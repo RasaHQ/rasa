@@ -135,7 +135,7 @@ class EmbeddingIntentClassifier(Component):
         # transform numbers to labels
         self.inverted_label_dict = inverted_label_dict
         # encode all label_ids with numbers
-        self._encoded_all_label_ids = None
+        self._label_data = None
 
         # tf related instances
         self.session = session
@@ -462,18 +462,16 @@ class EmbeddingIntentClassifier(Component):
         # get in tensors from generator
         self.batch_in = self._iterator.get_next()
         # convert encoded all labels into the batch format
-        all_label_ids_batch = train_utils.prepare_batch(self._encoded_all_label_ids)
+        label_batch = train_utils.prepare_batch(self._label_data)
 
         # convert batch format into sparse and dense tensors
-        batch_in = train_utils.batch_to_session_data(self.batch_in, session_data)
-        encoded_all_label_ids_batch = train_utils.batch_to_session_data(
-            all_label_ids_batch, self._encoded_all_label_ids
-        )
+        batch_data = train_utils.batch_to_session_data(self.batch_in, session_data)
+        label_data = train_utils.batch_to_session_data(label_batch, self._label_data)
 
-        a = self.combine_sparse_dense_features(batch_in["text_features"], "text")
-        b = self.combine_sparse_dense_features(batch_in["intent_features"], "intent")
-        encoded_all_label_ids = self.combine_sparse_dense_features(
-            encoded_all_label_ids_batch["intent_features"], "intent"
+        a = self.combine_sparse_dense_features(batch_data["text_features"], "text")
+        b = self.combine_sparse_dense_features(batch_data["intent_features"], "intent")
+        all_bs = self.combine_sparse_dense_features(
+            label_data["intent_features"], "intent"
         )
 
         message_embed = self._create_tf_embed_fnn(
@@ -488,9 +486,8 @@ class EmbeddingIntentClassifier(Component):
             fnn_name="text_intent" if self.share_hidden_layers else "intent",
             embed_name="intent",
         )
-
         self.all_labels_embed = self._create_tf_embed_fnn(
-            encoded_all_label_ids,
+            all_bs,
             self.hidden_layer_sizes["intent"],
             fnn_name="text_intent" if self.share_hidden_layers else "intent",
             embed_name="intent",
@@ -501,7 +498,7 @@ class EmbeddingIntentClassifier(Component):
             self.label_embed,
             b,
             self.all_labels_embed,
-            encoded_all_label_ids,
+            all_bs,
             self.num_neg,
             None,
             self.loss_type,
@@ -543,10 +540,10 @@ class EmbeddingIntentClassifier(Component):
 
         self.batch_in = tf.tuple(batch_placeholder)
 
-        batch_in = train_utils.batch_to_session_data(self.batch_in, session_data)
+        batch_data = train_utils.batch_to_session_data(self.batch_in, session_data)
 
-        a = self.combine_sparse_dense_features(batch_in["text_features"], "text")
-        b = self.combine_sparse_dense_features(batch_in["intent_features"], "intent")
+        a = self.combine_sparse_dense_features(batch_data["text_features"], "text")
+        b = self.combine_sparse_dense_features(batch_data["intent_features"], "intent")
 
         # TODO check this idea:
         # self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
@@ -612,7 +609,7 @@ class EmbeddingIntentClassifier(Component):
 
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
 
-        self._encoded_all_label_ids = self._create_encoded_label_ids(
+        self._label_data = self._create_encoded_label_ids(
             training_data, label_id_dict, attribute=MESSAGE_INTENT_ATTRIBUTE
         )
 
