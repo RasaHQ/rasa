@@ -5,6 +5,7 @@ from rasa.core.domain import Domain, PREV_PREFIX
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.training.generator import TrainingDataGenerator
 from rasa.importers.importer import TrainingDataImporter
+from rasa.nlu.constants import MESSAGE_INTENT_ATTRIBUTE
 from rasa.nlu.training_data import TrainingData
 from rasa.core.training.structures import StoryGraph
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
@@ -257,8 +258,8 @@ class Validator:
                                 if k.startswith(PREV_PREFIX):
                                     if k[len(PREV_PREFIX):] != ACTION_LISTEN_NAME:
                                         last_event_string = f"action '{k[len(PREV_PREFIX):]}'"
-                                elif k.startswith("intent_") and not last_event_string:
-                                    last_event_string = f"intent '{k[len('intent_'):]}'"
+                                elif k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_") and not last_event_string:
+                                    last_event_string = f"intent '{k[len(MESSAGE_INTENT_ATTRIBUTE + '_'):]}'"
                             break
                         idx += 1
                 conflict_string = f"CONFLICT after {last_event_string}:\n"
