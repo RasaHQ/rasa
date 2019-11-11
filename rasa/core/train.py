@@ -1,4 +1,6 @@
 import argparse
+import asyncio
+import functools
 import logging
 import os
 import tempfile
@@ -63,7 +65,11 @@ async def train(
     training_data = await agent.load_data(
         training_resource, exclusion_percentage=exclusion_percentage, **data_load_args
     )
-    agent.train(training_data, **kwargs)
+
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(
+        None, functools.partial(agent.train, training_data, **kwargs)
+    )
     agent.persist(output_path, dump_stories)
 
     return agent
@@ -144,7 +150,6 @@ async def do_compare_training(
     story_file: Text,
     additional_arguments: Optional[Dict] = None,
 ):
-    from rasa.core import utils
 
     await train_comparison_models(
         story_file,
