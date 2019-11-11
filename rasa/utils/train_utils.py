@@ -685,15 +685,16 @@ def _tf_calc_iou_mask(
     pos_b: "tf.Tensor", all_bs: "tf.Tensor", neg_ids: "tf.Tensor"
 ) -> "tf.Tensor":
     """Calculate IOU mask for given indices"""
-
     pos_b_in_flat = tf.expand_dims(pos_b, -2)
     neg_b_in_flat = _tf_sample_neg(tf.shape(pos_b)[0], all_bs, neg_ids)
 
-    intersection_b_in_flat = tf.minimum(neg_b_in_flat, pos_b_in_flat)
-    union_b_in_flat = tf.maximum(neg_b_in_flat, pos_b_in_flat)
+    return tf.cast(tf.reduce_all(tf.equal(neg_b_in_flat, pos_b_in_flat), axis=-1), pos_b_in_flat.dtype)
 
-    iou = tf.reduce_sum(intersection_b_in_flat, -1) / tf.reduce_sum(union_b_in_flat, -1)
-    return 1.0 - tf.nn.relu(tf.sign(1.0 - iou))
+    # intersection_b_in_flat = tf.minimum(neg_b_in_flat, pos_b_in_flat)
+    # union_b_in_flat = tf.maximum(neg_b_in_flat, pos_b_in_flat)
+    #
+    # iou = tf.reduce_sum(intersection_b_in_flat, -1) / tf.reduce_sum(union_b_in_flat, -1)
+    # return 1.0 - tf.nn.relu(tf.sign(1.0 - iou))
 
 
 def _tf_get_negs(

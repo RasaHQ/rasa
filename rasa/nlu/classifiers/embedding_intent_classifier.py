@@ -370,25 +370,6 @@ class EmbeddingIntentClassifier(Component):
 
         return encoded_id_labels
 
-    def labels_to_tensors(self, features: List[np.ndarray]):
-        label_features = []
-
-        for f in features:
-            if isinstance(f, scipy.sparse.spmatrix):
-                indices, values, shape = train_utils.scipy_matrix_to_values(
-                    np.array([f])
-                )
-                label_features.append(
-                    tf.cast(
-                        train_utils.values_to_sparse_tensor(indices, values, shape),
-                        tf.float64,
-                    )
-                )
-            else:
-                label_features.append(tf.cast(f, tf.float64))
-
-        return self.combine_sparse_dense_features(label_features, "label")
-
     # noinspection PyPep8Naming
     def _create_session_data(
         self,
@@ -485,18 +466,16 @@ class EmbeddingIntentClassifier(Component):
 
         # convert batch format into sparse and dense tensors
         batch_in = train_utils.batch_to_session_data(self.batch_in, session_data)
-        all_label_ids_batch = train_utils.batch_to_session_data(
+        encoded_all_label_ids_batch = train_utils.batch_to_session_data(
             all_label_ids_batch, self._encoded_all_label_ids
         )
 
         a = self.combine_sparse_dense_features(batch_in["text_features"], "text")
         b = self.combine_sparse_dense_features(batch_in["intent_features"], "intent")
-        all_label_ids = self.combine_sparse_dense_features(
-            all_label_ids_batch["intent_features"], "intent"
+        encoded_all_label_ids = self.combine_sparse_dense_features(
+            encoded_all_label_ids_batch["intent_features"], "intent"
         )
-        print(session_data["intent_ids"])
-        print(batch_in["intent_ids"])
-        exit()
+
         message_embed = self._create_tf_embed_fnn(
             a,
             self.hidden_layer_sizes["text"],
@@ -511,10 +490,10 @@ class EmbeddingIntentClassifier(Component):
         )
 
         self.all_labels_embed = self._create_tf_embed_fnn(
-            all_label_ids,
+            encoded_all_label_ids,
             self.hidden_layer_sizes["intent"],
             fnn_name="text_intent" if self.share_hidden_layers else "intent",
-            embed_name="all_intents",
+            embed_name="intent",
         )
 
         return train_utils.calculate_loss_acc(
@@ -522,7 +501,7 @@ class EmbeddingIntentClassifier(Component):
             self.label_embed,
             b,
             self.all_labels_embed,
-            all_label_ids,
+            encoded_all_label_ids,
             self.num_neg,
             None,
             self.loss_type,
@@ -636,16 +615,6 @@ class EmbeddingIntentClassifier(Component):
         self._encoded_all_label_ids = self._create_encoded_label_ids(
             training_data, label_id_dict, attribute=MESSAGE_INTENT_ATTRIBUTE
         )
-
-        # check if number of negatives is less than number of label_ids
-        logger.debug(
-            "Check if num_neg {} is smaller than "
-            "number of label_ids {}, "
-            "else set num_neg to the number of label_ids - 1"
-            "".format(self.num_neg, len(self._encoded_all_label_ids))
-        )
-        # noinspection PyAttributeOutsideInit
-        self.num_neg = min(self.num_neg, len(self._encoded_all_label_ids) - 1)
 
         session_data = self._create_session_data(
             training_data.intent_examples,
