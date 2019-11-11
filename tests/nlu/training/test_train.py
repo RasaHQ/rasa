@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os
 import pytest
 
@@ -42,10 +40,10 @@ def pipelines_for_tests():
                 "SpacyEntityExtractor",
                 "DucklingHTTPExtractor",
                 "EntitySynonymMapper",
-                "KeywordIntentClassifier",
                 "SklearnIntentClassifier",
                 "MitieIntentClassifier",
                 "EmbeddingIntentClassifier",
+                "KeywordIntentClassifier",
                 "ResponseSelector",
             ),
         ),
@@ -57,6 +55,7 @@ def pipelines_for_tests():
                 "MitieFeaturizer",
                 "MitieEntityExtractor",
                 "SklearnIntentClassifier",
+                "KeywordIntentClassifier",
             ),
         ),
     ]

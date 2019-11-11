@@ -66,7 +66,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         template_name: Text,
         tracker: DialogueStateTracker,
         output_channel: Text,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested template."""
 
@@ -80,7 +80,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         template_name: Text,
         filled_slots: Dict[Text, Any],
         output_channel: Text,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested template."""
 
@@ -96,7 +96,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         self,
         template: Dict[Text, Any],
         filled_slots: Optional[Dict[Text, Any]] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Dict[Text, Any]:
         """"Combine slot values and key word arguments to fill templates."""
 

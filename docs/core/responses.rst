@@ -35,8 +35,16 @@ available entities, slots and intents.
 In this example domain file, the section ``templates`` contains the
 template the assistant uses to send messages to the user.
 
-If you want to change the text, or any other part of the bots response,
-you need to retrain the assistant before these changes will be picked up.
+.. note::
+
+    If you want to change the text, or any other part of the bots response,
+    you need to retrain the assistant before these changes will be picked up.
+
+.. note::
+
+    utterances that are used in a story should be listed in the ``stories``
+    section of the domain.yml file. In this example, the ``utter_channel``
+    utterance is not used in a story so it is not listed in that section.
 
 More details about the format of these responses can be found in the
 documentation about the domain file format: :ref:`utter_templates`.

@@ -56,7 +56,7 @@ class NGramFeaturizer(Featurizer):
         all_ngrams: Optional[List[Text]] = None,
         best_num_ngrams: Optional[int] = None,
     ):
-        super(NGramFeaturizer, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.best_num_ngrams = best_num_ngrams
         self.all_ngrams = all_ngrams
@@ -99,7 +99,7 @@ class NGramFeaturizer(Featurizer):
         model_dir: Optional[Text] = None,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional["NGramFeaturizer"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "NGramFeaturizer":
 
         file_name = meta.get("file")
@@ -417,9 +417,7 @@ class NGramFeaturizer(Featurizer):
                     examples, y, existing_text_features, cv_splits, max_ngrams=n
                 )
                 scores.append(score)
-                logger.debug(
-                    "Evaluating usage of {} ngrams. Score: {}".format(n, score)
-                )
+                logger.debug(f"Evaluating usage of {n} ngrams. Score: {score}")
 
             n_top = num_ngrams[np.argmax(scores)]
             logger.info("Best score with {} ngrams: {}".format(n_top, np.max(scores)))

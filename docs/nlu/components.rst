@@ -116,6 +116,15 @@ SpacyFeaturizer
 :Requires: :ref:`SpacyNLP`
 :Description:
     Creates feature for intent classification using the spacy featurizer.
+    Optionally adds word vectors for each ``token`` to ``ner_features``, which can be referenced in ``CRFEntityExtractor``
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "SpacyFeaturizer"
+          # Whether to add word vectors to ``ner_features`` (default: False)
+          ner_feature_vectors: True
 
 NGramFeaturizer
 ~~~~~~~~~~~~~~~
@@ -266,23 +275,8 @@ CountVectorsFeaturizer
 Intent Classifiers
 ------------------
 
-KeywordIntentClassifier
-~~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: Simple keyword matching intent classifier. Not intended to be used.
-:Outputs: ``intent``
-:Requires: nothing
-:Output-Example:
 
-    .. code-block:: json
-
-        {
-            "intent": {"name": "greet", "confidence": 0.98343}
-        }
-
-:Description:
-    This classifier is mostly used as a placeholder. It is able to recognize `hello` and
-    `goodbye` intents by searching for these keywords in the passed messages.
 
 MitieIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~
@@ -476,6 +470,41 @@ EmbeddingIntentClassifier
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
 
+.. _keyword_intent_classifier:
+
+KeywordIntentClassifier
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Short: Simple keyword matching intent classifier, intended for small, short-term projects.
+:Outputs: ``intent``
+:Requires: nothing
+
+:Output-Example:
+
+    .. code-block:: json
+
+        {
+            "intent": {"name": "greet", "confidence": 1.0}
+        }
+
+:Description:
+    This classifier works by searching a message for keywords.
+    The matching is case sensitive by default and searches only for exact matches of the keyword-string in the user message.
+    The keywords for an intent are the examples of that intent in the NLU training data.
+    This means the entire example is the keyword, not the individual words in the example.
+
+    .. note:: This classifier is intended only for small projects or to get started. If
+              you have few NLU training data you can use one of our pipelines
+              :ref:`choosing-a-pipeline`.
+
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "KeywordIntentClassifier"
+          case_sensitive: True
+
 Selectors
 ----------
 
@@ -487,6 +516,7 @@ Response Selector
 :Short: Response Selector
 :Outputs: A dictionary with key as ``direct_response_intent`` and value containing ``response`` and ``ranking``
 :Requires: A featurizer
+
 :Output-Example:
 
     .. code-block:: json
@@ -753,7 +783,8 @@ CRFEntityExtractor
     and the states are entity classes. Features of the words (capitalisation, POS tagging,
     etc.) give probabilities to certain entity classes, as are transitions between
     neighbouring entity tags: the most likely set of tags is then calculated and returned.
-    If POS features are used (pos or pos2), spaCy has to be installed.
+    If POS features are used (pos or pos2), spaCy has to be installed. To use custom features
+    made available by Featurizers, use ``"ner_features"``.
 :Configuration:
    .. code-block:: yaml
 
@@ -767,7 +798,7 @@ CRFEntityExtractor
           # Available features are:
           # ``low``, ``title``, ``suffix5``, ``suffix3``, ``suffix2``,
           # ``suffix1``, ``pos``, ``pos2``, ``prefix5``, ``prefix2``,
-          # ``bias``, ``upper``, ``digit`` and ``pattern``
+          # ``bias``, ``upper``, ``digit``, ``pattern``, and ``ner_features``
           features: [["low", "title"], ["bias", "suffix3"], ["upper", "pos", "pos2"]]
 
           # The flag determines whether to use BILOU tagging or not. BILOU
@@ -847,5 +878,6 @@ DucklingHTTPExtractor
           # if not set the default timezone of Duckling is going to be used
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
-
-
+          # Timeout for receiving response from http url of the running duckling server
+          # if not set the default timeout of duckling http url is set to 3 seconds. 
+          timeout : 3

@@ -38,15 +38,6 @@ from tests.core.utilities import (
 domain = Domain.load("examples/moodbot/domain.yml")
 
 
-@pytest.fixture(scope="module")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
-
-
 class MockRedisTrackerStore(RedisTrackerStore):
     def __init__(self, domain):
         self.red = fakeredis.FakeStrictRedis()
@@ -399,7 +390,7 @@ async def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
         out_path = tmpdir_factory.mktemp("tracker").join("dumped_tracker.json")
 
         dumped = tracker.current_state(EventVerbosity.AFTER_RESTART)
-        utils.dump_obj_as_json_to_file(out_path.strpath, dumped)
+        rasa.utils.io.dump_obj_as_json_to_file(out_path.strpath, dumped)
 
         restored_tracker = restore.load_tracker_from_json(
             out_path.strpath, default_agent.domain

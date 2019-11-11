@@ -44,7 +44,7 @@ class JiebaTokenizer(Tokenizer, Component):
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new intent classifier using the MITIE framework."""
 
-        super(JiebaTokenizer, self).__init__(component_config)
+        super().__init__(component_config)
 
         # path to dictionary file or None
         self.dictionary_path = self.component_config.get("dictionary_path")
@@ -75,9 +75,9 @@ class JiebaTokenizer(Tokenizer, Component):
         """
         import jieba
 
-        jieba_userdicts = glob.glob("{}/*".format(path))
+        jieba_userdicts = glob.glob(f"{path}/*")
         for jieba_userdict in jieba_userdicts:
-            logger.info("Loading Jieba User Dictionary at {}".format(jieba_userdict))
+            logger.info(f"Loading Jieba User Dictionary at {jieba_userdict}")
             jieba.load_userdict(jieba_userdict)
 
     def train(
@@ -123,7 +123,7 @@ class JiebaTokenizer(Tokenizer, Component):
         model_dir: Optional[Text] = None,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional[Component] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "JiebaTokenizer":
 
         relative_dictionary_path = meta.get("dictionary_path")
@@ -142,7 +142,7 @@ class JiebaTokenizer(Tokenizer, Component):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        target_file_list = glob.glob("{}/*".format(input_dir))
+        target_file_list = glob.glob(f"{input_dir}/*")
         for target_file in target_file_list:
             shutil.copy2(target_file, output_dir)
 

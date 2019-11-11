@@ -127,7 +127,7 @@ objects that you can use, e.g.
    => {"value":"2018-05-31T20:00:00.000+01:00"}
 
 
-The list of supported langauges can be found `here 
+The list of supported languages can be found `here
 <https://github.com/facebook/duckling/tree/master/Duckling/Dimensions>`_.
 Duckling can also handle durations like "two hours",
 amounts of money, distances, and ordinals.
@@ -149,3 +149,12 @@ associate that with a location entity.
 
 If you just want to match regular expressions exactly, you can do this in your code,
 as a postprocessing step after receiving the response from Rasa NLU.
+
+
+Passing Custom Features to ``CRFEntityExtractor``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you want to pass custom features to ``CRFEntityExtractor``, you can create a ``Featurizer`` that provides ``ner_features``.
+If you do, ``ner_features`` should be an iterable of ``len(tokens)``, where each entry is a vector.
+If ``CRFEntityExtractor`` finds ``"ner_features"`` in one of the arrays in ``features`` in the config, it will pass the ``ner_features`` vectors to ``sklearn_crfsuite``.
+The simplest example of this is to pass word vectors as features, which you can do using :ref:``SpacyFeaturizer``.

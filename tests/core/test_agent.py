@@ -2,30 +2,19 @@ import asyncio
 from typing import Text
 
 import pytest
-from async_generator import async_generator, yield_
 from sanic import Sanic, response
 
-import rasa.utils.io
 import rasa.core
-from rasa.core import config, jobs, utils
+import rasa.utils.io
+from rasa.core import jobs, utils
 from rasa.core.agent import Agent, load_agent
-from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.channels.channel import UserMessage
+from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
-
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
-
-
-@pytest.fixture(scope="session")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
 
 
 def model_server_app(model_path: Text, model_hash: Text = "somehash"):
@@ -51,12 +40,11 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash"):
 
 
 @pytest.fixture
-@async_generator
 async def model_server(test_server, trained_moodbot_path):
     server = await test_server(
         model_server_app(trained_moodbot_path, model_hash="somehash")
     )
-    await yield_(server)  # python 3.5 compatibility
+    yield server
     await server.close()
 
 
@@ -175,7 +163,7 @@ async def test_agent_with_model_server_in_thread(
         agent, model_server=model_endpoint_config
     )
 
-    await asyncio.sleep(3)
+    await asyncio.sleep(5)
 
     assert agent.fingerprint == "somehash"
     assert hash(agent.domain) == hash(moodbot_domain)
@@ -190,7 +178,6 @@ async def test_agent_with_model_server_in_thread(
 
 
 async def test_wait_time_between_pulls_without_interval(model_server, monkeypatch):
-
     monkeypatch.setattr(
         "rasa.core.agent.schedule_model_pulling", lambda *args: 1 / 0
     )  # will raise an exception

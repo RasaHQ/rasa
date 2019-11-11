@@ -5,12 +5,10 @@ import os
 import tensorflow as tf
 import numpy as np
 import warnings
-import typing
 from typing import Any, List, Dict, Text, Optional, Tuple
 
 import rasa.utils.io
 
-from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
@@ -20,7 +18,6 @@ from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.common import obtain_verbosity
-from rasa.utils.train_utils import load_tf_config
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 # there are a number of issues with imports from tensorflow. hence the deactivation
@@ -60,14 +57,14 @@ class KerasPolicy(Policy):
         priority: int = DEFAULT_POLICY_PRIORITY,
         model: Optional[tf.keras.models.Sequential] = None,
         graph: Optional[tf.Graph] = None,
-        session: Optional[tf.Session] = None,
+        session: Optional[tf.compat.v1.Session] = None,
         current_epoch: int = 0,
         max_history: Optional[int] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
-        super(KerasPolicy, self).__init__(featurizer, priority)
+        super().__init__(featurizer, priority)
 
         self._load_params(**kwargs)
         self.model = model
@@ -79,6 +76,8 @@ class KerasPolicy(Policy):
         self.current_epoch = current_epoch
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
+        from rasa.utils.train_utils import load_tf_config
+
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
@@ -169,7 +168,7 @@ class KerasPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
 
         # set numpy random seed
@@ -183,7 +182,7 @@ class KerasPolicy(Policy):
         with self.graph.as_default():
             # set random seed in tf
             tf.set_random_seed(self.random_seed)
-            self.session = tf.Session(config=self._tf_config)
+            self.session = tf.compat.v1.Session(config=self._tf_config)
 
             with self.session.as_default():
                 if self.model is None:
@@ -209,7 +208,7 @@ class KerasPolicy(Policy):
                     batch_size=self.batch_size,
                     shuffle=False,
                     verbose=obtain_verbosity(),
-                    **self._train_params
+                    **self._train_params,
                 )
                 # the default parameter for epochs in keras fit is 1
                 self.current_epoch = self.defaults.get("epochs", 1)
@@ -219,7 +218,7 @@ class KerasPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Continues training an already trained policy."""
 
@@ -279,7 +278,7 @@ class KerasPolicy(Policy):
             }
 
             meta_file = os.path.join(path, "keras_policy.json")
-            utils.dump_obj_as_json_to_file(meta_file, meta)
+            rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
             model_file = os.path.join(path, meta["model"])
             # makes sure the model directory exists
@@ -315,7 +314,7 @@ class KerasPolicy(Policy):
 
                 graph = tf.Graph()
                 with graph.as_default():
-                    session = tf.Session(config=_tf_config)
+                    session = tf.compat.v1.Session(config=_tf_config)
                     with session.as_default():
                         with warnings.catch_warnings():
                             warnings.simplefilter("ignore")

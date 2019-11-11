@@ -1,15 +1,26 @@
-# -*- coding: utf-8 -*-
 import argparse
 import json
 import logging
+import os
 import re
 import sys
 from asyncio import Future
+from decimal import Decimal
 from hashlib import md5, sha1
 from io import StringIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple, Callable
-from typing import Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Set,
+    TYPE_CHECKING,
+    Text,
+    Tuple,
+    Callable,
+    Union,
+)
 
 import aiohttp
 from aiohttp import InvalidURL
@@ -17,11 +28,12 @@ from sanic import Sanic
 from sanic.views import CompositionView
 
 import rasa.utils.io as io_utils
+from rasa.constants import ENV_SANIC_WORKERS, DEFAULT_SANIC_WORKERS
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
-from rasa.utils.endpoints import concat_url
-from rasa.utils.endpoints import read_endpoint_config
+from rasa.core.lock_store import LockStore, RedisLockStore
+from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +46,7 @@ def configure_file_logging(logger_obj: logging.Logger, log_file: Optional[Text])
         return
 
     formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
-    file_handler = logging.FileHandler(log_file, encoding="utf-8")
+    file_handler = logging.FileHandler(log_file, encoding=io_utils.DEFAULT_ENCODING)
     file_handler.setLevel(logger_obj.level)
     file_handler.setFormatter(formatter)
     logger_obj.addHandler(file_handler)
@@ -43,20 +55,6 @@ def configure_file_logging(logger_obj: logging.Logger, log_file: Optional[Text])
 def module_path_from_instance(inst: Any) -> Text:
     """Return the module path of an instance's class."""
     return inst.__module__ + "." + inst.__class__.__name__
-
-
-def dump_obj_as_json_to_file(filename: Text, obj: Any) -> None:
-    """Dump an object as a json string to a file."""
-
-    dump_obj_as_str_to_file(filename, json.dumps(obj, indent=2))
-
-
-def dump_obj_as_str_to_file(filename: Text, text: Text) -> None:
-    """Dump a text to a file."""
-
-    with open(filename, "w", encoding="utf-8") as f:
-        # noinspection PyTypeChecker
-        f.write(str(text))
 
 
 def subsample_array(
@@ -113,12 +111,12 @@ def generate_id(prefix="", max_chars=None):
     if max_chars:
         gid = gid[:max_chars]
 
-    return "{}{}".format(prefix, gid)
+    return f"{prefix}{gid}"
 
 
 def request_input(valid_values=None, prompt=None, max_suggested=3):
     def wrong_input_message():
-        print (
+        print(
             "Invalid answer, only {}{} allowed\n".format(
                 ", ".join(valid_values[:max_suggested]),
                 ",..." if len(valid_values) > max_suggested else "",
@@ -140,7 +138,7 @@ def request_input(valid_values=None, prompt=None, max_suggested=3):
 # noinspection PyPep8Naming
 
 
-class HashableNDArray(object):
+class HashableNDArray:
     """Hashable wrapper for ndarray objects.
 
     Instances of ndarray are not hashable, meaning they cannot be added to
@@ -204,8 +202,8 @@ def _dump_yaml(obj, output):
 
 def dump_obj_as_yaml_to_file(filename: Union[Text, Path], obj: Dict) -> None:
     """Writes data (python dict) to the filename in yaml repr."""
-    with open(str(filename), "w", encoding="utf-8") as output:
-        _dump_yaml(obj, output)
+
+    io_utils.write_yaml_file(obj, filename)
 
 
 def dump_obj_as_yaml_to_string(obj: Dict) -> Text:
@@ -235,7 +233,7 @@ def list_routes(app: Sanic):
 
         options = {}
         for arg in route.parameters:
-            options[arg] = "[{0}]".format(arg)
+            options[arg] = f"[{arg}]"
 
         if not isinstance(route.handler, CompositionView):
             handlers = [(list(route.methods)[0], route.name)]
@@ -246,11 +244,11 @@ def list_routes(app: Sanic):
             ]
 
         for method, name in handlers:
-            line = unquote("{:50s} {:30s} {}".format(endpoint, method, name))
+            line = unquote(f"{endpoint:50s} {method:30s} {name}")
             output[name] = line
 
     url_table = "\n".join(output[url] for url in sorted(output))
-    logger.debug("Available web server routes: \n{}".format(url_table))
+    logger.debug(f"Available web server routes: \n{url_table}")
 
     return output
 
@@ -304,7 +302,7 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
 
     line_filter = re.compile(line_pattern)
 
-    with open(filename, "r", encoding="utf-8") as f:
+    with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING) as f:
         num_messages = 0
         for line in f:
             m = line_filter.match(line)
@@ -326,7 +324,7 @@ def convert_bytes_to_string(data: Union[bytes, bytearray, Text]) -> Text:
     """Convert `data` to string if it is a bytes-like object."""
 
     if isinstance(data, (bytes, bytearray)):
-        return data.decode("utf-8")
+        return data.decode(io_utils.DEFAULT_ENCODING)
 
     return data
 
@@ -336,12 +334,12 @@ def get_file_hash(path: Text) -> Text:
     return md5(file_as_bytes(path)).hexdigest()
 
 
-def get_text_hash(text: Text, encoding: Text = "utf-8") -> Text:
+def get_text_hash(text: Text, encoding: Text = io_utils.DEFAULT_ENCODING) -> Text:
     """Calculate the md5 hash for a text."""
     return md5(text.encode(encoding)).hexdigest()
 
 
-def get_dict_hash(data: Dict, encoding: Text = "utf-8") -> Text:
+def get_dict_hash(data: Dict, encoding: Text = io_utils.DEFAULT_ENCODING) -> Text:
     """Calculate the md5 hash of a dictionary."""
     return md5(json.dumps(data, sort_keys=True).encode(encoding)).hexdigest()
 
@@ -383,7 +381,7 @@ def pad_lists_to_size(
         return list_x, list_y
 
 
-class AvailableEndpoints(object):
+class AvailableEndpoints:
     """Collection of configured endpoints."""
 
     @classmethod
@@ -457,3 +455,84 @@ def create_task_error_logger(error_message: Text = "") -> Callable[[Future], Non
             )
 
     return handler
+
+
+def replace_floats_with_decimals(obj: Union[List, Dict]) -> Any:
+    """
+    Utility method to recursively walk a dictionary or list converting all `float` to `Decimal` as required by DynamoDb.
+
+    Args:
+        obj: A `List` or `Dict` object.
+
+    Returns: An object with all matching values and `float` type replaced by `Decimal`.
+
+    """
+    if isinstance(obj, list):
+        for i in range(len(obj)):
+            obj[i] = replace_floats_with_decimals(obj[i])
+        return obj
+    elif isinstance(obj, dict):
+        for j in obj:
+            obj[j] = replace_floats_with_decimals(obj[j])
+        return obj
+    elif isinstance(obj, float):
+        return Decimal(obj)
+    else:
+        return obj
+
+
+def _lock_store_is_redis_lock_store(
+    lock_store: Union[EndpointConfig, LockStore, None]
+) -> bool:
+    # determine whether `lock_store` is associated with a `RedisLockStore`
+    if isinstance(lock_store, LockStore):
+        if isinstance(lock_store, RedisLockStore):
+            return True
+        return False
+
+    # `lock_store` is `None` or `EndpointConfig`
+    return lock_store is not None and lock_store.type == "redis"
+
+
+def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) -> int:
+    """Get the number of Sanic workers to use in `app.run()`.
+
+    If the environment variable constants.ENV_SANIC_WORKERS is set and is not equal to
+    1, that value will only be permitted if the used lock store supports shared
+    resources across multiple workers (e.g. ``RedisLockStore``).
+    """
+
+    def _log_and_get_default_number_of_workers():
+        logger.debug(
+            f"Using the default number of Sanic workers ({DEFAULT_SANIC_WORKERS})."
+        )
+        return DEFAULT_SANIC_WORKERS
+
+    try:
+        env_value = int(os.environ.get(ENV_SANIC_WORKERS, DEFAULT_SANIC_WORKERS))
+    except ValueError:
+        logger.error(
+            f"Cannot convert environment variable `{ENV_SANIC_WORKERS}` "
+            f"to int ('{os.environ[ENV_SANIC_WORKERS]}')."
+        )
+        return _log_and_get_default_number_of_workers()
+
+    if env_value == DEFAULT_SANIC_WORKERS:
+        return _log_and_get_default_number_of_workers()
+
+    if env_value < 1:
+        logger.debug(
+            f"Cannot set number of Sanic workers to the desired value "
+            f"({env_value}). The number of workers must be at least 1."
+        )
+        return _log_and_get_default_number_of_workers()
+
+    if _lock_store_is_redis_lock_store(lock_store):
+        logger.debug(f"Using {env_value} Sanic workers.")
+        return env_value
+
+    logger.debug(
+        f"Unable to assign desired number of Sanic workers ({env_value}) as "
+        f"no `RedisLockStore` endpoint configuration has been found."
+    )
+    return _log_and_get_default_number_of_workers()
