@@ -298,7 +298,9 @@ def gen_batch(
         yield prepare_batch(session_data, start, end)
 
 
-def prepare_batch(session_data: SessionData, start: Optional[int] = None, end: Optional[int] = None):
+def prepare_batch(
+    session_data: SessionData, start: Optional[int] = None, end: Optional[int] = None
+):
     batch_data = []
 
     for values in session_data.values():
@@ -351,7 +353,7 @@ def values_to_sparse_tensor(
     return tf.SparseTensor(indices, data, shape)
 
 
-def pad_data(data: np.ndarray) -> np.ndarray:
+def pad_data(data: np.ndarray, feature_len: Optional[int] = None) -> np.ndarray:
     """
     Pad data of different lengths.
     Data is padded with zeros. Zeros are added to the beginning of data.
@@ -360,7 +362,8 @@ def pad_data(data: np.ndarray) -> np.ndarray:
         return data
 
     data_size = len(data)
-    feature_len = max([x.shape[-1] for x in data])
+    if feature_len is None:
+        feature_len = max([x.shape[-1] for x in data])
 
     if data[0].ndim == 1:
         data_padded = np.zeros([data_size, feature_len], dtype=data[0].dtype)
@@ -454,7 +457,7 @@ def get_shapes_types(session_data: SessionData) -> Tuple:
             types.append(tf.float64)
             types.append(tf.int64)
         else:
-            types.append(v.dtype)
+            types.append(v[0].dtype)
 
     for values in session_data.values():
         for v in values:

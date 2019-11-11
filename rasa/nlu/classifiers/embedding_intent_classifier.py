@@ -310,7 +310,9 @@ class EmbeddingIntentClassifier(Component):
         dense_features = np.array(dense_features)
 
         data = {}
-        self._add_to_session_data(data, "intent_features", [sparse_features, dense_features])
+        self._add_to_session_data(
+            data, "intent_features", [sparse_features, dense_features]
+        )
 
         return data
 
@@ -400,6 +402,10 @@ class EmbeddingIntentClassifier(Component):
         Y_sparse = []
         Y_dense = []
         label_ids = []
+        masks = []
+
+        # TODO should be variable
+        max_seq_len = max([len(e.get("tokens")) for e in training_data])
 
         for e in training_data:
             self._extract_and_add_features(e, MESSAGE_TEXT_ATTRIBUTE, X_sparse, X_dense)
@@ -410,13 +416,19 @@ class EmbeddingIntentClassifier(Component):
             if e.get(attribute):
                 label_ids.append(label_id_dict[e.get(attribute)])
 
+            mask = np.zeros(max_seq_len)
+            mask[0 : len(e.get("tokens"))] = 1
+            masks.append(mask)
+
         X_sparse = np.array(X_sparse)
         X_dense = np.array(X_dense)
         Y_sparse = np.array(Y_sparse)
         Y_dense = np.array(Y_dense)
         label_ids = np.array(label_ids)
+        masks = np.array(masks)
 
         session_data = {}
+        self._add_to_session_data(session_data, "masks", [masks])
         self._add_to_session_data(session_data, "text_features", [X_sparse, X_dense])
         self._add_to_session_data(session_data, "intent_features", [Y_sparse, Y_dense])
         self._add_to_session_data(session_data, "intent_ids", [label_ids])
@@ -472,11 +484,15 @@ class EmbeddingIntentClassifier(Component):
 
         # convert batch format into sparse and dense tensors
         batch_in = train_utils.batch_to_session_data(self.batch_in, session_data)
-        all_label_ids_batch = train_utils.batch_to_session_data(all_label_ids_batch, self._encoded_all_label_ids)
+        all_label_ids_batch = train_utils.batch_to_session_data(
+            all_label_ids_batch, self._encoded_all_label_ids
+        )
 
         a = self.combine_sparse_dense_features(batch_in["text_features"], "text")
         b = self.combine_sparse_dense_features(batch_in["intent_features"], "intent")
-        all_label_ids = self.combine_sparse_dense_features(all_label_ids_batch["intent_features"], "intent")
+        all_label_ids = self.combine_sparse_dense_features(
+            all_label_ids_batch["intent_features"], "intent"
+        )
 
         message_embed = self._create_tf_embed_fnn(
             a,
@@ -793,6 +809,11 @@ class EmbeddingIntentClassifier(Component):
                     shape = 1
                 # add dummy tensor of shape
                 X.append(np.zeros(shape))
+            # TODO
+            elif (isinstance(shape, tuple) or isinstance(shape, list)) and batch[
+                i
+            ].shape[-1] != shape[-1]:
+                X.append(train_utils.pad_data(batch[i], feature_len=shape[-1]))
             else:
                 X.append(batch[i])
             i += 1
