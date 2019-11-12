@@ -30,7 +30,7 @@ class WhitespaceTokenizer(Tokenizer):
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
 
-        super(WhitespaceTokenizer, self).__init__(component_config)
+        super().__init__(component_config)
         # flag to check whether to split intents
         self.intent_tokenization_flag = self.component_config.get(
             "intent_tokenization_flag"
@@ -63,8 +63,8 @@ class WhitespaceTokenizer(Tokenizer):
         if not self.case_sensitive:
             text = text.lower()
 
-        # remove 'not a word character' if
         if attribute != MESSAGE_INTENT_ATTRIBUTE:
+            # remove 'not a word character' if
             words = re.sub(
                 # there is a space or an end of a string after it
                 r"[^\w#@&]+(?=\s|$)|"
@@ -78,6 +78,9 @@ class WhitespaceTokenizer(Tokenizer):
                 " ",
                 text,
             ).split()
+            # if we removed everything like smiles `:)`, use the whole text as 1 token
+            if not words:
+                words = [text]
         else:
             words = (
                 text.split(self.intent_split_symbol)

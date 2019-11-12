@@ -1,4 +1,5 @@
 import logging
+
 import numpy as np
 import os
 import pickle
@@ -9,9 +10,9 @@ import warnings
 
 from tf_metrics import f1
 
-from nlu.extractors import EntityExtractor
-from nlu.test import determine_token_labels
-from nlu.tokenizers.tokenizer import Token
+from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.test import determine_token_labels
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.train_utils import SessionData
@@ -96,6 +97,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # set random seed to any int to get reproducible results
         "random_seed": None,
         # embedding parameters
+        # default dense dimension used if no dense features are present
+        "dense_dim": 512,
         # dimension size of embedding vectors
         "embed_dim": 20,
         # the type of the similarity
@@ -143,9 +146,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         inverted_tag_dict: Optional[Dict[int, Text]] = None,
         session: Optional["tf.Session"] = None,
         graph: Optional["tf.Graph"] = None,
-        message_placeholder: Optional["tf.Tensor"] = None,
-        label_placeholder: Optional["tf.Tensor"] = None,
-        tag_placeholder: Optional["tf.Tensor"] = None,
+        batch_placeholder: Optional["tf.Tensor"] = None,
         similarity_all: Optional["tf.Tensor"] = None,
         intent_prediction: Optional["tf.Tensor"] = None,
         tag_prediction: Optional["tf.Tensor"] = None,
@@ -153,9 +154,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
         label_embed: Optional["tf.Tensor"] = None,
         all_labels_embed: Optional["tf.Tensor"] = None,
         attention_weights: Optional["tf.Tensor"] = None,
+        shapes: Optional[Tuple] = None,
     ) -> None:
         """Declare instant variables with default values"""
-        super(EmbeddingIntentClassifier, self).__init__(component_config)
+
+        super().__init__(component_config)
 
         self._load_params()
 
@@ -164,16 +167,16 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # transform numbers to tags
         self.inverted_tag_dict = inverted_tag_dict
         # encode all label_ids with numbers
-        self._encoded_all_label_ids = None
+        self._label_data = None
         # encode all tag_ids with numbers
-        self._encoded_all_tag_ids = None
+        self._tag_data = None
 
         # tf related instances
         self.session = session
         self.graph = graph
-        self.a_in = message_placeholder
-        self.b_in = label_placeholder
-        self.c_in = tag_placeholder
+
+        self.batch_in = batch_placeholder
+
         self.sim_all = similarity_all
         self.intent_prediction = intent_prediction
         self.entity_prediction = tag_prediction
@@ -188,6 +191,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self._iterator = None
         self._train_op = None
         self._is_training = None
+
+        self.shapes = shapes
 
     # config migration warning
     def _check_old_config_variables(self, config: Dict[Text, Any]) -> None:
@@ -208,22 +213,22 @@ class EmbeddingIntentClassifier(EntityExtractor):
     # init helpers
     def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
         self.hidden_layer_sizes = {
-            "a": config["hidden_layers_sizes_a"],
-            "b": config["hidden_layers_sizes_b"],
-            "c": config["hidden_layers_sizes_c"],
+            "text": config["hidden_layers_sizes_a"],
+            "intent": config["hidden_layers_sizes_b"],
+            "tag": config["hidden_layers_sizes_c"],
         }
         self.share_hidden_layers = config["share_hidden_layers"]
         if (
             self.share_hidden_layers
-            and self.hidden_layer_sizes["a"] != self.hidden_layer_sizes["b"]
+            and self.hidden_layer_sizes["text"] != self.hidden_layer_sizes["intent"]
         ):
             raise ValueError(
                 "If hidden layer weights are shared,"
                 "hidden_layer_sizes for a and b must coincide"
             )
 
-        self.batch_size = config["batch_size"]
-        self.batch_strategy = config["batch_strategy"]
+        self.batch_in_size = config["batch_size"]
+        self.batch_in_strategy = config["batch_strategy"]
 
         self.epochs = config["epochs"]
 
@@ -239,6 +244,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
     def _load_embedding_params(self, config: Dict[Text, Any]) -> None:
         self.embed_dim = config["embed_dim"]
         self.num_neg = config["num_neg"]
+        self.dense_dim = config["dense_dim"]
 
         self.similarity_type = config["similarity_type"]
         self.loss_type = config["loss_type"]
@@ -291,9 +297,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
     ) -> Dict[Text, int]:
         """Create label_id dictionary"""
 
-        distinct_label_ids = set(
-            [example.get(attribute) for example in training_data.intent_examples]
-        ) - {None}
+        distinct_label_ids = {
+            example.get(attribute) for example in training_data.intent_examples
+        } - {None}
         return {
             label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
         }
@@ -336,72 +342,120 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     @staticmethod
     def _check_labels_features_exist(
-        labels_example: List[Tuple[int, "Message"]], attribute_feature_name: Text
+        labels_example: List["Message"], attribute: Text
     ) -> bool:
         """Check if all labels have features set"""
-        for (label_idx, label_example) in labels_example:
-            if label_example.get(attribute_feature_name) is None:
+        for label_example in labels_example:
+            if (
+                label_example.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute])
+                is None
+                and label_example.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute])
+                is None
+            ):
                 return False
         return True
 
     @staticmethod
+    def _extract_and_add_features(
+        message: "Message", attribute: Text
+    ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
+        sparse_features = None
+        dense_features = None
+
+        if message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]) is not None:
+            sparse_features = message.get(
+                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]
+            )
+
+        if message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]) is not None:
+            dense_features = message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute])
+
+        return sparse_features, dense_features
+
     def _extract_labels_precomputed_features(
-        label_examples: List[Tuple[int, "Message"]], attribute_feature_name: Text
-    ) -> np.ndarray:
+        self, label_examples: List["Message"]
+    ) -> List[np.ndarray]:
 
         # Collect precomputed encodings
-        encoded_id_labels = [
-            (label_idx, label_example.get(attribute_feature_name))
-            for (label_idx, label_example) in label_examples
+        sparse_features = []
+        dense_features = []
+
+        for e in label_examples:
+            _sparse, _dense = self._extract_and_add_features(
+                e, MESSAGE_INTENT_ATTRIBUTE
+            )
+            if _sparse is not None:
+                sparse_features.append(_sparse)
+            if _dense is not None:
+                dense_features.append(_dense)
+
+        sparse_features = np.array(sparse_features)
+        dense_features = np.array(dense_features)
+
+        return [sparse_features, dense_features]
+
+    @staticmethod
+    def _compute_default_label_features(
+        labels_example: List["Message"]
+    ) -> List[np.ndarray]:
+        """Compute one-hot representation for the labels"""
+        return [
+            np.array(
+                [
+                    scipy.sparse.coo_matrix(
+                        ([1], ([0], [idx])), shape=(1, len(labels_example))
+                    )
+                    for idx in range(len(labels_example))
+                ]
+            )
         ]
 
-        # Sort the list of tuples based on label_idx
-        encoded_id_labels = sorted(encoded_id_labels, key=lambda x: x[0])
-
-        encoded_all_labels = [encoding for (index, encoding) in encoded_id_labels]
-
-        return np.array(encoded_all_labels)
-
-    def _compute_default_label_features(
-        self, labels_example: List[Tuple[int, "Message"]]
-    ) -> np.ndarray:
-        """Compute one-hot representation for the labels"""
-
-        return np.eye(len(labels_example))
-
-    def _create_encoded_label_ids(
+    def _create_label_data(
         self,
         training_data: "TrainingData",
         label_id_dict: Dict[Text, int],
         attribute: Text,
-        attribute_feature_name: Text,
-    ) -> np.ndarray:
-        """Create matrix with label_ids encoded in rows as bag of words. If the
-        features are already computed, fetch them from the message object else compute
-        a one hot encoding for the label as the feature vector. Find a training example
-        for each label and get the encoded features from the corresponding Message
-        object."""
+    ) -> "SessionData":
+        """Create matrix with label_ids encoded in rows as bag of words.
 
-        labels_example = []
+        Find a training example for each label and get the encoded features
+        from the corresponding Message object.
+        If the features are already computed, fetch them from the message object
+        else compute a one hot encoding for the label as the feature vector.
+        """
 
         # Collect one example for each label
+        labels_idx_example = []
         for label_name, idx in label_id_dict.items():
             label_example = self._find_example_for_label(
                 label_name, training_data.intent_examples, attribute
             )
-            labels_example.append((idx, label_example))
+            labels_idx_example.append((idx, label_example))
+
+        # Sort the list of tuples based on label_idx
+        labels_idx_example = sorted(labels_idx_example, key=lambda x: x[0])
+        labels_example = [example for (_, example) in labels_idx_example]
 
         # Collect features, precomputed if they exist, else compute on the fly
-        if self._check_labels_features_exist(labels_example, attribute_feature_name):
-            encoded_id_labels = self._extract_labels_precomputed_features(
-                labels_example, attribute_feature_name
-            )
+        if self._check_labels_features_exist(labels_example, attribute):
+            features = self._extract_labels_precomputed_features(labels_example)
         else:
             features = self._compute_default_label_features(labels_example)
-            encoded_id_labels = [scipy.sparse.csr_matrix(f) for f in features]
-            encoded_id_labels = np.array(encoded_id_labels)
 
-        return encoded_id_labels
+        label_data = {}
+        self._add_to_session_data(label_data, "intent_features", features)
+
+        return label_data
+
+    def use_default_label_features(self, label_ids: np.ndarray) -> List[np.ndarray]:
+        return [
+            np.array(
+                [
+                    self._label_data["intent_features"][0][label_id]
+                    for label_id in label_ids
+                ]
+            )
+        ]
 
     def _create_encoded_tag_ids(
         self,
@@ -434,85 +488,88 @@ class EmbeddingIntentClassifier(EntityExtractor):
     # noinspection PyPep8Naming
     def _create_session_data(
         self,
-        training_data: "TrainingData",
-        label_id_dict: Dict[Text, int],
-        tag_id_dict: Dict[Text, int],
-        attribute: Text,
+        training_data: List["Message"],
+        label_id_dict: Optional[Dict[Text, int]] = None,
+        tag_id_dict: Optional[Dict[Text, int]] = None,
+        attribute: Optional[Text] = None,
     ) -> "SessionData":
         """Prepare data for training and create a SessionData object"""
         X_sparse = []
         X_dense = []
-        Y = []
-        intent_ids = []
+        Y_sparse = []
+        Y_dense = []
+        label_ids = []
         tag_ids = []
+        masks = []
 
-        for e in training_data.training_examples:
+        # TODO should be variable
+        # TODO what if not present? use default value? raise error?
+        seq_len = [
+            e.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]).shape[0]
+            for e in training_data
+        ]
+        max_seq_len = max(seq_len) if seq_len else 25
+
+        for e in training_data:
+            _sparse, _dense = self._extract_and_add_features(e, MESSAGE_TEXT_ATTRIBUTE)
+            if _sparse is not None:
+                X_sparse.append(_sparse)
+            if _dense is not None:
+                X_dense.append(_dense)
+
+            _sparse, _dense = self._extract_and_add_features(
+                e, MESSAGE_INTENT_ATTRIBUTE
+            )
+            if _sparse is not None:
+                Y_sparse.append(_sparse)
+            if _dense is not None:
+                Y_dense.append(_dense)
+
             if e.get(attribute):
-                x_sparse, x_dense = self._get_x_features(e)
+                label_ids.append(label_id_dict[e.get(attribute)])
 
-                if x_sparse is not None:
-                    X_sparse.append(x_sparse)
-                if x_dense is not None:
-                    X_dense.append(x_dense)
+            mask = np.zeros(max_seq_len)
+            mask[0 : len(e.get("tokens"))] = 1
+            masks.append(mask)
 
-                intent_ids.append(label_id_dict[e.get(attribute)])
-
-        for e in training_data.training_examples:
+        for e in training_data:
             _tags = []
             for t in e.get("tokens"):
                 _tag = determine_token_labels(
                     t, e.get(MESSAGE_ENTITIES_ATTRIBUTE), None
                 )
                 _tags.append(tag_id_dict[_tag])
-            tag_ids.append(scipy.sparse.csr_matrix(np.array([_tags]).T))
+            tag_ids.append(scipy.sparse.coo_matrix(np.array([_tags]).T))
 
-        X_sparse = np.array(X_sparse)
-        X_dense = np.array(X_dense)
-        intent_ids = np.array(intent_ids)
+        Y_sparse = np.array(Y_sparse)
+        Y_dense = np.array(Y_dense)
+        label_ids = np.array(label_ids)
         tag_ids = np.array(tag_ids)
+        masks = np.array(masks)
 
-        for label_id_idx in intent_ids:
-            Y.append(self._encoded_all_label_ids[label_id_idx])
-        Y = np.array(Y)
+        session_data = {}
+        self._add_to_session_data(session_data, "masks", [masks])
+        self._add_to_session_data(session_data, "text_features", [X_sparse, X_dense])
+        self._add_to_session_data(session_data, "intent_features", [Y_sparse, Y_dense])
+        self._add_to_session_data(session_data, "intent_ids", [label_ids])
 
-        X_dict = {}
-        if X_sparse.size > 0:
-            X_dict["text_features_sparse"] = X_sparse
-        if X_dense.size > 0:
-            X_dict["text_features_dense"] = X_dense
+        if "intent_features" not in session_data:
+            # no intent features are present, get default features from _label_data
+            session_data["intent_features"] = self.use_default_label_features(label_ids)
 
-        return SessionData(
-            X_dict,
-            {"intent_features": Y},
-            {"intent_ids": intent_ids, "tag_ids": tag_ids},
-        )
+        return session_data
 
-    def _get_x_features(
-        self, message: "Message"
-    ) -> Tuple[
-        Optional[Union[np.ndarray, scipy.sparse.spmatrix]],
-        Optional[Union[np.ndarray, scipy.sparse.spmatrix]],
-    ]:
-        x_sparse = None
-        x_dense = None
+    def _add_to_session_data(
+        self, session_data: SessionData, key: Text, features: List[np.ndarray]
+    ):
+        if not features:
+            return
 
-        if (
-            message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
-            is not None
-        ):
-            x_sparse = message.get(
-                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
-            )
+        session_data[key] = []
 
-        if (
-            message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
-            is not None
-        ):
-            x_dense = message.get(
-                MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
-            )
-
-        return x_sparse, x_dense
+        for data in features:
+            if data.size > 0:
+                session_data[key].append(data)
 
     # tf helpers:
     def _create_tf_embed_fnn(
@@ -541,101 +598,54 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
     def _build_tf_train_graph(
-        self
-    ) -> Tuple["tf.Tensor", "tf.Tensor", "tf.Tensor", "tf.Tensor"]:
-        intent_loss = tf.constant(0.0)
-        intent_metric = tf.constant(0.0)
-        entity_loss = tf.constant(0.0)
-        entity_metric = tf.constant(0.0)
+        self, session_data: SessionData
+    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
 
-        # batch = 1 or 2 a_in values, b_in, intent_ids
-        batch = self._iterator.get_next()
-        self.a_in, self.b_in, self.c_in = self.batch_to_input(batch)
+        # get in tensors from generator
+        self.batch_in = self._iterator.get_next()
 
-        # transformer
-        a, mask = self._create_tf_sequence(self.a_in)
+        # convert encoded all labels into the batch format
+        label_batch = train_utils.prepare_batch(self._label_data)
 
-        if self.intent_classification:
-            intent_loss, intent_metric = self.build_intent_train_graph(a, mask)
+        # convert batch format into sparse and dense tensors
+        batch_data = train_utils.batch_to_session_data(self.batch_in, session_data)
+        label_data = train_utils.batch_to_session_data(label_batch, self._label_data)
 
-        if self.named_entity_recognition:
-            entity_loss, entity_metric = self.build_entity_train_graph(a, mask)
-
-        return intent_loss, intent_metric, entity_loss, entity_metric
-
-    def build_entity_train_graph(self, a, mask):
-        # get sequence lengths for NER
-        sequence_lengths = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
-        if len(sequence_lengths.shape) > 1:
-            sequence_lengths = tf.squeeze(sequence_lengths)
-
-        sequence_lengths.set_shape([mask.shape[0]])
-
-        # shape: batch-size, seq-len, dim
-        self.c_in = tf.reduce_sum(tf.nn.relu(self.c_in), -1)
-
-        # CRF
-        crf_params, logits, pred_ids = self._create_crf(a, sequence_lengths)
-
-        # Loss
-        log_likelihood, _ = tf.contrib.crf.crf_log_likelihood(
-            logits, self.c_in, sequence_lengths, crf_params
+        a = self.combine_sparse_dense_features(
+            batch_data["text_features"], session_data["text_features"], "text"
         )
-        loss = tf.reduce_mean(-log_likelihood)
-
-        pos_tag_indices = [k for k, v in self.inverted_tag_dict.items() if v != "O"]
-
-        # Metrics
-        weights = tf.sequence_mask(sequence_lengths)
-        num_tags = len(self.inverted_tag_dict)
-        metric = f1(self.c_in, pred_ids, num_tags, pos_tag_indices, weights)[1]
-
-        return loss, metric
-
-    def build_intent_train_graph(
-        self, a: tf.Tensor, mask: tf.Tensor
-    ) -> Tuple[tf.Tensor, tf.Tensor]:
-        last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
-        last = tf.expand_dims(last, -1)
-
-        # get _cls_ vector for intent classification
-        cls_embed = tf.reduce_sum(a * last, 1)
-        cls_embed = train_utils.create_tf_embed(
-            cls_embed,
-            self.embed_dim,
-            self.C2,
-            self.similarity_type,
-            layer_name_suffix="a",
+        b = self.combine_sparse_dense_features(
+            batch_data["intent_features"], session_data["intent_features"], "intent"
+        )
+        all_bs = self.combine_sparse_dense_features(
+            label_data["intent_features"], self._label_data["intent_features"], "intent"
         )
 
-        # all_label_ids is tensor of label-count x 1 x feature-len for labels
-        all_label_ids = tf.sparse_tensor_to_dense(
-            self._encoded_all_label_ids, name="all_labels_raw"
+        message_embed = self._create_tf_embed_fnn(
+            a,
+            self.hidden_layer_sizes["text"],
+            fnn_name="text_intent" if self.share_hidden_layers else "text",
+            embed_name="text",
         )
-        all_label_ids = tf.reduce_sum(tf.nn.relu(all_label_ids), 1)
-
-        self.all_labels_embed = self._create_tf_embed_fnn(
-            all_label_ids,
-            self.hidden_layer_sizes["b"],
-            fnn_name="a_b" if self.share_hidden_layers else "b",
-            embed_name="b",
-        )
-
-        self.b_in = tf.reduce_sum(tf.nn.relu(self.b_in), 1)
-
         self.label_embed = self._create_tf_embed_fnn(
-            self.b_in,
-            self.hidden_layer_sizes["b"],
-            fnn_name="a_b" if self.share_hidden_layers else "b",
-            embed_name="b",
+            b,
+            self.hidden_layer_sizes["intent"],
+            fnn_name="text_intent" if self.share_hidden_layers else "intent",
+            embed_name="intent",
+        )
+        self.all_labels_embed = self._create_tf_embed_fnn(
+            all_bs,
+            self.hidden_layer_sizes["intent"],
+            fnn_name="text_intent" if self.share_hidden_layers else "intent",
+            embed_name="intent",
         )
 
-        intent_loss, intent_metric = train_utils.calculate_loss_acc(
-            cls_embed,
+        return train_utils.calculate_loss_acc(
+            message_embed,
             self.label_embed,
-            self.b_in,
+            b,
             self.all_labels_embed,
-            all_label_ids,
+            all_bs,
             self.num_neg,
             None,
             self.loss_type,
@@ -645,168 +655,100 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.C_emb,
             self.scale_loss,
         )
-        return intent_loss, intent_metric
 
-    def _create_crf(
-        self, input: tf.Tensor, sequence_lengths: tf.Tensor
-    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-        num_tags = len(self.inverted_tag_dict)
+    def combine_sparse_dense_features(
+        self,
+        features: List[Union[tf.Tensor, tf.SparseTensor]],
+        session_data: List[np.ndarray],
+        name: Text,
+    ) -> tf.Tensor:
 
-        with tf.variable_scope("model", reuse=tf.AUTO_REUSE):
-            logits = tf.layers.dense(input, num_tags, name="crf-logits")
-            crf_params = tf.get_variable(
-                "crf-params", [num_tags, num_tags], dtype=tf.float32
-            )
-            pred_ids, _ = tf.contrib.crf.crf_decode(
-                logits, crf_params, sequence_lengths
-            )
+        dense_features = []
 
-            return crf_params, logits, pred_ids
+        dense_dim = self.dense_dim
+        # if dense features are present use the feature dimension of the dense features
+        for d in session_data:
+            if not isinstance(d[0], scipy.sparse.spmatrix):
+                dense_dim = d[0].shape[-1]
+                break
 
-    def _create_tf_sequence(self, a_in: tf.Tensor) -> Tuple["tf.Tensor", "tf.Tensor"]:
-        """Create sequence level embedding and mask."""
-        # mask different length sequences
-        # if there is at least one `-1` it should be masked
-        mask = tf.sign(tf.reduce_max(self.a_in, -1) + 1)
+        for f in features:
+            if isinstance(f, tf.SparseTensor):
+                dense_features.append(
+                    train_utils.tf_dense_layer_for_sparse(f, dense_dim, name, self.C2)
+                )
+            else:
+                dense_features.append(f)
 
-        a_in = train_utils.create_tf_fnn(
-            a_in,
-            self.hidden_layer_sizes["a"],
-            self.droprate,
-            self.C2,
-            self._is_training,
-            layer_name_suffix="a",
-        )
-        self.attention_weights = {}
-        hparams = train_utils.create_t2t_hparams(
-            self.num_transformer_layers,
-            self.transformer_size,
-            self.num_heads,
-            self.droprate,
-            self.pos_encoding,
-            self.max_seq_length,
-            self._is_training,
-            self.unidirectional_encoder,
-        )
-
-        a = train_utils.create_t2t_transformer_encoder(
-            a_in, mask, self.attention_weights, hparams, self.C2, self._is_training
-        )
-
-        return a, mask
-
-    def batch_to_input(self, batch: Tuple) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-        """Convert batch input into correct tensors.
-
-        As we do not know what features (sparse and/or dense) were used, we need to
-        check what features are provided and parse them accordingly.
-        """
-        # batch contains 1 or 2 a_in values, b_in, label_ids, tag_ids
-        b_in = batch[-3]
-        c_in = batch[-1]
-
-        if len(batch) == 4:
-            a_in = batch[0]
-            return a_in, b_in, c_in
-
-        if len(batch) == 5:
-            a_in_1 = batch[0]
-            a_in_2 = batch[1]
-            # Concatenate a_in features
-            # TODO should not be just concatenated
-            a_in = tf.concat([a_in_1, a_in_2], axis=1)
-
-            return a_in, b_in, c_in
-
-        raise ValueError("Iterator return unexpected number of tensors.")
+        output = tf.concat(dense_features, axis=-1)
+        # apply mean to convert sequence to sentence features
+        # TODO we cannot use reduce_mean, we should use reduce_sum / real_length
+        output = tf.reduce_mean(output, axis=1)
+        return output
 
     def _build_tf_pred_graph(self, session_data: "SessionData") -> "tf.Tensor":
-        num_features_sparse = self._get_num_of_features(
-            session_data, "text_features_sparse"
-        )
-        num_features_dense = self._get_num_of_features(
-            session_data, "text_features_dense"
-        )
+        self.shapes, types = train_utils.get_shapes_types(session_data)
 
-        self.a_in = tf.placeholder(
-            tf.float32, (None, num_features_sparse + num_features_dense), name="a"
+        batch_placeholder = []
+        for s, t in zip(self.shapes, types):
+            batch_placeholder.append(tf.placeholder(t, s))
+
+        self.batch_in = tf.tuple(batch_placeholder)
+
+        batch_data = train_utils.batch_to_session_data(self.batch_in, session_data)
+
+        a = self.combine_sparse_dense_features(
+            batch_data["text_features"], session_data["text_features"], "text"
         )
-        self.b_in = tf.placeholder(
-            tf.float32,
-            (None, None, session_data.Y["intent_features"][0].shape[-1]),
-            name="b",
-        )
-        self.c_in = tf.placeholder(
-            tf.int64,
-            (None, None, session_data.labels["tag_ids"][0].shape[-1]),
-            name="c",
+        b = self.combine_sparse_dense_features(
+            batch_data["intent_features"], session_data["intent_features"], "intent"
         )
 
-        a, mask = self._create_tf_sequence(self.a_in)
+        self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
 
-        if self.intent_classification:
-            last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
-            last = tf.expand_dims(last, -1)
+        message_embed = self._create_tf_embed_fnn(
+            a,
+            self.hidden_layer_sizes["text"],
+            fnn_name="text_intent" if self.share_hidden_layers else "text",
+            embed_name="text",
+        )
 
-            # get _cls_ embedding
-            cls_embed = tf.reduce_sum(a * last, 1)
-            cls_embed = train_utils.create_tf_embed(
-                cls_embed,
-                self.embed_dim,
-                self.C2,
-                self.similarity_type,
-                layer_name_suffix="a",
-            )
+        self.sim_all = train_utils.tf_raw_sim(
+            message_embed[:, tf.newaxis, :],
+            self.all_labels_embed[tf.newaxis, :, :],
+            None,
+        )
 
-            # reduce dimensionality as input should not be sequence for intent
-            # classification
-            self.b_in = tf.reduce_sum(self.b_in, 1)
+        self.label_embed = self._create_tf_embed_fnn(
+            b,
+            self.hidden_layer_sizes["intent"],
+            fnn_name="text_intent" if self.share_hidden_layers else "intent",
+            embed_name="intent",
+        )
 
-            self.sim_all = train_utils.tf_raw_sim(
-                cls_embed[:, tf.newaxis, :],
-                self.all_labels_embed[tf.newaxis, :, :],
-                None,
-            )
+        self.sim = train_utils.tf_raw_sim(
+            message_embed[:, tf.newaxis, :], self.label_embed, None
+        )
 
-            self.label_embed = self._create_tf_embed_fnn(
-                self.b_in,
-                self.hidden_layer_sizes["b"],
-                fnn_name="a_b" if self.share_hidden_layers else "b",
-                embed_name="b",
-            )
-
-            # predict intents
-            self.sim = train_utils.tf_raw_sim(
-                cls_embed[:, tf.newaxis, :], self.label_embed, None
-            )
-            self.intent_prediction = train_utils.confidence_from_sim(
-                self.sim_all, self.similarity_type
-            )
-
-        if self.named_entity_recognition:
-            # get sequence lengths for NER
-            sequence_lengths = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
-
-            # predict tags
-            _, _, pred_ids = self._create_crf(a, sequence_lengths)
-            self.entity_prediction = tf.to_int64(pred_ids)
-
-    def _get_num_of_features(self, session_data: "SessionData", x_key: Text) -> int:
-        return session_data.X[x_key][0].shape[-1] if x_key in session_data.X else 0
+    def _get_num_of_features(
+        self, session_data: "SessionData", key_prefix: Text
+    ) -> int:
+        num_features = 0
+        for k, v in session_data.items():
+            if k.startswith(key_prefix):
+                num_features += v[0].shape[-1]
+        return num_features
 
     def check_input_dimension_consistency(self, session_data: "SessionData"):
         if self.share_hidden_layers:
-            num_features_sparse = self._get_num_of_features(
-                session_data, "text_features_sparse"
+            num_text_features = self._get_num_of_features(
+                session_data, "text_features_"
             )
-            num_features_dense = self._get_num_of_features(
-                session_data, "text_features_dense"
+            num_intent_features = self._get_num_of_features(
+                session_data, "intent_features_"
             )
 
-            if (
-                num_features_sparse + num_features_dense
-                != session_data.Y["intent_features"][0].shape[-1]
-            ):
+            if num_text_features != num_intent_features:
                 raise ValueError(
                     "If embeddings are shared "
                     "text features and label features "
@@ -822,36 +764,12 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
 
-        self._encoded_all_label_ids = self._create_encoded_label_ids(
-            training_data,
-            label_id_dict,
-            attribute=MESSAGE_INTENT_ATTRIBUTE,
-            attribute_feature_name=MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[
-                MESSAGE_INTENT_ATTRIBUTE
-            ],
+        self._label_data = self._create_label_data(
+            training_data, label_id_dict, attribute=MESSAGE_INTENT_ATTRIBUTE
         )
-
-        tag_id_dict = self._create_tag_id_dict(
-            training_data, attribute=MESSAGE_ENTITIES_ATTRIBUTE
-        )
-        self.inverted_tag_dict = {v: k for k, v in tag_id_dict.items()}
-
-        self._encoded_all_tag_ids = self._create_encoded_tag_ids(
-            training_data, tag_id_dict, attribute=MESSAGE_ENTITIES_ATTRIBUTE
-        )
-
-        # check if number of negatives is less than number of label_ids
-        logger.debug(
-            "Check if num_neg {} is smaller than "
-            "number of label_ids {}, "
-            "else set num_neg to the number of label_ids - 1"
-            "".format(self.num_neg, self._encoded_all_label_ids.shape[0])
-        )
-        # noinspection PyAttributeOutsideInit
-        self.num_neg = min(self.num_neg, self._encoded_all_label_ids.shape[0] - 1)
 
         session_data = self._create_session_data(
-            training_data,
+            training_data.intent_examples,
             label_id_dict,
             tag_id_dict,
             attribute=MESSAGE_INTENT_ATTRIBUTE,
@@ -862,7 +780,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         return session_data
 
     def _check_enough_labels(self, session_data: "SessionData") -> bool:
-        return len(np.unique(session_data.labels["intent_ids"])) >= 2
+        return len(np.unique(session_data["intent_ids"])) >= 2
 
     def train(
         self,
@@ -871,7 +789,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         **kwargs: Any,
     ) -> None:
         """Train the embedding label classifier on a data set."""
-
         logger.debug("Started training embedding classifier.")
 
         # set numpy random seed
@@ -916,17 +833,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 session_data,
                 eval_session_data,
                 batch_size_in,
-                self.batch_strategy,
+                self.batch_in_strategy,
                 label_key="intent_ids",
             )
 
             self._is_training = tf.placeholder_with_default(False, shape=())
 
-            intent_loss, intent_acc, entity_loss, entity_f1 = (
-                self._build_tf_train_graph()
-            )
-
-            loss = intent_loss + entity_loss
+            loss, acc = self._build_tf_train_graph(session_data)
 
             # define which optimizer to use
             self._train_op = tf.train.AdamOptimizer().minimize(loss)
@@ -944,7 +857,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 self.session,
                 self._is_training,
                 self.epochs,
-                self.batch_size,
+                self.batch_in_size,
                 self.evaluate_on_num_examples,
                 self.evaluate_every_num_epochs,
             )
@@ -958,10 +871,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     # process helpers
     # noinspection PyPep8Naming
-    def _calculate_message_sim(self, X: np.ndarray) -> Tuple[np.ndarray, List[float]]:
+    def _calculate_message_sim(self, X: Tuple) -> Tuple[np.ndarray, List[float]]:
         """Calculate message similarities"""
 
-        message_sim = self.session.run(self.intent_prediction, feed_dict={self.a_in: X})
+        message_sim = self.session.run(
+            self.intent_prediction,
+            feed_dict={_x: _x_in for _x, _x_in in zip(self.batch_in, X)},
+        )
 
         message_sim = message_sim.flatten()  # sim is a matrix
 
@@ -985,15 +901,17 @@ class EmbeddingIntentClassifier(EntityExtractor):
             )
 
         else:
-            # get features (bag of words/embeddings) for a message
-            # noinspection PyPep8Naming
-            X = self._extract_features(message)
+            # create session data from message and convert it into a batch of 1
+            session_data = self._create_session_data([message])
+
+            batch = train_utils.prepare_batch(session_data)
+            X = self._add_missing_placeholder_tensors(batch)
 
             # load tf graph and session
             label_ids, message_sim = self._calculate_message_sim(X)
 
             # if X contains all zeros do not predict some label
-            if X.any() and label_ids.size > 0:
+            if label_ids.size > 0:
                 label = {
                     "name": self.inverted_label_dict[label_ids[0]],
                     "confidence": message_sim[0],
@@ -1007,25 +925,31 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 ]
         return label, label_ranking
 
-    def _extract_features(self, message: "Message") -> np.ndarray:
-        x_sparse, x_dense = self._get_x_features(message)
+    def _add_missing_placeholder_tensors(self, batch):
+        # check if all data is already present
+        if self.shapes is not None and len(batch) == len(self.shapes):
+            return batch
 
-        if x_sparse is not None:
-            x_sparse = x_sparse.toarray().reshape(1, -1)
-
-        if x_dense is not None:
-            x_dense = x_dense.reshape(1, -1)
-
-        if x_sparse is not None and x_dense is not None:
-            return np.concatenate((x_sparse, x_dense), axis=-1)
-
-        if x_sparse is None and x_dense is not None:
-            return x_dense
-
-        if x_sparse is not None and x_dense is None:
-            return x_sparse
-
-        raise ValueError("No features found for X.")
+        X = []
+        # if features are not present add dummy tensor
+        for i, shape in enumerate(self.shapes):
+            if i >= len(batch) or batch[i] is None:
+                # shape may contain None, replace None by 1
+                if isinstance(shape, tuple):
+                    shape = tuple([x if x is not None else 1 for x in shape])
+                elif shape is None:
+                    shape = 1
+                # add dummy tensor of shape
+                X.append(np.zeros(shape))
+            # TODO mask
+            elif (isinstance(shape, tuple) or isinstance(shape, list)) and batch[
+                i
+            ].shape[-1] != shape[-1]:
+                X.append(train_utils.pad_data(batch[i], feature_len=shape[-1]))
+            else:
+                X.append(batch[i])
+            i += 1
+        return tuple(X)
 
     def predict_entities(self, message: "Message") -> List[Dict]:
         if self.session is None:
@@ -1120,9 +1044,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             if e.errno != errno.EEXIST:
                 raise
         with self.graph.as_default():
-            train_utils.persist_tensor("message_placeholder", self.a_in, self.graph)
-            train_utils.persist_tensor("label_placeholder", self.b_in, self.graph)
-            train_utils.persist_tensor("tag_placeholder", self.c_in, self.graph)
+            train_utils.persist_tensor("batch_placeholder", self.batch_in, self.graph)
 
             train_utils.persist_tensor("similarity_all", self.sim_all, self.graph)
             train_utils.persist_tensor(
@@ -1156,6 +1078,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "wb") as f:
             pickle.dump(self._tf_config, f)
 
+        with open(os.path.join(model_dir, file_name + ".shapes.pkl"), "wb") as f:
+            pickle.dump(self.shapes, f)
+
         return {"file": file_name}
 
     @classmethod
@@ -1182,9 +1107,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
                 saver.restore(session, checkpoint)
 
-                a_in = train_utils.load_tensor("message_placeholder")
-                b_in = train_utils.load_tensor("label_placeholder")
-                c_in = train_utils.load_tensor("tag_placeholder")
+                batch_in = train_utils.load_tensor("batch_placeholder")
 
                 sim_all = train_utils.load_tensor("similarity_all")
                 intent_prediction = train_utils.load_tensor("intent_prediction")
@@ -1206,15 +1129,16 @@ class EmbeddingIntentClassifier(EntityExtractor):
             ) as f:
                 inv_tag_dict = pickle.load(f)
 
+            with open(os.path.join(model_dir, file_name + ".shapes.pkl"), "rb") as f:
+                shapes = pickle.load(f)
+
             return cls(
                 component_config=meta,
                 inverted_label_dict=inv_label_dict,
                 inverted_tag_dict=inv_tag_dict,
                 session=session,
                 graph=graph,
-                message_placeholder=a_in,
-                label_placeholder=b_in,
-                tag_placeholder=c_in,
+                batch_placeholder=batch_in,
                 similarity_all=sim_all,
                 intent_prediction=intent_prediction,
                 tag_prediction=tag_prediction,
@@ -1222,6 +1146,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 label_embed=label_embed,
                 all_labels_embed=all_labels_embed,
                 attention_weights=attention_weights,
+                shapes=shapes,
             )
 
         else:

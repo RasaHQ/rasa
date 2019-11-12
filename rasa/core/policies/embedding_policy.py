@@ -133,7 +133,7 @@ class EmbeddingPolicy(Policy):
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
-        super(EmbeddingPolicy, self).__init__(featurizer, priority)
+        super().__init__(featurizer, priority)
 
         self._load_params(**kwargs)
 
@@ -253,12 +253,14 @@ class EmbeddingPolicy(Policy):
     def _create_session_data(
         self, data_X: "np.ndarray", data_Y: Optional["np.ndarray"] = None
     ) -> "train_utils.SessionData":
-        """Combine all tf session related data into a named tuple"""
+        """Combine all tf session related data into dict."""
+        data_X = data_X.astype(np.float32)
 
         if data_Y is not None:
             # training time
             label_ids = self._label_ids_for_Y(data_Y)
             Y = self._label_features_for_Y(label_ids)
+            Y = Y.astype(np.float32)
 
             # idea taken from sklearn's stratify split
             if label_ids.ndim == 2:
@@ -270,11 +272,11 @@ class EmbeddingPolicy(Policy):
             label_ids = None
             Y = None
 
-        return train_utils.SessionData(
-            X={"dialogue_features": data_X},
-            Y={"bot_features": Y},
-            labels={"action_ids": label_ids},
-        )
+        return {
+            "dialogue_features": [data_X],
+            "bot_features": [Y],
+            "action_ids": [label_ids],
+        }
 
     def _create_tf_bot_embed(self, b_in: "tf.Tensor") -> "tf.Tensor":
         """Create embedding bot vector."""
@@ -374,12 +376,12 @@ class EmbeddingPolicy(Policy):
         dialogue_len = None  # use dynamic time
         self.a_in = tf.placeholder(
             dtype=tf.float32,
-            shape=(None, dialogue_len, session_data.X["dialogue_features"].shape[-1]),
+            shape=(None, dialogue_len, session_data["dialogue_features"][0].shape[-1]),
             name="a",
         )
         self.b_in = tf.placeholder(
             dtype=tf.float32,
-            shape=(None, dialogue_len, None, session_data.Y["bot_features"].shape[-1]),
+            shape=(None, dialogue_len, None, session_data["bot_features"][0].shape[-1]),
             name="b",
         )
 
@@ -548,7 +550,7 @@ class EmbeddingPolicy(Policy):
         data_X = self.featurizer.create_X([tracker], domain)
         session_data = self._create_session_data(data_X)
 
-        return {self.a_in: session_data.X["dialogue_features"]}
+        return {self.a_in: session_data["dialogue_features"][0]}
 
     def predict_action_probabilities(
         self, tracker: "DialogueStateTracker", domain: "Domain"

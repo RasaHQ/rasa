@@ -56,9 +56,7 @@ class LockStore:
             )
             lock_store = LockStore.load_lock_store_from_module_path(store.type)
 
-        logger.debug(
-            "Connected to lock store '{}'.".format(lock_store.__class__.__name__)
-        )
+        logger.debug(f"Connected to lock store '{lock_store.__class__.__name__}'.")
 
         return lock_store
 
@@ -71,9 +69,7 @@ class LockStore:
         try:
             return class_from_module_path(module_path)
         except ImportError:
-            raise ImportError(
-                "Cannot retrieve `LockStore` from path '{}'.".format(module_path)
-            )
+            raise ImportError(f"Cannot retrieve `LockStore` from path '{module_path}'.")
 
     @staticmethod
     def create_lock(conversation_id: Text) -> TicketLock:
@@ -229,11 +225,9 @@ class LockStore:
     @staticmethod
     def _log_deletion(conversation_id: Text, deletion_successful: bool) -> None:
         if deletion_successful:
-            logger.debug("Deleted lock for conversation '{}'.".format(conversation_id))
+            logger.debug(f"Deleted lock for conversation '{conversation_id}'.")
         else:
-            logger.debug(
-                "Could not delete lock for conversation '{}'.".format(conversation_id)
-            )
+            logger.debug(f"Could not delete lock for conversation '{conversation_id}'.")
 
     def ensure_ticket_available(self, lock: TicketLock) -> None:
         """Check for duplicate tickets issued for `lock`.

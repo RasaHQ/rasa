@@ -38,7 +38,7 @@ class RegexFeaturizer(Featurizer):
         lookup_tables: List[Dict[Text, Union[Text, List]]] = None,
     ):
 
-        super(RegexFeaturizer, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.known_patterns = known_patterns if known_patterns else []
         lookup_tables = lookup_tables or []
@@ -79,7 +79,7 @@ class RegexFeaturizer(Featurizer):
 
     def _features_for_patterns(
         self, message: Message, attribute: Text
-    ) -> scipy.sparse.csr_matrix:
+    ) -> scipy.sparse.coo_matrix:
         """Checks which known patterns match the message.
 
         Given a sentence, returns a vector of {1,0} values indicating which
@@ -105,7 +105,7 @@ class RegexFeaturizer(Featurizer):
 
                 t.set("pattern", patterns)
 
-        return scipy.sparse.csr_matrix(vec)
+        return scipy.sparse.coo_matrix(vec)
 
     def _generate_lookup_regex(
         self, lookup_table: Dict[Text, Union[Text, List]]
@@ -122,10 +122,8 @@ class RegexFeaturizer(Featurizer):
         else:
 
             try:
-                f = io.open(
-                    lookup_elements, "r", encoding=rasa.utils.io.DEFAULT_ENCODING
-                )
-            except IOError:
+                f = open(lookup_elements, "r", encoding=rasa.utils.io.DEFAULT_ENCODING)
+            except OSError:
                 raise ValueError(
                     "Could not load lookup table {}"
                     "Make sure you've provided the correct path".format(lookup_elements)

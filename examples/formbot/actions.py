@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from typing import Dict, Text, Any, List, Union, Optional
 
 from rasa_sdk import Tracker

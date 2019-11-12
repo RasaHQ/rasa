@@ -85,7 +85,7 @@ async def train_trackers(domain, augmentation_factor=20):
 # Therefore, we are going to reverse this and train the policy within a class
 # and collect the tests in a base class.
 # noinspection PyMethodMayBeStatic
-class PolicyTestCollection(object):
+class PolicyTestCollection:
     """Tests every policy needs to fulfill.
 
     Each policy can declare further tests on its own."""
@@ -355,8 +355,8 @@ class TestEmbeddingPolicy(PolicyTestCollection):
         )
         assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
         assert (
-            batch_x[0].shape == session_data.X["dialogue_features"][0].shape
-            and batch_y[0].shape == session_data.Y["bot_features"][0].shape
+            batch_x[0].shape == session_data["dialogue_features"][0][0].shape
+            and batch_y[0].shape == session_data["bot_features"][0][0].shape
         )
         batch_x, batch_y, _ = next(
             train_utils.gen_batch(
@@ -369,8 +369,8 @@ class TestEmbeddingPolicy(PolicyTestCollection):
         )
         assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
         assert (
-            batch_x[0].shape == session_data.X["dialogue_features"][0].shape
-            and batch_y[0].shape == session_data.Y["bot_features"][0].shape
+            batch_x[0].shape == session_data["dialogue_features"][0][0].shape
+            and batch_y[0].shape == session_data["bot_features"][0][0].shape
         )
 
 

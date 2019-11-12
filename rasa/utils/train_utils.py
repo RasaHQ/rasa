@@ -2,18 +2,7 @@ from collections import defaultdict
 import logging
 import scipy.sparse
 import typing
-from typing import (
-    List,
-    Optional,
-    Text,
-    Dict,
-    Tuple,
-    Union,
-    Generator,
-    Callable,
-    Any,
-    NamedTuple,
-)
+from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable, Any
 import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
@@ -35,11 +24,8 @@ tf.contrib._warning = None
 logger = logging.getLogger(__name__)
 
 
-# namedtuple for all tf session related data
-class SessionData(NamedTuple):
-    X: Dict[Text, np.ndarray]
-    Y: Dict[Text, np.ndarray]
-    labels: Dict[Text, np.ndarray]
+# dictionary for all tf session related data
+SessionData = Dict[Text, List[np.ndarray]]
 
 
 def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto]:
@@ -58,42 +44,43 @@ def train_val_split(
     label_key: Text,
 ) -> Tuple["SessionData", "SessionData"]:
     """Create random hold out validation set using stratified split."""
-    if label_key not in session_data.labels:
-        raise ValueError(f"Key '{label_key}' not in SessionData.labels.")
+    if label_key not in session_data or len(session_data[label_key]) > 1:
+        raise ValueError(f"Key '{label_key}' not in SessionData.")
 
     label_counts = dict(
-        zip(*np.unique(session_data.labels[label_key], return_counts=True, axis=0))
+        zip(*np.unique(session_data[label_key][0], return_counts=True, axis=0))
     )
 
     check_train_test_sizes(evaluate_on_num_examples, label_counts, session_data)
 
-    counts = np.array([label_counts[label] for label in session_data.labels[label_key]])
+    counts = np.array([label_counts[label] for label in session_data[label_key][0]])
 
     multi_values = []
-    [multi_values.append(v[counts > 1]) for v in session_data.X.values()]
-    [multi_values.append(v[counts > 1]) for v in session_data.Y.values()]
-    [multi_values.append(v[counts > 1]) for v in session_data.labels.values()]
+    [
+        multi_values.append(v[counts > 1])
+        for values in session_data.values()
+        for v in values
+    ]
 
     solo_values = []
-    [solo_values.append(v[counts == 1]) for v in session_data.X.values()]
-    [solo_values.append(v[counts == 1]) for v in session_data.Y.values()]
-    [solo_values.append(v[counts == 1]) for v in session_data.labels.values()]
+    [
+        solo_values.append(v[counts == 1])
+        for values in session_data.values()
+        for v in values
+    ]
 
     output_values = train_test_split(
         *multi_values,
         test_size=evaluate_on_num_examples,
         random_state=random_seed,
-        stratify=session_data.labels[label_key][counts > 1],
+        stratify=session_data[label_key][0][counts > 1],
     )
 
-    X_train, X_val, Y_train, Y_val, labels_train, labels_val = convert_train_test_split(
+    session_data_train, session_data_val = convert_train_test_split(
         output_values, session_data, solo_values
     )
 
-    return (
-        SessionData(X_train, Y_train, labels_train),
-        SessionData(X_val, Y_val, labels_val),
-    )
+    return session_data_train, session_data_val
 
 
 def check_train_test_sizes(
@@ -105,8 +92,9 @@ def check_train_test_sizes(
 
     if evaluate_on_num_examples >= num_examples - len(label_counts):
         raise ValueError(
-            f"Validation set of {evaluate_on_num_examples} is too large. Remaining train set "
-            "should be at least equal to number of classes {len(label_counts)}."
+            f"Validation set of {evaluate_on_num_examples} is too large. Remaining "
+            f"train set should be at least equal to number of classes "
+            f"{len(label_counts)}."
         )
     elif evaluate_on_num_examples < len(label_counts):
         raise ValueError(
@@ -118,52 +106,32 @@ def check_train_test_sizes(
 def convert_train_test_split(
     output_values: List[Any], session_data: SessionData, solo_values: List[Any]
 ):
-    keys = [k for d in session_data for k, v in d.items()]
+    keys = [k for k in session_data.keys()]
 
-    X_train = {}
-    Y_train = {}
-    labels_train = {}
-    X_val = {}
-    Y_val = {}
-    labels_val = {}
+    session_data_train = defaultdict(list)
+    session_data_val = defaultdict(list)
 
     # output_values = x_train, x_val, y_train, y_val, z_train, z_val, etc.
-    # order is kept, so first session_data.X values, then session_data.Y values, and
-    # finally session_data.labels values
+    # order is kept, e.g. same order as session data keys
 
     # train datasets have an even index
-    for i in range(len(session_data.X)):
-        X_train[keys[i]] = combine_features(output_values[i * 2], solo_values[i])
-
-    for i in range(len(session_data.X), len(session_data.X) + len(session_data.Y)):
-        Y_train[keys[i]] = combine_features(output_values[i * 2], solo_values[i])
-
-    for i in range(
-        len(session_data.X) + len(session_data.Y),
-        len(session_data.X) + len(session_data.Y) + len(session_data.labels),
-    ):
-        labels_train[keys[i]] = combine_features(output_values[i * 2], solo_values[i])
+    for i in range(len(session_data)):
+        session_data_train[keys[i]].append(
+            combine_features(output_values[i * 2], solo_values[i])
+        )
 
     # val datasets have an odd index
-    for i in range(len(session_data.X)):
-        X_val[keys[i]] = output_values[(i * 2) + 1]
+    for i in range(len(session_data)):
+        session_data_val[keys[i]].append(output_values[(i * 2) + 1])
 
-    for i in range(len(session_data.X), len(session_data.X) + len(session_data.Y)):
-        Y_val[keys[i]] = output_values[(i * 2) + 1]
-
-    for i in range(
-        len(session_data.X) + len(session_data.Y),
-        len(session_data.X) + len(session_data.Y) + len(session_data.labels),
-    ):
-        labels_val[keys[i]] = output_values[(i * 2) + 1]
-
-    return X_train, X_val, Y_train, Y_val, labels_train, labels_val
+    return session_data_train, session_data_val
 
 
 def combine_features(
     feature_1: Union[np.ndarray, scipy.sparse.spmatrix],
     feature_2: Union[np.ndarray, scipy.sparse.spmatrix],
 ) -> Union[np.ndarray, scipy.sparse.spmatrix]:
+    """Concatenate features."""
     if isinstance(feature_1, scipy.sparse.spmatrix) and isinstance(
         feature_2, scipy.sparse.spmatrix
     ):
@@ -185,23 +153,23 @@ def shuffle_session_data(session_data: "SessionData") -> "SessionData":
 
 def session_data_for_ids(session_data: SessionData, ids: np.ndarray):
     """Filter session data by ids."""
-    X = {k: v[ids] for k, v in session_data.X.items()}
-    Y = {k: v[ids] for k, v in session_data.Y.items()}
-    labels = {k: v[ids] for k, v in session_data.labels.items()}
-
-    return SessionData(X, Y, labels)
+    new_session_data = defaultdict(list)
+    for k, values in session_data.items():
+        for v in values:
+            new_session_data[k].append(v[ids])
+    return new_session_data
 
 
 def split_session_data_by_label(
     session_data: "SessionData", label_key: Text, unique_label_ids: "np.ndarray"
 ) -> List["SessionData"]:
     """Reorganize session data into a list of session data with the same labels."""
-    if label_key not in session_data.labels:
-        raise ValueError(f"Key '{label_key}' not in SessionData.labels.")
+    if label_key not in session_data or len(session_data[label_key]) > 1:
+        raise ValueError(f"Key '{label_key}' not in SessionData.")
 
     label_data = []
     for label_id in unique_label_ids:
-        ids = session_data.labels[label_key] == label_id
+        ids = session_data[label_key][0] == label_id
         label_data.append(session_data_for_ids(session_data, ids))
     return label_data
 
@@ -216,13 +184,11 @@ def balance_session_data(
     by repeating them. Mimics stratified batching, but also takes into account
     that more populated classes should appear more often.
     """
-    if label_key not in session_data.labels:
-        raise ValueError(f"Key '{label_key}' not in SessionData.labels.")
-
-    num_examples = get_number_of_examples(session_data)
+    if label_key not in session_data or len(session_data[label_key]) > 1:
+        raise ValueError(f"Key '{label_key}' not in SessionData.")
 
     unique_label_ids, counts_label_ids = np.unique(
-        session_data.labels[label_key], return_counts=True, axis=0
+        session_data[label_key][0], return_counts=True, axis=0
     )
     num_label_ids = len(unique_label_ids)
 
@@ -233,9 +199,8 @@ def balance_session_data(
     num_data_cycles = [0] * num_label_ids
     skipped = [False] * num_label_ids
 
-    new_X = defaultdict(list)
-    new_Y = defaultdict(list)
-    new_labels = defaultdict(list)
+    new_session_data = defaultdict(list)
+    num_examples = get_number_of_examples(session_data)
 
     while min(num_data_cycles) == 0:
         if shuffle:
@@ -254,14 +219,13 @@ def balance_session_data(
                 int(counts_label_ids[index] / num_examples * batch_size) + 1
             )
 
-            for k, v in label_data[index].X.items():
-                new_X[k].append(v[data_idx[index] : data_idx[index] + index_batch_size])
-            for k, v in label_data[index].Y.items():
-                new_Y[k].append(v[data_idx[index] : data_idx[index] + index_batch_size])
-            for k, v in label_data[index].labels.items():
-                new_labels[k].append(
-                    v[data_idx[index] : data_idx[index] + index_batch_size]
-                )
+            for k, values in label_data[index].items():
+                for i, v in enumerate(values):
+                    if len(new_session_data[k]) < i + 1:
+                        new_session_data[k].append([])
+                    new_session_data[k][i].append(
+                        v[data_idx[index] : data_idx[index] + index_batch_size]
+                    )
 
             data_idx[index] += index_batch_size
             if data_idx[index] >= counts_label_ids[index]:
@@ -271,33 +235,25 @@ def balance_session_data(
             if min(num_data_cycles) > 0:
                 break
 
-    return SessionData(
-        X=concatenate_data(new_X),
-        Y=concatenate_data(new_Y),
-        labels=concatenate_data(new_labels),
-    )
+    final_session_data = defaultdict(list)
+    for k, values in new_session_data.items():
+        for v in values:
+            final_session_data[k].append(np.concatenate(np.array(v)))
 
-
-def concatenate_data(
-    data_dict: Dict[Text, Union[np.ndarray, List[scipy.sparse.spmatrix]]]
-) -> Dict[Text, Union[np.ndarray, List[scipy.sparse.spmatrix]]]:
-    new_dict = {}
-    for k, v in data_dict.items():
-        if isinstance(v[0], scipy.sparse.spmatrix):
-            new_dict[k] = scipy.sparse.vstack(v)
-        else:
-            new_dict[k] = np.concatenate(v)
-    return new_dict
+    return final_session_data
 
 
 def get_number_of_examples(session_data: SessionData):
-    example_lengths = [v.shape[0] for v in session_data.X.values()]
+    """Obtain number of examples in session data.
+    Raise a ValueError if number of examples differ for different data in session data.
+    """
+    example_lengths = [v.shape[0] for values in session_data.values() for v in values]
 
-    # check if number of examples is the same for all X
+    # check if number of examples is the same for all values
     if not all(length == example_lengths[0] for length in example_lengths):
         raise ValueError(
-            f"Number of examples differs for X ({session_data.X.keys()}). There should "
-            f"be the same."
+            f"Number of examples differs for keys '{session_data.keys()}'. Number of "
+            f"examples should be the same for all data in session data."
         )
 
     return example_lengths[0]
@@ -311,7 +267,6 @@ def gen_batch(
     shuffle: bool = False,
 ) -> Generator[Tuple, None, None]:
     """Generate batches."""
-
     if shuffle:
         session_data = shuffle_session_data(session_data)
 
@@ -327,37 +282,124 @@ def gen_batch(
         start = batch_num * batch_size
         end = start + batch_size
 
-        batch_data = [sparse_to_dense(v[start:end]) for v in session_data.X.values()]
-        batch_data = batch_data + [
-            sparse_to_dense(v[start:end]) for v in session_data.Y.values()
-        ]
-        batch_data = batch_data + [
-            sparse_to_dense(v[start:end]) for v in session_data.labels.values()
-        ]
-
-        # len of batch_data is equal to the number of keys in session data
-        yield tuple(batch_data)
+        yield prepare_batch(session_data, start, end)
 
 
-def sparse_to_dense(
-    data: Union[np.ndarray, List[scipy.sparse.spmatrix]], dtype=np.int32, use_zero=False
+def prepare_batch(
+    session_data: SessionData, start: Optional[int] = None, end: Optional[int] = None
 ):
-    if isinstance(data[0], scipy.sparse.spmatrix):
-        return np.stack([e.toarray() for e in data])
+    """Slices session data into batch using given start and end value."""
+    batch_data = []
+
+    for values in session_data.values():
+        # add None for not present values during processing
+        if not values:
+            batch_data.append(None)
+            continue
+
+        for v in values:
+            if start is not None and end is not None:
+                _data = v[start:end]
+            elif start is not None:
+                _data = v[start:]
+            elif end is not None:
+                _data = v[:end]
+            else:
+                _data = v[:]
+
+            if isinstance(_data[0], scipy.sparse.spmatrix):
+                batch_data = batch_data + scipy_matrix_to_values(_data)
+            else:
+                batch_data.append(pad_data(_data))
+
+    # len of batch_data is equal to the number of keys in session data
+    return tuple(batch_data)
+
+
+def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
+    """Convert a scipy matrix into inidces, data, and shape."""
+    seq_len = max([x.shape[0] for x in array_of_sparse])
+    if not isinstance(array_of_sparse[0], scipy.sparse.coo_matrix):
+        coo = [x.tocoo() for x in array_of_sparse]
+    else:
+        coo = array_of_sparse
+    data = [v for x in array_of_sparse for v in x.data]
+
+    indices = [
+        ids for i, x in enumerate(coo) for ids in zip([i] * len(x.row), x.row, x.col)
+    ]
+    shape = (len(array_of_sparse), seq_len, array_of_sparse[0].shape[-1])
+
+    return [
+        np.array(indices).astype(np.int64),
+        np.array(data).astype(np.float64),
+        np.array(shape).astype(np.int64),
+    ]
+
+
+def values_to_sparse_tensor(
+    indices: np.ndarray, data: np.ndarray, shape: Union[np.ndarray, List]
+) -> tf.SparseTensor:
+    """Create a Sparse Tensor from given indices, data, and shape."""
+    return tf.SparseTensor(indices, data, shape)
+
+
+def pad_data(data: np.ndarray, feature_len: Optional[int] = None) -> np.ndarray:
+    """
+    Pad data of different lengths.
+    Data is padded with zeros. Zeros are added to the beginning of data.
+    """
+    if data[0].ndim == 0:
+        return data
 
     data_size = len(data)
-    max_seq_len = max([x.shape[0] for x in data])
-    feature_len = max([x.shape[-1] for x in data])
+    if feature_len is None:
+        feature_len = max([x.shape[-1] for x in data])
 
-    if use_zero:
-        data_dense = np.zeros([data_size, max_seq_len, feature_len], dtype=dtype)
+    if data[0].ndim == 1:
+        data_padded = np.zeros([data_size, feature_len], dtype=data[0].dtype)
+        for i in range(data_size):
+            data_padded[i, : data[i].shape[0]] = data[i]
     else:
-        data_dense = np.ones([data_size, max_seq_len, feature_len], dtype=dtype) * -1
+        max_seq_len = max([x.shape[0] for x in data])
+        data_padded = np.zeros(
+            [data_size, max_seq_len, feature_len], dtype=data[0].dtype
+        )
+        for i in range(data_size):
+            data_padded[i, : data[i].shape[0], :] = data[i]
 
-    for i in range(data_size):
-        data_dense[i, : data[i].shape[0], :] = data[i]
+    return data_padded.astype(np.float64)
 
-    return data_dense
+
+def batch_to_session_data(
+    batch: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], session_data: SessionData
+):
+    """
+    Batch contains any number of batch data. The order is equal to the
+    key-value pairs in session data. As sparse data were converted into indices, data,
+    shape before, this methods converts them into sparse tensors. Dense data is
+    kept.
+    """
+    batch_data = defaultdict(list)
+    idx = 0
+
+    for k, values in session_data.items():
+        for v in values:
+            if isinstance(v[0], scipy.sparse.spmatrix):
+                # explicitly substitute last dimension in shape with known static value
+                batch_data[k].append(
+                    values_to_sparse_tensor(
+                        batch[idx],
+                        batch[idx + 1],
+                        [batch[idx + 2][0], batch[idx + 2][1], v[0].shape[-1]],
+                    )
+                )
+                idx += 3
+            else:
+                batch_data[k].append(batch[idx])
+                idx += 1
+
+    return batch_data
 
 
 # noinspection PyPep8Naming
@@ -370,8 +412,7 @@ def create_tf_dataset(
 ) -> "tf.data.Dataset":
     """Create tf dataset."""
 
-    # set batch and sequence length to None
-    shapes, types = _get_shape_and_types(session_data)
+    shapes, types = get_shapes_types(session_data)
 
     return tf.data.Dataset.from_generator(
         lambda batch_size_: gen_batch(
@@ -383,27 +424,37 @@ def create_tf_dataset(
     )
 
 
-def _get_shape_and_types(session_data: SessionData) -> Tuple[Tuple, Tuple]:
-    shapes = []
+def get_shapes_types(session_data: SessionData) -> Tuple:
+    """Extract shapes and types from session data."""
     types = []
+    shapes = []
 
     def append_shape(v: np.ndarray):
-        if v[0].ndim == 0:
+        if isinstance(v[0], scipy.sparse.spmatrix):
+            # scipy matrix is converted into indices, data, shape
+            shapes.append((None, v[0].ndim + 1))
+            shapes.append((None))
+            shapes.append((v[0].ndim + 1))
+        elif v[0].ndim == 0:
             shapes.append((None))
         elif v[0].ndim == 1:
             shapes.append((None, v[0].shape[-1]))
         else:
             shapes.append((None, None, v[0].shape[-1]))
 
-    for v in session_data.X.values():
-        append_shape(v)
-        types.append(np.float32)
-    for v in session_data.Y.values():
-        append_shape(v)
-        types.append(np.float32)
-    for v in session_data.labels.values():
-        append_shape(v)
-        types.append(v.dtype)
+    def append_type(v: np.ndarray):
+        if isinstance(v[0], scipy.sparse.spmatrix):
+            # scipy matrix is converted into indices, data, shape
+            types.append(tf.int64)
+            types.append(tf.float64)
+            types.append(tf.int64)
+        else:
+            types.append(v[0].dtype)
+
+    for values in session_data.values():
+        for v in values:
+            append_shape(v)
+            append_type(v)
 
     return tuple(shapes), tuple(types)
 
@@ -426,9 +477,7 @@ def create_iterator_init_datasets(
     )
 
     iterator = tf.data.Iterator.from_structure(
-        train_dataset.output_types,
-        train_dataset.output_shapes,
-        output_classes=train_dataset.output_classes,
+        train_dataset.output_types, train_dataset.output_shapes
     )
 
     train_init_op = iterator.make_initializer(train_dataset)
@@ -467,7 +516,7 @@ def create_tf_fnn(
             use_bias=use_bias,
             kernel_initializer=kernel_initializer,
             kernel_regularizer=reg,
-            name="hidden_layer_{}_{}".format(layer_name_suffix, i),
+            name=f"hidden_layer_{layer_name_suffix}_{i}",
             reuse=tf.AUTO_REUSE,
         )
         x = tf.layers.dropout(x, rate=droprate, training=is_training)
@@ -505,7 +554,7 @@ def create_tf_embed(
         units=embed_dim,
         activation=None,
         kernel_regularizer=reg,
-        name="embed_layer_{}".format(layer_name_suffix),
+        name=f"embed_layer_{layer_name_suffix}",
         reuse=tf.AUTO_REUSE,
     )
     # normalize embedding vectors for cosine similarity
@@ -629,15 +678,19 @@ def _tf_calc_iou_mask(
     pos_b: "tf.Tensor", all_bs: "tf.Tensor", neg_ids: "tf.Tensor"
 ) -> "tf.Tensor":
     """Calculate IOU mask for given indices"""
-
     pos_b_in_flat = tf.expand_dims(pos_b, -2)
     neg_b_in_flat = _tf_sample_neg(tf.shape(pos_b)[0], all_bs, neg_ids)
 
-    intersection_b_in_flat = tf.minimum(neg_b_in_flat, pos_b_in_flat)
-    union_b_in_flat = tf.maximum(neg_b_in_flat, pos_b_in_flat)
+    return tf.cast(
+        tf.reduce_all(tf.equal(neg_b_in_flat, pos_b_in_flat), axis=-1),
+        pos_b_in_flat.dtype,
+    )
 
-    iou = tf.reduce_sum(intersection_b_in_flat, -1) / tf.reduce_sum(union_b_in_flat, -1)
-    return 1.0 - tf.nn.relu(tf.sign(1.0 - iou))
+    # intersection_b_in_flat = tf.minimum(neg_b_in_flat, pos_b_in_flat)
+    # union_b_in_flat = tf.maximum(neg_b_in_flat, pos_b_in_flat)
+    #
+    # iou = tf.reduce_sum(intersection_b_in_flat, -1) / tf.reduce_sum(union_b_in_flat, -1)
+    # return 1.0 - tf.nn.relu(tf.sign(1.0 - iou))
 
 
 def _tf_get_negs(
@@ -703,6 +756,54 @@ def sample_negatives(
         dial_bad_negs,
         bot_bad_negs,
     )
+
+
+def tf_dense_layer_for_sparse(
+    inputs: tf.SparseTensor,
+    units: int,
+    name: Text,
+    C2: float,
+    activation: Optional[Callable] = tf.nn.relu,
+    use_bias: bool = True,
+) -> tf.Tensor:
+    """Idea from
+    https://medium.com/dailymotion/how-to-design-deep-learning-models-with-sparse-inputs-in-tensorflow-keras-fd5e754abec1
+    """
+
+    if not isinstance(inputs, tf.SparseTensor):
+        raise
+
+    with tf.variable_scope("dense_layer_for_sparse_" + name, reuse=tf.AUTO_REUSE):
+        kernel_regularizer = tf.contrib.layers.l2_regularizer(C2)
+        kernel = tf.get_variable(
+            "kernel",
+            shape=[inputs.shape[-1], units],
+            dtype=inputs.dtype,
+            regularizer=kernel_regularizer,
+        )
+        bias = tf.get_variable("bias", shape=[units], dtype=inputs.dtype)
+
+        # outputs will be 2D
+        outputs = tf.sparse.matmul(
+            tf.sparse.reshape(inputs, [-1, tf.shape(inputs)[-1]]), kernel
+        )
+        # outputs = tf.matmul(
+        #     tf.reshape(tf.sparse.to_dense(inputs, validate_indices=False), [-1, tf.shape(inputs)[-1]]), kernel, a_is_sparse=True
+        # )
+
+        if len(inputs.shape) == 3:
+            # reshape back
+            outputs = tf.reshape(
+                outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], -1)
+            )
+
+        if use_bias:
+            outputs = tf.nn.bias_add(outputs, bias)
+
+    if activation is None:
+        return outputs
+
+    return activation(outputs)
 
 
 def tf_raw_sim(
@@ -1072,10 +1173,7 @@ def train_tf_dataset(
         train_loss = ep_train_loss / batches_per_epoch
         train_acc = ep_train_acc / batches_per_epoch
 
-        postfix_dict = {
-            "loss": "{:.3f}".format(train_loss),
-            "acc": "{:.3f}".format(train_acc),
-        }
+        postfix_dict = {"loss": f"{train_loss:.3f}", "acc": f"{train_acc:.3f}"}
 
         if eval_init_op is not None:
             if (ep + 1) % evaluate_every_num_epochs == 0 or (ep + 1) == epochs:
@@ -1090,10 +1188,7 @@ def train_tf_dataset(
                 )
 
             postfix_dict.update(
-                {
-                    "val_loss": "{:.3f}".format(val_loss),
-                    "val_acc": "{:.3f}".format(val_acc),
-                }
+                {"val_loss": f"{val_loss:.3f}", "val_acc": f"{val_acc:.3f}"}
             )
 
         pbar.set_postfix(postfix_dict)
@@ -1130,11 +1225,22 @@ def persist_tensor(name: Text, tensor: "tf.Tensor", graph: "tf.Graph") -> None:
 
     if tensor is not None:
         graph.clear_collection(name)
-        graph.add_to_collection(name, tensor)
+        if isinstance(tensor, tuple) or isinstance(tensor, list):
+            for t in tensor:
+                graph.add_to_collection(name, t)
+        else:
+            graph.add_to_collection(name, tensor)
 
 
 def load_tensor(name: Text) -> Optional["tf.Tensor"]:
     """Load tensor or set it to None"""
 
     tensor_list = tf.get_collection(name)
-    return tensor_list[0] if tensor_list else None
+
+    if tensor_list is None:
+        return tensor_list
+
+    if len(tensor_list) == 1:
+        return tensor_list[0]
+
+    return tensor_list

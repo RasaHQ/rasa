@@ -67,6 +67,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
         # set random seed to any int to get reproducible results
         "random_seed": None,
         # embedding parameters
+        # default dense dimension used if no dense features are present
+        "dense_dim": 512,
         # dimension size of embedding vectors
         "embed_dim": 20,
         # the type of the similarity
@@ -114,7 +116,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
             )
 
     def _load_params(self) -> None:
-        super(ResponseSelector, self)._load_params()
+        super()._load_params()
         self._load_selector_params(self.component_config)
 
     @staticmethod
@@ -141,27 +143,14 @@ class ResponseSelector(EmbeddingIntentClassifier):
         )
 
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
-        self._encoded_all_label_ids = self._create_encoded_label_ids(
-            training_data,
-            label_id_dict,
-            attribute=MESSAGE_RESPONSE_ATTRIBUTE,
-            attribute_feature_name=MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[
-                MESSAGE_RESPONSE_ATTRIBUTE
-            ],
+        self._label_data = self._create_label_data(
+            training_data, label_id_dict, attribute=MESSAGE_RESPONSE_ATTRIBUTE
         )
-
-        # check if number of negatives is less than number of label_ids
-        logger.debug(
-            "Check if num_neg {} is smaller than "
-            "number of label_ids {}, "
-            "else set num_neg to the number of label_ids - 1"
-            "".format(self.num_neg, self._encoded_all_label_ids.shape[0])
-        )
-        # noinspection PyAttributeOutsideInit
-        self.num_neg = min(self.num_neg, self._encoded_all_label_ids.shape[0] - 1)
 
         session_data = self._create_session_data(
-            training_data, label_id_dict, attribute=MESSAGE_RESPONSE_ATTRIBUTE
+            training_data.intent_examples,
+            label_id_dict,
+            attribute=MESSAGE_RESPONSE_ATTRIBUTE,
         )
 
         self.check_input_dimension_consistency(session_data)
@@ -180,7 +169,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
         )
 
         logger.debug(
-            "Adding following selector key to message property: {}".format(selector_key)
+            f"Adding following selector key to message property: {selector_key}"
         )
 
         prediction_dict = {"response": label, "ranking": label_ranking}

@@ -1,4 +1,3 @@
-# coding=utf-8
 import asyncio
 import logging
 
@@ -376,7 +375,7 @@ def test_entity_evaluation_report(tmpdir_factory):
 
         def __init__(self, component_config=None) -> None:
 
-            super(EntityExtractorA, self).__init__(component_config)
+            super().__init__(component_config)
 
     class EntityExtractorB(EntityExtractor):
 
@@ -384,7 +383,7 @@ def test_entity_evaluation_report(tmpdir_factory):
 
         def __init__(self, component_config=None) -> None:
 
-            super(EntityExtractorB, self).__init__(component_config)
+            super().__init__(component_config)
 
     path = tmpdir_factory.mktemp("evaluation").strpath
     report_folder = os.path.join(path, "reports")
