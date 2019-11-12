@@ -388,7 +388,12 @@ class EmbeddingIntentClassifier(Component):
         masks = []
 
         # TODO should be variable
-        max_seq_len = max([len(e.get("tokens")) for e in training_data])
+        # TODO what if not present? use default value? raise error?
+        seq_len = [
+            len(e.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]))
+            for e in training_data
+        ]
+        max_seq_len = max(seq_len) if seq_len else 25
 
         for e in training_data:
             self._extract_and_add_features(e, MESSAGE_TEXT_ATTRIBUTE, X_sparse, X_dense)
