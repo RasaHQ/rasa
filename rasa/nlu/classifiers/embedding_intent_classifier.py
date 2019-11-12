@@ -279,52 +279,49 @@ class EmbeddingIntentClassifier(Component):
 
     @staticmethod
     def _extract_and_add_features(
-        message: "Message",
-        attribute: Text,
-        sparse_features: List[scipy.sparse.spmatrix],
-        dense_features: List[np.ndarray],
-    ):
+        message: "Message", attribute: Text
+    ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
+        sparse_features = None
+        dense_features = None
+
         # we mutate sparse_features and dense_features
         if message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]) is not None:
-            sparse_features.append(
-                message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute])
+            sparse_features = message.get(
+                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]
             )
 
         if message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]) is not None:
-            dense_features.append(
-                message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute])
-            )
+            dense_features = message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute])
+
+        return sparse_features, dense_features
 
     def _extract_labels_precomputed_features(
         self, label_examples: List["Message"]
-    ) -> "SessionData":
+    ) -> List[np.ndarray]:
 
         # Collect precomputed encodings
         sparse_features = []
         dense_features = []
 
         for e in label_examples:
-            self._extract_and_add_features(
-                e, MESSAGE_INTENT_ATTRIBUTE, sparse_features, dense_features
+            _sparse, _dense = self._extract_and_add_features(
+                e, MESSAGE_INTENT_ATTRIBUTE
             )
+            if _sparse is not None:
+                sparse_features.append(_sparse)
+            if _dense is not None:
+                dense_features.append(_dense)
 
         sparse_features = np.array(sparse_features)
         dense_features = np.array(dense_features)
 
-        data = {}
-        self._add_to_session_data(
-            data, "intent_features", [sparse_features, dense_features]
-        )
-
-        return data
+        return [sparse_features, dense_features]
 
     @staticmethod
     def _compute_default_label_features(
-        labels_example: List[Tuple[int, "Message"]]
+        labels_example: List["Message"]
     ) -> List[np.ndarray]:
         """Compute one-hot representation for the labels"""
-
-        # TODO check:
         return [
             np.array(
                 [
@@ -336,12 +333,12 @@ class EmbeddingIntentClassifier(Component):
             )
         ]
 
-    def _create_encoded_label_ids(
+    def _create_label_data(
         self,
         training_data: "TrainingData",
         label_id_dict: Dict[Text, int],
         attribute: Text,
-    ) -> List[np.ndarray]:
+    ) -> "SessionData":
         """Create matrix with label_ids encoded in rows as bag of words.
 
         Find a training example for each label and get the encoded features
@@ -364,13 +361,14 @@ class EmbeddingIntentClassifier(Component):
 
         # Collect features, precomputed if they exist, else compute on the fly
         if self._check_labels_features_exist(labels_example, attribute):
-            encoded_id_labels = self._extract_labels_precomputed_features(
-                labels_example
-            )
+            features = self._extract_labels_precomputed_features(labels_example)
         else:
-            encoded_id_labels = self._compute_default_label_features(labels_example)
+            features = self._compute_default_label_features(labels_example)
 
-        return encoded_id_labels
+        label_data = {}
+        self._add_to_session_data(label_data, "intent_features", features)
+
+        return label_data
 
     # noinspection PyPep8Naming
     def _create_session_data(
@@ -396,10 +394,19 @@ class EmbeddingIntentClassifier(Component):
         max_seq_len = max(seq_len) if seq_len else 25
 
         for e in training_data:
-            self._extract_and_add_features(e, MESSAGE_TEXT_ATTRIBUTE, X_sparse, X_dense)
-            self._extract_and_add_features(
-                e, MESSAGE_INTENT_ATTRIBUTE, Y_sparse, Y_dense
+            _sparse, _dense = self._extract_and_add_features(e, MESSAGE_TEXT_ATTRIBUTE)
+            if _sparse is not None:
+                X_sparse.append(_sparse)
+            if _dense is not None:
+                X_dense.append(_dense)
+
+            _sparse, _dense = self._extract_and_add_features(
+                e, MESSAGE_INTENT_ATTRIBUTE
             )
+            if _sparse is not None:
+                Y_sparse.append(_sparse)
+            if _dense is not None:
+                Y_dense.append(_dense)
 
             if e.get(attribute):
                 label_ids.append(label_id_dict[e.get(attribute)])
@@ -633,7 +640,7 @@ class EmbeddingIntentClassifier(Component):
 
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
 
-        self._label_data = self._create_encoded_label_ids(
+        self._label_data = self._create_label_data(
             training_data, label_id_dict, attribute=MESSAGE_INTENT_ATTRIBUTE
         )
 
