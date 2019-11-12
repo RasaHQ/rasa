@@ -45,9 +45,7 @@ class MultiProjectImporter(TrainingDataImporter):
         self._nlu_paths += list(extra_nlu_files)
 
         logger.debug(
-            "Selected projects: {}".format(
-                "".join(["\n-{}".format(i) for i in self._imports])
-            )
+            "Selected projects: {}".format("".join([f"\n-{i}" for i in self._imports]))
         )
 
         rasa.utils.common.mark_as_experimental_feature(
@@ -68,9 +66,7 @@ class MultiProjectImporter(TrainingDataImporter):
             parent_directory = os.path.dirname(path)
             self._init_from_dict(config, parent_directory)
         else:
-            logger.warning(
-                "'{}' does not exist or is not a valid config file.".format(path)
-            )
+            logger.warning(f"'{path}' does not exist or is not a valid config file.")
 
     def _init_from_dict(self, _dict: Dict[Text, Any], parent_directory: Text) -> None:
         imports = _dict.get("imports") or []

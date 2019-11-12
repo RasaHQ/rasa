@@ -33,7 +33,7 @@ class Ticket:
         return cls(number=data["number"], expires=data["expires"])
 
     def __repr__(self) -> Text:
-        return "Ticket(number: {}, expires: {})".format(self.number, self.expires)
+        return f"Ticket(number: {self.number}, expires: {self.expires})"
 
 
 class TicketLock:

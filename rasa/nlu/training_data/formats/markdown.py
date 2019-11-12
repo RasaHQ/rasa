@@ -89,7 +89,7 @@ class MarkdownReader(TrainingDataReader):
     def _find_section_header(self, line: Text) -> Optional[Tuple[Text, Text]]:
         """Checks if the current line contains a section header
         and returns the section and the title."""
-        match = re.search(r"##\s*(.+):(.+)", line)
+        match = re.search(r"##\s*(.+?):(.+)", line)
         if match is not None:
             return match.group(1), match.group(2)
 
@@ -277,7 +277,7 @@ class MarkdownWriter(TrainingDataWriter):
         """generates markdown section header."""
         prefix = "\n" if prepend_newline else ""
         subtitle_suffix = (
-            "{}{}".format(RESPONSE_IDENTIFIER_DELIMITER, subtitle) if subtitle else ""
+            f"{RESPONSE_IDENTIFIER_DELIMITER}{subtitle}" if subtitle else ""
         )
         return prefix + "## {}:{}{}\n".format(
             section_type, encode_string(title), encode_string(subtitle_suffix)
@@ -318,4 +318,4 @@ class MarkdownWriter(TrainingDataWriter):
             # add synonym suffix
             entity_type += ":{}".format(entity["value"])
 
-        return "[{}]({})".format(entity_text, entity_type)
+        return f"[{entity_text}]({entity_type})"

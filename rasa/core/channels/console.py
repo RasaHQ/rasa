@@ -81,7 +81,7 @@ def get_user_input(button_question: questionary.Question) -> Optional[Text]:
 async def send_message_receive_block(server_url, auth_token, sender_id, message):
     payload = {"sender": sender_id, "message": message}
 
-    url = "{}/webhooks/rest/webhook?token={}".format(server_url, auth_token)
+    url = f"{server_url}/webhooks/rest/webhook?token={auth_token}"
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload, raise_for_status=True) as resp:
             return await resp.json()
@@ -90,7 +90,7 @@ async def send_message_receive_block(server_url, auth_token, sender_id, message)
 async def send_message_receive_stream(server_url, auth_token, sender_id, message):
     payload = {"sender": sender_id, "message": message}
 
-    url = "{}/webhooks/rest/webhook?stream=true&token={}".format(server_url, auth_token)
+    url = f"{server_url}/webhooks/rest/webhook?stream=true&token={auth_token}"
 
     # Define timeout to not keep reading in case the server crashed in between
     timeout = ClientTimeout(DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS)
