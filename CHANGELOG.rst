@@ -40,6 +40,16 @@ Fixed
 - Fixed server hanging forever on leaving ``rasa shell`` before first message
 - Fixed rasa init showing traceback error when user does Keyboard Interrupt before choosing a project path
 - ``CountVectorsFeaturizer`` featurizes intents only if its analyzer is set to ``word``
+- fixed bug where facebooks generic template was not rendered when buttons were None 
+
+
+[1.4.3] - 2019-10-29
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Fixed ``Connection reset by peer`` errors and bot response delays when using the
+  RabbitMQ event broker.
 
 [1.4.2] - 2019-10-28
 ^^^^^^^^^^^^^^^^^^^^
@@ -53,6 +63,8 @@ Fixed
 - Fixed ``'Namespace' object has no attribute 'persist_nlu_data'`` error during
   interactive learning
 - Pinned `networkx~=2.3.0` to fix visualization in `rasa interactive` and Rasa X
+- Fixed ``No model found`` error when using ``rasa run actions`` with "actions"
+  as a directory.
 
 [1.4.1] - 2019-10-22
 ^^^^^^^^^^^^^^^^^^^^

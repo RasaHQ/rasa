@@ -129,7 +129,7 @@ class EmbeddingIntentClassifier(Component):
     ) -> None:
         """Declare instant variables with default values"""
 
-        super(EmbeddingIntentClassifier, self).__init__(component_config)
+        super().__init__(component_config)
 
         self._load_params()
 
@@ -247,9 +247,9 @@ class EmbeddingIntentClassifier(Component):
     ) -> Dict[Text, int]:
         """Create label_id dictionary"""
 
-        distinct_label_ids = set(
-            [example.get(attribute) for example in training_data.intent_examples]
-        ) - {None}
+        distinct_label_ids = {
+            example.get(attribute) for example in training_data.intent_examples
+        } - {None}
         return {
             label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
         }

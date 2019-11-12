@@ -190,7 +190,7 @@ def class_from_module_path(
             m = importlib.import_module(lookup_path)
             return getattr(m, module_path)
         else:
-            raise ImportError("Cannot retrieve class from path {}.".format(module_path))
+            raise ImportError(f"Cannot retrieve class from path {module_path}.")
 
 
 def minimal_kwargs(
@@ -242,7 +242,7 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         if unavailable_ok:
             return None
         else:
-            raise ValueError("Configuration '{}' key not found.".format(name))
+            raise ValueError(f"Configuration '{name}' key not found.")
 
     if not os.path.exists(GLOBAL_USER_CONFIG_PATH):
         return not_found()

@@ -55,7 +55,7 @@ class SklearnIntentClassifier(Component):
         """Construct a new intent classifier using the sklearn framework."""
         from sklearn.preprocessing import LabelEncoder
 
-        super(SklearnIntentClassifier, self).__init__(component_config)
+        super().__init__(component_config)
 
         if le is not None:
             self.le = le

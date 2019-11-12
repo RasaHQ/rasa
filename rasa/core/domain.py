@@ -46,7 +46,7 @@ class InvalidDomain(Exception):
         return bcolors.FAIL + self.message + bcolors.ENDC
 
 
-class Domain(object):
+class Domain:
     """The domain specifies the universe in which the bot's policy acts.
 
     A Domain subclass provides the actions the bot can take, the intents
@@ -403,7 +403,7 @@ class Domain(object):
             self._raise_action_not_found_exception(action_name)
 
     def _raise_action_not_found_exception(self, action_name):
-        action_names = "\n".join(["\t - {}".format(a) for a in self.action_names])
+        action_names = "\n".join([f"\t - {a}" for a in self.action_names])
         raise NameError(
             "Cannot access action '{}', "
             "as that name is not a registered "
@@ -426,7 +426,7 @@ class Domain(object):
         """Returns all available slot state strings."""
 
         return [
-            "slot_{}_{}".format(s.name, i)
+            f"slot_{s.name}_{i}"
             for s in self.slots
             for i in range(0, s.feature_dimensionality())
         ]
@@ -443,19 +443,19 @@ class Domain(object):
     def intent_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
-        return ["intent_{0}".format(i) for i in self.intents]
+        return [f"intent_{i}" for i in self.intents]
 
     # noinspection PyTypeChecker
     @common_utils.lazy_property
     def entity_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
-        return ["entity_{0}".format(e) for e in self.entities]
+        return [f"entity_{e}" for e in self.entities]
 
     # noinspection PyTypeChecker
     @common_utils.lazy_property
     def form_states(self) -> List[Text]:
-        return ["active_form_{0}".format(f) for f in self.form_names]
+        return [f"active_form_{f}" for f in self.form_names]
 
     def index_of_state(self, state_name: Text) -> Optional[int]:
         """Provides the index of a state."""
@@ -493,7 +493,7 @@ class Domain(object):
 
         if intent_name:
             for entity_name in self._get_featurized_entities(latest_message):
-                key = "entity_{0}".format(entity_name)
+                key = f"entity_{entity_name}"
                 state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
@@ -501,7 +501,7 @@ class Domain(object):
             if slot is not None:
                 for i, slot_value in enumerate(slot.as_feature()):
                     if slot_value != 0:
-                        slot_id = "slot_{}_{}".format(key, i)
+                        slot_id = f"slot_{key}_{i}"
                         state_dict[slot_id] = slot_value
 
         if "intent_ranking" in latest_message.parse_data:

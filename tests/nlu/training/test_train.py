@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os
 import pytest
 from nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier

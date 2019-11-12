@@ -146,7 +146,7 @@ def test_emojis_in_tmp_file():
             - two £ (?u)\\b\\w+\\b f\u00fcr
         """
     test_file = io_utils.create_temporary_file(test_data)
-    with io.open(test_file, mode="r", encoding="utf-8") as f:
+    with open(test_file, mode="r", encoding="utf-8") as f:
         content = f.read()
     content = io_utils.read_yaml(content)
 

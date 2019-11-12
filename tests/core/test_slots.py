@@ -1,4 +1,3 @@
-# coding=utf-8
 import pytest
 
 from rasa.core.slots import (
@@ -12,7 +11,7 @@ from rasa.core.slots import (
 )
 
 
-class SlotTestCollection(object):
+class SlotTestCollection:
     """Tests every slot needs to fulfill.
 
     Each slot can declare further tests on its own."""

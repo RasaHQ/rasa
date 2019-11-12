@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
 
 
-class MessageProcessor(object):
+class MessageProcessor:
     def __init__(
         self,
         interpreter: NaturalLanguageInterpreter,
@@ -285,10 +285,10 @@ class MessageProcessor(object):
     def _log_slots(tracker):
         # Log currently set slots
         slot_values = "\n".join(
-            ["\t{}: {}".format(s.name, s.value) for s in tracker.slots.values()]
+            [f"\t{s.name}: {s.value}" for s in tracker.slots.values()]
         )
         if slot_values.strip():
-            logger.debug("Current slot values: \n{}".format(slot_values))
+            logger.debug(f"Current slot values: \n{slot_values}")
 
     def _log_unseen_intent(self, parse_data: Dict[Text, Any]) -> None:
         """check if the NLU picks up intent that aren't in the domain.
@@ -556,7 +556,7 @@ class MessageProcessor(object):
 
         logger.debug(
             "Action '{}' ended with events '{}'".format(
-                action_name, ["{}".format(e) for e in events]
+                action_name, [f"{e}" for e in events]
             )
         )
 

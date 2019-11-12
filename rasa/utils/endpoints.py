@@ -62,7 +62,7 @@ def concat_url(base: Text, subpath: Optional[Text]) -> Text:
     return url + subpath
 
 
-class EndpointConfig(object):
+class EndpointConfig:
     """Configuration for an external HTTP endpoint."""
 
     def __init__(
@@ -186,7 +186,7 @@ class ClientResponseError(aiohttp.ClientError):
         self.status = status
         self.message = message
         self.text = text
-        super().__init__("{}, {}, body='{}'".format(status, message, text))
+        super().__init__(f"{status}, {message}, body='{text}'")
 
 
 def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
@@ -214,5 +214,5 @@ def float_arg(
     try:
         return float(str(arg))
     except (ValueError, TypeError):
-        logger.warning("Failed to convert '{}' to float.".format(arg))
+        logger.warning(f"Failed to convert '{arg}' to float.")
         return default
