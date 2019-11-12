@@ -525,7 +525,7 @@ class EmbeddingIntentClassifier(Component):
             #     "Need at least 2 different classes. "
             #     "Skipping training of classifier."
             # )
-            raise Exception("Can not train a classifier. "
+            raise ValueError("Can not train a classifier. "
                             "Need at least 2 different classes. "
                             "Skipping training of classifier.")
 
