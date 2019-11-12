@@ -156,17 +156,13 @@ def test_gen_batch(session_data: SessionData):
         next(iterator)
 
 
-@pytest.mark.parametrize(
-    "intent_ids, expected_labels",
-    [([0, 0, 0, 1, 1], [0, 1, 0, 1, 0]), ([0, 0, 0, 0, 1], [0, 1, 0, 0, 1, 0])],
-)
-def test_balance_session_data(session_data: SessionData, intent_ids, expected_labels):
-    # TODO improve test
-    session_data["intent_ids"] = [np.array(intent_ids)]
-
+def test_balance_session_data(session_data: SessionData):
     balanced_session_data = balance_session_data(session_data, 2, False, "intent_ids")
 
-    labels = balanced_session_data["intent_ids"][0]
+    for k, values in session_data.items():
+        assert k in balanced_session_data
 
-    assert len(expected_labels) == len(labels)
-    assert np.all(expected_labels == labels)
+        for i, v in enumerate(values):
+            assert len(v) == len(balanced_session_data[k][i])
+
+    assert np.all(balanced_session_data["intent_ids"][0] == np.array([0, 1, 1, 0, 1]))

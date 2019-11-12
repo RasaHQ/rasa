@@ -210,6 +210,7 @@ def balance_session_data(
     skipped = [False] * num_label_ids
 
     new_session_data = defaultdict(list)
+    num_examples = get_number_of_examples(session_data)
 
     while min(num_data_cycles) == 0:
         if shuffle:
@@ -224,15 +225,19 @@ def balance_session_data(
             else:
                 skipped[index] = False
 
+            index_batch_size = (
+                int(counts_label_ids[index] / num_examples * batch_size) + 1
+            )
+
             for k, values in label_data[index].items():
                 for i, v in enumerate(values):
                     if len(new_session_data[k]) < i + 1:
                         new_session_data[k].append([])
                     new_session_data[k][i].append(
-                        v[data_idx[index] : data_idx[index] + 1][0]
+                        v[data_idx[index] : data_idx[index] + index_batch_size]
                     )
 
-            data_idx[index] += 1
+            data_idx[index] += index_batch_size
             if data_idx[index] >= counts_label_ids[index]:
                 num_data_cycles[index] += 1
                 data_idx[index] = 0
@@ -240,11 +245,13 @@ def balance_session_data(
             if min(num_data_cycles) > 0:
                 break
 
-    new_session_data = {
-        k: [np.array(v) for v in values] for k, values in new_session_data.items()
-    }
+    updated = {}
+    for k, values in new_session_data.items():
+        updated[k] = []
+        for v in values:
+            updated[k].append(np.concatenate(np.array(v)))
 
-    return new_session_data
+    return updated
 
 
 def concatenate_data(
