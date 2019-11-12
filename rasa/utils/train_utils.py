@@ -289,7 +289,7 @@ def prepare_batch(
     session_data: SessionData,
     start: Optional[int] = None,
     end: Optional[int] = None,
-    tuple_sizes: Dict[Text:int] = None,
+    tuple_sizes: Dict[Text, int] = None,
 ):
     """Slices session data into batch using given start and end value."""
     batch_data = []
@@ -408,7 +408,7 @@ def batch_to_session_data(
     return batch_data
 
 
-def session_data_to_tuple_sizes(session_data: SessionData) -> Dict[Text:int]:
+def session_data_to_tuple_sizes(session_data: SessionData) -> Dict[Text, int]:
     batch_sizes = {}
 
     for k, values in session_data.items():
