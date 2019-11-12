@@ -461,6 +461,7 @@ class EmbeddingIntentClassifier(Component):
 
         # get in tensors from generator
         self.batch_in = self._iterator.get_next()
+
         # convert encoded all labels into the batch format
         label_batch = train_utils.prepare_batch(self._label_data)
 
@@ -764,12 +765,13 @@ class EmbeddingIntentClassifier(Component):
         return label, label_ranking
 
     def _add_missing_placeholder_tensors(self, batch):
+        # check if all data is already present
         if self.shapes is not None and len(batch) == len(self.shapes):
             return batch
 
         X = []
+        # if features are not present add dummy tensor
         for i, shape in enumerate(self.shapes):
-            # if features are not present add dummy tensor
             if i >= len(batch) or batch[i] is None:
                 # shape may contain None, replace None by 1
                 if isinstance(shape, tuple):
@@ -778,7 +780,7 @@ class EmbeddingIntentClassifier(Component):
                     shape = 1
                 # add dummy tensor of shape
                 X.append(np.zeros(shape))
-            # TODO
+            # TODO mask
             elif (isinstance(shape, tuple) or isinstance(shape, list)) and batch[
                 i
             ].shape[-1] != shape[-1]:

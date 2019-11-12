@@ -2,18 +2,7 @@ from collections import defaultdict
 import logging
 import scipy.sparse
 import typing
-from typing import (
-    List,
-    Optional,
-    Text,
-    Dict,
-    Tuple,
-    Union,
-    Generator,
-    Callable,
-    ValuesView,
-    Any,
-)
+from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable, Any
 import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
@@ -103,8 +92,9 @@ def check_train_test_sizes(
 
     if evaluate_on_num_examples >= num_examples - len(label_counts):
         raise ValueError(
-            f"Validation set of {evaluate_on_num_examples} is too large. Remaining train set "
-            "should be at least equal to number of classes {len(label_counts)}."
+            f"Validation set of {evaluate_on_num_examples} is too large. Remaining "
+            f"train set should be at least equal to number of classes "
+            f"{len(label_counts)}."
         )
     elif evaluate_on_num_examples < len(label_counts):
         raise ValueError(
@@ -122,8 +112,7 @@ def convert_train_test_split(
     session_data_val = defaultdict(list)
 
     # output_values = x_train, x_val, y_train, y_val, z_train, z_val, etc.
-    # order is kept, so first session_data.X values, then session_data.Y values, and
-    # finally session_data.labels values
+    # order is kept, e.g. same order as session data keys
 
     # train datasets have an even index
     for i in range(len(session_data)):
@@ -142,6 +131,7 @@ def combine_features(
     feature_1: Union[np.ndarray, scipy.sparse.spmatrix],
     feature_2: Union[np.ndarray, scipy.sparse.spmatrix],
 ) -> Union[np.ndarray, scipy.sparse.spmatrix]:
+    """Concatenate features."""
     if isinstance(feature_1, scipy.sparse.spmatrix) and isinstance(
         feature_2, scipy.sparse.spmatrix
     ):
@@ -175,7 +165,7 @@ def split_session_data_by_label(
 ) -> List["SessionData"]:
     """Reorganize session data into a list of session data with the same labels."""
     if label_key not in session_data or len(session_data[label_key]) > 1:
-        raise ValueError(f"Key '{label_key}' not in SessionData.labels.")
+        raise ValueError(f"Key '{label_key}' not in SessionData.")
 
     label_data = []
     for label_id in unique_label_ids:
@@ -195,7 +185,7 @@ def balance_session_data(
     that more populated classes should appear more often.
     """
     if label_key not in session_data or len(session_data[label_key]) > 1:
-        raise ValueError(f"Key '{label_key}' not in SessionData.labels.")
+        raise ValueError(f"Key '{label_key}' not in SessionData.")
 
     unique_label_ids, counts_label_ids = np.unique(
         session_data[label_key][0], return_counts=True, axis=0
@@ -254,19 +244,10 @@ def balance_session_data(
     return updated
 
 
-def concatenate_data(
-    data_dict: Dict[Text, Union[np.ndarray, List[scipy.sparse.spmatrix]]]
-) -> Dict[Text, Union[np.ndarray, List[scipy.sparse.spmatrix]]]:
-    new_dict = {}
-    for k, v in data_dict.items():
-        if isinstance(v[0], scipy.sparse.spmatrix):
-            new_dict[k] = scipy.sparse.vstack(v)
-        else:
-            new_dict[k] = np.concatenate(v)
-    return new_dict
-
-
 def get_number_of_examples(session_data: SessionData):
+    """Obtain number of examples in session data.
+    Raise a ValueError if number of examples differ for different data in session data.
+    """
     example_lengths = [v.shape[0] for values in session_data.values() for v in values]
 
     # check if number of examples is the same for all X
@@ -308,6 +289,7 @@ def gen_batch(
 def prepare_batch(
     session_data: SessionData, start: Optional[int] = None, end: Optional[int] = None
 ):
+    """Slices session data into batch using given start and end value."""
     batch_data = []
 
     for values in session_data.values():
@@ -336,6 +318,7 @@ def prepare_batch(
 
 
 def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
+    """Convert a scipy matrix into inidces, data, and shape."""
     seq_len = max([x.shape[0] for x in array_of_sparse])
     coo = [x.tocoo() for x in array_of_sparse]
     data = [v for x in array_of_sparse for v in x.data]
@@ -352,11 +335,10 @@ def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
     ]
 
 
-# TODO types, could be tf.Tensor or Tuple for shape - still relevant?
 def values_to_sparse_tensor(
-    indices: np.ndarray, data: np.ndarray, shape: np.ndarray
+    indices: np.ndarray, data: np.ndarray, shape: Union[np.ndarray, List]
 ) -> tf.SparseTensor:
-
+    """Create a Sparse Tensor from given indices, data, and shape."""
     return tf.SparseTensor(indices, data, shape)
 
 
@@ -441,6 +423,7 @@ def create_tf_dataset(
 
 
 def get_shapes_types(session_data: SessionData) -> Tuple:
+    """Extract shapes and types from session data."""
     types = []
     shapes = []
 
@@ -695,7 +678,10 @@ def _tf_calc_iou_mask(
     pos_b_in_flat = tf.expand_dims(pos_b, -2)
     neg_b_in_flat = _tf_sample_neg(tf.shape(pos_b)[0], all_bs, neg_ids)
 
-    return tf.cast(tf.reduce_all(tf.equal(neg_b_in_flat, pos_b_in_flat), axis=-1), pos_b_in_flat.dtype)
+    return tf.cast(
+        tf.reduce_all(tf.equal(neg_b_in_flat, pos_b_in_flat), axis=-1),
+        pos_b_in_flat.dtype,
+    )
 
     # intersection_b_in_flat = tf.minimum(neg_b_in_flat, pos_b_in_flat)
     # union_b_in_flat = tf.maximum(neg_b_in_flat, pos_b_in_flat)
