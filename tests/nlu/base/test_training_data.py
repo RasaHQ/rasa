@@ -506,39 +506,36 @@ def test_markdown_entity_regex():
     """
 
     result = r.reads(md)
-    expected_texts = [
-        "i'm looking for a place to eat",
-        "i'm looking for a place in the north of town",
-        "show me chines restaurants",
-        "show me chines restaurants",
-    ]
-    expected_data = [
-        {"intent": "restaurant_search"},
-        {
-            "intent": "restaurant_search",
-            "entities": [
-                {"start": 31, "end": 36, "value": "north", "entity": "loc-direction"}
-            ],
-        },
-        {
-            "intent": "restaurant_search",
-            "entities": [
-                {"start": 8, "end": 14, "value": "chinese", "entity": "cuisine"}
-            ],
-        },
-        {
-            "intent": "restaurant_search",
-            "entities": [
-                {"start": 8, "end": 14, "value": "43er*+?df", "entity": "22_ab-34*3.A"}
-            ],
-        },
-    ]
 
     assert len(result.training_examples) == 4
+    first = result.training_examples[0]
+    assert first.data == {"intent": "restaurant_search"}
+    assert first.text == "i'm looking for a place to eat"
 
-    for training_example in result.training_examples:
-        actual_text, actual_data = training_example.text, training_example.data
-        assert actual_text in expected_texts and actual_data in expected_data
+    second = result.training_examples[1]
+    assert second.data == {
+        "intent": "restaurant_search",
+        "entities": [
+            {"start": 31, "end": 36, "value": "north", "entity": "loc-direction"}
+        ],
+    }
+    assert second.text == "i'm looking for a place in the north of town"
+
+    third = result.training_examples[2]
+    assert third.data == {
+        "intent": "restaurant_search",
+        "entities": [{"start": 8, "end": 14, "value": "chinese", "entity": "cuisine"}],
+    }
+    assert third.text == "show me chines restaurants"
+
+    fourth = result.training_examples[3]
+    assert fourth.data == {
+        "intent": "restaurant_search",
+        "entities": [
+            {"start": 8, "end": 14, "value": "43er*+?df", "entity": "22_ab-34*3.A"}
+        ],
+    }
+    assert fourth.text == "show me chines restaurants"
 
 
 def test_get_file_format():
