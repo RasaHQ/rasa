@@ -18,6 +18,7 @@ Added
 - Added documentation for ``AugmentedMemoizationPolicy``
 - Fall back to ``InMemoryTrackerStore`` in case there is any problem with the current
   tracker store
+- Added template name to the metadata of bot utterance
 
 Changed
 -------
