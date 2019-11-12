@@ -370,6 +370,16 @@ class EmbeddingIntentClassifier(Component):
 
         return label_data
 
+    def use_default_label_features(self, label_ids: np.ndarray) -> List[np.ndarray]:
+        return [
+            np.array(
+                [
+                    self._label_data["intent_features"][0][label_id]
+                    for label_id in label_ids
+                ]
+            )
+        ]
+
     # noinspection PyPep8Naming
     def _create_session_data(
         self,
@@ -425,9 +435,12 @@ class EmbeddingIntentClassifier(Component):
         session_data = {}
         self._add_to_session_data(session_data, "masks", [masks])
         self._add_to_session_data(session_data, "text_features", [X_sparse, X_dense])
-        # TODO there might be no features for Y, in this case need to create sparse 1-hot encoding like we do for encoded_all_labels
         self._add_to_session_data(session_data, "intent_features", [Y_sparse, Y_dense])
         self._add_to_session_data(session_data, "intent_ids", [label_ids])
+
+        if "intent_features" not in session_data:
+            # no intent features are present, get default features from _label_data
+            session_data["intent_features"] = self.use_default_label_features(label_ids)
 
         return session_data
 
