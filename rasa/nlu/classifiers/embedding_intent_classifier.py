@@ -589,8 +589,7 @@ class EmbeddingIntentClassifier(Component):
             batch_data["intent_features"], session_data["intent_features"], "intent"
         )
 
-        # TODO check this idea:
-        # self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
+        self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
 
         message_embed = self._create_tf_embed_fnn(
             a,

@@ -370,12 +370,12 @@ class EmbeddingPolicy(Policy):
         dialogue_len = None  # use dynamic time
         self.a_in = tf.placeholder(
             dtype=tf.float32,
-            shape=(None, dialogue_len, session_data.X["dialogue_features"].shape[-1]),
+            shape=(None, dialogue_len, session_data["dialogue_features"][0].shape[-1]),
             name="a",
         )
         self.b_in = tf.placeholder(
             dtype=tf.float32,
-            shape=(None, dialogue_len, None, session_data.Y["bot_features"].shape[-1]),
+            shape=(None, dialogue_len, None, session_data["bot_features"][0].shape[-1]),
             name="b",
         )
 
@@ -544,7 +544,7 @@ class EmbeddingPolicy(Policy):
         data_X = self.featurizer.create_X([tracker], domain)
         session_data = self._create_session_data(data_X)
 
-        return {self.a_in: session_data.X["dialogue_features"]}
+        return {self.a_in: session_data["dialogue_features"][0]}
 
     def predict_action_probabilities(
         self, tracker: "DialogueStateTracker", domain: "Domain"

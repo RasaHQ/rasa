@@ -24,7 +24,7 @@ tf.contrib._warning = None
 logger = logging.getLogger(__name__)
 
 
-# namedtuple for all tf session related data
+# dictionary for all tf session related data
 SessionData = Dict[Text, List[np.ndarray]]
 
 
