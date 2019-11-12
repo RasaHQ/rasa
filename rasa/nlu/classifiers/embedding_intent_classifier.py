@@ -269,10 +269,11 @@ class EmbeddingIntentClassifier(Component):
     ) -> bool:
         """Check if all labels have features set"""
         for label_example in labels_example:
-            if label_example.get(
-                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]
-            ) is None and label_example.get(
-                MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
+            if (
+                label_example.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute])
+                is None
+                and label_example.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute])
+                is None
             ):
                 return False
         return True
@@ -284,7 +285,6 @@ class EmbeddingIntentClassifier(Component):
         sparse_features = None
         dense_features = None
 
-        # we mutate sparse_features and dense_features
         if message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]) is not None:
             sparse_features = message.get(
                 MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]

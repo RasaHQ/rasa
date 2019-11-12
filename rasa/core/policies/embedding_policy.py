@@ -253,12 +253,14 @@ class EmbeddingPolicy(Policy):
     def _create_session_data(
         self, data_X: "np.ndarray", data_Y: Optional["np.ndarray"] = None
     ) -> "train_utils.SessionData":
-        """Combine all tf session related data into a named tuple"""
+        """Combine all tf session related data into dict."""
+        data_X = data_X.astype(np.float32)
 
         if data_Y is not None:
             # training time
             label_ids = self._label_ids_for_Y(data_Y)
             Y = self._label_features_for_Y(label_ids)
+            Y = Y.astype(np.float32)
 
             # idea taken from sklearn's stratify split
             if label_ids.ndim == 2:
@@ -270,7 +272,11 @@ class EmbeddingPolicy(Policy):
             label_ids = None
             Y = None
 
-        return {"dialogue_features": data_X, "bot_features": Y, "action_ids": label_ids}
+        return {
+            "dialogue_features": [data_X],
+            "bot_features": [Y],
+            "action_ids": [label_ids],
+        }
 
     def _create_tf_bot_embed(self, b_in: "tf.Tensor") -> "tf.Tensor":
         """Create embedding bot vector."""

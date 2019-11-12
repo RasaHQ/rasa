@@ -235,13 +235,12 @@ def balance_session_data(
             if min(num_data_cycles) > 0:
                 break
 
-    updated = {}
+    final_session_data = defaultdict(list)
     for k, values in new_session_data.items():
-        updated[k] = []
         for v in values:
-            updated[k].append(np.concatenate(np.array(v)))
+            final_session_data[k].append(np.concatenate(np.array(v)))
 
-    return updated
+    return final_session_data
 
 
 def get_number_of_examples(session_data: SessionData):
@@ -250,11 +249,11 @@ def get_number_of_examples(session_data: SessionData):
     """
     example_lengths = [v.shape[0] for values in session_data.values() for v in values]
 
-    # check if number of examples is the same for all X
+    # check if number of examples is the same for all values
     if not all(length == example_lengths[0] for length in example_lengths):
         raise ValueError(
-            f"Number of examples differs for X ({session_data.keys()}). There should "
-            f"be the same."
+            f"Number of examples differs for keys '{session_data.keys()}'. Number of "
+            f"examples should be the same for all data in session data."
         )
 
     return example_lengths[0]

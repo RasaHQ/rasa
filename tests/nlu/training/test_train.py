@@ -243,22 +243,3 @@ async def test_train_model_training_data_persisted(component_builder, tmpdir):
     loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline
     assert loaded.model_metadata.get("training_data") is not None
-
-
-def test_compute_default_label_features():
-    label_features = [
-        Message("test a"),
-        Message("test b"),
-        Message("test c"),
-        Message("test d"),
-    ]
-
-    output = EmbeddingIntentClassifier._compute_default_label_features(label_features)
-
-    output = output[0]
-
-    assert output.size == len(label_features)
-    for i, o in enumerate(output):
-        assert o.data[0] == 1
-        assert o.indices[0] == i
-        assert o.shape == (1, len(label_features))
