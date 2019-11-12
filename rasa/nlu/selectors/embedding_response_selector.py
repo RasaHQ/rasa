@@ -143,7 +143,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
         )
 
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
-        self._label_data = self._create_encoded_label_ids(
+        self._label_data = self._create_label_data(
             training_data, label_id_dict, attribute=MESSAGE_RESPONSE_ATTRIBUTE
         )
 
