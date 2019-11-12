@@ -320,7 +320,10 @@ def prepare_batch(
 def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
     """Convert a scipy matrix into inidces, data, and shape."""
     seq_len = max([x.shape[0] for x in array_of_sparse])
-    coo = [x.tocoo() for x in array_of_sparse]
+    if not isinstance(array_of_sparse[0], scipy.sparse.coo_matrix):
+        coo = [x.tocoo() for x in array_of_sparse]
+    else:
+        coo = array_of_sparse
     data = [v for x in array_of_sparse for v in x.data]
 
     indices = [

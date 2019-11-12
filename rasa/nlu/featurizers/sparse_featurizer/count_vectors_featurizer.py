@@ -391,7 +391,7 @@ class CountVectorsFeaturizer(Featurizer):
 
     def _get_featurized_attribute(
         self, attribute: Text, attribute_texts: List[Text]
-    ) -> Optional[List[scipy.sparse.csr_matrix]]:
+    ) -> Optional[List[scipy.sparse.coo_matrix]]:
         """Return features of a particular attribute for complete data"""
 
         if self._check_attribute_vocabulary(attribute):
@@ -406,7 +406,7 @@ class CountVectorsFeaturizer(Featurizer):
 
     def _create_sequence(
         self, attribute: Text, attribute_texts: List[Text]
-    ) -> List[scipy.sparse.csr_matrix]:
+    ) -> List[scipy.sparse.coo_matrix]:
         texts = [self._get_text_sequence(text) for text in attribute_texts]
 
         X = []
@@ -414,7 +414,7 @@ class CountVectorsFeaturizer(Featurizer):
         for i, tokens in enumerate(texts):
             x = self.vectorizers[attribute].transform(tokens)
             x.sort_indices()
-            X.append(x)
+            X.append(x.tocoo())
 
         return X
 
