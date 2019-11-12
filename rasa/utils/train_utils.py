@@ -286,15 +286,21 @@ def gen_batch(
 
 
 def prepare_batch(
-    session_data: SessionData, start: Optional[int] = None, end: Optional[int] = None
+    session_data: SessionData,
+    start: Optional[int] = None,
+    end: Optional[int] = None,
+    tuple_sizes: Dict[Text:int] = None,
 ):
     """Slices session data into batch using given start and end value."""
     batch_data = []
 
-    for values in session_data.values():
+    for key, values in session_data.items():
         # add None for not present values during processing
         if not values:
-            batch_data.append(None)
+            if tuple_sizes:
+                batch_data += [None] * tuple_sizes[key]
+            else:
+                batch_data.append(None)
             continue
 
         for v in values:
@@ -400,6 +406,21 @@ def batch_to_session_data(
                 idx += 1
 
     return batch_data
+
+
+def session_data_to_tuple_sizes(session_data: SessionData) -> Dict[Text:int]:
+    batch_sizes = {}
+
+    for k, values in session_data.items():
+        idx = 0
+        for v in values:
+            if isinstance(v[0], scipy.sparse.spmatrix):
+                idx += 3
+            else:
+                idx += 1
+        batch_sizes[k] = idx
+
+    return batch_sizes
 
 
 # noinspection PyPep8Naming
