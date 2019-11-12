@@ -26,7 +26,9 @@ Changed
 - All featurizers in ``rasa.nlu`` return a sequence
 - Renamed the feature name ``ner_features`` to ``text_dense_features`` in ``CRFEntityExtractor``.
   The ``text_dense_features`` are created by any dense featurizer.
-- Values of ``SessionData`` are dictionaries instead of ``np.ndarray``
+- ``SessionData`` is a dictionary instead of namedtuple with ``np.ndarray`` values.
+- Keep sparse features as long as possible: Batch generator will output tensors of indices, data, shape for sparse data
+  so that they can be converted into ``SparseTensor`` inside the graph.
 - Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
 - Upgraded ``jsonschema`` version
 
