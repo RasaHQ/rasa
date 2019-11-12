@@ -784,6 +784,9 @@ def tf_dense_layer_for_sparse(
         outputs = tf.sparse.matmul(
             tf.sparse.reshape(inputs, [-1, tf.shape(inputs)[-1]]), kernel
         )
+        # outputs = tf.matmul(
+        #     tf.reshape(tf.sparse.to_dense(inputs, validate_indices=False), [-1, tf.shape(inputs)[-1]]), kernel, a_is_sparse=True
+        # )
 
         if len(inputs.shape) == 3:
             # reshape back

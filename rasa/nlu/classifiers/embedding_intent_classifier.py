@@ -390,7 +390,7 @@ class EmbeddingIntentClassifier(Component):
         # TODO should be variable
         # TODO what if not present? use default value? raise error?
         seq_len = [
-            len(e.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]))
+            e.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]).shape[0]
             for e in training_data
         ]
         max_seq_len = max(seq_len) if seq_len else 25
