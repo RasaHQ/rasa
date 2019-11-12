@@ -493,8 +493,8 @@ class EmbeddingIntentClassifier(Component):
         label_batch = train_utils.prepare_batch(self._label_data)
 
         # convert batch format into sparse and dense tensors
-        batch_data = train_utils.batch_to_session_data(self.batch_in, session_data)
-        label_data = train_utils.batch_to_session_data(label_batch, self._label_data)
+        batch_data, _ = train_utils.batch_to_session_data(self.batch_in, session_data)
+        label_data, _ = train_utils.batch_to_session_data(label_batch, self._label_data)
 
         a = self.combine_sparse_dense_features(
             batch_data["text_features"], batch_data["text_mask"][0], "text"
@@ -571,8 +571,6 @@ class EmbeddingIntentClassifier(Component):
         return output
 
     def _build_tf_pred_graph(self, session_data: "SessionData") -> "tf.Tensor":
-        # save the amount of placeholders attributed to session data keys
-        self.batch_tuple_sizes = train_utils.session_data_to_tuple_sizes(session_data)
 
         shapes, types = train_utils.get_shapes_types(session_data)
 
@@ -582,7 +580,7 @@ class EmbeddingIntentClassifier(Component):
 
         self.batch_in = tf.tuple(batch_placeholder)
 
-        batch_data = train_utils.batch_to_session_data(self.batch_in, session_data)
+        batch_data, self.batch_tuple_sizes = train_utils.batch_to_session_data(self.batch_in, session_data)
 
         a = self.combine_sparse_dense_features(
             batch_data["text_features"], batch_data["text_mask"][0], "text"

@@ -387,6 +387,8 @@ def batch_to_session_data(
     kept.
     """
     batch_data = defaultdict(list)
+    # save the amount of placeholders attributed to session data keys
+    batch_sizes = defaultdict(int)
     idx = 0
 
     for k, values in session_data.items():
@@ -401,26 +403,13 @@ def batch_to_session_data(
                     )
                 )
                 idx += 3
+                batch_sizes[k] += 3
             else:
                 batch_data[k].append(batch[idx])
                 idx += 1
+                batch_sizes[k] += 1
 
-    return batch_data
-
-
-def session_data_to_tuple_sizes(session_data: SessionData) -> Dict[Text, int]:
-    batch_sizes = {}
-
-    for k, values in session_data.items():
-        idx = 0
-        for v in values:
-            if isinstance(v[0], scipy.sparse.spmatrix):
-                idx += 3
-            else:
-                idx += 1
-        batch_sizes[k] = idx
-
-    return batch_sizes
+    return batch_data, batch_sizes
 
 
 # noinspection PyPep8Naming
