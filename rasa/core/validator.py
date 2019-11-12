@@ -1,10 +1,14 @@
 import logging
 from collections import defaultdict
-from typing import List, Set, Text
-from rasa.core.domain import Domain
+from typing import Set, Text
+from rasa.core.domain import Domain, PREV_PREFIX
+from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.training.generator import TrainingDataGenerator
 from rasa.importers.importer import TrainingDataImporter
+from rasa.nlu.constants import MESSAGE_INTENT_ATTRIBUTE
 from rasa.nlu.training_data import TrainingData
-from rasa.core.training.dsl import StoryStep
+from rasa.core.training.structures import StoryGraph
+from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
 from rasa.core.constants import UTTER_PREFIX
@@ -15,22 +19,22 @@ logger = logging.getLogger(__name__)
 class Validator:
     """A class used to verify usage of intents and utterances."""
 
-    def __init__(self, domain: Domain, intents: TrainingData, stories: List[StoryStep]):
+    def __init__(self, domain: Domain, intents: TrainingData, story_graph: StoryGraph):
         """Initializes the Validator object. """
 
         self.domain = domain
         self.intents = intents
-        self.stories = stories
+        self.story_graph = story_graph
 
     @classmethod
     async def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
         """Create an instance from the domain, nlu and story files."""
 
         domain = await importer.get_domain()
-        stories = await importer.get_stories()
+        story_graph = await importer.get_stories()
         intents = await importer.get_nlu_data()
 
-        return cls(domain, intents, stories.story_steps)
+        return cls(domain, intents, story_graph)
 
     def verify_intents(self, ignore_warnings: bool = True) -> bool:
         """Compares list of intents in domain with intents in NLU training data."""
@@ -90,7 +94,7 @@ class Validator:
 
         stories_intents = {
             event.intent["name"]
-            for story in self.stories
+            for story in self.story_graph.story_steps
             for event in story.events
             if type(event) == UserUttered
         }
@@ -156,7 +160,7 @@ class Validator:
         utterance_actions = self._gather_utterance_actions()
         stories_utterances = set()
 
-        for story in self.stories:
+        for story in self.story_graph.story_steps:
             for event in story.events:
                 if not isinstance(event, ActionExecuted):
                     continue
@@ -185,17 +189,118 @@ class Validator:
 
         return everything_is_alright
 
+    def verify_story_names(self, ignore_warnings: bool = True):
+        """Verify that story names are unique."""
+        names = set()
+        for step in self.story_graph.story_steps:
+            if step.block_name in names:
+                logger.warning("Found duplicate story names")
+                return ignore_warnings
+            names.add(step.block_name)
+        logger.info("All story names are unique")
+        return True
+
+    @staticmethod
+    def _last_event_string(sliced_states):
+        last_event_string = None
+        for k, v in sliced_states[-1].items():
+            if k.startswith(PREV_PREFIX):
+                if k[len(PREV_PREFIX):] != ACTION_LISTEN_NAME:
+                    last_event_string = f"action '{k[len(PREV_PREFIX):]}'"
+            elif k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_") and not last_event_string:
+                last_event_string = f"intent '{k[len(MESSAGE_INTENT_ATTRIBUTE + '_'):]}'"
+
+        return last_event_string
+
+    def verify_story_structure(self, ignore_warnings: bool = True, max_history: int = 5) -> bool:
+        """Verifies that bot behaviour in stories is deterministic."""
+
+        logger.info("Story structure validation...")
+        logger.info(f"Assuming max_history = {max_history}")
+
+        trackers = TrainingDataGenerator(
+            self.story_graph,
+            domain=self.domain,
+            remove_duplicates=False,   # ToDo: Q&A: Why don't we deduplicate the graph here?
+            augmentation_factor=0).generate()
+        rules = {}
+        for tracker in trackers:
+            states = tracker.past_states(self.domain)
+            states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
+
+            idx = 0
+            for event in tracker.events:
+                if isinstance(event, ActionExecuted):
+                    sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
+                        states[: idx + 1], max_history
+                    )
+                    h = hash(str(list(sliced_states)))
+                    if h in rules:
+                        if event.as_story_string() not in rules[h]:
+                            rules[h] += [event.as_story_string()]
+                    else:
+                        rules[h] = [event.as_story_string()]
+                    idx += 1
+
+        # Keep only conflicting rules
+        rules = {state: actions for (state, actions) in rules.items() if len(actions) > 1}
+
+        conflicts = {}
+
+        for tracker in trackers:
+            states = tracker.past_states(self.domain)
+            states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
+
+            idx = 0
+            for event in tracker.events:
+                if isinstance(event, ActionExecuted):
+                    sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
+                        states[: idx + 1], max_history
+                    )
+                    h = hash(str(list(sliced_states)))
+                    if h in rules:
+                        # Get the last event
+                        last_event_string = self._last_event_string(sliced_states)
+
+                        # Fill `conflicts` dict
+                        # {hash: {last_event: {action_1: [stories...], action_2: [stories...], ...}, ...}, ...}
+                        if h not in conflicts:
+                            conflicts[h] = {last_event_string: {event.as_story_string(): [tracker.sender_id]}}
+                        else:
+                            if last_event_string not in conflicts[h]:
+                                conflicts[h][last_event_string] = {event.as_story_string(): [tracker.sender_id]}
+                            else:
+                                if event.as_story_string() not in conflicts[h][last_event_string]:
+                                    conflicts[h][last_event_string][event.as_story_string()] = [tracker.sender_id]
+                                else:
+                                    conflicts[h][last_event_string][event.as_story_string()].append(tracker.sender_id)
+                    idx += 1
+
+        if len(conflicts) == 0:
+            logger.info("No story structure conflicts found.")
+        else:
+            for conflict in list(conflicts.values()):
+                for state, actions_and_stories in conflict.items():
+                    conflict_string = f"CONFLICT after {state}:\n"
+                    for action, stories in actions_and_stories.items():
+                        conflict_string += f"  {action} predicted in {stories}\n"
+                    logger.warning(conflict_string)
+
+        return len(conflicts) > 0
+
     def verify_all(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""
 
         logger.info("Validating intents...")
         intents_are_valid = self.verify_intents_in_stories(ignore_warnings)
 
-        logger.info("Validating there is no duplications...")
+        logger.info("Validating uniqueness of intents and stories...")
         there_is_no_duplication = self.verify_example_repetition_in_intents(
             ignore_warnings
         )
+        all_story_names_unique = self.verify_story_names(ignore_warnings)
 
         logger.info("Validating utterances...")
         stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
-        return intents_are_valid and stories_are_valid and there_is_no_duplication
+        return (intents_are_valid and stories_are_valid and
+                there_is_no_duplication and all_story_names_unique)
