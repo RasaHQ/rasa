@@ -1,7 +1,5 @@
 import os
 import pytest
-from nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
-from nlu.training_data import Message
 
 from rasa.nlu import registry, train
 from rasa.nlu.config import RasaNLUModelConfig
