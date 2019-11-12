@@ -59,11 +59,11 @@ def _rasa_service(
 ):
     """Starts the Rasa application."""
     from rasa.core.run import serve_application
+    import rasa.utils.common
 
     # needs separate logging configuration as it is started in its own process
-    logging.basicConfig(level=args.loglevel)
+    rasa.utils.common.set_log_level(args.loglevel)
     io_utils.configure_colored_logging(args.loglevel)
-    logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
     if not credentials_path:
         credentials_path = _prepare_credentials_for_rasa_x(
@@ -81,6 +81,7 @@ def _rasa_service(
         jwt_method=args.jwt_method,
         ssl_certificate=args.ssl_certificate,
         ssl_keyfile=args.ssl_keyfile,
+        ssl_ca_file=args.ssl_ca_file,
         ssl_password=args.ssl_password,
     )
 
@@ -112,7 +113,7 @@ def _overwrite_endpoints_for_local_x(
     import questionary
 
     endpoints.model = EndpointConfig(
-        "{}/projects/default/models/tags/production".format(rasa_x_url),
+        f"{rasa_x_url}/projects/default/models/tags/production",
         token=rasa_x_token,
         wait_time_between_pulls=2,
     )
@@ -152,7 +153,7 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
     credentials_path, endpoints_path = _get_credentials_and_endpoints_paths(args)
     endpoints = AvailableEndpoints.read_endpoints(endpoints_path)
 
-    rasa_x_url = "http://localhost:{}/api".format(args.rasa_x_port)
+    rasa_x_url = f"http://localhost:{args.rasa_x_port}/api"
     _overwrite_endpoints_for_local_x(endpoints, rasa_x_token, rasa_x_url)
 
     vars(args).update(
@@ -323,7 +324,7 @@ async def _pull_runtime_config_from_server(
                             "".format(resp.status, await resp.text())
                         )
         except aiohttp.ClientError as e:
-            logger.debug("Failed to connect to server. Retrying. {}".format(e))
+            logger.debug(f"Failed to connect to server. Retrying. {e}")
 
         await asyncio.sleep(wait_time_between_pulls)
         attempts -= 1
@@ -346,7 +347,7 @@ def run_in_production(args: argparse.Namespace):
 
 
 def _get_credentials_and_endpoints_paths(
-    args: argparse.Namespace
+    args: argparse.Namespace,
 ) -> Tuple[Optional[Text], Optional[Text]]:
     config_endpoint = args.config_endpoint
     if config_endpoint:
@@ -382,7 +383,7 @@ def run_locally(args: argparse.Namespace):
     try:
         local.main(args, project_path, args.data, token=rasa_x_token)
     except Exception:
-        print (traceback.format_exc())
+        print(traceback.format_exc())
         cli_utils.print_error(
             "Sorry, something went wrong (see error above). Make sure to start "
             "Rasa X with valid data and valid domain and config files. Please, "

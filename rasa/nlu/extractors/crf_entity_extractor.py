@@ -88,7 +88,7 @@ class CRFEntityExtractor(EntityExtractor):
         ent_tagger: Optional["CRF"] = None,
     ) -> None:
 
-        super(CRFEntityExtractor, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.ent_tagger = ent_tagger
 
@@ -403,7 +403,7 @@ class CRFEntityExtractor(EntityExtractor):
         model_dir: Text = None,
         model_metadata: Metadata = None,
         cached_component: Optional["CRFEntityExtractor"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "CRFEntityExtractor":
         from sklearn.externals import joblib
 

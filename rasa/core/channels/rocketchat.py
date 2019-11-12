@@ -60,7 +60,7 @@ class RocketChatBot(OutputChannel):
         recipient_id: Text,
         text: Text,
         buttons: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         # implementation is based on
         # https://github.com/RocketChat/Rocket.Chat/pull/11473

@@ -12,7 +12,12 @@ from sanic import Sanic
 import rasa
 import rasa.utils.io
 import rasa.core.utils
-from rasa.constants import DEFAULT_DOMAIN_PATH, LEGACY_DOCS_BASE_URL, ENV_SANIC_BACKLOG
+from rasa.constants import (
+    DEFAULT_DOMAIN_PATH,
+    LEGACY_DOCS_BASE_URL,
+    ENV_SANIC_BACKLOG,
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
+)
 from rasa.core import constants, jobs, training
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -25,7 +30,11 @@ from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import Policy
 from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
+from rasa.core.tracker_store import (
+    InMemoryTrackerStore,
+    TrackerStore,
+    FailSafeTrackerStore,
+)
 from rasa.core.trackers import DialogueStateTracker
 from rasa.exceptions import ModelNotFound
 from rasa.importers.importer import TrainingDataImporter
@@ -67,7 +76,7 @@ def _load_and_set_updated_model(
 ):
     """Load the persisted model into memory and set the model on the agent."""
 
-    logger.debug("Found new model with fingerprint {}. Loading...".format(fingerprint))
+    logger.debug(f"Found new model with fingerprint {fingerprint}. Loading...")
 
     core_path, nlu_path = get_model_subdirectories(model_directory)
 
@@ -115,7 +124,7 @@ async def _update_model_from_server(
         model_directory, new_model_fingerprint = model_directory_and_fingerprint
         _load_and_set_updated_model(agent, model_directory, new_model_fingerprint)
     else:
-        logger.debug("No new model found at URL {}".format(model_server.url))
+        logger.debug(f"No new model found at URL {model_server.url}")
 
 
 async def _pull_model_and_fingerprint(
@@ -129,7 +138,7 @@ async def _pull_model_and_fingerprint(
 
     headers = {"If-None-Match": fingerprint}
 
-    logger.debug("Requesting model from server {}...".format(model_server.url))
+    logger.debug(f"Requesting model from server {model_server.url}...")
 
     async with model_server.session() as session:
         try:
@@ -267,11 +276,11 @@ async def load_agent(
             return None
 
     except Exception as e:
-        logger.error("Could not load model due to {}.".format(e))
+        logger.error(f"Could not load model due to {e}.")
         raise
 
 
-class Agent(object):
+class Agent:
     """The Agent class provides a convenient interface for the most important
      Rasa functionality.
 
@@ -356,7 +365,7 @@ class Agent(object):
             if not model_path:
                 raise ModelNotFound("No path specified.")
             elif not os.path.exists(model_path):
-                raise ModelNotFound("No file or directory at '{}'.".format(model_path))
+                raise ModelNotFound(f"No file or directory at '{model_path}'.")
             elif os.path.isfile(model_path):
                 model_path = get_model(model_path)
         except ModelNotFound:
@@ -444,7 +453,7 @@ class Agent(object):
         self,
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        **kwargs
+        **kwargs,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
 
@@ -482,7 +491,7 @@ class Agent(object):
         self,
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> DialogueStateTracker:
         """Append a message to a dialogue - does not predict actions."""
 
@@ -682,7 +691,7 @@ class Agent(object):
                 "to `agent.train(data)`."
             )
 
-        logger.debug("Agent trainer got kwargs: {}".format(kwargs))
+        logger.debug(f"Agent trainer got kwargs: {kwargs}")
 
         self.policy_ensemble.train(training_trackers, self.domain, **kwargs)
         self._set_fingerprint()
@@ -764,8 +773,8 @@ class Agent(object):
         if not self.is_core_ready():
             raise AgentNotReady("Can't persist without a policy ensemble.")
 
-        if not model_path.endswith("core"):
-            model_path = os.path.join(model_path, "core")
+        if not model_path.endswith(DEFAULT_CORE_SUBDIRECTORY_NAME):
+            model_path = os.path.join(model_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
 
         self._clear_model_directory(model_path)
 
@@ -851,9 +860,11 @@ class Agent(object):
     ) -> TrackerStore:
         if store is not None:
             store.domain = domain
-            return store
+            tracker_store = store
         else:
-            return InMemoryTrackerStore(domain)
+            tracker_store = InMemoryTrackerStore(domain)
+
+        return FailSafeTrackerStore(tracker_store)
 
     @staticmethod
     def _create_lock_store(store: Optional[LockStore]) -> LockStore:
@@ -897,7 +908,7 @@ class Agent(object):
             model_archive = get_latest_model(model_path)
 
         if model_archive is None:
-            logger.warning("Could not load local model in '{}'".format(model_path))
+            logger.warning(f"Could not load local model in '{model_path}'")
             return Agent()
 
         working_directory = tempfile.mkdtemp()

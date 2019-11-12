@@ -132,7 +132,7 @@ class MessengerBot(OutputChannel):
     def __init__(self, messenger_client: MessengerClient) -> None:
 
         self.messenger_client = messenger_client
-        super(MessengerBot, self).__init__()
+        super().__init__()
 
     def send(self, recipient_id: Text, element: Any) -> None:
         """Sends a message to the recipient using the messenger client."""
@@ -162,7 +162,7 @@ class MessengerBot(OutputChannel):
         recipient_id: Text,
         text: Text,
         buttons: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Sends buttons to the output."""
 
@@ -196,7 +196,7 @@ class MessengerBot(OutputChannel):
         recipient_id: Text,
         text: Text,
         quick_replies: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Sends quick replies to the output."""
 
@@ -209,7 +209,8 @@ class MessengerBot(OutputChannel):
         """Sends elements to the output."""
 
         for element in elements:
-            self._add_postback_info(element["buttons"])
+            if "buttons" in element:
+                self._add_postback_info(element["buttons"])
 
         payload = {
             "attachment": {

@@ -6,7 +6,7 @@ from rasa.utils.common import class_from_module_path
 logger = logging.getLogger(__name__)
 
 
-class Slot(object):
+class Slot:
     type_name = None
 
     def __init__(
@@ -53,10 +53,10 @@ class Slot(object):
         self.value = self.initial_value
 
     def __str__(self):
-        return "{}({}: {})".format(self.__class__.__name__, self.name, self.value)
+        return f"{self.__class__.__name__}({self.name}: {self.value})"
 
     def __repr__(self):
-        return "<{}({}: {})>".format(self.__class__.__name__, self.name, self.value)
+        return f"<{self.__class__.__name__}({self.name}: {self.value})>"
 
     @staticmethod
     def resolve_by_type(type_name):
@@ -93,9 +93,7 @@ class FloatSlot(Slot):
         max_value=1.0,
         min_value=0.0,
     ):
-        super(FloatSlot, self).__init__(
-            name, initial_value, value_reset_delay, auto_fill
-        )
+        super().__init__(name, initial_value, value_reset_delay, auto_fill)
         self.max_value = max_value
         self.min_value = min_value
 
@@ -126,7 +124,7 @@ class FloatSlot(Slot):
             return [0.0]
 
     def persistence_info(self):
-        d = super(FloatSlot, self).persistence_info()
+        d = super().persistence_info()
         d["max_value"] = self.max_value
         d["min_value"] = self.min_value
         return d
@@ -191,13 +189,11 @@ class CategoricalSlot(Slot):
         value_reset_delay=None,
         auto_fill=True,
     ):
-        super(CategoricalSlot, self).__init__(
-            name, initial_value, value_reset_delay, auto_fill
-        )
+        super().__init__(name, initial_value, value_reset_delay, auto_fill)
         self.values = [str(v).lower() for v in values] if values else []
 
     def persistence_info(self):
-        d = super(CategoricalSlot, self).persistence_info()
+        d = super().persistence_info()
         d["values"] = self.values
         return d
 
@@ -231,9 +227,7 @@ class CategoricalSlot(Slot):
 
 class DataSlot(Slot):
     def __init__(self, name, initial_value=None, value_reset_delay=1, auto_fill=True):
-        super(DataSlot, self).__init__(
-            name, initial_value, value_reset_delay, auto_fill
-        )
+        super().__init__(name, initial_value, value_reset_delay, auto_fill)
 
     def as_feature(self):
         raise NotImplementedError(

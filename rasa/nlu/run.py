@@ -24,7 +24,7 @@ def run_cmdline(model_path, component_builder=None):
         else:
             result = interpreter.parse(message)
 
-        print (json_to_string(result))
+        print(json_to_string(result))
 
 
 if __name__ == "__main__":

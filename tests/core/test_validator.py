@@ -55,3 +55,62 @@ async def test_fail_on_invalid_utterances(tmpdir):
     importer = RasaFileImporter(domain_path=invalid_domain)
     validator = await Validator.from_importer(importer)
     assert not validator.verify_utterances()
+
+
+async def test_verify_there_is_example_repetition_in_intents():
+    # moodbot nlu data already has duplicated example 'good afternoon'
+    # for intents greet and goodbye
+    importer = RasaFileImporter(
+        domain_path="examples/moodbot/domain.yml",
+        training_data_paths=["examples/moodbot/data/nlu.md"],
+    )
+    validator = await Validator.from_importer(importer)
+    assert not validator.verify_example_repetition_in_intents(False)
+
+
+async def test_verify_logging_message_for_repetition_in_intents(caplog):
+    # moodbot nlu data already has duplicated example 'good afternoon'
+    # for intents greet and goodbye
+    importer = RasaFileImporter(
+        domain_path="examples/moodbot/domain.yml",
+        training_data_paths=["examples/moodbot/data/nlu.md"],
+    )
+    validator = await Validator.from_importer(importer)
+    validator.verify_example_repetition_in_intents(False)
+    log_object = caplog.records[-1]
+    level = log_object.levelname
+    message = log_object.message
+    assert "WARNING" == level
+    assert (
+        "The example 'good afternoon' was found in these "
+        + "multiples intents: goodbye, greet"
+        == message
+    )
+
+
+async def test_early_exit_on_invalid_domain(caplog):
+    domain_path = "data/test_domains/duplicate_intents.yml"
+
+    importer = RasaFileImporter(domain_path=domain_path)
+    validator = await Validator.from_importer(importer)
+    validator.verify_domain_validity()
+
+    log_object = caplog.records[-1]
+    message = log_object.message
+    level = log_object.levelname
+
+    assert "WARNING" == level
+    assert (
+        f"Loading domain from '{domain_path}' failed. Using empty domain. "
+        "Error: 'Intents are not unique! Found two intents with name "
+        "'default'. Either rename or remove one of them.'" == message
+    )
+
+
+async def test_verify_there_is_not_example_repetition_in_intents():
+    importer = RasaFileImporter(
+        domain_path="examples/moodbot/domain.yml",
+        training_data_paths=["examples/knowledgebasebot/data/nlu.md"],
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_example_repetition_in_intents(False)

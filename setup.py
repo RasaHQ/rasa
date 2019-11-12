@@ -7,7 +7,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 # Avoids IDE errors, but actual version is read from version.py
 __version__ = None
 with open("rasa/version.py") as f:
-    exec (f.read())
+    exec(f.read())
 
 # Get the long description from the README file
 with open(os.path.join(here, "README.md"), encoding="utf-8") as f:
@@ -36,7 +36,7 @@ install_requires = [
     "pymongo[tls,srv]~=3.8",
     "numpy~=1.16",
     "scipy~=1.2",
-    "tensorflow~=1.14.0",
+    "tensorflow~=1.15.0",
     # absl is a tensorflow dependency, but produces double logging before 0.8
     # should be removed once tensorflow requires absl > 0.8 on its own
     "absl-py>=0.8.0",
@@ -47,7 +47,7 @@ install_requires = [
     "tensor2tensor~=1.14.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
-    "networkx~=2.3",
+    "networkx~=2.3.0",
     "fbmessenger~=6.0",
     "pykwalify~=1.7.0",
     "coloredlogs~=10.0",
@@ -62,12 +62,12 @@ install_requires = [
     "rocketchat_API~=0.6.0",
     "colorhash~=1.0",
     "pika~=1.0.0",
-    "jsonschema~=2.6",
+    "jsonschema~=3.0",
     "packaging~=19.0",
     "gevent~=1.4",
     "pytz~=2019.1",
     "python-dateutil~=2.8",
-    "rasa-sdk~=1.3.0",
+    "rasa-sdk~=1.4.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
     "sanic~=19.6",
@@ -138,8 +138,8 @@ setup(
     },
 )
 
-print ("\nWelcome to Rasa!")
-print (
+print("\nWelcome to Rasa!")
+print(
     "If you have any questions, please visit our documentation page: https://rasa.com/docs/"
 )
-print ("or join the community discussions on https://forum.rasa.com/")
+print("or join the community discussions on https://forum.rasa.com/")

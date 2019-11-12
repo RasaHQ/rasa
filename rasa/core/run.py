@@ -150,6 +150,7 @@ def serve_application(
     log_file: Optional[Text] = None,
     ssl_certificate: Optional[Text] = None,
     ssl_keyfile: Optional[Text] = None,
+    ssl_ca_file: Optional[Text] = None,
     ssl_password: Optional[Text] = None,
 ):
     from rasa import server
@@ -171,7 +172,9 @@ def serve_application(
         log_file=log_file,
     )
 
-    ssl_context = server.create_ssl_context(ssl_certificate, ssl_keyfile, ssl_password)
+    ssl_context = server.create_ssl_context(
+        ssl_certificate, ssl_keyfile, ssl_ca_file, ssl_password
+    )
     protocol = "https" if ssl_context else "http"
 
     logger.info(
@@ -224,7 +227,7 @@ async def load_agent_on_start(
             _, nlu_model = model.get_model_subdirectories(unpacked_model)
             _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
     except Exception:
-        logger.debug("Could not load interpreter from '{}'.".format(model_path))
+        logger.debug(f"Could not load interpreter from '{model_path}'.")
         _interpreter = None
 
     _broker = broker_utils.from_endpoint_config(endpoints.event_broker)

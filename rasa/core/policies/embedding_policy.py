@@ -1,4 +1,3 @@
-from collections import namedtuple
 import copy
 import json
 import logging
@@ -10,7 +9,6 @@ import numpy as np
 from typing import Any, List, Optional, Text, Dict, Tuple
 
 import rasa.utils.io
-from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
     TrackerFeaturizer,
@@ -129,13 +127,13 @@ class EmbeddingPolicy(Policy):
         all_bot_embed: Optional["tf.Tensor"] = None,
         attention_weights: Optional["tf.Tensor"] = None,
         max_history: Optional[int] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Declare instant variables with default values"""
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
-        super(EmbeddingPolicy, self).__init__(featurizer, priority)
+        super().__init__(featurizer, priority)
 
         self._load_params(**kwargs)
 
@@ -409,7 +407,7 @@ class EmbeddingPolicy(Policy):
         self,
         training_trackers: List["DialogueStateTracker"],
         domain: "Domain",
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
 
@@ -498,7 +496,7 @@ class EmbeddingPolicy(Policy):
         self,
         training_trackers: List["DialogueStateTracker"],
         domain: "Domain",
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Continue training an already trained policy."""
 
@@ -577,7 +575,7 @@ class EmbeddingPolicy(Policy):
         meta = {"priority": self.priority}
 
         meta_file = os.path.join(path, "embedding_policy.json")
-        utils.dump_obj_as_json_to_file(meta_file, meta)
+        rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
         file_name = "tensorflow_embedding.ckpt"
         checkpoint = os.path.join(path, file_name)

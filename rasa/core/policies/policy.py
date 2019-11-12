@@ -17,7 +17,7 @@ from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 logger = logging.getLogger(__name__)
 
 
-class Policy(object):
+class Policy:
     SUPPORTS_ONLINE_TRAINING = False
 
     @staticmethod
@@ -52,16 +52,14 @@ class Policy(object):
         ignored_params = {
             key: kwargs.get(key) for key in kwargs.keys() if not params.get(key)
         }
-        logger.debug(
-            "Parameters ignored by `model.fit(...)`: {}".format(ignored_params)
-        )
+        logger.debug(f"Parameters ignored by `model.fit(...)`: {ignored_params}")
         return params
 
     def featurize_for_training(
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> DialogueTrainingData:
         """Transform training trackers into a vector representation.
         The trackers, consisting of multiple turns, will be transformed
@@ -83,7 +81,7 @@ class Policy(object):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers."""
 
@@ -116,7 +114,7 @@ class Policy(object):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Continues training an already trained policy.
 

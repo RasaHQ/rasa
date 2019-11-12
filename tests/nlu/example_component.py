@@ -35,7 +35,7 @@ class MyComponent(Component):
     language_list = None
 
     def __init__(self, component_config=None):
-        super(MyComponent, self).__init__(component_config)
+        super().__init__(component_config)
 
     def train(self, training_data, cfg, **kwargs):
         """Train this component.
@@ -75,7 +75,7 @@ class MyComponent(Component):
         model_dir: Optional[Text] = None,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional["Component"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "Component":
         """Load this component from file."""
 

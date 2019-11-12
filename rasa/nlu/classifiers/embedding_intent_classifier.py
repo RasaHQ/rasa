@@ -124,7 +124,7 @@ class EmbeddingIntentClassifier(Component):
     ) -> None:
         """Declare instant variables with default values"""
 
-        super(EmbeddingIntentClassifier, self).__init__(component_config)
+        super().__init__(component_config)
 
         self._load_params()
 
@@ -241,9 +241,9 @@ class EmbeddingIntentClassifier(Component):
     ) -> Dict[Text, int]:
         """Create label_id dictionary"""
 
-        distinct_label_ids = set(
-            [example.get(attribute) for example in training_data.intent_examples]
-        ) - {None}
+        distinct_label_ids = {
+            example.get(attribute) for example in training_data.intent_examples
+        } - {None}
         return {
             label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
         }
@@ -506,7 +506,7 @@ class EmbeddingIntentClassifier(Component):
         self,
         training_data: "TrainingData",
         cfg: Optional["RasaNLUModelConfig"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Train the embedding label classifier on a data set."""
 
@@ -691,7 +691,7 @@ class EmbeddingIntentClassifier(Component):
         model_dir: Text = None,
         model_metadata: "Metadata" = None,
         cached_component: Optional["EmbeddingIntentClassifier"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "EmbeddingIntentClassifier":
 
         if model_dir and meta.get("file"):
@@ -703,8 +703,8 @@ class EmbeddingIntentClassifier(Component):
 
             graph = tf.Graph()
             with graph.as_default():
-                session = tf.Session(config=_tf_config)
-                saver = tf.train.import_meta_graph(checkpoint + ".meta")
+                session = tf.compat.v1.Session(config=_tf_config)
+                saver = tf.compat.v1.train.import_meta_graph(checkpoint + ".meta")
 
                 saver.restore(session, checkpoint)
 

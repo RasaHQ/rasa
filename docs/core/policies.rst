@@ -417,6 +417,24 @@ training data. It predicts the next action with confidence ``1.0``
 if this exact conversation exists in the training data, otherwise it
 predicts ``None`` with confidence ``0.0``.
 
+Augmented Memoization Policy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``AugmentedMemoizationPolicy`` remembers examples from training
+stories for up to ``max_history`` turns, just like the ``MemoizationPolicy``.
+Additionally, it has a forgetting mechanism that will forget a certain amount
+of steps in the conversation history and try to find a match in your stories
+with the reduced history. It predicts the next action with confidence ``1.0``
+if a match is found, otherwise it predicts ``None`` with confidence ``0.0``.
+
+.. note::
+
+  If you have dialogues where some slots that are set during
+  prediction time might not be set in training stories (e.g. in training
+  stories starting with a reminder not all previous slots are set),
+  make sure to add the relevant stories without slots to your training
+  data as well.
+
 .. _fallback-policy:
 
 Fallback Policy
@@ -424,9 +442,10 @@ Fallback Policy
 
 The ``FallbackPolicy`` invokes a :ref:`fallback action
 <fallback-actions>` if at least one of the following occurs:
+
 1. The intent recognition has a confidence below ``nlu_threshold``.
-2. The highest ranked intent differs in confidence with the second highest ranked intent
-by less than ``ambiguity_threshold``.
+2. The highest ranked intent differs in confidence with the second highest 
+   ranked intent by less than ``ambiguity_threshold``.
 3. None of the dialogue policies predict an action with confidence higher than ``core_threshold``.
 
 **Configuration:**
@@ -533,7 +552,7 @@ by trying to disambiguate the user input.
     | ``ambiguity_threshold``       | Min amount by which the confidence of the|
     |                               | top intent must exceed that of the second|
     |                               | highest ranked intent.                   |
-    +--------------------------------------------------------------------------+
+    +-------------------------------+------------------------------------------+
     | ``core_threshold``            | Min confidence needed to accept an action|
     |                               | prediction from Rasa Core                |
     +-------------------------------+------------------------------------------+

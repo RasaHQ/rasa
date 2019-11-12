@@ -23,7 +23,7 @@ class MitieEntityExtractor(EntityExtractor):
     def __init__(self, component_config: Dict[Text, Any] = None, ner=None):
         """Construct a new intent classifier using the sklearn framework."""
 
-        super(MitieEntityExtractor, self).__init__(component_config)
+        super().__init__(component_config)
         self.ner = ner
 
     @classmethod
@@ -134,7 +134,7 @@ class MitieEntityExtractor(EntityExtractor):
         model_dir: Text = None,
         model_metadata: Metadata = None,
         cached_component: Optional["MitieEntityExtractor"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "MitieEntityExtractor":
         import mitie
 
