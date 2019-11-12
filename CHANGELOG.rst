@@ -33,7 +33,8 @@ Fixed
 - Fixed server hanging forever on leaving ``rasa shell`` before first message
 - Fixed rasa init showing traceback error when user does Keyboard Interrupt before choosing a project path
 - ``CountVectorsFeaturizer`` featurizes intents only if its analyzer is set to ``word``
-- fixed bug where facebooks generic template was not rendered when buttons were None 
+- fixed bug where facebooks generic template was not rendered when buttons were None
+- Training Luis data with ``luis_schema_version`` higher than 4.x.x will show a warning instead of throwing an exception
 
 
 [1.4.3] - 2019-10-29
