@@ -78,6 +78,8 @@ class EmbeddingIntentClassifier(Component):
         # set random seed to any int to get reproducible results
         "random_seed": None,
         # embedding parameters
+        # default dense dimension used if no dense features are present
+        "dense_dim": 512,
         # dimension size of embedding vectors
         "embed_dim": 20,
         # the type of the similarity
@@ -131,7 +133,6 @@ class EmbeddingIntentClassifier(Component):
 
         self._load_params()
 
-        self.dense_dim = 512  # TODO make configurable /extract form dense features
         # transform numbers to labels
         self.inverted_label_dict = inverted_label_dict
         # encode all label_ids with numbers
@@ -198,6 +199,7 @@ class EmbeddingIntentClassifier(Component):
     def _load_embedding_params(self, config: Dict[Text, Any]) -> None:
         self.embed_dim = config["embed_dim"]
         self.num_neg = config["num_neg"]
+        self.dense_dim = config["dense_dim"]
 
         self.similarity_type = config["similarity_type"]
         self.loss_type = config["loss_type"]
@@ -469,10 +471,14 @@ class EmbeddingIntentClassifier(Component):
         batch_data = train_utils.batch_to_session_data(self.batch_in, session_data)
         label_data = train_utils.batch_to_session_data(label_batch, self._label_data)
 
-        a = self.combine_sparse_dense_features(batch_data["text_features"], "text")
-        b = self.combine_sparse_dense_features(batch_data["intent_features"], "intent")
+        a = self.combine_sparse_dense_features(
+            batch_data["text_features"], session_data["text_features"], "text"
+        )
+        b = self.combine_sparse_dense_features(
+            batch_data["intent_features"], session_data["intent_features"], "intent"
+        )
         all_bs = self.combine_sparse_dense_features(
-            label_data["intent_features"], "intent"
+            label_data["intent_features"], self._label_data["intent_features"], "intent"
         )
 
         message_embed = self._create_tf_embed_fnn(
@@ -511,17 +517,25 @@ class EmbeddingIntentClassifier(Component):
         )
 
     def combine_sparse_dense_features(
-        self, features: List[Union[tf.Tensor, tf.SparseTensor]], name: Text
+        self,
+        features: List[Union[tf.Tensor, tf.SparseTensor]],
+        session_data: List[np.ndarray],
+        name: Text,
     ) -> tf.Tensor:
 
         dense_features = []
 
+        dense_dim = self.dense_dim
+        # if dense features are present use the feature dimension of the dense features
+        for d in session_data:
+            if not isinstance(d[0], scipy.sparse.spmatrix):
+                dense_dim = d[0].shape[-1]
+                break
+
         for f in features:
             if isinstance(f, tf.SparseTensor):
                 dense_features.append(
-                    train_utils.tf_dense_layer_for_sparse(
-                        f, self.dense_dim, name, self.C2
-                    )
+                    train_utils.tf_dense_layer_for_sparse(f, dense_dim, name, self.C2)
                 )
             else:
                 dense_features.append(f)
@@ -543,8 +557,12 @@ class EmbeddingIntentClassifier(Component):
 
         batch_data = train_utils.batch_to_session_data(self.batch_in, session_data)
 
-        a = self.combine_sparse_dense_features(batch_data["text_features"], "text")
-        b = self.combine_sparse_dense_features(batch_data["intent_features"], "intent")
+        a = self.combine_sparse_dense_features(
+            batch_data["text_features"], session_data["text_features"], "text"
+        )
+        b = self.combine_sparse_dense_features(
+            batch_data["intent_features"], session_data["intent_features"], "intent"
+        )
 
         # TODO check this idea:
         # self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
