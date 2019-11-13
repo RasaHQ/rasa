@@ -27,6 +27,7 @@ def add_subparser(
     _add_data_convert_parsers(data_subparsers, parents)
     _add_data_split_parsers(data_subparsers, parents)
     _add_data_validate_parsers(data_subparsers, parents)
+    _add_data_clean_parsers(data_subparsers, parents)
 
 
 def _add_data_convert_parsers(
@@ -86,8 +87,6 @@ def _add_data_validate_parsers(
         parents=parents,
         help="Validates domain and data files to check for possible mistakes.",
     )
-    validate_parser.add_argument("--stories", action="store_true", default=False,
-                                 help="Also validate that stories are consistent.")
     validate_parser.add_argument("--max-history", type=int, default=5,
                                  help="Assume this max_history setting for story structure validation.")
     validate_parser.set_defaults(func=validate_files)
@@ -105,14 +104,19 @@ def _add_data_validate_parsers(
     story_structure_parser.set_defaults(func=validate_stories)
     arguments.set_validator_arguments(story_structure_parser)
 
-    split_parser = data_subparsers.add_parser(
+
+def _add_data_clean_parsers(
+    data_subparsers, parents: List[argparse.ArgumentParser]
+):
+
+    clean_parser = data_subparsers.add_parser(
         "clean",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
         help="[Experimental] Ensures that story names are unique.",
     )
-    split_parser.set_defaults(func=deduplicate_story_names)
-    arguments.set_validator_arguments(split_parser)
+    clean_parser.set_defaults(func=deduplicate_story_names)
+    arguments.set_validator_arguments(clean_parser)
 
 
 def split_nlu_data(args):
@@ -149,9 +153,10 @@ def validate_files(args):
         sys.exit(1)
 
     everything_is_alright = validator.verify_all(not args.fail_on_warnings)
-    if args.stories:
-        everything_is_alright = everything_is_alright and \
-                                validator.verify_story_structure(not args.fail_on_warnings,
+    if everything_is_alright:
+        # Only run story structure validation if everything else is fine
+        # since this might take a while
+        everything_is_alright = validator.verify_story_structure(not args.fail_on_warnings,
                                                                  max_history=args.max_history)
     sys.exit(0) if everything_is_alright else sys.exit(1)
 
