@@ -197,8 +197,9 @@ class MarkdownReader(TrainingDataReader):
 
 
 class MarkdownWriter(TrainingDataWriter):
-    def dumps(self, training_data):
+    def dumps(self, training_data: TrainingData) -> Text:
         """Transforms a TrainingData object into a markdown string."""
+
         md = ""
         md += self._generate_training_examples_md(training_data)
         md += self._generate_synonyms_md(training_data)
@@ -207,8 +208,9 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_training_examples_md(self, training_data):
-        """generates markdown training examples."""
+    def _generate_training_examples_md(self, training_data: TrainingData) -> Text:
+        """Generates markdown training examples."""
+
         training_examples = sorted(
             [e.as_dict_nlu() for e in training_data.training_examples],
             key=lambda k: k[MESSAGE_INTENT_ATTRIBUTE],
@@ -228,8 +230,9 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_synonyms_md(self, training_data):
-        """generates markdown for entity synomyms."""
+    def _generate_synonyms_md(self, training_data: TrainingData) -> Text:
+        """Generates markdown for entity synomyms."""
+
         entity_synonyms = sorted(
             training_data.entity_synonyms.items(), key=lambda x: x[1]
         )
@@ -242,8 +245,9 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_regex_features_md(self, training_data):
-        """generates markdown for regex features."""
+    def _generate_regex_features_md(self, training_data: TrainingData) -> Text:
+        """Generates markdown for regex features."""
+
         md = ""
         # regex features are already sorted
         regex_features = training_data.regex_features
@@ -255,8 +259,9 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_lookup_tables_md(self, training_data):
-        """generates markdown for regex features."""
+    def _generate_lookup_tables_md(self, training_data: TrainingData) -> Text:
+        """Generates markdown for regex features."""
+
         md = ""
         # regex features are already sorted
         lookup_tables = training_data.lookup_tables
@@ -272,9 +277,13 @@ class MarkdownWriter(TrainingDataWriter):
 
     @staticmethod
     def _generate_section_header_md(
-        section_type, title, subtitle=None, prepend_newline=True
-    ):
-        """generates markdown section header."""
+        section_type: Text,
+        title: Text,
+        subtitle: Optional[Text] = None,
+        prepend_newline: bool = True,
+    ) -> Text:
+        """Generates markdown section header."""
+
         prefix = "\n" if prepend_newline else ""
         subtitle_suffix = (
             f"{RESPONSE_IDENTIFIER_DELIMITER}{subtitle}" if subtitle else ""
@@ -284,17 +293,20 @@ class MarkdownWriter(TrainingDataWriter):
         )
 
     @staticmethod
-    def _generate_item_md(text):
-        """generates markdown for a list item."""
+    def _generate_item_md(text: Text) -> Text:
+        """Generates markdown for a list item."""
+
         return "- {}\n".format(encode_string(text))
 
     @staticmethod
-    def _generate_fname_md(text):
-        """generates markdown for a lookup table file path."""
+    def _generate_fname_md(text: Text) -> Text:
+        """Generates markdown for a lookup table file path."""
+
         return "  {}\n".format(encode_string(text))
 
-    def _generate_message_md(self, message):
-        """generates markdown for a message object."""
+    def _generate_message_md(self, message: Message) -> Text:
+        """Generates markdown for a message object."""
+
         md = ""
         text = message.get("text", "")
         entities = sorted(message.get("entities", []), key=lambda k: k["start"])
@@ -310,8 +322,9 @@ class MarkdownWriter(TrainingDataWriter):
         return md
 
     @staticmethod
-    def _generate_entity_md(text, entity):
-        """generates markdown for an entity object."""
+    def _generate_entity_md(text: Text, entity: Dict) -> Text:
+        """Generates markdown for an entity object."""
+
         entity_text = text[entity["start"] : entity["end"]]
         entity_type = entity["entity"]
         if entity_text != entity["value"]:
