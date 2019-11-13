@@ -494,12 +494,12 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 label_ids.append(label_id_dict[e.get(attribute)])
 
             _tags = []
-            for t in e.get("tokens"):
+            for t in e.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]):
                 _tag = determine_token_labels(
                     t, e.get(MESSAGE_ENTITIES_ATTRIBUTE), None
                 )
                 _tags.append(tag_id_dict[_tag])
-            tag_ids.append(scipy.sparse.coo_matrix(np.array([_tags]).T))
+            tag_ids.append(scipy.sparse.csr_matrix(np.array([_tags]).T))
 
         X_sparse = np.array(X_sparse)
         X_dense = np.array(X_dense)
@@ -584,19 +584,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
         batch_data, _ = train_utils.batch_to_session_data(self.batch_in, session_data)
         label_data, _ = train_utils.batch_to_session_data(label_batch, self._label_data)
 
-        a = self.combine_sparse_dense_features(
-            batch_data["text_features"], batch_data["text_mask"][0], "text"
-        )
-        b = self.combine_sparse_dense_features(
-            batch_data["intent_features"], batch_data["intent_mask"][0], "intent"
-        )
-        c = self.combine_sparse_dense_features(
-            batch_data["tag_ids"], session_data["tag_ids"], "tag"
-        )
+        a = self.combine_sparse_dense_features(batch_data["text_features"], "text")
+        b = self.combine_sparse_dense_features(batch_data["intent_features"], "intent")
+        c = self.combine_sparse_dense_features(batch_data["tag_ids"], "tag")
         all_bs = self.combine_sparse_dense_features(
-            label_data["intent_features"], label_data["intent_mask"][0], "intent"
+            label_data["intent_features"], "intent"
         )
-        mask = tf.Tensor()  # TODO
+        mask = batch_data["text_mask"][0]
 
         # transformer
         a = self._create_tf_sequence(a, mask)
@@ -731,10 +725,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         return a
 
     def combine_sparse_dense_features(
-        self,
-        features: List[Union[tf.Tensor, tf.SparseTensor]],
-        mask: tf.Tensor,
-        name: Text,
+        self, features: List[Union[tf.Tensor, tf.SparseTensor]], name: Text
     ) -> tf.Tensor:
 
         dense_features = []
@@ -756,11 +747,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         output = tf.concat(dense_features, axis=-1)
         # apply mean to convert sequence to sentence features
-        output = tf.reduce_sum(output, axis=1) / tf.reduce_sum(mask, axis=1)
+        # output = tf.reduce_sum(output, axis=1) / tf.reduce_sum(mask, axis=1)
+
         return output
 
     def _build_tf_pred_graph(self, session_data: "SessionData") -> "tf.Tensor":
-
         shapes, types = train_utils.get_shapes_types(session_data)
 
         batch_placeholder = []
@@ -773,39 +764,38 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.batch_in, session_data
         )
 
-        a = self.combine_sparse_dense_features(
-            batch_data["text_features"], batch_data["text_mask"][0], "text"
-        )
-        b = self.combine_sparse_dense_features(
-            batch_data["intent_features"], batch_data["intent_mask"][0], "intent"
-        )
+        a = self.combine_sparse_dense_features(batch_data["text_features"], "text")
+        b = self.combine_sparse_dense_features(batch_data["intent_features"], "intent")
+        c = self.combine_sparse_dense_features(batch_data["tag_ids"], "tag")
 
         self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
 
+        if self.intent_classification:
+            return self._pred_intent_graph(a, b)
+        if self.named_entity_recognition:
+            return self._pred_entity_graph(a, c)
+
+    def _pred_intent_graph(self, a, b):
         message_embed = self._create_tf_embed_fnn(
             a,
             self.hidden_layer_sizes["text"],
             fnn_name="text_intent" if self.share_hidden_layers else "text",
             embed_name="text",
         )
-
         self.sim_all = train_utils.tf_raw_sim(
             message_embed[:, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, :, :],
             None,
         )
-
         self.label_embed = self._create_tf_embed_fnn(
             b,
             self.hidden_layer_sizes["intent"],
             fnn_name="text_intent" if self.share_hidden_layers else "intent",
             embed_name="intent",
         )
-
         self.sim = train_utils.tf_raw_sim(
             message_embed[:, tf.newaxis, :], self.label_embed, None
         )
-
         return train_utils.confidence_from_sim(self.sim_all, self.similarity_type)
 
     @staticmethod
