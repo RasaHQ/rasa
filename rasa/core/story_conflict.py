@@ -53,6 +53,17 @@ class StoryConflict:
     def conflicting_actions_with_counts(self):
         return [f"{a} [{len(s)}x]" for (a, s) in self._conflicting_actions.items()]
 
+    @property
+    def incorrect_stories(self):
+        if self.correct_response:
+            incorrect_stories = []
+            for stories in [s for (a, s) in self._conflicting_actions.items() if a != self.correct_response]:
+                for story in stories:
+                    incorrect_stories.append(story)
+            return incorrect_stories
+        else:
+            return []
+
     def story_prior_to_conflict(self):
         result = ""
         for state in self.sliced_states:

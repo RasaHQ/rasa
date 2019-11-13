@@ -287,7 +287,10 @@ class Validator:
                     if correct_response != keep:
                         # Remove the story count ending, e.g. " [42x]"
                         conflict.correct_response = correct_response.rsplit(" ", 1)[0]
-                    print(conflict.correct_response)
+
+        for conflict in list(conflicts.values()):
+            if conflict.correct_response:
+                print(f"Fixing {conflict.incorrect_stories} with {conflict.correct_response}...")
 
         return len(conflicts) > 0
 
