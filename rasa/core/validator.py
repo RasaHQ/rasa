@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 from typing import Set, Text
+import questionary
 from rasa.core.domain import Domain, PREV_PREFIX
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.training.generator import TrainingDataGenerator
@@ -290,7 +291,12 @@ class Validator:
 
                 # Fix the conflict if required
                 if prompt:
-                    raise NotImplementedError
+                    print(conflict.story_prior_to_conflict())
+                    correct_action = questionary.select(
+                        message="How should your bot respond at this point?",
+                        choices=conflict.conflicting_actions
+                    ).ask()
+                    print(correct_action)
 
         return len(conflicts) > 0
 
