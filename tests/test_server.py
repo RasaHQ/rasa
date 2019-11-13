@@ -168,7 +168,7 @@ def train(results):
             except:
                 pass
 
-        print("is_ready")
+        results["server_ready"] = True
 
         train_resp = requests.post("http://localhost:5005/model/train", json=payload)
         # client1 = SanicTestClient(rasa_server, port=PORT + 1)
@@ -213,6 +213,49 @@ def test_train_status():
     assert status_resp.status_code == 200
     assert status_resp.json()["num_active_training_jobs"] == 0
 
+    p0.kill()
+
+
+def test_training_non_blocking():
+    import requests
+
+    # Run training process in the background
+    manager = Manager()
+    results = manager.dict()
+
+    import multiprocessing
+
+    ctx = multiprocessing.get_context("spawn")
+    p0 = ctx.Process(target=run_server)
+    p0.start()
+    p1 = ctx.Process(target=train, args=(results,))
+    p1.start()
+
+    while results.get("server_ready") is None:
+        time.sleep(0.5)
+
+    training_started = False
+    while results.get("train_response_code") is None:
+        time.sleep(0.5)
+        # hit status endpoint continually while training
+        status_resp = requests.get("http://localhost:5005/status", timeout=0.5)
+        print(status_resp.json())
+        assert status_resp.status_code == 200
+
+        if not training_started:
+            training_started = status_resp.json()["num_active_training_jobs"] == 1
+            continue
+
+        if results.get("train_response_code") is None:
+            assert status_resp.json()["num_active_training_jobs"] == 1
+
+    assert results.get("train_response_code") == 200
+
+    status_resp = requests.get("http://localhost:5005/status")
+    assert status_resp.status_code == 200
+    assert status_resp.json()["num_active_training_jobs"] == 0
+
+    p1.kill()
     p0.kill()
 
 
