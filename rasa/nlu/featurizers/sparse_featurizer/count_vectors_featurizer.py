@@ -180,7 +180,7 @@ class CountVectorsFeaturizer(Featurizer):
                 )
 
     @staticmethod
-    def _attributes(analyzer):
+    def _attributes_for(analyzer):
         """Create a list of attributes that should be featurized."""
 
         # intents should be featurized only by word level count vectorizer
@@ -207,7 +207,7 @@ class CountVectorsFeaturizer(Featurizer):
         self._check_analyzer()
 
         # set which attributes to featurize
-        self._attributes = self._attributes(self.analyzer)
+        self._attributes = self._attributes_for(self.analyzer)
 
         # declare class instance for CountVectorizer
         self.vectorizers = vectorizers
@@ -237,6 +237,7 @@ class CountVectorsFeaturizer(Featurizer):
         # convert to lowercase if necessary
         if self.lowercase:
             tokens = [text.lower() for text in tokens]
+
         return tokens
 
     def _replace_with_oov_token(
@@ -245,9 +246,10 @@ class CountVectorsFeaturizer(Featurizer):
         """Replace OOV words with OOV token"""
 
         if self.OOV_token and self.analyzer == "word":
-            if self._check_attribute_vocabulary(
+            vocabulary_exists = self._check_attribute_vocabulary(attribute)
+            if vocabulary_exists and self.OOV_token in self._get_attribute_vocabulary(
                 attribute
-            ) and self.OOV_token in self._get_attribute_vocabulary(attribute):
+            ):
                 # CountVectorizer is trained, process for prediction
                 tokens = [
                     t
@@ -272,9 +274,7 @@ class CountVectorsFeaturizer(Featurizer):
             return [""]
 
         tokens = self._get_message_tokens_by_attribute(message, attribute)
-
         tokens = self._process_tokens(tokens, attribute)
-
         tokens = self._replace_with_oov_token(tokens, attribute)
 
         return tokens
@@ -291,10 +291,9 @@ class CountVectorsFeaturizer(Featurizer):
                         return
 
             logger.warning(
-                "OOV_token='{}' was given, but it is not present "
-                "in the training data. All unseen words "
-                "will be ignored during prediction."
-                "".format(self.OOV_token)
+                f"OOV_token='{self.OOV_token}' was given, but it is not present "
+                f"in the training data. All unseen words will be ignored during "
+                f"prediction."
             )
 
     def _get_all_attributes_processed_tokens(
@@ -312,6 +311,7 @@ class CountVectorsFeaturizer(Featurizer):
                 # check for oov tokens only in text based attributes
                 self._check_OOV_present(all_tokens)
             processed_attribute_tokens[attribute] = all_tokens
+
         return processed_attribute_tokens
 
     @staticmethod
@@ -319,6 +319,7 @@ class CountVectorsFeaturizer(Featurizer):
         attribute_tokens: Dict[Text, List[List[Text]]]
     ) -> Dict[Text, List[Text]]:
         attribute_texts = {}
+
         for attribute in attribute_tokens.keys():
             attribute_texts[attribute] = [
                 " ".join(tokens) for tokens in attribute_tokens[attribute]
@@ -353,7 +354,7 @@ class CountVectorsFeaturizer(Featurizer):
             )
 
     @staticmethod
-    def _attribute_texts_is_non_empty(attribute_texts):
+    def _attribute_texts_is_non_empty(attribute_texts: List[Text]) -> bool:
         return any(attribute_texts)
 
     def _train_with_independent_vocab(self, attribute_texts: Dict[Text, List[Text]]):
@@ -377,14 +378,14 @@ class CountVectorsFeaturizer(Featurizer):
                     self.vectorizers[attribute].fit(attribute_texts[attribute])
                 except ValueError:
                     logger.warning(
-                        "Unable to train CountVectorizer for message attribute {}. "
-                        "Leaving an untrained CountVectorizer for it".format(attribute)
+                        f"Unable to train CountVectorizer for message "
+                        f"attribute {attribute}. Leaving an untrained "
+                        f"CountVectorizer for it."
                     )
             else:
                 logger.debug(
-                    "No text provided for {} attribute in any messages of "
-                    "training data. Skipping training a CountVectorizer "
-                    "for it.".format(attribute)
+                    f"No text provided for {attribute} attribute in any messages of "
+                    f"training data. Skipping training a CountVectorizer for it."
                 )
 
     def _create_sequence(
@@ -565,7 +566,7 @@ class CountVectorsFeaturizer(Featurizer):
 
         attribute_vectorizers = {}
 
-        for attribute in cls._attributes(analyzer):
+        for attribute in cls._attributes_for(analyzer):
             attribute_vectorizers[attribute] = shared_vectorizer
 
         return attribute_vectorizers
@@ -588,7 +589,7 @@ class CountVectorsFeaturizer(Featurizer):
 
         attribute_vectorizers = {}
 
-        for attribute in cls._attributes(analyzer):
+        for attribute in cls._attributes_for(analyzer):
 
             attribute_vocabulary = vocabulary[attribute] if vocabulary else None
 

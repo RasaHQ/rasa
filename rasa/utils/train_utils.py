@@ -588,9 +588,8 @@ def tf_normalize_if_cosine(x: "tf.Tensor", similarity_type: Text) -> "tf.Tensor"
         return x
     else:
         raise ValueError(
-            "Wrong similarity type '{}', "
-            "should be 'cosine' or 'inner'"
-            "".format(similarity_type)
+            f"Wrong similarity type '{similarity_type}', "
+            f"should be 'cosine' or 'inner'"
         )
 
 
@@ -1004,9 +1003,7 @@ def choose_loss(
         )
     else:
         raise ValueError(
-            "Wrong loss type '{}', "
-            "should be 'margin' or 'softmax'"
-            "".format(loss_type)
+            f"Wrong loss type '{loss_type}', " f"should be 'margin' or 'softmax'"
         )
 
 
@@ -1145,8 +1142,8 @@ def train_tf_dataset(
 
     if evaluate_on_num_examples:
         logger.info(
-            "Validation accuracy is calculated every {} epochs"
-            "".format(evaluate_every_num_epochs)
+            f"Validation accuracy is calculated every {evaluate_every_num_epochs} "
+            f"epochs."
         )
     pbar = tqdm(range(epochs), desc="Epochs", disable=is_logging_disabled())
 
@@ -1199,14 +1196,12 @@ def train_tf_dataset(
         pbar.set_postfix(postfix_dict)
 
     final_message = (
-        "Finished training embedding policy, "
-        "train loss={:.3f}, train accuracy={:.3f}"
-        "".format(train_loss, train_acc)
+        f"Finished training embedding policy, "
+        f"train loss={train_loss:.3f}, train accuracy={train_acc:.3f}"
     )
     if eval_init_op is not None:
         final_message += (
-            ", validation loss={:.3f}, validation accuracy={:.3f}"
-            "".format(val_loss, val_acc)
+            f", validation loss={val_loss:.3f}, validation accuracy={val_acc:.3f}"
         )
     logger.info(final_message)
 
