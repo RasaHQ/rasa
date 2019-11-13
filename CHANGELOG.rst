@@ -7,8 +7,23 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.4.4]
+[Unreleased 1.4.5]
 ^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+
+[1.4.4] - 2019-11-13
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -21,10 +36,7 @@ Changed
 - Updated Mattermost connector documentation to be more clear.
 - Updated format strings to f-strings where appropriate.
 - Updated tensorflow requirement to ``1.15.0``
-- Dump domain using UTF-8 (to avoid \UXXXX sequences in the dumped files)
-
-Removed
--------
+- Dump domain using UTF-8 (to avoid ``\UXXXX`` sequences in the dumped files)
 
 Fixed
 -----
