@@ -191,6 +191,8 @@ def deduplicate_story_names(args):
     """Changes story names so as to make them unique.
        --EXPERIMENTAL-- """
 
+    # ToDo: Make this work with multiple story files
+
     from rasa.importers.rasa import RasaFileImporter
 
     loop = asyncio.get_event_loop()
@@ -198,11 +200,16 @@ def deduplicate_story_names(args):
         domain_path=args.domain, training_data_paths=args.data
     )
 
+    import shutil
+
     story_file_names, _ = data.get_core_nlu_files(args.data)
     names = set()
     for file_name in story_file_names:
-        if file_name.endswith(".new"):
+        if file_name.endswith(".bak"):
             continue
+
+        shutil.copy2(file_name, file_name + ".bak")
+
         with open(file_name, "r") as in_file, \
                 open(file_name + ".new", "w+") as out_file:
             for line in in_file:
@@ -220,6 +227,8 @@ def deduplicate_story_names(args):
                     out_file.write(f"## {new_name}\n")
                 else:
                     out_file.write(line + "\n")
+
+        shutil.move(file_name + ".new", file_name)
 
     # story_files, _ = data.get_core_nlu_files(args.data)
     # story_steps = loop.run_until_complete(file_importer.get_story_steps())
