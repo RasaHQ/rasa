@@ -717,9 +717,15 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.unidirectional_encoder,
         )
 
+        a_in = tf.cast(a_in, tf.float32)
+        mask = tf.cast(mask, tf.float32)
+
         a = train_utils.create_t2t_transformer_encoder(
             a_in, mask, self.attention_weights, hparams, self.C2, self._is_training
         )
+
+        a = tf.cast(a, tf.float64)
+        mask = tf.cast(mask, tf.float64)
 
         return a
 

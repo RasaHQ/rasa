@@ -640,14 +640,20 @@ def create_t2t_transformer_encoder(
         if hparams.multiply_embedding_mode == "sqrt_depth":
             x *= hparams.hidden_size ** 0.5
 
-        x *= tf.expand_dims(mask, -1)
+        if len(mask.shape) == 2:
+            x *= tf.expand_dims(mask, -1)
+        else:
+            x *= mask
         (
             x,
             self_attention_bias,
             encoder_decoder_attention_bias,
         ) = transformer_prepare_encoder(x, None, hparams)
 
-        x *= tf.expand_dims(mask, -1)
+        if len(mask.shape) == 2:
+            x *= tf.expand_dims(mask, -1)
+        else:
+            x *= mask
 
         x = tf.nn.dropout(
             x, tf.cast(1.0 - hparams.layer_prepostprocess_dropout, x.dtype)
@@ -667,7 +673,10 @@ def create_t2t_transformer_encoder(
             attn_bias_for_padding=attn_bias_for_padding,
         )
 
-        x *= tf.expand_dims(mask, -1)
+        if len(mask.shape) == 2:
+            x *= tf.expand_dims(mask, -1)
+        else:
+            x *= mask
 
         return tf.nn.dropout(
             tf.nn.relu(x), tf.cast(1.0 - hparams.layer_prepostprocess_dropout, x.dtype)
