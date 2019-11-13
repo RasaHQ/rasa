@@ -290,11 +290,22 @@ class MessageProcessor:
         if slot_values.strip():
             logger.debug(f"Current slot values: \n{slot_values}")
 
+    def _get_keywordlist():
+        keywordlist = [ "restart", "back", "stop", "start", "action" ]
+        return keywordlist
+    
     def _log_unseen_intent(self, parse_data: Dict[Text, Any]) -> None:
-        """check if the NLU picks up intent that aren't in the domain.
+        """check if the NLU picks up intent that aren't in the domain and intent shouldn't be the valid default intents or self domain intents in the domain.
         """
         intent = parse_data["intent"]["name"]
-        if intent and self.domain and intent not in self.domain.intents:
+        
+        if intent in self._get_keywordlist() or intent in self.domain.intents:
+            logger.error(
+                "Interpreter parsed an intent '{}' "
+                "that is should not defined in the domain.".format(intent)
+            )
+
+        elif intent and self.domain and intent not in self.domain.intents:
             logger.warning(
                 "Interpreter parsed an intent '{}' "
                 "that is not defined in the domain.".format(intent)
@@ -314,6 +325,7 @@ class MessageProcessor:
 
     def _get_action(self, action_name):
         return self.domain.action_for_name(action_name, self.action_endpoint)
+    
 
     async def _parse_message(self, message, tracker: DialogueStateTracker = None):
         # for testing - you can short-cut the NLU part with a message
