@@ -1225,7 +1225,11 @@ def extract_attention(attention_weights) -> Optional["tf.Tensor"]:
         return tf.concat(attention, 0)
 
 
-def persist_tensor(name: Text, tensor: Union["tf.Tensor", Tuple["tf.Tensor"], List["tf.Tensor"]], graph: "tf.Graph") -> None:
+def persist_tensor(
+    name: Text,
+    tensor: Union["tf.Tensor", Tuple["tf.Tensor"], List["tf.Tensor"]],
+    graph: "tf.Graph",
+) -> None:
     """Add tensor to collection if it is not None"""
 
     if tensor is not None:
@@ -1237,7 +1241,7 @@ def persist_tensor(name: Text, tensor: Union["tf.Tensor", Tuple["tf.Tensor"], Li
             graph.add_to_collection(name, tensor)
 
 
-def load_tensor(name: Text) -> Optional["tf.Tensor"]:
+def load_tensor(name: Text) -> Optional[Union["tf.Tensor", List["tf.Tensor"]]]:
     """Load tensor or set it to None"""
 
     tensor_list = tf.get_collection(name)
