@@ -1104,8 +1104,7 @@ def linearly_increasing_batch_size(
 
 def output_validation_stat(
     eval_init_op: "tf.Operation",
-    loss: "tf.Tensor",
-    acc: "tf.Tensor",
+    metrics: Dict[Text, List["tf.Tensor"]],
     session: "tf.Session",
     is_training: "tf.Session",
     batch_size_in: "tf.Tensor",
@@ -1114,29 +1113,30 @@ def output_validation_stat(
     """Output training statistics"""
 
     session.run(eval_init_op, feed_dict={batch_size_in: ep_batch_size})
-    ep_val_loss = 0
-    ep_val_acc = 0
+    ep_val_metrics = {k: [0] * len(v) for k, v in metrics.items()}
     batches_per_epoch = 0
     while True:
         try:
-            batch_val_loss, batch_val_acc = session.run(
-                [loss, acc], feed_dict={is_training: False}
-            )
+            batch_val_metrics = session.run([metrics], feed_dict={is_training: False})
             batches_per_epoch += 1
-            ep_val_loss += batch_val_loss
-            ep_val_acc += batch_val_acc
+            for k, values in batch_val_metrics.items():
+                for i, v in enumerate(values):
+                    ep_val_metrics[k][i] += v
         except tf.errors.OutOfRangeError:
             break
 
-    return ep_val_loss / batches_per_epoch, ep_val_acc / batches_per_epoch
+    for k, values in ep_val_metrics:
+        for i, v in enumerate(values):
+            ep_val_metrics[k][i] = v / batches_per_epoch
+
+    return ep_val_metrics
 
 
 def train_tf_dataset(
     train_init_op: "tf.Operation",
     eval_init_op: "tf.Operation",
     batch_size_in: "tf.Tensor",
-    loss: "tf.Tensor",
-    acc: "tf.Tensor",
+    metrics: Dict[Text, List[tf.Tensor]],
     train_op: "tf.Tensor",
     session: "tf.Session",
     is_training: "tf.Session",
@@ -1156,65 +1156,57 @@ def train_tf_dataset(
         )
     pbar = tqdm(range(epochs), desc="Epochs", disable=is_logging_disabled())
 
-    train_loss = 0
-    train_acc = 0
-    val_loss = 0
-    val_acc = 0
+    train_metrics = {k: [0] * len(v) for k, v in metrics.items()}
+    val_metrics = {k: [0] * len(v) for k, v in metrics.items()}
     for ep in pbar:
 
         ep_batch_size = linearly_increasing_batch_size(ep, batch_size, epochs)
 
         session.run(train_init_op, feed_dict={batch_size_in: ep_batch_size})
 
-        ep_train_loss = 0
-        ep_train_acc = 0
+        ep_train_metrics = {k: [0] * len(v) for k, v in metrics.items()}
         batches_per_epoch = 0
         while True:
             try:
-                _, batch_train_loss, batch_train_acc = session.run(
-                    [train_op, loss, acc], feed_dict={is_training: True}
+                _, batch_train_metrics = session.run(
+                    [train_op, metrics], feed_dict={is_training: True}
                 )
                 batches_per_epoch += 1
-                ep_train_loss += batch_train_loss
-                ep_train_acc += batch_train_acc
+                for k, values in batch_train_metrics.items():
+                    for i, v in enumerate(values):
+                        ep_train_metrics[k][i] += v
 
             except tf.errors.OutOfRangeError:
                 break
 
-        train_loss = ep_train_loss / batches_per_epoch
-        train_acc = ep_train_acc / batches_per_epoch
+        for k, values in ep_train_metrics:
+            for i, v in enumerate(values):
+                train_metrics[k][i] = v / batches_per_epoch
 
-        postfix_dict = {"loss": f"{train_loss:.3f}", "acc": f"{train_acc:.3f}"}
+        postfix_dict = {}
+        for k, values in train_metrics:
+            for i, v in enumerate(values):
+                postfix_dict[f"{k} {i}"] = f"{v:.3f}"
 
         if eval_init_op is not None:
             if (ep + 1) % evaluate_every_num_epochs == 0 or (ep + 1) == epochs:
-                val_loss, val_acc = output_validation_stat(
+                val_metrics = output_validation_stat(
                     eval_init_op,
-                    loss,
-                    acc,
+                    metrics,
                     session,
                     is_training,
                     batch_size_in,
                     ep_batch_size,
                 )
 
-            postfix_dict.update(
-                {"val_loss": f"{val_loss:.3f}", "val_acc": f"{val_acc:.3f}"}
-            )
+            postfix_dict = {}
+            for k, values in val_metrics:
+                for i, v in enumerate(values):
+                    postfix_dict[f"val {k} {i}"] = f"{v:.3f}"
 
         pbar.set_postfix(postfix_dict)
 
-    final_message = (
-        "Finished training embedding policy, "
-        "train loss={:.3f}, train accuracy={:.3f}"
-        "".format(train_loss, train_acc)
-    )
-    if eval_init_op is not None:
-        final_message += (
-            ", validation loss={:.3f}, validation accuracy={:.3f}"
-            "".format(val_loss, val_acc)
-        )
-    logger.info(final_message)
+    logger.info("Finished training.")
 
 
 def extract_attention(attention_weights) -> Optional["tf.Tensor"]:

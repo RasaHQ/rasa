@@ -135,7 +135,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # if true intent classification is trained and intent predicted
         "intent_classification": True,
         # if true named entity recognition is trained and entities predicted
-        "named_entity_recognition": True,
+        "named_entity_recognition": False,
         # number of entity tags
         "num_tags": 0,
     }
@@ -499,7 +499,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
                     t, e.get(MESSAGE_ENTITIES_ATTRIBUTE), None
                 )
                 _tags.append(tag_id_dict[_tag])
-            tag_ids.append(scipy.sparse.csr_matrix(np.array([_tags]).T))
+            tag_ids.append(
+                scipy.sparse.csr_matrix(np.array([_tags]).T.astype(np.float64))
+            )
 
         X_sparse = np.array(X_sparse)
         X_dense = np.array(X_dense)
@@ -572,7 +574,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     def _build_tf_train_graph(
         self, session_data: SessionData
-    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+    ) -> Dict[Text, List[tf.Tensor]]:
 
         # get in tensors from generator
         self.batch_in = self._iterator.get_next()
@@ -687,7 +689,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
             logits = tf.layers.dense(input, self.num_tags, name="crf-logits")
             crf_params = tf.get_variable(
-                "crf-params", [self.num_tags, self.num_tags], dtype=tf.float32
+                "crf-params", [self.num_tags, self.num_tags], dtype=tf.float64
             )
             pred_ids, _ = tf.contrib.crf.crf_decode(
                 logits, crf_params, sequence_lengths
@@ -699,11 +701,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
         """Create sequence level embedding and mask."""
         a_in = train_utils.create_tf_fnn(
             a_in,
-            self.hidden_layer_sizes["a"],
+            self.hidden_layer_sizes["text"],
             self.droprate,
             self.C2,
             self._is_training,
-            layer_name_suffix="a",
+            layer_name_suffix="text",
         )
 
         self.attention_weights = {}
@@ -775,17 +777,26 @@ class EmbeddingIntentClassifier(EntityExtractor):
         if self.named_entity_recognition:
             return self._pred_entity_graph(a, c)
 
-    def _pred_intent_graph(self, a, b):
-        message_embed = self._create_tf_embed_fnn(
-            a,
-            self.hidden_layer_sizes["text"],
-            fnn_name="text_intent" if self.share_hidden_layers else "text",
-            embed_name="text",
+    def _pred_intent_graph(self, a, b, mask):
+        last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
+        last = tf.expand_dims(last, -1)
+
+        # get _cls_ embedding
+        cls_embed = tf.reduce_sum(a * last, 1)
+        cls_embed = train_utils.create_tf_embed(
+            cls_embed,
+            self.embed_dim,
+            self.C2,
+            self.similarity_type,
+            layer_name_suffix="a",
         )
+
+        # reduce dimensionality as input should not be sequence for intent
+        # classification
+        self.b_in = tf.reduce_sum(self.b_in, 1)
+
         self.sim_all = train_utils.tf_raw_sim(
-            message_embed[:, tf.newaxis, :],
-            self.all_labels_embed[tf.newaxis, :, :],
-            None,
+            cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :], None
         )
         self.label_embed = self._create_tf_embed_fnn(
             b,
@@ -794,9 +805,20 @@ class EmbeddingIntentClassifier(EntityExtractor):
             embed_name="intent",
         )
         self.sim = train_utils.tf_raw_sim(
-            message_embed[:, tf.newaxis, :], self.label_embed, None
+            cls_embed[:, tf.newaxis, :], self.label_embed, None
         )
-        return train_utils.confidence_from_sim(self.sim_all, self.similarity_type)
+
+        self.intent_prediction = train_utils.confidence_from_sim(
+            self.sim_all, self.similarity_type
+        )
+
+    def _pred_entity_graph(self, a, c, mask):
+        # get sequence lengths for NER
+        sequence_lengths = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
+
+        # predict tagsx
+        _, _, pred_ids = self._create_crf(a, sequence_lengths)
+        self.tag_prediction = tf.to_int64(pred_ids)
 
     @staticmethod
     def _get_num_of_features(session_data: "SessionData", key_prefix: Text) -> int:
@@ -835,7 +857,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
         tag_id_dict = self._create_tag_id_dict(
-            training_data, attribute=MESSAGE_TEXT_ATTRIBUTE
+            training_data, attribute=MESSAGE_ENTITIES_ATTRIBUTE
         )
         self.inverted_tag_dict = {v: k for k, v in tag_id_dict.items()}
 
@@ -912,20 +934,21 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
             self._is_training = tf.placeholder_with_default(False, shape=())
 
-            loss, acc = self._build_tf_train_graph(session_data)
+            metrics = self._build_tf_train_graph(session_data)
+
+            loss = sum(metrics["loss"])
 
             # define which optimizer to use
             self._train_op = tf.train.AdamOptimizer().minimize(loss)
 
             # train tensorflow graph
             self.session = tf.Session(config=self._tf_config)
-            # TODO proper loss, acc handling
+
             train_utils.train_tf_dataset(
                 train_init_op,
                 eval_init_op,
                 batch_size_in,
-                loss,
-                intent_acc,
+                metrics,
                 self._train_op,
                 self.session,
                 self._is_training,
