@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from rasa.nlu.utils import ordered
 
 from rasa.nlu.constants import (
@@ -12,7 +10,7 @@ from rasa.nlu.constants import (
 )
 
 
-class Message(object):
+class Message:
     def __init__(self, text, data=None, output_properties=None, time=None):
         self.text = text
         self.time = time
@@ -85,11 +83,9 @@ class Message(object):
         intent = self.get(MESSAGE_INTENT_ATTRIBUTE)
         response_key = self.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE)
         response_key_suffix = (
-            "{}{}".format(RESPONSE_IDENTIFIER_DELIMITER, response_key)
-            if response_key
-            else ""
+            f"{RESPONSE_IDENTIFIER_DELIMITER}{response_key}" if response_key else ""
         )
-        return "{}{}".format(intent, response_key_suffix)
+        return f"{intent}{response_key_suffix}"
 
     @staticmethod
     def separate_intent_response_key(original_intent):

@@ -57,7 +57,7 @@ class AnySlotDict(dict):
         return True
 
 
-class DialogueStateTracker(object):
+class DialogueStateTracker:
     """Maintains the state of a conversation.
 
     The field max_event_history will only give you these last events,
@@ -165,7 +165,7 @@ class DialogueStateTracker(object):
         """Generate the past states of this tracker based on the history."""
 
         generated_states = domain.states_for_tracker_history(self)
-        return deque((frozenset(s.items()) for s in generated_states))
+        return deque(frozenset(s.items()) for s in generated_states)
 
     def change_form_to(self, form_name: Text) -> None:
         """Activate or deactivate a form"""
@@ -210,7 +210,7 @@ class DialogueStateTracker(object):
         if key in self.slots:
             return self.slots[key].value
         else:
-            logger.info("Tried to access non existent slot '{}'".format(key))
+            logger.info(f"Tried to access non existent slot '{key}'")
             return None
 
     def get_latest_entity_values(self, entity_type: Text) -> Iterator[Text]:
@@ -291,8 +291,7 @@ class DialogueStateTracker(object):
                     yield tracker
 
                 elif tracker.active_form.get("rejected"):
-                    for tr in ignored_trackers:
-                        yield tr
+                    yield from ignored_trackers
                     ignored_trackers = []
 
                     if not tracker.active_form.get(
@@ -328,8 +327,7 @@ class DialogueStateTracker(object):
         if tracker.active_form.get("name") is None:
             yield tracker
         elif tracker.active_form.get("rejected"):
-            for tr in ignored_trackers:
-                yield tr
+            yield from ignored_trackers
             yield tracker
 
     def applied_events(self) -> List[Event]:
@@ -377,7 +375,7 @@ class DialogueStateTracker(object):
 
         if not isinstance(dialogue, Dialogue):
             raise ValueError(
-                "story {0} is not of type Dialogue. "
+                "story {} is not of type Dialogue. "
                 "Have you deserialized it?".format(dialogue)
             )
 

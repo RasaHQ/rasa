@@ -88,9 +88,7 @@ def create_rabbitmq_ssl_options(
         import pika
         import rasa.server
 
-        logger.debug(
-            "Configuring SSL context for RabbitMQ host '{}'.".format(rabbitmq_host)
-        )
+        logger.debug(f"Configuring SSL context for RabbitMQ host '{rabbitmq_host}'.")
 
         ca_file_path = os.environ.get("RABBITMQ_SSL_CA_FILE")
         key_password = os.environ.get("RABBITMQ_SSL_KEY_PASSWORD")

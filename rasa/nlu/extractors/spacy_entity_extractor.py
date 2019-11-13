@@ -22,7 +22,7 @@ class SpacyEntityExtractor(EntityExtractor):
     }
 
     def __init__(self, component_config: Text = None) -> None:
-        super(SpacyEntityExtractor, self).__init__(component_config)
+        super().__init__(component_config)
 
     def process(self, message: Message, **kwargs: Any) -> None:
         # can't use the existing doc here (spacy_doc on the message)

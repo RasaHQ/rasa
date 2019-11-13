@@ -17,7 +17,7 @@ from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 logger = logging.getLogger(__name__)
 
 
-class Policy(object):
+class Policy:
     SUPPORTS_ONLINE_TRAINING = False
 
     @staticmethod
@@ -52,9 +52,7 @@ class Policy(object):
         ignored_params = {
             key: kwargs.get(key) for key in kwargs.keys() if not params.get(key)
         }
-        logger.debug(
-            "Parameters ignored by `model.fit(...)`: {}".format(ignored_params)
-        )
+        logger.debug(f"Parameters ignored by `model.fit(...)`: {ignored_params}")
         return params
 
     def featurize_for_training(
