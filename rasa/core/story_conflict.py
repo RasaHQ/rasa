@@ -21,6 +21,7 @@ class StoryConflict:
         self.tracker = tracker,
         self.event = event
         self._conflicting_actions = {}  # {"action": ["story_1", ...], ...}
+        self.correct_response = None
 
     def events_prior_to_conflict(self):
         raise NotImplementedError
@@ -47,6 +48,10 @@ class StoryConflict:
     @property
     def conflicting_actions(self):
         return list(self._conflicting_actions.keys())
+
+    @property
+    def conflicting_actions_with_counts(self):
+        return [f"{a} [{len(s)}x]" for (a, s) in self._conflicting_actions.items()]
 
     def story_prior_to_conflict(self):
         result = ""

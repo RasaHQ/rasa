@@ -277,12 +277,17 @@ class Validator:
 
                 # Fix the conflict if required
                 if prompt:
+                    print("A conflict occurs after the following sequence of events:")
                     print(conflict.story_prior_to_conflict())
-                    correct_action = questionary.select(
+                    keep = "KEEP AS IS"
+                    correct_response = questionary.select(
                         message="How should your bot respond at this point?",
-                        choices=conflict.conflicting_actions
+                        choices=[keep] + conflict.conflicting_actions_with_counts
                     ).ask()
-                    print(correct_action)
+                    if correct_response != keep:
+                        # Remove the story count ending, e.g. " [42x]"
+                        conflict.correct_response = correct_response.rsplit(" ", 1)[0]
+                    print(conflict.correct_response)
 
         return len(conflicts) > 0
 
