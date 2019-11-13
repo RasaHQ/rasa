@@ -297,6 +297,14 @@ class Validator:
                 for state, actions_and_stories in conflict.items():
                     conflict_string = f"CONFLICT after {state}:\n"
                     for action, stories in actions_and_stories.items():
+                        if len(stories) == 1:
+                            stories = f"'{stories[0]}'"
+                        elif len(stories) == 2:
+                            stories = f"'{stories[0]}' and '{stories[1]}'"
+                        elif len(stories) == 3:
+                            stories = f"'{stories[0]}', '{stories[1]}', and '{stories[2]}'"
+                        elif len(stories) >= 4:
+                            stories = f"'{stories[0]}' and {len(stories) - 1} other stories"
                         conflict_string += f"  {action} predicted in {stories}\n"
                     logger.warning(conflict_string)
 
