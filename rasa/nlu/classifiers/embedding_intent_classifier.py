@@ -620,18 +620,17 @@ class EmbeddingIntentClassifier(Component):
     @staticmethod
     def _get_num_of_features(session_data: "SessionData", key_prefix: Text) -> int:
         num_features = 0
-        for k, v in session_data.items():
+        for k, values in session_data.items():
             if k.startswith(key_prefix):
-                num_features += v[0].shape[-1]
+                for v in values:
+                    num_features += v[0].shape[-1]
         return num_features
 
     def check_input_dimension_consistency(self, session_data: "SessionData"):
         if self.share_hidden_layers:
-            num_text_features = self._get_num_of_features(
-                session_data, "text_features_"
-            )
+            num_text_features = self._get_num_of_features(session_data, "text_features")
             num_intent_features = self._get_num_of_features(
-                session_data, "intent_features_"
+                session_data, "intent_features"
             )
 
             if num_text_features != num_intent_features:
