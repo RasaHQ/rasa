@@ -286,15 +286,21 @@ def gen_batch(
 
 
 def prepare_batch(
-    session_data: SessionData, start: Optional[int] = None, end: Optional[int] = None
+    session_data: SessionData,
+    start: Optional[int] = None,
+    end: Optional[int] = None,
+    tuple_sizes: Dict[Text, int] = None,
 ):
     """Slices session data into batch using given start and end value."""
     batch_data = []
 
-    for values in session_data.values():
+    for key, values in session_data.items():
         # add None for not present values during processing
         if not values:
-            batch_data.append(None)
+            if tuple_sizes:
+                batch_data += [None] * tuple_sizes[key]
+            else:
+                batch_data.append(None)
             continue
 
         for v in values:
@@ -373,7 +379,7 @@ def pad_data(data: np.ndarray, feature_len: Optional[int] = None) -> np.ndarray:
 
 def batch_to_session_data(
     batch: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], session_data: SessionData
-):
+) -> Tuple[Dict[Text, List[tf.Tensor]], Dict[Text, int]]:
     """
     Batch contains any number of batch data. The order is equal to the
     key-value pairs in session data. As sparse data were converted into indices, data,
@@ -381,6 +387,8 @@ def batch_to_session_data(
     kept.
     """
     batch_data = defaultdict(list)
+    # save the amount of placeholders attributed to session data keys
+    batch_sizes = defaultdict(int)
     idx = 0
 
     for k, values in session_data.items():
@@ -395,11 +403,13 @@ def batch_to_session_data(
                     )
                 )
                 idx += 3
+                batch_sizes[k] += 3
             else:
                 batch_data[k].append(batch[idx])
                 idx += 1
+                batch_sizes[k] += 1
 
-    return batch_data
+    return batch_data, batch_sizes
 
 
 # noinspection PyPep8Naming

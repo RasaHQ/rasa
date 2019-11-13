@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import scipy.sparse
 
 from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
@@ -28,6 +29,37 @@ def test_compute_default_label_features():
         assert o.data[0] == 1
         assert o.indices[0] == i
         assert o.shape == (1, len(label_features))
+
+
+def test_get_num_of_features():
+    session_data = {
+        "text_features": [
+            np.array(
+                [
+                    np.random.rand(5, 14),
+                    np.random.rand(2, 14),
+                    np.random.rand(3, 14),
+                    np.random.rand(1, 14),
+                    np.random.rand(3, 14),
+                ]
+            ),
+            np.array(
+                [
+                    scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(5, size=(2, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(5, size=(1, 10))),
+                    scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
+                ]
+            ),
+        ]
+    }
+
+    num_features = EmbeddingIntentClassifier._get_num_of_features(
+        session_data, "text_features"
+    )
+
+    assert num_features == 24
 
 
 @pytest.mark.parametrize(
