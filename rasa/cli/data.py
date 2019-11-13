@@ -101,6 +101,8 @@ def _add_data_validate_parsers(
     )
     story_structure_parser.add_argument("--max-history", type=int, default=5,
                                         help="Assume this max_history setting for validation.")
+    story_structure_parser.add_argument("--prompt", action="store_true", default=False,
+                                        help="Ask how conflicts should be fixed")
     story_structure_parser.set_defaults(func=validate_stories)
     arguments.set_validator_arguments(story_structure_parser)
 
@@ -176,7 +178,11 @@ def validate_stories(args):
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
     everything_is_alright = (
             validator.verify_story_names(not args.fail_on_warnings) and
-            validator.verify_story_structure(not args.fail_on_warnings, max_history=args.max_history)
+            validator.verify_story_structure(
+                not args.fail_on_warnings,
+                max_history=args.max_history,
+                prompt=args.prompt
+            )
     )
     sys.exit(0) if everything_is_alright else sys.exit(1)
 

@@ -206,7 +206,10 @@ class Validator:
 
         return last_event_string
 
-    def verify_story_structure(self, ignore_warnings: bool = True, max_history: int = 5) -> bool:
+    def verify_story_structure(self,
+                               ignore_warnings: bool = True,
+                               max_history: int = 5,
+                               prompt: bool = False) -> bool:
         """Verifies that bot behaviour in stories is deterministic."""
 
         logger.info("Story structure validation...")
@@ -279,6 +282,10 @@ class Validator:
                     for action, stories in actions_and_stories.items():
                         conflict_string += f"  {action} predicted in {stories}\n"
                     logger.warning(conflict_string)
+
+                # Fix the conflict if required
+                if prompt:
+                    raise NotImplementedError
 
         return len(conflicts) > 0
 
