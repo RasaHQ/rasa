@@ -437,7 +437,9 @@ class EmbeddingIntentClassifier(Component):
         self._add_to_session_data(session_data, "intent_features", [Y_sparse, Y_dense])
         self._add_to_session_data(session_data, "intent_ids", [label_ids])
 
-        if label_attribute and not session_data["intent_features"]:
+        if label_attribute and (
+            "intent_features" not in session_data or not session_data["intent_features"]
+        ):
             # no label features are present, get default features from _label_data
             session_data["intent_features"] = self.use_default_label_features(label_ids)
 

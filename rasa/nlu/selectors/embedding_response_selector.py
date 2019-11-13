@@ -150,7 +150,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
         session_data = self._create_session_data(
             training_data.intent_examples,
             label_id_dict,
-            attribute=MESSAGE_RESPONSE_ATTRIBUTE,
+            label_attribute=MESSAGE_RESPONSE_ATTRIBUTE,
         )
 
         self.check_input_dimension_consistency(session_data)
