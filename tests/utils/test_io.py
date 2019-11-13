@@ -305,7 +305,7 @@ def test_write_json_file(tmp_path: Path):
 
 
 def test_write_utf_8_yaml_file(tmp_path: Path):
-    """This test makes sure that dumping a yaml doesn't result in \Uxxxx sequences
+    """This test makes sure that dumping a yaml doesn't result in Uxxxx sequences
     but rather directly dumps the unicode character."""
 
     file_path = str(tmp_path / "test.yml")
@@ -315,7 +315,7 @@ def test_write_utf_8_yaml_file(tmp_path: Path):
     assert io_utils.read_file(file_path) == "data: amazing 🌈\n"
 
 
-def test_create_directory_if_already_exists(tmp_path: Path):
+def test_create_directory_if_new(tmp_path: Path):
     directory = str(tmp_path / "a" / "b")
     io_utils.create_directory(directory)
 
