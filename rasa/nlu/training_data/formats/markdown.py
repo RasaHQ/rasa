@@ -305,7 +305,7 @@ class MarkdownWriter(TrainingDataWriter):
 
         return "  {}\n".format(encode_string(text))
 
-    def _generate_message_md(self, message: "Message") -> Text:
+    def _generate_message_md(self, message: Dict[Text, Any]) -> Text:
         """Generates markdown for a message object."""
 
         md = ""
