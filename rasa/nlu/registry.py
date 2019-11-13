@@ -23,6 +23,7 @@ from rasa.nlu.featurizers.mitie_featurizer import MitieFeaturizer
 from rasa.nlu.featurizers.ngram_featurizer import NGramFeaturizer
 from rasa.nlu.featurizers.regex_featurizer import RegexFeaturizer
 from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+from rasa.nlu.featurizers.convert_featurizer import ConvertFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
@@ -63,6 +64,7 @@ component_classes = [
     NGramFeaturizer,
     RegexFeaturizer,
     CountVectorsFeaturizer,
+    ConvertFeaturizer,
     # classifiers
     SklearnIntentClassifier,
     MitieIntentClassifier,
