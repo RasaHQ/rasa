@@ -51,7 +51,7 @@ _json_format_heuristics = {
 # ##
 # * intent/response_key
 #   - response_text
-_nlg_markdown_marker_regex = re.compile(r"##\s*.*\n\*.*\/.*\n\s*\t*\-.*")
+_nlg_markdown_marker_regex = re.compile(r"##\s*.*\n\*.*(?<!: )\/.*\n\s*\t*\-.*")
 
 
 def load_data(resource_name: Text, language: Optional[Text] = "en") -> "TrainingData":
