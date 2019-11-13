@@ -26,8 +26,9 @@ def test_compute_default_label_features():
 
     assert output.size == len(label_features)
     for i, o in enumerate(output):
+        assert isinstance(o, scipy.sparse.coo_matrix)
         assert o.data[0] == 1
-        assert o.indices[0] == i
+        assert o.col[0] == i
         assert o.shape == (1, len(label_features))
 
 
