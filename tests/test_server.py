@@ -137,40 +137,83 @@ def formbot_data():
     )
 
 
-def test_train_status(rasa_server, rasa_app, formbot_data):
+def run_server():
+    import subprocess
+
+    subprocess.run(["rasa", "run", "--enable-api"])
+
+
+def train(results):
+    formbot_data = dict(
+        domain="examples/formbot/domain.yml",
+        config="examples/formbot/config.yml",
+        stories="examples/formbot/data/stories.md",
+        nlu="examples/formbot/data/nlu.md",
+    )
     with ExitStack() as stack:
         payload = {
             key: stack.enter_context(open(path)).read()
             for key, path in formbot_data.items()
         }
+        payload["force"] = True
+        import requests
 
-    def train(results):
-        client1 = SanicTestClient(rasa_server, port=PORT + 1)
-        _, train_resp = client1.post("/model/train", json=payload)
-        results["train_response_code"] = train_resp.status
+        is_ready = False
+        while not is_ready:
+            try:
+                is_ready = (
+                    requests.get("http://localhost:5005/status").status_code == 200
+                )
+                time.sleep(1)
+            except:
+                pass
+
+        print("is_ready")
+
+        train_resp = requests.post("http://localhost:5005/model/train", json=payload)
+        # client1 = SanicTestClient(rasa_server, port=PORT + 1)
+        # _, train_resp = client1.post("/model/train", json=payload)
+        results["train_response_code"] = train_resp.status_code
+
+
+def test_train_status():
+    import requests
 
     # Run training process in the background
     manager = Manager()
     results = manager.dict()
-    p1 = Process(target=train, args=(results,))
+
+    import multiprocessing
+
+    ctx = multiprocessing.get_context("spawn")
+    p0 = ctx.Process(target=run_server)
+    p0.start()
+    p1 = ctx.Process(target=train, args=(results,))
     p1.start()
 
     # Query the status endpoint a few times to ensure the test does
     # not fail prematurely due to mismatched timing of a single query.
-    for i in range(10):
-        time.sleep(1)
-        _, status_resp = rasa_app.get("/status")
-        assert status_resp.status == 200
-        if status_resp.json["num_active_training_jobs"] == 1:
-            break
-    assert status_resp.json["num_active_training_jobs"] == 1
+    for i in range(30):
+        try:
+            time.sleep(1)
+            # _, status_resp = rasa_app.get("/status")
+            status_resp = requests.get("http://localhost:5005/status")
+            assert status_resp.status_code == 200
+            print(status_resp.json())
+            if status_resp.json()["num_active_training_jobs"] == 1:
+                break
+        except:
+            pass
+    assert status_resp.json()["num_active_training_jobs"] == 1
 
     p1.join()
-    assert results["train_response_code"] == 200
+    assert results.get("train_response_code") == 200
 
-    _, status_resp = rasa_app.get("/status")
-    assert status_resp.status == 200
-    assert status_resp.json["num_active_training_jobs"] == 0
+    status_resp = requests.get("http://localhost:5005/status")
+    assert status_resp.status_code == 200
+    assert status_resp.json()["num_active_training_jobs"] == 0
+
+    p0.kill()
 
 
 @pytest.mark.parametrize(
