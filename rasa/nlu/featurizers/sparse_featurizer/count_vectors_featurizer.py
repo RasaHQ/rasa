@@ -37,7 +37,9 @@ class CountVectorsFeaturizer(Featurizer):
         for attribute in MESSAGE_ATTRIBUTES
     ]
 
-    requires = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
+    requires = [
+        MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
+    ]
 
     defaults = {
         # whether to use a shared vocab
@@ -210,66 +212,6 @@ class CountVectorsFeaturizer(Featurizer):
         # declare class instance for CountVectorizer
         self.vectorizers = vectorizers
 
-    def _get_message_text_by_attribute(
-        self, message: "Message", attribute: Text = MESSAGE_TEXT_ATTRIBUTE
-    ) -> Text:
-        """Get processed text of attribute of a message"""
-
-        if message.get(attribute) is None:
-            # return empty string since sklearn countvectorizer does not like None
-            # object while training and predicting
-            return ""
-
-        tokens = self._get_message_tokens_by_attribute(message, attribute)
-
-        text = self._process_text(tokens, attribute)
-
-        text = self._replace_with_oov_token(text, attribute)
-
-        return text
-
-    def _process_text(
-        self, tokens: List[Text], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
-    ) -> Text:
-        """Apply processing and cleaning steps to text"""
-
-        text = " ".join(tokens)
-
-        if attribute == MESSAGE_INTENT_ATTRIBUTE:
-            # Don't do any processing for intent attribute. Treat them as whole labels
-            return text
-
-        # replace all digits with NUMBER token
-        text = re.sub(r"\b[0-9]+\b", "__NUMBER__", text)
-
-        # convert to lowercase if necessary
-        if self.lowercase:
-            text = text.lower()
-        return text
-
-    def _replace_with_oov_token(self, text: Text, attribute: Text) -> Text:
-        """Replace OOV words with OOV token"""
-
-        if self.OOV_token and self.analyzer == "word":
-            text_tokens = text.split()
-            if self._check_attribute_vocabulary(
-                attribute
-            ) and self.OOV_token in self._get_attribute_vocabulary(attribute):
-                # CountVectorizer is trained, process for prediction
-                text_tokens = [
-                    t
-                    if t in self._get_attribute_vocabulary_tokens(attribute)
-                    else self.OOV_token
-                    for t in text_tokens
-                ]
-            elif self.OOV_words:
-                # CountVectorizer is not trained, process for train
-                text_tokens = [
-                    self.OOV_token if t in self.OOV_words else t for t in text_tokens
-                ]
-            text = " ".join(text_tokens)
-        return text
-
     @staticmethod
     def _get_message_tokens_by_attribute(
         message: "Message", attribute: Text
@@ -280,17 +222,73 @@ class CountVectorsFeaturizer(Featurizer):
 
         return message.get(attribute).split()
 
+    def _process_tokens(
+        self, tokens: List[Text], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
+    ) -> List[Text]:
+        """Apply processing and cleaning steps to text"""
+
+        if attribute == MESSAGE_INTENT_ATTRIBUTE:
+            # Don't do any processing for intent attribute. Treat them as whole labels
+            return tokens
+
+        # replace all digits with NUMBER token
+        tokens = [re.sub(r"\b[0-9]+\b", "__NUMBER__", text) for text in tokens]
+
+        # convert to lowercase if necessary
+        if self.lowercase:
+            tokens = [text.lower() for text in tokens]
+        return tokens
+
+    def _replace_with_oov_token(
+        self, tokens: List[Text], attribute: Text
+    ) -> List[Text]:
+        """Replace OOV words with OOV token"""
+
+        if self.OOV_token and self.analyzer == "word":
+            if self._check_attribute_vocabulary(
+                attribute
+            ) and self.OOV_token in self._get_attribute_vocabulary(attribute):
+                # CountVectorizer is trained, process for prediction
+                tokens = [
+                    t
+                    if t in self._get_attribute_vocabulary_tokens(attribute)
+                    else self.OOV_token
+                    for t in tokens
+                ]
+            elif self.OOV_words:
+                # CountVectorizer is not trained, process for train
+                tokens = [self.OOV_token if t in self.OOV_words else t for t in tokens]
+
+        return tokens
+
+    def _get_processed_message_tokens_by_attribute(
+        self, message: "Message", attribute: Text = MESSAGE_TEXT_ATTRIBUTE
+    ) -> List[Text]:
+        """Get processed text of attribute of a message"""
+
+        if message.get(attribute) is None:
+            # return empty string since sklearn countvectorizer does not like None
+            # object while training and predicting
+            return [""]
+
+        tokens = self._get_message_tokens_by_attribute(message, attribute)
+
+        tokens = self._process_tokens(tokens, attribute)
+
+        tokens = self._replace_with_oov_token(tokens, attribute)
+
+        return tokens
+
     # noinspection PyPep8Naming
-    def _check_OOV_present(self, examples):
+    def _check_OOV_present(self, all_tokens: List[List[Text]]):
         """Check if an OOV word is present"""
         if self.OOV_token and not self.OOV_words:
-            for t in examples:
-                if (
-                    t is None
-                    or self.OOV_token in t
-                    or (self.lowercase and self.OOV_token in t.lower())
-                ):
-                    return
+            for tokens in all_tokens:
+                for text in tokens:
+                    if self.OOV_token in text or (
+                        self.lowercase and self.OOV_token in text.lower()
+                    ):
+                        return
 
             logger.warning(
                 "OOV_token='{}' was given, but it is not present "
@@ -299,35 +297,34 @@ class CountVectorsFeaturizer(Featurizer):
                 "".format(self.OOV_token)
             )
 
-    def _set_attribute_features(
-        self, attribute: Text, attribute_features: List, training_data: "TrainingData"
-    ):
-        """Set computed features of the attribute to corresponding message objects"""
-        for i, example in enumerate(training_data.training_examples):
-            # create bag for each example
-            example.set(
-                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
-                self._combine_with_existing_sparse_features(
-                    example,
-                    attribute_features[i],
-                    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
-                ),
-            )
-
-    def _get_all_attributes_processed_texts(
+    def _get_all_attributes_processed_tokens(
         self, training_data: "TrainingData"
-    ) -> Dict[Text, List[Text]]:
+    ) -> Dict[Text, List[List[Text]]]:
         """Get processed text for all attributes of examples in training data"""
 
-        processed_attribute_texts = {}
+        processed_attribute_tokens = {}
         for attribute in self._attributes:
-            attribute_texts = [
-                self._get_message_text_by_attribute(example, attribute)
+            all_tokens = [
+                self._get_processed_message_tokens_by_attribute(example, attribute)
                 for example in training_data.training_examples
             ]
-            self._check_OOV_present(attribute_texts)
-            processed_attribute_texts[attribute] = attribute_texts
-        return processed_attribute_texts
+            if attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
+                # check for oov tokens only in text based attributes
+                self._check_OOV_present(all_tokens)
+            processed_attribute_tokens[attribute] = all_tokens
+        return processed_attribute_tokens
+
+    @staticmethod
+    def _convert_attribute_tokens_to_texts(
+        attribute_tokens: Dict[Text, List[List[Text]]]
+    ) -> Dict[Text, List[Text]]:
+        attribute_texts = {}
+        for attribute in attribute_tokens.keys():
+            attribute_texts[attribute] = [
+                " ".join(tokens) for tokens in attribute_tokens[attribute]
+            ]
+
+        return attribute_texts
 
     def _train_with_shared_vocab(self, attribute_texts: Dict[Text, List[Text]]):
         """Construct the vectorizers and train them with a shared vocab"""
@@ -389,34 +386,43 @@ class CountVectorsFeaturizer(Featurizer):
                     "training a CountVectorizer for it.".format(attribute)
                 )
 
-    def _get_featurized_attribute(
-        self, attribute: Text, attribute_texts: List[Text]
-    ) -> Optional[List[scipy.sparse.coo_matrix]]:
-        """Return features of a particular attribute for complete data"""
-
-        if self._check_attribute_vocabulary(attribute):
-            # count vectorizer was trained
-            return self._create_sequence(attribute, attribute_texts)
-        else:
-            return None
-
-    @staticmethod
-    def _get_text_sequence(text: Text) -> List[Text]:
-        return text.split()
-
     def _create_sequence(
-        self, attribute: Text, attribute_texts: List[Text]
+        self, attribute: Text, all_tokens: List[List[Text]]
     ) -> List[scipy.sparse.coo_matrix]:
-        texts = [self._get_text_sequence(text) for text in attribute_texts]
-
         X = []
 
-        for i, tokens in enumerate(texts):
+        for i, tokens in enumerate(all_tokens):
             x = self.vectorizers[attribute].transform(tokens)
             x.sort_indices()
             X.append(x.tocoo())
 
         return X
+
+    def _get_featurized_attribute(
+        self, attribute: Text, all_tokens: List[List[Text]]
+    ) -> Optional[List[scipy.sparse.coo_matrix]]:
+        """Return features of a particular attribute for complete data"""
+
+        if self._check_attribute_vocabulary(attribute):
+            # count vectorizer was trained
+            return self._create_sequence(attribute, all_tokens)
+        else:
+            return None
+
+    def _set_attribute_features(
+        self, attribute: Text, attribute_features: List, training_data: "TrainingData"
+    ):
+        """Set computed features of the attribute to corresponding message objects"""
+        for i, example in enumerate(training_data.training_examples):
+            # create bag for each example
+            example.set(
+                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
+                self._combine_with_existing_sparse_features(
+                    example,
+                    attribute_features[i],
+                    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
+                ),
+            )
 
     def train(
         self, training_data: TrainingData, cfg: RasaNLUModelConfig = None, **kwargs: Any
@@ -433,21 +439,24 @@ class CountVectorsFeaturizer(Featurizer):
             self.OOV_words = [t.lemma_ for w in self.OOV_words for t in spacy_nlp(w)]
 
         # process sentences and collect data for all attributes
-        processed_attribute_texts = self._get_all_attributes_processed_texts(
+        processed_attribute_tokens = self._get_all_attributes_processed_tokens(
             training_data
         )
 
         # train for all attributes
+        attribute_texts = self._convert_attribute_tokens_to_texts(
+            processed_attribute_tokens
+        )
         if self.use_shared_vocab:
-            self._train_with_shared_vocab(processed_attribute_texts)
+            self._train_with_shared_vocab(attribute_texts)
         else:
-            self._train_with_independent_vocab(processed_attribute_texts)
+            self._train_with_independent_vocab(attribute_texts)
 
         # transform for all attributes
         for attribute in self._attributes:
 
             attribute_features = self._get_featurized_attribute(
-                attribute, processed_attribute_texts[attribute]
+                attribute, processed_attribute_tokens[attribute]
             )
 
             if attribute_features is not None:
@@ -467,10 +476,12 @@ class CountVectorsFeaturizer(Featurizer):
             return
 
         attribute = MESSAGE_TEXT_ATTRIBUTE
-        message_text = self._get_message_text_by_attribute(message, attribute=attribute)
+        message_tokens = self._get_processed_message_tokens_by_attribute(
+            message, attribute
+        )
 
         # features shape (1, seq, dim)
-        features = self._create_sequence(attribute, [message_text])
+        features = self._create_sequence(attribute, [message_tokens])
 
         message.set(
             MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],

@@ -11,7 +11,7 @@ import warnings
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.utils import train_utils
-from rasa.utils.train_utils import SessionData
+from rasa.utils.train_utils import SessionDataType
 from rasa.nlu.constants import (
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
@@ -157,8 +157,9 @@ class EmbeddingIntentClassifier(Component):
 
         self.batch_tuple_sizes = batch_tuple_sizes
 
-    # config migration warning
-    def _check_old_config_variables(self, config: Dict[Text, Any]) -> None:
+    @staticmethod
+    def _check_old_config_variables(config: Dict[Text, Any]) -> None:
+        """Config migration warning"""
 
         removed_tokenization_params = [
             "intent_tokenization_flag",
@@ -168,8 +169,9 @@ class EmbeddingIntentClassifier(Component):
             if removed_param in config:
                 warnings.warn(
                     "Intent tokenization has been moved to Tokenizer components. "
-                    "Your config still mentions '{}'. Tokenization may fail if you specify the parameter here."
-                    "Please specify the parameter 'intent_tokenization_flag' and 'intent_split_symbol' in the "
+                    "Your config still mentions '{}'. Tokenization may fail if "
+                    "you specify the parameter here. Please specify the parameter "
+                    "'intent_tokenization_flag' and 'intent_split_symbol' in the "
                     "tokenizer of your NLU pipeline".format(removed_param)
                 )
 
@@ -293,6 +295,13 @@ class EmbeddingIntentClassifier(Component):
         if message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]) is not None:
             dense_features = message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute])
 
+        if sparse_features is not None and dense_features is not None:
+            if sparse_features.shape[0] != dense_features.shape[0]:
+                raise ValueError(
+                    f"Sequence dimensions for sparse and dense features "
+                    f"don't coincide in '{message.text}'"
+                )
+
         return sparse_features, dense_features
 
     def _extract_labels_precomputed_features(
@@ -338,7 +347,7 @@ class EmbeddingIntentClassifier(Component):
         training_data: "TrainingData",
         label_id_dict: Dict[Text, int],
         attribute: Text,
-    ) -> "SessionData":
+    ) -> "SessionDataType":
         """Create matrix with label_ids encoded in rows as bag of words.
 
         Find a training example for each label and get the encoded features
@@ -387,8 +396,8 @@ class EmbeddingIntentClassifier(Component):
         training_data: List["Message"],
         label_id_dict: Optional[Dict[Text, int]] = None,
         attribute: Optional[Text] = None,
-    ) -> "SessionData":
-        """Prepare data for training and create a SessionData object"""
+    ) -> "SessionDataType":
+        """Prepare data for training and create a SessionDataType object"""
         X_sparse = []
         X_dense = []
         Y_sparse = []
@@ -435,7 +444,7 @@ class EmbeddingIntentClassifier(Component):
 
     @staticmethod
     def _add_to_session_data(
-        session_data: SessionData, key: Text, features: List[np.ndarray]
+        session_data: SessionDataType, key: Text, features: List[np.ndarray]
     ):
         if not features:
             return
@@ -447,7 +456,10 @@ class EmbeddingIntentClassifier(Component):
                 session_data[key].append(data)
 
     @staticmethod
-    def _add_mask_to_session_data(session_data: SessionData, key: Text, from_key: Text):
+    def _add_mask_to_session_data(
+        session_data: SessionDataType, key: Text, from_key: Text
+    ):
+
         for data in session_data[from_key]:
             if data.size > 0:
                 mask = np.array([np.ones((x.shape[0], 1)) for x in data])
@@ -481,7 +493,7 @@ class EmbeddingIntentClassifier(Component):
         )
 
     def _build_tf_train_graph(
-        self, session_data: SessionData
+        self, session_data: SessionDataType
     ) -> Tuple["tf.Tensor", "tf.Tensor"]:
 
         # get in tensors from generator
@@ -568,7 +580,7 @@ class EmbeddingIntentClassifier(Component):
         output = tf.reduce_sum(output, axis=1) / tf.reduce_sum(mask, axis=1)
         return output
 
-    def _build_tf_pred_graph(self, session_data: "SessionData") -> "tf.Tensor":
+    def _build_tf_pred_graph(self, session_data: "SessionDataType") -> "tf.Tensor":
 
         shapes, types = train_utils.get_shapes_types(session_data)
 
@@ -618,7 +630,7 @@ class EmbeddingIntentClassifier(Component):
         return train_utils.confidence_from_sim(self.sim_all, self.similarity_type)
 
     @staticmethod
-    def _get_num_of_features(session_data: "SessionData", key_prefix: Text) -> int:
+    def _get_num_of_features(session_data: "SessionDataType", key_prefix: Text) -> int:
         num_features = 0
         for k, values in session_data.items():
             if k.startswith(key_prefix):
@@ -626,7 +638,7 @@ class EmbeddingIntentClassifier(Component):
                     num_features += v[0].shape[-1]
         return num_features
 
-    def check_input_dimension_consistency(self, session_data: "SessionData"):
+    def check_input_dimension_consistency(self, session_data: "SessionDataType"):
         if self.share_hidden_layers:
             num_text_features = self._get_num_of_features(session_data, "text_features")
             num_intent_features = self._get_num_of_features(
@@ -664,7 +676,8 @@ class EmbeddingIntentClassifier(Component):
 
         return session_data
 
-    def _check_enough_labels(self, session_data: "SessionData") -> bool:
+    @staticmethod
+    def _check_enough_labels(session_data: "SessionDataType") -> bool:
         return len(np.unique(session_data["intent_ids"])) >= 2
 
     def train(
@@ -674,6 +687,7 @@ class EmbeddingIntentClassifier(Component):
         **kwargs: Any,
     ) -> None:
         """Train the embedding label classifier on a data set."""
+
         logger.debug("Started training embedding classifier.")
 
         # set numpy random seed
@@ -750,7 +764,9 @@ class EmbeddingIntentClassifier(Component):
 
     # process helpers
     # noinspection PyPep8Naming
-    def _calculate_message_sim(self, batch: Tuple) -> Tuple[np.ndarray, List[float]]:
+    def _calculate_message_sim(
+        self, batch: Tuple[np.ndarray]
+    ) -> Tuple[np.ndarray, List[float]]:
         """Calculate message similarities"""
 
         message_sim = self.session.run(
