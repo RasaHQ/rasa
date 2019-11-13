@@ -185,14 +185,31 @@ class Validator:
 
     def verify_story_names(self, ignore_warnings: bool = True):
         """Verify that story names are unique."""
-        names = set()
+
+        # Tally story names, e.g. {"story_1": 3, "story_2": 1, ...}
+        name_tally = {}
         for step in self.story_graph.story_steps:
-            if step.block_name in names:
-                logger.warning("Found duplicate story names")
-                return ignore_warnings
-            names.add(step.block_name)
-        logger.info("All story names are unique")
-        return True
+            if step.block_name in name_tally:
+                name_tally[step.block_name] += 1
+            else:
+                name_tally[step.block_name] = 1
+
+        # Find story names that appear more than once
+        # and construct a warning message
+        result = True
+        message = ""
+        for name, count in name_tally.items():
+            if count > 1:
+                if result:
+                    message = f"Found duplicate story names:\n"
+                    result = False
+                message += f"  '{name}' appears {count}x\n"
+
+        if result:
+            logger.info("All story names are unique")
+        else:
+            logger.error(message)
+        return result
 
     @staticmethod
     def _last_event_string(sliced_states):
