@@ -389,8 +389,10 @@ def run_locally(args: argparse.Namespace):
     rasa_x_token = generate_rasa_x_token()
     process = start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
 
+    config_path = _get_config_path(args)
+
     try:
-        local.main(args, project_path, args.data, token=rasa_x_token)
+        local.main(args, project_path, args.data, config_path, token=rasa_x_token)
     except Exception:
         print(traceback.format_exc())
         cli_utils.print_error(
