@@ -397,7 +397,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     @staticmethod
     def _compute_default_label_features(
-        labels_example: List["Message"]
+        labels_example: List["Message"],
     ) -> List[np.ndarray]:
         """Compute one-hot representation for the labels"""
         return [

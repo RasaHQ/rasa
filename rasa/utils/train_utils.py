@@ -388,11 +388,12 @@ def batch_to_session_data(
     """
     batch_data = defaultdict(list)
     # save the amount of placeholders attributed to session data keys
-    batch_sizes = defaultdict(int)
+    tuple_sizes = defaultdict(int)
     idx = 0
 
     for k, values in session_data.items():
         for v in values:
+            tuple_sizes[k] = 0
             if isinstance(v[0], scipy.sparse.spmatrix):
                 # explicitly substitute last dimension in shape with known static value
                 batch_data[k].append(
@@ -403,13 +404,13 @@ def batch_to_session_data(
                     )
                 )
                 idx += 3
-                batch_sizes[k] += 3
+                tuple_sizes[k] += 3
             else:
                 batch_data[k].append(batch[idx])
                 idx += 1
-                batch_sizes[k] += 1
+                tuple_sizes[k] += 1
 
-    return batch_data, batch_sizes
+    return batch_data, tuple_sizes
 
 
 # noinspection PyPep8Naming
