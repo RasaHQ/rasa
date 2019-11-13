@@ -282,7 +282,7 @@ class CountVectorsFeaturizer(Featurizer):
     # noinspection PyPep8Naming
     def _check_OOV_present(self, all_tokens: List[List[Text]]):
         """Check if an OOV word is present"""
-        if self.OOV_token and not self.OOV_words:
+        if self.OOV_token and not self.OOV_words and all_tokens:
             for tokens in all_tokens:
                 for text in tokens:
                     if self.OOV_token in text or (
@@ -382,8 +382,9 @@ class CountVectorsFeaturizer(Featurizer):
                     )
             else:
                 logger.debug(
-                    "No text provided for {} attribute in any messages of training data. Skipping "
-                    "training a CountVectorizer for it.".format(attribute)
+                    "No text provided for {} attribute in any messages of "
+                    "training data. Skipping training a CountVectorizer "
+                    "for it.".format(attribute)
                 )
 
     def _create_sequence(

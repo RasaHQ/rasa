@@ -54,7 +54,7 @@ class EmbeddingIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = [MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = []
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -398,9 +398,10 @@ class EmbeddingIntentClassifier(Component):
         self,
         training_data: List["Message"],
         label_id_dict: Optional[Dict[Text, int]] = None,
-        attribute: Optional[Text] = None,
+        label_attribute: Optional[Text] = None,
     ) -> "SessionDataType":
         """Prepare data for training and create a SessionDataType object"""
+
         X_sparse = []
         X_dense = []
         Y_sparse = []
@@ -422,8 +423,8 @@ class EmbeddingIntentClassifier(Component):
             if _dense is not None:
                 Y_dense.append(_dense)
 
-            if e.get(attribute):
-                label_ids.append(label_id_dict[e.get(attribute)])
+            if label_attribute and e.get(label_attribute):
+                label_ids.append(label_id_dict[e.get(label_attribute)])
 
         X_sparse = np.array(X_sparse)
         X_dense = np.array(X_dense)
@@ -436,8 +437,8 @@ class EmbeddingIntentClassifier(Component):
         self._add_to_session_data(session_data, "intent_features", [Y_sparse, Y_dense])
         self._add_to_session_data(session_data, "intent_ids", [label_ids])
 
-        if "intent_features" not in session_data:
-            # no intent features are present, get default features from _label_data
+        if label_attribute and not session_data["intent_features"]:
+            # no label features are present, get default features from _label_data
             session_data["intent_features"] = self.use_default_label_features(label_ids)
 
         self._add_mask_to_session_data(session_data, "text_mask", "text_features")
@@ -463,10 +464,12 @@ class EmbeddingIntentClassifier(Component):
         session_data: SessionDataType, key: Text, from_key: Text
     ):
 
+        session_data[key] = []
+
         for data in session_data[from_key]:
             if data.size > 0:
                 mask = np.array([np.ones((x.shape[0], 1)) for x in data])
-                session_data[key] = [mask]
+                session_data[key].append(mask)
                 break
 
     # tf helpers:
@@ -670,7 +673,7 @@ class EmbeddingIntentClassifier(Component):
         session_data = self._create_session_data(
             training_data.intent_examples,
             label_id_dict,
-            attribute=MESSAGE_INTENT_ATTRIBUTE,
+            label_attribute=MESSAGE_INTENT_ATTRIBUTE,
         )
 
         self.check_input_dimension_consistency(session_data)
