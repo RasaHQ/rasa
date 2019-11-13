@@ -197,7 +197,7 @@ class MarkdownReader(TrainingDataReader):
 
 
 class MarkdownWriter(TrainingDataWriter):
-    def dumps(self, training_data: TrainingData) -> Text:
+    def dumps(self, training_data: "TrainingData") -> Text:
         """Transforms a TrainingData object into a markdown string."""
 
         md = ""
@@ -208,9 +208,10 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_training_examples_md(self, training_data: TrainingData) -> Text:
+    def _generate_training_examples_md(self, training_data: "TrainingData") -> Text:
         """Generates markdown training examples."""
 
+        # Sort training data by intent
         training_examples = sorted(
             [e.as_dict_nlu() for e in training_data.training_examples],
             key=lambda k: k[MESSAGE_INTENT_ATTRIBUTE],
@@ -230,7 +231,7 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_synonyms_md(self, training_data: TrainingData) -> Text:
+    def _generate_synonyms_md(self, training_data: "TrainingData") -> Text:
         """Generates markdown for entity synomyms."""
 
         entity_synonyms = sorted(
@@ -245,7 +246,7 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_regex_features_md(self, training_data: TrainingData) -> Text:
+    def _generate_regex_features_md(self, training_data: "TrainingData") -> Text:
         """Generates markdown for regex features."""
 
         md = ""
@@ -259,7 +260,7 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_lookup_tables_md(self, training_data: TrainingData) -> Text:
+    def _generate_lookup_tables_md(self, training_data: "TrainingData") -> Text:
         """Generates markdown for regex features."""
 
         md = ""
@@ -304,7 +305,7 @@ class MarkdownWriter(TrainingDataWriter):
 
         return "  {}\n".format(encode_string(text))
 
-    def _generate_message_md(self, message: Message) -> Text:
+    def _generate_message_md(self, message: "Message") -> Text:
         """Generates markdown for a message object."""
 
         md = ""
