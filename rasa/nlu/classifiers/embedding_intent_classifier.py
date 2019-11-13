@@ -113,50 +113,6 @@ class EmbeddingIntentClassifier(Component):
     }
     # end default properties (DOC MARKER - don't remove)
 
-    def __init__(
-        self,
-        component_config: Optional[Dict[Text, Any]] = None,
-        inverted_label_dict: Optional[Dict[int, Text]] = None,
-        session: Optional["tf.Session"] = None,
-        graph: Optional["tf.Graph"] = None,
-        batch_placeholder: Optional["tf.Tensor"] = None,
-        similarity_all: Optional["tf.Tensor"] = None,
-        pred_confidence: Optional["tf.Tensor"] = None,
-        similarity: Optional["tf.Tensor"] = None,
-        label_embed: Optional["tf.Tensor"] = None,
-        all_labels_embed: Optional["tf.Tensor"] = None,
-        batch_tuple_sizes: Optional[Dict] = None,
-    ) -> None:
-        """Declare instant variables with default values"""
-
-        super().__init__(component_config)
-
-        self._load_params()
-
-        # transform numbers to labels
-        self.inverted_label_dict = inverted_label_dict
-        # encode all label_ids with numbers
-        self._label_data = None
-
-        # tf related instances
-        self.session = session
-        self.graph = graph
-        self.batch_in = batch_placeholder
-        self.sim_all = similarity_all
-        self.pred_confidence = pred_confidence
-        self.sim = similarity
-
-        # persisted embeddings
-        self.label_embed = label_embed
-        self.all_labels_embed = all_labels_embed
-
-        # internal tf instances
-        self._iterator = None
-        self._train_op = None
-        self._is_training = None
-
-        self.batch_tuple_sizes = batch_tuple_sizes
-
     @staticmethod
     def _check_old_config_variables(config: Dict[Text, Any]) -> None:
         """Config migration warning"""
@@ -241,6 +197,53 @@ class EmbeddingIntentClassifier(Component):
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["tensorflow"]
+
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        inverted_label_dict: Optional[Dict[int, Text]] = None,
+        session: Optional["tf.Session"] = None,
+        graph: Optional["tf.Graph"] = None,
+        batch_placeholder: Optional["tf.Tensor"] = None,
+        similarity_all: Optional["tf.Tensor"] = None,
+        pred_confidence: Optional["tf.Tensor"] = None,
+        similarity: Optional["tf.Tensor"] = None,
+        message_embed: Optional["tf.Tensor"] = None,
+        label_embed: Optional["tf.Tensor"] = None,
+        all_labels_embed: Optional["tf.Tensor"] = None,
+        batch_tuple_sizes: Optional[Dict] = None,
+    ) -> None:
+        """Declare instant variables with default values"""
+
+        super().__init__(component_config)
+
+        self._load_params()
+
+        # transform numbers to labels
+        self.inverted_label_dict = inverted_label_dict
+        # encode all label_ids with numbers
+        self._label_data = None
+
+        # tf related instances
+        self.session = session
+        self.graph = graph
+        self.batch_in = batch_placeholder
+        self.sim_all = similarity_all
+        self.pred_confidence = pred_confidence
+        self.sim = similarity
+
+        # persisted embeddings
+        self.message_embed = message_embed
+        self.label_embed = label_embed
+        self.all_labels_embed = all_labels_embed
+
+        # keep the input tuple sizes in self.batch_in
+        self.batch_tuple_sizes = batch_tuple_sizes
+
+        # internal tf instances
+        self._iterator = None
+        self._train_op = None
+        self._is_training = None
 
     # training data helpers:
     @staticmethod
@@ -492,65 +495,6 @@ class EmbeddingIntentClassifier(Component):
             layer_name_suffix=embed_name,
         )
 
-    def _build_tf_train_graph(
-        self, session_data: SessionDataType
-    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
-
-        # get in tensors from generator
-        self.batch_in = self._iterator.get_next()
-
-        # convert encoded all labels into the batch format
-        label_batch = train_utils.prepare_batch(self._label_data)
-
-        # convert batch format into sparse and dense tensors
-        batch_data, _ = train_utils.batch_to_session_data(self.batch_in, session_data)
-        label_data, _ = train_utils.batch_to_session_data(label_batch, self._label_data)
-
-        a = self.combine_sparse_dense_features(
-            batch_data["text_features"], batch_data["text_mask"][0], "text"
-        )
-        b = self.combine_sparse_dense_features(
-            batch_data["intent_features"], batch_data["intent_mask"][0], "intent"
-        )
-        all_bs = self.combine_sparse_dense_features(
-            label_data["intent_features"], label_data["intent_mask"][0], "intent"
-        )
-
-        message_embed = self._create_tf_embed_fnn(
-            a,
-            self.hidden_layer_sizes["text"],
-            fnn_name="text_intent" if self.share_hidden_layers else "text",
-            embed_name="text",
-        )
-        self.label_embed = self._create_tf_embed_fnn(
-            b,
-            self.hidden_layer_sizes["intent"],
-            fnn_name="text_intent" if self.share_hidden_layers else "intent",
-            embed_name="intent",
-        )
-        self.all_labels_embed = self._create_tf_embed_fnn(
-            all_bs,
-            self.hidden_layer_sizes["intent"],
-            fnn_name="text_intent" if self.share_hidden_layers else "intent",
-            embed_name="intent",
-        )
-
-        return train_utils.calculate_loss_acc(
-            message_embed,
-            self.label_embed,
-            b,
-            self.all_labels_embed,
-            all_bs,
-            self.num_neg,
-            None,
-            self.loss_type,
-            self.mu_pos,
-            self.mu_neg,
-            self.use_max_sim_neg,
-            self.C_emb,
-            self.scale_loss,
-        )
-
     def combine_sparse_dense_features(
         self,
         features: List[Union[tf.Tensor, tf.SparseTensor]],
@@ -580,6 +524,64 @@ class EmbeddingIntentClassifier(Component):
         output = tf.reduce_sum(output, axis=1) / tf.reduce_sum(mask, axis=1)
         return output
 
+    def _build_tf_train_graph(
+        self, session_data: SessionDataType
+    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+
+        # get in tensors from generator
+        self.batch_in = self._iterator.get_next()
+        # convert encoded all labels into the batch format
+        label_batch = train_utils.prepare_batch(self._label_data)
+
+        # convert batch format into sparse and dense tensors
+        batch_data, _ = train_utils.batch_to_session_data(self.batch_in, session_data)
+        label_data, _ = train_utils.batch_to_session_data(label_batch, self._label_data)
+
+        a = self.combine_sparse_dense_features(
+            batch_data["text_features"], batch_data["text_mask"][0], "text"
+        )
+        b = self.combine_sparse_dense_features(
+            batch_data["intent_features"], batch_data["intent_mask"][0], "intent"
+        )
+        all_bs = self.combine_sparse_dense_features(
+            label_data["intent_features"], label_data["intent_mask"][0], "intent"
+        )
+
+        self.message_embed = self._create_tf_embed_fnn(
+            a,
+            self.hidden_layer_sizes["text"],
+            fnn_name="text_intent" if self.share_hidden_layers else "text",
+            embed_name="text",
+        )
+        self.label_embed = self._create_tf_embed_fnn(
+            b,
+            self.hidden_layer_sizes["intent"],
+            fnn_name="text_intent" if self.share_hidden_layers else "intent",
+            embed_name="intent",
+        )
+        self.all_labels_embed = self._create_tf_embed_fnn(
+            all_bs,
+            self.hidden_layer_sizes["intent"],
+            fnn_name="text_intent" if self.share_hidden_layers else "intent",
+            embed_name="intent",
+        )
+
+        return train_utils.calculate_loss_acc(
+            self.message_embed,
+            self.label_embed,
+            b,
+            self.all_labels_embed,
+            all_bs,
+            self.num_neg,
+            None,
+            self.loss_type,
+            self.mu_pos,
+            self.mu_neg,
+            self.use_max_sim_neg,
+            self.C_emb,
+            self.scale_loss,
+        )
+
     def _build_tf_pred_graph(self, session_data: "SessionDataType") -> "tf.Tensor":
 
         shapes, types = train_utils.get_shapes_types(session_data)
@@ -603,7 +605,7 @@ class EmbeddingIntentClassifier(Component):
 
         self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
 
-        message_embed = self._create_tf_embed_fnn(
+        self.message_embed = self._create_tf_embed_fnn(
             a,
             self.hidden_layer_sizes["text"],
             fnn_name="text_intent" if self.share_hidden_layers else "text",
@@ -611,7 +613,7 @@ class EmbeddingIntentClassifier(Component):
         )
 
         self.sim_all = train_utils.tf_raw_sim(
-            message_embed[:, tf.newaxis, :],
+            self.message_embed[:, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, :, :],
             None,
         )
@@ -624,18 +626,17 @@ class EmbeddingIntentClassifier(Component):
         )
 
         self.sim = train_utils.tf_raw_sim(
-            message_embed[:, tf.newaxis, :], self.label_embed, None
+            self.message_embed[:, tf.newaxis, :], self.label_embed, None
         )
 
         return train_utils.confidence_from_sim(self.sim_all, self.similarity_type)
 
     @staticmethod
-    def _get_num_of_features(session_data: "SessionDataType", key_prefix: Text) -> int:
+    def _get_num_of_features(session_data: "SessionDataType", key: Text) -> int:
         num_features = 0
-        for k, values in session_data.items():
-            if k.startswith(key_prefix):
-                for v in values:
-                    num_features += v[0].shape[-1]
+        for data in session_data[key]:
+            if data.size > 0:
+                num_features += data[0].shape[-1]
         return num_features
 
     def check_input_dimension_consistency(self, session_data: "SessionDataType"):
@@ -860,6 +861,7 @@ class EmbeddingIntentClassifier(Component):
             )
             train_utils.persist_tensor("similarity", self.sim, self.graph)
 
+            train_utils.persist_tensor("message_embed", self.message_embed, self.graph)
             train_utils.persist_tensor("label_embed", self.label_embed, self.graph)
             train_utils.persist_tensor(
                 "all_labels_embed", self.all_labels_embed, self.graph
@@ -913,6 +915,7 @@ class EmbeddingIntentClassifier(Component):
                 pred_confidence = train_utils.load_tensor("pred_confidence")
                 sim = train_utils.load_tensor("similarity")
 
+                message_embed = train_utils.load_tensor("message_embed")
                 label_embed = train_utils.load_tensor("label_embed")
                 all_labels_embed = train_utils.load_tensor("all_labels_embed")
 
@@ -935,6 +938,7 @@ class EmbeddingIntentClassifier(Component):
                 similarity_all=sim_all,
                 pred_confidence=pred_confidence,
                 similarity=sim,
+                message_embed=message_embed,
                 label_embed=label_embed,
                 all_labels_embed=all_labels_embed,
                 batch_tuple_sizes=batch_tuple_sizes,

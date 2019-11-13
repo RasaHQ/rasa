@@ -21,6 +21,7 @@ if typing.TYPE_CHECKING:
 
 # avoid warning println on contrib import - remove for tf 2
 tf.contrib._warning = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -44,6 +45,7 @@ def train_val_split(
     label_key: Text,
 ) -> Tuple[SessionDataType, SessionDataType]:
     """Create random hold out validation set using stratified split."""
+
     if label_key not in session_data or len(session_data[label_key]) > 1:
         raise ValueError(f"Key '{label_key}' not in SessionDataType.")
 
@@ -132,6 +134,7 @@ def combine_features(
     feature_2: Union[np.ndarray, scipy.sparse.spmatrix],
 ) -> Union[np.ndarray, scipy.sparse.spmatrix]:
     """Concatenate features."""
+
     if isinstance(feature_1, scipy.sparse.spmatrix) and isinstance(
         feature_2, scipy.sparse.spmatrix
     ):
@@ -345,13 +348,6 @@ def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
     ]
 
 
-def values_to_sparse_tensor(
-    indices: np.ndarray, data: np.ndarray, shape: Union[np.ndarray, List]
-) -> tf.SparseTensor:
-    """Create a Sparse Tensor from given indices, data, and shape."""
-    return tf.SparseTensor(indices, data, shape)
-
-
 def pad_data(data: np.ndarray, feature_len: Optional[int] = None) -> np.ndarray:
     """
     Pad data of different lengths.
@@ -383,40 +379,41 @@ def pad_data(data: np.ndarray, feature_len: Optional[int] = None) -> np.ndarray:
 def batch_to_session_data(
     batch: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], session_data: SessionDataType
 ) -> Tuple[Dict[Text, List[tf.Tensor]], Dict[Text, int]]:
-    """
+    """Convert input batch tensors into batch data format.
+
     Batch contains any number of batch data. The order is equal to the
     key-value pairs in session data. As sparse data were converted into indices, data,
     shape before, this methods converts them into sparse tensors. Dense data is
     kept.
     """
+
     batch_data = defaultdict(list)
     # save the amount of placeholders attributed to session data keys
     tuple_sizes = defaultdict(int)
-    idx = 0
 
+    idx = 0
     for k, values in session_data.items():
         for v in values:
             tuple_sizes[k] = 0
             if isinstance(v[0], scipy.sparse.spmatrix):
                 # explicitly substitute last dimension in shape with known static value
                 batch_data[k].append(
-                    values_to_sparse_tensor(
+                    tf.SparseTensor(
                         batch[idx],
                         batch[idx + 1],
                         [batch[idx + 2][0], batch[idx + 2][1], v[0].shape[-1]],
                     )
                 )
-                idx += 3
                 tuple_sizes[k] += 3
+                idx += 3
             else:
                 batch_data[k].append(batch[idx])
-                idx += 1
                 tuple_sizes[k] += 1
+                idx += 1
 
     return batch_data, tuple_sizes
 
 
-# noinspection PyPep8Naming
 def create_tf_dataset(
     session_data: SessionDataType,
     batch_size: Union["tf.Tensor", int],
@@ -440,6 +437,7 @@ def create_tf_dataset(
 
 def get_shapes_types(session_data: SessionDataType) -> Tuple:
     """Extract shapes and types from session data."""
+
     types = []
     shapes = []
 
@@ -504,6 +502,50 @@ def create_iterator_init_datasets(
         eval_init_op = None
 
     return iterator, train_init_op, eval_init_op
+
+
+# noinspection PyPep8Naming
+def tf_dense_layer_for_sparse(
+    inputs: tf.SparseTensor,
+    units: int,
+    name: Text,
+    C2: float,
+    activation: Optional[Callable] = tf.nn.relu,
+    use_bias: bool = True,
+) -> tf.Tensor:
+    """Dense layer for sparse input tensor"""
+
+    if not isinstance(inputs, tf.SparseTensor):
+        raise ValueError("Input tensor should be sparse.")
+
+    with tf.variable_scope("dense_layer_for_sparse_" + name, reuse=tf.AUTO_REUSE):
+        kernel_regularizer = tf.contrib.layers.l2_regularizer(C2)
+        kernel = tf.get_variable(
+            "kernel",
+            shape=[inputs.shape[-1], units],
+            dtype=inputs.dtype,
+            regularizer=kernel_regularizer,
+        )
+        bias = tf.get_variable("bias", shape=[units], dtype=inputs.dtype)
+
+        # outputs will be 2D
+        outputs = tf.sparse.matmul(
+            tf.sparse.reshape(inputs, [-1, int(inputs.shape[-1])]), kernel
+        )
+
+        if len(inputs.shape) == 3:
+            # reshape back
+            outputs = tf.reshape(
+                outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], -1)
+            )
+
+        if use_bias:
+            outputs = tf.nn.bias_add(outputs, bias)
+
+    if activation is None:
+        return outputs
+
+    return activation(outputs)
 
 
 # noinspection PyPep8Naming
@@ -687,10 +729,14 @@ def _tf_sample_neg(
     return tf.batch_gather(tiled_all_bs, neg_ids)
 
 
-def _tf_calc_iou_mask(
+def _tf_get_bad_mask(
     pos_b: "tf.Tensor", all_bs: "tf.Tensor", neg_ids: "tf.Tensor"
 ) -> "tf.Tensor":
-    """Calculate IOU mask for given indices"""
+    """Calculate bad mask for given indices.
+
+    Checks that input features are different for positive negative samples.
+    """
+
     pos_b_in_flat = tf.expand_dims(pos_b, -2)
     neg_b_in_flat = _tf_sample_neg(tf.shape(pos_b)[0], all_bs, neg_ids)
 
@@ -698,12 +744,6 @@ def _tf_calc_iou_mask(
         tf.reduce_all(tf.equal(neg_b_in_flat, pos_b_in_flat), axis=-1),
         pos_b_in_flat.dtype,
     )
-
-    # intersection_b_in_flat = tf.minimum(neg_b_in_flat, pos_b_in_flat)
-    # union_b_in_flat = tf.maximum(neg_b_in_flat, pos_b_in_flat)
-    #
-    # iou = tf.reduce_sum(intersection_b_in_flat, -1) / tf.reduce_sum(union_b_in_flat, -1)
-    # return 1.0 - tf.nn.relu(tf.sign(1.0 - iou))
 
 
 def _tf_get_negs(
@@ -731,7 +771,7 @@ def _tf_get_negs(
     )
     neg_ids = shuffled_indices[:, :num_neg]
 
-    bad_negs = _tf_calc_iou_mask(raw_flat, all_raw, neg_ids)
+    bad_negs = _tf_get_bad_mask(raw_flat, all_raw, neg_ids)
     if len(raw_pos.shape) == 3:
         bad_negs = tf.reshape(bad_negs, (batch_size, seq_length, -1))
 
@@ -769,54 +809,6 @@ def sample_negatives(
         dial_bad_negs,
         bot_bad_negs,
     )
-
-
-def tf_dense_layer_for_sparse(
-    inputs: tf.SparseTensor,
-    units: int,
-    name: Text,
-    C2: float,
-    activation: Optional[Callable] = tf.nn.relu,
-    use_bias: bool = True,
-) -> tf.Tensor:
-    """Idea from
-    https://medium.com/dailymotion/how-to-design-deep-learning-models-with-sparse-inputs-in-tensorflow-keras-fd5e754abec1
-    """
-
-    if not isinstance(inputs, tf.SparseTensor):
-        raise
-
-    with tf.variable_scope("dense_layer_for_sparse_" + name, reuse=tf.AUTO_REUSE):
-        kernel_regularizer = tf.contrib.layers.l2_regularizer(C2)
-        kernel = tf.get_variable(
-            "kernel",
-            shape=[inputs.shape[-1], units],
-            dtype=inputs.dtype,
-            regularizer=kernel_regularizer,
-        )
-        bias = tf.get_variable("bias", shape=[units], dtype=inputs.dtype)
-
-        # outputs will be 2D
-        outputs = tf.sparse.matmul(
-            tf.sparse.reshape(inputs, [-1, tf.shape(inputs)[-1]]), kernel
-        )
-        # outputs = tf.matmul(
-        #     tf.reshape(tf.sparse.to_dense(inputs, validate_indices=False), [-1, tf.shape(inputs)[-1]]), kernel, a_is_sparse=True
-        # )
-
-        if len(inputs.shape) == 3:
-            # reshape back
-            outputs = tf.reshape(
-                outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], -1)
-            )
-
-        if use_bias:
-            outputs = tf.nn.bias_add(outputs, bias)
-
-    if activation is None:
-        return outputs
-
-    return activation(outputs)
 
 
 def tf_raw_sim(
@@ -1233,7 +1225,7 @@ def extract_attention(attention_weights) -> Optional["tf.Tensor"]:
         return tf.concat(attention, 0)
 
 
-def persist_tensor(name: Text, tensor: "tf.Tensor", graph: "tf.Graph") -> None:
+def persist_tensor(name: Text, tensor: Union["tf.Tensor", Tuple["tf.Tensor"], List["tf.Tensor"]], graph: "tf.Graph") -> None:
     """Add tensor to collection if it is not None"""
 
     if tensor is not None:
@@ -1250,8 +1242,8 @@ def load_tensor(name: Text) -> Optional["tf.Tensor"]:
 
     tensor_list = tf.get_collection(name)
 
-    if tensor_list is None:
-        return tensor_list
+    if not tensor_list:
+        return None
 
     if len(tensor_list) == 1:
         return tensor_list[0]
