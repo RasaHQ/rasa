@@ -62,13 +62,6 @@ class StoryConflict:
     def __str__(self):
         last_event_type, last_event_name = self._get_prev_event(self.sliced_states[-1])
         conflict_string = f"CONFLICT after {last_event_type} '{last_event_name}':\n"
-        # for state in self.sliced_states:
-        #     if state:
-        #         event_type, event_name = self._get_prev_event(state)
-        #         if event_type == "intent":
-        #             conflict_string += f"* {event_name}\n"
-        #         else:
-        #             conflict_string += f"  - {event_name}\n"
         for action, stories in self._conflicting_actions.items():
             if len(stories) == 1:
                 stories = f"'{stories[0]}'"
