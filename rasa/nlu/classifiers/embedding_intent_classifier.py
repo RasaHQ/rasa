@@ -500,7 +500,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 )
                 _tags.append(tag_id_dict[_tag])
             tag_ids.append(
-                scipy.sparse.csr_matrix(np.array([_tags]).T.astype(np.float64))
+                scipy.sparse.csr_matrix(np.array([_tags]).T)  # TODO coo matrix
             )
 
         X_sparse = np.array(X_sparse)
@@ -605,7 +605,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     def _train_entity_graph(self, a, c, mask):
         sequence_lengths = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
-        sequence_lengths.set_shape([mask.shape[0]])
 
         c = tf.reduce_sum(tf.nn.relu(c), -1)
 
@@ -699,13 +698,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     def _create_tf_sequence(self, a_in, mask) -> "tf.Tensor":
         """Create sequence level embedding and mask."""
-        a_in = train_utils.create_tf_fnn(
+        a_in = self._create_tf_embed_fnn(
             a_in,
             self.hidden_layer_sizes["text"],
-            self.droprate,
-            self.C2,
-            self._is_training,
-            layer_name_suffix="text",
+            fnn_name="text_intent" if self.share_hidden_layers else "text",
+            embed_name="text",
         )
 
         self.attention_weights = {}
@@ -914,6 +911,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         self.graph = tf.Graph()
         with self.graph.as_default():
+            # tf.enable_eager_execution()
             # set random seed
             tf.set_random_seed(self.random_seed)
 
