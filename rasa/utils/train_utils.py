@@ -393,6 +393,7 @@ def batch_to_session_data(
 
     for k, values in session_data.items():
         for v in values:
+            batch_sizes[k] = 0
             if isinstance(v[0], scipy.sparse.spmatrix):
                 # explicitly substitute last dimension in shape with known static value
                 batch_data[k].append(
