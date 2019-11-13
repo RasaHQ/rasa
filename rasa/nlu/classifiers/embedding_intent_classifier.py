@@ -424,12 +424,12 @@ class EmbeddingIntentClassifier(Component):
         self._add_to_session_data(session_data, "intent_features", [Y_sparse, Y_dense])
         self._add_to_session_data(session_data, "intent_ids", [label_ids])
 
-        self._add_mask_to_session_data(session_data, "text_mask", "text_features")
-        self._add_mask_to_session_data(session_data, "intent_mask", "intent_features")
-
         if "intent_features" not in session_data:
             # no intent features are present, get default features from _label_data
             session_data["intent_features"] = self.use_default_label_features(label_ids)
+
+        self._add_mask_to_session_data(session_data, "text_mask", "text_features")
+        self._add_mask_to_session_data(session_data, "intent_mask", "intent_features")
 
         return session_data
 
@@ -448,12 +448,10 @@ class EmbeddingIntentClassifier(Component):
 
     @staticmethod
     def _add_mask_to_session_data(session_data: SessionData, key: Text, from_key: Text):
-        session_data[key] = []
-
         for data in session_data[from_key]:
             if data.size > 0:
                 mask = np.array([np.ones((x.shape[0], 1)) for x in data])
-                session_data[key].append(mask)
+                session_data[key] = [mask]
                 break
 
     # tf helpers:
@@ -580,7 +578,9 @@ class EmbeddingIntentClassifier(Component):
 
         self.batch_in = tf.tuple(batch_placeholder)
 
-        batch_data, self.batch_tuple_sizes = train_utils.batch_to_session_data(self.batch_in, session_data)
+        batch_data, self.batch_tuple_sizes = train_utils.batch_to_session_data(
+            self.batch_in, session_data
+        )
 
         a = self.combine_sparse_dense_features(
             batch_data["text_features"], batch_data["text_mask"][0], "text"
@@ -775,36 +775,38 @@ class EmbeddingIntentClassifier(Component):
 
         label = {"name": None, "confidence": 0.0}
         label_ranking = []
+
         if self.session is None:
             logger.error(
                 "There is no trained tf.session: "
                 "component is either not trained or "
                 "didn't receive enough training data"
             )
+            return label, label_ranking
 
-        else:
-            # create session data from message and convert it into a batch of 1
-            session_data = self._create_session_data([message])
-            batch = train_utils.prepare_batch(
-                session_data, tuple_sizes=self.batch_tuple_sizes
-            )
+        # create session data from message and convert it into a batch of 1
+        session_data = self._create_session_data([message])
+        batch = train_utils.prepare_batch(
+            session_data, tuple_sizes=self.batch_tuple_sizes
+        )
 
-            # load tf graph and session
-            label_ids, message_sim = self._calculate_message_sim(batch)
+        # load tf graph and session
+        label_ids, message_sim = self._calculate_message_sim(batch)
 
-            # if X contains all zeros do not predict some label
-            if label_ids.size > 0:
-                label = {
-                    "name": self.inverted_label_dict[label_ids[0]],
-                    "confidence": message_sim[0],
-                }
+        # if X contains all zeros do not predict some label
+        if label_ids.size > 0:
+            label = {
+                "name": self.inverted_label_dict[label_ids[0]],
+                "confidence": message_sim[0],
+            }
 
-                ranking = list(zip(list(label_ids), message_sim))
-                ranking = ranking[:LABEL_RANKING_LENGTH]
-                label_ranking = [
-                    {"name": self.inverted_label_dict[label_idx], "confidence": score}
-                    for label_idx, score in ranking
-                ]
+            ranking = list(zip(list(label_ids), message_sim))
+            ranking = ranking[:LABEL_RANKING_LENGTH]
+            label_ranking = [
+                {"name": self.inverted_label_dict[label_idx], "confidence": score}
+                for label_idx, score in ranking
+            ]
+
         return label, label_ranking
 
     def process(self, message: "Message", **kwargs: Any) -> None:

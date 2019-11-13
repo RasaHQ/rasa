@@ -379,7 +379,7 @@ def pad_data(data: np.ndarray, feature_len: Optional[int] = None) -> np.ndarray:
 
 def batch_to_session_data(
     batch: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], session_data: SessionData
-):
+) -> Tuple[Dict[Text, List[tf.Tensor]], Dict[Text, int]]:
     """
     Batch contains any number of batch data. The order is equal to the
     key-value pairs in session data. As sparse data were converted into indices, data,
