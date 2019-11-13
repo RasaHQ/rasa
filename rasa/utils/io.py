@@ -211,7 +211,7 @@ def write_yaml_file(data: Dict, filename: Union[Text, Path]) -> None:
         filename: The path to the file which should be written.
     """
     with open(str(filename), "w", encoding=DEFAULT_ENCODING) as outfile:
-        yaml.dump(data, outfile, default_flow_style=False)
+        yaml.dump(data, outfile, default_flow_style=False, allow_unicode=True)
 
 
 def write_text_file(
