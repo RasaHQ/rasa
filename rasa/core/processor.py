@@ -290,27 +290,22 @@ class MessageProcessor:
         if slot_values.strip():
             logger.debug(f"Current slot values: \n{slot_values}")
 
-    def _log_unseen_intent(self, parse_data: Dict[Text, Any]) -> None:
-        """check if the NLU picks up intent that aren't in the domain.
-        """
+    def _log_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
+        """Check if the NLU interpreter picks up intents or entities that aren't in the domain."""
+
+        domain_is_not_empty = self.domain and not self.domain.is_empty()
         intent = parse_data["intent"]["name"]
-        if intent and not self.domain.is_empty() and intent not in self.domain.intents:
+        entities = parse_data["entities"]
+
+        if intent and domain_is_not_empty and intent not in self.domain.intents:
             logger.warning(
                 "Interpreter parsed an intent '{}' "
                 "that is not defined in the domain.".format(intent)
             )
 
-    def _log_unseen_enitites(self, parse_data: Dict[Text, Any]) -> None:
-        """check if the NLU picks up entities that aren't in the domain.
-        """
-        entities = parse_data["entities"]
         for element in entities:
             entity = element["entity"]
-            if (
-                entity
-                and not self.domain.is_empty()
-                and entity not in self.domain.entities
-            ):
+            if entity and domain_is_not_empty and entity not in self.domain.entities:
                 logger.warning(
                     "Interpreter parsed an entity '{}' "
                     "that is not defined in the domain.".format(entity)
@@ -339,8 +334,7 @@ class MessageProcessor:
             )
         )
 
-        self._log_unseen_intent(parse_data)
-        self._log_unseen_enitites(parse_data)
+        self._log_unseen_features(parse_data)
 
         return parse_data
 
