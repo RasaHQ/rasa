@@ -21,6 +21,7 @@ Changed
 - Updated Mattermost connector documentation to be more clear.
 - Updated format strings to f-strings where appropriate.
 - Updated tensorflow requirement to ``1.15.0``
+- Dump domain using UTF-8 (to avoid \UXXXX sequences in the dumped files)
 
 Removed
 -------
