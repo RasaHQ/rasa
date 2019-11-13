@@ -26,6 +26,7 @@ Changed
 
 Removed
 -------
+- Remove duplicate messages when creating training data (issues/1446)
 
 Fixed
 -----
