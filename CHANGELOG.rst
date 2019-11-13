@@ -17,7 +17,7 @@ Added
 - Fall back to ``InMemoryTrackerStore`` in case there is any problem with the current
   tracker store
 - Add command line argument ``rasa x --config CONFIG``, to specify path to the policy and
-  NLU pipeline configuration of your bot. (default: config.yml)
+  NLU pipeline configuration of your bot (default: config.yml)
 
 Changed
 -------
