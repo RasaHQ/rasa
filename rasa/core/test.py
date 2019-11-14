@@ -20,6 +20,7 @@ import matplotlib
 
 matplotlib.use("TkAgg")
 
+
 logger = logging.getLogger(__name__)
 
 StoryEvalution = namedtuple(

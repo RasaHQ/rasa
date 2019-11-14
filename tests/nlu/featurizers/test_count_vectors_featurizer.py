@@ -31,11 +31,11 @@ def test_count_vector_featurizer(sentence, expected):
     test_message = Message(sentence)
     ftr.process(test_message)
 
-    assert isinstance(test_message.get("text_sparse_features"), scipy.sparse.csr_matrix)
+    assert isinstance(test_message.get("text_sparse_features"), scipy.sparse.coo_matrix)
 
-    actual = test_message.get("text_sparse_features")[0].toarray()
+    actual = test_message.get("text_sparse_features").toarray()
 
-    assert np.all(actual == expected)
+    assert np.all(actual[0] == expected)
 
 
 @pytest.mark.parametrize(
@@ -65,14 +65,14 @@ def test_count_vector_featurizer_attribute_featurization(
 
     if intent_features:
         assert (
-            train_message.get("intent_sparse_features")[0].toarray() == intent_features
+            train_message.get("intent_sparse_features").toarray()[0] == intent_features
         )
     else:
         assert train_message.get("intent_sparse_features") is None
 
     if response_features:
         assert (
-            train_message.get("response_sparse_features")[0].toarray()
+            train_message.get("response_sparse_features").toarray()[0]
             == response_features
         )
     else:
@@ -113,13 +113,13 @@ def test_count_vector_featurizer_shared_vocab(
     ftr.train(data)
 
     assert np.all(
-        train_message.get("text_sparse_features")[0].toarray() == text_features
+        train_message.get("text_sparse_features").toarray()[0] == text_features
     )
     assert np.all(
-        train_message.get("intent_sparse_features")[0].toarray() == intent_features
+        train_message.get("intent_sparse_features").toarray()[0] == intent_features
     )
     assert np.all(
-        train_message.get("response_sparse_features")[0].toarray() == response_features
+        train_message.get("response_sparse_features").toarray()[0] == response_features
     )
 
 
@@ -149,7 +149,7 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
     test_message = Message(sentence)
     ftr.process(test_message)
 
-    assert np.all(test_message.get("text_sparse_features")[0].toarray() == expected)
+    assert np.all(test_message.get("text_sparse_features").toarray()[0] == expected)
 
 
 @pytest.mark.parametrize(
@@ -182,7 +182,7 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
     test_message = Message(sentence)
     ftr.process(test_message)
 
-    assert np.all(test_message.get("text_sparse_features")[0].toarray() == expected)
+    assert np.all(test_message.get("text_sparse_features").toarray()[0] == expected)
 
 
 @pytest.mark.parametrize(
@@ -223,7 +223,7 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
 
     ftr.process(test_message)
 
-    assert np.all(test_message.get("text_sparse_features")[0].toarray() == expected)
+    assert np.all(test_message.get("text_sparse_features").toarray()[0] == expected)
 
 
 @pytest.mark.parametrize(
@@ -249,7 +249,7 @@ def test_count_vector_featurizer_char(sentence, expected):
     test_message = Message(sentence)
     ftr.process(test_message)
 
-    assert np.all(test_message.get("text_sparse_features")[0].toarray() == expected)
+    assert np.all(test_message.get("text_sparse_features").toarray()[0] == expected)
 
 
 def test_count_vector_featurizer_persist_load(tmpdir):

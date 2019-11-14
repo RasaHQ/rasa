@@ -17,7 +17,7 @@ def sequence_to_sentence_features(
         return None
 
     if isinstance(features, scipy.sparse.spmatrix):
-        return scipy.sparse.csr_matrix(features.sum(axis=0))
+        return scipy.sparse.coo_matrix(features.sum(axis=0))
 
     return np.mean(features, axis=0)
 
