@@ -1120,7 +1120,7 @@ def output_validation_stat(
     is_training: "tf.Session",
     batch_size_in: "tf.Tensor",
     ep_batch_size: int,
-) -> Tuple[float, float]:
+) -> Dict[Text, List[float]]:
     """Output training statistics"""
 
     session.run(eval_init_op, feed_dict={batch_size_in: ep_batch_size})
@@ -1136,7 +1136,7 @@ def output_validation_stat(
         except tf.errors.OutOfRangeError:
             break
 
-    for k, values in ep_val_metrics:
+    for k, values in ep_val_metrics.items():
         for i, v in enumerate(values):
             ep_val_metrics[k][i] = v / batches_per_epoch
 
@@ -1190,14 +1190,14 @@ def train_tf_dataset(
             except tf.errors.OutOfRangeError:
                 break
 
-        for k, values in ep_train_metrics:
+        for k, values in ep_train_metrics.items():
             for i, v in enumerate(values):
                 train_metrics[k][i] = v / batches_per_epoch
 
         postfix_dict = {}
-        for k, values in train_metrics:
+        for k, values in train_metrics.items():
             for i, v in enumerate(values):
-                postfix_dict[f"{k} {i}"] = f"{v:.3f}"
+                postfix_dict[f"{k}_{i}"] = f"{v:.3f}"
 
         if eval_init_op is not None:
             if (ep + 1) % evaluate_every_num_epochs == 0 or (ep + 1) == epochs:
@@ -1213,7 +1213,7 @@ def train_tf_dataset(
             postfix_dict = {}
             for k, values in val_metrics:
                 for i, v in enumerate(values):
-                    postfix_dict[f"val {k} {i}"] = f"{v:.3f}"
+                    postfix_dict[f"val_{k}_{i}"] = f"{v:.3f}"
 
         pbar.set_postfix(postfix_dict)
 

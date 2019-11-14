@@ -504,13 +504,14 @@ class EmbeddingIntentClassifier(EntityExtractor):
             if label_attribute and e.get(label_attribute):
                 label_ids.append(label_id_dict[e.get(label_attribute)])
 
-            _tags = []
-            for t in e.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]):
-                _tag = determine_token_labels(
-                    t, e.get(MESSAGE_ENTITIES_ATTRIBUTE), None
-                )
-                _tags.append(tag_id_dict[_tag])
-            tag_ids.append(scipy.sparse.coo_matrix(np.array([_tags]).T))
+            if tag_id_dict:
+                _tags = []
+                for t in e.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]):
+                    _tag = determine_token_labels(
+                        t, e.get(MESSAGE_ENTITIES_ATTRIBUTE), None
+                    )
+                    _tags.append(tag_id_dict[_tag])
+                tag_ids.append(scipy.sparse.coo_matrix(np.array([_tags]).T))
 
         X_sparse = np.array(X_sparse)
         X_dense = np.array(X_dense)
@@ -589,11 +590,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
     def combine_sparse_dense_features(
-        self,
-        features: List[Union[tf.Tensor, tf.SparseTensor]],
-        mask: tf.Tensor,
-        name: Text,
-    ) -> tf.Tensor:
+        self, features: List[Union["tf.Tensor", "tf.SparseTensor"]], name: Text
+    ) -> "tf.Tensor":
 
         dense_features = []
 
@@ -612,14 +610,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
             else:
                 dense_features.append(f)
 
-        output = tf.concat(dense_features, axis=-1)
-        # apply mean to convert sequence to sentence features
-        output = tf.reduce_sum(output, axis=1) / tf.reduce_sum(mask, axis=1)
-        return output
+        return tf.concat(dense_features, axis=-1)
 
     def _build_tf_train_graph(
         self, session_data: SessionDataType
-    ) -> Dict[Text, List[tf.Tensor]]:
+    ) -> Dict[Text, List["tf.Tensor"]]:
 
         # get in tensors from generator
         self.batch_in = self._iterator.get_next()
@@ -656,9 +651,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     def _train_intent_graph(
         self, a: "tf.Tensor", b: "tf.Tensor", all_bs: "tf.Tensor", mask: "tf.Tensor"
-    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+    ) -> Dict[Text, List["tf.Tensor"]]:
         last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
-        last = tf.expand_dims(last, -1)
 
         # get _cls_ vector for intent classification
         cls_embed = tf.reduce_sum(a * last, 1)
@@ -667,8 +661,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.embed_dim,
             self.C2,
             self.similarity_type,
-            layer_name_suffix="a",
+            layer_name_suffix="cls",
         )
+
+        b = tf.reduce_sum(tf.nn.relu(b), 1)
+        all_bs = tf.reduce_sum(tf.nn.relu(all_bs), 1)
 
         self.label_embed = self._create_tf_embed_fnn(
             b,
@@ -683,7 +680,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             embed_name="intent",
         )
 
-        return train_utils.calculate_loss_acc(
+        loss, acc = train_utils.calculate_loss_acc(
             cls_embed,
             self.label_embed,
             b,
@@ -698,6 +695,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.C_emb,
             self.scale_loss,
         )
+
+        return {"loss": [loss], "acc": [acc]}
 
     def _calculate_crf_loss(
         self, inputs: tf.Tensor, sequence_lengths: tf.Tensor, tag_indices: tf.Tensor
@@ -767,33 +766,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return a
 
-    def combine_sparse_dense_features(
-        self, features: List[Union[tf.Tensor, tf.SparseTensor]], name: Text
-    ) -> tf.Tensor:
-
-        dense_features = []
-
-        dense_dim = self.dense_dim
-        # if dense features are present use the feature dimension of the dense features
-        for f in features:
-            if not isinstance(f, tf.SparseTensor):
-                dense_dim = f.shape[-1]
-                break
-
-        for f in features:
-            if isinstance(f, tf.SparseTensor):
-                dense_features.append(
-                    train_utils.tf_dense_layer_for_sparse(f, dense_dim, name, self.C2)
-                )
-            else:
-                dense_features.append(f)
-
-        output = tf.concat(dense_features, axis=-1)
-        # apply mean to convert sequence to sentence features
-        # output = tf.reduce_sum(output, axis=1) / tf.reduce_sum(mask, axis=1)
-
-        return output
-
     def _build_tf_pred_graph(self, session_data: "SessionDataType") -> "tf.Tensor":
 
         shapes, types = train_utils.get_shapes_types(session_data)
@@ -811,17 +783,20 @@ class EmbeddingIntentClassifier(EntityExtractor):
         a = self.combine_sparse_dense_features(batch_data["text_features"], "text")
         b = self.combine_sparse_dense_features(batch_data["intent_features"], "intent")
         c = self.combine_sparse_dense_features(batch_data["tag_ids"], "tag")
+        mask = batch_data["text_mask"][0]
 
         self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
 
-        if self.intent_classification:
-            return self._pred_intent_graph(a, b)
-        if self.named_entity_recognition:
-            return self._pred_entity_graph(a, c)
+        # transformer
+        a = self._create_tf_sequence(a, mask)
 
-    def _pred_intent_graph(self, a, b, mask):
+        if self.intent_classification:
+            return self._pred_intent_graph(a, b, mask)
+        if self.named_entity_recognition:
+            return self._pred_entity_graph(a, c, mask)
+
+    def _pred_intent_graph(self, a: "tf.Tensor", b: "tf.Tensor", mask: "tf.Tensor"):
         last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
-        last = tf.expand_dims(last, -1)
 
         # get _cls_ embedding
         cls_embed = tf.reduce_sum(a * last, 1)
@@ -830,12 +805,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.embed_dim,
             self.C2,
             self.similarity_type,
-            layer_name_suffix="text",
+            layer_name_suffix="cls",
         )
 
-        # reduce dimensionality as input should not be sequence for intent
-        # classification
-        self.b_in = tf.reduce_sum(self.b_in, 1)
+        self.b = tf.reduce_sum(b, 1)
 
         self.sim_all = train_utils.tf_raw_sim(
             cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :], None
@@ -959,7 +932,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         self.graph = tf.Graph()
         with self.graph.as_default():
-            # tf.enable_eager_execution()
             # set random seed
             tf.set_random_seed(self.random_seed)
 
@@ -982,9 +954,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
             metrics = self._build_tf_train_graph(session_data)
 
-            loss = sum(metrics["loss"])
-
             # define which optimizer to use
+            loss = tf.add_n(metrics["loss"])
             self._train_op = tf.train.AdamOptimizer().minimize(loss)
 
             # train tensorflow graph
