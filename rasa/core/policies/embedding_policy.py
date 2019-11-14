@@ -252,15 +252,12 @@ class EmbeddingPolicy(Policy):
     # noinspection PyPep8Naming
     def _create_session_data(
         self, data_X: "np.ndarray", data_Y: Optional["np.ndarray"] = None
-    ) -> "train_utils.SessionData":
+    ) -> "train_utils.SessionDataType":
         """Combine all tf session related data into dict."""
-        data_X = data_X.astype(np.float32)
-
         if data_Y is not None:
             # training time
             label_ids = self._label_ids_for_Y(data_Y)
             Y = self._label_features_for_Y(label_ids)
-            Y = Y.astype(np.float32)
 
             # idea taken from sklearn's stratify split
             if label_ids.ndim == 2:
@@ -370,7 +367,9 @@ class EmbeddingPolicy(Policy):
         )
 
     # prepare for prediction
-    def _create_tf_placeholders(self, session_data: "train_utils.SessionData") -> None:
+    def _create_tf_placeholders(
+        self, session_data: "train_utils.SessionDataType"
+    ) -> None:
         """Create placeholders for prediction."""
 
         dialogue_len = None  # use dynamic time
@@ -386,7 +385,7 @@ class EmbeddingPolicy(Policy):
         )
 
     def _build_tf_pred_graph(
-        self, session_data: "train_utils.SessionData"
+        self, session_data: "train_utils.SessionDataType"
     ) -> "tf.Tensor":
         """Rebuild tf graph for prediction."""
 

@@ -15,7 +15,7 @@ from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
-from rasa.utils.train_utils import SessionData
+from rasa.utils.train_utils import SessionDataType
 from rasa.nlu.constants import (
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
@@ -60,7 +60,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     provides = ["intent", "intent_ranking", "entities"]
 
-    requires = [MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = []
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -196,7 +196,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     # config migration warning
     def _check_old_config_variables(self, config: Dict[Text, Any]) -> None:
-
         removed_tokenization_params = [
             "intent_tokenization_flag",
             "intent_split_symbol",
@@ -204,10 +203,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
         for removed_param in removed_tokenization_params:
             if removed_param in config:
                 warnings.warn(
-                    "Intent tokenization has been moved to Tokenizer components. "
-                    "Your config still mentions '{}'. Tokenization may fail if you specify the parameter here."
-                    "Please specify the parameter 'intent_tokenization_flag' and 'intent_split_symbol' in the "
-                    "tokenizer of your NLU pipeline".format(removed_param)
+                    f"Intent tokenization has been moved to Tokenizer components. "
+                    f"Your config still mentions '{removed_param}'. Tokenization may "
+                    f"fail if you specify the parameter here. Please specify the "
+                    f"parameter 'intent_tokenization_flag' and 'intent_split_symbol' "
+                    f"in the tokenizer of your NLU pipeline."
                 )
 
     # init helpers
@@ -346,6 +346,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         labels_example: List["Message"], attribute: Text
     ) -> bool:
         """Check if all labels have features set"""
+
         for label_example in labels_example:
             if (
                 label_example.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute])
@@ -371,13 +372,20 @@ class EmbeddingIntentClassifier(EntityExtractor):
         if message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]) is not None:
             dense_features = message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute])
 
+        if sparse_features is not None and dense_features is not None:
+            if sparse_features.shape[0] != dense_features.shape[0]:
+                raise ValueError(
+                    f"Sequence dimensions for sparse and dense features "
+                    f"don't coincide in '{message.text}'"
+                )
+
         return sparse_features, dense_features
 
     def _extract_labels_precomputed_features(
         self, label_examples: List["Message"]
     ) -> List[np.ndarray]:
+        """Collect precomputed encodings"""
 
-        # Collect precomputed encodings
         sparse_features = []
         dense_features = []
 
@@ -400,6 +408,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         labels_example: List["Message"],
     ) -> List[np.ndarray]:
         """Compute one-hot representation for the labels"""
+
         return [
             np.array(
                 [
@@ -416,7 +425,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         training_data: "TrainingData",
         label_id_dict: Dict[Text, int],
         attribute: Text,
-    ) -> "SessionData":
+    ) -> "SessionDataType":
         """Create matrix with label_ids encoded in rows as bag of words.
 
         Find a training example for each label and get the encoded features
@@ -465,9 +474,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
         training_data: List["Message"],
         label_id_dict: Optional[Dict[Text, int]] = None,
         tag_id_dict: Optional[Dict[Text, int]] = None,
-        attribute: Optional[Text] = None,
-    ) -> "SessionData":
-        """Prepare data for training and create a SessionData object"""
+        label_attribute: Optional[Text] = None,
+    ) -> "SessionDataType":
+        """Prepare data for training and create a SessionDataType object"""
+
         X_sparse = []
         X_dense = []
         Y_sparse = []
@@ -490,8 +500,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
             if _dense is not None:
                 Y_dense.append(_dense)
 
-            if e.get(attribute):
-                label_ids.append(label_id_dict[e.get(attribute)])
+            if label_attribute and e.get(label_attribute):
+                label_ids.append(label_id_dict[e.get(label_attribute)])
 
             _tags = []
             for t in e.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]):
@@ -516,8 +526,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self._add_to_session_data(session_data, "intent_ids", [label_ids])
         self._add_to_session_data(session_data, "tag_ids", [tag_ids])
 
-        if "intent_features" not in session_data:
-            # no intent features are present, get default features from _label_data
+        if label_attribute and (
+            "intent_features" not in session_data or not session_data["intent_features"]
+        ):
+            # no label features are present, get default features from _label_data
             session_data["intent_features"] = self.use_default_label_features(label_ids)
 
         self._add_mask_to_session_data(session_data, "text_mask", "text_features")
@@ -527,7 +539,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     @staticmethod
     def _add_to_session_data(
-        session_data: SessionData, key: Text, features: List[np.ndarray]
+        session_data: SessionDataType, key: Text, features: List[np.ndarray]
     ):
         if not features:
             return
@@ -539,11 +551,16 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 session_data[key].append(data)
 
     @staticmethod
-    def _add_mask_to_session_data(session_data: SessionData, key: Text, from_key: Text):
+    def _add_mask_to_session_data(
+        session_data: SessionDataType, key: Text, from_key: Text
+    ):
+
+        session_data[key] = []
+
         for data in session_data[from_key]:
             if data.size > 0:
                 mask = np.array([np.ones((x.shape[0], 1)) for x in data])
-                session_data[key] = [mask]
+                session_data[key].append(mask)
                 break
 
     # tf helpers:
@@ -572,13 +589,41 @@ class EmbeddingIntentClassifier(EntityExtractor):
             layer_name_suffix=embed_name,
         )
 
+    def combine_sparse_dense_features(
+        self,
+        features: List[Union[tf.Tensor, tf.SparseTensor]],
+        mask: tf.Tensor,
+        name: Text,
+    ) -> tf.Tensor:
+
+        dense_features = []
+
+        dense_dim = self.dense_dim
+        # if dense features are present use the feature dimension of the dense features
+        for f in features:
+            if not isinstance(f, tf.SparseTensor):
+                dense_dim = f.shape[-1]
+                break
+
+        for f in features:
+            if isinstance(f, tf.SparseTensor):
+                dense_features.append(
+                    train_utils.tf_dense_layer_for_sparse(f, dense_dim, name, self.C2)
+                )
+            else:
+                dense_features.append(f)
+
+        output = tf.concat(dense_features, axis=-1)
+        # apply mean to convert sequence to sentence features
+        output = tf.reduce_sum(output, axis=1) / tf.reduce_sum(mask, axis=1)
+        return output
+
     def _build_tf_train_graph(
-        self, session_data: SessionData
+        self, session_data: SessionDataType
     ) -> Dict[Text, List[tf.Tensor]]:
 
         # get in tensors from generator
         self.batch_in = self._iterator.get_next()
-
         # convert encoded all labels into the batch format
         label_batch = train_utils.prepare_batch(self._label_data)
 
@@ -756,7 +801,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return output
 
-    def _build_tf_pred_graph(self, session_data: "SessionData") -> "tf.Tensor":
+    def _build_tf_pred_graph(self, session_data: "SessionDataType") -> "tf.Tensor":
+
         shapes, types = train_utils.get_shapes_types(session_data)
 
         batch_placeholder = []
@@ -791,7 +837,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.embed_dim,
             self.C2,
             self.similarity_type,
-            layer_name_suffix="a",
+            layer_name_suffix="text",
         )
 
         # reduce dimensionality as input should not be sequence for intent
@@ -824,15 +870,14 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.tag_prediction = tf.to_int64(pred_ids)
 
     @staticmethod
-    def _get_num_of_features(session_data: "SessionData", key_prefix: Text) -> int:
+    def _get_num_of_features(session_data: "SessionDataType", key: Text) -> int:
         num_features = 0
-        for k, values in session_data.items():
-            if k.startswith(key_prefix):
-                for v in values:
-                    num_features += v[0].shape[-1]
+        for data in session_data[key]:
+            if data.size > 0:
+                num_features += data[0].shape[-1]
         return num_features
 
-    def check_input_dimension_consistency(self, session_data: "SessionData"):
+    def check_input_dimension_consistency(self, session_data: "SessionDataType"):
         if self.share_hidden_layers:
             num_text_features = self._get_num_of_features(session_data, "text_features")
             num_intent_features = self._get_num_of_features(
@@ -847,8 +892,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 )
 
     def preprocess_train_data(self, training_data: "TrainingData"):
-        """Performs sanity checks on training data, extracts encodings for labels and
-        prepares data for training"""
+        """Prepares data for training.
+
+        Performs sanity checks on training data, extracts encodings for labels.
+        """
 
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=MESSAGE_INTENT_ATTRIBUTE
@@ -868,7 +915,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             training_data.training_examples,
             label_id_dict,
             tag_id_dict,
-            attribute=MESSAGE_INTENT_ATTRIBUTE,
+            label_attribute=MESSAGE_INTENT_ATTRIBUTE,
         )
 
         self.num_tags = len(self.inverted_tag_dict)
@@ -877,7 +924,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return session_data
 
-    def _check_enough_labels(self, session_data: "SessionData") -> bool:
+    @staticmethod
+    def _check_enough_labels(session_data: "SessionDataType") -> bool:
         return len(np.unique(session_data["intent_ids"])) >= 2
 
     def train(
@@ -887,6 +935,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         **kwargs: Any,
     ) -> None:
         """Train the embedding label classifier on a data set."""
+
         logger.debug("Started training embedding classifier.")
 
         # set numpy random seed
@@ -971,7 +1020,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     # process helpers
     # noinspection PyPep8Naming
-    def _calculate_message_sim(self, batch: Tuple) -> Tuple[np.ndarray, List[float]]:
+    def _calculate_message_sim(
+        self, batch: Tuple[np.ndarray]
+    ) -> Tuple[np.ndarray, List[float]]:
         """Calculate message similarities"""
 
         message_sim = self.session.run(
@@ -1133,6 +1184,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             )
             train_utils.persist_tensor("similarity", self.sim, self.graph)
 
+            train_utils.persist_tensor("message_embed", self.message_embed, self.graph)
             train_utils.persist_tensor("label_embed", self.label_embed, self.graph)
             train_utils.persist_tensor(
                 "all_labels_embed", self.all_labels_embed, self.graph
@@ -1194,6 +1246,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 tag_prediction = train_utils.load_tensor("tag_prediction")
                 sim = train_utils.load_tensor("similarity")
 
+                message_embed = train_utils.load_tensor("message_embed")
                 label_embed = train_utils.load_tensor("label_embed")
                 all_labels_embed = train_utils.load_tensor("all_labels_embed")
 
@@ -1225,6 +1278,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 intent_prediction=intent_prediction,
                 tag_prediction=tag_prediction,
                 similarity=sim,
+                message_embed=message_embed,
                 label_embed=label_embed,
                 all_labels_embed=all_labels_embed,
                 attention_weights=attention_weights,
@@ -1233,8 +1287,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         else:
             logger.warning(
-                "Failed to load nlu model. Maybe path {} "
-                "doesn't exist"
-                "".format(os.path.abspath(model_dir))
+                f"Failed to load nlu model. Maybe path {os.path.abspath(model_dir)} "
+                f"doesn't exist"
             )
             return cls(component_config=meta)

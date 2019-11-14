@@ -1,10 +1,8 @@
-import asyncio
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 
-import rasa.utils.io
 from rasa.utils import train_utils
 from rasa.core import training
 from rasa.core.actions.action import (
