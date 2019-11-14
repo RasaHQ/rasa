@@ -57,6 +57,7 @@ def create_label_ids(label_ids: "np.ndarray") -> "np.ndarray":
     else:
         raise ValueError("Unsupported label_ids dimensions")
 
+
 # noinspection PyPep8Naming
 def train_val_split(
     session_data: SessionDataType,
