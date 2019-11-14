@@ -22,6 +22,7 @@ Removed
 Fixed
 -----
 - NLU-only models no longer throw warnings about parsing features not defined in the domain
+- Fixed bug that stopped Dockerfiles from building version 1.4.4.
 
 [1.4.4] - 2019-11-13
 ^^^^^^^^^^^^^^^^^^^^
