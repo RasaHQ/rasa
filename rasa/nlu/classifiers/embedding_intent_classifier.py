@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 
 import numpy as np
 import os
@@ -135,7 +136,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # if true intent classification is trained and intent predicted
         "intent_classification": True,
         # if true named entity recognition is trained and entities predicted
-        "named_entity_recognition": False,
+        "named_entity_recognition": True,
         # number of entity tags
         "num_tags": 0,
     }
@@ -682,6 +683,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # transformer
         a = self._create_tf_sequence(a, mask)
 
+        train_output = defaultdict(list)
+
         if self.intent_classification:
             b = self.combine_sparse_dense_features(
                 batch_data["intent_features"], "intent"
@@ -690,19 +693,48 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 label_data["intent_features"], "intent"
             )
 
-            return self._train_intent_graph(a, b, all_bs, mask)
+            intent_output = self._train_intent_graph(a, b, all_bs, mask)
+            for k, v in intent_output.items():
+                train_output[k].append(v)
 
         if self.named_entity_recognition:
             c = self.combine_sparse_dense_features(batch_data["tag_ids"], "tag")
 
-            return self._train_entity_graph(a, c, mask)
+            entity_output = self._train_entity_graph(a, c, mask)
+            for k, v in entity_output.items():
+                train_output[k].append(v)
 
-    def _train_entity_graph(self, a, c, mask):
+        return train_output
+
+    def _train_entity_graph(self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor"):
         sequence_lengths = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
+        if len(sequence_lengths.shape) > 1:
+            sequence_lengths = tf.squeeze(sequence_lengths)
+        sequence_lengths.set_shape([mask.shape[0]])
 
         c = tf.reduce_sum(tf.nn.relu(c), -1)
+        c = tf.cast(c, tf.int32)
 
-        return self._calculate_crf_loss(a, sequence_lengths, c)
+        # tensor shapes
+        # a: tensor(batch-size, max-seq-len, dim)
+        # sequence_lengths: tensor(batch-size)
+        # c: (batch-size, max-seq-len)
+
+        # CRF
+        crf_params, logits, pred_ids = self._create_crf(a, sequence_lengths)
+
+        # Loss
+        log_likelihood, _ = tf.contrib.crf.crf_log_likelihood(
+            logits, c, sequence_lengths, crf_params
+        )
+        loss = tf.reduce_mean(-log_likelihood)
+
+        # calculate f1 score for train predictions
+        weights = tf.sequence_mask(sequence_lengths)
+        pos_tag_indices = [k for k, v in self.inverted_tag_dict.items() if v != "O"]
+        metric = f1(c, pred_ids, self.num_tags, pos_tag_indices, weights)
+
+        return {"loss": [loss], "f1": [metric]}
 
     def _train_intent_graph(
         self, a: "tf.Tensor", b: "tf.Tensor", all_bs: "tf.Tensor", mask: "tf.Tensor"
@@ -753,32 +785,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return {"loss": [loss], "acc": [acc]}
 
-    def _calculate_crf_loss(
-        self, inputs: tf.Tensor, sequence_lengths: tf.Tensor, tag_indices: tf.Tensor
-    ):
-        """
-        Args:
-            inputs: tensor (batch-size, max-sequence-length, dimension)
-            sequence_lengths: tensor (batch-size)
-            tag_indices: (batch-size, max-sequence-length)
-        """
-        # CRF
-        crf_params, logits, pred_ids = self._create_crf(inputs, sequence_lengths)
-
-        # Loss
-        log_likelihood, _ = tf.contrib.crf.crf_log_likelihood(
-            logits, tag_indices, sequence_lengths, crf_params
-        )
-        loss = tf.reduce_mean(-log_likelihood)
-
-        pos_tag_indices = [k for k, v in self.inverted_tag_dict.items() if v != "O"]
-
-        # Metrics
-        weights = tf.sequence_mask(sequence_lengths)
-        metric = f1(tag_indices, pred_ids, self.num_tags, pos_tag_indices, weights)
-
-        return loss, metric
-
     def _create_crf(
         self, input: tf.Tensor, sequence_lengths: tf.Tensor
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
@@ -823,9 +829,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             return self._pred_intent_graph(a, b, mask)
 
         if self.named_entity_recognition:
-            c = self.combine_sparse_dense_features(batch_data["tag_ids"], "tag")
-
-            return self._pred_entity_graph(a, c, mask)
+            return self._pred_entity_graph(a, mask)
 
     def _pred_intent_graph(self, a: "tf.Tensor", b: "tf.Tensor", mask: "tf.Tensor"):
         last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
@@ -859,9 +863,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.sim_all, self.similarity_type
         )
 
-    def _pred_entity_graph(self, a, c, mask):
-        # get sequence lengths for NER
+    def _pred_entity_graph(self, a: "tf.Tensor", mask: "tf.Tensor"):
         sequence_lengths = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
+        if len(sequence_lengths.shape) > 1:
+            sequence_lengths = tf.squeeze(sequence_lengths)
+        sequence_lengths.set_shape([mask.shape[0]])
 
         # predict tagsx
         _, _, pred_ids = self._create_crf(a, sequence_lengths)
@@ -970,13 +976,20 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 "didn't receive enough training data"
             )
         else:
-            # get features (bag of words) for a message
-            # noinspection PyPep8Naming
-            X = self._extract_features(message)
+            # create session data from message and convert it into a batch of 1
+            session_data = self._create_session_data([message])
+            batch = train_utils.prepare_batch(
+                session_data, tuple_sizes=self.batch_tuple_sizes
+            )
 
             # load tf graph and session
             predictions = self.session.run(
-                self.entity_prediction, feed_dict={self.a_in: X}
+                self.entity_prediction,
+                feed_dict={
+                    _x_in: _x
+                    for _x_in, _x in zip(self.batch_in, batch)
+                    if _x is not None
+                },
             )
 
             tags = [self.inverted_tag_dict[p] for p in predictions[0]]

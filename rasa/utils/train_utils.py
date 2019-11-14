@@ -1159,6 +1159,7 @@ def train_tf_dataset(
     """Train tf graph"""
 
     session.run(tf.global_variables_initializer())
+    session.run(tf.local_variables_initializer())
 
     if evaluate_on_num_examples:
         logger.info(
