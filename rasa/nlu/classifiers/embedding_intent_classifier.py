@@ -743,9 +743,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # calculate f1 score for train predictions
         weights = tf.sequence_mask(sequence_lengths)
         pos_tag_indices = [k for k, v in self.inverted_tag_dict.items() if v != "O"]
-        acc = f1(c, pred_ids, self.num_tags, pos_tag_indices, weights)
+        score = f1(c, pred_ids, self.num_tags, pos_tag_indices, weights)
 
-        return loss, acc[0]
+        return loss, score[1]
 
     def _train_intent_graph(
         self, a: "tf.Tensor", b: "tf.Tensor", all_bs: "tf.Tensor", mask: "tf.Tensor"
