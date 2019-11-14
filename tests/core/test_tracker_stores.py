@@ -204,15 +204,13 @@ def test_deprecated_pickle_deserialisation(caplog: LogCaptureFixture):
     serialised = pickle_serialise_tracker(tracker)
 
     # deprecation warning should be emitted
-    with pytest.warns(DeprecationWarning) as record:
+
+    with caplog.at_level(logging.WARNING):
         assert tracker == store.deserialise_tracker(
             UserMessage.DEFAULT_SENDER_ID, serialised
         )
-    assert len(record) == 1
-    assert (
-        "Deserialisation of pickled trackers will be deprecated"
-        in record[0].message.args[0]
-    )
+    assert len(caplog.records) == 1
+    assert "Deserialisation of pickled trackers will be deprecated" in caplog.text
 
 
 @pytest.mark.parametrize(
