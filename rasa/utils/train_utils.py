@@ -186,7 +186,7 @@ def session_data_for_ids(session_data: SessionDataType, ids: np.ndarray):
     return new_session_data
 
 
-def split_session_data_by_label(
+def split_session_data_by_label_ids(
     session_data: SessionDataType,
     label_ids: "np.ndarray",
     unique_label_ids: "np.ndarray",
@@ -222,7 +222,9 @@ def balance_session_data(
     num_label_ids = len(unique_label_ids)
 
     # need to call every time, so that the data is shuffled inside each class
-    label_data = split_session_data_by_label(session_data, label_ids, unique_label_ids)
+    label_data = split_session_data_by_label_ids(
+        session_data, label_ids, unique_label_ids
+    )
 
     data_idx = [0] * num_label_ids
     num_data_cycles = [0] * num_label_ids

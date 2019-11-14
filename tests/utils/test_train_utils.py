@@ -5,7 +5,7 @@ import numpy as np
 from rasa.utils.train_utils import (
     SessionDataType,
     shuffle_session_data,
-    split_session_data_by_label,
+    split_session_data_by_label_ids,
     train_val_split,
     session_data_for_ids,
     get_number_of_examples,
@@ -70,20 +70,13 @@ def test_shuffle_session_data(session_data: SessionDataType):
 
 
 def test_split_session_data_by_label(session_data: SessionDataType):
-    split_session_data = split_session_data_by_label(
-        session_data, "intent_ids", np.array([0, 1])
+    split_session_data = split_session_data_by_label_ids(
+        session_data, session_data["intent_ids"][0], np.array([0, 1])
     )
 
     assert len(split_session_data) == 2
     for s in split_session_data:
         assert len(set(s["intent_ids"][0])) == 1
-
-
-def test_split_session_data_by_incorrect_label(session_data: SessionDataType):
-    with pytest.raises(ValueError):
-        split_session_data_by_label(
-            session_data, "not-existing", np.array([1, 2, 3, 4, 5])
-        )
 
 
 def test_train_val_split(session_data: SessionDataType):
