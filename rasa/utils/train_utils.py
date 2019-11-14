@@ -585,7 +585,6 @@ def create_tf_fnn(
             name=f"hidden_layer_{layer_name_suffix}_{i}",
             reuse=tf.AUTO_REUSE,
         )
-        droprate = tf.cast(droprate, x.dtype)
         x = tf.layers.dropout(x, rate=droprate, training=is_training)
     return x
 
@@ -709,9 +708,7 @@ def create_t2t_transformer_encoder(
         else:
             x *= mask
 
-        x = tf.nn.dropout(
-            x, tf.cast(1.0 - hparams.layer_prepostprocess_dropout, x.dtype)
-        )
+        x = tf.nn.dropout(x, 1.0 - hparams.layer_prepostprocess_dropout)
 
         attn_bias_for_padding = None
         # Otherwise the encoder will just use encoder_self_attention_bias.
@@ -732,9 +729,7 @@ def create_t2t_transformer_encoder(
         else:
             x *= mask
 
-        return tf.nn.dropout(
-            tf.nn.relu(x), tf.cast(1.0 - hparams.layer_prepostprocess_dropout, x.dtype)
-        )
+        return tf.nn.dropout(tf.nn.relu(x), 1.0 - hparams.layer_prepostprocess_dropout)
 
 
 def _tf_make_flat(x: "tf.Tensor") -> "tf.Tensor":

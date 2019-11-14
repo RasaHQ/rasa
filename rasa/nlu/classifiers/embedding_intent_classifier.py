@@ -141,61 +141,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
     }
     # end default properties (DOC MARKER - don't remove)
 
-    def __init__(
-        self,
-        component_config: Optional[Dict[Text, Any]] = None,
-        inverted_label_dict: Optional[Dict[int, Text]] = None,
-        inverted_tag_dict: Optional[Dict[int, Text]] = None,
-        session: Optional["tf.Session"] = None,
-        graph: Optional["tf.Graph"] = None,
-        batch_placeholder: Optional["tf.Tensor"] = None,
-        similarity_all: Optional["tf.Tensor"] = None,
-        intent_prediction: Optional["tf.Tensor"] = None,
-        tag_prediction: Optional["tf.Tensor"] = None,
-        similarity: Optional["tf.Tensor"] = None,
-        label_embed: Optional["tf.Tensor"] = None,
-        all_labels_embed: Optional["tf.Tensor"] = None,
-        attention_weights: Optional["tf.Tensor"] = None,
-        batch_tuple_sizes: Optional[Dict] = None,
-    ) -> None:
-        """Declare instant variables with default values"""
-
-        super().__init__(component_config)
-
-        self._load_params()
-
-        # transform numbers to labels
-        self.inverted_label_dict = inverted_label_dict
-        # transform numbers to tags
-        self.inverted_tag_dict = inverted_tag_dict
-        # encode all label_ids with numbers
-        self._label_data = None
-
-        # tf related instances
-        self.session = session
-        self.graph = graph
-
-        self.batch_in = batch_placeholder
-
-        self.sim_all = similarity_all
-        self.intent_prediction = intent_prediction
-        self.entity_prediction = tag_prediction
-        self.sim = similarity
-        self.attention_weights = attention_weights
-
-        # persisted embeddings
-        self.label_embed = label_embed
-        self.all_labels_embed = all_labels_embed
-
-        # internal tf instances
-        self._iterator = None
-        self._train_op = None
-        self._is_training = None
-
-        self.batch_tuple_sizes = batch_tuple_sizes
-
-    # config migration warning
-    def _check_old_config_variables(self, config: Dict[Text, Any]) -> None:
+    @staticmethod
+    def _check_old_config_variables(config: Dict[Text, Any]) -> None:
+        """Config migration warning"""
         removed_tokenization_params = [
             "intent_tokenization_flag",
             "intent_split_symbol",
@@ -272,7 +220,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.evaluate_on_num_examples = config["evaluate_on_num_examples"]
 
     def _load_params(self) -> None:
-
         self._check_old_config_variables(self.component_config)
         self._tf_config = train_utils.load_tf_config(self.component_config)
         self._load_nn_architecture_params(self.component_config)
@@ -290,6 +237,60 @@ class EmbeddingIntentClassifier(EntityExtractor):
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["tensorflow"]
+
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        inverted_label_dict: Optional[Dict[int, Text]] = None,
+        inverted_tag_dict: Optional[Dict[int, Text]] = None,
+        session: Optional["tf.Session"] = None,
+        graph: Optional["tf.Graph"] = None,
+        batch_placeholder: Optional["tf.Tensor"] = None,
+        similarity_all: Optional["tf.Tensor"] = None,
+        intent_prediction: Optional["tf.Tensor"] = None,
+        entity_prediction: Optional["tf.Tensor"] = None,
+        similarity: Optional["tf.Tensor"] = None,
+        message_embed: Optional["tf.Tensor"] = None,
+        label_embed: Optional["tf.Tensor"] = None,
+        all_labels_embed: Optional["tf.Tensor"] = None,
+        batch_tuple_sizes: Optional[Dict] = None,
+        attention_weights: Optional["tf.Tensor"] = None,
+    ) -> None:
+        """Declare instant variables with default values"""
+
+        super().__init__(component_config)
+
+        self._load_params()
+
+        # transform numbers to labels
+        self.inverted_label_dict = inverted_label_dict
+        self.inverted_tag_dict = inverted_tag_dict
+        # encode all label_ids with numbers
+        self._label_data = None
+
+        # tf related instances
+        self.session = session
+        self.graph = graph
+        self.batch_in = batch_placeholder
+        self.sim_all = similarity_all
+        self.intent_prediction = intent_prediction
+        self.entity_prediction = entity_prediction
+        self.sim = similarity
+
+        # persisted embeddings
+        self.message_embed = message_embed
+        self.label_embed = label_embed
+        self.all_labels_embed = all_labels_embed
+
+        # keep the input tuple sizes in self.batch_in
+        self.batch_tuple_sizes = batch_tuple_sizes
+
+        # internal tf instances
+        self._iterator = None
+        self._train_op = None
+        self._is_training = None
+
+        self.attention_weights = attention_weights
 
     # training data helpers:
     @staticmethod
@@ -509,9 +510,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                     t, e.get(MESSAGE_ENTITIES_ATTRIBUTE), None
                 )
                 _tags.append(tag_id_dict[_tag])
-            tag_ids.append(
-                scipy.sparse.csr_matrix(np.array([_tags]).T)  # TODO coo matrix
-            )
+            tag_ids.append(scipy.sparse.coo_matrix(np.array([_tags]).T))
 
         X_sparse = np.array(X_sparse)
         X_dense = np.array(X_dense)
@@ -733,7 +732,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
             logits = tf.layers.dense(input, self.num_tags, name="crf-logits")
             crf_params = tf.get_variable(
-                "crf-params", [self.num_tags, self.num_tags], dtype=tf.float64
+                "crf-params", [self.num_tags, self.num_tags], dtype=tf.float32
             )
             pred_ids, _ = tf.contrib.crf.crf_decode(
                 logits, crf_params, sequence_lengths
@@ -762,15 +761,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.unidirectional_encoder,
         )
 
-        a_in = tf.cast(a_in, tf.float32)
-        mask = tf.cast(mask, tf.float32)
-
         a = train_utils.create_t2t_transformer_encoder(
             a_in, mask, self.attention_weights, hparams, self.C2, self._is_training
         )
-
-        a = tf.cast(a, tf.float64)
-        mask = tf.cast(mask, tf.float64)
 
         return a
 
@@ -1243,7 +1236,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
                 sim_all = train_utils.load_tensor("similarity_all")
                 intent_prediction = train_utils.load_tensor("intent_prediction")
-                tag_prediction = train_utils.load_tensor("tag_prediction")
+                entity_prediction = train_utils.load_tensor("entity_prediction")
                 sim = train_utils.load_tensor("similarity")
 
                 message_embed = train_utils.load_tensor("message_embed")
@@ -1276,7 +1269,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 batch_placeholder=batch_in,
                 similarity_all=sim_all,
                 intent_prediction=intent_prediction,
-                tag_prediction=tag_prediction,
+                entity_prediction=entity_prediction,
                 similarity=sim,
                 message_embed=message_embed,
                 label_embed=label_embed,
