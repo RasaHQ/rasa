@@ -422,6 +422,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         for data in session_data[from_key]:
             if data.size > 0:
+                # explicitly add last dimension to mask
+                # to track correctly dynamic sequences
                 mask = np.array([np.ones((x.shape[0], 1)) for x in data])
                 session_data[key].append(mask)
                 break
@@ -575,7 +577,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
         session_data = {}
         self._add_to_session_data(session_data, "text_features", [X_sparse, X_dense])
         self._add_to_session_data(session_data, "intent_features", [Y_sparse, Y_dense])
-        self._add_to_session_data(session_data, "intent_ids", [label_ids])
+        # explicitly add last dimension to label_ids
+        # to track correctly dynamic sequences
+        self._add_to_session_data(
+            session_data, "intent_ids", [np.expand_dims(label_ids, -1)]
+        )
         self._add_to_session_data(session_data, "tag_ids", [tag_ids])
         self._add_mask_to_session_data(session_data, "text_mask", "text_features")
 

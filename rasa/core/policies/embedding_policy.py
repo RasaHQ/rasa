@@ -258,12 +258,9 @@ class EmbeddingPolicy(Policy):
             # training time
             label_ids = self._label_ids_for_Y(data_Y)
             Y = self._label_features_for_Y(label_ids)
-
-            # idea taken from sklearn's stratify split
-            if label_ids.ndim == 2:
-                # for multi-label y, map each distinct row to a string repr
-                # using join because str(row) uses an ellipsis if len(row) > 1000
-                label_ids = np.array([" ".join(row.astype("str")) for row in label_ids])
+            # explicitly add last dimension to label_ids
+            # to track correctly dynamic sequences
+            label_ids = np.expand_dims(label_ids, -1)
         else:
             # prediction time
             label_ids = None
