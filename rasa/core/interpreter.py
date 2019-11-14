@@ -47,9 +47,7 @@ class NaturalLanguageInterpreter:
 
         if endpoint is None:
             if not os.path.exists(obj):
-                warnings.warn(
-                    f"No local NLU model '{obj}' found. Using RegexInterpreter instead."
-                )
+                logger.warning( f"No local NLU model '{obj}' found. Using RegexInterpreter instead.")
                 return RegexInterpreter()
             else:
                 return RasaNLUInterpreter(model_directory=obj)

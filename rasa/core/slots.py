@@ -108,9 +108,9 @@ class FloatSlot(Slot):
 
         if initial_value is not None and not (min_value <= initial_value <= max_value):
             warnings.warn(
-                f"Float slot ('{self.name}') created with an initial value"
-                f" {self.value} outside of configured min ({self.min_value})"
-                f" and max ({self.max_value}) values."
+                f"Float slot ('{self.name}') created with an initial value "
+                f"{self.value} outside of configured min ({self.min_value}) "
+                f"and max ({self.max_value}) values."
             )
 
     def as_feature(self):

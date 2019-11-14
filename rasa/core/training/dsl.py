@@ -73,11 +73,9 @@ class StoryStepBuilder:
             self.start_checkpoints.append(Checkpoint(name, conditions))
         else:
             if conditions:
-                warnings.warn(
-                    "End or intermediate checkpoints "
+                warnings.warn("End or intermediate checkpoints "
                     "do not support conditions! "
-                    f"(checkpoint: {name})"
-                )
+                    f"(checkpoint: {name})")
             additional_steps = []
             for t in self.current_steps:
                 if t.end_checkpoints:
