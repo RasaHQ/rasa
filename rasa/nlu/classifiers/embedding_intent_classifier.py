@@ -136,7 +136,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # if true intent classification is trained and intent predicted
         "intent_classification": True,
         # if true named entity recognition is trained and entities predicted
-        "named_entity_recognition": True,
+        "named_entity_recognition": False,
         # number of entity tags
         "num_tags": 0,
     }
@@ -145,6 +145,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
     @staticmethod
     def _check_old_config_variables(config: Dict[Text, Any]) -> None:
         """Config migration warning"""
+
         removed_tokenization_params = [
             "intent_tokenization_flag",
             "intent_split_symbol",
@@ -699,20 +700,22 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 label_data["intent_features"], "intent"
             )
 
-            intent_output = self._train_intent_graph(a, b, all_bs, mask)
-            for k, v in intent_output.items():
-                train_output[k].append(v)
+            loss, acc = self._train_intent_graph(a, b, all_bs, mask)
+            train_output["loss"].append(loss)
+            train_output["acc"].append(acc)
 
         if self.named_entity_recognition:
             c = self.combine_sparse_dense_features(batch_data["tag_ids"], "tag")
 
-            entity_output = self._train_entity_graph(a, c, mask)
-            for k, v in entity_output.items():
-                train_output[k].append(v)
+            loss, acc = self._train_entity_graph(a, c, mask)
+            train_output["loss"].append(loss)
+            train_output["acc"].append(acc)
 
         return train_output
 
-    def _train_entity_graph(self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor"):
+    def _train_entity_graph(
+        self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor"
+    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
         sequence_lengths = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
         if len(sequence_lengths.shape) > 1:
             sequence_lengths = tf.squeeze(sequence_lengths)
@@ -738,13 +741,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # calculate f1 score for train predictions
         weights = tf.sequence_mask(sequence_lengths)
         pos_tag_indices = [k for k, v in self.inverted_tag_dict.items() if v != "O"]
-        metric = f1(c, pred_ids, self.num_tags, pos_tag_indices, weights)
+        acc = f1(c, pred_ids, self.num_tags, pos_tag_indices, weights)
 
-        return {"loss": [loss], "f1": [metric]}
+        return loss, acc[0]
 
     def _train_intent_graph(
         self, a: "tf.Tensor", b: "tf.Tensor", all_bs: "tf.Tensor", mask: "tf.Tensor"
-    ) -> Dict[Text, List["tf.Tensor"]]:
+    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
         last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
 
         # get _cls_ vector for intent classification
@@ -773,7 +776,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             embed_name="intent",
         )
 
-        loss, acc = train_utils.calculate_loss_acc(
+        return train_utils.calculate_loss_acc(
             cls_embed,
             self.label_embed,
             b,
@@ -788,8 +791,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.C_emb,
             self.scale_loss,
         )
-
-        return {"loss": [loss], "acc": [acc]}
 
     def _create_crf(
         self, input: tf.Tensor, sequence_lengths: tf.Tensor
