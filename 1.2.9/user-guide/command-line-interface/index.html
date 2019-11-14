@@ -209,6 +209,7 @@
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../1.4.5/user-guide/command-line-interface/">1.4.5</a>
               <a href="../../../1.4.4/user-guide/command-line-interface/">1.4.4</a>
               <a href="../../../1.4.3/user-guide/command-line-interface/">1.4.3</a>
               <a href="../../../1.4.2/user-guide/command-line-interface/">1.4.2</a>
@@ -259,7 +260,7 @@
 
 
 
-    <p class="scv-banner"><a href="../../../1.4.4/user-guide/command-line-interface/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.4.4.</a></p>
+    <p class="scv-banner"><a href="../../../1.4.5/user-guide/command-line-interface/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.4.5.</a></p>
 <div class="section" id="command-line-interface">
 <span id="id1"></span><h1>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Permalink to this headline">¶</a></h1>
 
@@ -958,8 +959,8 @@ and you need to be in a Rasa project.<div class="admonition note">
 any other port.</p>
 </div>
 <p>The following arguments are available for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span></code>:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [-c CONFIG]
-              [--no-prompt] [--production] [--rasa-x-port RASA_X_PORT]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [--no-prompt]
+              [--production] [--rasa-x-port RASA_X_PORT]
               [--config-endpoint CONFIG_ENDPOINT] [--log-file LOG_FILE]
               [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
               [--cors [CORS [CORS ...]]] [--enable-api]
@@ -977,9 +978,6 @@ optional arguments:
                         directory. (default: models)
   --data DATA           Path to the file or directory containing stories and
                         Rasa NLU data. (default: data)
-  -c CONFIG, --config CONFIG
-                        The policy and NLU pipeline configuration of your bot.
-                        (default: config.yml)
   --no-prompt           Automatic yes or default options to prompts and
                         oppressed warnings. (default: False)
   --production          Run Rasa X in a production environment. (default:
