@@ -44,6 +44,7 @@ Fixed
 -----
 - Fixed exporting NLU training data in ``json`` format from ``rasa interactive``
 - Fixed numpy deprecation warnings
+- Fixed format guessing for e2e stories with intent restated as /intent
 
 [1.4.3] - 2019-10-29
 ^^^^^^^^^^^^^^^^^^^^
