@@ -192,6 +192,7 @@ def test_train_test_split(filepaths):
     [
         ("data/examples/rasa/demo-rasa.json", "data/test/multiple_files_json"),
         ("data/examples/rasa/demo-rasa.md", "data/test/multiple_files_markdown"),
+        ("data/examples/rasa/demo-rasa.md", "data/test/duplicate_intents_markdown"),
     ],
 )
 def test_data_merging(files):
