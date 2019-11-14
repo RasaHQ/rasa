@@ -254,13 +254,10 @@ class EmbeddingPolicy(Policy):
         self, data_X: "np.ndarray", data_Y: Optional["np.ndarray"] = None
     ) -> "train_utils.SessionDataType":
         """Combine all tf session related data into dict."""
-        data_X = data_X.astype(np.float32)
-
         if data_Y is not None:
             # training time
             label_ids = self._label_ids_for_Y(data_Y)
             Y = self._label_features_for_Y(label_ids)
-            Y = Y.astype(np.float32)
 
             # idea taken from sklearn's stratify split
             if label_ids.ndim == 2:

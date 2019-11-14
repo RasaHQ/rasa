@@ -343,7 +343,7 @@ def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
 
     return [
         np.array(indices).astype(np.int64),
-        np.array(data).astype(np.float64),
+        np.array(data).astype(np.float32),
         np.array(shape).astype(np.int64),
     ]
 
@@ -373,7 +373,7 @@ def pad_data(data: np.ndarray, feature_len: Optional[int] = None) -> np.ndarray:
         for i in range(data_size):
             data_padded[i, : data[i].shape[0], :] = data[i]
 
-    return data_padded.astype(np.float64)
+    return data_padded.astype(np.float32)
 
 
 def batch_to_session_data(
@@ -458,10 +458,10 @@ def get_shapes_types(session_data: SessionDataType) -> Tuple:
         if isinstance(v[0], scipy.sparse.spmatrix):
             # scipy matrix is converted into indices, data, shape
             types.append(tf.int64)
-            types.append(tf.float64)
+            types.append(tf.float32)
             types.append(tf.int64)
         else:
-            types.append(tf.float64)
+            types.append(tf.float32)
 
     for values in session_data.values():
         for v in values:
