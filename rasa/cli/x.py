@@ -220,7 +220,7 @@ def _configure_logging(args: argparse.Namespace):
         logging.getLogger("py.warnings").setLevel(logging.ERROR)
 
 
-def is_rasa_project_setup(args: argparse.Namespace, project_path: Text):
+def is_rasa_project_setup(args: argparse.Namespace, project_path: Text) -> bool:
     config_path = _get_config_path(args)
     mandatory_files = [config_path, DEFAULT_DOMAIN_PATH]
 
