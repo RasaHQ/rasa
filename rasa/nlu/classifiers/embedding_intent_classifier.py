@@ -16,7 +16,7 @@ from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
-from rasa.utils.train_utils import SessionDataType
+from rasa.utils.train_utils import SessionDataType, TrainingMetrics
 from rasa.nlu.constants import (
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
@@ -673,9 +673,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         return a
 
     # build tf graphs:
-    def _build_tf_train_graph(
-        self, session_data: SessionDataType
-    ) -> Dict[Text, List["tf.Tensor"]]:
+    def _build_tf_train_graph(self, session_data: SessionDataType) -> TrainingMetrics:
 
         # get in tensors from generator
         self.batch_in = self._iterator.get_next()
@@ -692,7 +690,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # transformer
         a = self._create_tf_sequence(a, mask)
 
-        train_output = defaultdict(list)
+        metrics = TrainingMetrics(loss={}, score={})
 
         if self.intent_classification:
             b = self.combine_sparse_dense_features(
@@ -703,17 +701,17 @@ class EmbeddingIntentClassifier(EntityExtractor):
             )
 
             loss, acc = self._train_intent_graph(a, b, all_bs, mask)
-            train_output["loss"].append(loss)
-            train_output["acc"].append(acc)
+            metrics.loss["intent_loss"] = loss
+            metrics.score["intent_acc"] = acc
 
         if self.named_entity_recognition:
             c = self.combine_sparse_dense_features(batch_data["tag_ids"], "tag")
 
-            loss, acc = self._train_entity_graph(a, c, mask)
-            train_output["loss"].append(loss)
-            train_output["acc"].append(acc)
+            loss, f1_score = self._train_entity_graph(a, c, mask)
+            metrics.loss["entity_loss"] = loss
+            metrics.score["entity_f1_score"] = f1_score
 
-        return train_output
+        return metrics
 
     def _train_entity_graph(
         self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor"
@@ -1101,7 +1099,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             metrics = self._build_tf_train_graph(session_data)
 
             # define which optimizer to use
-            loss = tf.add_n(metrics["loss"])
+            loss = tf.add_n(list(metrics.loss.values()))
             self._train_op = tf.train.AdamOptimizer().minimize(loss)
 
             # train tensorflow graph

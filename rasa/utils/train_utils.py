@@ -2,7 +2,18 @@ from collections import defaultdict
 import logging
 import scipy.sparse
 import typing
-from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable, Any
+from typing import (
+    List,
+    Optional,
+    Text,
+    Dict,
+    Tuple,
+    Union,
+    Generator,
+    Callable,
+    Any,
+    NamedTuple,
+)
 import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
@@ -27,6 +38,12 @@ logger = logging.getLogger(__name__)
 
 # type for all tf session related data
 SessionDataType = Dict[Text, List[np.ndarray]]
+
+
+# namedtuple for training metrics
+class TrainingMetrics(NamedTuple):
+    loss: Dict[Text, tf.Tensor]
+    score: Dict[Text, tf.Tensor]
 
 
 def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto]:
@@ -1138,30 +1155,35 @@ def linearly_increasing_batch_size(
 
 def output_validation_stat(
     eval_init_op: "tf.Operation",
-    metrics: Dict[Text, List["tf.Tensor"]],
+    metrics: TrainingMetrics,
     session: "tf.Session",
     is_training: "tf.Session",
     batch_size_in: "tf.Tensor",
     ep_batch_size: int,
-) -> Dict[Text, List[float]]:
+) -> TrainingMetrics:
     """Output training statistics"""
 
     session.run(eval_init_op, feed_dict={batch_size_in: ep_batch_size})
-    ep_val_metrics = {k: [0] * len(v) for k, v in metrics.items()}
+    ep_val_metrics = TrainingMetrics(
+        loss=defaultdict(lambda: 0.0), score=defaultdict(lambda: 0.0)
+    )
     batches_per_epoch = 0
     while True:
         try:
             batch_val_metrics = session.run([metrics], feed_dict={is_training: False})
             batches_per_epoch += 1
-            for k, values in batch_val_metrics.items():
-                for i, v in enumerate(values):
-                    ep_val_metrics[k][i] += v
+            for name, value in batch_val_metrics.loss.items():
+                ep_val_metrics.loss[name] += value
+            for name, value in batch_val_metrics.score.items():
+                ep_val_metrics.score[name] += value
+
         except tf.errors.OutOfRangeError:
             break
 
-    for k, values in ep_val_metrics.items():
-        for i, v in enumerate(values):
-            ep_val_metrics[k][i] = v / batches_per_epoch
+    for name, value in ep_val_metrics.loss.items():
+        ep_val_metrics.loss[name] = value / batches_per_epoch
+    for name, value in ep_val_metrics.score.items():
+        ep_val_metrics.score[name] = value / batches_per_epoch
 
     return ep_val_metrics
 
@@ -1170,7 +1192,7 @@ def train_tf_dataset(
     train_init_op: "tf.Operation",
     eval_init_op: "tf.Operation",
     batch_size_in: "tf.Tensor",
-    metrics: Dict[Text, List[tf.Tensor]],
+    metrics: TrainingMetrics,
     train_op: "tf.Tensor",
     session: "tf.Session",
     is_training: "tf.Session",
@@ -1191,37 +1213,42 @@ def train_tf_dataset(
         )
     pbar = tqdm(range(epochs), desc="Epochs", disable=is_logging_disabled())
 
-    train_metrics = {k: [0] * len(v) for k, v in metrics.items()}
-    val_metrics = {k: [0] * len(v) for k, v in metrics.items()}
+    train_metrics = TrainingMetrics(
+        loss=defaultdict(lambda: 0.0), score=defaultdict(lambda: 0.0)
+    )
+    val_metrics = TrainingMetrics(
+        loss=defaultdict(lambda: 0.0), score=defaultdict(lambda: 0.0)
+    )
     for ep in pbar:
 
         ep_batch_size = linearly_increasing_batch_size(ep, batch_size, epochs)
 
         session.run(train_init_op, feed_dict={batch_size_in: ep_batch_size})
 
-        ep_train_metrics = {k: [0] * len(v) for k, v in metrics.items()}
+        ep_train_metrics = TrainingMetrics(
+            loss=defaultdict(lambda: 0.0), score=defaultdict(lambda: 0.0)
+        )
         batches_per_epoch = 0
         while True:
             try:
-                _, batch_train_metrics = session.run(
+                _, batch_train_metric = session.run(
                     [train_op, metrics], feed_dict={is_training: True}
                 )
                 batches_per_epoch += 1
-                for k, values in batch_train_metrics.items():
-                    for i, v in enumerate(values):
-                        ep_train_metrics[k][i] += v
+                for name, value in batch_train_metric.loss.items():
+                    ep_train_metrics.loss[name] += value
+                for name, value in batch_train_metric.score.items():
+                    ep_train_metrics.score[name] += value
 
             except tf.errors.OutOfRangeError:
                 break
 
-        for k, values in ep_train_metrics.items():
-            for i, v in enumerate(values):
-                train_metrics[k][i] = v / batches_per_epoch
+        for name, value in ep_train_metrics.loss.items():
+            train_metrics.loss[name] = value / batches_per_epoch
+        for name, value in ep_train_metrics.score.items():
+            train_metrics.score[name] = value / batches_per_epoch
 
-        postfix_dict = {}
-        for k, values in train_metrics.items():
-            for i, v in enumerate(values):
-                postfix_dict[f"{k}_{i}"] = f"{v:.3f}"
+        postfix_dict = _create_postfix_dict(train_metrics)
 
         if eval_init_op is not None:
             if (ep + 1) % evaluate_every_num_epochs == 0 or (ep + 1) == epochs:
@@ -1234,14 +1261,22 @@ def train_tf_dataset(
                     ep_batch_size,
                 )
 
-            postfix_dict = {}
-            for k, values in val_metrics:
-                for i, v in enumerate(values):
-                    postfix_dict[f"val_{k}_{i}"] = f"{v:.3f}"
+            postfix_dict = _create_postfix_dict(val_metrics, "val_")
 
         pbar.set_postfix(postfix_dict)
 
     logger.info("Finished training.")
+
+
+def _create_postfix_dict(
+    metrics: TrainingMetrics, prefix: Text = ""
+) -> Dict[Text, Text]:
+    postfix_dict = {}
+    for name, value in metrics.loss.items():
+        postfix_dict[f"{prefix}{name}"] = f"{value:.3f}"
+    for name, value in metrics.score.items():
+        postfix_dict[f"{prefix}{name}"] = f"{value:.3f}"
+    return postfix_dict
 
 
 def extract_attention(attention_weights) -> Optional["tf.Tensor"]:

@@ -24,6 +24,8 @@ from rasa.utils import train_utils
 import tensorflow as tf
 
 # avoid warning println on contrib import - remove for tf 2
+from utils.train_utils import TrainingMetrics
+
 tf.contrib._warning = None
 logger = logging.getLogger(__name__)
 
@@ -483,7 +485,7 @@ class EmbeddingPolicy(Policy):
                 train_init_op,
                 eval_init_op,
                 batch_size_in,
-                {"loss": [loss], "acc": [acc]},
+                TrainingMetrics(loss={"loss": loss}, score={"acc": acc}),
                 self._train_op,
                 self.session,
                 self._is_training,
