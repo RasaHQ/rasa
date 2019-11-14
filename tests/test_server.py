@@ -1,9 +1,13 @@
+import multiprocessing
 import os
+import requests
+import subprocess
 import time
 import tempfile
 import uuid
-from multiprocessing import Process, Manager
-from typing import List, Text, Type
+
+from multiprocessing import Manager
+from typing import Any, Dict, List, Text, Type
 from contextlib import ExitStack
 
 from aioresponses import aioresponses
@@ -22,7 +26,7 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.model import unpack_model
 from rasa.utils.endpoints import EndpointConfig
 from sanic import Sanic
-from sanic.testing import SanicTestClient, PORT
+from sanic.testing import SanicTestClient
 from tests.nlu.utilities import ResponseTest
 from tests.conftest import get_test_client
 
@@ -127,136 +131,74 @@ def test_status_not_ready_agent(rasa_app: SanicTestClient):
     assert response.status == 409
 
 
-@pytest.fixture
-def formbot_data():
-    return dict(
-        domain="examples/formbot/domain.yml",
-        config="examples/formbot/config.yml",
-        stories="examples/formbot/data/stories.md",
-        nlu="examples/formbot/data/nlu.md",
-    )
+def _send_train_request(results: Dict[Text, Any], payload: Dict[Text, Any]) -> None:
+    """Send a request to /model/train. Used in test_train_status().
+
+    Must be picklable to be used as a Process target, therefore defined at the top level of the module.
+    """
+    train_resp = requests.post("http://localhost:5005/model/train", json=payload)
+    results["train_response_code"] = train_resp.status_code
 
 
-def run_server():
-    import subprocess
-
-    subprocess.run(["rasa", "run", "--enable-api"])
-
-
-def train(results):
-    formbot_data = dict(
-        domain="examples/formbot/domain.yml",
-        config="examples/formbot/config.yml",
-        stories="examples/formbot/data/stories.md",
-        nlu="examples/formbot/data/nlu.md",
-    )
+def test_train_status():
     with ExitStack() as stack:
+        formbot_data = dict(
+            domain="examples/formbot/domain.yml",
+            config="examples/formbot/config.yml",
+            stories="examples/formbot/data/stories.md",
+            nlu="examples/formbot/data/nlu.md",
+        )
         payload = {
             key: stack.enter_context(open(path)).read()
             for key, path in formbot_data.items()
         }
         payload["force"] = True
-        import requests
-
-        is_ready = False
-        while not is_ready:
-            try:
-                is_ready = (
-                    requests.get("http://localhost:5005/status").status_code == 200
-                )
-                time.sleep(1)
-            except:
-                pass
-
-        results["server_ready"] = True
-
-        train_resp = requests.post("http://localhost:5005/model/train", json=payload)
-        # client1 = SanicTestClient(rasa_server, port=PORT + 1)
-        # _, train_resp = client1.post("/model/train", json=payload)
-        results["train_response_code"] = train_resp.status_code
-
-
-def test_train_status():
-    import requests
-
-    # Run training process in the background
-    manager = Manager()
-    results = manager.dict()
-
-    import multiprocessing
 
     ctx = multiprocessing.get_context("spawn")
-    p0 = ctx.Process(target=run_server)
+    # run a rasa server in one process
+    p0 = ctx.Process(target=subprocess.run, args=(["rasa", "run", "--enable-api"],))
     p0.start()
-    p1 = ctx.Process(target=train, args=(results,))
-    p1.start()
 
-    # Query the status endpoint a few times to ensure the test does
-    # not fail prematurely due to mismatched timing of a single query.
-    for i in range(30):
+    server_ready = False
+    # wait until server is up before sending train request and status test loop
+    while not server_ready:
         try:
-            time.sleep(1)
-            # _, status_resp = rasa_app.get("/status")
-            status_resp = requests.get("http://localhost:5005/status")
-            assert status_resp.status_code == 200
-            print(status_resp.json())
-            if status_resp.json()["num_active_training_jobs"] == 1:
-                break
-        except:
+            server_ready = (
+                requests.get("http://localhost:5005/status").status_code == 200
+            )
+        except requests.exceptions.ConnectionError:
             pass
-    assert status_resp.json()["num_active_training_jobs"] == 1
+        time.sleep(1)
 
-    p1.join()
-    assert results.get("train_response_code") == 200
-
-    status_resp = requests.get("http://localhost:5005/status")
-    assert status_resp.status_code == 200
-    assert status_resp.json()["num_active_training_jobs"] == 0
-
-    p0.kill()
-
-
-def test_training_non_blocking():
-    import requests
-
-    # Run training process in the background
-    manager = Manager()
-    results = manager.dict()
-
-    import multiprocessing
-
-    ctx = multiprocessing.get_context("spawn")
-    p0 = ctx.Process(target=run_server)
-    p0.start()
-    p1 = ctx.Process(target=train, args=(results,))
+    # use another process to hit the first server with a training request
+    results = Manager().dict()
+    p1 = ctx.Process(target=_send_train_request, args=(results, payload))
     p1.start()
-
-    while results.get("server_ready") is None:
-        time.sleep(0.5)
 
     training_started = False
-    while results.get("train_response_code") is None:
+    training_finished = False
+    # use our current process to query the status endpoint while the training is running
+    while not training_finished:
         time.sleep(0.5)
-        # hit status endpoint continually while training
+        # hit status endpoint with short timeout to ensure training doesn't block
         status_resp = requests.get("http://localhost:5005/status", timeout=0.5)
-        print(status_resp.json())
         assert status_resp.status_code == 200
 
         if not training_started:
+            # make sure that we don't fail because we got status before training updated number of jobs
             training_started = status_resp.json()["num_active_training_jobs"] == 1
-            continue
+        else:
+            if results.get("train_response_code") is None:
+                assert status_resp.json()["num_active_training_jobs"] == 1
+            else:
+                # once the response code is in, training is done, status should return 0 again
+                assert results.get("train_response_code") == 200
+                training_finished = True
+                status_resp = requests.get("http://localhost:5005/status")
+                assert status_resp.json()["num_active_training_jobs"] == 0
 
-        if results.get("train_response_code") is None:
-            assert status_resp.json()["num_active_training_jobs"] == 1
-
-    assert results.get("train_response_code") == 200
-
-    status_resp = requests.get("http://localhost:5005/status")
-    assert status_resp.status_code == 200
-    assert status_resp.json()["num_active_training_jobs"] == 0
-
-    p1.kill()
     p0.kill()
+    p1.join()
 
 
 @pytest.mark.parametrize(
