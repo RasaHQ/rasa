@@ -1171,6 +1171,7 @@ def output_validation_stat(
     while True:
         try:
             batch_val_metrics = session.run([metrics], feed_dict={is_training: False})
+            batch_val_metrics = batch_val_metrics[0]
             batches_per_epoch += 1
             for name, value in batch_val_metrics.loss.items():
                 ep_val_metrics.loss[name] += value
@@ -1213,12 +1214,8 @@ def train_tf_dataset(
         )
     pbar = tqdm(range(epochs), desc="Epochs", disable=is_logging_disabled())
 
-    train_metrics = TrainingMetrics(
-        loss=defaultdict(lambda: 0.0), score=defaultdict(lambda: 0.0)
-    )
-    val_metrics = TrainingMetrics(
-        loss=defaultdict(lambda: 0.0), score=defaultdict(lambda: 0.0)
-    )
+    train_metrics = TrainingMetrics(loss={}, score={})
+    val_metrics = TrainingMetrics(loss={}, score={})
     for ep in pbar:
 
         ep_batch_size = linearly_increasing_batch_size(ep, batch_size, epochs)
@@ -1248,7 +1245,8 @@ def train_tf_dataset(
         for name, value in ep_train_metrics.score.items():
             train_metrics.score[name] = value / batches_per_epoch
 
-        postfix_dict = _create_postfix_dict(train_metrics)
+        postfix_dict = {}
+        postfix_dict = _update_postfix_dict(postfix_dict, train_metrics)
 
         if eval_init_op is not None:
             if (ep + 1) % evaluate_every_num_epochs == 0 or (ep + 1) == epochs:
@@ -1261,17 +1259,16 @@ def train_tf_dataset(
                     ep_batch_size,
                 )
 
-            postfix_dict = _create_postfix_dict(val_metrics, "val_")
+            postfix_dict = _update_postfix_dict(postfix_dict, val_metrics, "val_")
 
         pbar.set_postfix(postfix_dict)
 
     logger.info("Finished training.")
 
 
-def _create_postfix_dict(
-    metrics: TrainingMetrics, prefix: Text = ""
+def _update_postfix_dict(
+    postfix_dict: Dict[Text, Text], metrics: TrainingMetrics, prefix: Text = ""
 ) -> Dict[Text, Text]:
-    postfix_dict = {}
     for name, value in metrics.loss.items():
         postfix_dict[f"{prefix}{name}"] = f"{value:.3f}"
     for name, value in metrics.score.items():

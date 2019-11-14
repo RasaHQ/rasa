@@ -701,15 +701,15 @@ class EmbeddingIntentClassifier(EntityExtractor):
             )
 
             loss, acc = self._train_intent_graph(a, b, all_bs, mask)
-            metrics.loss["intent_loss"] = loss
-            metrics.score["intent_acc"] = acc
+            metrics.loss["i_loss"] = loss
+            metrics.score["i_acc"] = acc
 
         if self.named_entity_recognition:
             c = self.combine_sparse_dense_features(batch_data["tag_ids"], "tag")
 
             loss, f1_score = self._train_entity_graph(a, c, mask)
-            metrics.loss["entity_loss"] = loss
-            metrics.score["entity_f1_score"] = f1_score
+            metrics.loss["e_loss"] = loss
+            metrics.score["e_f1"] = f1_score
 
         return metrics
 
