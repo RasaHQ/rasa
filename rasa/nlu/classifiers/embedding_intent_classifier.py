@@ -382,6 +382,75 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return sparse_features, dense_features
 
+    @staticmethod
+    def _compute_default_label_features(
+        labels_example: List["Message"],
+    ) -> List[np.ndarray]:
+        """Compute one-hot representation for the labels"""
+
+        return [
+            np.array(
+                [
+                    scipy.sparse.coo_matrix(
+                        ([1], ([0], [idx])), shape=(1, len(labels_example))
+                    )
+                    for idx in range(len(labels_example))
+                ]
+            )
+        ]
+
+    @staticmethod
+    def _add_to_session_data(
+        session_data: SessionDataType, key: Text, features: List[np.ndarray]
+    ):
+        if not features:
+            return
+
+        session_data[key] = []
+
+        for data in features:
+            if data.size > 0:
+                session_data[key].append(data)
+
+    @staticmethod
+    def _add_mask_to_session_data(
+        session_data: SessionDataType, key: Text, from_key: Text
+    ):
+
+        session_data[key] = []
+
+        for data in session_data[from_key]:
+            if data.size > 0:
+                mask = np.array([np.ones((x.shape[0], 1)) for x in data])
+                session_data[key].append(mask)
+                break
+
+    @staticmethod
+    def _get_num_of_features(session_data: "SessionDataType", key: Text) -> int:
+        num_features = 0
+        for data in session_data[key]:
+            if data.size > 0:
+                num_features += data[0].shape[-1]
+        return num_features
+
+    @staticmethod
+    def _check_enough_labels(session_data: "SessionDataType") -> bool:
+        return len(np.unique(session_data["intent_ids"])) >= 2
+
+    def check_input_dimension_consistency(self, session_data: "SessionDataType"):
+        if self.share_hidden_layers:
+            num_text_features = self._get_num_of_features(session_data, "text_features")
+            num_intent_features = self._get_num_of_features(
+                session_data, "intent_features"
+            )
+
+            if num_text_features != num_intent_features:
+                raise ValueError(
+                    "If embeddings are shared "
+                    "text features and label features "
+                    "must coincide. Check the output dimensions of previous components."
+                )
+
     def _extract_labels_precomputed_features(
         self, label_examples: List["Message"]
     ) -> List[np.ndarray]:
@@ -403,23 +472,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         dense_features = np.array(dense_features)
 
         return [sparse_features, dense_features]
-
-    @staticmethod
-    def _compute_default_label_features(
-        labels_example: List["Message"],
-    ) -> List[np.ndarray]:
-        """Compute one-hot representation for the labels"""
-
-        return [
-            np.array(
-                [
-                    scipy.sparse.coo_matrix(
-                        ([1], ([0], [idx])), shape=(1, len(labels_example))
-                    )
-                    for idx in range(len(labels_example))
-                ]
-            )
-        ]
 
     def _create_label_data(
         self,
@@ -469,7 +521,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
             )
         ]
 
-    # noinspection PyPep8Naming
     def _create_session_data(
         self,
         training_data: List["Message"],
@@ -537,32 +588,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return session_data
 
-    @staticmethod
-    def _add_to_session_data(
-        session_data: SessionDataType, key: Text, features: List[np.ndarray]
-    ):
-        if not features:
-            return
-
-        session_data[key] = []
-
-        for data in features:
-            if data.size > 0:
-                session_data[key].append(data)
-
-    @staticmethod
-    def _add_mask_to_session_data(
-        session_data: SessionDataType, key: Text, from_key: Text
-    ):
-
-        session_data[key] = []
-
-        for data in session_data[from_key]:
-            if data.size > 0:
-                mask = np.array([np.ones((x.shape[0], 1)) for x in data])
-                session_data[key].append(mask)
-                break
-
     # tf helpers:
     def _create_tf_embed_fnn(
         self,
@@ -612,6 +637,34 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return tf.concat(dense_features, axis=-1)
 
+    def _create_tf_sequence(self, a_in, mask) -> "tf.Tensor":
+        """Create sequence level embedding and mask."""
+        a_in = self._create_tf_embed_fnn(
+            a_in,
+            self.hidden_layer_sizes["text"],
+            fnn_name="text_intent" if self.share_hidden_layers else "text",
+            embed_name="text",
+        )
+
+        self.attention_weights = {}
+        hparams = train_utils.create_t2t_hparams(
+            self.num_transformer_layers,
+            self.transformer_size,
+            self.num_heads,
+            self.droprate,
+            self.pos_encoding,
+            self.max_seq_length,
+            self._is_training,
+            self.unidirectional_encoder,
+        )
+
+        a = train_utils.create_t2t_transformer_encoder(
+            a_in, mask, self.attention_weights, hparams, self.C2, self._is_training
+        )
+
+        return a
+
+    # build tf graphs:
     def _build_tf_train_graph(
         self, session_data: SessionDataType
     ) -> Dict[Text, List["tf.Tensor"]]:
@@ -739,33 +792,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
             return crf_params, logits, pred_ids
 
-    def _create_tf_sequence(self, a_in, mask) -> "tf.Tensor":
-        """Create sequence level embedding and mask."""
-        a_in = self._create_tf_embed_fnn(
-            a_in,
-            self.hidden_layer_sizes["text"],
-            fnn_name="text_intent" if self.share_hidden_layers else "text",
-            embed_name="text",
-        )
-
-        self.attention_weights = {}
-        hparams = train_utils.create_t2t_hparams(
-            self.num_transformer_layers,
-            self.transformer_size,
-            self.num_heads,
-            self.droprate,
-            self.pos_encoding,
-            self.max_seq_length,
-            self._is_training,
-            self.unidirectional_encoder,
-        )
-
-        a = train_utils.create_t2t_transformer_encoder(
-            a_in, mask, self.attention_weights, hparams, self.C2, self._is_training
-        )
-
-        return a
-
     def _build_tf_pred_graph(self, session_data: "SessionDataType") -> "tf.Tensor":
 
         shapes, types = train_utils.get_shapes_types(session_data)
@@ -835,28 +861,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         _, _, pred_ids = self._create_crf(a, sequence_lengths)
         self.tag_prediction = tf.to_int64(pred_ids)
 
-    @staticmethod
-    def _get_num_of_features(session_data: "SessionDataType", key: Text) -> int:
-        num_features = 0
-        for data in session_data[key]:
-            if data.size > 0:
-                num_features += data[0].shape[-1]
-        return num_features
-
-    def check_input_dimension_consistency(self, session_data: "SessionDataType"):
-        if self.share_hidden_layers:
-            num_text_features = self._get_num_of_features(session_data, "text_features")
-            num_intent_features = self._get_num_of_features(
-                session_data, "intent_features"
-            )
-
-            if num_text_features != num_intent_features:
-                raise ValueError(
-                    "If embeddings are shared "
-                    "text features and label features "
-                    "must coincide. Check the output dimensions of previous components."
-                )
-
+    # train helpers
     def preprocess_train_data(self, training_data: "TrainingData"):
         """Prepares data for training.
 
@@ -890,10 +895,127 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return session_data
 
-    @staticmethod
-    def _check_enough_labels(session_data: "SessionDataType") -> bool:
-        return len(np.unique(session_data["intent_ids"])) >= 2
+    # process helpers
+    def predict_label(
+        self, message: "Message"
+    ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
 
+        label = {"name": None, "confidence": 0.0}
+        label_ranking = []
+
+        if self.session is None:
+            logger.error(
+                "There is no trained tf.session: "
+                "component is either not trained or "
+                "didn't receive enough training data"
+            )
+            return label, label_ranking
+
+        # create session data from message and convert it into a batch of 1
+        session_data = self._create_session_data([message])
+        batch = train_utils.prepare_batch(
+            session_data, tuple_sizes=self.batch_tuple_sizes
+        )
+
+        # load tf graph and session
+        label_ids, message_sim = self._calculate_message_sim(batch)
+
+        # if X contains all zeros do not predict some label
+        if label_ids.size > 0:
+            label = {
+                "name": self.inverted_label_dict[label_ids[0]],
+                "confidence": message_sim[0],
+            }
+
+            ranking = list(zip(list(label_ids), message_sim))
+            ranking = ranking[:LABEL_RANKING_LENGTH]
+            label_ranking = [
+                {"name": self.inverted_label_dict[label_idx], "confidence": score}
+                for label_idx, score in ranking
+            ]
+
+        return label, label_ranking
+
+    def _calculate_message_sim(
+        self, batch: Tuple[np.ndarray]
+    ) -> Tuple[np.ndarray, List[float]]:
+        """Calculate message similarities"""
+
+        message_sim = self.session.run(
+            self.intent_prediction,
+            feed_dict={
+                _x_in: _x for _x_in, _x in zip(self.batch_in, batch) if _x is not None
+            },
+        )
+
+        message_sim = message_sim.flatten()  # sim is a matrix
+
+        label_ids = message_sim.argsort()[::-1]
+        message_sim[::-1].sort()
+
+        # transform sim to python list for JSON serializing
+        return label_ids, message_sim.tolist()
+
+    def predict_entities(self, message: "Message") -> List[Dict]:
+        if self.session is None:
+            logger.error(
+                "There is no trained tf.session: "
+                "component is either not trained or "
+                "didn't receive enough training data"
+            )
+        else:
+            # get features (bag of words) for a message
+            # noinspection PyPep8Naming
+            X = self._extract_features(message)
+
+            # load tf graph and session
+            predictions = self.session.run(
+                self.entity_prediction, feed_dict={self.a_in: X}
+            )
+
+            tags = [self.inverted_tag_dict[p] for p in predictions[0]]
+
+            entities = self._convert_tags_to_entities(
+                message.text, message.get("tokens", []), tags
+            )
+
+            extracted = self.add_extractor_name(entities)
+            entities = message.get("entities", []) + extracted
+
+            return entities
+
+    def _convert_tags_to_entities(
+        self, text: str, tokens: List[Token], tags: List[Text]
+    ) -> List[Dict[Text, Any]]:
+        entities = []
+        last_tag = "O"
+        for token, tag in zip(tokens, tags):
+            if tag == "O":
+                last_tag = tag
+                continue
+
+            # new tag found
+            if last_tag != tag:
+                entity = {
+                    "entity": tag,
+                    "start": token.offset,
+                    "end": token.end,
+                    "extractor": "flair",
+                }
+                entities.append(entity)
+
+            # belongs to last entity
+            elif last_tag == tag:
+                entities[-1]["end"] = token.end
+
+            last_tag = tag
+
+        for entity in entities:
+            entity["value"] = text[entity["start"] : entity["end"]]
+
+        return entities
+
+    # methods to overwrite
     def train(
         self,
         training_data: "TrainingData",
@@ -981,127 +1103,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.attention_weights = train_utils.extract_attention(
                 self.attention_weights
             )
-
-    # process helpers
-    # noinspection PyPep8Naming
-    def _calculate_message_sim(
-        self, batch: Tuple[np.ndarray]
-    ) -> Tuple[np.ndarray, List[float]]:
-        """Calculate message similarities"""
-
-        message_sim = self.session.run(
-            self.intent_prediction,
-            feed_dict={
-                _x_in: _x for _x_in, _x in zip(self.batch_in, batch) if _x is not None
-            },
-        )
-
-        message_sim = message_sim.flatten()  # sim is a matrix
-
-        label_ids = message_sim.argsort()[::-1]
-        message_sim[::-1].sort()
-
-        # transform sim to python list for JSON serializing
-        return label_ids, message_sim.tolist()
-
-    def predict_label(
-        self, message: "Message"
-    ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
-
-        label = {"name": None, "confidence": 0.0}
-        label_ranking = []
-
-        if self.session is None:
-            logger.error(
-                "There is no trained tf.session: "
-                "component is either not trained or "
-                "didn't receive enough training data"
-            )
-            return label, label_ranking
-
-        # create session data from message and convert it into a batch of 1
-        session_data = self._create_session_data([message])
-        batch = train_utils.prepare_batch(
-            session_data, tuple_sizes=self.batch_tuple_sizes
-        )
-
-        # load tf graph and session
-        label_ids, message_sim = self._calculate_message_sim(batch)
-
-        # if X contains all zeros do not predict some label
-        if label_ids.size > 0:
-            label = {
-                "name": self.inverted_label_dict[label_ids[0]],
-                "confidence": message_sim[0],
-            }
-
-            ranking = list(zip(list(label_ids), message_sim))
-            ranking = ranking[:LABEL_RANKING_LENGTH]
-            label_ranking = [
-                {"name": self.inverted_label_dict[label_idx], "confidence": score}
-                for label_idx, score in ranking
-            ]
-
-        return label, label_ranking
-
-    def predict_entities(self, message: "Message") -> List[Dict]:
-        if self.session is None:
-            logger.error(
-                "There is no trained tf.session: "
-                "component is either not trained or "
-                "didn't receive enough training data"
-            )
-        else:
-            # get features (bag of words) for a message
-            # noinspection PyPep8Naming
-            X = self._extract_features(message)
-
-            # load tf graph and session
-            predictions = self.session.run(
-                self.entity_prediction, feed_dict={self.a_in: X}
-            )
-
-            tags = [self.inverted_tag_dict[p] for p in predictions[0]]
-
-            entities = self._convert_tags_to_entities(
-                message.text, message.get("tokens", []), tags
-            )
-
-            extracted = self.add_extractor_name(entities)
-            entities = message.get("entities", []) + extracted
-
-            return entities
-
-    def _convert_tags_to_entities(
-        self, text: str, tokens: List[Token], tags: List[Text]
-    ) -> List[Dict[Text, Any]]:
-        entities = []
-        last_tag = "O"
-        for token, tag in zip(tokens, tags):
-            if tag == "O":
-                last_tag = tag
-                continue
-
-            # new tag found
-            if last_tag != tag:
-                entity = {
-                    "entity": tag,
-                    "start": token.offset,
-                    "end": token.end,
-                    "extractor": "flair",
-                }
-                entities.append(entity)
-
-            # belongs to last entity
-            elif last_tag == tag:
-                entities[-1]["end"] = token.end
-
-            last_tag = tag
-
-        for entity in entities:
-            entity["value"] = text[entity["start"] : entity["end"]]
-
-        return entities
 
     def process(self, message: "Message", **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""
