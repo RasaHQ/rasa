@@ -392,7 +392,9 @@ def run_locally(args: argparse.Namespace):
     config_path = _get_config_path(args)
 
     try:
-        local.main(args, project_path, args.data, config_path, token=rasa_x_token)
+        local.main(
+            args, project_path, args.data, token=rasa_x_token, config_path=config_path
+        )
     except Exception:
         print(traceback.format_exc())
         cli_utils.print_error(
