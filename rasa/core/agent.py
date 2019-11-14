@@ -910,7 +910,7 @@ class Agent:
             model_archive = get_latest_model(model_path)
 
         if model_archive is None:
-            warnings.warn(f"Could not load local model in '{model_path}'")
+            warnings.warn(f"Could not load local model in '{model_path}'.")
             return Agent()
 
         working_directory = tempfile.mkdtemp()

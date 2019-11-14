@@ -209,7 +209,7 @@ class CategoricalSlot(Slot):
             else:
                 if self.value is not None:
                     warnings.warn(
-                        f"Categorical slot '{self.name}' is set to a value"
+                        f"Categorical slot '{self.name}' is set to a value "
                         f"('{self.value}') "
                         "that is not specified in the domain. "
                         "Value will be ignored and the slot will "
