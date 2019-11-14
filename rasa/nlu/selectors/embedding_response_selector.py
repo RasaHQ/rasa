@@ -54,8 +54,21 @@ class ResponseSelector(EmbeddingIntentClassifier):
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
         "hidden_layers_sizes_b": [256, 128],
+        # sizes of hidden layers before the embedding layer for tag labels
+        # the number of hidden layers is thus equal to the length of this list
+        "hidden_layers_sizes_c": [],
         # Whether to share the hidden layer weights between input words and intent labels
         "share_hidden_layers": False,
+        # number of units in transformer
+        "transformer_size": 128,
+        # number of transformer layers
+        "num_transformer_layers": 1,
+        # number of attention heads in transformer
+        "num_heads": 4,
+        # type of positional encoding in transformer
+        "pos_encoding": "timing",  # string 'timing' or 'emb'
+        # max sequence length if pos_encoding='emb'
+        "max_seq_length": 256,
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
@@ -95,6 +108,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
         "C_emb": 0.8,
         # dropout rate for rnn
         "droprate": 0.2,
+        # use a unidirectional or bidirectional encoder
+        "unidirectional_encoder": True,
         # visualization of accuracy
         # how often to calculate training accuracy
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
@@ -103,6 +118,12 @@ class ResponseSelector(EmbeddingIntentClassifier):
         # selector config
         # name of the intent for which this response selector is to be trained
         "retrieval_intent": None,
+        # if true intent classification is trained and intent predicted
+        "intent_classification": True,
+        # if true named entity recognition is trained and entities predicted
+        "named_entity_recognition": False,
+        # number of entity tags
+        "num_tags": 0,
     }
     # end default properties (DOC MARKER - don't remove)
 

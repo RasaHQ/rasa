@@ -555,14 +555,14 @@ class EmbeddingIntentClassifier(EntityExtractor):
             if label_attribute and e.get(label_attribute):
                 label_ids.append(label_id_dict[e.get(label_attribute)])
 
-            if tag_id_dict:
+            if self.named_entity_recognition and tag_id_dict:
                 _tags = []
                 for t in e.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]):
                     _tag = determine_token_labels(
                         t, e.get(MESSAGE_ENTITIES_ATTRIBUTE), None
                     )
                     _tags.append(tag_id_dict[_tag])
-                tag_ids.append(scipy.sparse.coo_matrix(np.array([_tags]).T))
+                tag_ids.append(scipy.sparse.csr_matrix(np.array([_tags]).T))
 
         X_sparse = np.array(X_sparse)
         X_dense = np.array(X_dense)
@@ -576,15 +576,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self._add_to_session_data(session_data, "intent_features", [Y_sparse, Y_dense])
         self._add_to_session_data(session_data, "intent_ids", [label_ids])
         self._add_to_session_data(session_data, "tag_ids", [tag_ids])
+        self._add_mask_to_session_data(session_data, "text_mask", "text_features")
 
         if label_attribute and (
             "intent_features" not in session_data or not session_data["intent_features"]
         ):
             # no label features are present, get default features from _label_data
             session_data["intent_features"] = self.use_default_label_features(label_ids)
-
-        self._add_mask_to_session_data(session_data, "text_mask", "text_features")
-        self._add_mask_to_session_data(session_data, "intent_mask", "intent_features")
 
         return session_data
 
@@ -679,20 +677,24 @@ class EmbeddingIntentClassifier(EntityExtractor):
         label_data, _ = train_utils.batch_to_session_data(label_batch, self._label_data)
 
         a = self.combine_sparse_dense_features(batch_data["text_features"], "text")
-        b = self.combine_sparse_dense_features(batch_data["intent_features"], "intent")
-        c = self.combine_sparse_dense_features(batch_data["tag_ids"], "tag")
-        all_bs = self.combine_sparse_dense_features(
-            label_data["intent_features"], "intent"
-        )
         mask = batch_data["text_mask"][0]
 
         # transformer
         a = self._create_tf_sequence(a, mask)
 
         if self.intent_classification:
+            b = self.combine_sparse_dense_features(
+                batch_data["intent_features"], "intent"
+            )
+            all_bs = self.combine_sparse_dense_features(
+                label_data["intent_features"], "intent"
+            )
+
             return self._train_intent_graph(a, b, all_bs, mask)
 
         if self.named_entity_recognition:
+            c = self.combine_sparse_dense_features(batch_data["tag_ids"], "tag")
+
             return self._train_entity_graph(a, c, mask)
 
     def _train_entity_graph(self, a, c, mask):
@@ -807,18 +809,22 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
         a = self.combine_sparse_dense_features(batch_data["text_features"], "text")
-        b = self.combine_sparse_dense_features(batch_data["intent_features"], "intent")
-        c = self.combine_sparse_dense_features(batch_data["tag_ids"], "tag")
         mask = batch_data["text_mask"][0]
-
-        self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
 
         # transformer
         a = self._create_tf_sequence(a, mask)
 
         if self.intent_classification:
+            b = self.combine_sparse_dense_features(
+                batch_data["intent_features"], "intent"
+            )
+            self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
+
             return self._pred_intent_graph(a, b, mask)
+
         if self.named_entity_recognition:
+            c = self.combine_sparse_dense_features(batch_data["tag_ids"], "tag")
+
             return self._pred_entity_graph(a, c, mask)
 
     def _pred_intent_graph(self, a: "tf.Tensor", b: "tf.Tensor", mask: "tf.Tensor"):
