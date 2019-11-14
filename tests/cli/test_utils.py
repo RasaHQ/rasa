@@ -1,4 +1,7 @@
+import contextlib
 import logging
+import os
+import pathlib
 import sys
 import tempfile
 
@@ -13,39 +16,56 @@ from rasa.cli.utils import (
 from tests.conftest import assert_log_emitted
 
 
+@contextlib.contextmanager
+def make_actions_subdir():
+    """Create a subdir called actions to test model argument handling."""
+    with tempfile.TemporaryDirectory() as tempdir:
+        cwd = os.getcwd()
+        os.chdir(tempdir)
+        try:
+            (pathlib.Path(tempdir) / "actions").mkdir()
+            yield
+        finally:
+            os.chdir(cwd)
+
+
 @pytest.mark.parametrize(
     "argv",
     [
         ["rasa", "run"],
+        ["rasa", "run", "actions"],
         ["rasa", "run", "core"],
         ["rasa", "interactive", "nlu", "--param", "xy"],
     ],
 )
 def test_parse_last_positional_argument_as_model_path(argv):
-    test_model_dir = tempfile.gettempdir()
-    argv.append(test_model_dir)
+    with make_actions_subdir():
+        test_model_dir = tempfile.gettempdir()
+        argv.append(test_model_dir)
 
-    sys.argv = argv.copy()
-    parse_last_positional_argument_as_model_path()
+        sys.argv = argv.copy()
+        parse_last_positional_argument_as_model_path()
 
-    assert sys.argv[-2] == "--model"
-    assert sys.argv[-1] == test_model_dir
+        assert sys.argv[-2] == "--model"
+        assert sys.argv[-1] == test_model_dir
 
 
 @pytest.mark.parametrize(
     "argv",
     [
         ["rasa", "run"],
+        ["rasa", "run", "actions"],
         ["rasa", "run", "core"],
         ["rasa", "test", "nlu", "--param", "xy", "--model", "test"],
     ],
 )
 def test_parse_no_positional_model_path_argument(argv):
-    sys.argv = argv.copy()
+    with make_actions_subdir():
+        sys.argv = argv.copy()
 
-    parse_last_positional_argument_as_model_path()
+        parse_last_positional_argument_as_model_path()
 
-    assert sys.argv == argv
+        assert sys.argv == argv
 
 
 def test_validate_invalid_path():
@@ -79,6 +99,7 @@ def test_validate_with_invalid_directory_if_default_is_valid(caplog: LogCaptureF
         assert get_validated_path(invalid_directory, "out", tempdir) == tempdir
     assert len(record) == 1
     assert "does not exist" in record[0].message.args[0]
+
 
 def test_print_error_and_exit():
     with pytest.raises(SystemExit):

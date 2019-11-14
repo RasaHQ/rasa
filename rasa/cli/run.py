@@ -55,13 +55,11 @@ def run_actions(args: argparse.Namespace):
 def _validate_model_path(model_path: Text, parameter: Text, default: Text):
 
     if model_path is not None and not os.path.exists(model_path):
-        reason_str = "'{}' not found.".format(model_path)
+        reason_str = f"'{model_path}' not found."
         if model_path is None:
-            reason_str = "Parameter '{}' not set.".format(parameter)
+            reason_str = f"Parameter '{parameter}' not set."
 
-        logger.debug(
-            "{} Using default location '{}' instead.".format(reason_str, default)
-        )
+        logger.debug(f"{reason_str} Using default location '{default}' instead.")
 
         os.makedirs(default, exist_ok=True)
         model_path = default

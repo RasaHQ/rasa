@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import logging
 from sanic import Blueprint, response
 from sanic.request import Request
@@ -26,7 +25,7 @@ class TwilioOutput(Client, OutputChannel):
         auth_token: Optional[Text],
         twilio_number: Optional[Text],
     ) -> None:
-        super(TwilioOutput, self).__init__(account_sid, auth_token)
+        super().__init__(account_sid, auth_token)
         self.twilio_number = twilio_number
         self.send_retry = 0
         self.max_retry = 5
@@ -134,9 +133,7 @@ class TwilioInput(InputChannel):
                         )
                     )
                 except Exception as e:
-                    logger.error(
-                        "Exception when trying to handle message.{0}".format(e)
-                    )
+                    logger.error(f"Exception when trying to handle message.{e}")
                     logger.debug(e, exc_info=True)
                     if self.debug_mode:
                         raise

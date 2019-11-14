@@ -85,7 +85,6 @@ async def test_log_unseen_enitites(default_processor: MessageProcessor):
     assert "Interpreter parsed an entity" in record[0].message.args[0]
 
 
-
 async def test_http_parsing():
     message = UserMessage("lunch?")
 

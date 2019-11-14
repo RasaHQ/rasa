@@ -16,7 +16,7 @@ class InvalidConfigError(ValueError):
     """Raised if an invalid configuration is encountered."""
 
     def __init__(self, message: Text) -> None:
-        super(InvalidConfigError, self).__init__(message)
+        super().__init__(message)
 
 
 def load(
@@ -34,7 +34,7 @@ def load(
             file_config = rasa.utils.io.read_config_file(config)
         except yaml.parser.ParserError as e:
             raise InvalidConfigError(
-                "Failed to read configuration file '{}'. Error: {}".format(config, e)
+                f"Failed to read configuration file '{config}'. Error: {e}"
             )
 
     return _load_from_dict(file_config, **kwargs)
@@ -76,7 +76,7 @@ def component_config_from_pipeline(
         return override_defaults(defaults, {})
 
 
-class RasaNLUModelConfig(object):
+class RasaNLUModelConfig:
     def __init__(self, configuration_values=None):
         """Create a model configuration, optionally overriding
         defaults with a dictionary ``configuration_values``.

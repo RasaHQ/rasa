@@ -21,7 +21,7 @@ class EntitySynonymMapper(EntityExtractor):
         synonyms: Optional[Dict[Text, Any]] = None,
     ) -> None:
 
-        super(EntitySynonymMapper, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.synonyms = synonyms if synonyms else {}
 

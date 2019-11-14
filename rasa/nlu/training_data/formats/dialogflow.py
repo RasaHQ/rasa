@@ -122,7 +122,7 @@ class DialogflowReader(TrainingDataReader):
             examples_type = "usersays"
         else:
             examples_type = "entries"
-        examples_fn_ending = "_{}_{}.json".format(examples_type, language)
+        examples_fn_ending = f"_{examples_type}_{language}.json"
         examples_fn = fn.replace(".json", examples_fn_ending)
         if os.path.isfile(examples_fn):
             return rasa.utils.io.read_json_file(examples_fn)

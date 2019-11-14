@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import logging
 import warnings
 import os
@@ -33,7 +31,7 @@ def get_file_format(resource_name: Text) -> Text:
     from rasa.nlu.training_data import loading
 
     if resource_name is None or not os.path.exists(resource_name):
-        raise AttributeError("Resource '{}' does not exist.".format(resource_name))
+        raise AttributeError(f"Resource '{resource_name}' does not exist.")
 
     files = io_utils.list_files(resource_name)
 

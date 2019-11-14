@@ -469,7 +469,7 @@ def test_slack_message_sanitization():
     target_message_2 = "Hey, you can sit here if you want !"
     target_message_3 = "Hey, you can sit here if you want!"
 
-    uid_token = "<@{}>".format(test_uid)
+    uid_token = f"<@{test_uid}>"
     raw_messages = [
         test.format(uid=uid_token)
         for test in [

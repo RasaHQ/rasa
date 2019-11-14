@@ -17,11 +17,11 @@ class SocketBlueprint(Blueprint):
     def __init__(self, sio: AsyncServer, socketio_path, *args, **kwargs):
         self.sio = sio
         self.socketio_path = socketio_path
-        super(SocketBlueprint, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def register(self, app, options):
         self.sio.attach(app, self.socketio_path)
-        super(SocketBlueprint, self).register(app, options)
+        super().register(app, options)
 
 
 class SocketIOOutput(OutputChannel):
@@ -155,11 +155,11 @@ class SocketIOInput(InputChannel):
 
         @sio.on("connect", namespace=self.namespace)
         async def connect(sid: Text, _) -> None:
-            logger.debug("User {} connected to socketIO endpoint.".format(sid))
+            logger.debug(f"User {sid} connected to socketIO endpoint.")
 
         @sio.on("disconnect", namespace=self.namespace)
         async def disconnect(sid: Text) -> None:
-            logger.debug("User {} disconnected from socketIO endpoint.".format(sid))
+            logger.debug(f"User {sid} disconnected from socketIO endpoint.")
 
         @sio.on("session_request", namespace=self.namespace)
         async def session_request(sid: Text, data: Optional[Dict]):
@@ -168,7 +168,7 @@ class SocketIOInput(InputChannel):
             if "session_id" not in data or data["session_id"] is None:
                 data["session_id"] = uuid.uuid4().hex
             await sio.emit("session_confirm", data["session_id"], room=sid)
-            logger.debug("User {} connected to socketIO endpoint.".format(sid))
+            logger.debug(f"User {sid} connected to socketIO endpoint.")
 
         @sio.on(self.user_message_evt, namespace=self.namespace)
         async def handle_message(sid: Text, data: Dict) -> Any:

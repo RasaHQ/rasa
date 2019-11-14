@@ -129,8 +129,12 @@ forms in stories.
     way to write these stories is to use :ref:`interactive learning <interactive-learning>`.
 
 
-Writing Fewer and Shorter Stories
----------------------------------
+Checkpoints and OR statements
+-----------------------------
+
+Checkpoints and OR statements should both be used with caution, if at all.
+There is usually a better way to achieve what you want by using forms and/or
+retrieval actions.
 
 
 Checkpoints

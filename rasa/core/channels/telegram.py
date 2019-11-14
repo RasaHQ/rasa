@@ -27,7 +27,7 @@ class TelegramOutput(Bot, OutputChannel):
         return "telegram"
 
     def __init__(self, access_token: Optional[Text]) -> None:
-        super(TelegramOutput, self).__init__(access_token)
+        super().__init__(access_token)
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
@@ -253,9 +253,7 @@ class TelegramInput(InputChannel):
                             )
                         )
                 except Exception as e:
-                    logger.error(
-                        "Exception when trying to handle message.{0}".format(e)
-                    )
+                    logger.error(f"Exception when trying to handle message.{e}")
                     logger.debug(e, exc_info=True)
                     if self.debug_mode:
                         raise

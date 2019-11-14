@@ -15,4 +15,3 @@ def test_entity_synonyms():
     assert entities[0]["value"] == "chinese"
     assert entities[1]["value"] == "chinese"
     assert entities[2]["value"] == "china"
-

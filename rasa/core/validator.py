@@ -138,7 +138,11 @@ class Validator:
         for action in actions:
             if action.startswith(UTTER_PREFIX):
                 if action not in utterance_templates:
+<<<<<<< HEAD
                     warnings.warn(f"There is no template for utterance '{action}'.")
+=======
+                    logger.error(f"There is no template for utterance '{action}'.")
+>>>>>>> master
                     everything_is_alright = False
 
         return everything_is_alright
@@ -195,3 +199,8 @@ class Validator:
         logger.info("Validating utterances...")
         stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
         return intents_are_valid and stories_are_valid and there_is_no_duplication
+
+    def verify_domain_validity(self) -> bool:
+        """Checks whether the domain returned by the importer is empty, indicating an invalid domain."""
+
+        return not self.domain.is_empty()

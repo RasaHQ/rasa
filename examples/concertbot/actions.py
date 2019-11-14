@@ -12,7 +12,7 @@ class ActionSearchConcerts(Action):
             {"artist": "Katy Perry", "reviews": 5.0},
         ]
         description = ", ".join([c["artist"] for c in concerts])
-        dispatcher.utter_message("{}".format(description))
+        dispatcher.utter_message(f"{description}")
         return [SlotSet("concerts", concerts)]
 
 
@@ -27,7 +27,7 @@ class ActionSearchVenues(Action):
         ]
         dispatcher.utter_message("here are some venues I found")
         description = ", ".join([c["name"] for c in venues])
-        dispatcher.utter_message("{}".format(description))
+        dispatcher.utter_message(f"{description}")
         return [SlotSet("venues", venues)]
 
 
@@ -37,7 +37,7 @@ class ActionShowConcertReviews(Action):
 
     def run(self, dispatcher, tracker, domain):
         concerts = tracker.get_slot("concerts")
-        dispatcher.utter_message("concerts from slots: {}".format(concerts))
+        dispatcher.utter_message(f"concerts from slots: {concerts}")
         return []
 
 
@@ -47,5 +47,5 @@ class ActionShowVenueReviews(Action):
 
     def run(self, dispatcher, tracker, domain):
         venues = tracker.get_slot("venues")
-        dispatcher.utter_message("venues from slots: {}".format(venues))
+        dispatcher.utter_message(f"venues from slots: {venues}")
         return []

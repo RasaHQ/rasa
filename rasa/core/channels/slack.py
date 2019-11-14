@@ -24,7 +24,7 @@ class SlackBot(SlackClient, OutputChannel):
     def __init__(self, token: Text, slack_channel: Optional[Text] = None) -> None:
 
         self.slack_channel = slack_channel
-        super(SlackBot, self).__init__(token)
+        super().__init__(token)
 
     @staticmethod
     def _get_text_from_slack_buttons(buttons: List[Dict]) -> Text:
@@ -35,7 +35,7 @@ class SlackBot(SlackClient, OutputChannel):
     ) -> None:
         recipient = self.slack_channel or recipient_id
         for message_part in text.split("\n\n"):
-            super(SlackBot, self).api_call(
+            super().api_call(
                 "chat.postMessage",
                 channel=recipient,
                 as_user=True,
@@ -48,7 +48,7 @@ class SlackBot(SlackClient, OutputChannel):
     ) -> None:
         recipient = self.slack_channel or recipient_id
         image_block = {"type": "image", "image_url": image, "alt_text": image}
-        return super(SlackBot, self).api_call(
+        return super().api_call(
             "chat.postMessage",
             channel=recipient,
             as_user=True,
@@ -60,7 +60,7 @@ class SlackBot(SlackClient, OutputChannel):
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
-        return super(SlackBot, self).api_call(
+        return super().api_call(
             "chat.postMessage",
             channel=recipient,
             as_user=True,
@@ -95,7 +95,7 @@ class SlackBot(SlackClient, OutputChannel):
                     "value": button["payload"],
                 }
             )
-        super(SlackBot, self).api_call(
+        super().api_call(
             "chat.postMessage",
             channel=recipient,
             as_user=True,
@@ -108,7 +108,7 @@ class SlackBot(SlackClient, OutputChannel):
     ) -> None:
         json_message.setdefault("channel", self.slack_channel or recipient_id)
         json_message.setdefault("as_user", True)
-        return super(SlackBot, self).api_call("chat.postMessage", **json_message)
+        return super().api_call("chat.postMessage", **json_message)
 
 
 class SlackInput(InputChannel):
@@ -204,12 +204,9 @@ class SlackInput(InputChannel):
             # can be adjusted to taste later if needed,
             # but is a good first approximation
             for regex, replacement in [
-                (r"<@{}>\s".format(uid_to_remove), ""),
-                (
-                    r"\s<@{}>".format(uid_to_remove),
-                    "",
-                ),  # a bit arbitrary but probably OK
-                (r"<@{}>".format(uid_to_remove), " "),
+                (fr"<@{uid_to_remove}>\s", ""),
+                (fr"\s<@{uid_to_remove}>", ""),  # a bit arbitrary but probably OK
+                (fr"<@{uid_to_remove}>", " "),
             ]:
                 text = re.sub(regex, replacement, text)
 
@@ -309,7 +306,7 @@ class SlackInput(InputChannel):
 
             await on_new_message(user_msg)
         except Exception as e:
-            logger.error("Exception when trying to handle message.{0}".format(e))
+            logger.error(f"Exception when trying to handle message.{e}")
             logger.error(str(e), exc_info=True)
 
         return response.text("")

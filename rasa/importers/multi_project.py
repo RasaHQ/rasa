@@ -46,9 +46,7 @@ class MultiProjectImporter(TrainingDataImporter):
         self._nlu_paths += list(extra_nlu_files)
 
         logger.debug(
-            "Selected projects: {}".format(
-                "".join(["\n-{}".format(i) for i in self._imports])
-            )
+            "Selected projects: {}".format("".join([f"\n-{i}" for i in self._imports]))
         )
 
         rasa.utils.common.mark_as_experimental_feature(

@@ -167,7 +167,7 @@ def get_component_class(component_name: Text) -> Type["Component"]:
                     )
                 else:
                     exception_message = (
-                        "Cannot find class '{0}' from global namespace. "
+                        "Cannot find class '{}' from global namespace. "
                         "Please check that there is no typo in the class "
                         "name and that you have imported the class into the global "
                         "namespace.".format(component_name)

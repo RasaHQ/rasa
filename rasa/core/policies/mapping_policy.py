@@ -40,7 +40,7 @@ class MappingPolicy(Policy):
     def __init__(self, priority: int = MAPPING_POLICY_PRIORITY) -> None:
         """Create a new Mapping policy."""
 
-        super(MappingPolicy, self).__init__(priority=priority)
+        super().__init__(priority=priority)
 
     @classmethod
     def validate_against_domain(

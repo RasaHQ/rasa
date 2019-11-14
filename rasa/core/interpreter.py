@@ -16,7 +16,7 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 
-class NaturalLanguageInterpreter(object):
+class NaturalLanguageInterpreter:
     async def parse(
         self,
         text: Text,
@@ -238,9 +238,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
                         )
                         return None
         except Exception:
-            logger.exception(
-                "Failed to parse text '{}' using rasa NLU over http.".format(text)
-            )
+            logger.exception(f"Failed to parse text '{text}' using rasa NLU over http.")
             return None
 
 
