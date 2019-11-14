@@ -538,7 +538,7 @@ class Domain:
         if explicitly_included and ambiguous_entities:
             warnings.warn(
                 f"Entities: '{ambiguous_entities}' are explicitly included and"
-                f" excluded for intent '{intent_name}'. "
+                f" excluded for intent '{intent_name}'."
                 "Excluding takes precedence in this case. "
                 "Please resolve that ambiguity."
             )
