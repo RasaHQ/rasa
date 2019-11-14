@@ -7,8 +7,32 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.4.4]
+[Unreleased 1.4.6]
 ^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+
+[1.4.5] - 2019-11-14
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- NLU-only models no longer throw warnings about parsing features not defined in the domain
+- Fixed bug that stopped Dockerfiles from building version 1.4.4.
+- Fixed format guessing for e2e stories with intent restated as ``/intent``
+
+[1.4.4] - 2019-11-13
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -25,6 +49,7 @@ Changed
 
 Removed
 -------
+- Dump domain using UTF-8 (to avoid ``\UXXXX`` sequences in the dumped files)
 
 Fixed
 -----
