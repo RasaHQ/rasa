@@ -3,9 +3,9 @@ import scipy.sparse
 import numpy as np
 
 from rasa.utils.train_utils import (
-    SessionData,
+    SessionDataType,
     shuffle_session_data,
-    split_session_data_by_label,
+    split_session_data_by_label_ids,
     train_val_split,
     session_data_for_ids,
     get_number_of_examples,
@@ -15,7 +15,7 @@ from rasa.utils.train_utils import (
 
 
 @pytest.fixture
-async def session_data() -> SessionData:
+async def session_data() -> SessionDataType:
     return {
         "text_features": [
             np.array(
@@ -63,15 +63,15 @@ async def session_data() -> SessionData:
     }
 
 
-def test_shuffle_session_data(session_data: SessionData):
+def test_shuffle_session_data(session_data: SessionDataType):
     shuffeled_session_data = shuffle_session_data(session_data)
 
     assert np.array(shuffeled_session_data.values()) != np.array(session_data.values())
 
 
-def test_split_session_data_by_label(session_data: SessionData):
-    split_session_data = split_session_data_by_label(
-        session_data, "intent_ids", np.array([0, 1])
+def test_split_session_data_by_label(session_data: SessionDataType):
+    split_session_data = split_session_data_by_label_ids(
+        session_data, session_data["intent_ids"][0], np.array([0, 1])
     )
 
     assert len(split_session_data) == 2
@@ -79,14 +79,7 @@ def test_split_session_data_by_label(session_data: SessionData):
         assert len(set(s["intent_ids"][0])) == 1
 
 
-def test_split_session_data_by_incorrect_label(session_data: SessionData):
-    with pytest.raises(ValueError):
-        split_session_data_by_label(
-            session_data, "not-existing", np.array([1, 2, 3, 4, 5])
-        )
-
-
-def test_train_val_split(session_data: SessionData):
+def test_train_val_split(session_data: SessionDataType):
     train_session_data, val_session_data = train_val_split(
         session_data, 2, 42, "intent_ids"
     )
@@ -101,12 +94,12 @@ def test_train_val_split(session_data: SessionData):
 
 
 @pytest.mark.parametrize("size", [0, 1, 5])
-def test_train_val_split_incorrect_size(session_data: SessionData, size):
+def test_train_val_split_incorrect_size(session_data: SessionDataType, size):
     with pytest.raises(ValueError):
         train_val_split(session_data, size, 42, "intent_ids")
 
 
-def test_session_data_for_ids(session_data: SessionData):
+def test_session_data_for_ids(session_data: SessionDataType):
     filtered_session_data = session_data_for_ids(session_data, np.array([0, 1]))
 
     for values in filtered_session_data.values():
@@ -123,19 +116,19 @@ def test_session_data_for_ids(session_data: SessionData):
     )
 
 
-def test_get_number_of_examples(session_data: SessionData):
+def test_get_number_of_examples(session_data: SessionDataType):
     num = get_number_of_examples(session_data)
 
     assert num == 5
 
 
-def test_get_number_of_examples_raises_value_error(session_data: SessionData):
+def test_get_number_of_examples_raises_value_error(session_data: SessionDataType):
     session_data["dense"] = np.random.randint(5, size=(2, 10))
     with pytest.raises(ValueError):
         get_number_of_examples(session_data)
 
 
-def test_gen_batch(session_data: SessionData):
+def test_gen_batch(session_data: SessionDataType):
     iterator = gen_batch(
         session_data, 2, "intent_ids", shuffle=True, batch_strategy="balanced"
     )
@@ -156,7 +149,7 @@ def test_gen_batch(session_data: SessionData):
         next(iterator)
 
 
-def test_balance_session_data(session_data: SessionData):
+def test_balance_session_data(session_data: SessionDataType):
     balanced_session_data = balance_session_data(session_data, 2, False, "intent_ids")
 
     for k, values in session_data.items():
