@@ -980,34 +980,33 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 "component is either not trained or "
                 "didn't receive enough training data"
             )
-        else:
-            # create session data from message and convert it into a batch of 1
-            self.num_tags = len(self.inverted_tag_dict)
-            session_data = self._create_session_data([message])
-            batch = train_utils.prepare_batch(
-                session_data, tuple_sizes=self.batch_tuple_sizes
-            )
+            return []
 
-            # load tf graph and session
-            predictions = self.session.run(
-                self.entity_prediction,
-                feed_dict={
-                    _x_in: _x
-                    for _x_in, _x in zip(self.batch_in, batch)
-                    if _x is not None
-                },
-            )
+        # create session data from message and convert it into a batch of 1
+        self.num_tags = len(self.inverted_tag_dict)
+        session_data = self._create_session_data([message])
+        batch = train_utils.prepare_batch(
+            session_data, tuple_sizes=self.batch_tuple_sizes
+        )
 
-            tags = [self.inverted_tag_dict[p] for p in predictions[0]]
+        # load tf graph and session
+        predictions = self.session.run(
+            self.entity_prediction,
+            feed_dict={
+                _x_in: _x for _x_in, _x in zip(self.batch_in, batch) if _x is not None
+            },
+        )
 
-            entities = self._convert_tags_to_entities(
-                message.text, message.get("tokens", []), tags
-            )
+        tags = [self.inverted_tag_dict[p] for p in predictions[0]]
 
-            extracted = self.add_extractor_name(entities)
-            entities = message.get("entities", []) + extracted
+        entities = self._convert_tags_to_entities(
+            message.text, message.get("tokens", []), tags
+        )
 
-            return entities
+        extracted = self.add_extractor_name(entities)
+        entities = message.get("entities", []) + extracted
+
+        return entities
 
     def _convert_tags_to_entities(
         self, text: str, tokens: List[Token], tags: List[Text]
