@@ -40,7 +40,7 @@ class NaturalLanguageInterpreter:
             if obj is not None:
                 warnings.warn(
                     "Tried to create NLU interpreter "
-                    f"from '{obj}', which is not possible."
+                    f"from '{obj}', which is not possible. "
                     "Using RegexInterpreter instead."
                 )
             return RegexInterpreter()
