@@ -31,6 +31,7 @@ SessionDataType = Dict[Text, List[np.ndarray]]
 
 def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto]:
     """Prepare `tf.compat.v1.ConfigProto` for training"""
+
     if config.get("tf_config") is not None:
         return tf.compat.v1.ConfigProto(**config.pop("tf_config"))
     else:
@@ -149,6 +150,7 @@ def combine_features(
 
 def shuffle_session_data(session_data: SessionDataType) -> SessionDataType:
     """Shuffle session data."""
+
     data_points = get_number_of_examples(session_data)
     ids = np.random.permutation(data_points)
     return session_data_for_ids(session_data, ids)
@@ -156,6 +158,7 @@ def shuffle_session_data(session_data: SessionDataType) -> SessionDataType:
 
 def session_data_for_ids(session_data: SessionDataType, ids: np.ndarray):
     """Filter session data by ids."""
+
     new_session_data = defaultdict(list)
     for k, values in session_data.items():
         for v in values:
@@ -167,6 +170,7 @@ def split_session_data_by_label(
     session_data: SessionDataType, label_key: Text, unique_label_ids: "np.ndarray"
 ) -> List[SessionDataType]:
     """Reorganize session data into a list of session data with the same labels."""
+
     if label_key not in session_data or len(session_data[label_key]) > 1:
         raise ValueError(f"Key '{label_key}' not in SessionDataType.")
 
@@ -187,6 +191,7 @@ def balance_session_data(
     by repeating them. Mimics stratified batching, but also takes into account
     that more populated classes should appear more often.
     """
+
     if label_key not in session_data or len(session_data[label_key]) > 1:
         raise ValueError(f"Key '{label_key}' not in SessionDataType.")
 
@@ -248,8 +253,10 @@ def balance_session_data(
 
 def get_number_of_examples(session_data: SessionDataType):
     """Obtain number of examples in session data.
+
     Raise a ValueError if number of examples differ for different data in session data.
     """
+
     example_lengths = [v.shape[0] for values in session_data.values() for v in values]
 
     # check if number of examples is the same for all values
@@ -270,6 +277,7 @@ def gen_batch(
     shuffle: bool = False,
 ) -> Generator[Tuple, None, None]:
     """Generate batches."""
+
     if shuffle:
         session_data = shuffle_session_data(session_data)
 
@@ -328,6 +336,7 @@ def prepare_batch(
 
 def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
     """Convert a scipy matrix into inidces, data, and shape."""
+
     max_seq_len = max([x.shape[0] for x in array_of_sparse])
 
     if not isinstance(array_of_sparse[0], scipy.sparse.coo_matrix):
@@ -349,10 +358,11 @@ def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
 
 
 def pad_data(data: np.ndarray, feature_len: Optional[int] = None) -> np.ndarray:
-    """
-    Pad data of different lengths.
+    """Pad data of different lengths.
+
     Data is padded with zeros. Zeros are added to the beginning of data.
     """
+
     if data[0].ndim == 0:
         return data
 

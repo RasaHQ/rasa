@@ -273,6 +273,7 @@ class EmbeddingIntentClassifier(Component):
         labels_example: List["Message"], attribute: Text
     ) -> bool:
         """Check if all labels have features set"""
+
         for label_example in labels_example:
             if (
                 label_example.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute])
@@ -310,8 +311,8 @@ class EmbeddingIntentClassifier(Component):
     def _extract_labels_precomputed_features(
         self, label_examples: List["Message"]
     ) -> List[np.ndarray]:
+        """Collect precomputed encodings"""
 
-        # Collect precomputed encodings
         sparse_features = []
         dense_features = []
 
@@ -334,6 +335,7 @@ class EmbeddingIntentClassifier(Component):
         labels_example: List["Message"],
     ) -> List[np.ndarray]:
         """Compute one-hot representation for the labels"""
+
         return [
             np.array(
                 [
@@ -659,8 +661,10 @@ class EmbeddingIntentClassifier(Component):
                 )
 
     def preprocess_train_data(self, training_data: "TrainingData"):
-        """Performs sanity checks on training data, extracts encodings for labels and
-        prepares data for training"""
+        """Prepares data for training.
+
+        Performs sanity checks on training data, extracts encodings for labels.
+        """
 
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=MESSAGE_INTENT_ATTRIBUTE
