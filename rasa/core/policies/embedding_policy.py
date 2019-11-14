@@ -252,7 +252,7 @@ class EmbeddingPolicy(Policy):
     # noinspection PyPep8Naming
     def _create_session_data(
         self, data_X: "np.ndarray", data_Y: Optional["np.ndarray"] = None
-    ) -> "train_utils.SessionData":
+    ) -> "train_utils.SessionDataType":
         """Combine all tf session related data into dict."""
         data_X = data_X.astype(np.float32)
 
@@ -370,7 +370,9 @@ class EmbeddingPolicy(Policy):
         )
 
     # prepare for prediction
-    def _create_tf_placeholders(self, session_data: "train_utils.SessionData") -> None:
+    def _create_tf_placeholders(
+        self, session_data: "train_utils.SessionDataType"
+    ) -> None:
         """Create placeholders for prediction."""
 
         dialogue_len = None  # use dynamic time
@@ -386,7 +388,7 @@ class EmbeddingPolicy(Policy):
         )
 
     def _build_tf_pred_graph(
-        self, session_data: "train_utils.SessionData"
+        self, session_data: "train_utils.SessionDataType"
     ) -> "tf.Tensor":
         """Rebuild tf graph for prediction."""
 
