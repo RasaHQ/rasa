@@ -172,6 +172,8 @@ async def test_train_model_with_entities(component_builder, tmpdir):
     assert result is not None
     assert result["intent"]["name"] == "restaurant_search"
     assert len(result["entities"]) == 1
+    assert result["entities"][0]["value"] == "Italian"
+    assert result["entities"][0]["entity"] == "cuisine"
 
 
 async def test_train_model_empty_pipeline(component_builder):

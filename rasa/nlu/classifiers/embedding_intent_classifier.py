@@ -718,9 +718,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
     def _train_entity_graph(
         self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor"
     ) -> Tuple["tf.Tensor", "tf.Tensor"]:
-        sequence_lengths = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
-        if len(sequence_lengths.shape) > 1:
-            sequence_lengths = tf.squeeze(sequence_lengths)
+        sequence_lengths = tf.cast(tf.reduce_sum(mask[:, :, 0], 1), tf.int32)
         sequence_lengths.set_shape([mask.shape[0]])
 
         c = tf.reduce_sum(tf.nn.relu(c), -1)
@@ -874,10 +872,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
     def _pred_entity_graph(self, a: "tf.Tensor", mask: "tf.Tensor"):
-        sequence_lengths = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
-        if len(sequence_lengths.shape) > 1:
-            sequence_lengths = tf.squeeze(sequence_lengths)
-        sequence_lengths.set_shape([mask.shape[0]])
+        sequence_lengths = tf.cast(tf.reduce_sum(mask[:, :, 0], 1), tf.int32)
 
         # predict tagsx
         _, _, pred_ids = self._create_crf(a, sequence_lengths)
