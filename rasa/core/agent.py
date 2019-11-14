@@ -628,7 +628,7 @@ class Agent:
             # possibility of data loss
             warnings.warn(
                 f"unique_last_num_states={unique_last_num_states} but "
-                f"maximum max_history={max_history}."
+                f"maximum max_history={max_history}. "
                 f"Possibility of data loss. "
                 f"It is recommended to set "
                 f"unique_last_num_states to "
