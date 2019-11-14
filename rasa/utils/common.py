@@ -230,7 +230,7 @@ def write_global_config_value(name: Text, value: Any) -> None:
         c[name] = value
         rasa.core.utils.dump_obj_as_yaml_to_file(GLOBAL_USER_CONFIG_PATH, c)
     except Exception as e:
-        logger.warning(f"Failed to write global config. Error: {e}. Skipping." "")
+        logger.warning(f"Failed to write global config. Error: {e}. Skipping.")
 
 
 def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:

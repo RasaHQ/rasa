@@ -628,7 +628,7 @@ class Agent:
             # possibility of data loss
             warnings.warn(
                 f"unique_last_num_states={unique_last_num_states} but "
-                f"maximum max_history={max_history}."
+                f"maximum max_history={max_history}. "
                 f"Possibility of data loss. "
                 f"It is recommended to set "
                 f"unique_last_num_states to "
@@ -910,7 +910,7 @@ class Agent:
             model_archive = get_latest_model(model_path)
 
         if model_archive is None:
-            warnings.warn(f"Could not load local model in '{model_path}'")
+            warnings.warn(f"Could not load local model in '{model_path}'.")
             return Agent()
 
         working_directory = tempfile.mkdtemp()
