@@ -38,14 +38,18 @@ def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto
         return None
 
 
-def create_label_ids(label_ids):
-    # idea taken from sklearn's stratify split
-    if label_ids.ndim == 2:
+def create_label_ids(label_ids: "np.ndarray") -> "np.ndarray":
+    """Convert various size label_ids into single dim array."""
+
+    if label_ids.ndim == 1:
+        return label_ids
+    elif label_ids.ndim == 2 and label_ids.shape[-1] == 1:
+        return label_ids[:, 0]
+    else:
+        # idea taken from sklearn's stratify split
         # for multi-label y, map each distinct row to a string repr
         # using join because str(row) uses an ellipsis if len(row) > 1000
-        label_ids = np.array([" ".join(row.astype("str")) for row in label_ids])
-
-    return label_ids
+        return np.array([" ".join(row.astype("str")) for row in label_ids[:, :, 0]])
 
 
 # noinspection PyPep8Naming

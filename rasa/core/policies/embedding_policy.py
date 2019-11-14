@@ -258,6 +258,9 @@ class EmbeddingPolicy(Policy):
             # training time
             label_ids = self._label_ids_for_Y(data_Y)
             Y = self._label_features_for_Y(label_ids)
+            # explicitly add last dimension to label_ids
+            # to track correctly dynamic sequences
+            label_ids = np.expand_dims(label_ids, -1)
         else:
             # prediction time
             label_ids = None
