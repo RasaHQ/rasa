@@ -364,8 +364,8 @@ def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
         coo = [x.tocoo() for x in array_of_sparse]
     else:
         coo = array_of_sparse
-    data = [v for x in array_of_sparse for v in x.data]
 
+    data = [v for x in array_of_sparse for v in x.data]
     indices = [
         ids for i, x in enumerate(coo) for ids in zip([i] * len(x.row), x.row, x.col)
     ]

@@ -136,9 +136,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # if true intent classification is trained and intent predicted
         "intent_classification": True,
         # if true named entity recognition is trained and entities predicted
-        "named_entity_recognition": False,
+        "named_entity_recognition": True,
         # number of entity tags
-        "num_tags": 0,
+        "num_tags": None,
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -252,7 +252,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         intent_prediction: Optional["tf.Tensor"] = None,
         entity_prediction: Optional["tf.Tensor"] = None,
         similarity: Optional["tf.Tensor"] = None,
-        message_embed: Optional["tf.Tensor"] = None,
+        cls_embed: Optional["tf.Tensor"] = None,
         label_embed: Optional["tf.Tensor"] = None,
         all_labels_embed: Optional["tf.Tensor"] = None,
         batch_tuple_sizes: Optional[Dict] = None,
@@ -280,7 +280,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.sim = similarity
 
         # persisted embeddings
-        self.message_embed = message_embed
+        self.cls_embed = cls_embed
         self.label_embed = label_embed
         self.all_labels_embed = all_labels_embed
 
@@ -566,7 +566,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
                         t, e.get(MESSAGE_ENTITIES_ATTRIBUTE), None
                     )
                     _tags.append(tag_id_dict[_tag])
-                tag_ids.append(scipy.sparse.csr_matrix(np.array([_tags]).T))
+                # transpose to have seq_len x 1
+                tag_ids.append(np.array([_tags]).T)
 
         X_sparse = np.array(X_sparse)
         X_dense = np.array(X_dense)
@@ -645,6 +646,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     def _create_tf_sequence(self, a_in, mask) -> "tf.Tensor":
         """Create sequence level embedding and mask."""
+
         a_in = self._create_tf_embed_fnn(
             a_in,
             self.hidden_layer_sizes["text"],
@@ -751,9 +753,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
 
         # get _cls_ vector for intent classification
-        cls_embed = tf.reduce_sum(a * last, 1)
-        cls_embed = train_utils.create_tf_embed(
-            cls_embed,
+        self.cls_embed = tf.reduce_sum(a * last, 1)
+        self.cls_embed = train_utils.create_tf_embed(
+            self.cls_embed,
             self.embed_dim,
             self.C2,
             self.similarity_type,
@@ -777,7 +779,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
         return train_utils.calculate_loss_acc(
-            cls_embed,
+            self.cls_embed,
             self.label_embed,
             b,
             self.all_labels_embed,
@@ -796,7 +798,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self, input: tf.Tensor, sequence_lengths: tf.Tensor
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         with tf.variable_scope("ner", reuse=tf.AUTO_REUSE):
-
             logits = tf.layers.dense(input, self.num_tags, name="crf-logits")
             crf_params = tf.get_variable(
                 "crf-params", [self.num_tags, self.num_tags], dtype=tf.float32
@@ -833,28 +834,30 @@ class EmbeddingIntentClassifier(EntityExtractor):
             )
             self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
 
-            return self._pred_intent_graph(a, b, mask)
+            self._pred_intent_graph(a, b, mask)
 
         if self.named_entity_recognition:
-            return self._pred_entity_graph(a, mask)
+            self._pred_entity_graph(a, mask)
 
     def _pred_intent_graph(self, a: "tf.Tensor", b: "tf.Tensor", mask: "tf.Tensor"):
         last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
 
         # get _cls_ embedding
-        cls_embed = tf.reduce_sum(a * last, 1)
-        cls_embed = train_utils.create_tf_embed(
-            cls_embed,
+        self.cls_embed = tf.reduce_sum(a * last, 1)
+        self.cls_embed = train_utils.create_tf_embed(
+            self.cls_embed,
             self.embed_dim,
             self.C2,
             self.similarity_type,
             layer_name_suffix="cls",
         )
 
-        self.b = tf.reduce_sum(b, 1)
+        b = tf.reduce_sum(b, 1)
 
         self.sim_all = train_utils.tf_raw_sim(
-            cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :], None
+            self.cls_embed[:, tf.newaxis, :],
+            self.all_labels_embed[tf.newaxis, :, :],
+            None,
         )
         self.label_embed = self._create_tf_embed_fnn(
             b,
@@ -863,7 +866,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             embed_name="intent",
         )
         self.sim = train_utils.tf_raw_sim(
-            cls_embed[:, tf.newaxis, :], self.label_embed, None
+            self.cls_embed[:, tf.newaxis, :], self.label_embed, None
         )
 
         self.intent_prediction = train_utils.confidence_from_sim(
@@ -878,7 +881,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         # predict tagsx
         _, _, pred_ids = self._create_crf(a, sequence_lengths)
-        self.tag_prediction = tf.to_int64(pred_ids)
+        self.entity_prediction = tf.to_int64(pred_ids)
 
     # train helpers
     def preprocess_train_data(self, training_data: "TrainingData"):
@@ -984,6 +987,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             )
         else:
             # create session data from message and convert it into a batch of 1
+            self.num_tags = len(self.inverted_tag_dict)
             session_data = self._create_session_data([message])
             batch = train_utils.prepare_batch(
                 session_data, tuple_sizes=self.batch_tuple_sizes
@@ -1175,7 +1179,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             )
             train_utils.persist_tensor("similarity", self.sim, self.graph)
 
-            train_utils.persist_tensor("message_embed", self.message_embed, self.graph)
+            train_utils.persist_tensor("cls_embed", self.cls_embed, self.graph)
             train_utils.persist_tensor("label_embed", self.label_embed, self.graph)
             train_utils.persist_tensor(
                 "all_labels_embed", self.all_labels_embed, self.graph
@@ -1233,6 +1237,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 batch_in = train_utils.load_tensor("batch_placeholder")
 
                 sim_all = train_utils.load_tensor("similarity_all")
+                cls_embed = train_utils.load_tensor("cls_embed")
                 intent_prediction = train_utils.load_tensor("intent_prediction")
                 entity_prediction = train_utils.load_tensor("entity_prediction")
                 sim = train_utils.load_tensor("similarity")
@@ -1269,7 +1274,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 intent_prediction=intent_prediction,
                 entity_prediction=entity_prediction,
                 similarity=sim,
-                message_embed=message_embed,
+                cls_embed=cls_embed,
                 label_embed=label_embed,
                 all_labels_embed=all_labels_embed,
                 attention_weights=attention_weights,
