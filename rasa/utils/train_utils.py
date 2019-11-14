@@ -48,15 +48,20 @@ def train_val_split(
     """Create random hold out validation set using stratified split."""
 
     if label_key not in session_data or len(session_data[label_key]) > 1:
-        raise ValueError(f"Key '{label_key}' not in SessionDataType.")
+        raise ValueError(f"Key '{label_key}' not in SessionData.")
 
-    label_counts = dict(
-        zip(*np.unique(session_data[label_key][0], return_counts=True, axis=0))
-    )
+    label_ids = session_data[label_key][0]
+    # idea taken from sklearn's stratify split
+    if label_ids.ndim == 2:
+        # for multi-label y, map each distinct row to a string repr
+        # using join because str(row) uses an ellipsis if len(row) > 1000
+        label_ids = np.array([" ".join(row.astype("str")) for row in label_ids])
+
+    label_counts = dict(zip(*np.unique(label_ids, return_counts=True, axis=0)))
 
     check_train_test_sizes(evaluate_on_num_examples, label_counts, session_data)
 
-    counts = np.array([label_counts[label] for label in session_data[label_key][0]])
+    counts = np.array([label_counts[label] for label in label_ids])
 
     multi_values = []
     [
@@ -76,7 +81,7 @@ def train_val_split(
         *multi_values,
         test_size=evaluate_on_num_examples,
         random_state=random_seed,
-        stratify=session_data[label_key][0][counts > 1],
+        stratify=label_ids[counts > 1],
     )
 
     session_data_train, session_data_val = convert_train_test_split(
@@ -167,16 +172,15 @@ def session_data_for_ids(session_data: SessionDataType, ids: np.ndarray):
 
 
 def split_session_data_by_label(
-    session_data: SessionDataType, label_key: Text, unique_label_ids: "np.ndarray"
+    session_data: SessionDataType,
+    label_ids: "np.ndarray",
+    unique_label_ids: "np.ndarray",
 ) -> List[SessionDataType]:
     """Reorganize session data into a list of session data with the same labels."""
 
-    if label_key not in session_data or len(session_data[label_key]) > 1:
-        raise ValueError(f"Key '{label_key}' not in SessionDataType.")
-
     label_data = []
     for label_id in unique_label_ids:
-        ids = session_data[label_key][0] == label_id
+        ids = label_ids == label_id
         label_data.append(session_data_for_ids(session_data, ids))
     return label_data
 
@@ -195,13 +199,20 @@ def balance_session_data(
     if label_key not in session_data or len(session_data[label_key]) > 1:
         raise ValueError(f"Key '{label_key}' not in SessionDataType.")
 
+    label_ids = session_data[label_key][0]
+    # idea taken from sklearn's stratify split
+    if label_ids.ndim == 2:
+        # for multi-label y, map each distinct row to a string repr
+        # using join because str(row) uses an ellipsis if len(row) > 1000
+        label_ids = np.array([" ".join(row.astype("str")) for row in label_ids])
+
     unique_label_ids, counts_label_ids = np.unique(
-        session_data[label_key][0], return_counts=True, axis=0
+        label_ids, return_counts=True, axis=0
     )
     num_label_ids = len(unique_label_ids)
 
     # need to call every time, so that the data is shuffled inside each class
-    label_data = split_session_data_by_label(session_data, label_key, unique_label_ids)
+    label_data = split_session_data_by_label(session_data, label_ids, unique_label_ids)
 
     data_idx = [0] * num_label_ids
     num_data_cycles = [0] * num_label_ids
