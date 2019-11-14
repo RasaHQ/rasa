@@ -292,7 +292,7 @@ class Validator:
             if conflict.correct_response:
                 print(f"Fixing {conflict.incorrect_stories} with {conflict.correct_response}...")
 
-        return len(conflicts) > 0
+        return len(conflicts) == 0
 
     def verify_all(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""
