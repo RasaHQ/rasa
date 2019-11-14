@@ -38,6 +38,16 @@ def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto
         return None
 
 
+def create_label_ids(label_ids):
+    # idea taken from sklearn's stratify split
+    if label_ids.ndim == 2:
+        # for multi-label y, map each distinct row to a string repr
+        # using join because str(row) uses an ellipsis if len(row) > 1000
+        label_ids = np.array([" ".join(row.astype("str")) for row in label_ids])
+
+    return label_ids
+
+
 # noinspection PyPep8Naming
 def train_val_split(
     session_data: SessionDataType,
@@ -50,12 +60,7 @@ def train_val_split(
     if label_key not in session_data or len(session_data[label_key]) > 1:
         raise ValueError(f"Key '{label_key}' not in SessionData.")
 
-    label_ids = session_data[label_key][0]
-    # idea taken from sklearn's stratify split
-    if label_ids.ndim == 2:
-        # for multi-label y, map each distinct row to a string repr
-        # using join because str(row) uses an ellipsis if len(row) > 1000
-        label_ids = np.array([" ".join(row.astype("str")) for row in label_ids])
+    label_ids = create_label_ids(session_data[label_key][0])
 
     label_counts = dict(zip(*np.unique(label_ids, return_counts=True, axis=0)))
 
@@ -199,12 +204,7 @@ def balance_session_data(
     if label_key not in session_data or len(session_data[label_key]) > 1:
         raise ValueError(f"Key '{label_key}' not in SessionDataType.")
 
-    label_ids = session_data[label_key][0]
-    # idea taken from sklearn's stratify split
-    if label_ids.ndim == 2:
-        # for multi-label y, map each distinct row to a string repr
-        # using join because str(row) uses an ellipsis if len(row) > 1000
-        label_ids = np.array([" ".join(row.astype("str")) for row in label_ids])
+    label_ids = create_label_ids(session_data[label_key][0])
 
     unique_label_ids, counts_label_ids = np.unique(
         label_ids, return_counts=True, axis=0
