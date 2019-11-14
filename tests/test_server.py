@@ -106,11 +106,11 @@ def test_version(rasa_app: SanicTestClient):
 def test_status(rasa_app: SanicTestClient):
     _, response = rasa_app.get("/status")
     model_file = response.json["model_file"]
-    test_folder_pattern = re.compile("models\d/\d+-\d+.tar.gz")
+    test_folder_pattern = re.search(r"models\d/\d+-\d+.tar.gz", model_file)
     assert response.status == 200
     assert "fingerprint" in response.json
     assert "model_file" in response.json
-    assert "models/" in model_file or test_folder_pattern.search(model_file)
+    assert "models/" in model_file or test_folder_pattern
 
 
 def test_status_nlu_only(rasa_app_nlu: SanicTestClient):
