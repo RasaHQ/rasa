@@ -16,7 +16,6 @@ from rasa.core.utils import AvailableEndpoints
 from tests.conftest import assert_log_emitted
 
 
-
 def test_x_help(run: Callable[..., RunResult]):
     output = run("x", "--help")
 
@@ -85,26 +84,40 @@ def test_if_endpoint_config_is_invalid_in_local_mode(kwargs: Dict):
     config = EndpointConfig(**kwargs)
     assert not x._is_correct_event_broker(config)
 
+
 def test_overwrite_for_local_x(caplog: LogCaptureFixture):
     test_wait_time = 5
     default_wait_time = 2
-    endpoint_config_missing_wait = EndpointConfig(url="http://testserver:5002/models/default@latest")
-    endpoint_config_custom = EndpointConfig(url="http://testserver:5002/models/default@latest", wait_time_between_pulls=test_wait_time)
+    endpoint_config_missing_wait = EndpointConfig(
+        url="http://testserver:5002/models/default@latest"
+    )
+    endpoint_config_custom = EndpointConfig(
+        url="http://testserver:5002/models/default@latest",
+        wait_time_between_pulls=test_wait_time,
+    )
     endpoints_custom = AvailableEndpoints(model=endpoint_config_custom)
     endpoints_missing_wait = AvailableEndpoints(model=endpoint_config_missing_wait)
 
     # Check that we get INFO message about overwriting the endpoints configuration
     log_message = "Ignoring url 'http://testserver:5002/models/default@latest' from 'endpoints.yml' and using 'http://localhost/projects/default/models/tag/production' instead"
-    with assert_log_emitted(caplog, 'rasa.cli.x', logging.INFO, log_message):
+    with assert_log_emitted(caplog, "rasa.cli.x", logging.INFO, log_message):
         x._overwrite_endpoints_for_local_x(endpoints_custom, "test", "http://localhost")
 
     # Checking for url to be changed in config and wait time value to be honored
-    assert endpoints_custom.model.url == 'http://localhost/projects/default/models/tag/production'
-    assert endpoints_custom.model.kwargs['wait_time_between_pulls'] == test_wait_time
+    assert (
+        endpoints_custom.model.url
+        == "http://localhost/projects/default/models/tag/production"
+    )
+    assert endpoints_custom.model.kwargs["wait_time_between_pulls"] == test_wait_time
 
     # Check for wait time to be set to 3 since it isn't specified
-    x._overwrite_endpoints_for_local_x(endpoints_missing_wait, "test", "http://localhost")
-    assert endpoints_missing_wait.model.kwargs['wait_time_between_pulls'] == default_wait_time
+    x._overwrite_endpoints_for_local_x(
+        endpoints_missing_wait, "test", "http://localhost"
+    )
+    assert (
+        endpoints_missing_wait.model.kwargs["wait_time_between_pulls"]
+        == default_wait_time
+    )
 
 
 async def test_pull_runtime_config_from_server():
@@ -126,7 +139,7 @@ async def test_pull_runtime_config_from_server():
         endpoints_path, credentials_path = await x._pull_runtime_config_from_server(
             config_url, 1, 0
         )
-        
+
         with open(endpoints_path) as f:
             assert f.read() == endpoint_config
         with open(credentials_path) as f:
