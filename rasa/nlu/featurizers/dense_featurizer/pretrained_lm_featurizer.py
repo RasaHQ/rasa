@@ -82,6 +82,7 @@ class PreTrainedLMFeaturizer(Featurizer):
         )
         self.model = model_dictionary[self.model_key].from_pretrained(self.model_key)
         self.contains_special_token = special_tokens_present[self.model_key]
+        self.model.eval()
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
 
@@ -96,9 +97,115 @@ class PreTrainedLMFeaturizer(Featurizer):
         **kwargs: Any,
     ) -> None:
 
-        for example in training_data.intent_examples:
-            for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
-                self._set_lm_features(example, attribute)
+        bs = 128
+
+        for attribute in [MESSAGE_TEXT_ATTRIBUTE]:
+
+            start_index = 0
+
+            while start_index < len(training_data.intent_examples):
+
+                end_index = min(start_index + bs, len(training_data.intent_examples))
+                batch_examples = training_data.intent_examples[start_index:end_index]
+                batch_text = [ex.get(attribute) for ex in batch_examples]
+
+                batch_feats = self._compute_features(batch_text)
+
+                for index, ex in enumerate(batch_examples):
+
+                    ex.set(
+                        MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute],
+                        self._combine_with_existing_dense_features(
+                            ex,
+                            batch_feats[index],
+                            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute],
+                        ),
+                    )
+
+                start_index += bs
+
+        # for example in training_data.intent_examples:
+        #     for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
+        #         self._set_lm_features(example, attribute)
+
+    def _compute_input_ids(self, batch_examples):
+
+        batch_input_ids = []
+        max_seq_len = 0
+        actual_seq_lengths = []
+        for example in batch_examples:
+
+            example_input_ids = self.tokenizer.encode(
+                example, add_special_tokens=self.contains_special_token
+            )
+            max_seq_len = max(max_seq_len, len(example_input_ids))
+            actual_seq_lengths.append(len(example_input_ids))
+            batch_input_ids.append(example_input_ids)
+
+        # add padding
+        padded_input_ids = []
+        for example_input_ids in batch_input_ids:
+            padded_input_ids.append(
+                example_input_ids
+                + [self.tokenizer.pad_token_id] * (max_seq_len - len(example_input_ids))
+            )
+
+        return torch.tensor(padded_input_ids), actual_seq_lengths
+
+    def _compute_attention_mask(self, actual_seq_lengths):
+
+        attention_mask = []
+        max_seq_length = max(actual_seq_lengths)
+        for index in range(len(actual_seq_lengths)):
+            example_seq_length = actual_seq_lengths[index]
+            attention_mask.append(
+                [1] * example_seq_length + [0] * (max_seq_length - example_seq_length)
+            )
+
+        attention_mask = np.array(attention_mask).astype(np.float32)
+
+        return torch.tensor(attention_mask)
+
+    def _compute_features(self, batch_inputs):
+
+        batch_model_inputs, actual_seq_lengths = self._compute_input_ids(batch_inputs)
+        batch_attention_mask = self._compute_attention_mask(actual_seq_lengths)
+
+        with torch.no_grad():
+            last_hidden_states = self.model(
+                batch_model_inputs, attention_mask=batch_attention_mask
+            )[
+                0
+            ].numpy()  # Models outputs are now numpy array
+            sequence_embedding = last_hidden_states  # First element of batch
+
+            truncated_embeds = self._resolve_special_tokens_in_embeddings(
+                sequence_embedding, actual_seq_lengths
+            )
+
+            return truncated_embeds
+
+    def _resolve_special_tokens_in_embeddings(self, embeddings, actual_seq_lengths):
+
+        truncated_embeds = []
+        for index, embedding in enumerate(embeddings):
+            unmasked_embedding = embedding[: actual_seq_lengths[index]]
+
+            if self.contains_special_token:
+                # dim - (seq + 2, hdim)
+                # Discard SEP token and move CLS token to last index
+                unmasked_embedding = unmasked_embedding[:-1, :]  # Discard SEP
+                unmasked_embedding = np.roll(
+                    unmasked_embedding, -1, axis=0
+                )  # Move CLS to back
+            else:
+                unmasked_embedding = np.concatenate(
+                    [unmasked_embedding, np.zeros((1, unmasked_embedding.shape[-1]))],
+                    axis=0,
+                )
+            truncated_embeds.append(unmasked_embedding)
+
+        return np.array(truncated_embeds)
 
     def _set_lm_features(self, example, attribute=MESSAGE_TEXT_ATTRIBUTE):
 
@@ -144,4 +251,12 @@ class PreTrainedLMFeaturizer(Featurizer):
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
-        self._set_lm_features(message)
+        feats = self._compute_features([message.get(MESSAGE_TEXT_ATTRIBUTE)])
+        message.set(
+            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            self._combine_with_existing_dense_features(
+                message,
+                feats[0],
+                MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            ),
+        )
