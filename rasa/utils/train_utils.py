@@ -383,25 +383,24 @@ def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
 def pad_dense_data(array_of_dense: np.ndarray) -> np.ndarray:
     """Pad data of different lengths.
 
-    Data is padded with zeros. Zeros are added to the end of data.
+    Sequential data is padded with zeros. Zeros are added to the end of data.
     """
 
     if array_of_dense[0].ndim < 2:
         # data doesn't contain a sequence
         return array_of_dense
-    else:
-        # data contains dynamic sequence dimension
-        data_size = len(array_of_dense)
-        max_seq_len = max([x.shape[0] for x in array_of_dense])
 
-        data_padded = np.zeros(
-            [data_size, max_seq_len, array_of_dense[0].shape[-1]],
-            dtype=array_of_dense[0].dtype,
-        )
-        for i in range(data_size):
-            data_padded[i, : array_of_dense[i].shape[0], :] = array_of_dense[i]
+    data_size = len(array_of_dense)
+    max_seq_len = max([x.shape[0] for x in array_of_dense])
 
-        return data_padded.astype(np.float32)
+    data_padded = np.zeros(
+        [data_size, max_seq_len, array_of_dense[0].shape[-1]],
+        dtype=array_of_dense[0].dtype,
+    )
+    for i in range(data_size):
+        data_padded[i, : array_of_dense[i].shape[0], :] = array_of_dense[i]
+
+    return data_padded.astype(np.float32)
 
 
 def batch_to_session_data(
