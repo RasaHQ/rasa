@@ -44,7 +44,7 @@ class SQLProducer(EventChannel):
             dialect, host, port, db, username, password
         )
 
-        logger.debug("SQLProducer: Connecting to database: '{}'.".format(engine_url))
+        logger.debug(f"SQLProducer: Connecting to database: '{engine_url}'.")
 
         self.engine = sqlalchemy.create_engine(engine_url)
         self.Base.metadata.create_all(self.engine)

@@ -21,7 +21,7 @@ def policy_from_module_path(module_path: Text) -> Type["Policy"]:
             module_path, lookup_path="rasa.core.policies.registry"
         )
     except ImportError:
-        raise ImportError("Cannot retrieve policy from path '{}'".format(module_path))
+        raise ImportError(f"Cannot retrieve policy from path '{module_path}'")
 
 
 def featurizer_from_module_path(module_path: Text) -> Type["TrackerFeaturizer"]:
@@ -31,6 +31,4 @@ def featurizer_from_module_path(module_path: Text) -> Type["TrackerFeaturizer"]:
     try:
         return class_from_module_path(module_path, lookup_path="rasa.core.featurizers")
     except ImportError:
-        raise ImportError(
-            "Cannot retrieve featurizer from path '{}'".format(module_path)
-        )
+        raise ImportError(f"Cannot retrieve featurizer from path '{module_path}'")

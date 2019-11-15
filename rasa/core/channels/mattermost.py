@@ -40,8 +40,8 @@ class MattermostBot(MattermostAPI, OutputChannel):
         self.bot_channel = bot_channel
         self.webhook_url = webhook_url
 
-        super(MattermostBot, self).__init__(url, team)
-        super(MattermostBot, self).login(user, pw)
+        super().__init__(url, team)
+        super().login(user, pw)
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
@@ -76,7 +76,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
         recipient_id: Text,
         text: Text,
         buttons: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Sends buttons to the output."""
 
@@ -181,7 +181,7 @@ class MattermostInput(InputChannel):
             )
             await on_new_message(user_msg)
         except Exception as e:
-            logger.error("Exception when trying to handle message.{0}".format(e))
+            logger.error(f"Exception when trying to handle message.{e}")
             logger.debug(e, exc_info=True)
 
     async def action_from_button(
@@ -214,7 +214,7 @@ class MattermostInput(InputChannel):
             )
             await on_new_message(context_action)
         except Exception as e:
-            logger.error("Exception when trying to handle message.{0}".format(e))
+            logger.error(f"Exception when trying to handle message.{e}")
             logger.debug(e, exc_info=True)
 
     def blueprint(

@@ -15,13 +15,8 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
 
 from rasa.nlu.constants import (
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
     MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_FEATURE_NAMES,
     SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 
@@ -50,7 +45,7 @@ class SpacyNLP(Component):
     ) -> None:
 
         self.nlp = nlp
-        super(SpacyNLP, self).__init__(component_config)
+        super().__init__(component_config)
 
     @staticmethod
     def load_model(spacy_model_name: Text) -> "Language":
@@ -86,9 +81,7 @@ class SpacyNLP(Component):
             spacy_model_name = config.language
             component_config["model"] = config.language
 
-        logger.info(
-            "Trying to load spacy model with name '{}'".format(spacy_model_name)
-        )
+        logger.info(f"Trying to load spacy model with name '{spacy_model_name}'")
 
         nlp = cls.load_model(spacy_model_name)
 
@@ -255,7 +248,7 @@ class SpacyNLP(Component):
         model_dir: Text = None,
         model_metadata: "Metadata" = None,
         cached_component: Optional["SpacyNLP"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "SpacyNLP":
 
         if cached_component:

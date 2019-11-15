@@ -6,7 +6,7 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 
-class EventChannel(object):
+class EventChannel:
     @classmethod
     def from_endpoint_config(cls, broker_config: EndpointConfig) -> "EventChannel":
         raise NotImplementedError(

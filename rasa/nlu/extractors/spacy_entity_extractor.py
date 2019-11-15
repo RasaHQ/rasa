@@ -1,6 +1,7 @@
 import typing
 from typing import Any, Dict, List, Text
 
+from rasa.nlu.constants import MESSAGE_ENTITIES_ATTRIBUTE
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.training_data import Message
 
@@ -10,7 +11,7 @@ if typing.TYPE_CHECKING:
 
 class SpacyEntityExtractor(EntityExtractor):
 
-    provides = ["entities"]
+    provides = [MESSAGE_ENTITIES_ATTRIBUTE]
 
     requires = ["spacy_nlp"]
 
@@ -22,7 +23,7 @@ class SpacyEntityExtractor(EntityExtractor):
     }
 
     def __init__(self, component_config: Text = None) -> None:
-        super(SpacyEntityExtractor, self).__init__(component_config)
+        super().__init__(component_config)
 
     def process(self, message: Message, **kwargs: Any) -> None:
         # can't use the existing doc here (spacy_doc on the message)
@@ -35,7 +36,9 @@ class SpacyEntityExtractor(EntityExtractor):
             all_extracted, dimensions
         )
         message.set(
-            "entities", message.get("entities", []) + extracted, add_to_output=True
+            MESSAGE_ENTITIES_ATTRIBUTE,
+            message.get(MESSAGE_ENTITIES_ATTRIBUTE, []) + extracted,
+            add_to_output=True,
         )
 
     @staticmethod

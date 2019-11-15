@@ -46,7 +46,7 @@ types:
 	pytype --keep-going rasa
 
 prepare-tests-macos: prepare-tests-files
-	brew install graphviz
+	brew install graphviz wget
 
 prepare-tests-ubuntu: prepare-tests-files
 	sudo apt-get -y install graphviz graphviz-dev python3-tk

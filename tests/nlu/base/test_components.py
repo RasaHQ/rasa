@@ -15,7 +15,7 @@ def test_no_components_with_same_name(component_class):
     names = [cls.name for cls in registry.component_classes]
     assert (
         names.count(component_class.name) == 1
-    ), "There is more than one component named {}".format(component_class.name)
+    ), f"There is more than one component named {component_class.name}"
 
 
 @pytest.mark.parametrize("pipeline_template", registry.registered_pipeline_templates)
@@ -55,9 +55,9 @@ def test_find_unavailable_packages():
 
 
 def test_builder_create_by_module_path(component_builder, default_config):
-    from rasa.nlu.featurizers.regex_featurizer import RegexFeaturizer
+    from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 
-    path = "rasa.nlu.featurizers.regex_featurizer.RegexFeaturizer"
+    path = "rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer"
     component_config = {"name": path}
     component = component_builder.create_component(component_config, default_config)
     assert type(component) == RegexFeaturizer

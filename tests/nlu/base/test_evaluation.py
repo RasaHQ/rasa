@@ -1,4 +1,3 @@
-# coding=utf-8
 import asyncio
 import logging
 
@@ -39,7 +38,7 @@ from rasa.nlu.test import align_entity_predictions
 from rasa.nlu.test import determine_intersection
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.tokenizers import Token
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu import utils
 import json
 import os
@@ -257,7 +256,7 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
     data = DEFAULT_DATA_PATH
 
     result = run_evaluation(
-        data, os.path.join(unpacked_trained_moodbot_path, "nlu"), errors=None
+        data, os.path.join(unpacked_trained_moodbot_path, "nlu"), errors=False
     )
     assert result.get("intent_evaluation")
     assert result.get("entity_evaluation").get("CRFEntityExtractor")
@@ -376,7 +375,7 @@ def test_entity_evaluation_report(tmpdir_factory):
 
         def __init__(self, component_config=None) -> None:
 
-            super(EntityExtractorA, self).__init__(component_config)
+            super().__init__(component_config)
 
     class EntityExtractorB(EntityExtractor):
 
@@ -384,7 +383,7 @@ def test_entity_evaluation_report(tmpdir_factory):
 
         def __init__(self, component_config=None) -> None:
 
-            super(EntityExtractorB, self).__init__(component_config)
+            super().__init__(component_config)
 
     path = tmpdir_factory.mktemp("evaluation").strpath
     report_folder = os.path.join(path, "reports")

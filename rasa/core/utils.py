@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import argparse
 import json
 import logging
@@ -47,7 +46,7 @@ def configure_file_logging(logger_obj: logging.Logger, log_file: Optional[Text])
         return
 
     formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
-    file_handler = logging.FileHandler(log_file, encoding="utf-8")
+    file_handler = logging.FileHandler(log_file, encoding=io_utils.DEFAULT_ENCODING)
     file_handler.setLevel(logger_obj.level)
     file_handler.setFormatter(formatter)
     logger_obj.addHandler(file_handler)
@@ -56,20 +55,6 @@ def configure_file_logging(logger_obj: logging.Logger, log_file: Optional[Text])
 def module_path_from_instance(inst: Any) -> Text:
     """Return the module path of an instance's class."""
     return inst.__module__ + "." + inst.__class__.__name__
-
-
-def dump_obj_as_json_to_file(filename: Text, obj: Any) -> None:
-    """Dump an object as a json string to a file."""
-
-    dump_obj_as_str_to_file(filename, json.dumps(obj, indent=2))
-
-
-def dump_obj_as_str_to_file(filename: Text, text: Text) -> None:
-    """Dump a text to a file."""
-
-    with open(filename, "w", encoding="utf-8") as f:
-        # noinspection PyTypeChecker
-        f.write(str(text))
 
 
 def subsample_array(
@@ -126,12 +111,12 @@ def generate_id(prefix="", max_chars=None):
     if max_chars:
         gid = gid[:max_chars]
 
-    return "{}{}".format(prefix, gid)
+    return f"{prefix}{gid}"
 
 
 def request_input(valid_values=None, prompt=None, max_suggested=3):
     def wrong_input_message():
-        print (
+        print(
             "Invalid answer, only {}{} allowed\n".format(
                 ", ".join(valid_values[:max_suggested]),
                 ",..." if len(valid_values) > max_suggested else "",
@@ -153,7 +138,7 @@ def request_input(valid_values=None, prompt=None, max_suggested=3):
 # noinspection PyPep8Naming
 
 
-class HashableNDArray(object):
+class HashableNDArray:
     """Hashable wrapper for ndarray objects.
 
     Instances of ndarray are not hashable, meaning they cannot be added to
@@ -217,8 +202,8 @@ def _dump_yaml(obj, output):
 
 def dump_obj_as_yaml_to_file(filename: Union[Text, Path], obj: Dict) -> None:
     """Writes data (python dict) to the filename in yaml repr."""
-    with open(str(filename), "w", encoding="utf-8") as output:
-        _dump_yaml(obj, output)
+
+    io_utils.write_yaml_file(obj, filename)
 
 
 def dump_obj_as_yaml_to_string(obj: Dict) -> Text:
@@ -248,7 +233,7 @@ def list_routes(app: Sanic):
 
         options = {}
         for arg in route.parameters:
-            options[arg] = "[{0}]".format(arg)
+            options[arg] = f"[{arg}]"
 
         if not isinstance(route.handler, CompositionView):
             handlers = [(list(route.methods)[0], route.name)]
@@ -259,11 +244,11 @@ def list_routes(app: Sanic):
             ]
 
         for method, name in handlers:
-            line = unquote("{:50s} {:30s} {}".format(endpoint, method, name))
+            line = unquote(f"{endpoint:50s} {method:30s} {name}")
             output[name] = line
 
     url_table = "\n".join(output[url] for url in sorted(output))
-    logger.debug("Available web server routes: \n{}".format(url_table))
+    logger.debug(f"Available web server routes: \n{url_table}")
 
     return output
 
@@ -317,7 +302,7 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
 
     line_filter = re.compile(line_pattern)
 
-    with open(filename, "r", encoding="utf-8") as f:
+    with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING) as f:
         num_messages = 0
         for line in f:
             m = line_filter.match(line)
@@ -339,7 +324,7 @@ def convert_bytes_to_string(data: Union[bytes, bytearray, Text]) -> Text:
     """Convert `data` to string if it is a bytes-like object."""
 
     if isinstance(data, (bytes, bytearray)):
-        return data.decode("utf-8")
+        return data.decode(io_utils.DEFAULT_ENCODING)
 
     return data
 
@@ -349,12 +334,12 @@ def get_file_hash(path: Text) -> Text:
     return md5(file_as_bytes(path)).hexdigest()
 
 
-def get_text_hash(text: Text, encoding: Text = "utf-8") -> Text:
+def get_text_hash(text: Text, encoding: Text = io_utils.DEFAULT_ENCODING) -> Text:
     """Calculate the md5 hash for a text."""
     return md5(text.encode(encoding)).hexdigest()
 
 
-def get_dict_hash(data: Dict, encoding: Text = "utf-8") -> Text:
+def get_dict_hash(data: Dict, encoding: Text = io_utils.DEFAULT_ENCODING) -> Text:
     """Calculate the md5 hash of a dictionary."""
     return md5(json.dumps(data, sort_keys=True).encode(encoding)).hexdigest()
 
@@ -396,7 +381,7 @@ def pad_lists_to_size(
         return list_x, list_y
 
 
-class AvailableEndpoints(object):
+class AvailableEndpoints:
     """Collection of configured endpoints."""
 
     @classmethod

@@ -1,10 +1,11 @@
 import time
-
+import json
 import logging
 import os
 import requests
 from typing import Any, List, Optional, Text, Dict
 
+from rasa.nlu.constants import MESSAGE_ENTITIES_ATTRIBUTE
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
@@ -48,7 +49,7 @@ def convert_duckling_format_to_rasa(matches):
 class DucklingHTTPExtractor(EntityExtractor):
     """Searches for structured entites, e.g. dates, using a duckling server."""
 
-    provides = ["entities"]
+    provides = [MESSAGE_ENTITIES_ATTRIBUTE]
 
     defaults = {
         # by default all dimensions recognized by duckling are returned
@@ -73,7 +74,7 @@ class DucklingHTTPExtractor(EntityExtractor):
         language: Optional[Text] = None,
     ) -> None:
 
-        super(DucklingHTTPExtractor, self).__init__(component_config)
+        super().__init__(component_config)
         self.language = language
 
     @classmethod
@@ -100,10 +101,12 @@ class DucklingHTTPExtractor(EntityExtractor):
         return self.component_config.get("url")
 
     def _payload(self, text, reference_time):
+        dimensions = self.component_config["dimensions"]
         return {
             "text": text,
             "locale": self._locale(),
             "tz": self.component_config.get("timezone"),
+            "dims": json.dumps(dimensions),
             "reftime": reference_time,
         }
 
@@ -181,7 +184,9 @@ class DucklingHTTPExtractor(EntityExtractor):
 
         extracted = self.add_extractor_name(extracted)
         message.set(
-            "entities", message.get("entities", []) + extracted, add_to_output=True
+            MESSAGE_ENTITIES_ATTRIBUTE,
+            message.get(MESSAGE_ENTITIES_ATTRIBUTE, []) + extracted,
+            add_to_output=True,
         )
 
     @classmethod
@@ -191,7 +196,7 @@ class DucklingHTTPExtractor(EntityExtractor):
         model_dir: Text = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["DucklingHTTPExtractor"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "DucklingHTTPExtractor":
 
         language = model_metadata.get("language") if model_metadata else None

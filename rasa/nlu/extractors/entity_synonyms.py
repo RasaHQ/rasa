@@ -2,7 +2,7 @@ import os
 import warnings
 from typing import Any, Dict, Optional, Text
 
-from rasa.nlu import utils
+from rasa.nlu.constants import MESSAGE_ENTITIES_ATTRIBUTE
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
@@ -13,7 +13,7 @@ import rasa.utils.io
 
 class EntitySynonymMapper(EntityExtractor):
 
-    provides = ["entities"]
+    provides = [MESSAGE_ENTITIES_ATTRIBUTE]
 
     def __init__(
         self,
@@ -21,7 +21,7 @@ class EntitySynonymMapper(EntityExtractor):
         synonyms: Optional[Dict[Text, Any]] = None,
     ) -> None:
 
-        super(EntitySynonymMapper, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.synonyms = synonyms if synonyms else {}
 
@@ -33,15 +33,15 @@ class EntitySynonymMapper(EntityExtractor):
             self.add_entities_if_synonyms(key, value)
 
         for example in training_data.entity_examples:
-            for entity in example.get("entities", []):
+            for entity in example.get(MESSAGE_ENTITIES_ATTRIBUTE, []):
                 entity_val = example.text[entity["start"] : entity["end"]]
                 self.add_entities_if_synonyms(entity_val, str(entity.get("value")))
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
-        updated_entities = message.get("entities", [])[:]
+        updated_entities = message.get(MESSAGE_ENTITIES_ATTRIBUTE, [])[:]
         self.replace_synonyms(updated_entities)
-        message.set("entities", updated_entities, add_to_output=True)
+        message.set(MESSAGE_ENTITIES_ATTRIBUTE, updated_entities, add_to_output=True)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
 
@@ -62,7 +62,7 @@ class EntitySynonymMapper(EntityExtractor):
         model_dir: Optional[Text] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["EntitySynonymMapper"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "EntitySynonymMapper":
 
         file_name = meta.get("file")
@@ -75,9 +75,7 @@ class EntitySynonymMapper(EntityExtractor):
             synonyms = rasa.utils.io.read_json_file(entity_synonyms_file)
         else:
             synonyms = None
-            warnings.warn(
-                "Failed to load synonyms file from '{}'".format(entity_synonyms_file)
-            )
+            warnings.warn(f"Failed to load synonyms file from '{entity_synonyms_file}'")
         return cls(meta, synonyms)
 
     def replace_synonyms(self, entities):

@@ -1,4 +1,3 @@
-from collections import namedtuple
 import copy
 import json
 import logging
@@ -10,7 +9,6 @@ import numpy as np
 from typing import Any, List, Optional, Text, Dict, Tuple
 
 import rasa.utils.io
-from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
     TrackerFeaturizer,
@@ -130,13 +128,13 @@ class EmbeddingPolicy(Policy):
         all_bot_embed: Optional["tf.Tensor"] = None,
         attention_weights: Optional["tf.Tensor"] = None,
         max_history: Optional[int] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Declare instant variables with default values"""
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
-        super(EmbeddingPolicy, self).__init__(featurizer, priority)
+        super().__init__(featurizer, priority)
 
         self._load_params(**kwargs)
 
@@ -260,25 +258,25 @@ class EmbeddingPolicy(Policy):
     # noinspection PyPep8Naming
     def _create_session_data(
         self, data_X: "np.ndarray", data_Y: Optional["np.ndarray"] = None
-    ) -> "train_utils.SessionData":
-        """Combine all tf session related data into a named tuple"""
-
+    ) -> "train_utils.SessionDataType":
+        """Combine all tf session related data into dict."""
         if data_Y is not None:
             # training time
             label_ids = self._label_ids_for_Y(data_Y)
             Y = self._label_features_for_Y(label_ids)
-
-            # idea taken from sklearn's stratify split
-            if label_ids.ndim == 2:
-                # for multi-label y, map each distinct row to a string repr
-                # using join because str(row) uses an ellipsis if len(row) > 1000
-                label_ids = np.array([" ".join(row.astype("str")) for row in label_ids])
+            # explicitly add last dimension to label_ids
+            # to track correctly dynamic sequences
+            label_ids = np.expand_dims(label_ids, -1)
         else:
             # prediction time
             label_ids = None
             Y = None
 
-        return train_utils.SessionData(X=data_X, Y=Y, label_ids=label_ids)
+        return {
+            "dialogue_features": [data_X],
+            "bot_features": [Y],
+            "action_ids": [label_ids],
+        }
 
     def _create_tf_bot_embed(self, b_in: "tf.Tensor") -> "tf.Tensor":
         """Create embedding bot vector."""
@@ -352,9 +350,9 @@ class EmbeddingPolicy(Policy):
 
     def _build_tf_train_graph(self) -> Tuple["tf.Tensor", "tf.Tensor"]:
         """Bulid train graph using iterator."""
+        # iterator returns a_in, b_in, action_ids
+        self.a_in, self.b_in, _ = self._iterator.get_next()
 
-        # session data are int counts but we need a float tensors
-        self.a_in, self.b_in = self._iterator.get_next()
         if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
             # add time dimension if max history featurizer is used
             self.b_in = self.b_in[:, tf.newaxis, :]
@@ -386,23 +384,25 @@ class EmbeddingPolicy(Policy):
         )
 
     # prepare for prediction
-    def _create_tf_placeholders(self, session_data: "train_utils.SessionData") -> None:
+    def _create_tf_placeholders(
+        self, session_data: "train_utils.SessionDataType"
+    ) -> None:
         """Create placeholders for prediction."""
 
         dialogue_len = None  # use dynamic time
         self.a_in = tf.placeholder(
             dtype=tf.float32,
-            shape=(None, dialogue_len, session_data.X.shape[-1]),
+            shape=(None, dialogue_len, session_data["dialogue_features"][0].shape[-1]),
             name="a",
         )
         self.b_in = tf.placeholder(
             dtype=tf.float32,
-            shape=(None, dialogue_len, None, session_data.Y.shape[-1]),
+            shape=(None, dialogue_len, None, session_data["bot_features"][0].shape[-1]),
             name="b",
         )
 
     def _build_tf_pred_graph(
-        self, session_data: "train_utils.SessionData"
+        self, session_data: "train_utils.SessionDataType"
     ) -> "tf.Tensor":
         """Rebuild tf graph for prediction."""
 
@@ -429,7 +429,7 @@ class EmbeddingPolicy(Policy):
         self,
         training_trackers: List["DialogueStateTracker"],
         domain: "Domain",
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
 
@@ -462,7 +462,10 @@ class EmbeddingPolicy(Policy):
 
         if self.evaluate_on_num_examples:
             session_data, eval_session_data = train_utils.train_val_split(
-                session_data, self.evaluate_on_num_examples, self.random_seed
+                session_data,
+                self.evaluate_on_num_examples,
+                self.random_seed,
+                label_key="action_ids",
             )
         else:
             eval_session_data = None
@@ -480,7 +483,11 @@ class EmbeddingPolicy(Policy):
                 train_init_op,
                 eval_init_op,
             ) = train_utils.create_iterator_init_datasets(
-                session_data, eval_session_data, batch_size_in, self.batch_strategy
+                session_data,
+                eval_session_data,
+                batch_size_in,
+                self.batch_strategy,
+                label_key="action_ids",
             )
 
             self._is_training = tf.placeholder_with_default(False, shape=())
@@ -518,7 +525,7 @@ class EmbeddingPolicy(Policy):
         self,
         training_trackers: List["DialogueStateTracker"],
         domain: "Domain",
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Continue training an already trained policy."""
 
@@ -534,7 +541,9 @@ class EmbeddingPolicy(Policy):
                 session_data = self._create_session_data(
                     training_data.X, training_data.y
                 )
-                train_dataset = train_utils.create_tf_dataset(session_data, batch_size)
+                train_dataset = train_utils.create_tf_dataset(
+                    session_data, batch_size, label_key="action_ids"
+                )
                 train_init_op = self._iterator.make_initializer(train_dataset)
                 self.session.run(train_init_op)
 
@@ -557,7 +566,7 @@ class EmbeddingPolicy(Policy):
         data_X = self.featurizer.create_X([tracker], domain)
         session_data = self._create_session_data(data_X)
 
-        return {self.a_in: session_data.X}
+        return {self.a_in: session_data["dialogue_features"][0]}
 
     def predict_action_probabilities(
         self, tracker: "DialogueStateTracker", domain: "Domain"
@@ -635,7 +644,7 @@ class EmbeddingPolicy(Policy):
         meta = {"priority": self.priority}
 
         meta_file = os.path.join(path, "embedding_policy.json")
-        utils.dump_obj_as_json_to_file(meta_file, meta)
+        rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
         file_name = "tensorflow_embedding.ckpt"
         checkpoint = os.path.join(path, file_name)

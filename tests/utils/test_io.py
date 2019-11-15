@@ -146,7 +146,7 @@ def test_emojis_in_tmp_file():
             - two £ (?u)\\b\\w+\\b f\u00fcr
         """
     test_file = io_utils.create_temporary_file(test_data)
-    with io.open(test_file, mode="r", encoding="utf-8") as f:
+    with open(test_file, mode="r", encoding="utf-8") as f:
         content = f.read()
     content = io_utils.read_yaml(content)
 
@@ -294,3 +294,43 @@ def test_list_directory(
     expected = {str(subdirectory / entry) for entry in expected}
 
     assert set(list_function(str(subdirectory))) == expected
+
+
+def test_write_json_file(tmp_path: Path):
+    expected = {"abc": "dasds", "list": [1, 2, 3, 4], "nested": {"a": "b"}}
+    file_path = str(tmp_path / "abc.txt")
+
+    io_utils.dump_obj_as_json_to_file(file_path, expected)
+    assert io_utils.read_json_file(file_path) == expected
+
+
+def test_write_utf_8_yaml_file(tmp_path: Path):
+    """This test makes sure that dumping a yaml doesn't result in Uxxxx sequences
+    but rather directly dumps the unicode character."""
+
+    file_path = str(tmp_path / "test.yml")
+    data = {"data": "amazing 🌈"}
+
+    io_utils.write_yaml_file(data, file_path)
+    assert io_utils.read_file(file_path) == "data: amazing 🌈\n"
+
+
+def test_create_directory_if_new(tmp_path: Path):
+    directory = str(tmp_path / "a" / "b")
+    io_utils.create_directory(directory)
+
+    assert os.path.exists(directory)
+
+
+def test_create_directory_if_already_exists(tmp_path: Path):
+    # This should not throw an exception
+    io_utils.create_directory(str(tmp_path))
+    assert True
+
+
+def test_create_directory_for_file(tmp_path: Path):
+    file = str(tmp_path / "dir" / "test.txt")
+
+    io_utils.create_directory_for_file(str(file))
+    assert not os.path.exists(file)
+    assert os.path.exists(os.path.dirname(file))

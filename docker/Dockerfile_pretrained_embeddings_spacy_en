@@ -1,56 +1,86 @@
-FROM python:3.6-slim as builder
-# if this installation process changes, the enterprise container needs to be
-# updated as well
+# Create common base stage
+FROM python:3.6-slim as base
+
 WORKDIR /build
-COPY . .
-RUN python setup.py sdist bdist_wheel
-RUN find dist -maxdepth 1 -mindepth 1 -name '*.tar.gz' -print0 | xargs -0 -I {} mv {} rasa.tar.gz
 
-FROM python:3.6-slim
+# Create virtualenv to isolate builds
+RUN python -m venv /build
 
-SHELL ["/bin/bash", "-c"]
+# Install common libraries
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+    # required by psycopg2 at build and runtime
+    libpq-dev \
+     # required for health check
+    curl \
+ && apt-get autoremove -y
 
-RUN apt-get update -qq && \
-  apt-get install -y --no-install-recommends \
-  build-essential \
-  wget \
-  openssh-client \
-  graphviz-dev \
-  pkg-config \
-  git-core \
-  openssl \
-  libssl-dev \
-  libffi6 \
-  libffi-dev \
-  libpng-dev \
-  libpq-dev \
-  curl && \
-  apt-get clean && \
-  rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-  mkdir /install && \
-  mkdir /app
+# Make sure we use the virtualenv
+ENV PATH="/build/bin:$PATH"
 
-WORKDIR /install
+# Stage to build and install everything
+FROM base as builder
 
-# Copy as early as possible so we can cache ...
-COPY alt_requirements/ ./alt_requirements
-COPY requirements.txt .
+WORKDIR /src
 
-RUN pip install -r alt_requirements/requirements_pretrained_embeddings_spacy.txt
+# Install all required build libraries
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+    build-essential \
+    wget \
+    openssh-client \
+    graphviz-dev \
+    pkg-config \
+    git-core \
+    openssl \
+    libssl-dev \
+    libffi6 \
+    libffi-dev \
+    libpng-dev
 
-COPY --from=builder /build/rasa.tar.gz .
-RUN pip install ./rasa.tar.gz[sql,spacy]
+# Make sure we have the latest pip version
+RUN pip install -U pip
 
+# Install spacy model
 RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > /dev/null \
     && python -m spacy link en_core_web_md en
 
-COPY sample_configs/config_pretrained_embeddings_spacy.yml /app/config.yml
+# Copy only what we really need
+COPY README.md .
+COPY setup.py .
+COPY setup.cfg .
+COPY MANIFEST.in .
+COPY alt_requirements/ ./alt_requirements
+COPY requirements.txt .
 
-VOLUME ["/app"]
+# Install Rasa and its dependencies
+RUN pip install --no-cache-dir -r alt_requirements/requirements_pretrained_embeddings_spacy.txt
+
+# Install Rasa as package
+COPY rasa ./rasa
+RUN pip install .[sql,spacy]
+
+# Runtime stage which uses the virtualenv which we built in the previous stage
+FROM base AS runner
+
 WORKDIR /app
+
+# Copy over default pipeline config
+COPY sample_configs/config_pretrained_embeddings_spacy.yml config.yml
+
+# Copy virtualenv from previous stage
+COPY --from=builder /build /build
+
+# Create a volume for temporary data
+VOLUME /tmp
+
+# Make sure the default group has the same permissions as the owner
+RUN chgrp -R 0 . && chmod -R g=u .
+
+# Don't run as root
+USER 1001
 
 EXPOSE 5005
 
 ENTRYPOINT ["rasa"]
-
 CMD ["--help"]
