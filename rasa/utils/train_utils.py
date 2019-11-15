@@ -365,18 +365,20 @@ def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
 
     max_seq_len = max([x.shape[0] for x in array_of_sparse])
 
-    indices = []
-    data = []
-    for i, x in enumerate(array_of_sparse):
-        indices.extend(list(zip([i] * len(x.row), x.row, x.col)))
-        data.extend(x.data)
+    indices = np.hstack(
+        [
+            np.vstack([i * np.ones_like(x.row), x.row, x.col])
+            for i, x in enumerate(array_of_sparse)
+        ]
+    ).T
+    data = np.hstack([x.data for x in array_of_sparse])
 
-    shape = (len(array_of_sparse), max_seq_len, array_of_sparse[0].shape[-1])
+    shape = np.array((len(array_of_sparse), max_seq_len, array_of_sparse[0].shape[-1]))
 
     return [
-        np.array(indices).astype(np.int64),
-        np.array(data).astype(np.float32),
-        np.array(shape).astype(np.int64),
+        indices.astype(np.int64),
+        data.astype(np.float32),
+        shape.astype(np.int64),
     ]
 
 
