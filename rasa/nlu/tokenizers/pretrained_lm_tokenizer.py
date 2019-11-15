@@ -116,12 +116,12 @@ class PreTrainedLMTokenizer(Tokenizer):
                 current_token_offset = token_start
                 for index, string in enumerate(split_token_strings):
                     if index == 0:
+                        if index == len(split_token_strings) - 1:
+                            s_token_end = token_end
+                        else:
+                            s_token_end = current_token_offset + len(string)
                         expanded_tokens_list.append(
-                            Token(
-                                string,
-                                token_start,
-                                end=current_token_offset + len(string),
-                            )
+                            Token(string, token_start, end=s_token_end)
                         )
                     elif index == len(split_token_strings) - 1:
                         expanded_tokens_list.append(
