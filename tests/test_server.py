@@ -181,7 +181,7 @@ def test_train_status():
     while not training_finished:
         time.sleep(0.5)
         # hit status endpoint with short timeout to ensure training doesn't block
-        status_resp = requests.get("http://localhost:5005/status", timeout=0.5)
+        status_resp = requests.get("http://localhost:5005/status", timeout=1)
         assert status_resp.status_code == 200
 
         if not training_started:
