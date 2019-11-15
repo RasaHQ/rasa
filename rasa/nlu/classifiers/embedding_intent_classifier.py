@@ -614,11 +614,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             layer_name_suffix=fnn_name,
         )
         return train_utils.create_tf_embed(
-            x,
-            self.embed_dim,
-            self.C2,
-            self.similarity_type,
-            layer_name_suffix=embed_name,
+            x, self.embed_dim, self.C2, embed_name, self.similarity_type
         )
 
     def combine_sparse_dense_features(
@@ -753,11 +749,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # get _cls_ vector for intent classification
         self.cls_embed = tf.reduce_sum(a * last, 1)
         self.cls_embed = train_utils.create_tf_embed(
-            self.cls_embed,
-            self.embed_dim,
-            self.C2,
-            self.similarity_type,
-            layer_name_suffix="cls",
+            self.cls_embed, self.embed_dim, self.C2, "cls", self.similarity_type
         )
 
         b = tf.reduce_sum(tf.nn.relu(b), 1)
@@ -796,9 +788,14 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self, input: tf.Tensor, sequence_lengths: tf.Tensor
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         with tf.variable_scope("ner", reuse=tf.AUTO_REUSE):
-            logits = tf.layers.dense(input, self.num_tags, name="crf-logits")
+            logits = train_utils.create_tf_embed(
+                input, self.num_tags, self.C2, "crf-logits"
+            )
             crf_params = tf.get_variable(
-                "crf-params", [self.num_tags, self.num_tags], dtype=tf.float32
+                "crf-params",
+                [self.num_tags, self.num_tags],
+                dtype=tf.float32,
+                regularizer=tf.contrib.layers.l2_regularizer(self.C2),
             )
             pred_ids, _ = tf.contrib.crf.crf_decode(
                 logits, crf_params, sequence_lengths
@@ -806,7 +803,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
             return crf_params, logits, pred_ids
 
-    def _build_tf_pred_graph(self, session_data: "SessionDataType") -> "tf.Tensor":
+    def _build_tf_pred_graph(self, session_data: "SessionDataType"):
 
         shapes, types = train_utils.get_shapes_types(session_data)
 
@@ -843,11 +840,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # get _cls_ embedding
         self.cls_embed = tf.reduce_sum(a * last, 1)
         self.cls_embed = train_utils.create_tf_embed(
-            self.cls_embed,
-            self.embed_dim,
-            self.C2,
-            self.similarity_type,
-            layer_name_suffix="cls",
+            self.cls_embed, self.embed_dim, self.C2, "cls", self.similarity_type
         )
 
         b = tf.reduce_sum(b, 1)

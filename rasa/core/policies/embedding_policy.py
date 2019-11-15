@@ -286,7 +286,7 @@ class EmbeddingPolicy(Policy):
             layer_name_suffix="bot",
         )
         return train_utils.create_tf_embed(
-            b, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix="bot"
+            b, self.embed_dim, self.C2, "bot", self.similarity_type
         )
 
     def _create_tf_dial(self, a_in) -> Tuple["tf.Tensor", "tf.Tensor"]:
@@ -326,7 +326,7 @@ class EmbeddingPolicy(Policy):
             mask = mask[:, -1:]
 
         dial_embed = train_utils.create_tf_embed(
-            a, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix="dial"
+            a, self.embed_dim, self.C2, "dial", self.similarity_type
         )
 
         return dial_embed, mask

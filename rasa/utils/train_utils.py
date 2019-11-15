@@ -648,8 +648,8 @@ def create_tf_embed(
     x: "tf.Tensor",
     embed_dim: int,
     C2: float,
-    similarity_type: Text,
     layer_name_suffix: Text,
+    similarity_type: Optional[Text] = None,
 ) -> "tf.Tensor":
     """Create dense embedding layer with a name."""
 
@@ -662,8 +662,12 @@ def create_tf_embed(
         name=f"embed_layer_{layer_name_suffix}",
         reuse=tf.AUTO_REUSE,
     )
-    # normalize embedding vectors for cosine similarity
-    return tf_normalize_if_cosine(embed_x, similarity_type)
+
+    if similarity_type:
+        # normalize embedding vectors for cosine similarity
+        return tf_normalize_if_cosine(embed_x, similarity_type)
+
+    return embed_x
 
 
 def create_t2t_hparams(
