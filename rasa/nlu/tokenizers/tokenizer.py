@@ -19,10 +19,11 @@ class Token(object):
         offset: int,
         data: Optional[Dict[Text, Any]] = None,
         lemma: Optional[Text] = None,
+        end: int = None,
     ):
         self.offset = offset
         self.text = text
-        self.end = offset + len(text)
+        self.end = end if end else offset + len(text)
         self.data = data if data else {}
         self.lemma = lemma or text
 
