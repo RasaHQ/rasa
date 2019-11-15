@@ -67,22 +67,26 @@ async def test_parsing(default_processor: MessageProcessor):
     assert parsed["entities"][0]["entity"] == "name"
 
 
+@pytest.mark.filterwarnings(
+        "ignore: "
+        "Interpreter parsed an intent 'love' that is not defined in the domain."
+        ":UserWarning"
+    )
 async def test_log_unseen_intent(default_processor: MessageProcessor):
-    message = UserMessage('/love{"name": "RASA"}')
+    message = UserMessage("/love")
     parsed = await default_processor._parse_message(message)
-    with pytest.warns(UserWarning) as record:
-        default_processor._log_unseen_intent(parsed)
-    assert len(record) == 1
-    assert "Interpreter parsed an intent" in record[0].message.args[0]
+    default_processor._log_unseen_features(parsed)
 
 
-async def test_log_unseen_enitites(default_processor: MessageProcessor):
-    message = UserMessage('/love{"test_entity": "RASA"}')
+@pytest.mark.filterwarnings(
+        "ignore: "
+        "Interpreter parsed an entity 'test_entity' that is not defined in the domain."
+        ":UserWarning"
+    )
+async def test_log_unseen_entity(default_processor: MessageProcessor):
+    message = UserMessage('/greet{"test_entity": "RASA"}')
     parsed = await default_processor._parse_message(message)
-    with pytest.warns(UserWarning) as record:
-        default_processor._log_unseen_enitites(parsed)
-    assert len(record) == 1
-    assert "Interpreter parsed an entity" in record[0].message.args[0]
+    default_processor._log_unseen_features(parsed)
 
 
 async def test_http_parsing():
