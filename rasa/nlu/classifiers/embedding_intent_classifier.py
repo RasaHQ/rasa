@@ -1041,13 +1041,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 ))
             xs = np.array(xs)
 
-            max_mask = (xs.max(axis=-1, keepdims=True) == xs).astype(xs.dtype)
+            unique, counts = np.unique(xs, return_counts=True, axis=0)
 
-            mask_xs = xs * max_mask
-            max_xs = mask_xs.sum(axis=0) / (max_mask.sum(axis=0) + 1e-8)
-            freq_xs = max_mask.sum(axis=0) / max_mask.shape[0]
+            max_count = counts.argmax()
+            predictions = unique[max_count]
 
-            predictions = 2 * freq_xs * max_xs / (freq_xs + max_xs + 1e-8)
         else:
             predictions = self.session.run(
                 self.entity_prediction,
