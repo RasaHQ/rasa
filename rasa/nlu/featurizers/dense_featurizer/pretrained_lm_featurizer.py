@@ -8,6 +8,7 @@ from rasa.nlu.constants import (
     SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 import torch
+import re
 from transformers import *
 import numpy as np
 
