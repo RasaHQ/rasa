@@ -5,7 +5,6 @@ import time
 import tempfile
 import uuid
 
-from multiprocessing import Manager
 from typing import Any, Dict, List, Text, Type
 from contextlib import ExitStack
 
@@ -14,7 +13,7 @@ from aioresponses import aioresponses
 import pytest
 from freezegun import freeze_time
 from mock import MagicMock
-from multiprocessing import Process
+from multiprocessing import Process, Manager
 
 import rasa
 import rasa.constants
@@ -74,6 +73,13 @@ def rasa_app_core(rasa_core_server: Sanic) -> SanicTestClient:
 @pytest.fixture
 def rasa_secured_app(rasa_server_secured: Sanic) -> SanicTestClient:
     return get_test_client(rasa_server_secured)
+
+
+@pytest.fixture
+def server_process():
+    server = Process(target=subprocess.run, args=(["rasa", "run", "--enable-api"],))
+    yield server
+    server.kill()
 
 
 def test_root(rasa_app: SanicTestClient):
@@ -157,19 +163,20 @@ def _send_train_request(
     training_result["train_response_code"] = train_resp.status_code
 
 
-def test_train_status():
+def test_train_status(server_process):
 
     # run a rasa server in one process
-    server = Process(target=subprocess.run, args=(["rasa", "run", "--enable-api"],))
-    server.start()
+    server_process.start()
 
     server_ready = False
     # wait until server is up before sending train request and status test loop
     while not server_ready:
         try:
+            start = time.time()
             server_ready = (
                 requests.get("http://localhost:5005/status").status_code == 200
             )
+            status_request_duration = time.time() - start
         except requests.exceptions.ConnectionError:
             pass
         time.sleep(1)
@@ -204,7 +211,6 @@ def test_train_status():
                 status_resp = requests.get("http://localhost:5005/status")
                 assert status_resp.json()["num_active_training_jobs"] == 0
 
-    server.kill()
     training_request.join()
 
 
