@@ -60,3 +60,8 @@ gast==0.2.2
 torch
 torchvision
 transformers
+# for hermit evaluation
+pandas
+progress
+# to calculate f1 score in new architecture
+git+https://github.com/guillaumegenthial/tf_metrics.git
