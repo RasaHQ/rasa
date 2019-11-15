@@ -51,9 +51,9 @@ class Validator:
 
         for intent in nlu_data_intents:
             if intent not in self.domain.intents:
-                logger.error(
+                warnings.warn(
                     f"The intent '{intent}' is in the NLU training data, but "
-                    "is not listed in the domain."
+                    f"is not listed in the domain."
                 )
                 everything_is_alright = False
 
@@ -99,9 +99,9 @@ class Validator:
 
         for story_intent in stories_intents:
             if story_intent not in self.domain.intents:
-                logger.error(
-                    "The intent '{}' is used in stories, but is not "
-                    "listed in the domain file.".format(story_intent)
+                warnings.warn(
+                    f"The intent '{story_intent}' is used in stories, but is not "
+                    f"listed in the domain file."
                 )
                 everything_is_alright = False
 
@@ -167,9 +167,9 @@ class Validator:
                     continue
 
                 if event.action_name not in utterance_actions:
-                    logger.error(
-                        "The utterance '{}' is used in stories, but is not a "
-                        "valid utterance.".format(event.action_name)
+                    warnings.warn(
+                        f"The utterance '{event.action_name}' is used in stories, but is not a "
+                        f"valid utterance."
                     )
                     everything_is_alright = False
                 stories_utterances.add(event.action_name)
