@@ -8,6 +8,9 @@ import logging
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
+from rasa.nlu.featurizers.dense_featurizer.pretrained_lm_featurizer import (
+    PreTrainedLMFeaturizer,
+)
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
@@ -22,12 +25,9 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
 from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizer
-from rasa.nlu.featurizers.sparse_featurizer.ngram_featurizer import NGramFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
-from rasa.nlu.featurizers.dense_featurizer.pretrained_lm_featurizer import (
-    PreTrainedLMFeaturizer,
-)
+
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer

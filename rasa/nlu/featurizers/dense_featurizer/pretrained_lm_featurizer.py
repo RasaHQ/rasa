@@ -1,4 +1,3 @@
-import logging
 from typing import Any, Dict, Optional, Text
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurzier import Featurizer
