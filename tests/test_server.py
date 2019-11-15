@@ -1,4 +1,3 @@
-import multiprocessing
 import os
 import requests
 import subprocess
@@ -15,6 +14,7 @@ from aioresponses import aioresponses
 import pytest
 from freezegun import freeze_time
 from mock import MagicMock
+from multiprocessing import Process
 
 import rasa
 import rasa.constants
@@ -131,16 +131,15 @@ def test_status_not_ready_agent(rasa_app: SanicTestClient):
     assert response.status == 409
 
 
-def _send_train_request(results: Dict[Text, Any], payload: Dict[Text, Any]) -> None:
+def _send_train_request(
+    training_result: Dict[Text, Any], working_directory: Text
+) -> None:
     """Send a request to /model/train. Used in test_train_status().
 
-    Must be picklable to be used as a Process target, therefore defined at the top level of the module.
+    Must be picklable to be used as a `Process` target, therefore defined at the top level of the module.
     """
-    train_resp = requests.post("http://localhost:5005/model/train", json=payload)
-    results["train_response_code"] = train_resp.status_code
 
-
-def test_train_status():
+    os.chdir(working_directory)
     with ExitStack() as stack:
         formbot_data = dict(
             domain="examples/formbot/domain.yml",
@@ -154,10 +153,15 @@ def test_train_status():
         }
         payload["force"] = True
 
-    ctx = multiprocessing.get_context("spawn")
+    train_resp = requests.post("http://localhost:5005/model/train", json=payload)
+    training_result["train_response_code"] = train_resp.status_code
+
+
+def test_train_status():
+
     # run a rasa server in one process
-    p0 = ctx.Process(target=subprocess.run, args=(["rasa", "run", "--enable-api"],))
-    p0.start()
+    server = Process(target=subprocess.run, args=(["rasa", "run", "--enable-api"],))
+    server.start()
 
     server_ready = False
     # wait until server is up before sending train request and status test loop
@@ -171,9 +175,12 @@ def test_train_status():
         time.sleep(1)
 
     # use another process to hit the first server with a training request
-    results = Manager().dict()
-    p1 = ctx.Process(target=_send_train_request, args=(results, payload))
-    p1.start()
+    training_result = Manager().dict()
+    working_directory = os.getcwd()
+    training_request = Process(
+        target=_send_train_request, args=(training_result, working_directory)
+    )
+    training_request.start()
 
     training_started = False
     training_finished = False
@@ -188,17 +195,17 @@ def test_train_status():
             # make sure that we don't fail because we got status before training updated number of jobs
             training_started = status_resp.json()["num_active_training_jobs"] == 1
         else:
-            if results.get("train_response_code") is None:
+            if training_result.get("train_response_code") is None:
                 assert status_resp.json()["num_active_training_jobs"] == 1
             else:
-                # once the response code is in, training is done, status should return 0 again
-                assert results.get("train_response_code") == 200
+                # once the response code is in, training is done, `num_active_training_jobs ` should be 0 again
+                assert training_result.get("train_response_code") == 200
                 training_finished = True
                 status_resp = requests.get("http://localhost:5005/status")
                 assert status_resp.json()["num_active_training_jobs"] == 0
 
-    p0.kill()
-    p1.join()
+    server.kill()
+    training_request.join()
 
 
 @pytest.mark.parametrize(
