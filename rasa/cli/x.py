@@ -150,6 +150,8 @@ def _overwrite_endpoints_for_local_x(
     if not endpoints.tracker_store or overwrite_existing_event_broker:
         endpoints.event_broker = EndpointConfig(type="sql", db=DEFAULT_EVENTS_DB)
 
+    return endpoints
+
 
 def _is_correct_event_broker(event_broker: EndpointConfig) -> bool:
     return all(

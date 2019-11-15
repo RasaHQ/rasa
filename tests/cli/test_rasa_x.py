@@ -9,6 +9,7 @@ from aioresponses import aioresponses
 import rasa.utils.io as io_utils
 from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
+from rasa.core.utils import AvailableEndpoints
 
 
 def test_x_help(run: Callable[..., RunResult]):
@@ -79,6 +80,14 @@ def test_if_endpoint_config_is_invalid_in_local_mode(kwargs: Dict):
     config = EndpointConfig(**kwargs)
     assert not x._is_correct_event_broker(config)
 
+def test_wait_time_between_pulls_custom():
+    #endpoint_config = EndpointConfig(url="http://localhost:5002/api/projects/default/models/tag/production", wait_time_between_pulls=3)
+    endpoint_config = EndpointConfig(url="http://testserver:5002/models/default@latest", wait_time_between_pulls=5)
+    endpoints = AvailableEndpoints(model=endpoint_config)
+
+    updated_endpoints = x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
+    updated_config = updated_endpoints.model
+    assert updated_config.url == 'http://localhost/projects/default/models/tag/production'
 
 async def test_pull_runtime_config_from_server():
     config_url = "http://example.com/api/config?token=token"
@@ -99,6 +108,7 @@ async def test_pull_runtime_config_from_server():
         endpoints_path, credentials_path = await x._pull_runtime_config_from_server(
             config_url, 1, 0
         )
+        
 
         with open(endpoints_path) as f:
             assert f.read() == endpoint_config
