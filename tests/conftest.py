@@ -34,14 +34,6 @@ DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 pytest_plugins = ["pytester"]
 
 
-@pytest.fixture(autouse=True)
-def set_log_level_debug(caplog: LogCaptureFixture) -> None:
-    # Set the post-test log level to DEBUG for failing tests.  For all tests
-    # (failing and successful), the live log level can be additionally set in
-    # `setup.cfg`. It should be set to WARNING.
-    caplog.set_level(logging.DEBUG)
-
-
 @pytest.fixture
 async def default_agent(tmpdir_factory: TempdirFactory) -> Agent:
     model_path = tmpdir_factory.mktemp("model").strpath
