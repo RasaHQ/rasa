@@ -120,14 +120,14 @@ def _overwrite_endpoints_for_local_x(
         f"{rasa_x_url}/projects/default/models/tag/production"
     )
 
-    if custom_url is not None and custom_url != default_rasax_model_server_url:
+    if custom_url != default_rasax_model_server_url:
         logger.info(
             f"Ignoring url '{custom_url}' from 'endpoints.yml' and using "
-            f"'{default_rasax_model_server_url}' instead"
+            f"'{default_rasax_model_server_url}' instead."
         )
 
     endpoints.model = EndpointConfig(
-        f"{default_rasax_model_server_url}",
+        default_rasax_model_server_url,
         token=rasa_x_token,
         wait_time_between_pulls=custom_wait_time_pulls or 2,
     )
