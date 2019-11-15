@@ -324,7 +324,7 @@ def prepare_batch(
     start: Optional[int] = None,
     end: Optional[int] = None,
     tuple_sizes: Dict[Text, int] = None,
-) -> Tuple[np.ndarray]:
+) -> Tuple[Optional[np.ndarray]]:
     """Slices session data into batch using given start and end value."""
 
     batch_data = []
@@ -349,9 +349,9 @@ def prepare_batch(
                 _data = v[:]
 
             if isinstance(_data[0], scipy.sparse.spmatrix):
-                batch_data = batch_data + scipy_matrix_to_values(_data)
+                batch_data.extend(scipy_matrix_to_values(_data))
             else:
-                batch_data.append(pad_data(_data))
+                batch_data.append(pad_dense_data(_data))
 
     # len of batch_data is equal to the number of keys in session data
     return tuple(batch_data)
@@ -360,51 +360,47 @@ def prepare_batch(
 def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
     """Convert a scipy matrix into inidces, data, and shape."""
 
+    if not isinstance(array_of_sparse[0], scipy.sparse.coo_matrix):
+        array_of_sparse = [x.tocoo() for x in array_of_sparse]
+
     max_seq_len = max([x.shape[0] for x in array_of_sparse])
 
-    if not isinstance(array_of_sparse[0], scipy.sparse.coo_matrix):
-        coo = [x.tocoo() for x in array_of_sparse]
-    else:
-        coo = array_of_sparse
-    data = [v for x in array_of_sparse for v in x.data]
+    indices = np.hstack(
+        [
+            np.vstack([i * np.ones_like(x.row), x.row, x.col])
+            for i, x in enumerate(array_of_sparse)
+        ]
+    ).T
+    data = np.hstack([x.data for x in array_of_sparse])
 
-    indices = [
-        ids for i, x in enumerate(coo) for ids in zip([i] * len(x.row), x.row, x.col)
-    ]
-    shape = (len(array_of_sparse), max_seq_len, array_of_sparse[0].shape[-1])
+    shape = np.array((len(array_of_sparse), max_seq_len, array_of_sparse[0].shape[-1]))
 
     return [
-        np.array(indices).astype(np.int64),
-        np.array(data).astype(np.float32),
-        np.array(shape).astype(np.int64),
+        indices.astype(np.int64),
+        data.astype(np.float32),
+        shape.astype(np.int64),
     ]
 
 
-def pad_data(data: np.ndarray, feature_len: Optional[int] = None) -> np.ndarray:
+def pad_dense_data(array_of_dense: np.ndarray) -> np.ndarray:
     """Pad data of different lengths.
 
-    Data is padded with zeros. Zeros are added to the beginning of data.
+    Sequential data is padded with zeros. Zeros are added to the end of data.
     """
 
-    if data[0].ndim == 0:
-        return data
+    if array_of_dense[0].ndim < 2:
+        # data doesn't contain a sequence
+        return array_of_dense
 
-    data_size = len(data)
-    if feature_len is None:
-        feature_len = max([x.shape[-1] for x in data])
+    data_size = len(array_of_dense)
+    max_seq_len = max([x.shape[0] for x in array_of_dense])
 
-    if data[0].ndim == 1:
-        data_padded = np.zeros([data_size, feature_len], dtype=data[0].dtype)
-        for i in range(data_size):
-            data_padded[i, : data[i].shape[0]] = data[i]
-    else:
-        max_seq_len = max([x.shape[0] for x in data])
-
-        data_padded = np.zeros(
-            [data_size, max_seq_len, feature_len], dtype=data[0].dtype
-        )
-        for i in range(data_size):
-            data_padded[i, : data[i].shape[0], :] = data[i]
+    data_padded = np.zeros(
+        [data_size, max_seq_len, array_of_dense[0].shape[-1]],
+        dtype=array_of_dense[0].dtype,
+    )
+    for i in range(data_size):
+        data_padded[i, : array_of_dense[i].shape[0], :] = array_of_dense[i]
 
     return data_padded.astype(np.float32)
 
