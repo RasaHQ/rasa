@@ -2,7 +2,18 @@ from collections import defaultdict
 import logging
 import scipy.sparse
 import typing
-from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable, Any
+from typing import (
+    List,
+    Optional,
+    Text,
+    Dict,
+    Tuple,
+    Union,
+    Generator,
+    Callable,
+    Any,
+    NamedTuple,
+)
 import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
@@ -27,6 +38,12 @@ logger = logging.getLogger(__name__)
 
 # type for all tf session related data
 SessionDataType = Dict[Text, List[np.ndarray]]
+
+
+# namedtuple for training metrics
+class TrainingMetrics(NamedTuple):
+    loss: Dict[Text, tf.Tensor]
+    score: Dict[Text, tf.Tensor]
 
 
 def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto]:
@@ -372,14 +389,9 @@ def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
         ]
     ).T
     data = np.hstack([x.data for x in array_of_sparse])
-
     shape = np.array((len(array_of_sparse), max_seq_len, array_of_sparse[0].shape[-1]))
 
-    return [
-        indices.astype(np.int64),
-        data.astype(np.float32),
-        shape.astype(np.int64),
-    ]
+    return [indices.astype(np.int64), data.astype(np.float32), shape.astype(np.int64)]
 
 
 def pad_dense_data(array_of_dense: np.ndarray) -> np.ndarray:
@@ -627,8 +639,8 @@ def create_tf_embed(
     x: "tf.Tensor",
     embed_dim: int,
     C2: float,
-    similarity_type: Text,
     layer_name_suffix: Text,
+    similarity_type: Optional[Text] = None,
 ) -> "tf.Tensor":
     """Create dense embedding layer with a name."""
 
@@ -641,8 +653,12 @@ def create_tf_embed(
         name=f"embed_layer_{layer_name_suffix}",
         reuse=tf.AUTO_REUSE,
     )
-    # normalize embedding vectors for cosine similarity
-    return tf_normalize_if_cosine(embed_x, similarity_type)
+
+    if similarity_type:
+        # normalize embedding vectors for cosine similarity
+        return tf_normalize_if_cosine(embed_x, similarity_type)
+
+    return embed_x
 
 
 def create_tfp_embed_layer(embed_dim: int, layer_name_suffix: Text, use_bias=True):
@@ -678,6 +694,7 @@ def create_t2t_hparams(
     pos_encoding: Text,
     max_seq_length: int,
     is_training: "tf.Tensor",
+    unidirectional_encoder: bool = True,
 ) -> "HParams":
     """Create parameters for t2t transformer."""
 
@@ -693,7 +710,7 @@ def create_t2t_hparams(
 
     hparams.max_length = max_seq_length
 
-    hparams.unidirectional_encoder = True
+    hparams.unidirectional_encoder = unidirectional_encoder
 
     hparams.self_attention_type = "dot_product_relative_v2"
     hparams.max_relative_position = 5
@@ -721,6 +738,12 @@ def create_t2t_transformer_encoder(
     """Create t2t transformer encoder."""
 
     with tf.variable_scope("transformer", reuse=tf.AUTO_REUSE):
+
+        if len(mask.shape) == 2:
+            _mask = tf.expand_dims(mask, -1)
+        else:
+            _mask = mask
+
         if pre_embed_layer is not None:
             x = pre_embed_layer(x_in)
         else:
@@ -740,14 +763,14 @@ def create_t2t_transformer_encoder(
             if hparams.multiply_embedding_mode == "sqrt_depth":
                 x *= hparams.hidden_size ** 0.5
 
-        x *= tf.expand_dims(mask, -1)
+        x *= _mask
         (
             x,
             self_attention_bias,
             encoder_decoder_attention_bias,
         ) = transformer_prepare_encoder(x, None, hparams)
 
-        x *= tf.expand_dims(mask, -1)
+        x *= _mask
 
         x = tf.nn.dropout(x, 1.0 - hparams.layer_prepostprocess_dropout)
 
@@ -760,12 +783,12 @@ def create_t2t_transformer_encoder(
             x,
             self_attention_bias,
             hparams,
-            nonpadding=mask,
+            nonpadding=_mask,
             save_weights_to=attention_weights,
             attn_bias_for_padding=attn_bias_for_padding,
         )
 
-        x *= tf.expand_dims(mask, -1)
+        x *= _mask
 
         return tf.nn.dropout(tf.nn.relu(x), 1.0 - hparams.layer_prepostprocess_dropout)
 
@@ -1164,39 +1187,45 @@ def linearly_increasing_batch_size(
 
 def output_validation_stat(
     eval_init_op: "tf.Operation",
-    loss: "tf.Tensor",
-    acc: "tf.Tensor",
+    metrics: TrainingMetrics,
     session: "tf.Session",
     is_training: "tf.Session",
     batch_size_in: "tf.Tensor",
     ep_batch_size: int,
-) -> Tuple[float, float]:
+) -> TrainingMetrics:
     """Output training statistics"""
 
     session.run(eval_init_op, feed_dict={batch_size_in: ep_batch_size})
-    ep_val_loss = 0
-    ep_val_acc = 0
+    ep_val_metrics = TrainingMetrics(
+        loss=defaultdict(lambda: 0.0), score=defaultdict(lambda: 0.0)
+    )
     batches_per_epoch = 0
     while True:
         try:
-            batch_val_loss, batch_val_acc = session.run(
-                [loss, acc], feed_dict={is_training: False}
-            )
+            batch_val_metrics = session.run([metrics], feed_dict={is_training: False})
+            batch_val_metrics = batch_val_metrics[0]
             batches_per_epoch += 1
-            ep_val_loss += batch_val_loss
-            ep_val_acc += batch_val_acc
+            for name, value in batch_val_metrics.loss.items():
+                ep_val_metrics.loss[name] += value
+            for name, value in batch_val_metrics.score.items():
+                ep_val_metrics.score[name] += value
+
         except tf.errors.OutOfRangeError:
             break
 
-    return ep_val_loss / batches_per_epoch, ep_val_acc / batches_per_epoch
+    for name, value in ep_val_metrics.loss.items():
+        ep_val_metrics.loss[name] = value / batches_per_epoch
+    for name, value in ep_val_metrics.score.items():
+        ep_val_metrics.score[name] = value / batches_per_epoch
+
+    return ep_val_metrics
 
 
 def train_tf_dataset(
     train_init_op: "tf.Operation",
     eval_init_op: "tf.Operation",
     batch_size_in: "tf.Tensor",
-    loss: "tf.Tensor",
-    acc: "tf.Tensor",
+    metrics: TrainingMetrics,
     train_op: "tf.Tensor",
     session: "tf.Session",
     is_training: "tf.Session",
@@ -1208,6 +1237,7 @@ def train_tf_dataset(
     """Train tf graph"""
 
     session.run(tf.global_variables_initializer())
+    session.run(tf.local_variables_initializer())
 
     if evaluate_on_num_examples:
         logger.info(
@@ -1216,63 +1246,66 @@ def train_tf_dataset(
         )
     pbar = tqdm(range(epochs), desc="Epochs", disable=is_logging_disabled())
 
-    train_loss = 0
-    train_acc = 0
-    val_loss = 0
-    val_acc = 0
+    train_metrics = TrainingMetrics(loss={}, score={})
+    val_metrics = TrainingMetrics(loss={}, score={})
     for ep in pbar:
 
         ep_batch_size = linearly_increasing_batch_size(ep, batch_size, epochs)
 
         session.run(train_init_op, feed_dict={batch_size_in: ep_batch_size})
 
-        ep_train_loss = 0
-        ep_train_acc = 0
+        ep_train_metrics = TrainingMetrics(
+            loss=defaultdict(lambda: 0.0), score=defaultdict(lambda: 0.0)
+        )
         batches_per_epoch = 0
         while True:
             try:
-                _, batch_train_loss, batch_train_acc = session.run(
-                    [train_op, loss, acc], feed_dict={is_training: True}
+                _, batch_train_metric = session.run(
+                    [train_op, metrics], feed_dict={is_training: True}
                 )
                 batches_per_epoch += 1
-                ep_train_loss += batch_train_loss
-                ep_train_acc += batch_train_acc
+                for name, value in batch_train_metric.loss.items():
+                    ep_train_metrics.loss[name] += value
+                for name, value in batch_train_metric.score.items():
+                    ep_train_metrics.score[name] += value
 
             except tf.errors.OutOfRangeError:
                 break
 
-        train_loss = ep_train_loss / batches_per_epoch
-        train_acc = ep_train_acc / batches_per_epoch
+        for name, value in ep_train_metrics.loss.items():
+            train_metrics.loss[name] = value / batches_per_epoch
+        for name, value in ep_train_metrics.score.items():
+            train_metrics.score[name] = value / batches_per_epoch
 
-        postfix_dict = {"loss": f"{train_loss:.3f}", "acc": f"{train_acc:.3f}"}
+        postfix_dict = {}
+        postfix_dict = _update_postfix_dict(postfix_dict, train_metrics)
 
         if eval_init_op is not None:
             if (ep + 1) % evaluate_every_num_epochs == 0 or (ep + 1) == epochs:
-                val_loss, val_acc = output_validation_stat(
+                val_metrics = output_validation_stat(
                     eval_init_op,
-                    loss,
-                    acc,
+                    metrics,
                     session,
                     is_training,
                     batch_size_in,
                     ep_batch_size,
                 )
 
-            postfix_dict.update(
-                {"val_loss": f"{val_loss:.3f}", "val_acc": f"{val_acc:.3f}"}
-            )
+            postfix_dict = _update_postfix_dict(postfix_dict, val_metrics, "val_")
 
         pbar.set_postfix(postfix_dict)
 
-    final_message = (
-        f"Finished training embedding policy, "
-        f"train loss={train_loss:.3f}, train accuracy={train_acc:.3f}"
-    )
-    if eval_init_op is not None:
-        final_message += (
-            f", validation loss={val_loss:.3f}, validation accuracy={val_acc:.3f}"
-        )
-    logger.info(final_message)
+    logger.info("Finished training.")
+
+
+def _update_postfix_dict(
+    postfix_dict: Dict[Text, Text], metrics: TrainingMetrics, prefix: Text = ""
+) -> Dict[Text, Text]:
+    for name, value in metrics.loss.items():
+        postfix_dict[f"{prefix}{name}"] = f"{value:.3f}"
+    for name, value in metrics.score.items():
+        postfix_dict[f"{prefix}{name}"] = f"{value:.3f}"
+    return postfix_dict
 
 
 def extract_attention(attention_weights) -> Optional["tf.Tensor"]:
