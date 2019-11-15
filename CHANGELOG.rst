@@ -26,12 +26,16 @@ Changed
 - All featurizers in ``rasa.nlu`` return a sequence
 - Renamed the feature name ``ner_features`` to ``text_dense_features`` in ``CRFEntityExtractor``.
   The ``text_dense_features`` are created by any dense featurizer.
+- ``SessionData`` is a dictionary instead of namedtuple with ``np.ndarray`` values.
+- Keep sparse features as long as possible: Batch generator will output tensors of indices, data, shape for sparse data
+  so that they can be converted into ``SparseTensor`` inside the graph.
 - Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
 - Upgraded ``jsonschema`` version
 
 Removed
 -------
 - Deprecated ``NGramFeaturizer`` in ``rasa.nlu.featurizers`` (removed functionality and print deprecation warning instead)
+- Remove duplicate messages when creating training data (issues/1446)
 
 Fixed
 -----
@@ -39,8 +43,37 @@ Fixed
 - Fixed server hanging forever on leaving ``rasa shell`` before first message
 - Fixed rasa init showing traceback error when user does Keyboard Interrupt before choosing a project path
 - ``CountVectorsFeaturizer`` featurizes intents only if its analyzer is set to ``word``
-- fixed bug where facebooks generic template was not rendered when buttons were None 
+- fixed bug where facebooks generic template was not rendered when buttons were ``None``
 
+[1.4.5] - 2019-11-14
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- NLU-only models no longer throw warnings about parsing features not defined in the domain
+- Fixed bug that stopped Dockerfiles from building version 1.4.4.
+- Fixed format guessing for e2e stories with intent restated as ``/intent``
+
+[1.4.4] - 2019-11-13
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- ``PikaEventProducer`` adds the RabbitMQ ``App ID`` message property to published
+  messages with the value of the ``RASA_ENVIRONMENT`` environment variable. The
+  message property will not be assigned if this environment variable isn't set.
+
+Changed
+-------
+- Updated Mattermost connector documentation to be more clear.
+- Updated format strings to f-strings where appropriate.
+- Updated tensorflow requirement to ``1.15.0``
+- Dump domain using UTF-8 (to avoid ``\UXXXX`` sequences in the dumped files)
+
+Fixed
+-----
+- Fixed exporting NLU training data in ``json`` format from ``rasa interactive``
+- Fixed numpy deprecation warnings
 
 [1.4.3] - 2019-10-29
 ^^^^^^^^^^^^^^^^^^^^

@@ -32,6 +32,26 @@ class Token(object):
     def get(self, prop: Text, default: Optional[Any] = None):
         return self.data.get(prop, default)
 
+    def __eq__(self, other):
+        if not isinstance(other, Token):
+            return NotImplemented
+        return (self.offset, self.end, self.text, self.lemma) == (
+            other.offset,
+            other.end,
+            other.text,
+            other.lemma,
+        )
+
+    def __lt__(self, other):
+        if not isinstance(other, Token):
+            return NotImplemented
+        return (self.offset, self.end, self.text, self.lemma) < (
+            other.offset,
+            other.end,
+            other.text,
+            other.lemma,
+        )
+
 
 class Tokenizer(Component):
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:

@@ -70,20 +70,20 @@ async def test_parsing(default_processor: MessageProcessor):
 async def test_log_unseen_intent(default_processor: MessageProcessor):
     test_logger = logging.getLogger("rasa.core.processor")
     with patch.object(test_logger, "warning") as mock_warning:
-        message = UserMessage('/love{"name": "RASA"}')
+        message = UserMessage("/love")
         parsed = await default_processor._parse_message(message)
-        default_processor._log_unseen_intent(parsed)
+        default_processor._log_unseen_features(parsed)
         mock_warning.assert_called_with(
             "Interpreter parsed an intent 'love' that is not defined in the domain."
         )
 
 
-async def test_log_unseen_enitites(default_processor: MessageProcessor):
+async def test_log_unseen_entity(default_processor: MessageProcessor):
     test_logger = logging.getLogger("rasa.core.processor")
     with patch.object(test_logger, "warning") as mock_warning:
-        message = UserMessage('/love{"test_entity": "RASA"}')
+        message = UserMessage('/greet{"test_entity": "RASA"}')
         parsed = await default_processor._parse_message(message)
-        default_processor._log_unseen_enitites(parsed)
+        default_processor._log_unseen_features(parsed)
         mock_warning.assert_called_with(
             "Interpreter parsed an entity 'test_entity' that is not defined in the domain."
         )
