@@ -86,7 +86,7 @@ class StoryConflict:
             elif len(stories) == 3:
                 stories = f"'{stories[0]}', '{stories[1]}', and '{stories[2]}'"
             elif len(stories) >= 4:
-                stories = f"'{stories[0]}' and {len(stories) - 1} other stories"
+                stories = f"'{stories[0]}' and {len(stories) - 1} other trackers"
             conflict_string += f"  {action} predicted in {stories}\n"
 
         return conflict_string
