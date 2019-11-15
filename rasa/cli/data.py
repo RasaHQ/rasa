@@ -1,3 +1,4 @@
+import logging
 import argparse
 import asyncio
 import sys
@@ -8,6 +9,7 @@ from rasa.cli.arguments import data as arguments
 from rasa.cli.utils import get_validated_path
 from rasa.constants import DEFAULT_DATA_PATH
 
+logger = logging.getLogger(__name__)
 
 # noinspection PyProtectedMember
 def add_subparser(
@@ -87,7 +89,7 @@ def _add_data_validate_parsers(
         parents=parents,
         help="Validates domain and data files to check for possible mistakes.",
     )
-    validate_parser.add_argument("--max-history", type=int, default=5,
+    validate_parser.add_argument("--max-history", type=int, default=None,
                                  help="Assume this max_history setting for story structure validation.")
     validate_parser.set_defaults(func=validate_files)
     arguments.set_validator_arguments(validate_parser)
@@ -99,7 +101,7 @@ def _add_data_validate_parsers(
         parents=parents,
         help="Checks for inconsistencies in the story files.",
     )
-    story_structure_parser.add_argument("--max-history", type=int, default=5,
+    story_structure_parser.add_argument("--max-history", type=int,
                                         help="Assume this max_history setting for validation.")
     story_structure_parser.add_argument("--prompt", action="store_true", default=False,
                                         help="Ask how conflicts should be fixed")
@@ -155,7 +157,10 @@ def validate_files(args):
         sys.exit(1)
 
     everything_is_alright = validator.verify_all(not args.fail_on_warnings)
-    if everything_is_alright:
+    if not args.max_history:
+        logger.info("Will not test for inconsistencies in stories since "
+                    "you did not provide --max-history.")
+    if everything_is_alright and args.max_history:
         # Only run story structure validation if everything else is fine
         # since this might take a while
         everything_is_alright = validator.verify_story_structure(not args.fail_on_warnings,
@@ -170,20 +175,27 @@ def validate_stories(args):
     from rasa.core.validator import Validator
     from rasa.importers.rasa import RasaFileImporter
 
+    if not isinstance(args.max_history, int) or args.max_history < 1:
+        logger.error("You have to provide a positive integer for --max-history.")
+        sys.exit(1)
+
     loop = asyncio.get_event_loop()
     file_importer = RasaFileImporter(
         domain_path=args.domain, training_data_paths=args.data
     )
 
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
-    everything_is_alright = (
-            validator.verify_story_names(not args.fail_on_warnings) and
-            validator.verify_story_structure(
-                not args.fail_on_warnings,
-                max_history=args.max_history,
-                prompt=args.prompt
-            )
-    )
+
+    # First check for duplicate story names
+    story_names_unique = validator.verify_story_names(not args.fail_on_warnings)
+
+    # If names are unique, look for inconsistencies
+    everything_is_alright = validator.verify_story_structure(
+        not args.fail_on_warnings,
+        max_history=args.max_history,
+        prompt=args.prompt
+    ) if story_names_unique else False
+
     sys.exit(0) if everything_is_alright else sys.exit(1)
 
 
