@@ -23,14 +23,14 @@ TMP_NODE_ID = -2
 VISUALIZATION_TEMPLATE_PATH = "/visualization.html"
 
 
-class UserMessageGenerator(object):
+class UserMessageGenerator:
     def __init__(self, nlu_training_data):
         self.nlu_training_data = nlu_training_data
         self.mapping = self._create_reverse_mapping(self.nlu_training_data)
 
     @staticmethod
     def _create_reverse_mapping(
-        data: "TrainingData"
+        data: "TrainingData",
     ) -> Dict[Dict[Text, Any], List["Message"]]:
         """Create a mapping from intent to messages
 
@@ -298,9 +298,7 @@ def persist_graph(graph: "networkx.Graph", output_file: Text) -> None:
     graph_as_text = expg.to_string()
     # escape backslashes
     graph_as_text = graph_as_text.replace("\\", "\\\\")
-    template = template.replace(
-        "// { graph-content }", "graph = `{}`".format(graph_as_text), 1
-    )
+    template = template.replace("// { graph-content }", f"graph = `{graph_as_text}`", 1)
 
     io_utils.write_text_file(template, output_file)
 

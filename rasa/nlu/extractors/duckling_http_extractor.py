@@ -74,7 +74,7 @@ class DucklingHTTPExtractor(EntityExtractor):
         language: Optional[Text] = None,
     ) -> None:
 
-        super(DucklingHTTPExtractor, self).__init__(component_config)
+        super().__init__(component_config)
         self.language = language
 
     @classmethod

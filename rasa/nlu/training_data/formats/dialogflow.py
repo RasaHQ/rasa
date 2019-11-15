@@ -39,9 +39,7 @@ class DialogflowReader(TrainingDataReader):
         examples_js = self._read_examples_js(fn, language, fformat)
 
         if not examples_js:
-            logger.warning(
-                "No training examples found for dialogflow file {}!".format(fn)
-            )
+            logger.warning(f"No training examples found for dialogflow file {fn}!")
             return TrainingData()
         elif fformat == DIALOGFLOW_INTENT:
             return self._read_intent(root_js, examples_js)
@@ -123,7 +121,7 @@ class DialogflowReader(TrainingDataReader):
             examples_type = "usersays"
         else:
             examples_type = "entries"
-        examples_fn_ending = "_{}_{}.json".format(examples_type, language)
+        examples_fn_ending = f"_{examples_type}_{language}.json"
         examples_fn = fn.replace(".json", examples_fn_ending)
         if os.path.isfile(examples_fn):
             return rasa.utils.io.read_json_file(examples_fn)

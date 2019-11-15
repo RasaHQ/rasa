@@ -4,12 +4,12 @@ import pytest
 from _pytest.tmpdir import TempdirFactory
 import os
 
+from rasa.constants import DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
 from rasa.nlu.training_data.formats import RasaReader
 from rasa import model
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.importers.multi_project import MultiProjectImporter
-from rasa.train import train_async
 
 
 def test_load_imports_from_directory_tree(tmpdir_factory: TempdirFactory):
@@ -83,7 +83,7 @@ def test_load_from_none(input_dict: Dict, tmpdir_factory: TempdirFactory):
 
 
 def test_load_if_subproject_is_more_specific_than_parent(
-    tmpdir_factory: TempdirFactory
+    tmpdir_factory: TempdirFactory,
 ):
     root = tmpdir_factory.mktemp("Parent Bot")
     config_path = str(root / "config.yml")
@@ -242,7 +242,9 @@ async def test_multi_project_training(trained_async):
 
     unpacked = model.unpack_model(trained_stack_model_path)
 
-    domain_file = os.path.join(unpacked, "core", "domain.yml")
+    domain_file = os.path.join(
+        unpacked, DEFAULT_CORE_SUBDIRECTORY_NAME, DEFAULT_DOMAIN_PATH
+    )
     domain = Domain.load(domain_file)
 
     expected_intents = {
