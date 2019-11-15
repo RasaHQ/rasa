@@ -75,10 +75,9 @@ class Validator:
 
             if len(duplication_hash[text]) > 1:
                 everything_is_alright = ignore_warnings and everything_is_alright
-                logger.warning(
-                    "The example '{}' was found in these multiples intents: {}".format(
-                        text, ", ".join(sorted(intents))
-                    )
+                intents_string = ", ".join(sorted(intents))
+                warnings.warn(
+                    f"The example '{text}' was found in these multiples intents: {intents_string }"
                 )
         return everything_is_alright
 
