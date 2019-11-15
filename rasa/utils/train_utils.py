@@ -349,7 +349,7 @@ def prepare_batch(
                 _data = v[:]
 
             if isinstance(_data[0], scipy.sparse.spmatrix):
-                batch_data += scipy_matrix_to_values(_data)
+                batch_data.extend(scipy_matrix_to_values(_data))
             else:
                 batch_data.append(pad_dense_data(_data))
 
