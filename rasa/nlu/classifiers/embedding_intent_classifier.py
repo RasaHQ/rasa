@@ -139,6 +139,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         "named_entity_recognition": True,
         # number of entity tags
         "num_tags": None,
+        "var_layers": []  # ["pre", "cls", "crf"]
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -234,6 +235,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             "named_entity_recognition"
         ]
         self.num_tags = self.component_config["num_tags"]
+        self.var_layers = self.component_config["var_layers"]
 
     # package safety checks
     @classmethod
@@ -291,6 +293,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self._iterator = None
         self._train_op = None
         self._is_training = None
+
+        self.pre_embed_layer = None
+        self.cls_embed_layer = None
+        self.crf_embed_layer = None
 
         self.attention_weights = attention_weights
 
@@ -664,8 +670,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.unidirectional_encoder,
         )
 
+        if "pre" in self.var_layers and self.pre_embed_layer is None:
+            self.pre_embed_layer = train_utils.create_tfp_embed_layer(self.transformer_size, layer_name_suffix="pre", use_bias=False)
+
         a = train_utils.create_t2t_transformer_encoder(
-            a_in, None, mask, self.attention_weights, hparams, self.C2, self._is_training
+            a_in, self.pre_embed_layer, mask, self.attention_weights, hparams, self.C2, self._is_training
         )
 
         return a
@@ -747,10 +756,16 @@ class EmbeddingIntentClassifier(EntityExtractor):
         last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
 
         # get _cls_ vector for intent classification
-        self.cls_embed = tf.reduce_sum(a * last, 1)
-        self.cls_embed = train_utils.create_tf_embed(
-            self.cls_embed, self.embed_dim, self.C2, "cls", self.similarity_type
-        )
+        a_last = tf.reduce_sum(a * last, 1)
+
+        if "cls" in self.var_layers:
+            if self.cls_embed_layer is None:
+                self.cls_embed_layer = train_utils.create_tfp_embed_layer(self.embed_dim, layer_name_suffix="cls")
+            self.cls_embed = self.cls_embed_layer(a_last)
+        else:
+            self.cls_embed = train_utils.create_tf_embed(
+                a_last, self.embed_dim, self.C2, "cls", self.similarity_type
+            )
 
         b = tf.reduce_sum(tf.nn.relu(b), 1)
         all_bs = tf.reduce_sum(tf.nn.relu(all_bs), 1)
@@ -788,9 +803,16 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self, input: tf.Tensor, sequence_lengths: tf.Tensor
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         with tf.variable_scope("ner", reuse=tf.AUTO_REUSE):
-            logits = train_utils.create_tf_embed(
-                input, self.num_tags, self.C2, "crf-logits"
-            )
+
+            if "crf-logits" in self.var_layers:
+                if self.crf_embed_layer is None:
+                    self.crf_embed_layer = train_utils.create_tfp_embed_layer(self.num_tags, layer_name_suffix="crf-logits")
+                logits = self.cls_embed_layer(input)
+            else:
+                logits = train_utils.create_tf_embed(
+                    input, self.num_tags, self.C2, "crf-logits"
+                )
+
             crf_params = tf.get_variable(
                 "crf-params",
                 [self.num_tags, self.num_tags],
@@ -838,10 +860,16 @@ class EmbeddingIntentClassifier(EntityExtractor):
         last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
 
         # get _cls_ embedding
-        self.cls_embed = tf.reduce_sum(a * last, 1)
-        self.cls_embed = train_utils.create_tf_embed(
-            self.cls_embed, self.embed_dim, self.C2, "cls", self.similarity_type
-        )
+        a_last = tf.reduce_sum(a * last, 1)
+
+        if "cls" in self.var_layers:
+            if self.cls_embed_layer is None:
+                self.cls_embed_layer = train_utils.create_tfp_embed_layer(self.embed_dim, layer_name_suffix="cls")
+            self.cls_embed = self.cls_embed_layer(a_last)
+        else:
+            self.cls_embed = train_utils.create_tf_embed(
+                a_last, self.embed_dim, self.C2, "cls", self.similarity_type
+            )
 
         b = tf.reduce_sum(b, 1)
 
@@ -951,12 +979,31 @@ class EmbeddingIntentClassifier(EntityExtractor):
     ) -> Tuple[np.ndarray, List[float]]:
         """Calculate message similarities"""
 
-        message_sim = self.session.run(
-            self.intent_prediction,
-            feed_dict={
-                _x_in: _x for _x_in, _x in zip(self.batch_in, batch) if _x is not None
-            },
-        )
+        if "pre" in self.var_layers or "cls" in self.var_layers:
+            xs = []
+            for _ in range(100):
+                xs.append(self.session.run(
+                    self.intent_prediction,
+                    feed_dict={
+                        _x_in: _x for _x_in, _x in zip(self.batch_in, batch) if _x is not None
+                    },
+                ))
+            xs = np.array(xs)
+
+            max_mask = (xs.max(axis=-1, keepdims=True) == xs).astype(xs.dtype)
+
+            mask_xs = xs * max_mask
+            max_xs = mask_xs.sum(axis=0) / (max_mask.sum(axis=0) + 1e-8)
+            freq_xs = max_mask.sum(axis=0) / max_mask.shape[0]
+
+            message_sim = 2 * freq_xs * max_xs / (freq_xs + max_xs + 1e-8)
+        else:
+            message_sim = self.session.run(
+                self.intent_prediction,
+                feed_dict={
+                    _x_in: _x for _x_in, _x in zip(self.batch_in, batch) if _x is not None
+                },
+            )
 
         message_sim = message_sim.flatten()  # sim is a matrix
 
@@ -983,12 +1030,31 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
         # load tf graph and session
-        predictions = self.session.run(
-            self.entity_prediction,
-            feed_dict={
-                _x_in: _x for _x_in, _x in zip(self.batch_in, batch) if _x is not None
-            },
-        )
+        if "pre" in self.var_layers or "crf" in self.var_layers:
+            xs = []
+            for _ in range(100):
+                xs.append(self.session.run(
+                    self.entity_prediction,
+                    feed_dict={
+                        _x_in: _x for _x_in, _x in zip(self.batch_in, batch) if _x is not None
+                    },
+                ))
+            xs = np.array(xs)
+
+            max_mask = (xs.max(axis=-1, keepdims=True) == xs).astype(xs.dtype)
+
+            mask_xs = xs * max_mask
+            max_xs = mask_xs.sum(axis=0) / (max_mask.sum(axis=0) + 1e-8)
+            freq_xs = max_mask.sum(axis=0) / max_mask.shape[0]
+
+            predictions = 2 * freq_xs * max_xs / (freq_xs + max_xs + 1e-8)
+        else:
+            predictions = self.session.run(
+                self.entity_prediction,
+                feed_dict={
+                    _x_in: _x for _x_in, _x in zip(self.batch_in, batch) if _x is not None
+                },
+            )
 
         tags = [self.inverted_tag_dict[p] for p in predictions[0]]
 

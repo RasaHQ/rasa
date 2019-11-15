@@ -597,8 +597,8 @@ class EmbeddingPolicy(Policy):
         max_mask = (xs.max(axis=-1, keepdims=True) == xs).astype(xs.dtype)
 
         # print(max_mask.sum(axis=0))
-        mas_xs = xs * max_mask
-        self.max_xs = mas_xs.sum(axis=0) / (max_mask.sum(axis=0) + 1e-8)
+        mask_xs = xs * max_mask
+        self.max_xs = mask_xs.sum(axis=0) / (max_mask.sum(axis=0) + 1e-8)
         self.freq_xs = max_mask.sum(axis=0) / max_mask.shape[0]
         # print(self.freq_xs)
         # print(self.max_xs)
