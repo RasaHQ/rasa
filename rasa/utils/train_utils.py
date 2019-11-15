@@ -129,8 +129,6 @@ def check_train_test_sizes(
 def convert_train_test_split(
     output_values: List[Any], session_data: SessionDataType, solo_values: List[Any]
 ):
-    keys = [k for k in session_data.keys()]
-
     session_data_train = defaultdict(list)
     session_data_val = defaultdict(list)
 
@@ -138,14 +136,20 @@ def convert_train_test_split(
     # order is kept, e.g. same order as session data keys
 
     # train datasets have an even index
-    for i in range(len(session_data)):
-        session_data_train[keys[i]].append(
-            combine_features(output_values[i * 2], solo_values[i])
-        )
+    index = 0
+    for key, values in session_data.items():
+        for _ in range(len(values)):
+            session_data_train[key].append(
+                combine_features(output_values[index * 2], solo_values[index])
+            )
+            index += 1
 
     # val datasets have an odd index
-    for i in range(len(session_data)):
-        session_data_val[keys[i]].append(output_values[(i * 2) + 1])
+    index = 0
+    for key, values in session_data.items():
+        for _ in range(len(values)):
+            session_data_val[key].append(output_values[(index * 2) + 1])
+            index += 1
 
     return session_data_train, session_data_val
 
@@ -375,11 +379,7 @@ def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
 
     shape = np.array((len(array_of_sparse), max_seq_len, array_of_sparse[0].shape[-1]))
 
-    return [
-        indices.astype(np.int64),
-        data.astype(np.float32),
-        shape.astype(np.int64),
-    ]
+    return [indices.astype(np.int64), data.astype(np.float32), shape.astype(np.int64)]
 
 
 def pad_dense_data(array_of_dense: np.ndarray) -> np.ndarray:
