@@ -8,6 +8,7 @@ import rasa.utils.io
 from rasa.nlu import utils
 from rasa.nlu.training_data.formats.readerwriter import TrainingDataReader
 from rasa.nlu.training_data.util import transform_entity_synonyms
+from rasa.utils.common import raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
@@ -40,7 +41,10 @@ class DialogflowReader(TrainingDataReader):
         examples_js = self._read_examples_js(fn, language, fformat)
 
         if not examples_js:
-            warnings.warn(f"No training examples found for dialogflow file {fn}!")
+            raise_warning(
+                f"No training examples found for dialogflow file {fn}!",
+                docs="/migrate-from/google-dialogflow-to-rasa/",
+            )
             return TrainingData()
         elif fformat == DIALOGFLOW_INTENT:
             return self._read_intent(root_js, examples_js)

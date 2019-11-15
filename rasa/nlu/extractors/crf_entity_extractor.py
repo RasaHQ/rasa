@@ -18,6 +18,7 @@ from rasa.nlu.constants import (
     ENTITIES_ATTRIBUTE,
 )
 from rasa.constants import DOCS_BASE_URL
+from rasa.utils.common import raise_warning
 
 try:
     import spacy
@@ -518,14 +519,15 @@ class CRFEntityExtractor(EntityExtractor):
                 collected.append(t)
             elif collected:
                 collected_text = " ".join([t.text for t in collected])
-                warnings.warn(
+                raise_warning(
                     f"Misaligned entity annotation for '{collected_text}' "
                     f"in sentence '{message.text}' with intent "
                     f"'{message.get('intent')}'. "
                     f"Make sure the start and end values of the "
                     f"annotated training examples end at token "
                     f"boundaries (e.g. don't include trailing "
-                    f"whitespaces or punctuation)."
+                    f"whitespaces or punctuation).",
+                    docs="/nlu/training-data-format/",
                 )
                 collected = []
 
@@ -593,12 +595,13 @@ class CRFEntityExtractor(EntityExtractor):
 
         tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE], [])
         if len(tokens) != len(features):
-            warnings.warn(
+            raise_warning(
                 f"Number of features ({len(features)}) for attribute "
                 f"'{DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]}' "
                 f"does not match number of tokens ({len(tokens)}). Set "
                 f"'return_sequence' to true in the corresponding featurizer in order "
-                f"to make use of the features in 'CRFEntityExtractor'."
+                f"to make use of the features in 'CRFEntityExtractor'.",
+                docs="/nlu/components/#crfentityextractor",
             )
             return None
 

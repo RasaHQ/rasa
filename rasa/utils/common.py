@@ -1,17 +1,21 @@
 import logging
 import os
 import shutil
+import warnings
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Text, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Text, Type
 
 import rasa.core.utils
 import rasa.utils.io
+from rasa.cli import utils
+from rasa.cli.utils import bcolors
 from rasa.constants import (
-    GLOBAL_USER_CONFIG_PATH,
     DEFAULT_LOG_LEVEL,
-    ENV_LOG_LEVEL,
     DEFAULT_LOG_LEVEL_LIBRARIES,
+    ENV_LOG_LEVEL,
     ENV_LOG_LEVEL_LIBRARIES,
+    GLOBAL_USER_CONFIG_PATH,
+    DOCS_BASE_URL,
 )
 
 logger = logging.getLogger(__name__)
@@ -295,3 +299,47 @@ def lazy_property(function: Callable) -> Any:
         return getattr(self, attr_name)
 
     return _lazyprop
+
+
+def raise_warning(
+    message: Text,
+    category: Optional[Type[Warning]] = None,
+    docs: Optional[Text] = None,
+    **kwargs: Any,
+) -> None:
+    """Emit a `warnings.warn` with sensible defaults and a colored warning msg."""
+
+    original_formatter = warnings.formatwarning
+
+    def should_show_source_line():
+        if "stacklevel" not in kwargs:
+            if category == UserWarning or category is None:
+                return False
+            if category == FutureWarning:
+                return False
+        return True
+
+    def formatwarning(message, category, filename, lineno, line=None):
+        """Function to format a warning the standard way."""
+
+        if not should_show_source_line():
+            if docs:
+                line = f"More info at {DOCS_BASE_URL}{docs}"
+            else:
+                line = ""
+
+        msg = original_formatter(message, category, filename, lineno, line)
+        return utils.wrap_with_color(msg, color=bcolors.WARNING)
+
+    if "stacklevel" not in kwargs:
+        # try to set useful defaults for the most common warning categories
+        if category == DeprecationWarning:
+            kwargs["stacklevel"] = 3
+        elif category == UserWarning:
+            kwargs["stacklevel"] = 2
+        elif category == FutureWarning:
+            kwargs["stacklevel"] = 3
+
+    warnings.formatwarning = formatwarning
+    warnings.warn(message, category=category, **kwargs)
+    warnings.formatwarning = original_formatter

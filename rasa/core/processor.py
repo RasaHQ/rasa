@@ -1,37 +1,40 @@
-import warnings
 import logging
 import os
+import time
+import warnings
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import numpy as np
-import time
-
 from rasa.core import jobs
-from rasa.core.actions.action import Action, ACTION_SESSION_START_NAME
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
+from rasa.core.actions.action import (
+    ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
+    Action,
+    ActionExecutionRejection,
+)
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
-    UserMessage,
     OutputChannel,
+    UserMessage,
 )
 from rasa.core.constants import (
-    USER_INTENT_RESTART,
-    UTTER_PREFIX,
     USER_INTENT_BACK,
     USER_INTENT_OUT_OF_SCOPE,
+    USER_INTENT_RESTART,
     USER_INTENT_SESSION_START,
+    UTTER_PREFIX,
 )
 from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,
     ActionExecutionRejected,
+    BotUttered,
     Event,
     ReminderCancelled,
     ReminderScheduled,
     SlotSet,
     UserUttered,
-    BotUttered,
 )
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
@@ -42,6 +45,7 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -92,9 +96,10 @@ class MessageProcessor:
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
-            warnings.warn(
+            raise_warning(
                 "No policy ensemble or domain set. Skipping action prediction "
-                "and execution."
+                "and execution.",
+                docs="/core/policies/",
             )
             return None
 
@@ -121,8 +126,10 @@ class MessageProcessor:
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
-            warnings.warn(
-                "No policy ensemble or domain set. Skipping action prediction "
+            raise_warning(
+                "No policy ensemble or domain set. Skipping action prediction."
+                "You should set a policy before training a model.",
+                docs="/core/policies/",
             )
             return None
 
@@ -361,7 +368,7 @@ class MessageProcessor:
         elif not entities:
             entity_list = []
         else:
-            warnings.warn(
+            raise_warning(
                 f"Invalid entity specification: {entities}. Assuming no entities."
             )
             entity_list = []
@@ -391,18 +398,22 @@ class MessageProcessor:
                 domain_is_not_empty and intent in self.domain.intents
             ) or intent in DEFAULT_INTENTS
             if not intent_is_recognized:
-                warnings.warn(
+                raise_warning(
                     f"Interpreter parsed an intent '{intent}' "
-                    "that is not defined in the domain."
+                    f"which is not defined in the domain. "
+                    f"Please make sure all intents are listed in the domain.",
+                    docs="/core/domains",
                 )
 
         entities = parse_data["entities"] or []
         for element in entities:
             entity = element["entity"]
             if entity and domain_is_not_empty and entity not in self.domain.entities:
-                warnings.warn(
+                raise_warning(
                     f"Interpreter parsed an entity '{entity}' "
-                    "that is not defined in the domain."
+                    f"which is not defined in the domain. "
+                    f"Please make sure all entities are listed in the domain.",
+                    docs="/core/domains",
                 )
 
     def _get_action(self, action_name) -> Optional[Action]:
@@ -628,8 +639,8 @@ class MessageProcessor:
                     if e.key == "requested_slot" and tracker.active_form:
                         pass
                     else:
-                        warnings.warn(
-                            f"Action '{action_name}' set a slot type '{e.key}' that "
+                        raise_warning(
+                            f"Action '{action_name}' set a slot type '{e.key}' which "
                             f"it never set during the training. This "
                             f"can throw off the prediction. Make sure to "
                             f"include training examples in your stories "

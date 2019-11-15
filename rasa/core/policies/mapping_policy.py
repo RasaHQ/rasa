@@ -23,6 +23,7 @@ from rasa.core.events import ActionExecuted
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import MAPPING_POLICY_PRIORITY
+from rasa.utils.common import raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
@@ -105,10 +106,11 @@ class MappingPolicy(Policy):
             if action:
                 idx = domain.index_for_action(action)
                 if idx is None:
-                    warnings.warn(
-                        "MappingPolicy tried to predict unknown "
+                    raise_warning(
+                        f"MappingPolicy tried to predict unknown "
                         f"action '{action}'. Make sure all mapped actions are "
-                        "listed in the domain."
+                        f"listed in the domain.",
+                        docs="/core/policies/#mapping-policy",
                     )
                 else:
                     prediction[idx] = 1

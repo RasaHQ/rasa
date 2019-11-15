@@ -23,6 +23,7 @@ from rasa.core.training.structures import (
 )
 from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.core.domain import Domain
+from rasa.utils.common import raise_warning
 
 if TYPE_CHECKING:
     from rasa.nlu.training_data import Message
@@ -36,13 +37,11 @@ class EndToEndReader(MarkdownReader):
         self._regex_interpreter = RegexInterpreter()
 
     def _parse_item(self, line: Text) -> Optional["Message"]:
-        """Parses an md list item line based on the current section type.
+        f"""Parses an md list item line based on the current section type.
 
         Matches expressions of the form `<intent>:<example>. For the
         syntax of <example> see the Rasa docs on NLU training data:
-        {}/nlu/training-data-format/#markdown-format""".format(
-            DOCS_BASE_URL
-        )
+        {DOCS_BASE_URL}/nlu/training-data-format/#markdown-format"""
 
         # Match three groups:
         # 1) Potential "form" annotation
@@ -91,10 +90,11 @@ class StoryStepBuilder:
             self.start_checkpoints.append(Checkpoint(name, conditions))
         else:
             if conditions:
-                warnings.warn(
-                    "End or intermediate checkpoints "
-                    "do not support conditions! "
-                    f"(checkpoint: {name})"
+                raise_warning(
+                    f"End or intermediate checkpoints "
+                    f"do not support conditions! "
+                    f"(checkpoint: {name})",
+                    docs="/core/stories/#checkpoints",
                 )
             additional_steps = []
             for t in self.current_steps:
@@ -302,7 +302,10 @@ class StoryFileReader:
             parameters = StoryFileReader._parameters_from_json_string(slots_str, line)
             return event_name, parameters
         else:
-            warnings.warn(f"Failed to parse action line '{line}'. Ignoring this line.")
+            raise_warning(
+                f"Failed to parse action line '{line}'. Ignoring this line.",
+                docs="/core/stories/",
+            )
             return "", {}
 
     async def process_lines(self, lines: List[Text]) -> List[StoryStep]:
@@ -412,10 +415,12 @@ class StoryFileReader:
         )
         intent_name = utterance.intent.get("name")
         if intent_name not in self.domain.intents:
-            warnings.warn(
+            raise_warning(
                 f"Found unknown intent '{intent_name}' on line {line_num}. "
                 "Please, make sure that all intents are "
-                "listed in your domain yaml."
+                "listed in your domain yaml.",
+                UserWarning,
+                docs="https://rasa.com/docs/rasa/core/domains/",
             )
         return utterance
 
