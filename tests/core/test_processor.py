@@ -75,8 +75,6 @@ async def test_log_unseen_feature(default_processor: MessageProcessor):
     assert len(record) == 2
     assert record[0].message.args[0] == "Interpreter parsed an intent 'dislike' that is not defined in the domain."
     assert record[1].message.args[0] == "Interpreter parsed an entity 'test_entity' that is not defined in the domain."
-    record.clear()
-    assert len(record) == 0
 
 
 async def test_http_parsing():
