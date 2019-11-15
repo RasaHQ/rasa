@@ -155,14 +155,16 @@ def convert_train_test_split(
     # order is kept, e.g. same order as session data keys
 
     # train datasets have an even index
-    for i in range(len(session_data)):
-        session_data_train[keys[i]].append(
-            combine_features(output_values[i * 2], solo_values[i])
-        )
+    for i in range(len(keys)):
+        for j in range(len(session_data[keys[i]])):
+            session_data_train[keys[i]].append(
+                combine_features(output_values[(i + j) * 2], solo_values[i])
+            )
 
     # val datasets have an odd index
     for i in range(len(session_data)):
-        session_data_val[keys[i]].append(output_values[(i * 2) + 1])
+        for j in range(len(session_data[keys[i]])):
+            session_data_val[keys[i]].append(output_values[((i + j) * 2) + 1])
 
     return session_data_train, session_data_val
 

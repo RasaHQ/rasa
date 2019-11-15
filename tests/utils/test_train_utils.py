@@ -84,6 +84,12 @@ def test_train_val_split(session_data: SessionDataType):
         session_data, 2, 42, "intent_ids"
     )
 
+    for k, values in session_data.items():
+        assert len(values) == len(train_session_data[k])
+        assert len(values) == len(val_session_data[k])
+        for i, v in enumerate(values):
+            assert v[0].dtype == train_session_data[k][i][0].dtype
+
     for values in train_session_data.values():
         for v in values:
             assert v.shape[0] == 3
