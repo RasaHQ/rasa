@@ -715,8 +715,12 @@ def create_t2t_transformer_encoder(
     is_training: "tf.Tensor",
 ) -> "tf.Tensor":
     """Create t2t transformer encoder."""
-
     with tf.variable_scope("transformer", reuse=tf.AUTO_REUSE):
+        if len(mask.shape) == 2:
+            _mask = tf.expand_dims(mask, -1)
+        else:
+            _mask = mask
+
         x = create_tf_fnn(
             x_in,
             [hparams.hidden_size],
@@ -733,20 +737,14 @@ def create_t2t_transformer_encoder(
         if hparams.multiply_embedding_mode == "sqrt_depth":
             x *= hparams.hidden_size ** 0.5
 
-        if len(mask.shape) == 2:
-            x *= tf.expand_dims(mask, -1)
-        else:
-            x *= mask
+        x *= _mask
         (
             x,
             self_attention_bias,
             encoder_decoder_attention_bias,
         ) = transformer_prepare_encoder(x, None, hparams)
 
-        if len(mask.shape) == 2:
-            x *= tf.expand_dims(mask, -1)
-        else:
-            x *= mask
+        x *= _mask
 
         x = tf.nn.dropout(x, 1.0 - hparams.layer_prepostprocess_dropout)
 
@@ -759,15 +757,12 @@ def create_t2t_transformer_encoder(
             x,
             self_attention_bias,
             hparams,
-            nonpadding=mask,
+            nonpadding=_mask,
             save_weights_to=attention_weights,
             attn_bias_for_padding=attn_bias_for_padding,
         )
 
-        if len(mask.shape) == 2:
-            x *= tf.expand_dims(mask, -1)
-        else:
-            x *= mask
+        x *= _mask
 
         return tf.nn.dropout(tf.nn.relu(x), 1.0 - hparams.layer_prepostprocess_dropout)
 

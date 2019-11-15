@@ -647,11 +647,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
     def _create_tf_sequence(self, a_in, mask) -> "tf.Tensor":
         """Create sequence level embedding and mask."""
 
-        a_in = self._create_tf_embed_fnn(
+        a_in = train_utils.create_tf_fnn(
             a_in,
             self.hidden_layer_sizes["text"],
-            fnn_name="text_intent" if self.share_hidden_layers else "text",
-            embed_name="text",
+            self.droprate,
+            self.C2,
+            self._is_training,
+            layer_name_suffix="text_intent" if self.share_hidden_layers else "text",
         )
 
         self.attention_weights = {}
