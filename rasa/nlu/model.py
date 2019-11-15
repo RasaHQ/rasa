@@ -51,7 +51,7 @@ class UnsupportedModelError(Exception):
         return self.message
 
 
-class Metadata(object):
+class Metadata:
     """Captures all information about a model to load and prepare it."""
 
     @staticmethod
@@ -70,7 +70,7 @@ class Metadata(object):
         except Exception as e:
             abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))
             raise InvalidModelError(
-                "Failed to load model metadata from '{}'. {}".format(abspath, e)
+                f"Failed to load model metadata from '{abspath}'. {e}"
             )
 
     def __init__(self, metadata: Dict[Text, Any], model_dir: Optional[Text]):
@@ -117,7 +117,7 @@ class Metadata(object):
         write_json_to_file(filename, metadata, indent=4)
 
 
-class Trainer(object):
+class Trainer:
     """Trainer will load the data and train all components.
 
     Requires a pipeline specification and configuration to use for
@@ -190,7 +190,7 @@ class Trainer(object):
         working_data = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
-            logger.info("Starting to train component {}".format(component.name))
+            logger.info(f"Starting to train component {component.name}")
             component.prepare_partial_processing(self.pipeline[:i], context)
             updates = component.train(working_data, self.config, **context)
             logger.info("Finished training component.")
@@ -201,7 +201,7 @@ class Trainer(object):
 
     @staticmethod
     def _file_name(index, name):
-        return "component_{}_{}".format(index, name)
+        return f"component_{index}_{name}"
 
     def persist(
         self,
@@ -250,7 +250,7 @@ class Trainer(object):
         return dir_name
 
 
-class Interpreter(object):
+class Interpreter:
     """Use a trained pipeline of components to parse text messages."""
 
     # Defines all attributes (& default values)

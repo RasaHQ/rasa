@@ -36,7 +36,7 @@ def add_stories_param(
         "--stories",
         type=str,
         default=DEFAULT_DATA_PATH,
-        help="File or folder containing your {} stories.".format(stories_name),
+        help=f"File or folder containing your {stories_name} stories.",
     )
 
 
@@ -100,7 +100,7 @@ def add_data_param(
         "--data",
         type=str,
         default=default,
-        help="Path to the file or directory containing {} data.".format(data_type),
+        help=f"Path to the file or directory containing {data_type} data.",
         required=required,
     )
 

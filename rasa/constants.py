@@ -9,6 +9,7 @@ DEFAULT_MODELS_PATH = "models"
 DEFAULT_DATA_PATH = "data"
 DEFAULT_RESULTS_PATH = "results"
 DEFAULT_NLU_RESULTS_PATH = "nlu_comparison_results"
+DEFAULT_CORE_SUBDIRECTORY_NAME = "core"
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
 TEST_DATA_FILE = "test.md"

@@ -150,8 +150,6 @@ def _overwrite_endpoints_for_local_x(
     if not endpoints.tracker_store or overwrite_existing_event_broker:
         endpoints.event_broker = EndpointConfig(type="sql", db=DEFAULT_EVENTS_DB)
 
-    return endpoints
-
 
 def _is_correct_event_broker(event_broker: EndpointConfig) -> bool:
     return all(
@@ -169,7 +167,7 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
     credentials_path, endpoints_path = _get_credentials_and_endpoints_paths(args)
     endpoints = AvailableEndpoints.read_endpoints(endpoints_path)
 
-    rasa_x_url = "http://localhost:{}/api".format(args.rasa_x_port)
+    rasa_x_url = f"http://localhost:{args.rasa_x_port}/api"
     _overwrite_endpoints_for_local_x(endpoints, rasa_x_token, rasa_x_url)
 
     vars(args).update(
@@ -340,7 +338,7 @@ async def _pull_runtime_config_from_server(
                             "".format(resp.status, await resp.text())
                         )
         except aiohttp.ClientError as e:
-            logger.debug("Failed to connect to server. Retrying. {}".format(e))
+            logger.debug(f"Failed to connect to server. Retrying. {e}")
 
         await asyncio.sleep(wait_time_between_pulls)
         attempts -= 1
@@ -363,7 +361,7 @@ def run_in_production(args: argparse.Namespace):
 
 
 def _get_credentials_and_endpoints_paths(
-    args: argparse.Namespace
+    args: argparse.Namespace,
 ) -> Tuple[Optional[Text], Optional[Text]]:
     config_endpoint = args.config_endpoint
     if config_endpoint:

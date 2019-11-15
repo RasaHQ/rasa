@@ -1,8 +1,11 @@
 from pathlib import Path
+import logging
 
 import pytest
 from typing import Callable, Dict
 from _pytest.pytester import RunResult
+from _pytest.logging import LogCaptureFixture
+
 
 from aioresponses import aioresponses
 
@@ -10,6 +13,8 @@ import rasa.utils.io as io_utils
 from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.utils import AvailableEndpoints
+from tests.conftest import assert_log_emitted
+
 
 
 def test_x_help(run: Callable[..., RunResult]):
@@ -80,14 +85,27 @@ def test_if_endpoint_config_is_invalid_in_local_mode(kwargs: Dict):
     config = EndpointConfig(**kwargs)
     assert not x._is_correct_event_broker(config)
 
-def test_wait_time_between_pulls_custom():
-    #endpoint_config = EndpointConfig(url="http://localhost:5002/api/projects/default/models/tag/production", wait_time_between_pulls=3)
-    endpoint_config = EndpointConfig(url="http://testserver:5002/models/default@latest", wait_time_between_pulls=5)
-    endpoints = AvailableEndpoints(model=endpoint_config)
+def test_overwrite_for_local_x(caplog: LogCaptureFixture):
+    test_wait_time = 5
+    default_wait_time = 2
+    endpoint_config_missing_wait = EndpointConfig(url="http://testserver:5002/models/default@latest")
+    endpoint_config_custom = EndpointConfig(url="http://testserver:5002/models/default@latest", wait_time_between_pulls=test_wait_time)
+    endpoints_custom = AvailableEndpoints(model=endpoint_config_custom)
+    endpoints_missing_wait = AvailableEndpoints(model=endpoint_config_missing_wait)
 
-    updated_endpoints = x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
-    updated_config = updated_endpoints.model
-    assert updated_config.url == 'http://localhost/projects/default/models/tag/production'
+    # Check that we get INFO message about overwriting the endpoints configuration
+    log_message = "Ignoring url 'http://testserver:5002/models/default@latest' from 'endpoints.yml' and using 'http://localhost/projects/default/models/tag/production' instead"
+    with assert_log_emitted(caplog, 'rasa.cli.x', logging.INFO, log_message):
+        x._overwrite_endpoints_for_local_x(endpoints_custom, "test", "http://localhost")
+
+    # Checking for url to be changed in config and wait time value to be honored
+    assert endpoints_custom.model.url == 'http://localhost/projects/default/models/tag/production'
+    assert endpoints_custom.model.kwargs['wait_time_between_pulls'] == test_wait_time
+
+    # Check for wait time to be set to 3 since it isn't specified
+    x._overwrite_endpoints_for_local_x(endpoints_missing_wait, "test", "http://localhost")
+    assert endpoints_missing_wait.model.kwargs['wait_time_between_pulls'] == default_wait_time
+
 
 async def test_pull_runtime_config_from_server():
     config_url = "http://example.com/api/config?token=token"
