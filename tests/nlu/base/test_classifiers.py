@@ -143,7 +143,10 @@ class TestKeywordClassifier(ClassifierTestCollection):
         with pytest.warns(UserWarning) as record:
             self._train_classifier(classifier_class, data, component_config, **kwargs)
         assert len(record) == 1
-        assert "Remove (one of) the duplicates from the training data." in record[0].message.args[0]
+        assert (
+            "Remove (one of) the duplicates from the training data."
+            in record[0].message.args[0]
+        )
 
     @pytest.mark.filterwarnings("ignore:Keyword.* of keywords:UserWarning")
     def test_ambiguous_data(
