@@ -21,6 +21,7 @@ Removed
 
 Fixed
 -----
+- Fixed Rasa X not working when any tracker store was configured for Rasa.
 
 [1.4.5] - 2019-11-14
 ^^^^^^^^^^^^^^^^^^^^
@@ -30,7 +31,6 @@ Fixed
 - NLU-only models no longer throw warnings about parsing features not defined in the domain
 - Fixed bug that stopped Dockerfiles from building version 1.4.4.
 - Fixed format guessing for e2e stories with intent restated as ``/intent``
-- Fixed Rasa X not working when any tracker store was configured for Rasa.
 
 [1.4.4] - 2019-11-13
 ^^^^^^^^^^^^^^^^^^^^
