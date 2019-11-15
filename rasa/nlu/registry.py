@@ -25,6 +25,9 @@ from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturiz
 from rasa.nlu.featurizers.sparse_featurizer.ngram_featurizer import NGramFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
+from rasa.nlu.featurizers.dense_featurizer.pretrained_lm_featurizer import (
+    PreTrainedLMFeaturizer,
+)
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
@@ -64,6 +67,7 @@ component_classes = [
     MitieFeaturizer,
     RegexFeaturizer,
     CountVectorsFeaturizer,
+    PreTrainedLMFeaturizer,
     # classifiers
     SklearnIntentClassifier,
     MitieIntentClassifier,
