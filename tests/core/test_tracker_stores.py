@@ -205,6 +205,7 @@ def test_deprecated_pickle_deserialisation(caplog: LogCaptureFixture):
 
     # deprecation warning should be emitted
 
+    caplog.clear()  # avoid counting debug messages
     with caplog.at_level(logging.WARNING):
         assert tracker == store.deserialise_tracker(
             UserMessage.DEFAULT_SENDER_ID, serialised
