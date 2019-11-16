@@ -1,4 +1,5 @@
 import logging
+import warnings
 import os
 import re
 from typing import Any, Dict, List, Optional, Text, Union
@@ -306,11 +307,10 @@ class CountVectorsFeaturizer(Featurizer):
                 ):
                     return
 
-            logger.warning(
-                "OOV_token='{}' was given, but it is not present "
+            warnings.warn(
+                f"OOV_token='{self.OOV_token}' was given, but it is not present "
                 "in the training data. All unseen words "
                 "will be ignored during prediction."
-                "".format(self.OOV_token)
             )
 
     def _set_attribute_features(
@@ -397,8 +397,9 @@ class CountVectorsFeaturizer(Featurizer):
                     self.vectorizers[attribute].fit(attribute_texts[attribute])
                 except ValueError:
                     logger.warning(
-                        "Unable to train CountVectorizer for message attribute {}. "
-                        "Leaving an untrained CountVectorizer for it".format(attribute)
+                        f"Unable to train CountVectorizer for message attribute "
+                        "{attribute}. "
+                        "Leaving an untrained CountVectorizer for it"
                     )
             else:
                 logger.debug(
