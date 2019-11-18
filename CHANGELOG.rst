@@ -21,6 +21,7 @@ Removed
 
 Fixed
 -----
+- Fixed Rasa X not working when any tracker store was configured for Rasa.
 
 [1.4.5] - 2019-11-14
 ^^^^^^^^^^^^^^^^^^^^
