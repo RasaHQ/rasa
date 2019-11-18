@@ -278,7 +278,9 @@ class PreTrainedLMFeaturizer(Featurizer):
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
-        feats = self._compute_features([message.get(MESSAGE_TEXT_ATTRIBUTE)])
+        cleaned_text = self._clean_text(message.get(MESSAGE_TEXT_ATTRIBUTE))
+
+        feats = self._compute_features([cleaned_text])
         message.set(
             MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
             self._combine_with_existing_dense_features(
