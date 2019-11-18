@@ -68,7 +68,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # nn architecture
         # sizes of hidden layers before the embedding layer for input words
         # the number of hidden layers is thus equal to the length of this list
-        "hidden_layers_sizes_a": [256, 128],
+        "hidden_layers_sizes_a": [],
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
         "hidden_layers_sizes_b": [],
@@ -78,9 +78,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # Whether to share the hidden layer weights between input words and labels
         "share_hidden_layers": False,
         # number of units in transformer
-        "transformer_size": 128,
+        "transformer_size": 256,
         # number of transformer layers
-        "num_transformer_layers": 1,
+        "num_transformer_layers": 2,
         # number of attention heads in transformer
         "num_heads": 4,
         # type of positional encoding in transformer
