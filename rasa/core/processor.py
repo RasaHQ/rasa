@@ -19,6 +19,8 @@ from rasa.core.constants import (
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     USER_INTENT_RESTART,
     UTTER_PREFIX,
+    USER_INTENT_BACK,
+    USER_INTENT_OUT_OF_SCOPE,
 )
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -290,22 +292,16 @@ class MessageProcessor:
         if slot_values.strip():
             logger.debug(f"Current slot values: \n{slot_values}")
 
-    def _get_keywordlist():
-        keywordlist = ["restart", "back", "stop", "start", "action"]
-        return keywordlist
-
     def _log_unseen_intent(self, parse_data: Dict[Text, Any]) -> None:
         """check if the NLU picks up intent that aren't in the domain and intent shouldn't be the valid default intents or self domain intents in the domain.
         """
         intent = parse_data["intent"]["name"]
-
-        if intent in self._get_keywordlist() or intent in self.domain.intents:
-            logger.error(
-                "Interpreter parsed an intent '{}' "
-                "that is should not defined in the domain.".format(intent)
-            )
-
-        elif intent and self.domain and intent not in self.domain.intents:
+        
+        default_intents = [ USER_INTENT_RESTART, USER_INTENT_BACK, USER_INTENT_OUT_OF_SCOPE ]
+	
+        intent_is_recognized = intent and (intent in self.domain.intents or intent in default_intents)
+        
+        if not intent_is_recognized and not self.domain.intents:
             logger.warning(
                 "Interpreter parsed an intent '{}' "
                 "that is not defined in the domain.".format(intent)
