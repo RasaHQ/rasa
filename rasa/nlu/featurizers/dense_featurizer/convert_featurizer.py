@@ -119,6 +119,9 @@ class ConvertFeaturizer(Featurizer):
             text,
         )
 
+        # remove multiple occurences of ' '
+        cleaned_text = re.sub(" +", " ", cleaned_text)
+
         if not cleaned_text.strip():
             cleaned_text = text
 
