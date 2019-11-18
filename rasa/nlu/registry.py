@@ -28,12 +28,14 @@ from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturiz
 from rasa.nlu.featurizers.dense_featurizer.pretrained_lm_featurizer import (
     PreTrainedLMFeaturizer,
 )
+from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConvertFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.tokenizers.pretrained_lm_tokenizer import PreTrainedLMTokenizer
+from rasa.nlu.tokenizers.convert_tokenizer import ConvertTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.utils.common import class_from_module_path
@@ -58,6 +60,7 @@ component_classes = [
     WhitespaceTokenizer,
     JiebaTokenizer,
     PreTrainedLMTokenizer,
+    ConvertTokenizer,
     # extractors
     SpacyEntityExtractor,
     MitieEntityExtractor,
@@ -70,6 +73,7 @@ component_classes = [
     RegexFeaturizer,
     CountVectorsFeaturizer,
     PreTrainedLMFeaturizer,
+    ConvertFeaturizer,
     # classifiers
     SklearnIntentClassifier,
     MitieIntentClassifier,

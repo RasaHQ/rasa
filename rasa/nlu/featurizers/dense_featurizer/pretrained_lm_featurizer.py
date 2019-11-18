@@ -156,7 +156,7 @@ class PreTrainedLMFeaturizer(Featurizer):
         if not cleaned_text.strip():
             cleaned_text = text
 
-        return cleaned_text
+        return cleaned_text.strip()
 
     def _compute_input_ids(self, batch_examples):
 
