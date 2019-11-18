@@ -296,11 +296,17 @@ class MessageProcessor:
         """check if the NLU picks up intent that aren't in the domain and intent shouldn't be the valid default intents or self domain intents in the domain.
         """
         intent = parse_data["intent"]["name"]
-        
-        default_intents = [ USER_INTENT_RESTART, USER_INTENT_BACK, USER_INTENT_OUT_OF_SCOPE ]
-	
-        intent_is_recognized = intent and (intent in self.domain.intents or intent in default_intents)
-        
+
+        default_intents = [
+            USER_INTENT_RESTART,
+            USER_INTENT_BACK,
+            USER_INTENT_OUT_OF_SCOPE,
+        ]
+
+        intent_is_recognized = intent and (
+            intent in self.domain.intents or intent in default_intents
+        )
+
         if not intent_is_recognized and not self.domain.intents:
             logger.warning(
                 "Interpreter parsed an intent '{}' "
