@@ -873,7 +873,7 @@ def create_app(
             newMap[data['name']] = data['value']
         if newMap.__contains__("WORK_OF_ART") and newMap.__contains__("subject"):
             print("into special condition")
-            newMap.__delitem__("WORK_OF_ART")
+            newMap.__delitem__("subject")
             entMap = []
             resMap = {}
             for data, value in newMap.items():
@@ -882,6 +882,7 @@ def create_app(
                 entMap.append(resMap)
                 resMap = {}
         if intent == "searchintent" or intent == "cancelholdintent" or intent == "renewintent" or intent == "listcheckOutintent":
+            print("entity map value is ",entMap)
             for data in entMap:
                 if data["name"] == "WORK_OF_ART":
                     data["name"] = "stitle"
@@ -892,6 +893,7 @@ def create_app(
                     if data["value"] != "":
                         entityArray.append(data)
                         conditionMap["stitle"] = data["value"]
+                    print("Entity array after work of art is ", entityArray)
                 elif data["name"] == "person":
                     if "stitle" in conditionMap:
                         if data["value"] != conditionMap["stitle"]:
@@ -918,6 +920,7 @@ def create_app(
                                 entityArray.append(data)
                                 conditionMap["subject"] = data["value"]
                 elif data["name"] == "subject":
+                    print("Entity array before subject is ",entityArray)
                     if "subject" not in conditionMap:
                         data["name"] = data["name"].lower()
                         entityArray.append(data)
@@ -925,9 +928,17 @@ def create_app(
                 elif data["name"] == "filterphrase":
                     if data["value"] in conditionMap.values():
                         pass
+                    elif conditionMap.__contains__("stitle"):
+                        if data["value"] == conditionMap["stitle"]:
+                            pass
+                        else:
+                            data["name"] = data["name"].lower()
+                            entityArray.append(data)
                     else:
                         data["name"] = data["name"].lower()
                         entityArray.append(data)
+                elif data["name"]  == "sauthor":
+                    entityArray.append(data)
                 elif data["name"] == 'type' or data["name"] == 'timeline' or data[
                     "name"] == 'mtype' or data["name"] == 'renew' or data["name"] == 'renewAll' or  data["name"] == 'pubyear':
                     data["name"] = data["name"].lower()
