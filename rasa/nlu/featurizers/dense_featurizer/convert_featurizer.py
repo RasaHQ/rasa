@@ -71,7 +71,7 @@ class ConvertFeaturizer(Featurizer):
         **kwargs: Any,
     ) -> None:
 
-        bs = 1
+        bs = 64
 
         for attribute in [MESSAGE_TEXT_ATTRIBUTE]:
 
