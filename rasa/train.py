@@ -135,8 +135,12 @@ async def _train_async_internal(
     Returns:
         Path of the trained model archive.
     """
-    stories = await file_importer.get_stories()
-    nlu_data = await file_importer.get_nlu_data()
+
+    stories, nlu_data = await asyncio.gather(
+        model.model_fingerprint(file_importer),
+        file_importer.get_stories(),
+        file_importer.get_nlu_data(),
+    )
 
     if stories.is_empty() and nlu_data.is_empty():
         print_error(
@@ -344,8 +348,9 @@ async def _train_core_with_validated_data(
 
         # normal (not compare) training
         print_color("Training Core model...", color=bcolors.OKBLUE)
-        domain = await file_importer.get_domain()
-        config = await file_importer.get_config()
+        domain, config = await asyncio.gather(
+            file_importer.get_domain(), file_importer.get_config()
+        )
         await rasa.core.train(
             domain_file=domain,
             training_resource=file_importer,

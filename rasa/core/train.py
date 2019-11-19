@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import logging
 import os
 import tempfile
@@ -106,7 +107,7 @@ async def train_comparison_models(
                 )
 
                 with TempDirectoryPath(tempfile.mkdtemp()) as train_path:
-                    await train(
+                    train_coroutine = train(
                         domain,
                         file_importer,
                         train_path,
@@ -116,7 +117,9 @@ async def train_comparison_models(
                         dump_stories=dump_stories,
                     )
 
-                    new_fingerprint = await model.model_fingerprint(file_importer)
+                    _, new_fingerprint = await asyncio.gather(
+                        train_coroutine, model.model_fingerprint(file_importer)
+                    )
 
                     output_dir = os.path.join(output_path, "run_" + str(r + 1))
                     model_name = config_name + PERCENTAGE_KEY + str(percentage)
@@ -144,7 +147,7 @@ async def do_compare_training(
     story_file: Text,
     additional_arguments: Optional[Dict] = None,
 ):
-    await train_comparison_models(
+    train_coroutine = train_comparison_models(
         story_file,
         args.domain,
         args.out,
@@ -155,7 +158,9 @@ async def do_compare_training(
         additional_arguments,
     )
 
-    no_stories = await get_no_of_stories(args.stories, args.domain)
+    _, no_stories = await asyncio.gather(
+        train_coroutine, get_no_of_stories(args.stories, args.domain)
+    )
 
     # store the list of the number of stories present at each exclusion
     # percentage
