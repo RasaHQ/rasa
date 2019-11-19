@@ -12,13 +12,18 @@ from rasa.core.events import ActionExecuted, UserUttered
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.io import DEFAULT_ENCODING
+import matplotlib
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
 
-import matplotlib
+try:
+    # If the `tkinter` package is available, we can use the `TkAgg` backend
+    import tkinter
 
-matplotlib.use("TkAgg")
+    matplotlib.use("TkAgg")
+except ImportError:
+    matplotlib.use("agg")
 
 logger = logging.getLogger(__name__)
 
@@ -589,7 +594,6 @@ async def compare_models_in_dir(
     model_dir: Text, stories_file: Text, output: Text
 ) -> None:
     """Evaluates multiple trained models in a directory on a test set."""
-    from rasa.core import utils
     import rasa.utils.io as io_utils
 
     number_correct = defaultdict(list)
@@ -617,7 +621,6 @@ async def compare_models_in_dir(
 
 async def compare_models(models: List[Text], stories_file: Text, output: Text) -> None:
     """Evaluates provided trained models on a test set."""
-    from rasa.core import utils
 
     number_correct = defaultdict(list)
 
