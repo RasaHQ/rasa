@@ -20,6 +20,8 @@ from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+from rasa.nlu.featurizers.chatbert_featurizer import ChatBERTFeaturizer
+
 from rasa.nlu.featurizers.mitie_featurizer import MitieFeaturizer
 from rasa.nlu.featurizers.ngram_featurizer import NGramFeaturizer
 from rasa.nlu.featurizers.regex_featurizer import RegexFeaturizer
@@ -64,6 +66,7 @@ component_classes = [
     NGramFeaturizer,
     RegexFeaturizer,
     CountVectorsFeaturizer,
+    ChatBERTFeaturizer,
     # classifiers
     SklearnIntentClassifier,
     MitieIntentClassifier,
