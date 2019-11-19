@@ -97,6 +97,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         "epochs": 300,
         # set random seed to any int to get reproducible results
         "random_seed": None,
+        # optimizer
+        "optimizer": "Adam",  # can bei either 'Adam' (default) or 'Nadam'
         # embedding parameters
         # default dense dimension used if no dense features are present
         "dense_dim": 512,
@@ -137,8 +139,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         "intent_classification": True,
         # if true named entity recognition is trained and entities predicted
         "named_entity_recognition": True,
-        # number of entity tags
-        "num_tags": None,
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -179,6 +179,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         self.batch_in_size = config["batch_size"]
         self.batch_in_strategy = config["batch_strategy"]
+
+        self.optimizer = config["optimizer"]
 
         self.epochs = config["epochs"]
 
@@ -233,7 +235,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.named_entity_recognition = self.component_config[
             "named_entity_recognition"
         ]
-        self.num_tags = self.component_config["num_tags"]
 
     # package safety checks
     @classmethod
@@ -291,6 +292,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self._iterator = None
         self._train_op = None
         self._is_training = None
+
+        # number of entity tags
+        self.num_tags = 0
 
         self.attention_weights = attention_weights
 
@@ -1093,9 +1097,14 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
             metrics = self._build_tf_train_graph(session_data)
 
-            # define which optimizer to use
+            # calculate overall loss
             loss = tf.add_n(list(metrics.loss.values()))
-            self._train_op = tf.train.AdamOptimizer().minimize(loss)
+
+            # define which optimizer to use
+            if self.optimizer.lower() == "nadam":
+                self._train_op = tf.contrib.opt.NadamOptimizer().minimize(loss)
+            else:
+                self._train_op = tf.train.AdamOptimizer().minimize(loss)
 
             # train tensorflow graph
             self.session = tf.Session(config=self._tf_config)
