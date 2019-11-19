@@ -31,6 +31,11 @@ Fixed
 - Fixed bug that stopped Dockerfiles from building version 1.4.4.
 - Fixed format guessing for e2e stories with intent restated as ``/intent``
 
+Changed
+-------
+- Updated ``/status`` endpoint to show correct path to model archive
+
+
 [1.4.4] - 2019-11-13
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -45,7 +50,6 @@ Changed
 - Updated Mattermost connector documentation to be more clear.
 - Updated format strings to f-strings where appropriate.
 - Updated tensorflow requirement to ``1.15.0``
-- Updated ``/status`` endpoint to show correct path to model archive
 
 Removed
 -------

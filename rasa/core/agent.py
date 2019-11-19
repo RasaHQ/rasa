@@ -906,7 +906,6 @@ class Agent:
 
         working_directory = tempfile.mkdtemp()
         unpacked_model = unpack_model(model_archive, working_directory)
-        print(f"The model_archive is: {model_archive}")
 
         return Agent.load(
             unpacked_model,
