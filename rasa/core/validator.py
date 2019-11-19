@@ -110,9 +110,7 @@ class Validator:
 
         for intent in self.domain.intents:
             if intent not in stories_intents:
-                logger.debug(
-                    f"The intent '{intent}' is not used in any story."
-                )
+                logger.debug(f"The intent '{intent}' is not used in any story.")
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
@@ -184,9 +182,7 @@ class Validator:
 
         for utterance in utterance_actions:
             if utterance not in stories_utterances:
-                logger.debug(
-                    f"The utterance '{utterance}' is not used in any story."
-                )
+                logger.debug(f"The utterance '{utterance}' is not used in any story.")
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
