@@ -68,7 +68,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # nn architecture
         # sizes of hidden layers before the embedding layer for input words
         # the number of hidden layers is thus equal to the length of this list
-        "hidden_layers_sizes_a": [256, 128],
+        "hidden_layers_sizes_a": [],
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
         "hidden_layers_sizes_b": [],
@@ -98,7 +98,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # set random seed to any int to get reproducible results
         "random_seed": None,
         # optimizer
-        "optimizer": "Adam",  # can bei either 'Adam' (default) or 'Nadam'
+        "optimizer": "Adam",  # can be either 'Adam' (default) or 'Nadam'
+        "normalize_loss": False,
         # embedding parameters
         # default dense dimension used if no dense features are present
         "dense_dim": 512,
@@ -181,7 +182,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.batch_in_strategy = config["batch_strategy"]
 
         self.optimizer = config["optimizer"]
-
+        self.normalize_loss = config["normalize_loss"]
         self.epochs = config["epochs"]
 
         self.random_seed = self.component_config["random_seed"]
@@ -292,6 +293,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self._iterator = None
         self._train_op = None
         self._is_training = None
+        self._in_layer_norm = {}
 
         # number of entity tags
         self.num_tags = 0
@@ -642,6 +644,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
             else:
                 dense_features.append(f)
 
+        # if self._in_layer_norm.get(name) is None:
+        #     self._in_layer_norm[name] = tf.keras.layers.LayerNormalization(name=name)
+
+        # return self._in_layer_norm[name](tf.concat(dense_features, axis=-1))
         return tf.concat(dense_features, axis=-1)
 
     def _create_tf_sequence(self, a_in, mask) -> "tf.Tensor":
@@ -1098,7 +1104,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
             metrics = self._build_tf_train_graph(session_data)
 
             # calculate overall loss
-            loss = tf.add_n(list(metrics.loss.values()))
+            if self.normalize_loss:
+                loss = tf.add_n([_loss / (tf.stop_gradient(_loss) + 1e-8) for _loss in metrics.loss.values()])
+            else:
+                loss = tf.add_n(list(metrics.loss.values()))
 
             # define which optimizer to use
             if self.optimizer.lower() == "nadam":
