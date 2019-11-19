@@ -45,7 +45,7 @@ class Validator:
             if intent not in nlu_data_intents:
                 logger.debug(
                     f"The intent '{intent}' is listed in the domain file, but "
-                    "is not found in the NLU training data.",
+                    f"is not found in the NLU training data.",
                 )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
@@ -54,7 +54,7 @@ class Validator:
                 warnings.warn(
                     f"The intent '{intent}' is in the NLU training data, but "
                     f"is not listed in the domain.",
-                    stack=2,
+                    stacklevel=2,
                 )
                 everything_is_alright = False
 
@@ -79,7 +79,7 @@ class Validator:
                 intents_string = ", ".join(sorted(intents))
                 warnings.warn(
                     f"The example '{text}' was found in these multiples intents: "
-                    "{intents_string }",
+                    f"{intents_string}.",
                     stacklevel=2,
                 )
         return everything_is_alright
@@ -134,7 +134,7 @@ class Validator:
             if utterance not in actions:
                 logger.debug(
                     f"The utterance '{utterance}' is not listed under 'actions' in the "
-                    "domain file. It can only be used as a template.",
+                    f"domain file. It can only be used as a template.",
                 )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
@@ -142,7 +142,8 @@ class Validator:
             if action.startswith(UTTER_PREFIX):
                 if action not in utterance_templates:
                     warnings.warn(
-                        f"There is no template for utterance " "'{action}'.", stack=2
+                        f"There is no template for utterance '{action}'.",
+                        stacklevel=2
                     )
                     everything_is_alright = False
 
@@ -175,7 +176,7 @@ class Validator:
                     warnings.warn(
                         f"The utterance '{event.action_name}' is used in stories, but is not a "
                         f"valid utterance.",
-                        stack=2,
+                        stacklevel=2,
                     )
                     everything_is_alright = False
                 stories_utterances.add(event.action_name)
