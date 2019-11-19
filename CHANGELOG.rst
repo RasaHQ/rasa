@@ -7,20 +7,43 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.4.5]
-^^^^^^^^^^^^^^^^^^
+
+[Unreleased 1.5.0a1] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
+- Added data validator that checks if domain object returned is empty. If so, exit early from the command ``rasa data validate``
+- Added the KeywordIntentClassifier
+- Added documentation for ``AugmentedMemoizationPolicy``
+- Fall back to ``InMemoryTrackerStore`` in case there is any problem with the current
+  tracker store
 
 Changed
 -------
+- Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
+- Upgraded ``jsonschema`` version
 
 Removed
 -------
+- Remove duplicate messages when creating training data (issues/1446)
 
 Fixed
 -----
+- ``MultiProjectImporter`` now imports files in the order of the import statements
+- Fixed server hanging forever on leaving ``rasa shell`` before first message
+- Fixed rasa init showing traceback error when user does Keyboard Interrupt before choosing a project path
+- ``CountVectorsFeaturizer`` featurizes intents only if its analyzer is set to ``word``
+- fixed bug where facebooks generic template was not rendered when buttons were ``None``
+
+[1.4.5] - 2019-11-14
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- NLU-only models no longer throw warnings about parsing features not defined in the domain
+- Fixed bug that stopped Dockerfiles from building version 1.4.4.
+- Fixed format guessing for e2e stories with intent restated as ``/intent``
 
 [1.4.4] - 2019-11-13
 ^^^^^^^^^^^^^^^^^^^^
@@ -253,7 +276,6 @@ Fixed
 Changed
 -------
 - Pin gast to == 0.2.2
-
 
 [1.3.0] - 2019-09-05
 ^^^^^^^^^^^^^^^^^^^^

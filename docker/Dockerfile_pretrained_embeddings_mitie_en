@@ -38,6 +38,9 @@ RUN apt-get update -qq \
     libffi-dev \
     libpng-dev
 
+# Make sure we have the latest pip version
+RUN pip install -U pip
+
 # Download mitie model
 RUN wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 

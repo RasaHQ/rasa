@@ -460,6 +460,24 @@ def test_count_vector_featurizer_char(sentence, expected):
     assert np.all(test_message.get("text_features") == expected)
 
 
+def test_count_vector_featurizer_char_intent_featurizer():
+    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+
+    ftr = CountVectorsFeaturizer({"min_ngram": 1, "max_ngram": 2, "analyzer": "char"})
+    td = training_data.load_data("data/examples/rasa/demo-rasa.json")
+    ftr.train(td, config=None)
+
+    intent_features_exist = np.array(
+        [
+            True if example.get("intent_features") is not None else False
+            for example in td.intent_examples
+        ]
+    )
+
+    # no intent features should have been set
+    assert not any(intent_features_exist)
+
+
 def test_count_vector_featurizer_persist_load(tmpdir):
     from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
 

@@ -1,8 +1,10 @@
 import collections
+import warnings
 import json
 import logging
 import os
 import typing
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
 
 import rasa.core.constants
@@ -248,12 +250,11 @@ class Domain:
 
                 # templates should be a dict with options
                 if isinstance(t, str):
-                    logger.warning(
+                    warnings.warn(
                         "Deprecated: Templates should not be strings anymore. "
-                        "Utterance template '{}' should contain either '- text: ' or "
-                        "'- custom: ' attribute to be a proper template.".format(
-                            template_key
-                        )
+                        f"Utterance template '{template_key}' should contain either '- text: ' or "
+                        "'- custom: ' attribute to be a proper template.",
+                        DeprecationWarning,
                     )
                     validated_variations.append({"text": t})
                 elif "text" not in t and "custom" not in t:
@@ -535,11 +536,11 @@ class Domain:
         explicitly_included = isinstance(include, list)
         ambiguous_entities = included_entities.intersection(excluded_entities)
         if explicitly_included and ambiguous_entities:
-            logger.warning(
-                "Entities: '{}' are explicitly included and excluded for intent '{}'. "
+            warnings.warn(
+                f"Entities: '{ambiguous_entities}' are explicitly included and"
+                f" excluded for intent '{intent_name}'."
                 "Excluding takes precedence in this case. "
                 "Please resolve that ambiguity."
-                "".format(ambiguous_entities, intent_name)
             )
 
         return entity_names.intersection(wanted_entities)
@@ -555,13 +556,12 @@ class Domain:
             if prev_action_name in self.input_state_map:
                 return {prev_action_name: 1.0}
             else:
-                logger.warning(
-                    "Failed to use action '{}' in history. "
+                warnings.warn(
+                    f"Failed to use action '{latest_action}' in history. "
                     "Please make sure all actions are listed in the "
                     "domains action list. If you recently removed an "
                     "action, don't worry about this warning. It "
                     "should stop appearing after a while. "
-                    "".format(latest_action)
                 )
                 return {}
         else:
@@ -664,7 +664,7 @@ class Domain:
             "forms": self.form_names,
         }
 
-    def persist(self, filename: Text) -> None:
+    def persist(self, filename: Union[Text, Path]) -> None:
         """Write domain to a file."""
 
         domain_data = self.as_dict()
@@ -908,11 +908,11 @@ class Domain:
 
         if missing_templates:
             for template in missing_templates:
-                logger.warning(
-                    "Utterance '{}' is listed as an "
+                warnings.warn(
+                    f"Utterance '{template}' is listed as an "
                     "action in the domain file, but there is "
                     "no matching utterance template. Please "
-                    "check your domain.".format(template)
+                    "check your domain."
                 )
 
     def is_empty(self) -> bool:
