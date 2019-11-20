@@ -130,7 +130,7 @@ async def send_message(
     }
 
     return await endpoint.request(
-        json=payload, method="post", subpath=f"/conversations/{sender_id}/messages",
+        json=payload, method="post", subpath=f"/conversations/{sender_id}/messages"
     )
 
 
@@ -1382,23 +1382,25 @@ async def record_messages(
             )
             return
 
-        trackers = await training.load_data(
-            stories,
-            Domain.from_dict(domain),
-            augmentation_factor=0,
-            use_story_concatenation=False,
-        )
-
         intents = [next(iter(i)) for i in (domain.get("intents") or [])]
 
         num_messages = 0
-        sender_ids = [t.events for t in trackers] + [sender_id]
 
         if not skip_visualization:
             plot_file = "story_graph.dot"
-            await _plot_trackers(sender_ids, plot_file, endpoint)
+            trackers = await training.load_data(
+                stories,
+                Domain.from_dict(domain),
+                augmentation_factor=0,
+                use_story_concatenation=False,
+            )
+            events_from_training_data = [t.events for t in trackers]
+            events_including_current_user_id = events_from_training_data + [sender_id]
+            await _plot_trackers(events_including_current_user_id, plot_file, endpoint)
         else:
+            # `None` will prevent story plotting in calls to `_plot_trackers`
             plot_file = None
+            events_including_current_user_id = []
 
         while not utils.is_limit_reached(num_messages, max_message_limit):
             try:
@@ -1407,7 +1409,7 @@ async def record_messages(
                     await _validate_nlu(intents, endpoint, sender_id)
 
                 await _predict_till_next_listen(
-                    endpoint, sender_id, sender_ids, plot_file
+                    endpoint, sender_id, events_including_current_user_id, plot_file
                 )
 
                 num_messages += 1
@@ -1435,7 +1437,9 @@ async def record_messages(
                 logger.info("Restarted conversation at fork.")
 
                 await _print_history(sender_id, endpoint)
-                await _plot_trackers(sender_ids, plot_file, endpoint)
+                await _plot_trackers(
+                    events_including_current_user_id, plot_file, endpoint
+                )
 
     except Abort:
         return
