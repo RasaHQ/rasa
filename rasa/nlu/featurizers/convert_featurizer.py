@@ -1,25 +1,15 @@
 import logging
-import os
-import re
-import scipy.sparse
 from rasa.nlu.featurizers import Featurizer
-from typing import Any, Dict, List, Optional, Text
-from rasa.nlu import utils
+from typing import Any, Dict, List, Optional, Text, Tuple
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-    MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_VECTOR_FEATURE_NAMES,
     SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 import numpy as np
 import tensorflow as tf
-import tensorflow_text
-import tensorflow_hub as tfhub
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +21,10 @@ class ConvertFeaturizer(Featurizer):
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
 
-    def _load_model(self):
+    def _load_model(self) -> None:
+
+        import tensorflow_text
+        import tensorflow_hub as tfhub
 
         self.graph = tf.Graph()
         model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
@@ -51,6 +44,10 @@ class ConvertFeaturizer(Featurizer):
 
         self._load_model()
 
+    @classmethod
+    def required_packages(cls) -> List[Text]:
+        return ["tensorflow", "tensorflow_text", "tensorflow_hub"]
+
     def train(
         self,
         training_data: TrainingData,
@@ -58,53 +55,105 @@ class ConvertFeaturizer(Featurizer):
         **kwargs: Any,
     ) -> None:
 
-        bs = 64
+        batch_size = 64
 
-        for attribute in [MESSAGE_TEXT_ATTRIBUTE]:
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
 
-            start_index = 0
+            batch_start_index = 0
 
-            while start_index < len(training_data.intent_examples):
+            while batch_start_index < len(training_data.training_examples):
 
-                end_index = min(start_index + bs, len(training_data.intent_examples))
-                batch_examples = training_data.intent_examples[start_index:end_index]
-                batch_text = [ex.get(attribute) for ex in batch_examples]
+                batch_end_index = min(
+                    batch_start_index + batch_size, len(training_data.training_examples)
+                )
 
-                batch_feats = self.compute_features(batch_text)
+                batch_examples = training_data.training_examples[
+                    batch_start_index:batch_end_index
+                ]
+
+                batch_feats = self._compute_features(batch_examples, attribute)
 
                 for index, ex in enumerate(batch_examples):
 
-                    ex.set(
-                        MESSAGE_VECTOR_FEATURE_NAMES[attribute],
-                        self._combine_with_existing_features(
-                            ex,
-                            batch_feats[index],
+                    # Don't set None features
+                    if batch_feats[index] is not None:
+
+                        ex.set(
                             MESSAGE_VECTOR_FEATURE_NAMES[attribute],
-                        ),
-                    )
+                            self._combine_with_existing_features(
+                                ex,
+                                batch_feats[index],
+                                MESSAGE_VECTOR_FEATURE_NAMES[attribute],
+                            ),
+                        )
 
-                start_index += bs
+                batch_start_index += batch_size
 
-    def compute_features(self, batch_examples):
+    def _split_content_nocontent_examples(
+        self, batch_attribute_text: List[Any]
+    ) -> Tuple[List[Tuple[int, Any]], List[Tuple[int, Any]]]:
 
-        return self.session.run(
-            self.encoding_tensor, feed_dict={self.text_placeholder: batch_examples}
+        # [(int, Text)]
+        content_bearing_samples = [
+            (index, example_text)
+            for index, example_text in enumerate(batch_attribute_text)
+            if example_text
+        ]
+
+        # [(int, None)]
+        nocontent_bearing_samples = [
+            (index, example_text)
+            for index, example_text in enumerate(batch_attribute_text)
+            if not example_text
+        ]
+
+        return content_bearing_samples, nocontent_bearing_samples
+
+    def _compute_features(
+        self, batch_examples: List[Message], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
+    ) -> List[np.ndarray]:
+
+        # Get text for attribute of each example
+        batch_attribute_text = [ex.get(attribute) for ex in batch_examples]
+
+        # Split examples which have the attribute set from those which do not have it
+        (
+            content_bearing_examples,
+            nocontent_bearing_examples,
+        ) = self._split_content_nocontent_examples(batch_attribute_text)
+        content_bearing_indices = [index for (index, _) in content_bearing_examples]
+
+        # prepare the input for model
+        text_for_model = [text for (index, text) in content_bearing_examples]
+
+        # Get the features
+        model_features = self._run_model_on_text(text_for_model)
+
+        # Combine back index with features
+        content_bearing_features = [
+            (index, feature_vec)
+            for (index, feature_vec) in zip(content_bearing_indices, model_features)
+        ]
+
+        # Combine all features
+        batch_features = sorted(
+            content_bearing_features + nocontent_bearing_examples, key=lambda x: x[0]
         )
 
-    def _set_lm_features(self, example, attribute=MESSAGE_TEXT_ATTRIBUTE):
+        return [feature_vec for (_, feature_vec) in batch_features]
 
-        message_attribute_text = example.get(attribute)
-        if message_attribute_text:
-            # Encode text
-            features = self.module([message_attribute_text])[0]
-            features = self._combine_with_existing_features(
-                example, features, MESSAGE_VECTOR_FEATURE_NAMES[attribute]
-            )
-            # print(features.shape)
-            example.set(MESSAGE_VECTOR_FEATURE_NAMES[attribute], features)
+    def _run_model_on_text(self, batch: List[Text]) -> np.ndarray:
+
+        return self.session.run(
+            self.encoding_tensor, feed_dict={self.text_placeholder: batch}
+        )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
-        feats = self.compute_features([message.get(MESSAGE_TEXT_ATTRIBUTE)])[0]
-        message.set(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE], feats)
-        # self._set_lm_features(message)
+        feats = self._compute_features([message])[0]
+        message.set(
+            MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            self._combine_with_existing_features(
+                message, feats, MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+            ),
+        )

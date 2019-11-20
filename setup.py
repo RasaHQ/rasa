@@ -37,8 +37,6 @@ install_requires = [
     "numpy~=1.16",
     "scipy~=1.2",
     "tensorflow~=1.15.0",
-    "tensorflow_text~=1.15.1",
-    "tensorflow_hub~=0.6.0",
     # absl is a tensorflow dependency, but produces double logging before 0.8
     # should be removed once tensorflow requires absl > 0.8 on its own
     "absl-py>=0.8.0",
@@ -94,6 +92,8 @@ install_requires = [
 extras_requires = {
     "test": tests_requires,
     "spacy": ["spacy>=2.1,<2.2"],
+    "tensorflow_text": ["tensorflow_text~=1.15.1"],
+    "tensorflow_hub": ["tensorflow_hub~=0.6.0"],
     "mitie": ["mitie"],
     "sql": ["psycopg2~=2.8.2", "SQLAlchemy~=1.3"],
 }
