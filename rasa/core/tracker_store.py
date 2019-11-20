@@ -127,7 +127,7 @@ class TrackerStore:
 
         if custom_tracker:
             return custom_tracker(
-                domain=domain, url=store.url, event_broker=event_broker, **store.kwargs
+                domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
             )
         else:
             return InMemoryTrackerStore(domain)
