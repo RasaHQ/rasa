@@ -84,7 +84,7 @@ NEW_ACTION = uuid.uuid4().hex
 
 NEW_TEMPLATES = {}
 
-SUGGESTED_MAX_NUMBER_OF_STORIES_FOR_VISUALIZATION = 200
+MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION = 200
 
 
 class RestartConversation(Exception):
@@ -1387,7 +1387,7 @@ async def record_messages(
         if not skip_visualization:
             training_trackers = await _get_training_trackers(stories, domain)
             number_of_trackers = len(training_trackers)
-            if number_of_trackers > SUGGESTED_MAX_NUMBER_OF_STORIES_FOR_VISUALIZATION:
+            if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
                 rasa.cli.utils.print_warning(
                     f"You have {number_of_trackers} different story paths in "
                     f"your training data. Visualizing them is very resource "
