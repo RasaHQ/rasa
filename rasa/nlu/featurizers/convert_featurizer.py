@@ -88,14 +88,14 @@ class ConveRTFeaturizer(Featurizer):
                 # Collect batch examples
                 batch_examples = non_empty_examples[batch_start_index:batch_end_index]
 
-                batch_feats = self._compute_features(batch_examples, attribute)
+                batch_features = self._compute_features(batch_examples, attribute)
 
                 for index, ex in enumerate(batch_examples):
 
                     ex.set(
                         FEATURE_NAMES[attribute],
                         self._combine_with_existing_features(
-                            ex, batch_feats[index], FEATURE_NAMES[attribute]
+                            ex, batch_features[index], FEATURE_NAMES[attribute]
                         ),
                     )
 

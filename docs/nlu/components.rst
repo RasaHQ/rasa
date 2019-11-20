@@ -274,7 +274,7 @@ CountVectorsFeaturizer
 
 
 ConveRTFeaturizer
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 :Short: Creates a vector representation of user message and response (if specified) using `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model.
 :Outputs: nothing, used as an input to intent classifiers and response selectors that need intent features and response features respectively(e.g. ``EmbeddingIntentClassifier`` and ``ResponseSelector``)
