@@ -73,11 +73,11 @@ def test_spacy_intent_featurizer(spacy_nlp_component):
 
 
 def test_convert_intent_featurizer():
-    from rasa.nlu.featurizers.convert_featurizer import ConvertFeaturizer
+    from rasa.nlu.featurizers.convert_featurizer import ConveRTFeaturizer
 
     td = training_data.load_data("data/examples/rasa/demo-rasa.json")
 
-    convert_featurizer = ConvertFeaturizer()
+    convert_featurizer = ConveRTFeaturizer()
     convert_featurizer.train(td, config=None)
 
     intent_features_exist = np.array(
@@ -92,11 +92,11 @@ def test_convert_intent_featurizer():
 
 
 def test_convert_featurizer_output_shape():
-    from rasa.nlu.featurizers.convert_featurizer import ConvertFeaturizer
+    from rasa.nlu.featurizers.convert_featurizer import ConveRTFeaturizer
 
     td = training_data.load_data("data/examples/rasa/demo-rasa.json")
 
-    convert_featurizer = ConvertFeaturizer()
+    convert_featurizer = ConveRTFeaturizer()
     convert_featurizer.train(td, config=None)
 
     text_features_dim = np.array(

@@ -11,13 +11,13 @@ from rasa.nlu.tokenizers import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 from rasa.nlu.constants import (
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_INTENT_ATTRIBUTE,
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-    MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_FEATURE_NAMES,
+    RESPONSE_ATTRIBUTE,
+    INTENT_ATTRIBUTE,
+    TEXT_ATTRIBUTE,
+    TOKEN_NAMES,
+    ATTRIBUTES,
+    SPACY_FEATURE_NAMES,
+    FEATURE_NAMES,
 )
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ if typing.TYPE_CHECKING:
 
 class JiebaTokenizer(Tokenizer, Component):
 
-    provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
+    provides = [TOKEN_NAMES[attribute] for attribute in ATTRIBUTES]
 
     language_list = ["zh"]
 
@@ -86,29 +86,28 @@ class JiebaTokenizer(Tokenizer, Component):
 
         for example in training_data.training_examples:
 
-            for attribute in MESSAGE_ATTRIBUTES:
+            for attribute in ATTRIBUTES:
 
                 if example.get(attribute) is not None:
                     example.set(
-                        MESSAGE_TOKENS_NAMES[attribute],
+                        TOKEN_NAMES[attribute],
                         self.tokenize(example.get(attribute), attribute),
                     )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set(
-            MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE],
-            self.tokenize(message.text, MESSAGE_TEXT_ATTRIBUTE),
+            TOKEN_NAMES[TEXT_ATTRIBUTE], self.tokenize(message.text, TEXT_ATTRIBUTE)
         )
 
     def preprocess_text(self, text, attribute):
 
-        if attribute == MESSAGE_INTENT_ATTRIBUTE and self.intent_tokenization_flag:
+        if attribute == INTENT_ATTRIBUTE and self.intent_tokenization_flag:
             return " ".join(text.split(self.intent_split_symbol))
         else:
             return text
 
-    def tokenize(self, text: Text, attribute=MESSAGE_TEXT_ATTRIBUTE) -> List[Token]:
+    def tokenize(self, text: Text, attribute=TEXT_ATTRIBUTE) -> List[Token]:
         import jieba
 
         text = self.preprocess_text(text, attribute)

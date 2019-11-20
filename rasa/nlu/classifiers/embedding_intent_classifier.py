@@ -9,11 +9,7 @@ import warnings
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.utils import train_utils
-from rasa.nlu.constants import (
-    MESSAGE_INTENT_ATTRIBUTE,
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_VECTOR_FEATURE_NAMES,
-)
+from rasa.nlu.constants import INTENT_ATTRIBUTE, TEXT_ATTRIBUTE, FEATURE_NAMES
 
 import tensorflow as tf
 
@@ -50,7 +46,7 @@ class EmbeddingIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = [FEATURE_NAMES[TEXT_ATTRIBUTE]]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -336,7 +332,7 @@ class EmbeddingIntentClassifier(Component):
 
         for e in training_data.intent_examples:
             if e.get(attribute):
-                X.append(e.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]))
+                X.append(e.get(FEATURE_NAMES[TEXT_ATTRIBUTE]))
                 label_ids.append(label_id_dict[e.get(attribute)])
 
         X = np.array(X)
@@ -468,17 +464,15 @@ class EmbeddingIntentClassifier(Component):
         """Performs sanity checks on training data, extracts encodings for labels and prepares data for training"""
 
         label_id_dict = self._create_label_id_dict(
-            training_data, attribute=MESSAGE_INTENT_ATTRIBUTE
+            training_data, attribute=INTENT_ATTRIBUTE
         )
 
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
         self._encoded_all_label_ids = self._create_encoded_label_ids(
             training_data,
             label_id_dict,
-            attribute=MESSAGE_INTENT_ATTRIBUTE,
-            attribute_feature_name=MESSAGE_VECTOR_FEATURE_NAMES[
-                MESSAGE_INTENT_ATTRIBUTE
-            ],
+            attribute=INTENT_ATTRIBUTE,
+            attribute_feature_name=FEATURE_NAMES[INTENT_ATTRIBUTE],
         )
 
         # check if number of negatives is less than number of label_ids
@@ -492,7 +486,7 @@ class EmbeddingIntentClassifier(Component):
         self.num_neg = min(self.num_neg, self._encoded_all_label_ids.shape[0] - 1)
 
         session_data = self._create_session_data(
-            training_data, label_id_dict, attribute=MESSAGE_INTENT_ATTRIBUTE
+            training_data, label_id_dict, attribute=INTENT_ATTRIBUTE
         )
 
         self.check_input_dimension_consistency(session_data)
@@ -607,9 +601,7 @@ class EmbeddingIntentClassifier(Component):
         else:
             # get features (bag of words) for a message
             # noinspection PyPep8Naming
-            X = message.get(
-                MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
-            ).reshape(1, -1)
+            X = message.get(FEATURE_NAMES[TEXT_ATTRIBUTE]).reshape(1, -1)
 
             # load tf graph and session
             label_ids, message_sim = self._calculate_message_sim(X)

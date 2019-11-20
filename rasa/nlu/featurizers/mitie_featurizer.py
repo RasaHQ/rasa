@@ -11,23 +11,21 @@ if typing.TYPE_CHECKING:
     import mitie
 
 from rasa.nlu.constants import (
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_INTENT_ATTRIBUTE,
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-    MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_FEATURE_NAMES,
+    RESPONSE_ATTRIBUTE,
+    INTENT_ATTRIBUTE,
+    TEXT_ATTRIBUTE,
+    TOKEN_NAMES,
+    ATTRIBUTES,
+    SPACY_FEATURE_NAMES,
+    FEATURE_NAMES,
 )
 
 
 class MitieFeaturizer(Featurizer):
 
-    provides = [
-        MESSAGE_VECTOR_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES
-    ]
+    provides = [FEATURE_NAMES[attribute] for attribute in ATTRIBUTES]
 
-    requires = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES] + [
+    requires = [TOKEN_NAMES[attribute] for attribute in ATTRIBUTES] + [
         "mitie_feature_extractor"
     ]
 
@@ -41,7 +39,7 @@ class MitieFeaturizer(Featurizer):
 
     def get_tokens_by_attribute(self, example, attribute):
 
-        return example.get(MESSAGE_TOKENS_NAMES[attribute])
+        return example.get(TOKEN_NAMES[attribute])
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
@@ -50,7 +48,7 @@ class MitieFeaturizer(Featurizer):
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         for example in training_data.intent_examples:
 
-            for attribute in MESSAGE_ATTRIBUTES:
+            for attribute in ATTRIBUTES:
 
                 attribute_tokens = self.get_tokens_by_attribute(example, attribute)
                 if attribute_tokens is not None:
@@ -59,9 +57,9 @@ class MitieFeaturizer(Featurizer):
                         attribute_tokens, mitie_feature_extractor
                     )
                     example.set(
-                        MESSAGE_VECTOR_FEATURE_NAMES[attribute],
+                        FEATURE_NAMES[attribute],
                         self._combine_with_existing_features(
-                            example, features, MESSAGE_VECTOR_FEATURE_NAMES[attribute]
+                            example, features, FEATURE_NAMES[attribute]
                         ),
                     )
 
@@ -69,13 +67,12 @@ class MitieFeaturizer(Featurizer):
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         features = self.features_for_tokens(
-            message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]),
-            mitie_feature_extractor,
+            message.get(TOKEN_NAMES[TEXT_ATTRIBUTE]), mitie_feature_extractor
         )
         message.set(
-            MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            FEATURE_NAMES[TEXT_ATTRIBUTE],
             self._combine_with_existing_features(
-                message, features, MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+                message, features, FEATURE_NAMES[TEXT_ATTRIBUTE]
             ),
         )
 

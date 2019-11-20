@@ -4,9 +4,9 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_VECTOR_FEATURE_NAMES,
-    SPACY_FEATURIZABLE_ATTRIBUTES,
+    TEXT_ATTRIBUTE,
+    FEATURE_NAMES,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
 )
 import numpy as np
 import tensorflow as tf
@@ -14,12 +14,9 @@ import tensorflow as tf
 logger = logging.getLogger(__name__)
 
 
-class ConvertFeaturizer(Featurizer):
+class ConveRTFeaturizer(Featurizer):
 
-    provides = [
-        MESSAGE_VECTOR_FEATURE_NAMES[attribute]
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
-    ]
+    provides = [FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
 
     def _load_model(self) -> None:
 
@@ -40,7 +37,7 @@ class ConvertFeaturizer(Featurizer):
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
 
-        super(ConvertFeaturizer, self).__init__(component_config)
+        super(ConveRTFeaturizer, self).__init__(component_config)
 
         self._load_model()
 
@@ -57,7 +54,7 @@ class ConvertFeaturizer(Featurizer):
 
         batch_size = 64
 
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
             batch_start_index = 0
 
@@ -67,6 +64,7 @@ class ConvertFeaturizer(Featurizer):
                     batch_start_index + batch_size, len(training_data.training_examples)
                 )
 
+                # Collect batch examples
                 batch_examples = training_data.training_examples[
                     batch_start_index:batch_end_index
                 ]
@@ -79,11 +77,9 @@ class ConvertFeaturizer(Featurizer):
                     if batch_feats[index] is not None:
 
                         ex.set(
-                            MESSAGE_VECTOR_FEATURE_NAMES[attribute],
+                            FEATURE_NAMES[attribute],
                             self._combine_with_existing_features(
-                                ex,
-                                batch_feats[index],
-                                MESSAGE_VECTOR_FEATURE_NAMES[attribute],
+                                ex, batch_feats[index], FEATURE_NAMES[attribute]
                             ),
                         )
 
@@ -93,14 +89,14 @@ class ConvertFeaturizer(Featurizer):
         self, batch_attribute_text: List[Any]
     ) -> Tuple[List[Tuple[int, Any]], List[Tuple[int, Any]]]:
 
-        # [(int, Text)]
+        # Get an indexed list of examples which don't have text set to None, Type - [(int, Text)]
         content_bearing_samples = [
             (index, example_text)
             for index, example_text in enumerate(batch_attribute_text)
             if example_text
         ]
 
-        # [(int, None)]
+        # Get an indexed list of examples which don't have text set to None, Type - [(int, None)]
         nocontent_bearing_samples = [
             (index, example_text)
             for index, example_text in enumerate(batch_attribute_text)
@@ -110,7 +106,7 @@ class ConvertFeaturizer(Featurizer):
         return content_bearing_samples, nocontent_bearing_samples
 
     def _compute_features(
-        self, batch_examples: List[Message], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
+        self, batch_examples: List[Message], attribute: Text = TEXT_ATTRIBUTE
     ) -> List[np.ndarray]:
 
         # Get text for attribute of each example
@@ -152,8 +148,8 @@ class ConvertFeaturizer(Featurizer):
 
         feats = self._compute_features([message])[0]
         message.set(
-            MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            FEATURE_NAMES[TEXT_ATTRIBUTE],
             self._combine_with_existing_features(
-                message, feats, MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+                message, feats, FEATURE_NAMES[TEXT_ATTRIBUTE]
             ),
         )

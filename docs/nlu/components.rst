@@ -272,10 +272,29 @@ CountVectorsFeaturizer
           OOV_token: None  # string or None
           OOV_words: []  # list of strings
 
+
+ConveRTFeaturizer
+~~~~~~~~~~~~~~~
+
+:Short: Creates a vector representation of user message and response(if specified) using `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model.
+:Outputs: nothing, used as an input to intent classifiers and response selectors that need intent features and response features respectively(e.g. ``EmbeddingIntentClassifier`` and ``ResponseSelector``)
+:Requires: nothing
+:Description:
+    Creates features for intent classification and response selection.
+    Uses the `default signature <https://github.com/PolyAI-LDN/polyai-models#tfhub-signatures>`_ to compute vector representations of input text.
+
+    .. note::
+        Since ``ConveRT`` model is trained only on an english corpus of conversations, this featurizer should only be used if your training data is in english language.
+
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "ConveRTFeaturizer"
+
 Intent Classifiers
 ------------------
-
-
 
 
 MitieIntentClassifier

@@ -5,7 +5,7 @@ import warnings
 
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
 from rasa.nlu.training_data import TrainingData, Message
-from rasa.nlu.constants import MESSAGE_RESPONSE_ATTRIBUTE
+from rasa.nlu.constants import RESPONSE_ATTRIBUTE
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
@@ -90,7 +90,7 @@ def validate_required_components_from_data(
     response_selector_exists = False
     for component in pipeline:
         # check if a response selector is part of NLU pipeline
-        if MESSAGE_RESPONSE_ATTRIBUTE in component.provides:
+        if RESPONSE_ATTRIBUTE in component.provides:
             response_selector_exists = True
 
     if len(data.response_examples) and not response_selector_exists:
