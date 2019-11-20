@@ -283,7 +283,7 @@ ConveRTFeaturizer
     Creates features for intent classification and response selection.
     Uses the `default signature <https://github.com/PolyAI-LDN/polyai-models#tfhub-signatures>`_ to compute vector representations of input text.
 
-    .. note::
+    .. warning::
         Since ``ConveRT`` model is trained only on an english corpus of conversations, this featurizer should only be used if your training data is in english language.
 
 :Configuration:

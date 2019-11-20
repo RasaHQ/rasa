@@ -19,20 +19,12 @@ it on your dataset.
 The Short Answer
 ----------------
 
-If your training data is in english and doesn't consist of domain specific words, for example asthma, arthritis, etc. -  we recommend using the
-``pretrained_embeddings_convert`` pipeline.
+If your training data is in english, a good starting point is using ``pretrained_embeddings_convert`` pipeline.
 
 .. literalinclude:: ../../sample_configs/config_pretrained_embeddings_convert.yml
     :language: yaml
 
-If your training data is not in english, doesn't consist of domain specific words, and there is a spaCy model for your
-language, use the ``pretrained_embeddings_spacy`` pipeline:
-
-.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_spacy.yml
-    :language: yaml
-
-
-In case your training data is multi-lingual and is rich with domain specific words,
+In case your training data is multi-lingual and is rich with domain specific vocabulary,
 use the ``supervised_embeddings`` pipeline:
 
 .. literalinclude:: ../../sample_configs/config_supervised_embeddings.yml
@@ -60,15 +52,19 @@ if you don't have large enough training data.
 
 pretrained_embeddings_convert
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The advantage of the ``pretrained_embeddings_convert`` pipeline is that it doesn't treat each word of the user message independently,
+This pipeline uses `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model to extract vector representation of a sentence and feeds them to ``EmbeddingIntentClassifier`` for intent classification.
+The advantage of using ``pretrained_embeddings_convert`` pipeline is that it doesn't treat each word of the user message independently,
 but creates a contextual vector representation for the complete sentence. For example, if you have a training example, like:
 "can I book a car?", and Rasa is asked to predict the intent for "I need a ride from my place", since the contextual vector representation for both
 examples are already very similar, the intent classified for both is highly likely to be the same. This is also useful if you don't have
 large enough training data.
 
-    .. note::
+    .. warning::
         Since ``ConveRT`` model is trained only on an english corpus of conversations, this pipeline should only be used if your training data is in english language.
 
+
+.. note::
+    These recommendations are highly dependent on your dataset and hence approximate. We suggest experimenting with different pipelines to train the best model.
 
 supervised_embeddings
 ~~~~~~~~~~~~~~~~~~~~~

@@ -56,87 +56,44 @@ class ConveRTFeaturizer(Featurizer):
 
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
+            non_empty_examples = list(
+                filter(lambda x: x.get(attribute), training_data.training_examples)
+            )
+
             batch_start_index = 0
 
-            while batch_start_index < len(training_data.training_examples):
+            while batch_start_index < len(non_empty_examples):
 
                 batch_end_index = min(
-                    batch_start_index + batch_size, len(training_data.training_examples)
+                    batch_start_index + batch_size, len(non_empty_examples)
                 )
 
                 # Collect batch examples
-                batch_examples = training_data.training_examples[
-                    batch_start_index:batch_end_index
-                ]
+                batch_examples = non_empty_examples[batch_start_index:batch_end_index]
 
                 batch_feats = self._compute_features(batch_examples, attribute)
 
                 for index, ex in enumerate(batch_examples):
 
-                    # Don't set None features
-                    if batch_feats[index] is not None:
-
-                        ex.set(
-                            FEATURE_NAMES[attribute],
-                            self._combine_with_existing_features(
-                                ex, batch_feats[index], FEATURE_NAMES[attribute]
-                            ),
-                        )
+                    ex.set(
+                        FEATURE_NAMES[attribute],
+                        self._combine_with_existing_features(
+                            ex, batch_feats[index], FEATURE_NAMES[attribute]
+                        ),
+                    )
 
                 batch_start_index += batch_size
 
-    def _split_content_nocontent_examples(
-        self, batch_attribute_text: List[Any]
-    ) -> Tuple[List[Tuple[int, Any]], List[Tuple[int, Any]]]:
-
-        # Get an indexed list of examples which don't have text set to None, Type - [(int, Text)]
-        content_bearing_samples = [
-            (index, example_text)
-            for index, example_text in enumerate(batch_attribute_text)
-            if example_text
-        ]
-
-        # Get an indexed list of examples which don't have text set to None, Type - [(int, None)]
-        nocontent_bearing_samples = [
-            (index, example_text)
-            for index, example_text in enumerate(batch_attribute_text)
-            if not example_text
-        ]
-
-        return content_bearing_samples, nocontent_bearing_samples
-
     def _compute_features(
         self, batch_examples: List[Message], attribute: Text = TEXT_ATTRIBUTE
-    ) -> List[np.ndarray]:
+    ) -> np.ndarray:
 
         # Get text for attribute of each example
         batch_attribute_text = [ex.get(attribute) for ex in batch_examples]
 
-        # Split examples which have the attribute set from those which do not have it
-        (
-            content_bearing_examples,
-            nocontent_bearing_examples,
-        ) = self._split_content_nocontent_examples(batch_attribute_text)
-        content_bearing_indices = [index for (index, _) in content_bearing_examples]
+        batch_features = self._run_model_on_text(batch_attribute_text)
 
-        # prepare the input for model
-        text_for_model = [text for (index, text) in content_bearing_examples]
-
-        # Get the features
-        model_features = self._run_model_on_text(text_for_model)
-
-        # Combine back index with features
-        content_bearing_features = [
-            (index, feature_vec)
-            for (index, feature_vec) in zip(content_bearing_indices, model_features)
-        ]
-
-        # Combine all features
-        batch_features = sorted(
-            content_bearing_features + nocontent_bearing_examples, key=lambda x: x[0]
-        )
-
-        return [feature_vec for (_, feature_vec) in batch_features]
+        return batch_features
 
     def _run_model_on_text(self, batch: List[Text]) -> np.ndarray:
 
