@@ -60,7 +60,7 @@ gast==0.2.2
 # for new featurizers
 tensorflow==1.14.0
 tensorflow_hub==0.6.0
-tensorflow_text[no-deps]==0.1.0
+#tensorflow_text[no-deps]==0.1.0
 torch
 torchvision
 transformers
