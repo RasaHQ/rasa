@@ -67,5 +67,7 @@ transformers
 # for hermit evaluation
 pandas
 progress
+# for plotter
+ipython
 # to calculate f1 score in new architecture
 git+https://github.com/guillaumegenthial/tf_metrics.git
