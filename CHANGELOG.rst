@@ -18,6 +18,8 @@ Added
 - Added documentation for ``AugmentedMemoizationPolicy``
 - Fall back to ``InMemoryTrackerStore`` in case there is any problem with the current
   tracker store
+- Add command line argument ``rasa x --config CONFIG``, to specify path to the policy and
+  NLU pipeline configuration of your bot (default: ``config.yml``)
 - Added a new NLU featurizer - ``ConveRTFeaturizer`` based on `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model released by PolyAI.
 - Added a new preconfigured pipeline - ``pretrained_embeddings_convert``.
 
