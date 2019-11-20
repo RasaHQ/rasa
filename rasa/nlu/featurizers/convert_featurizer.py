@@ -45,6 +45,23 @@ class ConveRTFeaturizer(Featurizer):
     def required_packages(cls) -> List[Text]:
         return ["tensorflow", "tensorflow_text", "tensorflow_hub"]
 
+    def _compute_features(
+        self, batch_examples: List[Message], attribute: Text = TEXT_ATTRIBUTE
+    ) -> np.ndarray:
+
+        # Get text for attribute of each example
+        batch_attribute_text = [ex.get(attribute) for ex in batch_examples]
+
+        batch_features = self._run_model_on_text(batch_attribute_text)
+
+        return batch_features
+
+    def _run_model_on_text(self, batch: List[Text]) -> np.ndarray:
+
+        return self.session.run(
+            self.encoding_tensor, feed_dict={self.text_placeholder: batch}
+        )
+
     def train(
         self,
         training_data: TrainingData,
@@ -83,23 +100,6 @@ class ConveRTFeaturizer(Featurizer):
                     )
 
                 batch_start_index += batch_size
-
-    def _compute_features(
-        self, batch_examples: List[Message], attribute: Text = TEXT_ATTRIBUTE
-    ) -> np.ndarray:
-
-        # Get text for attribute of each example
-        batch_attribute_text = [ex.get(attribute) for ex in batch_examples]
-
-        batch_features = self._run_model_on_text(batch_attribute_text)
-
-        return batch_features
-
-    def _run_model_on_text(self, batch: List[Text]) -> np.ndarray:
-
-        return self.session.run(
-            self.encoding_tensor, feed_dict={self.text_placeholder: batch}
-        )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 

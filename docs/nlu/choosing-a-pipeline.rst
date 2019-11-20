@@ -40,6 +40,8 @@ word vectors from either GloVe or fastText, whereas ``pretrained_embeddings_conv
 extract vector representations of complete user utterance as a whole. On the other hand, the ``supervised_embeddings`` pipeline
 doesn't use any pre-trained word vectors or sentence vectors, but instead fits these specifically for your dataset.
 
+.. note::
+    These recommendations are highly dependent on your dataset and hence approximate. We suggest experimenting with different pipelines to train the best model.
 
 pretrained_embeddings_spacy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -52,19 +54,16 @@ if you don't have large enough training data.
 
 pretrained_embeddings_convert
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    .. warning::
+        Since ``ConveRT`` model is trained only on an **English** corpus of conversations, this pipeline should only be used if your training data is in English language.
+
+
 This pipeline uses `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model to extract vector representation of a sentence and feeds them to ``EmbeddingIntentClassifier`` for intent classification.
 The advantage of using ``pretrained_embeddings_convert`` pipeline is that it doesn't treat each word of the user message independently,
 but creates a contextual vector representation for the complete sentence. For example, if you have a training example, like:
 "can I book a car?", and Rasa is asked to predict the intent for "I need a ride from my place", since the contextual vector representation for both
 examples are already very similar, the intent classified for both is highly likely to be the same. This is also useful if you don't have
 large enough training data.
-
-    .. warning::
-        Since ``ConveRT`` model is trained only on an english corpus of conversations, this pipeline should only be used if your training data is in english language.
-
-
-.. note::
-    These recommendations are highly dependent on your dataset and hence approximate. We suggest experimenting with different pipelines to train the best model.
 
 supervised_embeddings
 ~~~~~~~~~~~~~~~~~~~~~
