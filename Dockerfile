@@ -38,6 +38,9 @@ RUN apt-get update -qq \
     libffi-dev \
     libpng-dev
 
+# update pip
+RUN pip install --upgrade pip
+
 # Copy only what we really need
 COPY README.md .
 COPY setup.py .
