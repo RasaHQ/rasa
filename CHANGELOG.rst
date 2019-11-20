@@ -33,7 +33,6 @@ Fixed
 
 Changed
 -------
-- Updated ``/status`` endpoint to show correct path to model archive
 
 
 [1.4.4] - 2019-11-13
