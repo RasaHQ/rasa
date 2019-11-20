@@ -4,6 +4,7 @@ import os
 import tempfile
 import textwrap
 import uuid
+import warnings
 from functools import partial
 from multiprocessing import Process
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
@@ -83,6 +84,8 @@ OTHER_ACTION = uuid.uuid4().hex
 NEW_ACTION = uuid.uuid4().hex
 
 NEW_TEMPLATES = {}
+
+SUGGESTED_MAX_NUMBER_OF_STORIES_FOR_VISUALIZATION = 200
 
 
 class RestartConversation(Exception):
@@ -1368,8 +1371,6 @@ async def record_messages(
 ):
     """Read messages from the command line and print bot responses."""
 
-    from rasa.core import training
-
     try:
         _print_help(skip_visualization)
 
@@ -1388,13 +1389,7 @@ async def record_messages(
 
         if not skip_visualization:
             plot_file = "story_graph.dot"
-            trackers = await training.load_data(
-                stories,
-                Domain.from_dict(domain),
-                augmentation_factor=0,
-                use_story_concatenation=False,
-            )
-            events_from_training_data = [t.events for t in trackers]
+            events_from_training_data = await _get_training_stories(stories, domain)
             events_including_current_user_id = events_from_training_data + [sender_id]
             await _plot_trackers(events_including_current_user_id, plot_file, endpoint)
         else:
@@ -1446,6 +1441,31 @@ async def record_messages(
     except Exception:
         logger.exception("An exception occurred while recording messages.")
         raise
+
+
+async def _get_training_stories(
+    stories: Optional[Text], domain: Dict[str, Any]
+) -> List[List[Event]]:
+    from rasa.core import training
+
+    trackers = await training.load_data(
+        stories,
+        Domain.from_dict(domain),
+        augmentation_factor=0,
+        use_story_concatenation=False,
+    )
+
+    number_of_trackers = len(trackers)
+    if number_of_trackers > SUGGESTED_MAX_NUMBER_OF_STORIES_FOR_VISUALIZATION:
+        warnings.warn(
+            f"You have {number_of_trackers} different story paths in "
+            f"your training data. Visualizing them is very resource "
+            f"consuming. Hence, it is suggested that you disable "
+            f"visualization using the '--skip-visualization' flag.",
+            ResourceWarning,
+        )
+
+    return [t.events for t in trackers]
 
 
 def _serve_application(app, stories, skip_visualization):
