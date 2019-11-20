@@ -1,16 +1,19 @@
 import logging
-from collections import defaultdict
 
 import numpy as np
 import os
 import pickle
 import scipy.sparse
 import typing
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import warnings
+
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from shutil import copyfile
 
 from tf_metrics import f1
 
+import rasa.utils.io as io_utils
+from utils.plotter import Plotter
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -299,6 +302,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.num_tags = 0
 
         self.attention_weights = attention_weights
+
+        self.training_log_file = io_utils.create_temporary_file("")
 
     # training data helpers:
     @staticmethod
@@ -1105,7 +1110,12 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
             # calculate overall loss
             if self.normalize_loss:
-                loss = tf.add_n([_loss / (tf.stop_gradient(_loss) + 1e-8) for _loss in metrics.loss.values()])
+                loss = tf.add_n(
+                    [
+                        _loss / (tf.stop_gradient(_loss) + 1e-8)
+                        for _loss in metrics.loss.values()
+                    ]
+                )
             else:
                 loss = tf.add_n(list(metrics.loss.values()))
 
@@ -1130,6 +1140,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 self.batch_in_size,
                 self.evaluate_on_num_examples,
                 self.evaluate_every_num_epochs,
+                output_file=self.training_log_file,
             )
 
             # rebuild the graph for prediction
@@ -1163,6 +1174,12 @@ class EmbeddingIntentClassifier(EntityExtractor):
             return {"file": None}
 
         checkpoint = os.path.join(model_dir, file_name + ".ckpt")
+
+        # plot training curves
+        plotter = Plotter()
+        plotter.plot_training_curves(self.training_log_file, model_dir)
+        # copy trainig log file
+        copyfile(self.training_log_file, os.path.join(model_dir, "training-log.tsv"))
 
         try:
             os.makedirs(os.path.dirname(checkpoint))

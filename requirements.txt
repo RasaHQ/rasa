@@ -8,7 +8,7 @@ redis==3.3.5
 pymongo[tls,srv]==3.8.0
 numpy==1.16.3
 scipy==1.2.1
-tensorflow==1.15.0
+#tensorflow==1.15.0
 absl-py>=0.8.0
 # setuptools comes from tensorboard requirement:
 # https://github.com/tensorflow/tensorboard/blob/1.14/tensorboard/pip_package/setup.py#L33
@@ -57,6 +57,10 @@ PyJWT==1.7.1
 # remove when tensorflow@1.15.x or a pre-release patch is released
 # https://github.com/tensorflow/tensorflow/issues/32319
 gast==0.2.2
+# for new featurizers
+tensorflow==1.14.0
+tensorflow_hub==0.6.0
+tensorflow_text[no-deps]==0.1.0
 torch
 torchvision
 transformers

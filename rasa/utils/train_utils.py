@@ -42,8 +42,8 @@ SessionDataType = Dict[Text, List[np.ndarray]]
 
 # namedtuple for training metrics
 class TrainingMetrics(NamedTuple):
-    loss: Dict[Text, tf.Tensor]
-    score: Dict[Text, tf.Tensor]
+    loss: Dict[Text, Union[tf.Tensor, float]]
+    score: Dict[Text, Union[tf.Tensor, float]]
 
 
 def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto]:
@@ -1196,6 +1196,7 @@ def train_tf_dataset(
     batch_size: Union[List[int], int],
     evaluate_on_num_examples: int,
     evaluate_every_num_epochs: int,
+    output_file: Optional[Text] = None,
 ) -> None:
     """Train tf graph"""
 
@@ -1258,6 +1259,8 @@ def train_tf_dataset(
 
         pbar.set_postfix(postfix_dict)
 
+        _write_training_metrics(output_file, ep, train_metrics, val_metrics)
+
     logger.info("Finished training.")
 
 
@@ -1269,6 +1272,38 @@ def _update_postfix_dict(
     for name, value in metrics.score.items():
         postfix_dict[f"{prefix}{name}"] = f"{value:.3f}"
     return postfix_dict
+
+
+def _write_training_metrics(
+    output_file: Text,
+    epoch: int,
+    train_metrics: TrainingMetrics,
+    val_metrics: TrainingMetrics,
+):
+    if output_file:
+        import datetime
+
+        # output log file
+        with open(output_file, "a") as f:
+            # make headers on first epoch
+            if epoch == 0:
+                f.write(f"EPOCH\tTIMESTAMP")
+                [f.write(f"\t{key.upper()}") for key in train_metrics.loss.keys()]
+                [f.write(f"\t{key.upper()}") for key in train_metrics.score.keys()]
+                [f.write(f"\tVAL_{key.upper()}") for key in train_metrics.loss.keys()]
+                [f.write(f"\tVAL_{key.upper()}") for key in train_metrics.score.keys()]
+
+            f.write(f"\n{epoch}\t{datetime.datetime.now():%H:%M:%S}")
+            [f.write(f"\t{val:.3f}") for val in train_metrics.loss.values()]
+            [f.write(f"\t{val:.3f}") for val in train_metrics.score.values()]
+            [
+                f.write(f"\t{val:.3f}") if val else f.write("\t0.0")
+                for val in val_metrics.loss.values()
+            ]
+            [
+                f.write(f"\t{val:.3f}") if val else f.write("\t0.0")
+                for val in val_metrics.score.values()
+            ]
 
 
 def extract_attention(attention_weights) -> Optional["tf.Tensor"]:
