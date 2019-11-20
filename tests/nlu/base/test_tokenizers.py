@@ -1,9 +1,25 @@
-# -*- coding: utf-8 -*-
-
 from unittest.mock import patch
+
+import pytest
+
+from rasa.nlu import training_data
 from rasa.nlu.training_data import TrainingData, Message
 from tests.nlu import utilities
-from rasa.nlu import training_data
+
+
+def test_tokens_comparison():
+    from rasa.nlu.tokenizers import Token
+
+    x = Token("hello", 0)
+    y = Token("Hello", 0)
+
+    assert x == x
+    assert y < x
+
+    assert x != 1
+
+    with pytest.raises(TypeError):
+        assert y < "a"
 
 
 def test_whitespace():

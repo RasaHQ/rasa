@@ -50,7 +50,7 @@ class SpacyFeaturizer(Featurizer):
 
     def __init__(self, component_config=None, known_patterns=None, lookup_tables=None):
 
-        super(SpacyFeaturizer, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.ner_feature_vectors = self.component_config["ner_feature_vectors"]
 

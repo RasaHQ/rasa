@@ -13,7 +13,9 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- Added data validator that checks if domain object returned is empty. If so, exit early from the command ``rasa data validate``
 - Added the KeywordIntentClassifier
+- Added documentation for ``AugmentedMemoizationPolicy``
 - Fall back to ``InMemoryTrackerStore`` in case there is any problem with the current
   tracker store
 - Add command line argument ``rasa x --config CONFIG``, to specify path to the policy and
@@ -26,12 +28,53 @@ Changed
 
 Removed
 -------
+- Remove duplicate messages when creating training data (issues/1446)
 
 Fixed
 -----
 - ``MultiProjectImporter`` now imports files in the order of the import statements
 - Fixed server hanging forever on leaving ``rasa shell`` before first message
+- Fixed rasa init showing traceback error when user does Keyboard Interrupt before choosing a project path
+- ``CountVectorsFeaturizer`` featurizes intents only if its analyzer is set to ``word``
+- fixed bug where facebooks generic template was not rendered when buttons were ``None``
 
+[1.4.5] - 2019-11-14
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- NLU-only models no longer throw warnings about parsing features not defined in the domain
+- Fixed bug that stopped Dockerfiles from building version 1.4.4.
+- Fixed format guessing for e2e stories with intent restated as ``/intent``
+
+[1.4.4] - 2019-11-13
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- ``PikaEventProducer`` adds the RabbitMQ ``App ID`` message property to published
+  messages with the value of the ``RASA_ENVIRONMENT`` environment variable. The
+  message property will not be assigned if this environment variable isn't set.
+
+Changed
+-------
+- Updated Mattermost connector documentation to be more clear.
+- Updated format strings to f-strings where appropriate.
+- Updated tensorflow requirement to ``1.15.0``
+- Dump domain using UTF-8 (to avoid ``\UXXXX`` sequences in the dumped files)
+
+Fixed
+-----
+- Fixed exporting NLU training data in ``json`` format from ``rasa interactive``
+- Fixed numpy deprecation warnings
+
+[1.4.3] - 2019-10-29
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Fixed ``Connection reset by peer`` errors and bot response delays when using the
+  RabbitMQ event broker.
 
 [1.4.2] - 2019-10-28
 ^^^^^^^^^^^^^^^^^^^^
@@ -45,6 +88,8 @@ Fixed
 - Fixed ``'Namespace' object has no attribute 'persist_nlu_data'`` error during
   interactive learning
 - Pinned `networkx~=2.3.0` to fix visualization in `rasa interactive` and Rasa X
+- Fixed ``No model found`` error when using ``rasa run actions`` with "actions"
+  as a directory.
 
 [1.4.1] - 2019-10-22
 ^^^^^^^^^^^^^^^^^^^^

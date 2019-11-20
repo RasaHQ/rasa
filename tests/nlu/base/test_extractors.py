@@ -1,4 +1,3 @@
-# coding=utf-8
 import responses
 
 from rasa.nlu.config import RasaNLUModelConfig
