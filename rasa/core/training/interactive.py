@@ -1372,8 +1372,6 @@ async def record_messages(
     """Read messages from the command line and print bot responses."""
 
     try:
-        _print_help(skip_visualization)
-
         try:
             domain = await retrieve_domain(endpoint)
         except ClientError:
@@ -1388,14 +1386,30 @@ async def record_messages(
         num_messages = 0
 
         if not skip_visualization:
+            training_trackers = await _get_training_trackers(stories, domain)
+            number_of_trackers = len(training_trackers)
+            if number_of_trackers > SUGGESTED_MAX_NUMBER_OF_STORIES_FOR_VISUALIZATION:
+                rasa.cli.utils.print_warning(
+                    f"You have {number_of_trackers} different story paths in "
+                    f"your training data. Visualizing them is very resource "
+                    f"consuming. Hence, the visualization will only show the stories "
+                    f"which you created during interactive learning, but not your "
+                    f"training stories."
+                )
+                training_trackers = []
+
+            training_data_events = [t.events for t in training_trackers]
+            events_including_current_user_id = training_data_events + [sender_id]
+
             plot_file = "story_graph.dot"
-            events_from_training_data = await _get_training_stories(stories, domain)
-            events_including_current_user_id = events_from_training_data + [sender_id]
             await _plot_trackers(events_including_current_user_id, plot_file, endpoint)
         else:
-            # `None` will prevent story plotting in calls to `_plot_trackers`
+            # `None` means that future `_plot_trackers` calls will also skip the
+            # visualization.
             plot_file = None
             events_including_current_user_id = []
+
+        _print_help(skip_visualization)
 
         while not utils.is_limit_reached(num_messages, max_message_limit):
             try:
@@ -1443,29 +1457,17 @@ async def record_messages(
         raise
 
 
-async def _get_training_stories(
+async def _get_training_trackers(
     stories: Optional[Text], domain: Dict[str, Any]
-) -> List[List[Event]]:
+) -> List[DialogueStateTracker]:
     from rasa.core import training
 
-    trackers = await training.load_data(
+    return await training.load_data(
         stories,
         Domain.from_dict(domain),
         augmentation_factor=0,
         use_story_concatenation=False,
     )
-
-    number_of_trackers = len(trackers)
-    if number_of_trackers > SUGGESTED_MAX_NUMBER_OF_STORIES_FOR_VISUALIZATION:
-        warnings.warn(
-            f"You have {number_of_trackers} different story paths in "
-            f"your training data. Visualizing them is very resource "
-            f"consuming. Hence, it is suggested that you disable "
-            f"visualization using the '--skip-visualization' flag.",
-            ResourceWarning,
-        )
-
-    return [t.events for t in trackers]
 
 
 def _serve_application(app, stories, skip_visualization):

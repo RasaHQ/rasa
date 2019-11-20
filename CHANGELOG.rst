@@ -15,8 +15,9 @@ Added
 
 Changed
 -------
-- ``rasa interactive`` will print a warning in case there are more than 200 stories
-  which should be visualized during interactive learning
+- ``rasa interactive`` will skip the story visualization of training stories in case
+  there are more than 200 stories in your training data. Stories created during
+  interactive learning will be visualized as before.
 
 Removed
 -------
