@@ -32,7 +32,7 @@ language, use the ``pretrained_embeddings_spacy`` pipeline:
     :language: yaml
 
 
-In case your training data is multi-lingual and is rich with domain specific words,
+In case your training data is multi-lingual or is rich with domain specific words,
 use the ``supervised_embeddings`` pipeline:
 
 .. literalinclude:: ../../sample_configs/config_supervised_embeddings.yml
