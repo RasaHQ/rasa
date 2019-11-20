@@ -1,5 +1,6 @@
 import time
 import typing
+from abc import ABC, abstractmethod
 
 import json
 import warnings
@@ -33,8 +34,8 @@ def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"
                 deserialised.append(event)
             else:
                 logger.warning(
-                    f"Ignoring event ({event}) while deserialising "
-                    "events. Couldn't parse it."
+                    f"Unable to parse event '{event}' while deserialising. The event"
+                    " will be ignored."
                 )
 
     return deserialised
@@ -74,21 +75,25 @@ def first_key(d, default_key):
 
 
 # noinspection PyProtectedMember
-class Event:
+class Event(ABC):
     """Events describe everything that occurs in
     a conversation and tell the :class:`rasa.core.trackers.DialogueStateTracker`
     how to update its state."""
 
     type_name = "event"
 
-    def __init__(self, timestamp: Optional[float] = None):
-        self.timestamp = timestamp if timestamp else time.time()
+    def __init__(
+        self, timestamp: Optional[float] = None, metadata: Optional[Dict] = None
+    ):
+        self.timestamp = timestamp or time.time()
+        self._metadata = metadata or {}
 
     def __ne__(self, other: Any) -> bool:
         # Not strictly necessary, but to avoid having both x==y and x!=y
         # True at the same time
         return not (self == other)
 
+    @abstractmethod
     def as_story_string(self) -> Text:
         raise NotImplementedError
 
@@ -111,25 +116,29 @@ class Event:
     ) -> Optional["Event"]:
 
         event_name = parameters.get("event")
-        if event_name is not None:
-            copied = parameters.copy()
-            del copied["event"]
-
-            event = Event.resolve_by_type(event_name, default)
-            if event:
-                return event._from_parameters(parameters)
-            else:
-                return None
-        else:
+        if event_name is None:
             return None
+
+        copied = parameters.copy()
+        del copied["event"]
+
+        event_class = Event.resolve_by_type(event_name, default)
+        if not event_class:
+            return None
+
+        return event_class._from_parameters(parameters)
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List["Event"]]:
         """Called to convert a parsed story line into an event."""
-        return [cls(parameters.get("timestamp"))]
+        return [cls(parameters.get("timestamp"), parameters.get("metadata"))]
 
     def as_dict(self):
-        return {"event": self.type_name, "timestamp": self.timestamp}
+        return {
+            "event": self.type_name,
+            "timestamp": self.timestamp,
+            "metadata": self._metadata,
+        }
 
     @classmethod
     def _from_parameters(cls, parameters: Dict[Text, Any]) -> Optional["Event"]:
@@ -195,7 +204,6 @@ class UserUttered(Event):
         self.entities = entities if entities else []
         self.input_channel = input_channel
         self.message_id = message_id
-        self.metadata = metadata
 
         if parse_data:
             self.parse_data = parse_data
@@ -205,10 +213,10 @@ class UserUttered(Event):
                 "entities": self.entities,
                 "text": text,
                 "message_id": self.message_id,
-                "metadata": self.metadata,
+                "metadata": metadata,
             }
 
-        super().__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     @staticmethod
     def _from_parse_data(
@@ -266,7 +274,6 @@ class UserUttered(Event):
                 "parse_data": self.parse_data,
                 "input_channel": getattr(self, "input_channel", None),
                 "message_id": getattr(self, "message_id", None),
-                "metadata": getattr(self, "metadata", None),
             }
         )
         return _dict
@@ -326,8 +333,7 @@ class BotUttered(Event):
     def __init__(self, text=None, data=None, metadata=None, timestamp=None):
         self.text = text
         self.data = data or {}
-        self._metadata = metadata or {}
-        super().__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     @property
     def metadata(self):
@@ -424,10 +430,10 @@ class SlotSet(Event):
 
     type_name = "slot"
 
-    def __init__(self, key, value=None, timestamp=None):
+    def __init__(self, key, value=None, timestamp=None, metadata=None):
         self.key = key
         self.value = value
-        super().__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __str__(self):
         return f"SlotSet(key: {self.key}, value: {self.value})"
@@ -469,6 +475,7 @@ class SlotSet(Event):
                 parameters.get("name"),
                 parameters.get("value"),
                 parameters.get("timestamp"),
+                parameters.get("metadata"),
             )
         except KeyError as e:
             raise ValueError(f"Failed to parse set slot event. {e}")
@@ -577,6 +584,7 @@ class ReminderScheduled(Event):
         name=None,
         kill_on_user_message=True,
         timestamp=None,
+        metadata=None,
     ):
         """Creates the reminder
 
@@ -589,13 +597,14 @@ class ReminderScheduled(Event):
             kill_on_user_message: ``True`` means a user message before the
                  trigger date will abort the reminder
             timestamp: creation date of the event
+            metadata: optional event metadata
         """
 
         self.action_name = action_name
         self.trigger_date_time = trigger_date_time
         self.kill_on_user_message = kill_on_user_message
         self.name = name if name is not None else str(uuid.uuid1())
-        super().__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __hash__(self):
         return hash(
@@ -648,6 +657,7 @@ class ReminderScheduled(Event):
                 parameters.get("name", None),
                 parameters.get("kill_on_user_msg", True),
                 parameters.get("timestamp"),
+                parameters.get("metadata"),
             )
         ]
 
@@ -658,14 +668,15 @@ class ReminderCancelled(Event):
 
     type_name = "cancel_reminder"
 
-    def __init__(self, action_name, timestamp=None):
+    def __init__(self, action_name, timestamp=None, metadata=None):
         """
         Args:
             action_name: name of the scheduled action to be cancelled
+            metadata: optional event metadata
         """
 
         self.action_name = action_name
-        super().__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __hash__(self):
         return hash(self.action_name)
@@ -683,7 +694,11 @@ class ReminderCancelled(Event):
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
         return [
-            ReminderCancelled(parameters.get("action"), parameters.get("timestamp"))
+            ReminderCancelled(
+                parameters.get("action"),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
         ]
 
 
@@ -722,9 +737,9 @@ class StoryExported(Event):
 
     type_name = "export"
 
-    def __init__(self, path=None, timestamp=None):
+    def __init__(self, path=None, timestamp=None, metadata=None):
         self.path = path
-        super().__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __hash__(self):
         return hash(32143124319)
@@ -734,6 +749,16 @@ class StoryExported(Event):
 
     def __str__(self):
         return "StoryExported()"
+
+    @classmethod
+    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+        return [
+            StoryExported(
+                parameters.get("path"),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
+        ]
 
     def as_story_string(self):
         return self.type_name
@@ -749,9 +774,9 @@ class FollowupAction(Event):
 
     type_name = "followup"
 
-    def __init__(self, name, timestamp=None):
+    def __init__(self, name, timestamp=None, metadata=None):
         self.action_name = name
-        super().__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __hash__(self):
         return hash(self.action_name)
@@ -772,7 +797,13 @@ class FollowupAction(Event):
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
 
-        return [FollowupAction(parameters.get("name"), parameters.get("timestamp"))]
+        return [
+            FollowupAction(
+                parameters.get("name"),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
+        ]
 
     def as_dict(self):
         d = super().as_dict()
@@ -848,12 +879,13 @@ class ActionExecuted(Event):
         policy: Optional[Text] = None,
         confidence: Optional[float] = None,
         timestamp: Optional[int] = None,
+        metadata: Optional[Dict] = None,
     ):
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
         self.unpredictable = False
-        super().__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __str__(self):
         return "ActionExecuted(action: {}, policy: {}, confidence: {})".format(
@@ -881,6 +913,7 @@ class ActionExecuted(Event):
                 parameters.get("policy"),
                 parameters.get("confidence"),
                 parameters.get("timestamp"),
+                parameters.get("metadata"),
             )
         ]
 
@@ -910,10 +943,10 @@ class AgentUttered(Event):
 
     type_name = "agent"
 
-    def __init__(self, text=None, data=None, timestamp=None):
+    def __init__(self, text=None, data=None, timestamp=None, metadata=None):
         self.text = text
         self.data = data
-        super().__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __hash__(self):
         return hash((self.text, jsonpickle.encode(self.data)))
@@ -955,6 +988,7 @@ class AgentUttered(Event):
                 parameters.get("text"),
                 parameters.get("data"),
                 parameters.get("timestamp"),
+                parameters.get("metadata"),
             )
         except KeyError as e:
             raise ValueError(f"Failed to parse agent uttered event. {e}")
@@ -967,9 +1001,9 @@ class Form(Event):
 
     type_name = "form"
 
-    def __init__(self, name, timestamp=None):
+    def __init__(self, name, timestamp=None, metadata=None):
         self.name = name
-        super().__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __str__(self):
         return f"Form({self.name})"
@@ -990,7 +1024,13 @@ class Form(Event):
     @classmethod
     def _from_story_string(cls, parameters):
         """Called to convert a parsed story line into an event."""
-        return [Form(parameters.get("name"), parameters.get("timestamp"))]
+        return [
+            Form(
+                parameters.get("name"),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
+        ]
 
     def as_dict(self):
         d = super().as_dict()
@@ -1007,9 +1047,9 @@ class FormValidation(Event):
 
     type_name = "form_validation"
 
-    def __init__(self, validate, timestamp=None):
+    def __init__(self, validate, timestamp=None, metadata=None):
         self.validate = validate
-        super().__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __str__(self):
         return f"FormValidation({self.validate})"
@@ -1025,7 +1065,11 @@ class FormValidation(Event):
 
     @classmethod
     def _from_parameters(cls, parameters):
-        return FormValidation(parameters.get("validate"), parameters.get("timestamp"))
+        return FormValidation(
+            parameters.get("validate"),
+            parameters.get("timestamp"),
+            parameters.get("metadata"),
+        )
 
     def as_dict(self):
         d = super().as_dict()
@@ -1041,11 +1085,13 @@ class ActionExecutionRejected(Event):
 
     type_name = "action_execution_rejected"
 
-    def __init__(self, action_name, policy=None, confidence=None, timestamp=None):
+    def __init__(
+        self, action_name, policy=None, confidence=None, timestamp=None, metadata=None
+    ):
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
-        super().__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __str__(self):
         return (
@@ -1070,6 +1116,7 @@ class ActionExecutionRejected(Event):
             parameters.get("policy"),
             parameters.get("confidence"),
             parameters.get("timestamp"),
+            parameters.get("metadata"),
         )
 
     def as_story_string(self):

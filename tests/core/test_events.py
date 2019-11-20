@@ -6,6 +6,7 @@ import copy
 
 import pytest
 from dateutil import parser
+from rasa.core import utils
 from rasa.core.events import (
     Event,
     UserUttered,
@@ -242,7 +243,6 @@ def test_json_parse_agent():
         UserUttered,
         BotUttered,
         ActionReverted,
-        Event,
         Restarted,
         AllSlotsReset,
         ConversationResumed,
@@ -267,3 +267,37 @@ def test_correct_timestamp_setting(event_class):
     event2 = event_class("test")
 
     assert event.timestamp < event2.timestamp
+
+
+@pytest.mark.parametrize("event_class", utils.all_subclasses(Event))
+def test_event_metadata_dict(event_class):
+    metadata = {"foo": "bar", "quux": 42}
+
+    # Create the event from a dict that will be accepted by the _from_parameters
+    # method of any Event subclass (the values themselves are not important).
+    event = Event.from_parameters(
+        {
+            "metadata": metadata,
+            "event": event_class.type_name,
+            "parse_data": {},
+            "date_time": "2019-11-20T16:09:16Z",
+        }
+    )
+    assert event.as_dict()["metadata"] == metadata
+
+
+@pytest.mark.parametrize("event_class", utils.all_subclasses(Event))
+def test_event_default_metadata(event_class):
+    event = Event.from_parameters(
+        {
+            "event": event_class.type_name,
+            "parse_data": {},
+            "date_time": "2019-11-20T16:09:16Z",
+        }
+    )
+    assert event.as_dict()["metadata"] == {}
+
+
+def test_instance_event_error():
+    with pytest.raises(TypeError):
+        Event()
