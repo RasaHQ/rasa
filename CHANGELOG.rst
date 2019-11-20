@@ -12,6 +12,9 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- Arbitrary metadata can now be attached to any ``Event`` subclass. The data must
+  be stored under the ``metadata`` key when reading an event from a JSON object or
+  dictionary.
 
 Changed
 -------
