@@ -13,7 +13,7 @@ from shutil import copyfile
 from tf_metrics import f1
 
 import rasa.utils.io as io_utils
-from utils.plotter import Plotter
+from rasa.utils.plotter import Plotter
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
