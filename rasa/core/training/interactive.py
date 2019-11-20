@@ -4,7 +4,6 @@ import os
 import tempfile
 import textwrap
 import uuid
-import warnings
 from functools import partial
 from multiprocessing import Process
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
