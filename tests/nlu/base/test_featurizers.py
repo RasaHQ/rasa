@@ -109,7 +109,7 @@ def test_convert_featurizer_output_shape():
 
     response_features_dim = np.array(
         [
-            example.get("text_features").shape[0]
+            example.get("response_features").shape[0]
             for example in td.intent_examples
             if example.get("response_features") is not None
         ]
