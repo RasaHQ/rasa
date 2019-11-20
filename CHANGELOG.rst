@@ -15,6 +15,8 @@ Added
 
 Changed
 -------
+- ``rasa interactive`` will print a warning in case there are more than 200 stories
+  which should be visualized during interactive learning
 
 Removed
 -------
@@ -23,6 +25,8 @@ Fixed
 -----
 - Fixed Rasa X not working when any tracker store was configured for Rasa.
 - Use the matplotlib backend ``agg`` in case the ``tkinter`` package is not installed.
+- ``rasa interactive`` will not load training stories in case the visualization is
+  skipped
 
 [1.4.5] - 2019-11-14
 ^^^^^^^^^^^^^^^^^^^^
