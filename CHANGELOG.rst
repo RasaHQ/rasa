@@ -35,6 +35,7 @@ Fixed
 - Fixed rasa init showing traceback error when user does Keyboard Interrupt before choosing a project path
 - ``CountVectorsFeaturizer`` featurizes intents only if its analyzer is set to ``word``
 - fixed bug where facebooks generic template was not rendered when buttons were ``None``
+- fixed bug with unnecessary ``kwargs`` unpacking in ``rasa.test.test_core`` call in ``rasa.test.test`` function
 
 [1.4.5] - 2019-11-14
 ^^^^^^^^^^^^^^^^^^^^
