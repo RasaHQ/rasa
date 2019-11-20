@@ -1,5 +1,5 @@
 # noinspection PyPep8Naming
-class DialogueTrainingData(object):
+class DialogueTrainingData:
     def __init__(self, X, y, true_length=None):
         self.X = X
         self.y = y

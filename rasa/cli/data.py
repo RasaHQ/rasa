@@ -1,3 +1,4 @@
+import logging
 import argparse
 import asyncio
 import sys
@@ -8,6 +9,7 @@ from rasa.cli.arguments import data as arguments
 from rasa.cli.utils import get_validated_path
 from rasa.constants import DEFAULT_DATA_PATH
 
+logger = logging.getLogger(__name__)
 
 # noinspection PyProtectedMember
 def add_subparser(
@@ -27,6 +29,7 @@ def add_subparser(
     _add_data_convert_parsers(data_subparsers, parents)
     _add_data_split_parsers(data_subparsers, parents)
     _add_data_validate_parsers(data_subparsers, parents)
+    _add_data_clean_parsers(data_subparsers, parents)
 
 
 def _add_data_convert_parsers(
@@ -86,9 +89,7 @@ def _add_data_validate_parsers(
         parents=parents,
         help="Validates domain and data files to check for possible mistakes.",
     )
-    validate_parser.add_argument("--stories", action="store_true", default=False,
-                                 help="Also validate that stories are consistent.")
-    validate_parser.add_argument("--max-history", type=int, default=5,
+    validate_parser.add_argument("--max-history", type=int, default=None,
                                  help="Assume this max_history setting for story structure validation.")
     validate_parser.set_defaults(func=validate_files)
     arguments.set_validator_arguments(validate_parser)
@@ -100,19 +101,26 @@ def _add_data_validate_parsers(
         parents=parents,
         help="Checks for inconsistencies in the story files.",
     )
-    story_structure_parser.add_argument("--max-history", type=int, default=5,
+    story_structure_parser.add_argument("--max-history", type=int,
                                         help="Assume this max_history setting for validation.")
+    story_structure_parser.add_argument("--prompt", action="store_true", default=False,
+                                        help="Ask how conflicts should be fixed")
     story_structure_parser.set_defaults(func=validate_stories)
     arguments.set_validator_arguments(story_structure_parser)
 
-    split_parser = data_subparsers.add_parser(
+
+def _add_data_clean_parsers(
+    data_subparsers, parents: List[argparse.ArgumentParser]
+):
+
+    clean_parser = data_subparsers.add_parser(
         "clean",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
         help="[Experimental] Ensures that story names are unique.",
     )
-    split_parser.set_defaults(func=deduplicate_story_names)
-    arguments.set_validator_arguments(split_parser)
+    clean_parser.set_defaults(func=deduplicate_story_names)
+    arguments.set_validator_arguments(clean_parser)
 
 
 def split_nlu_data(args):
@@ -127,8 +135,8 @@ def split_nlu_data(args):
 
     train, test = nlu_data.train_test_split(args.training_fraction)
 
-    train.persist(args.out, filename="training_data.{}".format(fformat))
-    test.persist(args.out, filename="test_data.{}".format(fformat))
+    train.persist(args.out, filename=f"training_data.{fformat}")
+    test.persist(args.out, filename=f"test_data.{fformat}")
 
 
 def validate_files(args):
@@ -144,10 +152,18 @@ def validate_files(args):
     )
 
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
+    domain_is_valid = validator.verify_domain_validity()
+    if not domain_is_valid:
+        sys.exit(1)
+
     everything_is_alright = validator.verify_all(not args.fail_on_warnings)
-    if args.stories:
-        everything_is_alright = everything_is_alright and \
-                                validator.verify_story_structure(not args.fail_on_warnings,
+    if not args.max_history:
+        logger.info("Will not test for inconsistencies in stories since "
+                    "you did not provide --max-history.")
+    if everything_is_alright and args.max_history:
+        # Only run story structure validation if everything else is fine
+        # since this might take a while
+        everything_is_alright = validator.verify_story_structure(not args.fail_on_warnings,
                                                                  max_history=args.max_history)
     sys.exit(0) if everything_is_alright else sys.exit(1)
 
@@ -159,22 +175,35 @@ def validate_stories(args):
     from rasa.core.validator import Validator
     from rasa.importers.rasa import RasaFileImporter
 
+    if not isinstance(args.max_history, int) or args.max_history < 1:
+        logger.error("You have to provide a positive integer for --max-history.")
+        sys.exit(1)
+
     loop = asyncio.get_event_loop()
     file_importer = RasaFileImporter(
         domain_path=args.domain, training_data_paths=args.data
     )
 
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
-    everything_is_alright = (
-            validator.verify_story_names(not args.fail_on_warnings) and
-            validator.verify_story_structure(not args.fail_on_warnings, max_history=args.max_history)
-    )
+
+    # First check for duplicate story names
+    story_names_unique = validator.verify_story_names(not args.fail_on_warnings)
+
+    # If names are unique, look for inconsistencies
+    everything_is_alright = validator.verify_story_structure(
+        not args.fail_on_warnings,
+        max_history=args.max_history,
+        prompt=args.prompt
+    ) if story_names_unique else False
+
     sys.exit(0) if everything_is_alright else sys.exit(1)
 
 
 def deduplicate_story_names(args):
     """Changes story names so as to make them unique.
        --EXPERIMENTAL-- """
+
+    # ToDo: Make this work with multiple story files
 
     from rasa.importers.rasa import RasaFileImporter
 
@@ -183,11 +212,16 @@ def deduplicate_story_names(args):
         domain_path=args.domain, training_data_paths=args.data
     )
 
+    import shutil
+
     story_file_names, _ = data.get_core_nlu_files(args.data)
     names = set()
     for file_name in story_file_names:
-        if file_name.endswith(".new"):
+        if file_name.endswith(".bak"):
             continue
+
+        shutil.copy2(file_name, file_name + ".bak")
+
         with open(file_name, "r") as in_file, \
                 open(file_name + ".new", "w+") as out_file:
             for line in in_file:
@@ -205,6 +239,8 @@ def deduplicate_story_names(args):
                     out_file.write(f"## {new_name}\n")
                 else:
                     out_file.write(line + "\n")
+
+        shutil.move(file_name + ".new", file_name)
 
     # story_files, _ = data.get_core_nlu_files(args.data)
     # story_steps = loop.run_until_complete(file_importer.get_story_steps())

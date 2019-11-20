@@ -38,7 +38,7 @@ class RasaChatInput(RestInput):
         self.jwt_algorithm = None
 
     async def _fetch_public_key(self) -> None:
-        public_key_url = "{}/version".format(self.base_url)
+        public_key_url = f"{self.base_url}/version"
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 public_key_url, timeout=DEFAULT_REQUEST_TIMEOUT

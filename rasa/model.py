@@ -132,18 +132,16 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
     if not model_path:
         raise ModelNotFound("No path specified.")
     elif not os.path.exists(model_path):
-        raise ModelNotFound("No file or directory at '{}'.".format(model_path))
+        raise ModelNotFound(f"No file or directory at '{model_path}'.")
 
     if os.path.isdir(model_path):
         model_path = get_latest_model(model_path)
         if not model_path:
             raise ModelNotFound(
-                "Could not find any Rasa model files in '{}'.".format(model_path)
+                f"Could not find any Rasa model files in '{model_path}'."
             )
     elif not model_path.endswith(".tar.gz"):
-        raise ModelNotFound(
-            "Path '{}' does not point to a Rasa model file.".format(model_path)
-        )
+        raise ModelNotFound(f"Path '{model_path}' does not point to a Rasa model file.")
 
     return unpack_model(model_path)
 
@@ -316,7 +314,7 @@ def _get_hash_of_config(
 
     keys = include_keys or list(filter(lambda k: k not in exclude_keys, config.keys()))
 
-    sub_config = dict((k, config[k]) for k in keys if k in config)
+    sub_config = {k: config[k] for k in keys if k in config}
 
     return get_dict_hash(sub_config)
 

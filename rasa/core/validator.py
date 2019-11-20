@@ -1,17 +1,17 @@
 import logging
 from collections import defaultdict
 from typing import Set, Text
-from rasa.core.domain import Domain, PREV_PREFIX
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+import questionary
+from rasa.core.domain import Domain
 from rasa.core.training.generator import TrainingDataGenerator
 from rasa.importers.importer import TrainingDataImporter
-from rasa.nlu.constants import MESSAGE_INTENT_ATTRIBUTE
 from rasa.nlu.training_data import TrainingData
 from rasa.core.training.structures import StoryGraph
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
 from rasa.core.constants import UTTER_PREFIX
+from rasa.core.story_conflict import StoryConflict
 
 logger = logging.getLogger(__name__)
 
@@ -109,9 +109,7 @@ class Validator:
 
         for intent in self.domain.intents:
             if intent not in stories_intents:
-                logger.warning(
-                    "The intent '{}' is not used in any story.".format(intent)
-                )
+                logger.warning(f"The intent '{intent}' is not used in any story.")
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
@@ -142,9 +140,7 @@ class Validator:
         for action in actions:
             if action.startswith(UTTER_PREFIX):
                 if action not in utterance_templates:
-                    logger.error(
-                        "There is no template for utterance '{}'.".format(action)
-                    )
+                    logger.error(f"There is no template for utterance '{action}'.")
                     everything_is_alright = False
 
         return everything_is_alright
@@ -182,37 +178,43 @@ class Validator:
 
         for utterance in utterance_actions:
             if utterance not in stories_utterances:
-                logger.warning(
-                    "The utterance '{}' is not used in any story.".format(utterance)
-                )
+                logger.warning(f"The utterance '{utterance}' is not used in any story.")
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
 
     def verify_story_names(self, ignore_warnings: bool = True):
         """Verify that story names are unique."""
-        names = set()
+
+        # Tally story names, e.g. {"story_1": 3, "story_2": 1, ...}
+        name_tally = {}
         for step in self.story_graph.story_steps:
-            if step.block_name in names:
-                logger.warning("Found duplicate story names")
-                return ignore_warnings
-            names.add(step.block_name)
-        logger.info("All story names are unique")
-        return True
+            if step.block_name in name_tally:
+                name_tally[step.block_name] += 1
+            else:
+                name_tally[step.block_name] = 1
 
-    @staticmethod
-    def _last_event_string(sliced_states):
-        last_event_string = None
-        for k, v in sliced_states[-1].items():
-            if k.startswith(PREV_PREFIX):
-                if k[len(PREV_PREFIX):] != ACTION_LISTEN_NAME:
-                    last_event_string = f"action '{k[len(PREV_PREFIX):]}'"
-            elif k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_") and not last_event_string:
-                last_event_string = f"intent '{k[len(MESSAGE_INTENT_ATTRIBUTE + '_'):]}'"
+        # Find story names that appear more than once
+        # and construct a warning message
+        result = True
+        message = ""
+        for name, count in name_tally.items():
+            if count > 1:
+                if result:
+                    message = f"Found duplicate story names:\n"
+                    result = False
+                message += f"  '{name}' appears {count}x\n"
 
-        return last_event_string
+        if result:
+            logger.info("All story names are unique")
+        else:
+            logger.error(message)
+        return result
 
-    def verify_story_structure(self, ignore_warnings: bool = True, max_history: int = 5) -> bool:
+    def verify_story_structure(self,
+                               ignore_warnings: bool = True,
+                               max_history: int = 5,
+                               prompt: bool = False) -> bool:
         """Verifies that bot behaviour in stories is deterministic."""
 
         logger.info("Story structure validation...")
@@ -259,34 +261,38 @@ class Validator:
                     )
                     h = hash(str(list(sliced_states)))
                     if h in rules:
-                        # Get the last event
-                        last_event_string = self._last_event_string(sliced_states)
-
-                        # Fill `conflicts` dict
-                        # {hash: {last_event: {action_1: [stories...], action_2: [stories...], ...}, ...}, ...}
                         if h not in conflicts:
-                            conflicts[h] = {last_event_string: {event.as_story_string(): [tracker.sender_id]}}
-                        else:
-                            if last_event_string not in conflicts[h]:
-                                conflicts[h][last_event_string] = {event.as_story_string(): [tracker.sender_id]}
-                            else:
-                                if event.as_story_string() not in conflicts[h][last_event_string]:
-                                    conflicts[h][last_event_string][event.as_story_string()] = [tracker.sender_id]
-                                else:
-                                    conflicts[h][last_event_string][event.as_story_string()].append(tracker.sender_id)
+                            conflicts[h] = StoryConflict(sliced_states, tracker, event)
+                        conflicts[h].add_conflicting_action(
+                            action=event.as_story_string(),
+                            story_name=tracker.sender_id
+                        )
                     idx += 1
 
         if len(conflicts) == 0:
             logger.info("No story structure conflicts found.")
         else:
             for conflict in list(conflicts.values()):
-                for state, actions_and_stories in conflict.items():
-                    conflict_string = f"CONFLICT after {state}:\n"
-                    for action, stories in actions_and_stories.items():
-                        conflict_string += f"  {action} predicted in {stories}\n"
-                    logger.warning(conflict_string)
+                logger.warning(conflict)
 
-        return len(conflicts) > 0
+                # Fix the conflict if required
+                if prompt:
+                    print("A conflict occurs after the following sequence of events:")
+                    print(conflict.story_prior_to_conflict())
+                    keep = "KEEP AS IS"
+                    correct_response = questionary.select(
+                        message="How should your bot respond at this point?",
+                        choices=[keep] + conflict.conflicting_actions_with_counts
+                    ).ask()
+                    if correct_response != keep:
+                        # Remove the story count ending, e.g. " [42x]"
+                        conflict.correct_response = correct_response.rsplit(" ", 1)[0]
+
+        for conflict in list(conflicts.values()):
+            if conflict.correct_response:
+                print(f"Fixing {conflict.incorrect_stories} with {conflict.correct_response}...")
+
+        return len(conflicts) == 0
 
     def verify_all(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""
@@ -304,3 +310,8 @@ class Validator:
         stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
         return (intents_are_valid and stories_are_valid and
                 there_is_no_duplication and all_story_names_unique)
+
+    def verify_domain_validity(self) -> bool:
+        """Checks whether the domain returned by the importer is empty, indicating an invalid domain."""
+
+        return not self.domain.is_empty()
