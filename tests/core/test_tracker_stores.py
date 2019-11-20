@@ -123,16 +123,7 @@ def test_find_tracker_store(default_domain: Domain, monkeypatch: MonkeyPatch):
 
 
 class ExampleTrackerStore(RedisTrackerStore):
-    def __init__(self, domain, url, port, db, password, record_exp, event_broker=None):
-        super().__init__(
-            domain,
-            event_broker=event_broker,
-            host=url,
-            port=port,
-            db=db,
-            password=password,
-            record_exp=record_exp,
-        )
+    pass
 
 
 def test_tracker_store_from_string(default_domain: Domain):
