@@ -7,12 +7,11 @@ from typing import Text, Optional, Union, AsyncGenerator
 from async_generator import asynccontextmanager
 
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
+from rasa.utils import common
 from rasa.core.lock import TicketLock, NO_TICKET_ISSUED
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
-
-ACCEPTED_LOCK_STORES = ["in_memory", "redis"]
 
 LOCK_LIFETIME = int(os.environ.get("TICKET_LOCK_LIFETIME", 0)) or DEFAULT_LOCK_LIFETIME
 
@@ -42,34 +41,13 @@ class TicketExistsError(Exception):
 
 class LockStore:
     @staticmethod
-    def find_lock_store(store: EndpointConfig = None) -> "LockStore":
-        if store is None or store.type is None or store.type == "in_memory":
-            lock_store = InMemoryLockStore()
-        elif store.type == "redis":
-            lock_store = RedisLockStore(host=store.url, **store.kwargs)
+    def create(obj: Union["LockStore", EndpointConfig, None]) -> "LockStore":
+        """Factory to create a generator."""
+
+        if isinstance(obj, LockStore):
+            return obj
         else:
-            logger.debug(
-                "Could not load built-in `LockStore`, which needs to be of "
-                "type: {}. Trying to load `LockStore` from module path '{}' "
-                "instead."
-                "".format(store.type, ", ".join(ACCEPTED_LOCK_STORES), store.type)
-            )
-            lock_store = LockStore.load_lock_store_from_module_path(store.type)
-
-        logger.debug(f"Connected to lock store '{lock_store.__class__.__name__}'.")
-
-        return lock_store
-
-    @staticmethod
-    def load_lock_store_from_module_path(module_path: Text) -> "LockStore":
-        """Given the name of a `LockStore` module tries to retrieve it."""
-
-        from rasa.utils.common import class_from_module_path
-
-        try:
-            return class_from_module_path(module_path)
-        except ImportError:
-            raise ImportError(f"Cannot retrieve `LockStore` from path '{module_path}'.")
+            return _create_from_endpoint_config(obj)
 
     @staticmethod
     def create_lock(conversation_id: Text) -> TicketLock:
@@ -162,8 +140,8 @@ class LockStore:
                 return lock
 
             logger.debug(
-                "Failed to acquire lock for conversation ID '{}'. Retrying..."
-                "".format(conversation_id)
+                f"Failed to acquire lock for conversation ID '{conversation_id}'. "
+                f"Retrying..."
             )
 
             # sleep and update lock
@@ -171,8 +149,7 @@ class LockStore:
             self.update_lock(conversation_id)
 
         raise LockError(
-            "Could not acquire lock for conversation_id '{}'."
-            "".format(conversation_id)
+            f"Could not acquire lock for conversation_id '{conversation_id}'."
         )
 
     def update_lock(self, conversation_id: Text) -> None:
@@ -247,8 +224,8 @@ class LockStore:
         # that of the one being acquired
         if existing_lock.last_issued != lock.last_issued:
             raise TicketExistsError(
-                "Ticket '{}' already exists for conversation ID '{}'."
-                "".format(existing_lock.last_issued, lock.conversation_id)
+                f"Ticket '{existing_lock.last_issued}' already exists "
+                f"for conversation ID '{lock.conversation_id}'."
             )
 
 
@@ -301,3 +278,40 @@ class InMemoryLockStore(LockStore):
 
     def save_lock(self, lock: TicketLock) -> None:
         self.conversation_locks[lock.conversation_id] = lock
+
+
+def _create_from_endpoint_config(
+    endpoint_config: Optional[EndpointConfig] = None,
+) -> "LockStore":
+    """Given an endpoint configuration, create a proper `LockStore` object."""
+
+    if (
+        endpoint_config is None
+        or endpoint_config.type is None
+        or endpoint_config.type == "in_memory"
+    ):
+        # this is the default type if no lock store type is set
+
+        lock_store = InMemoryLockStore()
+    elif endpoint_config.type == "redis":
+        lock_store = RedisLockStore(host=endpoint_config.url, **endpoint_config.kwargs)
+    else:
+        lock_store = _load_from_module_string(endpoint_config.type)
+
+    logger.debug(f"Connected to lock store '{lock_store.__class__.__name__}'.")
+
+    return lock_store
+
+
+def _load_from_module_string(endpoint_config: EndpointConfig) -> "LockStore":
+    """Given the name of a `LockStore` module tries to retrieve it."""
+
+    try:
+        lock_store_class = common.class_from_module_path(endpoint_config.type)
+        return lock_store_class(endpoint_config=endpoint_config)
+    except (AttributeError, ImportError) as e:
+        raise Exception(
+            f"Could not find a class based on the module path "
+            f"'{endpoint_config.type}'. Failed to create a `LockStore` "
+            f"instance. Error: {e}"
+        )

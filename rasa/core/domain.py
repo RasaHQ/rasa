@@ -274,7 +274,7 @@ class Domain:
         intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
         entities: List[Text],
         slots: List[Slot],
-        templates: Dict[Text, Any],
+        templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
         form_names: List[Text],
         store_entities_as_slots: bool = True,

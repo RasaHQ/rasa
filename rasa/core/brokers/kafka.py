@@ -1,14 +1,15 @@
 import json
 import logging
+import warnings
 from typing import Optional
 
-from rasa.core.brokers.event_channel import EventChannel
+from rasa.core.brokers.broker import EventBroker
 from rasa.utils.io import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
 
 
-class KafkaProducer(EventChannel):
+class KafkaEventBroker(EventBroker):
     def __init__(
         self,
         host,
@@ -37,7 +38,7 @@ class KafkaProducer(EventChannel):
         logging.getLogger("kafka").setLevel(loglevel)
 
     @classmethod
-    def from_endpoint_config(cls, broker_config) -> Optional["KafkaProducer"]:
+    def from_endpoint_config(cls, broker_config) -> Optional["KafkaEventBroker"]:
         if broker_config is None:
             return None
 
@@ -76,3 +77,12 @@ class KafkaProducer(EventChannel):
 
     def _close(self):
         self.producer.close()
+
+
+class KafkaProducer(KafkaEventBroker):
+    warnings.warn(
+        "Deprecated, the class `KafkaProducer` has been renamed to "
+        "`KafkaEventBroker`. The `KafkaProducer` class will be removed.",
+        DeprecationWarning,
+        stacklevel=2,
+    )

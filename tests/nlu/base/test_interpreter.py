@@ -96,6 +96,6 @@ def test_create_interpreter(parameters, trained_nlu_model):
     if obj == "trained_nlu_model":
         _, obj = get_model_subdirectories(get_model(trained_nlu_model))
 
-    interpreter = NaturalLanguageInterpreter.create(obj, parameters["endpoint"])
+    interpreter = NaturalLanguageInterpreter.create(parameters["endpoint"] or obj)
 
     assert isinstance(interpreter, parameters["type"])

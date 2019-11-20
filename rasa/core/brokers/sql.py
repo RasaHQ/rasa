@@ -1,15 +1,16 @@
 import json
 import logging
+import warnings
 from typing import Any, Dict, Optional, Text
 
-from rasa.core.brokers.event_channel import EventChannel
+from rasa.core.brokers.broker import EventBroker
 from rasa.utils.endpoints import EndpointConfig
 import contextlib
 
 logger = logging.getLogger(__name__)
 
 
-class SQLProducer(EventChannel):
+class SQLEventBroker(EventBroker):
     """Save events into an SQL database.
 
     All events will be stored in a table called `events`.
@@ -51,7 +52,7 @@ class SQLProducer(EventChannel):
         self.sessionmaker = sqlalchemy.orm.sessionmaker(bind=self.engine)
 
     @classmethod
-    def from_endpoint_config(cls, broker_config: EndpointConfig) -> "EventChannel":
+    def from_endpoint_config(cls, broker_config: EndpointConfig) -> "SQLEventBroker":
         return cls(host=broker_config.url, **broker_config.kwargs)
 
     @contextlib.contextmanager
@@ -72,3 +73,12 @@ class SQLProducer(EventChannel):
                 )
             )
             session.commit()
+
+
+class SQLProducer(SQLEventBroker):
+    warnings.warn(
+        "Deprecated, the class `SQLProducer` has been renamed to "
+        "`SQLEventBroker`. The `SQLProducer` class will be removed.",
+        DeprecationWarning,
+        stacklevel=2,
+    )

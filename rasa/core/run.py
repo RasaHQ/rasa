@@ -16,6 +16,7 @@ from rasa import model, server
 from rasa.constants import ENV_SANIC_BACKLOG
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
+from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
 from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -220,22 +221,19 @@ async def load_agent_on_start(
 
     Used to be scheduled on server start
     (hence the `app` and `loop` arguments)."""
-    import rasa.core.brokers.utils as broker_utils
 
     # noinspection PyBroadException
     try:
         with model.get_model(model_path) as unpacked_model:
             _, nlu_model = model.get_model_subdirectories(unpacked_model)
-            _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
+            _interpreter = NaturalLanguageInterpreter.create(endpoints.nlu or nlu_model)
     except Exception:
         logger.debug(f"Could not load interpreter from '{model_path}'.")
         _interpreter = None
 
-    _broker = broker_utils.from_endpoint_config(endpoints.event_broker)
-    _tracker_store = TrackerStore.find_tracker_store(
-        None, endpoints.tracker_store, _broker
-    )
-    _lock_store = LockStore.find_lock_store(endpoints.lock_store)
+    _broker = EventBroker.create(endpoints.event_broker)
+    _tracker_store = TrackerStore.create(endpoints.tracker_store, event_broker=_broker)
+    _lock_store = LockStore.create(endpoints.lock_store)
 
     model_server = endpoints.model if endpoints and endpoints.model else None
 
