@@ -117,7 +117,9 @@ class FingerprintComparisonResult:
         return self.force_training or self.nlu
 
 
-def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
+def get_model(
+    model_path: Text = DEFAULT_MODELS_PATH, working_directory: Text = None
+) -> TempDirectoryPath:
     """Get a model and unpack it. Raises a `ModelNotFound` exception if
     no model could be found at the provided path.
 
@@ -143,7 +145,7 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
     elif not model_path.endswith(".tar.gz"):
         raise ModelNotFound(f"Path '{model_path}' does not point to a Rasa model file.")
 
-    return unpack_model(model_path)
+    return unpack_model(model_path, working_directory)
 
 
 def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
