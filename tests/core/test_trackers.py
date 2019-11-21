@@ -566,6 +566,21 @@ def test_last_executed_has_not_name():
     assert tracker.last_executed_action_has("another") is False
 
 
+def test_events_metadata():
+    # It should be possible to attach arbitrary metadata to any event and then
+    # retrieve it after getting the tracker dict representation.
+    events = [
+        ActionExecuted("one", metadata={"one": 1}),
+        user_uttered("two", 1, metadata={"two": 2}),
+        ActionExecuted(ACTION_LISTEN_NAME, metadata={"three": 3}),
+    ]
+
+    events = get_tracker(events).current_state(EventVerbosity.ALL)["events"]
+    assert events[0]["metadata"] == {"one": 1}
+    assert events[1]["metadata"] == {"two": 2}
+    assert events[2]["metadata"] == {"three": 3}
+
+
 @pytest.mark.parametrize("key, value", [("asfa", 1), ("htb", None)])
 def test_tracker_without_slots(key, value, caplog):
     event = SlotSet(key, value)

@@ -1,4 +1,6 @@
 import os
+import random
+
 from decimal import Decimal
 from typing import Optional, Text, Union
 
@@ -173,3 +175,14 @@ def test_lock_store_is_redis_lock_store(
 ):
     # noinspection PyProtectedMember
     assert rasa.core.utils._lock_store_is_redis_lock_store(lock_store) == expected
+
+
+def test_all_subclasses():
+    num = random.randint(1, 10)
+
+    class TestClass:
+        pass
+
+    classes = [type(f"TestClass{i}", (TestClass,), {}) for i in range(num)]
+
+    assert utils.all_subclasses(TestClass) == classes
