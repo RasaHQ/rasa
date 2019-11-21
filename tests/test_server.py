@@ -103,12 +103,14 @@ def test_version(rasa_app: SanicTestClient):
     )
 
 
-def test_status(rasa_app: SanicTestClient):
+def test_status(rasa_app: SanicTestClient, trained_rasa_model: Text):
     _, response = rasa_app.get("/status")
+    model_file = response.json["model_file"]
     assert response.status == 200
     assert "fingerprint" in response.json
-    assert "model_file" in response.json
-    assert os.path.isfile(response.json["model_file"])
+    assert os.path.isfile(model_file)
+    assert model_file == trained_rasa_model
+
 
 
 def test_status_nlu_only(rasa_app_nlu: SanicTestClient):
