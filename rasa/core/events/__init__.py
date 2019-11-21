@@ -143,11 +143,15 @@ class Event:
         return [cls(parameters.get("timestamp"), parameters.get("metadata"))]
 
     def as_dict(self):
-        return {
+        d = {
             "event": self.type_name,
             "timestamp": self.timestamp,
-            "metadata": self.metadata,
         }
+
+        if self.metadata:
+            d["metadata"] = self.metadata
+
+        return d
 
     @classmethod
     def _from_parameters(cls, parameters: Dict[Text, Any]) -> Optional["Event"]:
@@ -283,6 +287,7 @@ class UserUttered(Event):
                 "parse_data": self.parse_data,
                 "input_channel": getattr(self, "input_channel", None),
                 "message_id": getattr(self, "message_id", None),
+                "metadata": self.metadata
             }
         )
         return _dict

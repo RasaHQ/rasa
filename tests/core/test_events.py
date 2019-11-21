@@ -288,6 +288,12 @@ def test_event_metadata_dict(event_class):
 
 @pytest.mark.parametrize("event_class", utils.all_subclasses(Event))
 def test_event_default_metadata(event_class):
+
+    # Create an event without metadata.
+    # When converting the Event to a dict, it should not include a `metadata`
+    # property - unless it's a UserUttered or a BotUttered event (or subclasses
+    # of them), in which case the metadata should be included with a default
+    # value of {}.
     event = Event.from_parameters(
         {
             "event": event_class.type_name,
@@ -295,4 +301,8 @@ def test_event_default_metadata(event_class):
             "date_time": "2019-11-20T16:09:16Z",
         }
     )
-    assert event.as_dict()["metadata"] == {}
+
+    if isinstance(event, BotUttered) or isinstance(event, UserUttered):
+        assert event.as_dict()["metadata"] == {}
+    else:
+        assert "metadata" not in event.as_dict()
