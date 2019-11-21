@@ -210,17 +210,17 @@ class SlackInput(InputChannel):
             ]:
                 text = re.sub(regex, replacement, text)
 
-        """Find mailto or http links like <mailto:xyz@rasa.com|xyz@rasa.com> or '<http://url.com|url.com>in text and substitute it with original content
+        """Find multiple mailto or http links like <mailto:xyz@rasa.com|xyz@rasa.com> or '<http://url.com|url.com>in text and substitute it with original content
         """
 
-        pattern = r"\<(mailto:|(http|https):\/\/).*\|.*\>"
-        match = re.search(pattern, text)
+        pattern = r"(\<(?:mailto|http|https):\/\/.*?\|.*?\>)"
+        match = re.findall(pattern, text)
 
         if match:
-            regex = match.group(0)
-            replacement = regex.split("|")[1]
-            replacement = replacement.replace(">", "")
-            text = text.replace(regex, replacement)
+            for remove in match:
+                replacement = remove.split("|")[1]
+                replacement = replacement.replace(">", "")
+                text = text.replace(remove, replacement)
         return text.strip()
 
     @staticmethod
