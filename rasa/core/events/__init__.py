@@ -82,19 +82,18 @@ class Event:
     type_name = "event"
 
     def __init__(
-        self, timestamp: Optional[float] = None, metadata: Optional[Dict] = None
-    ):
+        self,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
         self.timestamp = timestamp or time.time()
         self._metadata = metadata or {}
 
     @property
-    def metadata(self):
+    def metadata(self) -> Dict[Text, Any]:
         # needed for backwards compatibility <1.0.0 - previously pickled events
         # won't have the `_metadata` attribute
-        if hasattr(self, "_metadata"):
-            return self._metadata
-        else:
-            return {}
+        return getattr(self, "_metadata", {})
 
     def __ne__(self, other: Any) -> bool:
         # Not strictly necessary, but to avoid having both x==y and x!=y
@@ -425,7 +424,13 @@ class SlotSet(Event):
 
     type_name = "slot"
 
-    def __init__(self, key, value=None, timestamp=None, metadata=None):
+    def __init__(
+        self,
+        key: Text,
+        value: Optional[Any] = None,
+        timestamp: Optional[int] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
         self.key = key
         self.value = value
         super().__init__(timestamp, metadata)
@@ -769,7 +774,12 @@ class FollowupAction(Event):
 
     type_name = "followup"
 
-    def __init__(self, name, timestamp=None, metadata=None):
+    def __init__(
+        self,
+        name: Text,
+        timestamp: Optional[int] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
         self.action_name = name
         super().__init__(timestamp, metadata)
 
@@ -938,7 +948,13 @@ class AgentUttered(Event):
 
     type_name = "agent"
 
-    def __init__(self, text=None, data=None, timestamp=None, metadata=None):
+    def __init__(
+        self,
+        text: Optional[Text] = None,
+        data: Optional[Any] = None,
+        timestamp: Optional[int] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
         self.text = text
         self.data = data
         super().__init__(timestamp, metadata)
@@ -996,7 +1012,12 @@ class Form(Event):
 
     type_name = "form"
 
-    def __init__(self, name, timestamp=None, metadata=None):
+    def __init__(
+        self,
+        name: Optional[Text],
+        timestamp: Optional[int] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
         self.name = name
         super().__init__(timestamp, metadata)
 
@@ -1042,7 +1063,12 @@ class FormValidation(Event):
 
     type_name = "form_validation"
 
-    def __init__(self, validate, timestamp=None, metadata=None):
+    def __init__(
+        self,
+        validate: bool,
+        timestamp: Optional[int] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
         self.validate = validate
         super().__init__(timestamp, metadata)
 
@@ -1081,8 +1107,13 @@ class ActionExecutionRejected(Event):
     type_name = "action_execution_rejected"
 
     def __init__(
-        self, action_name, policy=None, confidence=None, timestamp=None, metadata=None
-    ):
+        self,
+        action_name: Text,
+        policy: Optional[Text] = None,
+        confidence: Optional[float] = None,
+        timestamp: Optional[int] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
