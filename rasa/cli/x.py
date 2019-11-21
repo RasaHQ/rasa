@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import importlib.util
 import logging
+import warnings
 import os
 import signal
 import traceback
@@ -121,7 +122,7 @@ def _overwrite_endpoints_for_local_x(
     )
 
     if custom_url != default_rasax_model_server_url:
-        logger.info(
+        warnings.warn(
             f"Ignoring url '{custom_url}' from 'endpoints.yml' and using "
             f"'{default_rasax_model_server_url}' instead."
         )
