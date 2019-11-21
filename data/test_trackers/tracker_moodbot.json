@@ -32,7 +32,6 @@
   "events": [
     {
       "timestamp": 1517821726.211031,
-      "metadata": {},
       "event": "action",
       "name": "action_listen",
       "policy": null,
@@ -69,7 +68,6 @@
     },
     {
       "timestamp": 1517821726.200373,
-      "metadata": {},
       "event": "action",
       "name": "utter_greet",
       "policy": null,
@@ -77,7 +75,6 @@
     },
     {
       "timestamp": 1517821726.211038,
-      "metadata": {},
       "event": "action",
       "name": "action_listen",
       "policy": null,
@@ -114,7 +111,6 @@
     },
     {
       "timestamp": 1517821726.209908,
-      "metadata": {},
       "event": "action",
       "name": "utter_happy",
       "policy": "policy_1_KerasPolicy",
@@ -122,7 +118,6 @@
     },
     {
       "timestamp": 1517821726.211042,
-      "metadata": {},
       "event": "action",
       "name": "action_listen",
       "policy": "policy_2_MemoizationPolicy",
