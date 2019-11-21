@@ -222,7 +222,7 @@ class UserUttered(Event):
                 "entities": self.entities,
                 "text": text,
                 "message_id": self.message_id,
-                "metadata": self.metadata
+                "metadata": self.metadata,
             }
 
     @staticmethod
