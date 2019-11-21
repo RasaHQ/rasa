@@ -688,5 +688,24 @@ is thrown before training if one is missing</li>
 
   </script>
   <script type="text/javascript" src="https://rasa.com/assets/js/u-info.js"></script>
+     <div id="webchat">
+     <script src="../_static/rasa-webchat.js"></script>
+     <script>
+      WebChat.default.init({
+          selector: "#webchat",
+          initPayload: "/greet",
+          interval: 500,
+          socketUrl: "https://website-demo.rasa.com/",
+          socketPath: "/socket.io",
+          title: "Sara",
+          subtitle: "I'm still in development",
+          profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+          showCloseButton: true,
+          fullScreenMode: false,
+        params: {
+          storage: "local"
+        }})
+     </script>
+     </div>
   </body>
 </html>

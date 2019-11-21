@@ -1393,12 +1393,12 @@ div .copyable {
   max-width: 215px;
 }
  #webchat .conversation-container .header {
-  background-color: #7C00BC;
+  background-color: #574ae2;
   color: #fff;
   padding: 16px 0 16px;
 }
  #webchat .launcher {
-  background-color: #7C00BC;
+  background-color: #574ae2;
   box-shadow: 0 1px 8px 0 rgba(40, 40, 40, 0.5);
   -webkit-box-shadow: 0 1px 8px 0 rgba(40, 40, 40, 0.5);
   height: 60px;
@@ -1434,7 +1434,7 @@ div .copyable {
 }
  @media screen and (max-width: 800px) {
   #webchat .conversation-container .close-button {
-    background-color: #7C00BC;
+    background-color: #574ae2;
     border: 0;
     display: block;
     position: absolute;
