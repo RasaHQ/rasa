@@ -414,7 +414,7 @@ class StoryFileReader:
         )
         self.current_step_builder.add_user_messages(parsed_messages)
 
-    async def add_e2e_messages(self, e2e_messages, line_num):
+    async def add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
                 "End-to-end message '{}' at invalid "

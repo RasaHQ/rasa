@@ -143,7 +143,9 @@ class StoryStep:
     def _user_string(story_step_element, e2e, prefix=""):
         return "* {}{}\n".format(prefix, story_step_element.as_story_string(e2e))
 
-    def _store_user_strings(self, story_step_element, e2e, prefix=""):
+    def _store_user_strings(
+        self, story_step_element, e2e: bool, prefix: Text = ""
+    ) -> None:
         self.story_string_helper.no_form_prefix_string += self._user_string(
             story_step_element, e2e
         )
