@@ -18,6 +18,8 @@ Added
 - Added documentation for ``AugmentedMemoizationPolicy``
 - Fall back to ``InMemoryTrackerStore`` in case there is any problem with the current
   tracker store
+- Add command line argument ``rasa x --config CONFIG``, to specify path to the policy and
+  NLU pipeline configuration of your bot (default: ``config.yml``)
 
 Changed
 -------
@@ -34,7 +36,8 @@ Fixed
 - Fixed server hanging forever on leaving ``rasa shell`` before first message
 - Fixed rasa init showing traceback error when user does Keyboard Interrupt before choosing a project path
 - ``CountVectorsFeaturizer`` featurizes intents only if its analyzer is set to ``word``
-- fixed bug where facebooks generic template was not rendered when buttons were ``None``
+- Fixed bug where facebooks generic template was not rendered when buttons were ``None``
+- Fixed default intents unnecessarily raising undefined parsing error
 
 [1.4.5] - 2019-11-14
 ^^^^^^^^^^^^^^^^^^^^
