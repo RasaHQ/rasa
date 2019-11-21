@@ -177,6 +177,9 @@ Alternatively, lookup elements may be directly included as a list
     - rice
     - tacos
     - cheese
+    
+.. note::
+    Lookup elements in the NLU file are ignored in Rasa X after version `0.22.2`. A lookup table file is automatically created.
 
 When lookup tables are supplied in training data, the contents are combined
 into a large, case-insensitive regex pattern that looks for exact matches in
