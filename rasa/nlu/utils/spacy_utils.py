@@ -15,15 +15,16 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
 
 from rasa.nlu.constants import (
-    TEXT_ATTRIBUTE,
-    SPACY_FEATURE_NAMES,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_SPACY_FEATURE_NAMES,
+    SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 
 
 class SpacyNLP(Component):
     provides = ["spacy_nlp"] + [
-        SPACY_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
+        MESSAGE_SPACY_FEATURE_NAMES[attribute]
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
 
     defaults = {
@@ -190,7 +191,7 @@ class SpacyNLP(Component):
         self, training_data: TrainingData
     ) -> Dict[Text, List[Any]]:
         attribute_docs = {}
-        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
             texts = [self.get_text(e, attribute) for e in training_data.intent_examples]
             # Index and freeze indices of the training samples for preserving the order
             # after processing the data.
@@ -222,19 +223,22 @@ class SpacyNLP(Component):
 
         attribute_docs = self.docs_for_training_data(training_data)
 
-        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
 
             for idx, example in enumerate(training_data.training_examples):
                 example_attribute_doc = attribute_docs[attribute][idx]
                 if len(example_attribute_doc):
                     # If length is 0, that means the initial text feature was None and was replaced by ''
                     # in preprocess method
-                    example.set(SPACY_FEATURE_NAMES[attribute], example_attribute_doc)
+                    example.set(
+                        MESSAGE_SPACY_FEATURE_NAMES[attribute], example_attribute_doc
+                    )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set(
-            SPACY_FEATURE_NAMES[TEXT_ATTRIBUTE], self.doc_for_text(message.text)
+            MESSAGE_SPACY_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            self.doc_for_text(message.text),
         )
 
     @classmethod

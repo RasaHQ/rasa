@@ -15,14 +15,14 @@ from rasa.nlu.training_data import Message, TrainingData
 logger = logging.getLogger(__name__)
 
 from rasa.nlu.constants import (
-    RESPONSE_ATTRIBUTE,
-    INTENT_ATTRIBUTE,
-    TEXT_ATTRIBUTE,
-    TOKEN_NAMES,
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_TOKEN_NAMES,
     ATTRIBUTES,
-    SPACY_FEATURE_NAMES,
-    FEATURE_NAMES,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
+    MESSAGE_SPACY_FEATURE_NAMES,
+    MESSAGE_VECTOR_FEATURE_NAMES,
+    SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 
 
@@ -39,7 +39,7 @@ class CountVectorsFeaturizer(Featurizer):
     from https://arxiv.org/abs/1810.07150.
     """
 
-    provides = [FEATURE_NAMES[attribute] for attribute in ATTRIBUTES]
+    provides = [MESSAGE_VECTOR_FEATURE_NAMES[attribute] for attribute in ATTRIBUTES]
 
     requires = []
 
@@ -186,7 +186,7 @@ class CountVectorsFeaturizer(Featurizer):
         """Create a list of attributes that should be featurized."""
 
         # intents should be featurized only by word level count vectorizer
-        return ATTRIBUTES if analyzer == "word" else DENSE_FEATURIZABLE_ATTRIBUTES
+        return ATTRIBUTES if analyzer == "word" else SPACY_FEATURIZABLE_ATTRIBUTES
 
     def __init__(
         self,
@@ -213,7 +213,7 @@ class CountVectorsFeaturizer(Featurizer):
         self.vectorizers = vectorizers
 
     def _get_message_text_by_attribute(
-        self, message: "Message", attribute: Text = TEXT_ATTRIBUTE
+        self, message: "Message", attribute: Text = MESSAGE_TEXT_ATTRIBUTE
     ) -> Text:
         """Get processed text of attribute of a message"""
 
@@ -230,13 +230,13 @@ class CountVectorsFeaturizer(Featurizer):
         return text
 
     def _process_text(
-        self, tokens: List[Text], attribute: Text = TEXT_ATTRIBUTE
+        self, tokens: List[Text], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
     ) -> Text:
         """Apply processing and cleaning steps to text"""
 
         text = " ".join(tokens)
 
-        if attribute == INTENT_ATTRIBUTE:
+        if attribute == MESSAGE_INTENT_ATTRIBUTE:
             # Don't do any processing for intent attribute. Treat them as whole labels
             return text
 
@@ -277,12 +277,16 @@ class CountVectorsFeaturizer(Featurizer):
     ) -> List[Text]:
         """Get text tokens of an attribute of a message"""
 
-        if attribute in DENSE_FEATURIZABLE_ATTRIBUTES and message.get(
-            SPACY_FEATURE_NAMES[attribute]
+        if attribute in SPACY_FEATURIZABLE_ATTRIBUTES and message.get(
+            MESSAGE_SPACY_FEATURE_NAMES[attribute]
         ):  # if lemmatize is possible
-            tokens = [t.lemma_ for t in message.get(SPACY_FEATURE_NAMES[attribute])]
-        elif message.get(TOKEN_NAMES[attribute]):  # if directly tokens is provided
-            tokens = [t.text for t in message.get(TOKEN_NAMES[attribute])]
+            tokens = [
+                t.lemma_ for t in message.get(MESSAGE_SPACY_FEATURE_NAMES[attribute])
+            ]
+        elif message.get(
+            MESSAGE_TOKEN_NAMES[attribute]
+        ):  # if directly tokens is provided
+            tokens = [t.text for t in message.get(MESSAGE_TOKEN_NAMES[attribute])]
         else:
             tokens = message.get(attribute).split()
         return tokens
@@ -315,9 +319,11 @@ class CountVectorsFeaturizer(Featurizer):
         for i, example in enumerate(training_data.intent_examples):
             # create bag for each example
             example.set(
-                FEATURE_NAMES[attribute],
+                MESSAGE_VECTOR_FEATURE_NAMES[attribute],
                 self._combine_with_existing_features(
-                    example, attribute_features[i], FEATURE_NAMES[attribute]
+                    example,
+                    attribute_features[i],
+                    MESSAGE_VECTOR_FEATURE_NAMES[attribute],
                 ),
             )
 
@@ -356,7 +362,7 @@ class CountVectorsFeaturizer(Featurizer):
             combined_cleaned_texts += attribute_texts[attribute]
 
         try:
-            self.vectorizers[TEXT_ATTRIBUTE].fit(combined_cleaned_texts)
+            self.vectorizers[MESSAGE_TEXT_ATTRIBUTE].fit(combined_cleaned_texts)
         except ValueError:
             logger.warning(
                 "Unable to train a shared CountVectorizer. Leaving an untrained CountVectorizer"
@@ -459,19 +465,21 @@ class CountVectorsFeaturizer(Featurizer):
             )
         else:
             message_text = self._get_message_text_by_attribute(
-                message, attribute=TEXT_ATTRIBUTE
+                message, attribute=MESSAGE_TEXT_ATTRIBUTE
             )
 
             bag = (
-                self.vectorizers[TEXT_ATTRIBUTE]
+                self.vectorizers[MESSAGE_TEXT_ATTRIBUTE]
                 .transform([message_text])
                 .toarray()
                 .squeeze()
             )
             message.set(
-                FEATURE_NAMES[TEXT_ATTRIBUTE],
+                MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
                 self._combine_with_existing_features(
-                    message, bag, feature_name=FEATURE_NAMES[TEXT_ATTRIBUTE]
+                    message,
+                    bag,
+                    feature_name=MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
                 ),
             )
 
@@ -509,7 +517,7 @@ class CountVectorsFeaturizer(Featurizer):
                 if self.use_shared_vocab:
                     # Only persist vocabulary from one attribute. Can be loaded and distributed to all attributes.
                     utils.json_pickle(
-                        featurizer_file, attribute_vocabularies[TEXT_ATTRIBUTE]
+                        featurizer_file, attribute_vocabularies[MESSAGE_TEXT_ATTRIBUTE]
                     )
                 else:
                     utils.json_pickle(featurizer_file, attribute_vocabularies)

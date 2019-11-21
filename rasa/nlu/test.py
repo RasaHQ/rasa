@@ -22,7 +22,7 @@ import rasa.utils.io as io_utils
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE
 from rasa.nlu.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE,
-    RESPONSE_SELECTOR_PROPERTY_NAME,
+    MESSAGE_SELECTOR_PROPERTY_NAME,
     OPEN_UTTERANCE_PREDICTION_KEY,
 )
 from rasa.model import get_model
@@ -903,7 +903,7 @@ def get_eval_data(
 
             # including all examples here. Empty response examples are filtered at the time of metric calculation
             intent_target = example.get("intent", "")
-            selector_properties = result.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
+            selector_properties = result.get(MESSAGE_SELECTOR_PROPERTY_NAME, {})
 
             if intent_target in available_response_selector_types:
                 response_prediction_key = intent_target

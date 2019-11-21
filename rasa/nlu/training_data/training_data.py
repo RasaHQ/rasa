@@ -9,7 +9,10 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
 import rasa.nlu.utils
 import rasa.utils.common as rasa_utils
-from rasa.nlu.constants import RESPONSE_ATTRIBUTE, RESPONSE_KEY_ATTRIBUTE
+from rasa.nlu.constants import (
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_RESPONSE_KEY_ATTRIBUTE,
+)
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.utils import list_to_str
@@ -177,7 +180,7 @@ class TrainingData:
     def fill_response_phrases(self):
         """Set response phrase for all examples by looking up NLG stories"""
         for example in self.training_examples:
-            response_key = example.get(RESPONSE_KEY_ATTRIBUTE)
+            response_key = example.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE)
             # if response_key is None, that means the corresponding intent is not a retrieval intent
             # and hence no response text needs to be fetched.
             # If response_key is set, fetch the corresponding response text
@@ -187,7 +190,7 @@ class TrainingData:
                 assistant_utterances = self.nlg_stories.get(story_lookup_intent, [])
                 if assistant_utterances:
                     # selecting only first assistant utterance for now
-                    example.set(RESPONSE_ATTRIBUTE, assistant_utterances[0])
+                    example.set(MESSAGE_RESPONSE_ATTRIBUTE, assistant_utterances[0])
                 else:
                     raise ValueError(
                         "No response phrases found for {}. Check training data "
@@ -382,9 +385,11 @@ class TrainingData:
 
         nlg_stories = {}
         for ex in examples:
-            if ex.get(RESPONSE_KEY_ATTRIBUTE) and ex.get(RESPONSE_ATTRIBUTE):
+            if ex.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE) and ex.get(
+                MESSAGE_RESPONSE_ATTRIBUTE
+            ):
                 nlg_stories[ex.get_combined_intent_response_key()] = [
-                    ex.get(RESPONSE_ATTRIBUTE)
+                    ex.get(MESSAGE_RESPONSE_ATTRIBUTE)
                 ]
         return nlg_stories
 

@@ -9,8 +9,8 @@ from rasa.nlu.training_data.formats.readerwriter import (
 )
 from rasa.nlu.utils import build_entity
 from rasa.nlu.constants import (
-    INTENT_ATTRIBUTE,
-    RESPONSE_KEY_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_RESPONSE_KEY_ATTRIBUTE,
     RESPONSE_IDENTIFIER_DELIMITER,
 )
 
@@ -214,16 +214,16 @@ class MarkdownWriter(TrainingDataWriter):
         # Sort training data by intent
         training_examples = sorted(
             [e.as_dict_nlu() for e in training_data.training_examples],
-            key=lambda k: k[INTENT_ATTRIBUTE],
+            key=lambda k: k[MESSAGE_INTENT_ATTRIBUTE],
         )
         md = ""
         for i, example in enumerate(training_examples):
-            intent = training_examples[i - 1][INTENT_ATTRIBUTE]
-            if i == 0 or intent != example[INTENT_ATTRIBUTE]:
+            intent = training_examples[i - 1][MESSAGE_INTENT_ATTRIBUTE]
+            if i == 0 or intent != example[MESSAGE_INTENT_ATTRIBUTE]:
                 md += self._generate_section_header_md(
                     INTENT,
-                    example[INTENT_ATTRIBUTE],
-                    example.get(RESPONSE_KEY_ATTRIBUTE, None),
+                    example[MESSAGE_INTENT_ATTRIBUTE],
+                    example.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE, None),
                     i != 0,
                 )
 

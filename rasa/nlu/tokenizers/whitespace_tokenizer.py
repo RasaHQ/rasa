@@ -6,19 +6,19 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    RESPONSE_ATTRIBUTE,
-    INTENT_ATTRIBUTE,
-    TEXT_ATTRIBUTE,
-    TOKEN_NAMES,
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_TOKEN_NAMES,
     ATTRIBUTES,
-    SPACY_FEATURE_NAMES,
-    FEATURE_NAMES,
+    MESSAGE_SPACY_FEATURE_NAMES,
+    MESSAGE_VECTOR_FEATURE_NAMES,
 )
 
 
 class WhitespaceTokenizer(Tokenizer, Component):
 
-    provides = [TOKEN_NAMES[attribute] for attribute in ATTRIBUTES]
+    provides = [MESSAGE_TOKEN_NAMES[attribute] for attribute in ATTRIBUTES]
 
     defaults = {
         # Flag to check whether to split intents
@@ -48,20 +48,24 @@ class WhitespaceTokenizer(Tokenizer, Component):
             for attribute in ATTRIBUTES:
                 if example.get(attribute) is not None:
                     example.set(
-                        TOKEN_NAMES[attribute],
+                        MESSAGE_TOKEN_NAMES[attribute],
                         self.tokenize(example.get(attribute), attribute),
                     )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
-        message.set(TOKEN_NAMES[TEXT_ATTRIBUTE], self.tokenize(message.text))
+        message.set(
+            MESSAGE_TOKEN_NAMES[MESSAGE_TEXT_ATTRIBUTE], self.tokenize(message.text)
+        )
 
-    def tokenize(self, text: Text, attribute: Text = TEXT_ATTRIBUTE) -> List[Token]:
+    def tokenize(
+        self, text: Text, attribute: Text = MESSAGE_TEXT_ATTRIBUTE
+    ) -> List[Token]:
 
         if not self.case_sensitive:
             text = text.lower()
         # remove 'not a word character' if
-        if attribute != INTENT_ATTRIBUTE:
+        if attribute != MESSAGE_INTENT_ATTRIBUTE:
             words = re.sub(
                 # there is a space or an end of a string after it
                 r"[^\w#@&]+(?=\s|$)|"

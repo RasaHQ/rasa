@@ -11,13 +11,13 @@ from rasa.nlu.tokenizers import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 from rasa.nlu.constants import (
-    RESPONSE_ATTRIBUTE,
-    INTENT_ATTRIBUTE,
-    TEXT_ATTRIBUTE,
-    TOKEN_NAMES,
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_TOKEN_NAMES,
     ATTRIBUTES,
-    SPACY_FEATURE_NAMES,
-    FEATURE_NAMES,
+    MESSAGE_SPACY_FEATURE_NAMES,
+    MESSAGE_VECTOR_FEATURE_NAMES,
 )
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ if typing.TYPE_CHECKING:
 
 class JiebaTokenizer(Tokenizer, Component):
 
-    provides = [TOKEN_NAMES[attribute] for attribute in ATTRIBUTES]
+    provides = [MESSAGE_TOKEN_NAMES[attribute] for attribute in ATTRIBUTES]
 
     language_list = ["zh"]
 
@@ -90,24 +90,25 @@ class JiebaTokenizer(Tokenizer, Component):
 
                 if example.get(attribute) is not None:
                     example.set(
-                        TOKEN_NAMES[attribute],
+                        MESSAGE_TOKEN_NAMES[attribute],
                         self.tokenize(example.get(attribute), attribute),
                     )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set(
-            TOKEN_NAMES[TEXT_ATTRIBUTE], self.tokenize(message.text, TEXT_ATTRIBUTE)
+            MESSAGE_TOKEN_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            self.tokenize(message.text, MESSAGE_TEXT_ATTRIBUTE),
         )
 
     def preprocess_text(self, text, attribute):
 
-        if attribute == INTENT_ATTRIBUTE and self.intent_tokenization_flag:
+        if attribute == MESSAGE_INTENT_ATTRIBUTE and self.intent_tokenization_flag:
             return " ".join(text.split(self.intent_split_symbol))
         else:
             return text
 
-    def tokenize(self, text: Text, attribute=TEXT_ATTRIBUTE) -> List[Token]:
+    def tokenize(self, text: Text, attribute=MESSAGE_TEXT_ATTRIBUTE) -> List[Token]:
         import jieba
 
         text = self.preprocess_text(text, attribute)

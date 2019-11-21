@@ -7,14 +7,14 @@ from rasa.nlu.tokenizers import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 from rasa.nlu.constants import (
-    RESPONSE_ATTRIBUTE,
-    INTENT_ATTRIBUTE,
-    TEXT_ATTRIBUTE,
-    TOKEN_NAMES,
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_TOKEN_NAMES,
     ATTRIBUTES,
-    SPACY_FEATURE_NAMES,
-    FEATURE_NAMES,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
+    MESSAGE_SPACY_FEATURE_NAMES,
+    MESSAGE_VECTOR_FEATURE_NAMES,
+    SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 
 if typing.TYPE_CHECKING:
@@ -23,10 +23,13 @@ if typing.TYPE_CHECKING:
 
 class SpacyTokenizer(Tokenizer, Component):
 
-    provides = [TOKEN_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
+    provides = [
+        MESSAGE_TOKEN_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
+    ]
 
     requires = [
-        SPACY_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
+        MESSAGE_SPACY_FEATURE_NAMES[attribute]
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
 
     def train(
@@ -35,22 +38,24 @@ class SpacyTokenizer(Tokenizer, Component):
 
         for example in training_data.training_examples:
 
-            for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
 
                 attribute_doc = self.get_doc(example, attribute)
 
                 if attribute_doc is not None:
-                    example.set(TOKEN_NAMES[attribute], self.tokenize(attribute_doc))
+                    example.set(
+                        MESSAGE_TOKEN_NAMES[attribute], self.tokenize(attribute_doc)
+                    )
 
     def get_doc(self, message, attribute):
 
-        return message.get(SPACY_FEATURE_NAMES[attribute])
+        return message.get(MESSAGE_SPACY_FEATURE_NAMES[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set(
-            TOKEN_NAMES[TEXT_ATTRIBUTE],
-            self.tokenize(self.get_doc(message, TEXT_ATTRIBUTE)),
+            MESSAGE_TOKEN_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            self.tokenize(self.get_doc(message, MESSAGE_TEXT_ATTRIBUTE)),
         )
 
     def tokenize(self, doc: "Doc") -> typing.List[Token]:

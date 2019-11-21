@@ -11,21 +11,21 @@ if typing.TYPE_CHECKING:
     import mitie
 
 from rasa.nlu.constants import (
-    RESPONSE_ATTRIBUTE,
-    INTENT_ATTRIBUTE,
-    TEXT_ATTRIBUTE,
-    TOKEN_NAMES,
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_TOKEN_NAMES,
     ATTRIBUTES,
-    SPACY_FEATURE_NAMES,
-    FEATURE_NAMES,
+    MESSAGE_SPACY_FEATURE_NAMES,
+    MESSAGE_VECTOR_FEATURE_NAMES,
 )
 
 
 class MitieFeaturizer(Featurizer):
 
-    provides = [FEATURE_NAMES[attribute] for attribute in ATTRIBUTES]
+    provides = [MESSAGE_VECTOR_FEATURE_NAMES[attribute] for attribute in ATTRIBUTES]
 
-    requires = [TOKEN_NAMES[attribute] for attribute in ATTRIBUTES] + [
+    requires = [MESSAGE_TOKEN_NAMES[attribute] for attribute in ATTRIBUTES] + [
         "mitie_feature_extractor"
     ]
 
@@ -39,7 +39,7 @@ class MitieFeaturizer(Featurizer):
 
     def get_tokens_by_attribute(self, example, attribute):
 
-        return example.get(TOKEN_NAMES[attribute])
+        return example.get(MESSAGE_TOKEN_NAMES[attribute])
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
@@ -57,9 +57,9 @@ class MitieFeaturizer(Featurizer):
                         attribute_tokens, mitie_feature_extractor
                     )
                     example.set(
-                        FEATURE_NAMES[attribute],
+                        MESSAGE_VECTOR_FEATURE_NAMES[attribute],
                         self._combine_with_existing_features(
-                            example, features, FEATURE_NAMES[attribute]
+                            example, features, MESSAGE_VECTOR_FEATURE_NAMES[attribute]
                         ),
                     )
 
@@ -67,12 +67,13 @@ class MitieFeaturizer(Featurizer):
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         features = self.features_for_tokens(
-            message.get(TOKEN_NAMES[TEXT_ATTRIBUTE]), mitie_feature_extractor
+            message.get(MESSAGE_TOKEN_NAMES[MESSAGE_TEXT_ATTRIBUTE]),
+            mitie_feature_extractor,
         )
         message.set(
-            FEATURE_NAMES[TEXT_ATTRIBUTE],
+            MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
             self._combine_with_existing_features(
-                message, features, FEATURE_NAMES[TEXT_ATTRIBUTE]
+                message, features, MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
             ),
         )
 

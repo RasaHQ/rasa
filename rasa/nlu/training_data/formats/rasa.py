@@ -13,9 +13,9 @@ from rasa.nlu.training_data.formats.readerwriter import (
 from rasa.nlu.training_data.util import transform_entity_synonyms
 from rasa.nlu.utils import json_to_string
 from rasa.nlu.constants import (
-    INTENT_ATTRIBUTE,
-    RESPONSE_KEY_ATTRIBUTE,
-    RESPONSE_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_RESPONSE_KEY_ATTRIBUTE,
+    MESSAGE_RESPONSE_ATTRIBUTE,
     RESPONSE_IDENTIFIER_DELIMITER,
 )
 

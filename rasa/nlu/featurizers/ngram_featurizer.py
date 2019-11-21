@@ -15,7 +15,11 @@ from rasa.nlu.featurizers import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
 import rasa.utils.io
-from rasa.nlu.constants import SPACY_FEATURE_NAMES, TEXT_ATTRIBUTE, FEATURE_NAMES
+from rasa.nlu.constants import (
+    MESSAGE_SPACY_FEATURE_NAMES,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_VECTOR_FEATURE_NAMES,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +29,9 @@ if typing.TYPE_CHECKING:
 
 class NGramFeaturizer(Featurizer):
 
-    provides = [FEATURE_NAMES[TEXT_ATTRIBUTE]]
+    provides = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
-    requires = [SPACY_FEATURE_NAMES[TEXT_ATTRIBUTE]]
+    requires = [MESSAGE_SPACY_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     defaults = {
         # defines the maximum number of ngrams to collect and add
@@ -71,12 +75,12 @@ class NGramFeaturizer(Featurizer):
 
         for example in training_data.training_examples:
             updated = self._text_features_with_ngrams(example, self.best_num_ngrams)
-            example.set(FEATURE_NAMES[TEXT_ATTRIBUTE], updated)
+            example.set(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE], updated)
 
     def process(self, message: Message, **kwargs: Any):
 
         updated = self._text_features_with_ngrams(message, self.best_num_ngrams)
-        message.set(FEATURE_NAMES[TEXT_ATTRIBUTE], updated)
+        message.set(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE], updated)
 
     def _text_features_with_ngrams(self, message, max_ngrams):
 
@@ -86,7 +90,7 @@ class NGramFeaturizer(Featurizer):
             extras = np.array(self._ngrams_in_sentence(message, ngrams_to_use))
             return self._combine_with_existing_features(message, extras)
         else:
-            return message.get(FEATURE_NAMES[TEXT_ATTRIBUTE])
+            return message.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
 
     @classmethod
     def load(
@@ -168,7 +172,9 @@ class NGramFeaturizer(Featurizer):
 
         cleaned_tokens = [
             token
-            for token in example.get(SPACY_FEATURE_NAMES[TEXT_ATTRIBUTE])
+            for token in example.get(
+                MESSAGE_SPACY_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+            )
             if self._is_ngram_worthy(token)
         ]
 
@@ -319,9 +325,10 @@ class NGramFeaturizer(Featurizer):
     def _collect_features(examples):
         if examples:
             collected_features = [
-                e.get(FEATURE_NAMES[TEXT_ATTRIBUTE])
+                e.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
                 for e in examples
-                if e.get(FEATURE_NAMES[TEXT_ATTRIBUTE]) is not None
+                if e.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+                is not None
             ]
         else:
             collected_features = []

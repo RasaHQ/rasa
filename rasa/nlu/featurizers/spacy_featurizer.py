@@ -11,16 +11,16 @@ if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
 
 from rasa.nlu.constants import (
-    RESPONSE_ATTRIBUTE,
-    INTENT_ATTRIBUTE,
-    TEXT_ATTRIBUTE,
-    TOKEN_NAMES,
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_TOKEN_NAMES,
     ATTRIBUTES,
-    SPACY_FEATURE_NAMES,
-    FEATURE_NAMES,
-    ENTITIES_ATTRIBUTE,
-    NER_FEATURES_ATTRIBUTE,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
+    MESSAGE_SPACY_FEATURE_NAMES,
+    MESSAGE_VECTOR_FEATURE_NAMES,
+    MESSAGE_ENTITIES_ATTRIBUTE,
+    MESSAGE_NER_FEATURES_ATTRIBUTE,
+    SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 
 
@@ -37,11 +37,13 @@ def features_for_doc(doc: "Doc") -> np.ndarray:
 class SpacyFeaturizer(Featurizer):
 
     provides = [
-        FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
-    ] + [NER_FEATURES_ATTRIBUTE]
+        MESSAGE_VECTOR_FEATURE_NAMES[attribute]
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
+    ] + [MESSAGE_NER_FEATURES_ATTRIBUTE]
 
     requires = [
-        SPACY_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
+        MESSAGE_SPACY_FEATURE_NAMES[attribute]
+        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
 
     defaults = {"ner_feature_vectors": False}
@@ -57,13 +59,13 @@ class SpacyFeaturizer(Featurizer):
     ) -> None:
 
         for example in training_data.intent_examples:
-            for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
                 self._set_spacy_features(example, attribute)
             self._set_spacy_ner_features(example)
 
     def get_doc(self, message, attribute):
 
-        return message.get(SPACY_FEATURE_NAMES[attribute])
+        return message.get(MESSAGE_SPACY_FEATURE_NAMES[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
@@ -72,23 +74,27 @@ class SpacyFeaturizer(Featurizer):
 
     def _set_spacy_ner_features(self, message: Message):
         """If we want to use spacy as an NER featurizer, set token vectors"""
-        doc = message.get(SPACY_FEATURE_NAMES[TEXT_ATTRIBUTE])
+        doc = message.get(MESSAGE_SPACY_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
         if self.ner_feature_vectors:
             ner_features = np.array([t.vector for t in doc])
         else:
             ner_features = np.array([[] for t in doc])
         combined_features = self._combine_with_existing_features(
-            message, ner_features, FEATURE_NAMES[ENTITIES_ATTRIBUTE]
+            message,
+            ner_features,
+            MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_ENTITIES_ATTRIBUTE],
         )
-        message.set(FEATURE_NAMES[ENTITIES_ATTRIBUTE], combined_features)
+        message.set(
+            MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_ENTITIES_ATTRIBUTE], combined_features
+        )
 
-    def _set_spacy_features(self, message, attribute=TEXT_ATTRIBUTE):
+    def _set_spacy_features(self, message, attribute=MESSAGE_TEXT_ATTRIBUTE):
         """Adds the spacy word vectors to the messages features."""
 
         message_attribute_doc = self.get_doc(message, attribute)
         if message_attribute_doc is not None:
             fs = features_for_doc(message_attribute_doc)
             features = self._combine_with_existing_features(
-                message, fs, FEATURE_NAMES[attribute]
+                message, fs, MESSAGE_VECTOR_FEATURE_NAMES[attribute]
             )
-            message.set(FEATURE_NAMES[attribute], features)
+            message.set(MESSAGE_VECTOR_FEATURE_NAMES[attribute], features)

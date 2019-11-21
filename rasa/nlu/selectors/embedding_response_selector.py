@@ -5,16 +5,16 @@ from typing import Any, Dict, Optional, Text
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.core.actions.action import RESPOND_PREFIX
 from rasa.nlu.constants import (
-    RESPONSE_ATTRIBUTE,
-    INTENT_ATTRIBUTE,
-    TEXT_ATTRIBUTE,
-    TOKEN_NAMES,
+    MESSAGE_RESPONSE_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_TOKEN_NAMES,
     ATTRIBUTES,
-    SPACY_FEATURE_NAMES,
-    FEATURE_NAMES,
+    MESSAGE_SPACY_FEATURE_NAMES,
+    MESSAGE_VECTOR_FEATURE_NAMES,
     OPEN_UTTERANCE_PREDICTION_KEY,
     OPEN_UTTERANCE_RANKING_KEY,
-    RESPONSE_SELECTOR_PROPERTY_NAME,
+    MESSAGE_SELECTOR_PROPERTY_NAME,
     DEFAULT_OPEN_UTTERANCE_TYPE,
 )
 
@@ -50,7 +50,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     provides = ["response", "response_ranking"]
 
-    requires = [FEATURE_NAMES[TEXT_ATTRIBUTE]]
+    requires = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -129,10 +129,10 @@ class ResponseSelector(EmbeddingIntentClassifier):
         message: "Message", prediction_dict: Dict[Text, Any], selector_key: Text
     ):
 
-        message_selector_properties = message.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
+        message_selector_properties = message.get(MESSAGE_SELECTOR_PROPERTY_NAME, {})
         message_selector_properties[selector_key] = prediction_dict
         message.set(
-            RESPONSE_SELECTOR_PROPERTY_NAME,
+            MESSAGE_SELECTOR_PROPERTY_NAME,
             message_selector_properties,
             add_to_output=True,
         )
@@ -144,15 +144,17 @@ class ResponseSelector(EmbeddingIntentClassifier):
             training_data = training_data.filter_by_intent(self.retrieval_intent)
 
         label_id_dict = self._create_label_id_dict(
-            training_data, attribute=RESPONSE_ATTRIBUTE
+            training_data, attribute=MESSAGE_RESPONSE_ATTRIBUTE
         )
 
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
         self._encoded_all_label_ids = self._create_encoded_label_ids(
             training_data,
             label_id_dict,
-            attribute=RESPONSE_ATTRIBUTE,
-            attribute_feature_name=FEATURE_NAMES[RESPONSE_ATTRIBUTE],
+            attribute=MESSAGE_RESPONSE_ATTRIBUTE,
+            attribute_feature_name=MESSAGE_VECTOR_FEATURE_NAMES[
+                MESSAGE_RESPONSE_ATTRIBUTE
+            ],
         )
 
         # check if number of negatives is less than number of label_ids
@@ -166,7 +168,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
         self.num_neg = min(self.num_neg, self._encoded_all_label_ids.shape[0] - 1)
 
         session_data = self._create_session_data(
-            training_data, label_id_dict, attribute=RESPONSE_ATTRIBUTE
+            training_data, label_id_dict, attribute=MESSAGE_RESPONSE_ATTRIBUTE
         )
 
         self.check_input_dimension_consistency(session_data)

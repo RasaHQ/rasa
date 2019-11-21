@@ -27,7 +27,6 @@ Changed
 -------
 - Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
 - Upgraded ``jsonschema`` version
-- Removed ``MESSAGE`` prefix from the names of message attribute related constants in NLU
 
 Removed
 -------
