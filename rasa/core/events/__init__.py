@@ -212,6 +212,8 @@ class UserUttered(Event):
         self.input_channel = input_channel
         self.message_id = message_id
 
+        super().__init__(timestamp, metadata)
+
         if parse_data:
             self.parse_data = parse_data
         else:
@@ -220,9 +222,8 @@ class UserUttered(Event):
                 "entities": self.entities,
                 "text": text,
                 "message_id": self.message_id,
+                "metadata": self.metadata
             }
-
-        super().__init__(timestamp, metadata)
 
     @staticmethod
     def _from_parse_data(

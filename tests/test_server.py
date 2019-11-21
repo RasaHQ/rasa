@@ -546,7 +546,7 @@ def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
         "intent": {},
         "entities": [],
         "message_id": None,
-        "metadata": None,
+        "metadata": {},
     }
 
 
