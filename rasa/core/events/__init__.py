@@ -86,6 +86,15 @@ class Event:
         self.timestamp = timestamp or time.time()
         self._metadata = metadata or {}
 
+    @property
+    def metadata(self):
+        # needed for backwards compatibility <1.0.0 - previously pickled events
+        # won't have the `_metadata` attribute
+        if hasattr(self, "_metadata"):
+            return self._metadata
+        else:
+            return {}
+
     def __ne__(self, other: Any) -> bool:
         # Not strictly necessary, but to avoid having both x==y and x!=y
         # True at the same time
@@ -134,7 +143,7 @@ class Event:
         return {
             "event": self.type_name,
             "timestamp": self.timestamp,
-            "metadata": self._metadata,
+            "metadata": self.metadata,
         }
 
     @classmethod
@@ -331,15 +340,6 @@ class BotUttered(Event):
         self.text = text
         self.data = data or {}
         super().__init__(timestamp, metadata)
-
-    @property
-    def metadata(self):
-        # needed for backwards compatibility <1.0.0 - previously pickled events
-        # won't have the `_metadata` attribute
-        if hasattr(self, "_metadata"):
-            return self._metadata
-        else:
-            return {}
 
     def __members(self):
         data_no_nones = utils.remove_none_values(self.data)
