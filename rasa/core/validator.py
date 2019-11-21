@@ -188,9 +188,7 @@ class Validator:
 
         # Tally story names, e.g. {"story_1": 3, "story_2": 1, ...}
         name_tally = {}
-        print(self.story_graph.as_story_string())
         for step in self.story_graph.story_steps:
-            # print(step.block_name)
             if step.block_name in name_tally:
                 name_tally[step.block_name] += 1
             else:
