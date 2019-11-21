@@ -12,7 +12,7 @@ from rasa.nlu.featurizers import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
 import rasa.utils.io
 from rasa.nlu.constants import (
-    MESSAGE_TOKEN_NAMES,
+    MESSAGE_TOKENS_NAMES,
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_VECTOR_FEATURE_NAMES,
 )
@@ -27,7 +27,7 @@ class RegexFeaturizer(Featurizer):
 
     provides = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
-    requires = [MESSAGE_TOKEN_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = [MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     def __init__(self, component_config=None, known_patterns=None, lookup_tables=None):
 
@@ -82,7 +82,7 @@ class RegexFeaturizer(Featurizer):
             matches = list(matches)
             found_patterns.append(False)
             for token_index, t in enumerate(
-                message.get(MESSAGE_TOKEN_NAMES[MESSAGE_TEXT_ATTRIBUTE], [])
+                message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], [])
             ):
                 patterns = t.get("pattern", default={})
                 patterns[exp["name"]] = False

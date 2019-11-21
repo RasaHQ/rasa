@@ -14,9 +14,9 @@ from rasa.nlu.constants import (
     MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKEN_NAMES,
-    ATTRIBUTES,
-    MESSAGE_SPACY_FEATURE_NAMES,
+    MESSAGE_TOKENS_NAMES,
+    MESSAGE_ATTRIBUTES,
+    MESSAGE_SPACY_FEATURES_NAMES,
     MESSAGE_VECTOR_FEATURE_NAMES,
     MESSAGE_ENTITIES_ATTRIBUTE,
     MESSAGE_NER_FEATURES_ATTRIBUTE,
@@ -42,7 +42,7 @@ class SpacyFeaturizer(Featurizer):
     ] + [MESSAGE_NER_FEATURES_ATTRIBUTE]
 
     requires = [
-        MESSAGE_SPACY_FEATURE_NAMES[attribute]
+        MESSAGE_SPACY_FEATURES_NAMES[attribute]
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
 
@@ -65,7 +65,7 @@ class SpacyFeaturizer(Featurizer):
 
     def get_doc(self, message, attribute):
 
-        return message.get(MESSAGE_SPACY_FEATURE_NAMES[attribute])
+        return message.get(MESSAGE_SPACY_FEATURES_NAMES[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
@@ -74,7 +74,7 @@ class SpacyFeaturizer(Featurizer):
 
     def _set_spacy_ner_features(self, message: Message):
         """If we want to use spacy as an NER featurizer, set token vectors"""
-        doc = message.get(MESSAGE_SPACY_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+        doc = message.get(MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE])
         if self.ner_feature_vectors:
             ner_features = np.array([t.vector for t in doc])
         else:

@@ -16,7 +16,7 @@ from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
 import rasa.utils.io
 from rasa.nlu.constants import (
-    MESSAGE_SPACY_FEATURE_NAMES,
+    MESSAGE_SPACY_FEATURES_NAMES,
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_VECTOR_FEATURE_NAMES,
 )
@@ -31,7 +31,7 @@ class NGramFeaturizer(Featurizer):
 
     provides = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
-    requires = [MESSAGE_SPACY_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = [MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
     defaults = {
         # defines the maximum number of ngrams to collect and add
@@ -173,7 +173,7 @@ class NGramFeaturizer(Featurizer):
         cleaned_tokens = [
             token
             for token in example.get(
-                MESSAGE_SPACY_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+                MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE]
             )
             if self._is_ngram_worthy(token)
         ]

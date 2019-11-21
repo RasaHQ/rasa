@@ -18,9 +18,9 @@ from rasa.nlu.constants import (
     MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKEN_NAMES,
-    ATTRIBUTES,
-    MESSAGE_SPACY_FEATURE_NAMES,
+    MESSAGE_TOKENS_NAMES,
+    MESSAGE_ATTRIBUTES,
+    MESSAGE_SPACY_FEATURES_NAMES,
     MESSAGE_VECTOR_FEATURE_NAMES,
     SPACY_FEATURIZABLE_ATTRIBUTES,
 )
@@ -39,7 +39,9 @@ class CountVectorsFeaturizer(Featurizer):
     from https://arxiv.org/abs/1810.07150.
     """
 
-    provides = [MESSAGE_VECTOR_FEATURE_NAMES[attribute] for attribute in ATTRIBUTES]
+    provides = [
+        MESSAGE_VECTOR_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES
+    ]
 
     requires = []
 
@@ -186,7 +188,9 @@ class CountVectorsFeaturizer(Featurizer):
         """Create a list of attributes that should be featurized."""
 
         # intents should be featurized only by word level count vectorizer
-        return ATTRIBUTES if analyzer == "word" else SPACY_FEATURIZABLE_ATTRIBUTES
+        return (
+            MESSAGE_ATTRIBUTES if analyzer == "word" else SPACY_FEATURIZABLE_ATTRIBUTES
+        )
 
     def __init__(
         self,
@@ -278,15 +282,15 @@ class CountVectorsFeaturizer(Featurizer):
         """Get text tokens of an attribute of a message"""
 
         if attribute in SPACY_FEATURIZABLE_ATTRIBUTES and message.get(
-            MESSAGE_SPACY_FEATURE_NAMES[attribute]
+            MESSAGE_SPACY_FEATURES_NAMES[attribute]
         ):  # if lemmatize is possible
             tokens = [
-                t.lemma_ for t in message.get(MESSAGE_SPACY_FEATURE_NAMES[attribute])
+                t.lemma_ for t in message.get(MESSAGE_SPACY_FEATURES_NAMES[attribute])
             ]
         elif message.get(
-            MESSAGE_TOKEN_NAMES[attribute]
+            MESSAGE_TOKENS_NAMES[attribute]
         ):  # if directly tokens is provided
-            tokens = [t.text for t in message.get(MESSAGE_TOKEN_NAMES[attribute])]
+            tokens = [t.text for t in message.get(MESSAGE_TOKENS_NAMES[attribute])]
         else:
             tokens = message.get(attribute).split()
         return tokens

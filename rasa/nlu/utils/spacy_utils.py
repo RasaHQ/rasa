@@ -16,14 +16,14 @@ if typing.TYPE_CHECKING:
 
 from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_SPACY_FEATURE_NAMES,
+    MESSAGE_SPACY_FEATURES_NAMES,
     SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 
 
 class SpacyNLP(Component):
     provides = ["spacy_nlp"] + [
-        MESSAGE_SPACY_FEATURE_NAMES[attribute]
+        MESSAGE_SPACY_FEATURES_NAMES[attribute]
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
 
@@ -231,13 +231,13 @@ class SpacyNLP(Component):
                     # If length is 0, that means the initial text feature was None and was replaced by ''
                     # in preprocess method
                     example.set(
-                        MESSAGE_SPACY_FEATURE_NAMES[attribute], example_attribute_doc
+                        MESSAGE_SPACY_FEATURES_NAMES[attribute], example_attribute_doc
                     )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set(
-            MESSAGE_SPACY_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE],
             self.doc_for_text(message.text),
         )
 

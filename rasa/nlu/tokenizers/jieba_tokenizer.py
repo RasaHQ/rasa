@@ -14,9 +14,9 @@ from rasa.nlu.constants import (
     MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKEN_NAMES,
-    ATTRIBUTES,
-    MESSAGE_SPACY_FEATURE_NAMES,
+    MESSAGE_TOKENS_NAMES,
+    MESSAGE_ATTRIBUTES,
+    MESSAGE_SPACY_FEATURES_NAMES,
     MESSAGE_VECTOR_FEATURE_NAMES,
 )
 
@@ -29,7 +29,7 @@ if typing.TYPE_CHECKING:
 
 class JiebaTokenizer(Tokenizer, Component):
 
-    provides = [MESSAGE_TOKEN_NAMES[attribute] for attribute in ATTRIBUTES]
+    provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     language_list = ["zh"]
 
@@ -86,18 +86,18 @@ class JiebaTokenizer(Tokenizer, Component):
 
         for example in training_data.training_examples:
 
-            for attribute in ATTRIBUTES:
+            for attribute in MESSAGE_ATTRIBUTES:
 
                 if example.get(attribute) is not None:
                     example.set(
-                        MESSAGE_TOKEN_NAMES[attribute],
+                        MESSAGE_TOKENS_NAMES[attribute],
                         self.tokenize(example.get(attribute), attribute),
                     )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set(
-            MESSAGE_TOKEN_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE],
             self.tokenize(message.text, MESSAGE_TEXT_ATTRIBUTE),
         )
 

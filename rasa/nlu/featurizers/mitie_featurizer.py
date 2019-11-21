@@ -14,18 +14,20 @@ from rasa.nlu.constants import (
     MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKEN_NAMES,
-    ATTRIBUTES,
-    MESSAGE_SPACY_FEATURE_NAMES,
+    MESSAGE_TOKENS_NAMES,
+    MESSAGE_ATTRIBUTES,
+    MESSAGE_SPACY_FEATURES_NAMES,
     MESSAGE_VECTOR_FEATURE_NAMES,
 )
 
 
 class MitieFeaturizer(Featurizer):
 
-    provides = [MESSAGE_VECTOR_FEATURE_NAMES[attribute] for attribute in ATTRIBUTES]
+    provides = [
+        MESSAGE_VECTOR_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES
+    ]
 
-    requires = [MESSAGE_TOKEN_NAMES[attribute] for attribute in ATTRIBUTES] + [
+    requires = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES] + [
         "mitie_feature_extractor"
     ]
 
@@ -39,7 +41,7 @@ class MitieFeaturizer(Featurizer):
 
     def get_tokens_by_attribute(self, example, attribute):
 
-        return example.get(MESSAGE_TOKEN_NAMES[attribute])
+        return example.get(MESSAGE_TOKENS_NAMES[attribute])
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
@@ -48,7 +50,7 @@ class MitieFeaturizer(Featurizer):
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         for example in training_data.intent_examples:
 
-            for attribute in ATTRIBUTES:
+            for attribute in MESSAGE_ATTRIBUTES:
 
                 attribute_tokens = self.get_tokens_by_attribute(example, attribute)
                 if attribute_tokens is not None:
@@ -67,7 +69,7 @@ class MitieFeaturizer(Featurizer):
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         features = self.features_for_tokens(
-            message.get(MESSAGE_TOKEN_NAMES[MESSAGE_TEXT_ATTRIBUTE]),
+            message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]),
             mitie_feature_extractor,
         )
         message.set(
