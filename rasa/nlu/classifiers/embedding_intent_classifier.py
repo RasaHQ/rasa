@@ -143,6 +143,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         "intent_classification": True,
         # if true named entity recognition is trained and entities predicted
         "named_entity_recognition": True,
+        "masked_lm_loss": False,
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -240,6 +241,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.named_entity_recognition = self.component_config[
             "named_entity_recognition"
         ]
+        self.masked_lm_loss = self.component_config["masked_lm_loss"]
 
     # package safety checks
     @classmethod
@@ -591,19 +593,21 @@ class EmbeddingIntentClassifier(EntityExtractor):
         session_data = {}
         self._add_to_session_data(session_data, "text_features", [X_sparse, X_dense])
         self._add_to_session_data(session_data, "intent_features", [Y_sparse, Y_dense])
+        if label_attribute and (
+            "intent_features" not in session_data or not session_data["intent_features"]
+        ):
+            # no label features are present, get default features from _label_data
+            session_data["intent_features"] = self.use_default_label_features(label_ids)
+
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         self._add_to_session_data(
             session_data, "intent_ids", [np.expand_dims(label_ids, -1)]
         )
         self._add_to_session_data(session_data, "tag_ids", [tag_ids])
-        self._add_mask_to_session_data(session_data, "text_mask", "text_features")
 
-        if label_attribute and (
-            "intent_features" not in session_data or not session_data["intent_features"]
-        ):
-            # no label features are present, get default features from _label_data
-            session_data["intent_features"] = self.use_default_label_features(label_ids)
+        self._add_mask_to_session_data(session_data, "text_mask", "text_features")
+        self._add_mask_to_session_data(session_data, "intent_mask", "intent_features")
 
         return session_data
 
@@ -630,7 +634,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
     def combine_sparse_dense_features(
-        self, features: List[Union["tf.Tensor", "tf.SparseTensor"]], name: Text
+        self,
+        features: List[Union["tf.Tensor", "tf.SparseTensor"]],
+        mask: "tf.Tensor",
+        name: Text,
     ) -> "tf.Tensor":
 
         dense_features = []
@@ -654,7 +661,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         #     self._in_layer_norm[name] = tf.keras.layers.LayerNormalization(name=name)
         # return self._in_layer_norm[name](tf.concat(dense_features, axis=-1))
 
-        return tf.concat(dense_features, axis=-1)
+        return tf.concat(dense_features, axis=-1) * mask
 
     def _create_tf_sequence(self, a_in, mask) -> "tf.Tensor":
         """Create sequence level embedding and mask."""
@@ -698,34 +705,93 @@ class EmbeddingIntentClassifier(EntityExtractor):
         batch_data, _ = train_utils.batch_to_session_data(self.batch_in, session_data)
         label_data, _ = train_utils.batch_to_session_data(label_batch, self._label_data)
 
-        a = self.combine_sparse_dense_features(batch_data["text_features"], "text")
         mask = batch_data["text_mask"][0]
+        a = self.combine_sparse_dense_features(
+            batch_data["text_features"], mask, "text"
+        )
+
+        if self.masked_lm_loss:
+            a_random = (
+                tf.random.uniform(
+                    tf.shape(a), tf.reduce_min(a), tf.reduce_max(a), a.dtype
+                )
+                * mask
+            )
+            # a_shuffle = tf.random.shuffle(a)
+
+            other_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype)
+            other_prob = tf.tile(other_prob, (1, 1, a.shape[-1]))
+            # a_other = tf.stop_gradient(tf.where(other_prob < 0.80, a_random, tf.where(other_prob < 0.90, a_shuffle, a)))
+            a_other = tf.where(other_prob < 0.80, a_random, a)
+
+            lm_mask_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype) * mask
+            lm_mask = tf.greater_equal(lm_mask_prob, 0.85)
+            a_pre = tf.where(tf.tile(lm_mask, (1, 1, a.shape[-1])), a_other, a)
+        else:
+            a_pre = a
+            lm_mask = None
 
         # transformer
-        a = self._create_tf_sequence(a, mask)
+        a_transformed = self._create_tf_sequence(a_pre, mask)
 
         metrics = TrainingMetrics(loss={}, score={})
 
+        if self.masked_lm_loss:
+            loss, acc = self._train_mask_graph(a_transformed, a, lm_mask)
+            metrics.loss["m_loss"] = loss
+            metrics.score["m_acc"] = acc
+
         if self.intent_classification:
             b = self.combine_sparse_dense_features(
-                batch_data["intent_features"], "intent"
+                batch_data["intent_features"], batch_data["intent_mask"][0], "intent"
             )
             all_bs = self.combine_sparse_dense_features(
-                label_data["intent_features"], "intent"
+                label_data["intent_features"], label_data["intent_mask"][0], "intent"
             )
 
-            loss, acc = self._train_intent_graph(a, b, all_bs, mask)
+            loss, acc = self._train_intent_graph(a_transformed, b, all_bs, mask)
             metrics.loss["i_loss"] = loss
             metrics.score["i_acc"] = acc
 
         if self.named_entity_recognition:
-            c = self.combine_sparse_dense_features(batch_data["tag_ids"], "tag")
+            c = self.combine_sparse_dense_features(batch_data["tag_ids"], mask, "tag")
 
-            loss, f1_score = self._train_entity_graph(a, c, mask)
+            loss, f1_score = self._train_entity_graph(a_transformed, c, mask)
             metrics.loss["e_loss"] = loss
             metrics.score["e_f1"] = f1_score
 
         return metrics
+
+    def _train_mask_graph(self, a_transformed, a, lm_mask):
+
+        lm_mask = tf.squeeze(lm_mask, -1)
+        a_t_masked = tf.boolean_mask(a_transformed, lm_mask)
+        a_masked = tf.boolean_mask(a, lm_mask)
+
+        a_t_masked_embed = train_utils.create_tf_embed(
+            a_t_masked, self.embed_dim, self.C2, "a_transformed", self.similarity_type
+        )
+
+        a_embed = train_utils.create_tf_embed(
+            a, self.embed_dim, self.C2, "a", self.similarity_type
+        )
+        a_embed_masked = tf.boolean_mask(a_embed, lm_mask)
+
+        return train_utils.calculate_loss_acc(
+            a_t_masked_embed,
+            a_embed_masked,
+            a_masked,
+            a_embed,
+            a,
+            self.num_neg,
+            None,
+            self.loss_type,
+            self.mu_pos,
+            self.mu_neg,
+            self.use_max_sim_neg,
+            self.C_emb,
+            self.scale_loss,
+        )
 
     def _train_entity_graph(
         self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor"
@@ -833,15 +899,17 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.batch_in, session_data
         )
 
-        a = self.combine_sparse_dense_features(batch_data["text_features"], "text")
         mask = batch_data["text_mask"][0]
+        a = self.combine_sparse_dense_features(
+            batch_data["text_features"], mask, "text"
+        )
 
         # transformer
         a = self._create_tf_sequence(a, mask)
 
         if self.intent_classification:
             b = self.combine_sparse_dense_features(
-                batch_data["intent_features"], "intent"
+                batch_data["intent_features"], batch_data["intent_mask"][0], "intent"
             )
             self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
 
