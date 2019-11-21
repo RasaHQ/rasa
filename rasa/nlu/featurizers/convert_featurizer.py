@@ -46,7 +46,7 @@ class ConveRTFeaturizer(Featurizer):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
-        return ["tensorflow", "tensorflow_text", "tensorflow_hub"]
+        return ["tensorflow_text", "tensorflow_hub"]
 
     def _compute_features(
         self, batch_examples: List[Message], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
