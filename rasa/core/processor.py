@@ -20,6 +20,8 @@ from rasa.core.constants import (
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     USER_INTENT_RESTART,
     UTTER_PREFIX,
+    USER_INTENT_BACK,
+    USER_INTENT_OUT_OF_SCOPE,
 )
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -289,17 +291,28 @@ class MessageProcessor:
             logger.debug(f"Current slot values: \n{slot_values}")
 
     def _log_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
-        """Check if the NLU interpreter picks up intents or entities that aren't in the domain."""
+        """Check if the NLU interpreter picks up intents or entities that aren't recognized."""
 
         domain_is_not_empty = self.domain and not self.domain.is_empty()
-        intent = parse_data["intent"]["name"]
-        if intent and domain_is_not_empty and intent not in self.domain.intents:
-            warnings.warn(
-                f"Interpreter parsed an intent '{intent}' "
-                "that is not defined in the domain."
-            )
 
-        entities = parse_data["entities"]
+        default_intents = [
+            USER_INTENT_RESTART,
+            USER_INTENT_BACK,
+            USER_INTENT_OUT_OF_SCOPE,
+        ]
+
+        intent = parse_data["intent"]["name"]
+        if intent:
+            intent_is_recognized = (
+                domain_is_not_empty and intent in self.domain.intents
+            ) or intent in default_intents
+            if not intent_is_recognized:
+                warnings.warn(
+                    f"Interpreter parsed an intent '{intent}' "
+                    "that is not defined in the domain."
+                )
+
+        entities = parse_data["entities"] or []
         for element in entities:
             entity = element["entity"]
             if entity and domain_is_not_empty and entity not in self.domain.entities:
