@@ -687,7 +687,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         other_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype)
         other_prob = tf.tile(other_prob, (1, 1, a.shape[-1]))
         a_other = tf.where(
-            other_prob < 0.70, a_mask, tf.where(other_prob < 0.90, a_shuffle, a)
+            other_prob < 0.70, a_mask, tf.where(other_prob < 0.80, a_shuffle, a)
         )
 
         lm_mask_prob = (
@@ -757,11 +757,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         if self.masked_lm_loss:
             loss, acc = self._train_mask_graph(a_transformed, a, lm_mask_bool)
-            loss, acc = tf.cond(
-                tf.reduce_any(lm_mask_bool),
-                lambda: (loss, acc),
-                lambda: (tf.constant(0, a.dtype), tf.constant(0, a.dtype)),
-            )
+
             metrics.loss["m_loss"] = loss
             metrics.score["m_acc"] = acc
 
@@ -786,11 +782,18 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return metrics
 
-    def _train_mask_graph(self, a_transformed, a, lm_mask):
+    def _train_mask_graph(self, a_transformed, a, lm_mask_bool):
 
-        lm_mask = tf.squeeze(lm_mask, -1)
-        a_t_masked = tf.boolean_mask(a_transformed, lm_mask)
-        a_masked = tf.boolean_mask(a, lm_mask)
+        # make sure there is at least one element in the mask
+        lm_mask_bool = tf.cond(
+            tf.reduce_any(lm_mask_bool),
+            lambda: lm_mask_bool,
+            lambda: tf.scatter_nd([[0, 0, 0]], [True], tf.shape(lm_mask_bool)),
+        )
+
+        lm_mask_bool = tf.squeeze(lm_mask_bool, -1)
+        a_t_masked = tf.boolean_mask(a_transformed, lm_mask_bool)
+        a_masked = tf.boolean_mask(a, lm_mask_bool)
 
         a_t_masked_embed = train_utils.create_tf_embed(
             a_t_masked, self.embed_dim, self.C2, "a_transformed", self.similarity_type
@@ -799,7 +802,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         a_embed = train_utils.create_tf_embed(
             a, self.embed_dim, self.C2, "a", self.similarity_type
         )
-        a_embed_masked = tf.boolean_mask(a_embed, lm_mask)
+        a_embed_masked = tf.boolean_mask(a_embed, lm_mask_bool)
 
         return train_utils.calculate_loss_acc(
             a_t_masked_embed,
