@@ -161,7 +161,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
                     f"Your config still mentions '{removed_param}'. Tokenization may "
                     f"fail if you specify the parameter here. Please specify the "
                     f"parameter 'intent_tokenization_flag' and 'intent_split_symbol' "
-                    f"in the tokenizer of your NLU pipeline."
+                    f"in the tokenizer of your NLU pipeline.",
+                    DeprecationWarning,
                 )
 
     # init helpers
@@ -651,8 +652,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         # if self._in_layer_norm.get(name) is None:
         #     self._in_layer_norm[name] = tf.keras.layers.LayerNormalization(name=name)
-
         # return self._in_layer_norm[name](tf.concat(dense_features, axis=-1))
+
         return tf.concat(dense_features, axis=-1)
 
     def _create_tf_sequence(self, a_in, mask) -> "tf.Tensor":
@@ -1304,8 +1305,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
             )
 
         else:
-            logger.warning(
-                f"Failed to load nlu model. Maybe path {os.path.abspath(model_dir)} "
-                f"doesn't exist"
+            warnings.warn(
+                f"Failed to load nlu model. Maybe path '{os.path.abspath(model_dir)}' "
+                "doesn't exist."
             )
             return cls(component_config=meta)

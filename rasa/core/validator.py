@@ -1,4 +1,6 @@
 import logging
+import warnings
+import asyncio
 from collections import defaultdict
 from typing import List, Set, Text
 from rasa.core.domain import Domain
@@ -41,17 +43,17 @@ class Validator:
 
         for intent in self.domain.intents:
             if intent not in nlu_data_intents:
-                logger.warning(
-                    "The intent '{}' is listed in the domain file, but "
-                    "is not found in the NLU training data.".format(intent)
+                warnings.warn(
+                    f"The intent '{intent}' is listed in the domain file, but "
+                    "is not found in the NLU training data."
                 )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         for intent in nlu_data_intents:
             if intent not in self.domain.intents:
-                logger.error(
-                    "The intent '{}' is in the NLU training data, but "
-                    "is not listed in the domain.".format(intent)
+                warnings.warn(
+                    f"The intent '{intent}' is in the NLU training data, but "
+                    f"is not listed in the domain."
                 )
                 everything_is_alright = False
 
@@ -73,10 +75,9 @@ class Validator:
 
             if len(duplication_hash[text]) > 1:
                 everything_is_alright = ignore_warnings and everything_is_alright
-                logger.warning(
-                    "The example '{}' was found in these multiples intents: {}".format(
-                        text, ", ".join(sorted(intents))
-                    )
+                intents_string = ", ".join(sorted(intents))
+                warnings.warn(
+                    f"The example '{text}' was found in these multiples intents: {intents_string }"
                 )
         return everything_is_alright
 
@@ -97,15 +98,15 @@ class Validator:
 
         for story_intent in stories_intents:
             if story_intent not in self.domain.intents:
-                logger.error(
-                    "The intent '{}' is used in stories, but is not "
-                    "listed in the domain file.".format(story_intent)
+                warnings.warn(
+                    f"The intent '{story_intent}' is used in stories, but is not "
+                    f"listed in the domain file."
                 )
                 everything_is_alright = False
 
         for intent in self.domain.intents:
             if intent not in stories_intents:
-                logger.warning(f"The intent '{intent}' is not used in any story.")
+                warnings.warn(f"The intent '{intent}' is not used in any story.")
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
@@ -127,16 +128,16 @@ class Validator:
 
         for utterance in utterance_templates:
             if utterance not in actions:
-                logger.warning(
-                    "The utterance '{}' is not listed under 'actions' in the "
-                    "domain file. It can only be used as a template.".format(utterance)
+                warnings.warn(
+                    f"The utterance '{utterance}' is not listed under 'actions' in the "
+                    "domain file. It can only be used as a template."
                 )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         for action in actions:
             if action.startswith(UTTER_PREFIX):
                 if action not in utterance_templates:
-                    logger.error(f"There is no template for utterance '{action}'.")
+                    warnings.warn(f"There is no template for utterance '{action}'.")
                     everything_is_alright = False
 
         return everything_is_alright
@@ -165,16 +166,16 @@ class Validator:
                     continue
 
                 if event.action_name not in utterance_actions:
-                    logger.error(
-                        "The utterance '{}' is used in stories, but is not a "
-                        "valid utterance.".format(event.action_name)
+                    warnings.warn(
+                        f"The utterance '{event.action_name}' is used in stories, but is not a "
+                        f"valid utterance."
                     )
                     everything_is_alright = False
                 stories_utterances.add(event.action_name)
 
         for utterance in utterance_actions:
             if utterance not in stories_utterances:
-                logger.warning(f"The utterance '{utterance}' is not used in any story.")
+                warnings.warn(f"The utterance '{utterance}' is not used in any story.")
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright

@@ -65,10 +65,9 @@ class NLGMarkdownReader(TrainingDataReader):
                 else:
                     # reached an unknown type of line
                     logger.warning(
-                        "Skipping line {}. "
+                        f"Skipping line {line_num}. "
                         "No valid command found. "
-                        "Line Content: '{}'"
-                        "".format(line_num, line)
+                        f"Line Content: '{line}'"
                     )
             except Exception as e:
                 msg = f"Error in line {line_num}: {e}"

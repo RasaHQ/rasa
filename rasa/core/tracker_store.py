@@ -1,4 +1,5 @@
 import contextlib
+import warnings
 import json
 import logging
 import os
@@ -119,9 +120,9 @@ class TrackerStore:
         try:
             custom_tracker = class_from_module_path(store.type)
         except (AttributeError, ImportError):
-            logger.warning(
-                "Store type '{}' not found. "
-                "Using InMemoryTrackerStore instead".format(store.type)
+            warnings.warn(
+                f"Store type '{store.type}' not found. "
+                "Using InMemoryTrackerStore instead"
             )
 
         if custom_tracker:
@@ -199,7 +200,7 @@ class TrackerStore:
     ) -> Dialogue:
 
         logger.warning(
-            f"DEPRECATION warning: Found pickled tracker for "
+            f"Found pickled tracker for "
             f"conversation ID '{sender_id}'. Deserialisation of pickled "
             f"trackers will be deprecated in version 2.0. Rasa will perform any "
             f"future save operations of this tracker using json serialisation."
@@ -417,14 +418,14 @@ class MongoTrackerStore(TrackerStore):
 
     def __init__(
         self,
-        domain,
-        host="mongodb://localhost:27017",
-        db="rasa",
-        username=None,
-        password=None,
-        auth_source="admin",
-        collection="conversations",
-        event_broker=None,
+        domain: Domain,
+        host: Optional[Text] = "mongodb://localhost:27017",
+        db: Optional[Text] = "rasa",
+        username: Optional[Text] = None,
+        password: Optional[Text] = None,
+        auth_source: Optional[Text] = "admin",
+        collection: Optional[Text] = "conversations",
+        event_broker: Optional[EventChannel] = None,
     ):
         from pymongo.database import Database
         from pymongo import MongoClient
@@ -486,17 +487,9 @@ class MongoTrackerStore(TrackerStore):
             )
 
         if stored is not None:
-            if self.domain:
-                return DialogueStateTracker.from_dict(
-                    sender_id, stored.get("events"), self.domain.slots
-                )
-            else:
-                logger.warning(
-                    "Can't recreate tracker from mongo storage "
-                    "because no domain is set. Returning `None` "
-                    "instead."
-                )
-                return None
+            return DialogueStateTracker.from_dict(
+                sender_id, stored.get("events"), self.domain.slots
+            )
         else:
             return None
 
@@ -588,9 +581,9 @@ class SQLTrackerStore(TrackerStore):
             except (
                 sqlalchemy.exc.OperationalError,
                 sqlalchemy.exc.IntegrityError,
-            ) as e:
+            ) as error:
 
-                logger.warning(e)
+                logger.warning(error)
                 sleep(5)
 
         logger.debug(f"Connection to SQL database '{db}' successful.")
