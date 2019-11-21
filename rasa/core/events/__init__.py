@@ -1,6 +1,5 @@
 import time
 import typing
-from abc import ABC, abstractmethod
 
 import json
 import jsonpickle
@@ -74,7 +73,7 @@ def first_key(d, default_key):
 
 
 # noinspection PyProtectedMember
-class Event(ABC):
+class Event:
     """Events describe everything that occurs in
     a conversation and tell the :class:`rasa.core.trackers.DialogueStateTracker`
     how to update its state."""
@@ -92,7 +91,6 @@ class Event(ABC):
         # True at the same time
         return not (self == other)
 
-    @abstractmethod
     def as_story_string(self) -> Text:
         raise NotImplementedError
 
@@ -102,12 +100,12 @@ class Event(ABC):
         parameters: Dict[Text, Any],
         default: Optional[Type["Event"]] = None,
     ) -> Optional[List["Event"]]:
-        event = Event.resolve_by_type(event_name, default)
+        event_class = Event.resolve_by_type(event_name, default)
 
-        if event:
-            return event._from_story_string(parameters)
-        else:
+        if not event_class:
             return None
+
+        return event_class._from_story_string(parameters)
 
     @staticmethod
     def from_parameters(
