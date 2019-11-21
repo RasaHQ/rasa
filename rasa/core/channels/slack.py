@@ -109,6 +109,20 @@ class SlackBot(SlackClient, OutputChannel):
         return super(SlackBot, self).api_call("chat.postMessage", **json_message)
 
 
+def is_app_mention(user_message) -> bool:
+    try:
+        return user_message["event"]["type"] == "app_mention"
+    except KeyError:
+        return False
+
+
+def is_direct_message(user_message) -> bool:
+    try:
+        return user_message["event"]["channel_type"] == "im"
+    except KeyError:
+        return False
+
+
 class SlackInput(InputChannel):
     """Slack input channel implementation. Based on the HTTPInputChannel."""
 
@@ -319,8 +333,13 @@ class SlackInput(InputChannel):
                     return response.json(output.get("challenge"))
 
                 elif self._is_user_message(output):
-                    if self.is_direct_message(output) or self.is_app_mention(output):
-                        self.set_output_channel(output["event"]["channel"])
+                    channel = output["event"]["channel"]
+                    if (
+                        is_direct_message(output)
+                        or is_app_mention(output)
+                        or channel == self.slack_channel
+                    ):
+                        self.set_output_channel(channel)
                         return await self.process_message(
                             request,
                             on_new_message,
@@ -341,15 +360,3 @@ class SlackInput(InputChannel):
 
     def set_output_channel(self, channel) -> None:
         self.slack_channel = channel
-
-    def is_direct_message(self, user_message) -> bool:
-        try:
-            return user_message["event"]["channel_type"] == "im"
-        except KeyError:
-            return False
-
-    def is_app_mention(self, user_message) -> bool:
-        try:
-            return user_message["event"]["type"] == "app_mention"
-        except KeyError:
-            return False
