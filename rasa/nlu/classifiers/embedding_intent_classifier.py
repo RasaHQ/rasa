@@ -663,7 +663,42 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return tf.concat(dense_features, axis=-1) * mask
 
-    def _create_tf_sequence(self, a_in, mask) -> "tf.Tensor":
+    @staticmethod
+    def _mask_input(
+        a: "tf.Tensor", mask: "tf.Tensor"
+    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+        """Randomly mask input sequences."""
+
+        # do not mask cls token
+        pad_mask_up_to_last = tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
+        mask_up_to_last = 1 - pad_mask_up_to_last
+
+        a_random_pad = (
+            tf.random.uniform(tf.shape(a), tf.reduce_min(a), tf.reduce_max(a), a.dtype)
+            * pad_mask_up_to_last
+        )
+        a_shuffle = tf.stop_gradient(
+            tf.random.shuffle(a * mask_up_to_last + a_random_pad)
+        )
+
+        mask_vector = tf.get_variable("mask_vector", (1, 1, a.shape[-1]), a.dtype)
+        a_mask = tf.tile(mask_vector, (tf.shape(a)[0], tf.shape(a)[1], 1))
+
+        other_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype)
+        other_prob = tf.tile(other_prob, (1, 1, a.shape[-1]))
+        a_other = tf.where(
+            other_prob < 0.70, a_mask, tf.where(other_prob < 0.90, a_shuffle, a)
+        )
+
+        lm_mask_prob = (
+            tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype) * mask_up_to_last
+        )
+        lm_mask_bool = tf.greater_equal(lm_mask_prob, 0.85)
+        a_pre = tf.where(tf.tile(lm_mask_bool, (1, 1, a.shape[-1])), a_other, a)
+
+        return a_pre, lm_mask_bool
+
+    def _create_tf_sequence(self, a_in: "tf.Tensor", mask: "tf.Tensor") -> "tf.Tensor":
         """Create sequence level embedding and mask."""
 
         a_in = train_utils.create_tf_fnn(
@@ -711,25 +746,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
         if self.masked_lm_loss:
-            a_random = (
-                tf.random.uniform(
-                    tf.shape(a), tf.reduce_min(a), tf.reduce_max(a), a.dtype
-                )
-                * mask
-            )
-            # a_shuffle = tf.random.shuffle(a)
-
-            other_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype)
-            other_prob = tf.tile(other_prob, (1, 1, a.shape[-1]))
-            # a_other = tf.stop_gradient(tf.where(other_prob < 0.80, a_random, tf.where(other_prob < 0.90, a_shuffle, a)))
-            a_other = tf.where(other_prob < 0.80, a_random, a)
-
-            lm_mask_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype) * mask
-            lm_mask = tf.greater_equal(lm_mask_prob, 0.85)
-            a_pre = tf.where(tf.tile(lm_mask, (1, 1, a.shape[-1])), a_other, a)
+            a_pre, lm_mask_bool = self._mask_input(a, mask)
         else:
-            a_pre = a
-            lm_mask = None
+            a_pre, lm_mask_bool = (a, None)
 
         # transformer
         a_transformed = self._create_tf_sequence(a_pre, mask)
@@ -737,7 +756,12 @@ class EmbeddingIntentClassifier(EntityExtractor):
         metrics = TrainingMetrics(loss={}, score={})
 
         if self.masked_lm_loss:
-            loss, acc = self._train_mask_graph(a_transformed, a, lm_mask)
+            loss, acc = self._train_mask_graph(a_transformed, a, lm_mask_bool)
+            loss, acc = tf.cond(
+                tf.reduce_any(lm_mask_bool),
+                lambda: (loss, acc),
+                lambda: (tf.constant(0, a.dtype), tf.constant(0, a.dtype)),
+            )
             metrics.loss["m_loss"] = loss
             metrics.score["m_acc"] = acc
 
