@@ -900,10 +900,7 @@ def train_tf_dataset(
         train_loss = ep_train_loss / batches_per_epoch
         train_acc = ep_train_acc / batches_per_epoch
 
-        postfix_dict = {
-            "loss": f"{train_loss:.3f}",
-            "acc": f"{train_acc:.3f}",
-        }
+        postfix_dict = {"loss": f"{train_loss:.3f}", "acc": f"{train_acc:.3f}"}
 
         if eval_init_op is not None:
             if (ep + 1) % evaluate_every_num_epochs == 0 or (ep + 1) == epochs:
@@ -918,7 +915,7 @@ def train_tf_dataset(
                 )
 
             postfix_dict.update(
-                {"val_loss": f"{val_loss:.3f}", "val_acc": f"{val_acc:.3f}",}
+                {"val_loss": f"{val_loss:.3f}", "val_acc": f"{val_acc:.3f}"}
             )
 
         pbar.set_postfix(postfix_dict)

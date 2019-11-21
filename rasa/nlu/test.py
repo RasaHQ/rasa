@@ -1314,11 +1314,7 @@ def compare_nlu(
                         fixed_model_name=model_name,
                     )
                 except Exception as e:
-                    logger.warning(
-                        "Training model '{}' failed. Error: {}".format(
-                            model_name, str(e)
-                        )
-                    )
+                    logger.warning(f"Training model '{model_name}' failed. Error: {e}")
                     f_score_results[model_name][run].append(0.0)
                     continue
 
