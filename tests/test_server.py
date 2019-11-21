@@ -112,7 +112,6 @@ def test_status(rasa_app: SanicTestClient, trained_rasa_model: Text):
     assert model_file == trained_rasa_model
 
 
-
 def test_status_nlu_only(rasa_app_nlu: SanicTestClient):
     _, response = rasa_app_nlu.get("/status")
     assert os.path.isfile(response.json["model_file"])
