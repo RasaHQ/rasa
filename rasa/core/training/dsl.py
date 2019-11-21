@@ -61,7 +61,6 @@ class EndToEndReader(MarkdownReader):
             # are also annotated
             if message.startswith(INTENT_MESSAGE_PREFIX):
                 parsed = self._regex_interpreter.synchronous_parse(message)
-
                 example.data["entities"] = parsed["entities"]
 
             example.data["true_intent"] = intent
