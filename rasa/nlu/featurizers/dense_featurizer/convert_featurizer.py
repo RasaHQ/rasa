@@ -13,6 +13,9 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_hub as tfhub
 
+# needed to load convert model
+import tensorflow_text
+
 logger = logging.getLogger(__name__)
 
 
