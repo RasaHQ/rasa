@@ -35,7 +35,7 @@ class StoryConflict:
             if k.startswith(PREV_PREFIX):
                 if k[len(PREV_PREFIX):] != ACTION_LISTEN_NAME:
                     result = ("action", k[len(PREV_PREFIX):])
-            elif k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_") and not result:
+            elif k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_") and not result[0]:
                 result = ("intent", k[len(MESSAGE_INTENT_ATTRIBUTE + '_'):])
         return result
 
