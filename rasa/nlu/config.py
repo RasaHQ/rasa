@@ -1,5 +1,6 @@
 import copy
 import logging
+import warnings
 import os
 import ruamel.yaml as yaml
 from typing import Any, Dict, List, Optional, Text, Union
@@ -67,11 +68,10 @@ def component_config_from_pipeline(
         c = pipeline[index]
         return override_defaults(defaults, c)
     except IndexError:
-        logger.warning(
+        warnings.warn(
             "Tried to get configuration value for component "
-            "number {} which is not part of the pipeline. "
+            f"number {index} which is not part of the pipeline. "
             "Returning `defaults`."
-            "".format(index)
         )
         return override_defaults(defaults, {})
 
@@ -102,12 +102,14 @@ class RasaNLUModelConfig:
                 "tensorflow_embedding": "supervised_embeddings",
             }
             if template_name in new_names:
-                logger.warning(
-                    "You have specified the pipeline template "
-                    "'{}' which has been renamed to '{}'. "
+                warnings.warn(
+                    f"You have specified the pipeline template "
+                    f"'{template_name}' which has been renamed to "
+                    f"'{new_names[template_name]}'. "
                     "Please update your code as it will no "
                     "longer work with future versions of "
-                    "Rasa NLU.".format(template_name, new_names[template_name])
+                    "Rasa",
+                    DeprecationWarning,
                 )
                 template_name = new_names[template_name]
 
@@ -178,10 +180,9 @@ class RasaNLUModelConfig:
         try:
             self.pipeline[index].update(kwargs)
         except IndexError:
-            logger.warning(
+            warnings.warn(
                 "Tried to set configuration value for component "
-                "number {} which is not part of the pipeline."
-                "".format(index)
+                f"number {index} which is not part of the pipeline."
             )
 
     def override(self, config):
