@@ -321,7 +321,7 @@ your events should be formatted like the JSON objects on this page.</p>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.SlotSet">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">SlotSet</code><span class="sig-paren">(</span><em>key</em>, <em>value=None</em>, <em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.SlotSet" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">SlotSet</code><span class="sig-paren">(</span><em>key</em>, <em>value=None</em>, <em>timestamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.SlotSet" title="Permalink to this definition">¶</a></dt>
 <dd><p>The user has specified their preference for the value of a <code class="docutils literal notranslate"><span class="pre">slot</span></code>.</p>
 <p>Every slot has a name and a value. This event can be used to set a
 value for a slot on a conversation.</p>
@@ -357,7 +357,7 @@ that <code class="docutils literal notranslate"><span class="pre">tracker.slots[
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.Restarted">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">Restarted</code><span class="sig-paren">(</span><em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.Restarted" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">Restarted</code><span class="sig-paren">(</span><em>timestamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.Restarted" title="Permalink to this definition">¶</a></dt>
 <dd><p>Conversation should start over &amp; history wiped.</p>
 <p>Instead of deleting all events, this event can be used to reset the
 trackers state (e.g. ignoring any past user messages &amp; resetting all
@@ -397,7 +397,7 @@ the slots).</p>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.AllSlotsReset">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">AllSlotsReset</code><span class="sig-paren">(</span><em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.AllSlotsReset" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">AllSlotsReset</code><span class="sig-paren">(</span><em>timestamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.AllSlotsReset" title="Permalink to this definition">¶</a></dt>
 <dd><p>All Slots are reset to their initial values.</p>
 <p>If you want to keep the dialogue history and only want to reset the
 slots, you can use this event to set all the slots to their initial
@@ -438,7 +438,7 @@ values.</p>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.ReminderScheduled">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ReminderScheduled</code><span class="sig-paren">(</span><em>action_name</em>, <em>trigger_date_time</em>, <em>name=None</em>, <em>kill_on_user_message=True</em>, <em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ReminderScheduled" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ReminderScheduled</code><span class="sig-paren">(</span><em>action_name</em>, <em>trigger_date_time</em>, <em>name=None</em>, <em>kill_on_user_message=True</em>, <em>timestamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ReminderScheduled" title="Permalink to this definition">¶</a></dt>
 <dd><p>Allows asynchronous scheduling of action execution.</p>
 <p>As a side effect the message processor will schedule an action to be run
 at the trigger date.</p>
@@ -470,7 +470,7 @@ will be halted until resumed.</p>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.ConversationPaused">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ConversationPaused</code><span class="sig-paren">(</span><em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ConversationPaused" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ConversationPaused</code><span class="sig-paren">(</span><em>timestamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ConversationPaused" title="Permalink to this definition">¶</a></dt>
 <dd><p>Ignore messages from the user to let a human take over.</p>
 <p>As a side effect the <code class="docutils literal notranslate"><span class="pre">Tracker</span></code>’s <code class="docutils literal notranslate"><span class="pre">paused</span></code> attribute will
 be set to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
@@ -505,7 +505,7 @@ predicting actions again.</p>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.ConversationResumed">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ConversationResumed</code><span class="sig-paren">(</span><em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ConversationResumed" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ConversationResumed</code><span class="sig-paren">(</span><em>timestamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ConversationResumed" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bot takes over conversation.</p>
 <p>Inverse of <code class="docutils literal notranslate"><span class="pre">PauseConversation</span></code>. As a side effect the <code class="docutils literal notranslate"><span class="pre">Tracker</span></code>’s
 <code class="docutils literal notranslate"><span class="pre">paused</span></code> attribute will be set to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
@@ -540,7 +540,7 @@ to be a fixed one.</p>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.FollowupAction">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">FollowupAction</code><span class="sig-paren">(</span><em>name</em>, <em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.FollowupAction" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">FollowupAction</code><span class="sig-paren">(</span><em>name</em>, <em>timestamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.FollowupAction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Enqueue a followup action.</p>
 </dd></dl>
 
@@ -656,7 +656,7 @@ to be a fixed one.</p>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.UserUtteranceReverted">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">UserUtteranceReverted</code><span class="sig-paren">(</span><em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.UserUtteranceReverted" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">UserUtteranceReverted</code><span class="sig-paren">(</span><em>timestamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.UserUtteranceReverted" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bot reverts everything until before the most recent user message.</p>
 <p>The bot will revert all events after the latest <cite>UserUttered</cite>, this
 also means that the last event on the tracker is usually <cite>action_listen</cite>
@@ -693,7 +693,7 @@ and the bot is waiting for a new user message.</p>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.ActionReverted">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ActionReverted</code><span class="sig-paren">(</span><em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ActionReverted" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ActionReverted</code><span class="sig-paren">(</span><em>timestamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ActionReverted" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bot undoes its last action.</p>
 <p>The bot reverts everything until before the most recent action.
 This includes the action itself, as well as any events that
@@ -732,7 +732,7 @@ action created are logged separately.</p>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.ActionExecuted">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ActionExecuted</code><span class="sig-paren">(</span><em>action_name</em>, <em>policy=None</em>, <em>confidence=None</em>, <em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ActionExecuted" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ActionExecuted</code><span class="sig-paren">(</span><em>action_name</em>, <em>policy=None</em>, <em>confidence=None</em>, <em>timestamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ActionExecuted" title="Permalink to this definition">¶</a></dt>
 <dd><p>An operation describes an action taken + its result.</p>
 <p>It comprises an action and a list of events. operations will be appended
 to the latest <code class="docutils literal notranslate"><span class="pre">Turn</span></code> in the <code class="docutils literal notranslate"><span class="pre">Tracker.turns</span></code>.</p>
