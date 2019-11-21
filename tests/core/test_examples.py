@@ -1,12 +1,9 @@
-import asyncio
 import sys
 
 import json
 import os
-import pytest
 from aioresponses import aioresponses
 
-import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.train import train
 from rasa.core.utils import AvailableEndpoints
