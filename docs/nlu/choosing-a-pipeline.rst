@@ -65,6 +65,9 @@ but creates a contextual vector representation for the complete sentence. For ex
 examples are already very similar, the intent classified for both is highly likely to be the same. This is also useful if you don't have
 large enough training data.
 
+    .. note::
+        To use ``pretrained_embeddings_convert`` pipeline, you should install ``tensorflow_text==1.15.1`` and ``tensorflow_hub==0.6.0``. Otherwise, you can also pip install Rasa with ``pip install rasa[convert]``
+
 supervised_embeddings
 ~~~~~~~~~~~~~~~~~~~~~
 
