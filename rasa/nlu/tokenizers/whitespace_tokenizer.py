@@ -78,6 +78,9 @@ class WhitespaceTokenizer(Tokenizer):
                 " ",
                 text,
             ).split()
+            # Fix for convert tokenizer, remove any single '&'
+            words = [w for w in words if w != "&"]
+
             # if we removed everything like smiles `:)`, use the whole text as 1 token
             if not words:
                 words = [text]
