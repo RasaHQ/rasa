@@ -92,8 +92,7 @@ install_requires = [
 extras_requires = {
     "test": tests_requires,
     "spacy": ["spacy>=2.1,<2.2"],
-    "tensorflow_text": ["tensorflow_text~=1.15.1"],
-    "tensorflow_hub": ["tensorflow_hub~=0.6.0"],
+    "convert": ["tensorflow_text~=1.15.1", "tensorflow_hub~=0.6.0"],
     "mitie": ["mitie"],
     "sql": ["psycopg2~=2.8.2", "SQLAlchemy~=1.3"],
 }
