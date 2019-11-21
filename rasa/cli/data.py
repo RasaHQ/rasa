@@ -195,7 +195,7 @@ def validate_stories(args):
     if not story_names_unique:
         msg = "Found duplicate story names:\n"
         for (name, count) in duplicate_story_names.items():
-            msg += f"  Story name '{name}' appears {count}x\n"
+            msg += f"  '{name}' appears {count}x\n"
         logger.error(msg)
 
     # If names are unique, look for inconsistencies

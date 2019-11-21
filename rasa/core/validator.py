@@ -271,6 +271,9 @@ class Validator:
                         )
                     idx += 1
 
+        # Remove conflicts that arise from unpredictable actions
+        conflicts = {h: c for (h, c) in conflicts.items() if c.has_prior_events}
+
         if len(conflicts) == 0:
             logger.info("No story structure conflicts found.")
         else:

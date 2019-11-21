@@ -64,6 +64,10 @@ class StoryConflict:
         else:
             return []
 
+    @property
+    def has_prior_events(self):
+        return self._get_prev_event(self.sliced_states[-1])[0] is not None
+
     def story_prior_to_conflict(self):
         result = ""
         for state in self.sliced_states:
