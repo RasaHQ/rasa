@@ -15,6 +15,8 @@ Added
 
 Changed
 -------
+- End to end stories now support literal payloads which specify entities, e.g.
+  ``greet: /greet{"name": "John"}``
 
 Removed
 -------
