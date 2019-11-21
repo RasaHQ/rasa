@@ -319,14 +319,18 @@ class SlackInput(InputChannel):
                     return response.json(output.get("challenge"))
 
                 elif self._is_user_message(output):
-                    return await self.process_message(
-                        request,
-                        on_new_message,
-                        text=self._sanitize_user_message(
-                            output["event"]["text"], output["authed_users"]
-                        ),
-                        sender_id=output.get("event").get("user"),
-                    )
+                    if self.is_direct_message(output) or self.is_app_mention(output):
+                        self.set_output_channel(output["event"]["channel"])
+                        return await self.process_message(
+                            request,
+                            on_new_message,
+                            text=self._sanitize_user_message(
+                                output["event"]["text"], output["authed_users"]
+                            ),
+                            sender_id=output.get("event").get("user"),
+                        )
+                    else:
+                        return response.text("")
 
             return response.text("Bot message delivered")
 
@@ -334,3 +338,18 @@ class SlackInput(InputChannel):
 
     def get_output_channel(self) -> OutputChannel:
         return SlackBot(self.slack_token, self.slack_channel)
+
+    def set_output_channel(self, channel) -> None:
+        self.slack_channel = channel
+
+    def is_direct_message(self, user_message) -> bool:
+        try:
+            return user_message["event"]["channel_type"] == "im"
+        except KeyError:
+            return False
+
+    def is_app_mention(self, user_message) -> bool:
+        try:
+            return user_message["event"]["type"] == "app_mention"
+        except KeyError:
+            return False
