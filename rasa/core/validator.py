@@ -188,7 +188,9 @@ class Validator:
 
         # Tally story names, e.g. {"story_1": 3, "story_2": 1, ...}
         name_tally = {}
+        print(self.story_graph.as_story_string())
         for step in self.story_graph.story_steps:
+            # print(step.block_name)
             if step.block_name in name_tally:
                 name_tally[step.block_name] += 1
             else:
@@ -223,7 +225,7 @@ class Validator:
         trackers = TrainingDataGenerator(
             self.story_graph,
             domain=self.domain,
-            remove_duplicates=False,   # ToDo: Q&A: Why don't we deduplicate the graph here?
+            remove_duplicates=False,   # ToDo: Q&A: Why not remove_duplicates=True?
             augmentation_factor=0).generate()
         rules = {}
         for tracker in trackers:

@@ -11,6 +11,7 @@ from rasa.constants import DEFAULT_DATA_PATH
 
 logger = logging.getLogger(__name__)
 
+
 # noinspection PyProtectedMember
 def add_subparser(
         subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
@@ -184,10 +185,18 @@ def validate_stories(args):
         domain_path=args.domain, training_data_paths=args.data
     )
 
+    # This loads the stories and thus fills `STORY_NAME_TALLY` (see next code block)
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
 
     # First check for duplicate story names
-    story_names_unique = validator.verify_story_names(not args.fail_on_warnings)
+    from rasa.core.training.structures import STORY_NAME_TALLY  # ToDo: Avoid global variable
+    duplicate_story_names = {name: count for (name, count) in STORY_NAME_TALLY.items() if count > 1}
+    story_names_unique = len(duplicate_story_names) == 0
+    if not story_names_unique:
+        msg = "Found duplicate story names:\n"
+        for (name, count) in duplicate_story_names.items():
+            msg += f"  Story name '{name}' appears {count}x\n"
+        logger.error(msg)
 
     # If names are unique, look for inconsistencies
     everything_is_alright = validator.verify_story_structure(

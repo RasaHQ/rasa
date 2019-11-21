@@ -38,6 +38,9 @@ FORM_PREFIX = "form: "
 # will get increased with each new instance
 STEP_COUNT = 1
 
+# Tally over story names
+STORY_NAME_TALLY = {}
+
 
 class StoryStringHelper:
     """A helper class to mark story steps that are inside a form with `form: `

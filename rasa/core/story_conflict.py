@@ -29,8 +29,8 @@ class StoryConflict:
     @staticmethod
     def _get_prev_event(state) -> [Event, None]:
         if not state:
-            return None
-        result = None
+            return None, None
+        result = (None, None)
         for k in state:
             if k.startswith(PREV_PREFIX):
                 if k[len(PREV_PREFIX):] != ACTION_LISTEN_NAME:
@@ -77,7 +77,10 @@ class StoryConflict:
 
     def __str__(self):
         last_event_type, last_event_name = self._get_prev_event(self.sliced_states[-1])
-        conflict_string = f"CONFLICT after {last_event_type} '{last_event_name}':\n"
+        if last_event_type:
+            conflict_string = f"CONFLICT after {last_event_type} '{last_event_name}':\n"
+        else:
+            conflict_string = f"CONFLICT at the beginning of stories:\n"
         for action, stories in self._conflicting_actions.items():
             if len(stories) == 1:
                 stories = f"'{stories[0]}'"
