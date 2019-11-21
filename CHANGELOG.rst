@@ -22,6 +22,8 @@ Removed
 
 Fixed
 -----
+- Fixed Rasa X not working when any tracker store was configured for Rasa.
+- Use the matplotlib backend ``agg`` in case the ``tkinter`` package is not installed.
 
 [1.4.5] - 2019-11-14
 ^^^^^^^^^^^^^^^^^^^^
