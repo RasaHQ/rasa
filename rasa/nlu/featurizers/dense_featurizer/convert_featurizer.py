@@ -1,24 +1,16 @@
 import logging
-import os
 import re
-import scipy.sparse
 from rasa.nlu.featurizers.featurzier import Featurizer
-from typing import Any, Dict, List, Optional, Text
-from rasa.nlu import utils
+from typing import Any, Dict, Optional, Text
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-    MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
     SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 import numpy as np
 import tensorflow as tf
-import tensorflow_text
 import tensorflow_hub as tfhub
 
 logger = logging.getLogger(__name__)

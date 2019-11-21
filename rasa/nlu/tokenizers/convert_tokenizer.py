@@ -1,23 +1,13 @@
-import logging
-import os
-import re
-import scipy.sparse
-from typing import Any, Dict, List, Optional, Text
-from rasa.nlu import utils
+from typing import Any, Dict, Optional, Text
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Tokenizer, Token
-from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-    MESSAGE_INTENT_ATTRIBUTE,
     SPACY_FEATURIZABLE_ATTRIBUTES,
 )
-import torch
 from transformers import *
-import numpy as np
 import tensorflow as tf
 import tensorflow_hub as tfhub
 
