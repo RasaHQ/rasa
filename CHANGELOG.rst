@@ -21,6 +21,7 @@ Added
 - Add command line argument ``rasa x --config CONFIG``, to specify path to the policy and
   NLU pipeline configuration of your bot (default: ``config.yml``)
 
+
 Changed
 -------
 - Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
@@ -37,6 +38,7 @@ Fixed
 - Fixed rasa init showing traceback error when user does Keyboard Interrupt before choosing a project path
 - ``CountVectorsFeaturizer`` featurizes intents only if its analyzer is set to ``word``
 - fixed bug where facebooks generic template was not rendered when buttons were ``None``
+- Fixed issue in converting multi links in incoming message as part of Slack sanitization 
 
 [1.4.5] - 2019-11-14
 ^^^^^^^^^^^^^^^^^^^^
