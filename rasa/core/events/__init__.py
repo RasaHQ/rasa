@@ -219,7 +219,6 @@ class UserUttered(Event):
                 "entities": self.entities,
                 "text": text,
                 "message_id": self.message_id,
-                "metadata": metadata,
             }
 
         super().__init__(timestamp, metadata)
