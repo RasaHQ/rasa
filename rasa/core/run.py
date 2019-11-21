@@ -1,4 +1,5 @@
 import asyncio
+import warnings
 import logging
 import os
 import shutil
@@ -250,7 +251,7 @@ async def load_agent_on_start(
     )
 
     if not app.agent:
-        logger.warning(
+        warnings.warn(
             "Agent could not be loaded with the provided configuration. "
             "Load default agent without any model."
         )

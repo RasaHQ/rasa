@@ -25,3 +25,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
+
+## story_with_intent_restated
+* greet: /greet
+ - utter_ask_howcanhelp
