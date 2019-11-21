@@ -91,8 +91,14 @@ class Event:
 
     @property
     def metadata(self) -> Dict[Text, Any]:
-        # needed for backwards compatibility <1.0.0 - previously pickled events
-        # won't have the `_metadata` attribute
+        # Needed for compatibility for Rasa versions <1.4.0.
+        # Previous versions of Rasa serialized trackers using the pickle
+        # module.  For the moment, Rasa still supports loading these serialized
+        # trackers with pickle, but will use JSON in any subsequent save
+        # operations.  Versions of trackers serialized with pickle won't
+        # include the `_metadata` attribute in their events, so it is necessary
+        # to define this getter in case the attribute does not exist.
+        # For more information see CHANGELOG.rst.
         return getattr(self, "_metadata", {})
 
     def __ne__(self, other: Any) -> bool:
