@@ -287,7 +287,7 @@ class UserUttered(Event):
                 "parse_data": self.parse_data,
                 "input_channel": getattr(self, "input_channel", None),
                 "message_id": getattr(self, "message_id", None),
-                "metadata": self.metadata
+                "metadata": self.metadata,
             }
         )
         return _dict
