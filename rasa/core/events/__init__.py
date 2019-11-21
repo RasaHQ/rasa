@@ -126,9 +126,6 @@ class Event:
         if event_name is None:
             return None
 
-        copied = parameters.copy()
-        del copied["event"]
-
         event_class = Event.resolve_by_type(event_name, default)
         if not event_class:
             return None
