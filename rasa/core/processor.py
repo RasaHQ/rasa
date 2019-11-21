@@ -290,36 +290,36 @@ class MessageProcessor:
         if slot_values.strip():
             logger.debug(f"Current slot values: \n{slot_values}")
 
-def _log_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
-    """Check if the NLU interpreter picks up intents or entities that aren't recognized."""
+    def _log_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
+        """Check if the NLU interpreter picks up intents or entities that aren't recognized."""
 
-    domain_is_not_empty = self.domain and not self.domain.is_empty()
+        domain_is_not_empty = self.domain and not self.domain.is_empty()
 
-    default_intents = [
-        USER_INTENT_RESTART,
-        USER_INTENT_BACK,
-        USER_INTENT_OUT_OF_SCOPE,
-    ]
+        default_intents = [
+            USER_INTENT_RESTART,
+            USER_INTENT_BACK,
+            USER_INTENT_OUT_OF_SCOPE,
+        ]
 
-    intent = parse_data["intent"]["name"]
-    if intent:
-        intent_is_recognized = (
-            domain_is_not_empty and intent in self.domain.intents
-        ) or intent in default_intents
-        if not intent_is_recognized:
-            warnings.warn(
-                f"Interpreter parsed an intent '{intent}' "
-                "that is not defined in the domain."
-            )
+        intent = parse_data["intent"]["name"]
+        if intent:
+            intent_is_recognized = (
+                domain_is_not_empty and intent in self.domain.intents
+            ) or intent in default_intents
+            if not intent_is_recognized:
+                warnings.warn(
+                    f"Interpreter parsed an intent '{intent}' "
+                    "that is not defined in the domain."
+                )
 
-    entities = parse_data["entities"] or []
-    for element in entities:
-        entity = element["entity"]
-        if entity and domain_is_not_empty and entity not in self.domain.entities:
-            warnings.warn(
-                f"Interpreter parsed an entity '{entity}' "
-                "that is not defined in the domain."
-            )
+        entities = parse_data["entities"] or []
+        for element in entities:
+            entity = element["entity"]
+            if entity and domain_is_not_empty and entity not in self.domain.entities:
+                warnings.warn(
+                    f"Interpreter parsed an entity '{entity}' "
+                    "that is not defined in the domain."
+                )
 
     def _get_action(self, action_name):
         return self.domain.action_for_name(action_name, self.action_endpoint)

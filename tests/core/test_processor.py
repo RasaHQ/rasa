@@ -82,6 +82,13 @@ async def test_log_unseen_feature(default_processor: MessageProcessor):
         == "Interpreter parsed an entity 'test_entity' that is not defined in the domain."
     )
 
+async def test_default_intent_recognized(default_processor: MessageProcessor):
+    message = UserMessage('/restart')
+    parsed = await default_processor._parse_message(message)
+    with pytest.warns(None) as record:
+        default_processor._log_unseen_features(parsed)
+    assert len(record) == 0
+
 
 async def test_http_parsing():
     message = UserMessage("lunch?")
