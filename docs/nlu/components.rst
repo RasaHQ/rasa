@@ -287,7 +287,7 @@ ConveRTFeaturizer
         Since ``ConveRT`` model is trained only on an english corpus of conversations, this featurizer should only be used if your training data is in english language.
 
     .. note::
-        To use ``ConveRTFeaturizer`` you should install ``tensorflow_text==1.15.1`` and ``tensorflow_hub==0.6.0``. Otherwise, you can also pip install Rasa with ``pip install rasa[convert]``
+        To use ``ConveRTFeaturizer`` you should install ``tensorflow_text==1.15.1`` and ``tensorflow_hub==0.6.0``. Otherwise, you can also do a pip install of Rasa with ``pip install rasa[convert]``
 
 :Configuration:
 
