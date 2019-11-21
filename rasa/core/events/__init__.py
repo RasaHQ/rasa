@@ -1,6 +1,5 @@
 import time
 import typing
-from abc import ABC, abstractmethod
 
 import json
 import warnings
@@ -75,7 +74,7 @@ def first_key(d, default_key):
 
 
 # noinspection PyProtectedMember
-class Event(ABC):
+class Event:
     """Events describe everything that occurs in
     a conversation and tell the :class:`rasa.core.trackers.DialogueStateTracker`
     how to update its state."""
@@ -88,12 +87,20 @@ class Event(ABC):
         self.timestamp = timestamp or time.time()
         self._metadata = metadata or {}
 
+    @property
+    def metadata(self):
+        # needed for backwards compatibility <1.0.0 - previously pickled events
+        # won't have the `_metadata` attribute
+        if hasattr(self, "_metadata"):
+            return self._metadata
+        else:
+            return {}
+
     def __ne__(self, other: Any) -> bool:
         # Not strictly necessary, but to avoid having both x==y and x!=y
         # True at the same time
         return not (self == other)
 
-    @abstractmethod
     def as_story_string(self) -> Text:
         raise NotImplementedError
 
@@ -103,12 +110,12 @@ class Event(ABC):
         parameters: Dict[Text, Any],
         default: Optional[Type["Event"]] = None,
     ) -> Optional[List["Event"]]:
-        event = Event.resolve_by_type(event_name, default)
+        event_class = Event.resolve_by_type(event_name, default)
 
-        if event:
-            return event._from_story_string(parameters)
-        else:
+        if not event_class:
             return None
+
+        return event_class._from_story_string(parameters)
 
     @staticmethod
     def from_parameters(
@@ -137,7 +144,7 @@ class Event(ABC):
         return {
             "event": self.type_name,
             "timestamp": self.timestamp,
-            "metadata": self._metadata,
+            "metadata": self.metadata,
         }
 
     @classmethod
@@ -213,7 +220,6 @@ class UserUttered(Event):
                 "entities": self.entities,
                 "text": text,
                 "message_id": self.message_id,
-                "metadata": metadata,
             }
 
         super().__init__(timestamp, metadata)
@@ -334,15 +340,6 @@ class BotUttered(Event):
         self.text = text
         self.data = data or {}
         super().__init__(timestamp, metadata)
-
-    @property
-    def metadata(self):
-        # needed for backwards compatibility <1.0.0 - previously pickled events
-        # won't have the `_metadata` attribute
-        if hasattr(self, "_metadata"):
-            return self._metadata
-        else:
-            return {}
 
     def __members(self):
         data_no_nones = utils.remove_none_values(self.data)

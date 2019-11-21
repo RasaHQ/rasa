@@ -296,8 +296,3 @@ def test_event_default_metadata(event_class):
         }
     )
     assert event.as_dict()["metadata"] == {}
-
-
-def test_instance_event_error():
-    with pytest.raises(TypeError):
-        Event()

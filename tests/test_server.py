@@ -538,6 +538,7 @@ def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
             "policy": None,
             "confidence": None,
             "timestamp": 1514764800,
+            "metadata": {},
         }
     ]
     assert content["latest_message"] == {
