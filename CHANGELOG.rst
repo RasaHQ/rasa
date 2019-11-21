@@ -18,6 +18,9 @@ Added
 - Added documentation for ``AugmentedMemoizationPolicy``
 - Fall back to ``InMemoryTrackerStore`` in case there is any problem with the current
   tracker store
+- Arbitrary metadata can now be attached to any ``Event`` subclass. The data must be
+  stored under the ``metadata`` key when reading the event from a JSON object or
+  dictionary.
 
 Changed
 -------
