@@ -30,6 +30,8 @@ Changed
 -------
 - Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
 - Upgraded ``jsonschema`` version
+- When NLU training data is dumped as Markdown file the intents are not longer ordered
+  alphabetically, but in the original order of given training data
 
 Removed
 -------
