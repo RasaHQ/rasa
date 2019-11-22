@@ -665,9 +665,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
                     _f = tf.cond(self._is_training, lambda: _f, lambda: f)
                 else:
                     _f = f
+
                 dense_features.append(
                     train_utils.tf_dense_layer_for_sparse(
-                        f, dense_dim, name, self.C2, input_dim=int(f.shape[-1])
+                        _f, dense_dim, name, self.C2, input_dim=int(f.shape[-1])
                     )
                 )
             else:
