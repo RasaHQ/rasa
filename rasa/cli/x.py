@@ -113,8 +113,8 @@ def _overwrite_endpoints_for_local_x(
     from rasa.utils.endpoints import EndpointConfig
     import questionary
 
-    # Checking if endpoint.yml has existing url and wait time values set, if so give warning we are overwriting
-    # the endpoint.yml file.
+    # Checking if endpoint.yml has existing url and wait time values set, if so give
+    # warning we are overwriting the endpoint.yml file.
     custom_wait_time_pulls = endpoints.model.kwargs.get("wait_time_between_pulls")
     custom_url = endpoints.model.url
     default_rasax_model_server_url = (

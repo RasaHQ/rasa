@@ -85,27 +85,17 @@ def test_if_endpoint_config_is_invalid_in_local_mode(kwargs: Dict):
 
 
 def test_overwrite_model_server_url():
-    """
-    Ensures the model url is overwritten
-    :return:
-    """
     endpoint_config = EndpointConfig(url="http://testserver:5002/models/default@latest")
     endpoints = AvailableEndpoints(model=endpoint_config)
     x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
     assert (
         endpoints.model.url == "http://localhost/projects/default/models/tag/production"
     )
-    # Check that we get INFO message about overwriting the endpoints configuration
-    log_message = "Ignoring url 'http://testserver:5002/models/default@latest' from 'endpoints.yml' and using 'http://localhost/projects/default/models/tag/production' instead"
-    with warnings.catch_warnings(record=True):
+    with pytest.warns(UserWarning):
         x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
 
 
 def test_reuse_wait_time_between_pulls():
-    """
-    Checks to ensure wait_between_pull_time is honored
-    :return:
-    """
     test_wait_time = 5
     endpoint_config = EndpointConfig(
         url="http://localhost:5002/models/default@latest",
@@ -115,67 +105,19 @@ def test_reuse_wait_time_between_pulls():
     assert endpoints.model.kwargs["wait_time_between_pulls"] == test_wait_time
 
 
-def test_no_wait_time_between_pulls():
-    """
-    Checks to ensure when wait_between_pull_time isn't specified it should be default value
-    :return:
-    """
+def test_default_wait_time_between_pulls():
     endpoint_config = EndpointConfig(url="http://localhost:5002/models/default@latest")
     endpoints = AvailableEndpoints(model=endpoint_config)
     x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
     assert endpoints.model.kwargs["wait_time_between_pulls"] == 2
 
 
-def test_no_model_server_url():
-    """
-    Checks for the model server url being empty to ensure it gives back default value.
-    :return:
-    """
+def test_default_model_server_url():
     endpoint_config = EndpointConfig()
     endpoints = AvailableEndpoints(model=endpoint_config)
     x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
     assert (
         endpoints.model.url == "http://localhost/projects/default/models/tag/production"
-    )
-
-
-def test_overwrite_for_local_x(caplog: LogCaptureFixture):
-    test_wait_time = 5
-    default_wait_time = 2
-    endpoint_config_missing_wait = EndpointConfig(
-        url="http://localhost:5002/models/default@latest"
-    )
-    endpoint_config_custom = EndpointConfig(
-        url="http://localhost:5002/models/default@latest",
-        wait_time_between_pulls=test_wait_time,
-    )
-    endpoints_custom = AvailableEndpoints(model=endpoint_config_custom)
-    endpoints_missing_wait = AvailableEndpoints(model=endpoint_config_missing_wait)
-
-    # Check that we get INFO message about overwriting the endpoints configuration
-    expected_warning = (
-        "Ignoring url 'http://localhost:5002/models/default@latest' from 'endpoints.yml'"
-        " and using 'http://localhost/projects/default/models/tag/production' instead."
-    )
-    with pytest.warns(UserWarning, match="test") as warning_checker:
-        x._overwrite_endpoints_for_local_x(endpoints_custom, "test", "http://localhost")
-    warning = warning_checker.list[0]
-    assert str(warning.message) == expected_warning
-
-    # Checking for url to be changed in config and wait time value to be honored
-    assert (
-        endpoints_custom.model.url
-        == "http://localhost/projects/default/models/tag/production"
-    )
-    assert endpoints_custom.model.kwargs["wait_time_between_pulls"] == test_wait_time
-
-    # Check for wait time to be set to 3 since it isn't specified
-    x._overwrite_endpoints_for_local_x(
-        endpoints_missing_wait, "test", "http://localhost"
-    )
-    assert (
-        endpoints_missing_wait.model.kwargs["wait_time_between_pulls"]
-        == default_wait_time
     )
 
 
