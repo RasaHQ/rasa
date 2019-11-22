@@ -35,7 +35,7 @@ jsonschema==3.0.2
 packaging==19.0
 gevent==1.4.0
 pytz==2019.1
-rasa-sdk~=1.4.0
+rasa-sdk~=1.5.0
 colorclass==2.2.0
 terminaltables==3.1.0
 sanic==19.6.3
