@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os
 import pytest
 
@@ -37,6 +35,7 @@ def pipelines_for_tests():
                 "NGramFeaturizer",
                 "RegexFeaturizer",
                 "CountVectorsFeaturizer",
+                "ConveRTFeaturizer",
                 "MitieEntityExtractor",
                 "CRFEntityExtractor",
                 "SpacyEntityExtractor",

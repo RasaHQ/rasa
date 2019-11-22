@@ -1,4 +1,5 @@
 import asyncio
+import warnings
 import logging
 import os
 import shutil
@@ -227,7 +228,7 @@ async def load_agent_on_start(
             _, nlu_model = model.get_model_subdirectories(unpacked_model)
             _interpreter = NaturalLanguageInterpreter.create(nlu_model, endpoints.nlu)
     except Exception:
-        logger.debug("Could not load interpreter from '{}'.".format(model_path))
+        logger.debug(f"Could not load interpreter from '{model_path}'.")
         _interpreter = None
 
     _broker = broker_utils.from_endpoint_config(endpoints.event_broker)
@@ -250,7 +251,7 @@ async def load_agent_on_start(
     )
 
     if not app.agent:
-        logger.warning(
+        warnings.warn(
             "Agent could not be loaded with the provided configuration. "
             "Load default agent without any model."
         )

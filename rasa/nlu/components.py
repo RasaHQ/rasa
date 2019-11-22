@@ -176,7 +176,7 @@ class MissingArgumentError(ValueError):
     """
 
     def __init__(self, message: Text) -> None:
-        super(MissingArgumentError, self).__init__(message)
+        super().__init__(message)
         self.message = message
 
     def __str__(self) -> Text:
@@ -195,7 +195,7 @@ class UnsupportedLanguageError(Exception):
         self.component = component
         self.language = language
 
-        super(UnsupportedLanguageError, self).__init__(component, language)
+        super().__init__(component, language)
 
     def __str__(self) -> Text:
         return "component {} does not support language {}".format(
@@ -213,7 +213,7 @@ class ComponentMetaclass(type):
         return cls.__name__
 
 
-class Component(object, metaclass=ComponentMetaclass):
+class Component(metaclass=ComponentMetaclass):
     """A component is a message processing unit in a pipeline.
 
     Components are collected sequentially in a pipeline. Each component
@@ -446,7 +446,7 @@ class Component(object, metaclass=ComponentMetaclass):
         return language in cls.language_list
 
 
-class ComponentBuilder(object):
+class ComponentBuilder:
     """Creates trainers and interpreters based on configurations.
 
     Caches components for reuse.

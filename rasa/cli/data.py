@@ -86,8 +86,8 @@ def split_nlu_data(args):
 
     train, test = nlu_data.train_test_split(args.training_fraction)
 
-    train.persist(args.out, filename="training_data.{}".format(fformat))
-    test.persist(args.out, filename="test_data.{}".format(fformat))
+    train.persist(args.out, filename=f"training_data.{fformat}")
+    test.persist(args.out, filename=f"test_data.{fformat}")
 
 
 def validate_files(args):
@@ -103,5 +103,9 @@ def validate_files(args):
     )
 
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
+    domain_is_valid = validator.verify_domain_validity()
+    if not domain_is_valid:
+        sys.exit(1)
+
     everything_is_alright = validator.verify_all(not args.fail_on_warnings)
     sys.exit(0) if everything_is_alright else sys.exit(1)

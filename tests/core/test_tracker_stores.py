@@ -124,7 +124,7 @@ def test_find_tracker_store(default_domain: Domain, monkeypatch: MonkeyPatch):
 
 class ExampleTrackerStore(RedisTrackerStore):
     def __init__(self, domain, url, port, db, password, record_exp, event_broker=None):
-        super(ExampleTrackerStore, self).__init__(
+        super().__init__(
             domain,
             event_broker=event_broker,
             host=url,
@@ -204,12 +204,14 @@ def test_deprecated_pickle_deserialisation(caplog: LogCaptureFixture):
     serialised = pickle_serialise_tracker(tracker)
 
     # deprecation warning should be emitted
-    with assert_log_emitted(
-        caplog, rasa.core.tracker_store.logger.name, logging.WARNING, "DEPRECATION"
-    ):
+
+    caplog.clear()  # avoid counting debug messages
+    with caplog.at_level(logging.WARNING):
         assert tracker == store.deserialise_tracker(
             UserMessage.DEFAULT_SENDER_ID, serialised
         )
+    assert len(caplog.records) == 1
+    assert "Deserialisation of pickled trackers will be deprecated" in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -229,7 +231,7 @@ def test_get_db_url_with_port_in_host():
     dialect = "postgresql"
     db = "mydb"
 
-    expected = "{}://{}/{}".format(dialect, host, db)
+    expected = f"{dialect}://{host}/{db}"
 
     assert (
         str(SQLTrackerStore.get_db_url(dialect="postgresql", host=host, db=db))

@@ -150,7 +150,7 @@ def test_ticket_exists_error():
 async def test_multiple_conversation_ids(default_agent: Agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
 
-    conversation_ids = ["conversation {}".format(i) for i in range(2)]
+    conversation_ids = [f"conversation {i}" for i in range(2)]
 
     # ensure conversations are processed in order
     tasks = [default_agent.handle_text(text, sender_id=_id) for _id in conversation_ids]
@@ -204,7 +204,7 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
         wait_times = np.linspace(0.1, 0.05, n_messages)
         tasks = [
             default_agent.handle_message(
-                UserMessage("sender {0}".format(i), sender_id="some id"), wait=k
+                UserMessage(f"sender {i}", sender_id="some id"), wait=k
             )
             for i, k in enumerate(wait_times)
         ]
@@ -212,7 +212,7 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
         # execute futures
         await asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))
 
-        expected_order = ["sender {0}".format(i) for i in range(len(wait_times))]
+        expected_order = [f"sender {i}" for i in range(len(wait_times))]
 
         # ensure order of incoming messages is as expected
         with open(str(incoming_order_file)) as f:
@@ -257,7 +257,7 @@ async def test_lock_error(default_agent: Agent):
         # meaning the second message will not be able to acquire a lock
         tasks = [
             default_agent.handle_message(
-                UserMessage("sender {0}".format(i), sender_id="some id")
+                UserMessage(f"sender {i}", sender_id="some id")
             )
             for i in range(2)
         ]

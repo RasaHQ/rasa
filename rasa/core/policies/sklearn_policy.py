@@ -67,7 +67,7 @@ class SklearnPolicy(Policy):
                     "MaxHistoryTrackerFeaturizer."
                     "".format(type(featurizer).__name__)
                 )
-        super(SklearnPolicy, self).__init__(featurizer, priority)
+        super().__init__(featurizer, priority)
 
         self.model = model or self._default_model()
         self.cv = cv
@@ -143,7 +143,7 @@ class SklearnPolicy(Policy):
         self.model = model
         logger.info("Done fitting sklearn policy model")
         if score is not None:
-            logger.info("Cross validation score: {:.5f}".format(score))
+            logger.info(f"Cross validation score: {score:.5f}")
 
     def _postprocess_prediction(self, y_proba, domain):
         yp = y_proba[0].tolist()

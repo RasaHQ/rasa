@@ -1,4 +1,5 @@
 import logging
+import warnings
 import json
 import os
 import typing
@@ -39,7 +40,7 @@ class MappingPolicy(Policy):
     def __init__(self, priority: int = MAPPING_POLICY_PRIORITY) -> None:
         """Create a new Mapping policy."""
 
-        super(MappingPolicy, self).__init__(priority=priority)
+        super().__init__(priority=priority)
 
     @classmethod
     def validate_against_domain(
@@ -97,9 +98,10 @@ class MappingPolicy(Policy):
             if action:
                 idx = domain.index_for_action(action)
                 if idx is None:
-                    logger.warning(
+                    warnings.warn(
                         "MappingPolicy tried to predict unknown "
-                        "action '{}'.".format(action)
+                        f"action '{action}'. Make sure all mapped actions are "
+                        "listed in the domain."
                     )
                 else:
                     prediction[idx] = 1

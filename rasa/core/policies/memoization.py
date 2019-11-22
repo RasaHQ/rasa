@@ -68,7 +68,7 @@ class MemoizationPolicy(Policy):
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
-        super(MemoizationPolicy, self).__init__(featurizer, priority)
+        super().__init__(featurizer, priority)
 
         self.max_history = self.featurizer.max_history
         self.lookup = lookup if lookup is not None else {}
@@ -204,10 +204,10 @@ class MemoizationPolicy(Policy):
 
         tracker_as_states = self.featurizer.prediction_states([tracker], domain)
         states = tracker_as_states[0]
-        logger.debug("Current tracker state {}".format(states))
+        logger.debug(f"Current tracker state {states}")
         recalled = self.recall(states, tracker, domain)
         if recalled is not None:
-            logger.debug("There is a memorised next action '{}'".format(recalled))
+            logger.debug(f"There is a memorised next action '{recalled}'")
 
             if self.USE_NLU_CONFIDENCE_AS_SCORE:
                 # the memoization will use the confidence of NLU on the latest
@@ -318,7 +318,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 # check if we like new futures
                 memorised = self._recall_states(states)
                 if memorised is not None:
-                    logger.debug("Current tracker state {}".format(states))
+                    logger.debug(f"Current tracker state {states}")
                     return memorised
                 old_states = states
 
@@ -326,7 +326,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             mcfly_tracker = self._back_to_the_future_again(mcfly_tracker)
 
         # No match found
-        logger.debug("Current tracker state {}".format(old_states))
+        logger.debug(f"Current tracker state {old_states}")
         return None
 
     def recall(
