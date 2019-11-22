@@ -102,6 +102,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         "random_seed": None,
         # optimizer
         "optimizer": "Adam",  # can be either 'Adam' (default) or 'Nadam'
+        "learning_rate": 0.001,
         "normalize_loss": False,
         # embedding parameters
         # default dense dimension used if no dense features are present
@@ -189,6 +190,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         self.optimizer = config["optimizer"]
         self.normalize_loss = config["normalize_loss"]
+        self.learning_rate = config["learning_rate"]
         self.epochs = config["epochs"]
 
         self.random_seed = self.component_config["random_seed"]
@@ -1235,9 +1237,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
             # define which optimizer to use
             if self.optimizer.lower() == "nadam":
-                self._train_op = tf.contrib.opt.NadamOptimizer().minimize(loss)
+                self._train_op = tf.contrib.opt.NadamOptimizer(
+                    learning_rate=self.learning_rate
+                ).minimize(loss)
             else:
-                self._train_op = tf.train.AdamOptimizer().minimize(loss)
+                self._train_op = tf.train.AdamOptimizer(
+                    learning_rate=self.learning_rate
+                ).minimize(loss)
 
             # train tensorflow graph
             self.session = tf.Session(config=self._tf_config)

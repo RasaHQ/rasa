@@ -70,6 +70,7 @@ class Plotter(object):
         metrics = {
             "intent": {"scores": ["loss", "acc"], "prefix": "i"},
             "entity": {"scores": ["loss", "f1"], "prefix": "e"},
+            "mask": {"scores": ["loss", "acc"], "prefix": "m"},
         }
 
         for metric_name, metric_values in metrics.items():
