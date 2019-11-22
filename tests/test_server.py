@@ -117,7 +117,7 @@ def test_status_nlu_only(rasa_app_nlu: SanicTestClient, trained_rasa_model: Text
     assert response.status == 200
     assert "fingerprint" in response.json
     assert "model_file" in response.json
-    # Eventually update with assert model_file == trained_rasa_model
+    # TODO: Eventually update with assert model_file == trained_rasa_model
     # believe bug is causing NLU to be retrained twice breaking above
     # code
     assert os.path.isfile(model_file)
