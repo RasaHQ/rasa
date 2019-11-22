@@ -211,23 +211,31 @@ class MarkdownWriter(TrainingDataWriter):
     def _generate_training_examples_md(self, training_data: "TrainingData") -> Text:
         """Generates markdown training examples."""
 
-        # Sort training data by intent
-        training_examples = sorted(
-            [e.as_dict_nlu() for e in training_data.training_examples],
-            key=lambda k: k[MESSAGE_INTENT_ATTRIBUTE],
-        )
-        md = ""
-        for i, example in enumerate(training_examples):
-            intent = training_examples[i - 1][MESSAGE_INTENT_ATTRIBUTE]
-            if i == 0 or intent != example[MESSAGE_INTENT_ATTRIBUTE]:
-                md += self._generate_section_header_md(
-                    INTENT,
-                    example[MESSAGE_INTENT_ATTRIBUTE],
-                    example.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE, None),
-                    i != 0,
-                )
+        from collections import defaultdict
 
-            md += self._generate_item_md(self._generate_message_md(example))
+        training_examples = defaultdict(list)
+
+        # Sort by intent while keeping basic intent order
+        for example in [e.as_dict_nlu() for e in training_data.training_examples]:
+            intent = example[MESSAGE_INTENT_ATTRIBUTE]
+            training_examples[intent].append(example)
+
+        md = ""
+
+        for intent, examples in training_examples.items():
+            for i, example in enumerate(examples):
+                did_intent_change = i == 0
+                is_first_line = md == ""
+
+                if did_intent_change:
+                    md += self._generate_section_header_md(
+                        INTENT,
+                        intent,
+                        example.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE, None),
+                        not is_first_line,
+                    )
+
+                md += self._generate_item_md(self._generate_message_md(example))
 
         return md
 
