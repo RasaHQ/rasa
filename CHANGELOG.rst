@@ -15,6 +15,8 @@ Added
 
 Changed
 -------
+- Updated ``/status`` endpoint to show correct path to model archive
+
 
 Removed
 -------
@@ -48,7 +50,6 @@ Changed
 - Updated Mattermost connector documentation to be more clear.
 - Updated format strings to f-strings where appropriate.
 - Updated tensorflow requirement to ``1.15.0``
-- Updated ``/status`` endpoint to show correct path to model archive
 
 Removed
 -------
