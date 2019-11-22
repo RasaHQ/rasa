@@ -123,7 +123,6 @@ def test_status_nlu_only(rasa_app_nlu: SanicTestClient, trained_rasa_model: Text
     assert os.path.isfile(model_file)
 
 
-
 def test_status_secured(rasa_secured_app: SanicTestClient):
     _, response = rasa_secured_app.get("/status")
     assert response.status == 401
