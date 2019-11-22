@@ -2,7 +2,6 @@ import os
 import time
 import tempfile
 import uuid
-import re
 from multiprocessing import Process, Manager
 from typing import List, Text, Type
 from contextlib import ExitStack
@@ -112,9 +111,10 @@ def test_status(rasa_app: SanicTestClient, trained_rasa_model: Text):
     assert model_file == trained_rasa_model
 
 
-def test_status_nlu_only(rasa_app_nlu: SanicTestClient):
+def test_status_nlu_only(rasa_app_nlu: SanicTestClient, trained_rasa_model: Text):
     _, response = rasa_app_nlu.get("/status")
-    assert os.path.isfile(response.json["model_file"])
+    model_file = response.json["model_file"]
+    assert model_file == trained_rasa_model
     assert response.status == 200
     assert "fingerprint" in response.json
     assert "model_file" in response.json
