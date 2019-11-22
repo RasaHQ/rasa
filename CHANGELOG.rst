@@ -22,7 +22,7 @@ Added
   stored under the ``metadata`` key when reading the event from a JSON object or
   dictionary.
 - Add command line argument ``rasa x --config CONFIG``, to specify path to the policy
-  and NLU pipeline configuration of your bot (default: ``config.yml``)
+  and NLU pipeline configuration of your bot (default: ``config.yml``).
 - Added a new NLU featurizer - ``ConveRTFeaturizer`` based on `ConveRT
   <https://github.com/PolyAI-LDN/polyai-models>`_ model released by PolyAI.
 - Added a new preconfigured pipeline - ``pretrained_embeddings_convert``.
@@ -45,6 +45,14 @@ Fixed
 - ``CountVectorsFeaturizer`` featurizes intents only if its analyzer is set to ``word``
 - Fixed bug where facebooks generic template was not rendered when buttons were ``None``
 - Fixed default intents unnecessarily raising undefined parsing error
+
+[1.4.6] - 2019-11-22
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Fixed Rasa X not working when any tracker store was configured for Rasa.
+- Use the matplotlib backend ``agg`` in case the ``tkinter`` package is not installed.
 
 [1.4.5] - 2019-11-14
 ^^^^^^^^^^^^^^^^^^^^
