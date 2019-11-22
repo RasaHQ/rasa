@@ -299,32 +299,33 @@ out <a class="reference internal" href="../../api/custom-nlu-components/#custom-
 <li><a class="reference internal" href="#ngramfeaturizer" id="id13">NGramFeaturizer</a></li>
 <li><a class="reference internal" href="#regexfeaturizer" id="id14">RegexFeaturizer</a></li>
 <li><a class="reference internal" href="#countvectorsfeaturizer" id="id15">CountVectorsFeaturizer</a></li>
+<li><a class="reference internal" href="#convertfeaturizer" id="id16">ConveRTFeaturizer</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#intent-classifiers" id="id16">Intent Classifiers</a><ul>
-<li><a class="reference internal" href="#mitieintentclassifier" id="id17">MitieIntentClassifier</a></li>
-<li><a class="reference internal" href="#sklearnintentclassifier" id="id18">SklearnIntentClassifier</a></li>
-<li><a class="reference internal" href="#embeddingintentclassifier" id="id19">EmbeddingIntentClassifier</a></li>
-<li><a class="reference internal" href="#keywordintentclassifier" id="id20">KeywordIntentClassifier</a></li>
+<li><a class="reference internal" href="#intent-classifiers" id="id17">Intent Classifiers</a><ul>
+<li><a class="reference internal" href="#mitieintentclassifier" id="id18">MitieIntentClassifier</a></li>
+<li><a class="reference internal" href="#sklearnintentclassifier" id="id19">SklearnIntentClassifier</a></li>
+<li><a class="reference internal" href="#embeddingintentclassifier" id="id20">EmbeddingIntentClassifier</a></li>
+<li><a class="reference internal" href="#keywordintentclassifier" id="id21">KeywordIntentClassifier</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#selectors" id="id21">Selectors</a><ul>
-<li><a class="reference internal" href="#response-selector" id="id22">Response Selector</a></li>
+<li><a class="reference internal" href="#selectors" id="id22">Selectors</a><ul>
+<li><a class="reference internal" href="#response-selector" id="id23">Response Selector</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#tokenizers" id="id23">Tokenizers</a><ul>
-<li><a class="reference internal" href="#whitespacetokenizer" id="id24">WhitespaceTokenizer</a></li>
-<li><a class="reference internal" href="#jiebatokenizer" id="id25">JiebaTokenizer</a></li>
-<li><a class="reference internal" href="#mitietokenizer" id="id26">MitieTokenizer</a></li>
-<li><a class="reference internal" href="#spacytokenizer" id="id27">SpacyTokenizer</a></li>
+<li><a class="reference internal" href="#tokenizers" id="id24">Tokenizers</a><ul>
+<li><a class="reference internal" href="#whitespacetokenizer" id="id25">WhitespaceTokenizer</a></li>
+<li><a class="reference internal" href="#jiebatokenizer" id="id26">JiebaTokenizer</a></li>
+<li><a class="reference internal" href="#mitietokenizer" id="id27">MitieTokenizer</a></li>
+<li><a class="reference internal" href="#spacytokenizer" id="id28">SpacyTokenizer</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#entity-extractors" id="id28">Entity Extractors</a><ul>
-<li><a class="reference internal" href="#mitieentityextractor" id="id29">MitieEntityExtractor</a></li>
-<li><a class="reference internal" href="#spacyentityextractor" id="id30">SpacyEntityExtractor</a></li>
-<li><a class="reference internal" href="#entitysynonymmapper" id="id31">EntitySynonymMapper</a></li>
-<li><a class="reference internal" href="#crfentityextractor" id="id32">CRFEntityExtractor</a></li>
-<li><a class="reference internal" href="#ducklinghttpextractor" id="id33">DucklingHTTPExtractor</a></li>
+<li><a class="reference internal" href="#entity-extractors" id="id29">Entity Extractors</a><ul>
+<li><a class="reference internal" href="#mitieentityextractor" id="id30">MitieEntityExtractor</a></li>
+<li><a class="reference internal" href="#spacyentityextractor" id="id31">SpacyEntityExtractor</a></li>
+<li><a class="reference internal" href="#entitysynonymmapper" id="id32">EntitySynonymMapper</a></li>
+<li><a class="reference internal" href="#crfentityextractor" id="id33">CRFEntityExtractor</a></li>
+<li><a class="reference internal" href="#ducklinghttpextractor" id="id34">DucklingHTTPExtractor</a></li>
 </ul>
 </li>
 </ul>
@@ -660,11 +661,47 @@ Unseen words will be substituted with <code class="docutils literal notranslate"
 </tbody>
 </table>
 </div>
+<div class="section" id="convertfeaturizer">
+<h3><a class="toc-backref" href="#id16">ConveRTFeaturizer</a><a class="headerlink" href="#convertfeaturizer" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Creates a vector representation of user message and response (if specified) using <a class="reference external" href="https://github.com/PolyAI-LDN/polyai-models">ConveRT</a> model.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">nothing, used as an input to intent classifiers and response selectors that need intent features and response features respectively(e.g. <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> and <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code>)</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">nothing</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates features for intent classification and response selection.
+Uses the <a class="reference external" href="https://github.com/PolyAI-LDN/polyai-models#tfhub-signatures">default signature</a> to compute vector representations of input text.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Since <code class="docutils literal notranslate"><span class="pre">ConveRT</span></code> model is trained only on an english corpus of conversations, this featurizer should only be used if your training data is in english language.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">To use <code class="docutils literal notranslate"><span class="pre">ConveRTFeaturizer</span></code> you should install <code class="docutils literal notranslate"><span class="pre">tensorflow_text==1.15.1</span></code> and <code class="docutils literal notranslate"><span class="pre">tensorflow_hub==0.6.0</span></code>. Otherwise, you can also do a pip install of Rasa with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rasa[convert]</span></code></p>
+</div>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ConveRTFeaturizer&quot;</span>
+</pre></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <div class="section" id="intent-classifiers">
-<h2><a class="toc-backref" href="#id16">Intent Classifiers</a><a class="headerlink" href="#intent-classifiers" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id17">Intent Classifiers</a><a class="headerlink" href="#intent-classifiers" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="mitieintentclassifier">
-<h3><a class="toc-backref" href="#id17">MitieIntentClassifier</a><a class="headerlink" href="#mitieintentclassifier" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id18">MitieIntentClassifier</a><a class="headerlink" href="#mitieintentclassifier" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -699,7 +736,7 @@ is using a multi-class linear SVM with a sparse linear kernel (see <a class="ref
 </table>
 </div>
 <div class="section" id="sklearnintentclassifier">
-<h3><a class="toc-backref" href="#id18">SklearnIntentClassifier</a><a class="headerlink" href="#sklearnintentclassifier" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id19">SklearnIntentClassifier</a><a class="headerlink" href="#sklearnintentclassifier" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -755,7 +792,7 @@ that will get tried</p>
 </table>
 </div>
 <div class="section" id="embeddingintentclassifier">
-<h3><a class="toc-backref" href="#id19">EmbeddingIntentClassifier</a><a class="headerlink" href="#embeddingintentclassifier" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id20">EmbeddingIntentClassifier</a><a class="headerlink" href="#embeddingintentclassifier" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -956,7 +993,7 @@ See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starsp
 </table>
 </div>
 <div class="section" id="keywordintentclassifier">
-<span id="keyword-intent-classifier"></span><h3><a class="toc-backref" href="#id20">KeywordIntentClassifier</a><a class="headerlink" href="#keywordintentclassifier" title="Permalink to this headline">¶</a></h3>
+<span id="keyword-intent-classifier"></span><h3><a class="toc-backref" href="#id21">KeywordIntentClassifier</a><a class="headerlink" href="#keywordintentclassifier" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1001,9 +1038,9 @@ you have few NLU training data you can use one of our pipelines
 </div>
 </div>
 <div class="section" id="selectors">
-<h2><a class="toc-backref" href="#id21">Selectors</a><a class="headerlink" href="#selectors" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id22">Selectors</a><a class="headerlink" href="#selectors" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="response-selector">
-<span id="id4"></span><h3><a class="toc-backref" href="#id22">Response Selector</a><a class="headerlink" href="#response-selector" title="Permalink to this headline">¶</a></h3>
+<span id="id4"></span><h3><a class="toc-backref" href="#id23">Response Selector</a><a class="headerlink" href="#response-selector" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1129,9 +1166,9 @@ The default values are defined in <code class="docutils literal notranslate"><sp
 </div>
 </div>
 <div class="section" id="tokenizers">
-<span id="id5"></span><h2><a class="toc-backref" href="#id23">Tokenizers</a><a class="headerlink" href="#tokenizers" title="Permalink to this headline">¶</a></h2>
+<span id="id5"></span><h2><a class="toc-backref" href="#id24">Tokenizers</a><a class="headerlink" href="#tokenizers" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="whitespacetokenizer">
-<h3><a class="toc-backref" href="#id24">WhitespaceTokenizer</a><a class="headerlink" href="#whitespacetokenizer" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id25">WhitespaceTokenizer</a><a class="headerlink" href="#whitespacetokenizer" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1173,7 +1210,7 @@ modeling hierarchical intent structure, use these flags:</p>
 </table>
 </div>
 <div class="section" id="jiebatokenizer">
-<h3><a class="toc-backref" href="#id25">JiebaTokenizer</a><a class="headerlink" href="#jiebatokenizer" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id26">JiebaTokenizer</a><a class="headerlink" href="#jiebatokenizer" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1206,7 +1243,7 @@ MITIE entity extractor. Make sure to install Jieba, <code class="docutils litera
 <p>If the <code class="docutils literal notranslate"><span class="pre">dictionary_path</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code> (the default), then no custom dictionary will be used.</p>
 </div>
 <div class="section" id="mitietokenizer">
-<h3><a class="toc-backref" href="#id26">MitieTokenizer</a><a class="headerlink" href="#mitietokenizer" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id27">MitieTokenizer</a><a class="headerlink" href="#mitietokenizer" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1234,7 +1271,7 @@ tokens for the MITIE entity extractor.</p>
 </table>
 </div>
 <div class="section" id="spacytokenizer">
-<h3><a class="toc-backref" href="#id27">SpacyTokenizer</a><a class="headerlink" href="#spacytokenizer" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id28">SpacyTokenizer</a><a class="headerlink" href="#spacytokenizer" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1253,9 +1290,9 @@ tokens for the MITIE entity extractor.</td>
 </div>
 </div>
 <div class="section" id="entity-extractors">
-<h2><a class="toc-backref" href="#id28">Entity Extractors</a><a class="headerlink" href="#entity-extractors" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id29">Entity Extractors</a><a class="headerlink" href="#entity-extractors" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="mitieentityextractor">
-<h3><a class="toc-backref" href="#id29">MitieEntityExtractor</a><a class="headerlink" href="#mitieentityextractor" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id30">MitieEntityExtractor</a><a class="headerlink" href="#mitieentityextractor" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1296,7 +1333,7 @@ The MITIE component does not provide entity confidence values.</p>
 </table>
 </div>
 <div class="section" id="spacyentityextractor">
-<h3><a class="toc-backref" href="#id30">SpacyEntityExtractor</a><a class="headerlink" href="#spacyentityextractor" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id31">SpacyEntityExtractor</a><a class="headerlink" href="#spacyentityextractor" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1343,7 +1380,7 @@ Leaving the dimensions option unspecified will extract all available dimensions.
 </table>
 </div>
 <div class="section" id="entitysynonymmapper">
-<h3><a class="toc-backref" href="#id31">EntitySynonymMapper</a><a class="headerlink" href="#entitysynonymmapper" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id32">EntitySynonymMapper</a><a class="headerlink" href="#entitysynonymmapper" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1389,7 +1426,7 @@ exisiting entity, it appends itself to the processor list of this entity.</p>
 </table>
 </div>
 <div class="section" id="crfentityextractor">
-<h3><a class="toc-backref" href="#id32">CRFEntityExtractor</a><a class="headerlink" href="#crfentityextractor" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id33">CRFEntityExtractor</a><a class="headerlink" href="#crfentityextractor" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1461,7 +1498,7 @@ made available by Featurizers, use <code class="docutils literal notranslate"><s
 </table>
 </div>
 <div class="section" id="ducklinghttpextractor">
-<span id="id6"></span><h3><a class="toc-backref" href="#id33">DucklingHTTPExtractor</a><a class="headerlink" href="#ducklinghttpextractor" title="Permalink to this headline">¶</a></h3>
+<span id="id6"></span><h3><a class="toc-backref" href="#id34">DucklingHTTPExtractor</a><a class="headerlink" href="#ducklinghttpextractor" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
