@@ -31,6 +31,10 @@ logger = logging.getLogger(__name__)
 
 
 class EndToEndReader(MarkdownReader):
+    def __init__(self):
+        super().__init__()
+        self._regex_interpreter = RegexInterpreter()
+
     def _parse_item(self, line: Text) -> Optional["Message"]:
         """Parses an md list item line based on the current section type.
 
@@ -40,13 +44,25 @@ class EndToEndReader(MarkdownReader):
             DOCS_BASE_URL
         )
 
-        item_regex = re.compile(r"\s*(.+?):\s*(.*)")
+        # Match three groups:
+        # 1) The correct intent
+        # 2) Optional entities
+        # 3) The message text
+        item_regex = re.compile(r"\s*(.+?)({.*})*:\s*(.*)")
         match = re.match(item_regex, line)
         if match:
             intent = match.group(1)
+
             self.current_title = intent
-            message = match.group(2)
+            message = match.group(3)
             example = self._parse_training_example(message)
+
+            # If the message starts with the `INTENT_MESSAGE_PREFIX` the entities are
+            # are also annotated
+            if message.startswith(INTENT_MESSAGE_PREFIX):
+                parsed = self._regex_interpreter.synchronous_parse(message)
+                example.data["entities"] = parsed["entities"]
+
             example.data["true_intent"] = intent
             return example
 
@@ -414,7 +430,7 @@ class StoryFileReader:
         )
         self.current_step_builder.add_user_messages(parsed_messages)
 
-    async def add_e2e_messages(self, e2e_messages, line_num):
+    async def add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
                 "End-to-end message '{}' at invalid "

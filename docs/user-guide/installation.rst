@@ -13,7 +13,7 @@ Installation
 Quick Installation
 ~~~~~~~~~~~~~~~~~~
 
-You can install both Rasa and Rasa X using pip (requires Python 3.6.0 or higher).
+You can install both Rasa Open Source and Rasa X using pip (requires Python 3.6 or 3.7).
 
 .. code-block:: bash
 
@@ -141,17 +141,29 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
 
 .. tabs::
 
-    .. tab:: Rasa and Rasa X
+    .. tab:: Rasa Open Source and Rasa X
 
-        To install both Rasa and Rasa X in one go:
+        First make sure your ``pip`` version is up to date:
+
+        .. code-block:: bash
+
+            $ pip install -U pip
+
+        To install both Rasa Open Source and Rasa X in one go:
 
         .. code-block:: bash
 
             $ pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
 
-    .. tab:: Rasa only
+    .. tab:: Rasa Open Source only
 
-        If you just want to install Rasa without Rasa X:
+        First make sure your ``pip`` version is up to date:
+
+        .. code-block:: bash
+
+            $ pip install -U pip
+
+        To install Rasa Open Source without Rasa X:
 
         .. code-block:: bash
 
@@ -175,7 +187,7 @@ You can now head over to the tutorial.
 Building from Source
 ~~~~~~~~~~~~~~~~~~~~
 
-If you want to use the development version of Rasa, you can get it from GitHub:
+If you want to use the development version of Rasa Open Source, you can get it from GitHub:
 
 .. code-block:: bash
 
@@ -205,7 +217,7 @@ for your assistant.
 I have decided on a pipeline. How do I install the dependencies for it?
 -----------------------------------------------------------------------
 
-When you install Rasa, the dependencies for the ``supervised_embeddings`` - TensorFlow
+When you install Rasa Open Source, the dependencies for the ``supervised_embeddings`` - TensorFlow
 and sklearn_crfsuite get automatically installed. However, spaCy and MITIE need to be separately installed if you want to use pipelines containing components from those libraries.
 
 .. admonition:: Just give me everything!
@@ -235,9 +247,9 @@ You can install it with the following commands:
     $ python -m spacy download en_core_web_md
     $ python -m spacy link en_core_web_md en
 
-This will install Rasa NLU as well as spacy and its language model
+This will install Rasa Open Source as well as spaCy and its language model
 for the English language. We recommend using at least the
-"medium" sized models (``_md``) instead of the spacy's
+"medium" sized models (``_md``) instead of the spaCy's
 default small ``en_core_web_sm`` model. Small models require less
 memory to run, but will somewhat reduce intent classification performance.
 
