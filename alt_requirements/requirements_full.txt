@@ -7,4 +7,7 @@
 # MITIE Requirements
 -r requirements_pretrained_embeddings_mitie.txt
 
+# ConveRT Requirements
+-r requirements_pretrained_embeddings_convert.txt
+
 jieba==0.39
