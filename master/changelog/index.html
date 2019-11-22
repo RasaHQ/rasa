@@ -214,6 +214,7 @@
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../1.4.6/changelog/">1.4.6</a>
               <a href="../../1.4.5/changelog/">1.4.5</a>
               <a href="../../1.4.4/changelog/">1.4.4</a>
               <a href="../../1.4.3/changelog/">1.4.3</a>
@@ -265,7 +266,7 @@
 
 
 
-    <p class="scv-banner"><a href="../../1.4.5/changelog/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.4.5.</a></p>
+    <p class="scv-banner"><a href="../../1.4.6/changelog/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.4.6.</a></p>
 <div class="section" id="rasa-change-log">
 <h1>Rasa Change Log<a class="headerlink" href="#rasa-change-log" title="Permalink to this headline">¶</a></h1>
 <p>All notable changes to this project will be documented in this file.
@@ -280,6 +281,9 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 <li>Added documentation for <code class="docutils literal notranslate"><span class="pre">AugmentedMemoizationPolicy</span></code></li>
 <li>Fall back to <code class="docutils literal notranslate"><span class="pre">InMemoryTrackerStore</span></code> in case there is any problem with the current
 tracker store</li>
+<li>Arbitrary metadata can now be attached to any <code class="docutils literal notranslate"><span class="pre">Event</span></code> subclass. The data must be
+stored under the <code class="docutils literal notranslate"><span class="pre">metadata</span></code> key when reading the event from a JSON object or
+dictionary.</li>
 <li>Add command line argument <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span> <span class="pre">--config</span> <span class="pre">CONFIG</span></code>, to specify path to the policy and
 NLU pipeline configuration of your bot (default: <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>)</li>
 <li>Added a new NLU featurizer - <code class="docutils literal notranslate"><span class="pre">ConveRTFeaturizer</span></code> based on <a class="reference external" href="https://github.com/PolyAI-LDN/polyai-models">ConveRT</a> model released by PolyAI.</li>
