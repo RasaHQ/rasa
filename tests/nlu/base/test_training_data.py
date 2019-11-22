@@ -595,19 +595,3 @@ def test_section_value_with_delimiter():
         "data/test/markdown_single_sections/section_with_delimiter.md"
     )
     assert td_section_with_delimiter.entity_synonyms == {"10:00 am": "10:00"}
-
-
-def test_markdown_order():
-    r = MarkdownReader()
-
-    md = """## intent:z
-- i'm looking for a place to eat
-- i'm looking for a place in the [north](loc-direction) of town
-
-## intent:a
-- intent a
-- also very important
-"""
-
-    training_data = r.reads(md)
-    assert training_data.nlu_as_markdown() == md
