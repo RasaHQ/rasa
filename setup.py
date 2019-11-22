@@ -70,7 +70,7 @@ install_requires = [
     "rasa-sdk~=1.5.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
-    "sanic~=19.6",
+    "sanic~=19.9",
     "sanic-cors==0.9.9.post1",
     "sanic-jwt~=1.3",
     "aiohttp~=3.5",
