@@ -35,6 +35,7 @@ def pipelines_for_tests():
                 "NGramFeaturizer",
                 "RegexFeaturizer",
                 "CountVectorsFeaturizer",
+                "ConveRTFeaturizer",
                 "MitieEntityExtractor",
                 "CRFEntityExtractor",
                 "SpacyEntityExtractor",
