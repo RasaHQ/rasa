@@ -57,8 +57,8 @@ class EndToEndReader(MarkdownReader):
             message = match.group(3)
             example = self._parse_training_example(message)
 
-            # If the message starts with the `INTENT_MESSAGE_PREFIX` the entities are
-            # are also annotated
+            # If the message starts with the `INTENT_MESSAGE_PREFIX` potential entities
+            # are annotated in the json format (e.g. `/greet{"name": "Rasa"})
             if message.startswith(INTENT_MESSAGE_PREFIX):
                 parsed = self._regex_interpreter.synchronous_parse(message)
                 example.data["entities"] = parsed["entities"]

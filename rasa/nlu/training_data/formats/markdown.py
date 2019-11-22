@@ -315,8 +315,10 @@ class MarkdownWriter(TrainingDataWriter):
 
         pos = 0
 
-        # If a message was prefixed with `INTENT_MESSAGE_PREFIX` the entities were also
-        # annotated as part of the text
+        # If a message was prefixed with `INTENT_MESSAGE_PREFIX` (this can only happen
+        # in end-to-end stories) then potential entities were provided in the json
+        # format (e.g. `/greet{"name": "Rasa"}) and we don't have to add the NLU
+        # entity annotation
         if not text.startswith(INTENT_MESSAGE_PREFIX):
             entities = sorted(message.get("entities", []), key=lambda k: k["start"])
 
