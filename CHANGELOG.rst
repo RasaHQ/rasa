@@ -12,7 +12,6 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
-- Added tests for the ``/status`` api route to verify model and url settings.
 
 Changed
 -------
