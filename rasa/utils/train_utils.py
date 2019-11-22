@@ -558,6 +558,7 @@ def tf_dense_layer_for_sparse(
     C2: float,
     activation: Optional[Callable] = tf.nn.relu,
     use_bias: bool = True,
+    input_dim: Optional[int] = None,
 ) -> tf.Tensor:
     """Dense layer for sparse input tensor"""
 
@@ -566,18 +567,17 @@ def tf_dense_layer_for_sparse(
 
     with tf.variable_scope("dense_layer_for_sparse_" + name, reuse=tf.AUTO_REUSE):
         kernel_regularizer = tf.contrib.layers.l2_regularizer(C2)
+        input_dim = input_dim or int(inputs.shape[-1])
         kernel = tf.get_variable(
             "kernel",
-            shape=[inputs.shape[-1], units],
+            shape=[input_dim, units],
             dtype=inputs.dtype,
             regularizer=kernel_regularizer,
         )
         bias = tf.get_variable("bias", shape=[units], dtype=inputs.dtype)
 
         # outputs will be 2D
-        outputs = tf.sparse.matmul(
-            tf.sparse.reshape(inputs, [-1, int(inputs.shape[-1])]), kernel
-        )
+        outputs = tf.sparse.matmul(tf.sparse.reshape(inputs, [-1, input_dim]), kernel)
 
         if len(inputs.shape) == 3:
             # reshape back

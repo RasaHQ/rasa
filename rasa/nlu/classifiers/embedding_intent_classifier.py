@@ -144,6 +144,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # if true named entity recognition is trained and entities predicted
         "named_entity_recognition": True,
         "masked_lm_loss": False,
+        "sparse_input_dropout": False,
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -242,6 +243,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             "named_entity_recognition"
         ]
         self.masked_lm_loss = self.component_config["masked_lm_loss"]
+        self.sparse_input_dropout = self.component_config["sparse_input_dropout"]
 
     # package safety checks
     @classmethod
@@ -638,6 +640,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         features: List[Union["tf.Tensor", "tf.SparseTensor"]],
         mask: "tf.Tensor",
         name: Text,
+        sparse_dropout: bool = False,
     ) -> "tf.Tensor":
 
         dense_features = []
@@ -651,8 +654,19 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         for f in features:
             if isinstance(f, tf.SparseTensor):
+                if sparse_dropout:
+                    to_retain_prob = tf.random.uniform(
+                        tf.shape(f.values), 0, 1, f.values.dtype
+                    )
+                    to_retain = tf.greater_equal(to_retain_prob, self.droprate)
+                    _f = tf.sparse.retain(f, to_retain)
+                    _f = tf.cond(self._is_training, lambda: _f, lambda: f)
+                else:
+                    _f = f
                 dense_features.append(
-                    train_utils.tf_dense_layer_for_sparse(f, dense_dim, name, self.C2)
+                    train_utils.tf_dense_layer_for_sparse(
+                        f, dense_dim, name, self.C2, input_dim=int(f.shape[-1])
+                    )
                 )
             else:
                 dense_features.append(f)
@@ -663,9 +677,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return tf.concat(dense_features, axis=-1) * mask
 
-    @staticmethod
     def _mask_input(
-        a: "tf.Tensor", mask: "tf.Tensor"
+        self, a: "tf.Tensor", mask: "tf.Tensor"
     ) -> Tuple["tf.Tensor", "tf.Tensor"]:
         """Randomly mask input sequences."""
 
@@ -695,6 +708,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
         lm_mask_bool = tf.greater_equal(lm_mask_prob, 0.85)
         a_pre = tf.where(tf.tile(lm_mask_bool, (1, 1, a.shape[-1])), a_other, a)
+
+        a_pre = tf.cond(self._is_training, lambda: a_pre, lambda: a)
 
         return a_pre, lm_mask_bool
 
@@ -742,7 +757,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         mask = batch_data["text_mask"][0]
         a = self.combine_sparse_dense_features(
-            batch_data["text_features"], mask, "text"
+            batch_data["text_features"],
+            mask,
+            "text",
+            sparse_dropout=self.sparse_input_dropout,
         )
 
         if self.masked_lm_loss:
