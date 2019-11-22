@@ -106,6 +106,35 @@ def validate_required_components_from_data(
             "To featurize regexes for entity extraction, you need to have RegexFeaturizer in your pipeline."
         )
 
+    # Lookup Tables config verification
+    if data.lookup_tables:
+        crf_components = [
+            component
+            for component in pipeline
+            if component.name == "CRFEntityExtractor"
+        ]
+        if not crf_components:
+            warnings.warn(
+                "You have defined training data consisting of lookup tables, but "
+                "your NLU pipeline does not include a CRFEntityExtractor. "
+                "To featurize lookup tables, add a CRFEntityExtractor to your pipeline."
+            )
+        else:
+            crf_component = crf_components[0]
+            component_features_list = crf_component.component_config["features"]
+            component_list = [
+                item for sublist in component_features_list for item in sublist
+            ]
+            pattern_feature = [
+                feature for feature in component_list if "pattern" in feature
+            ]
+            if not pattern_feature:
+                warnings.warn(
+                    "You have defined training data consisting of lookup tables, but "
+                    "your NLU pipeline CRFEntityExtractor does not include pattern feature. "
+                    "To featurize lookup tables, add pattern feature to pipeline."
+                )
+
     # Check for lookup tables but no RegexFeaturizer
     if data.lookup_tables and not any(
         [component.name == "RegexFeaturizer" for component in pipeline]
