@@ -1004,12 +1004,8 @@ def tf_loss_softmax(
 
     if scale_loss:
         # mask loss by prediction confidence
-        pred = tf.nn.softmax(logits)
-        if len(pred.shape) == 3:
-            pos_pred = pred[:, :, 0]
-        else:  # len(pred.shape) == 2
-            pos_pred = pred[:, 0]
-        mask *= tf.pow((1 - pos_pred) / 0.5, 4)
+        pos_pred = tf.nn.softmax(logits)[..., 0]
+        mask *= tf.pow(tf.minimum(0.5, 1 - pos_pred) / 0.5, 4)
 
     loss = tf.losses.softmax_cross_entropy(labels, logits, mask)
     # add regularization losses
