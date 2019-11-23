@@ -81,9 +81,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # Whether to share the hidden layer weights between input words and labels
         "share_hidden_layers": False,
         # number of units in transformer
-        "transformer_size": 128,
+        "transformer_size": 256,
         # number of transformer layers
-        "num_transformer_layers": 1,
+        "num_transformer_layers": 2,
         # number of attention heads in transformer
         "num_heads": 4,
         # type of positional encoding in transformer
