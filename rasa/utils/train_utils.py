@@ -753,18 +753,43 @@ def create_t2t_transformer_encoder(
         if hparams.unidirectional_encoder:
             attn_bias_for_padding = encoder_decoder_attention_bias
 
-        x = transformer_encoder(
+        x_1 = transformer_encoder(
             x,
             self_attention_bias,
             hparams,
+            name="encoder_1",
             nonpadding=_mask,
             save_weights_to=attention_weights,
             attn_bias_for_padding=attn_bias_for_padding,
         )
 
-        x *= _mask
+        hparams.num_hidden_layers = 1
+        x_2 = transformer_encoder(
+            x_1,
+            self_attention_bias,
+            hparams,
+            name="encoder_2",
+            nonpadding=_mask,
+            save_weights_to=attention_weights,
+            attn_bias_for_padding=attn_bias_for_padding,
+        )
+        x_3 = transformer_encoder(
+            x_1,
+            self_attention_bias,
+            hparams,
+            name="encoder_3",
+            nonpadding=_mask,
+            save_weights_to=attention_weights,
+            attn_bias_for_padding=attn_bias_for_padding,
+        )
 
-        return tf.nn.dropout(tf.nn.relu(x), 1.0 - hparams.layer_prepostprocess_dropout)
+        x_1 *= _mask
+        x_2 *= _mask
+        x_3 *= _mask
+
+        return (tf.nn.dropout(tf.nn.relu(x_1), 1.0 - hparams.layer_prepostprocess_dropout),
+                tf.nn.dropout(tf.nn.relu(x_2), 1.0 - hparams.layer_prepostprocess_dropout),
+                tf.nn.dropout(tf.nn.relu(x_3), 1.0 - hparams.layer_prepostprocess_dropout))
 
 
 def _tf_make_flat(x: "tf.Tensor") -> "tf.Tensor":
@@ -1004,12 +1029,8 @@ def tf_loss_softmax(
 
     if scale_loss:
         # mask loss by prediction confidence
-        pred = tf.nn.softmax(logits)
-        if len(pred.shape) == 3:
-            pos_pred = pred[:, :, 0]
-        else:  # len(pred.shape) == 2
-            pos_pred = pred[:, 0]
-        mask *= tf.pow((1 - pos_pred) / 0.5, 4)
+        pos_pred = tf.nn.softmax(logits)[..., 0]
+        mask *= tf.pow(tf.minimum(0.5, 1 - pos_pred) / 0.5, 4)
 
     loss = tf.losses.softmax_cross_entropy(labels, logits, mask)
     # add regularization losses

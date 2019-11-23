@@ -81,7 +81,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # Whether to share the hidden layer weights between input words and labels
         "share_hidden_layers": False,
         # number of units in transformer
-        "transformer_size": 128,
+        "transformer_size": 256,
         # number of transformer layers
         "num_transformer_layers": 1,
         # number of attention heads in transformer
@@ -740,11 +740,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.unidirectional_encoder,
         )
 
-        a = train_utils.create_t2t_transformer_encoder(
+        a_1, a_2, a_3 = train_utils.create_t2t_transformer_encoder(
             a_in, mask, self.attention_weights, hparams, self.C2, self._is_training
         )
 
-        return a
+        return a_1, a_2, a_3
 
     # build tf graphs:
     def _build_tf_train_graph(self, session_data: SessionDataType) -> TrainingMetrics:
@@ -772,12 +772,12 @@ class EmbeddingIntentClassifier(EntityExtractor):
             a_pre, lm_mask_bool = (a, None)
 
         # transformer
-        a_transformed = self._create_tf_sequence(a_pre, mask)
+        a_1, a_2, a_3 = self._create_tf_sequence(a_pre, mask)
 
         metrics = TrainingMetrics(loss={}, score={})
 
         if self.masked_lm_loss:
-            loss, acc = self._train_mask_graph(a_transformed, a, lm_mask_bool)
+            loss, acc = self._train_mask_graph(a_1, a, lm_mask_bool)
 
             metrics.loss["m_loss"] = loss
             metrics.score["m_acc"] = acc
@@ -790,14 +790,14 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 label_data["intent_features"], label_data["intent_mask"][0], "intent"
             )
 
-            loss, acc = self._train_intent_graph(a_transformed, b, all_bs, mask)
+            loss, acc = self._train_intent_graph(a_3, b, all_bs, mask)
             metrics.loss["i_loss"] = loss
             metrics.score["i_acc"] = acc
 
         if self.named_entity_recognition:
             c = self.combine_sparse_dense_features(batch_data["tag_ids"], mask, "tag")
 
-            loss, f1_score = self._train_entity_graph(a_transformed, c, mask)
+            loss, f1_score = self._train_entity_graph(a_2, c, mask)
             metrics.loss["e_loss"] = loss
             metrics.score["e_f1"] = f1_score
 
@@ -953,7 +953,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
         # transformer
-        a = self._create_tf_sequence(a, mask)
+        _, a_2, a_3 = self._create_tf_sequence(a, mask)
 
         if self.intent_classification:
             b = self.combine_sparse_dense_features(
@@ -961,10 +961,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
             )
             self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
 
-            self._pred_intent_graph(a, b, mask)
+            self._pred_intent_graph(a_3, b, mask)
 
         if self.named_entity_recognition:
-            self._pred_entity_graph(a, mask)
+            self._pred_entity_graph(a_2, mask)
 
     def _pred_intent_graph(self, a: "tf.Tensor", b: "tf.Tensor", mask: "tf.Tensor"):
         last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
