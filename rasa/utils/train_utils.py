@@ -25,7 +25,7 @@ from tensor2tensor.models.transformer import (
 )
 from tensor2tensor.layers.common_attention import large_compatible_negative
 from rasa.utils.common import is_logging_disabled
-
+from rasa.utils.loss_utils import bi_tempered_logistic_loss
 
 if typing.TYPE_CHECKING:
     from tensor2tensor.utils.hparam import HParams
@@ -787,9 +787,11 @@ def create_t2t_transformer_encoder(
         x_2 *= _mask
         x_3 *= _mask
 
-        return (tf.nn.dropout(tf.nn.relu(x_1), 1.0 - hparams.layer_prepostprocess_dropout),
-                tf.nn.dropout(tf.nn.relu(x_2), 1.0 - hparams.layer_prepostprocess_dropout),
-                tf.nn.dropout(tf.nn.relu(x_3), 1.0 - hparams.layer_prepostprocess_dropout))
+        return (
+            tf.nn.dropout(tf.nn.relu(x_1), 1.0 - hparams.layer_prepostprocess_dropout),
+            tf.nn.dropout(tf.nn.relu(x_2), 1.0 - hparams.layer_prepostprocess_dropout),
+            tf.nn.dropout(tf.nn.relu(x_3), 1.0 - hparams.layer_prepostprocess_dropout),
+        )
 
 
 def _tf_make_flat(x: "tf.Tensor") -> "tf.Tensor":
@@ -1032,7 +1034,10 @@ def tf_loss_softmax(
         pos_pred = tf.nn.softmax(logits)[..., 0]
         mask *= tf.pow(tf.minimum(0.5, 1 - pos_pred) / 0.5, 4)
 
-    loss = tf.losses.softmax_cross_entropy(labels, logits, mask)
+    loss = tf.reduce_mean(bi_tempered_logistic_loss(logits, labels, t1=0.2, t2=4.0))
+
+    # loss = tf.losses.softmax_cross_entropy(labels, logits, mask)
+
     # add regularization losses
     loss += tf.losses.get_regularization_loss()
 

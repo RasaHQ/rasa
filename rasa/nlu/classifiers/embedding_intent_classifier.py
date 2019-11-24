@@ -561,7 +561,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         for e in training_data:
             try:
-                _sparse, _dense = self._extract_and_add_features(e, MESSAGE_TEXT_ATTRIBUTE)
+                _sparse, _dense = self._extract_and_add_features(
+                    e, MESSAGE_TEXT_ATTRIBUTE
+                )
             except Exception as e:
                 continue
             if _sparse is not None:
