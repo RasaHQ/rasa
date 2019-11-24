@@ -6,6 +6,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.constants import (
     MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
     CLS_TOKEN,
 )
 
@@ -73,7 +74,7 @@ class Tokenizer(Component):
             return tokens
 
         if (
-            attribute in [MESSAGE_RESPONSE_ATTRIBUTE, MESSAGE_TEXT_ATTRIBUTE]
+            attribute in [MESSAGE_RESPONSE_ATTRIBUTE, MESSAGE_INTENT_ATTRIBUTE, MESSAGE_TEXT_ATTRIBUTE]
             and self.use_cls_token
             and tokens
         ):

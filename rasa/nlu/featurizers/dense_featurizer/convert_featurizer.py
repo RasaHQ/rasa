@@ -6,6 +6,8 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_INTENT_ATTRIBUTE,
+    MESSAGE_ATTRIBUTES,
     MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
     SPACY_FEATURIZABLE_ATTRIBUTES,
 )
@@ -22,7 +24,7 @@ logger = logging.getLogger(__name__)
 class ConvertFeaturizer(Featurizer):
     provides = [
         MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
+        for attribute in MESSAGE_ATTRIBUTES
     ]
 
     defaults = {
@@ -68,7 +70,7 @@ class ConvertFeaturizer(Featurizer):
 
         bs = 64
 
-        for attribute in [MESSAGE_TEXT_ATTRIBUTE]:
+        for attribute in [MESSAGE_TEXT_ATTRIBUTE, MESSAGE_INTENT_ATTRIBUTE]:
 
             start_index = 0
 
@@ -78,7 +80,7 @@ class ConvertFeaturizer(Featurizer):
                 batch_examples = training_data.intent_examples[start_index:end_index]
 
                 batch_text = [
-                    self._clean_text(ex.get(attribute)) for ex in batch_examples
+                    self._clean_text(ex.get(attribute),MESSAGE_INTENT_ATTRIBUTE) for ex in batch_examples
                 ]
 
                 batch_feats = self._compute_features(batch_text)
@@ -98,7 +100,10 @@ class ConvertFeaturizer(Featurizer):
                 start_index += bs
 
     @staticmethod
-    def _clean_text(text):
+    def _clean_text(text,attribute=MESSAGE_TEXT_ATTRIBUTE):
+
+        # if attribute==MESSAGE_INTENT_ATTRIBUTE:
+        text = " ".join(text.split("_"))
 
         cleaned_text = re.sub(
             # there is a space or an end of a string after it

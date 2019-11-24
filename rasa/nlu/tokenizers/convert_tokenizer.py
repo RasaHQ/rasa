@@ -4,6 +4,7 @@ from rasa.nlu.tokenizers.tokenizer import Tokenizer, Token
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
+    MESSAGE_ATTRIBUTES,
     MESSAGE_TOKENS_NAMES,
     SPACY_FEATURIZABLE_ATTRIBUTES,
 )
@@ -57,7 +58,7 @@ class ConvertTokenizer(Tokenizer):
     ) -> None:
 
         for example in training_data.intent_examples:
-            for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
+            for attribute in MESSAGE_ATTRIBUTES:
                 example.set(
                     MESSAGE_TOKENS_NAMES[attribute],
                     self._get_lm_tokens(example, attribute),
@@ -73,6 +74,8 @@ class ConvertTokenizer(Tokenizer):
 
         message_attribute_text = example.get(attribute)
         if message_attribute_text:
+
+            # print(attribute)
 
             expanded_tokens_list = []
 

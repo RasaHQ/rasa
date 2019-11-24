@@ -64,6 +64,8 @@ class WhitespaceTokenizer(Tokenizer):
             text = text.lower()
 
         if attribute != MESSAGE_INTENT_ATTRIBUTE:
+
+            text = " ".join(text.split("_"))
             # remove 'not a word character' if
             words = re.sub(
                 # there is a space or an end of a string after it
