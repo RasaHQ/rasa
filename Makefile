@@ -1,6 +1,6 @@
 .PHONY: clean test lint init check-readme
 
-JOBS ?= auto
+JOBS ?= 1
 
 help:
 	@echo "make"
@@ -20,7 +20,7 @@ help:
 	@echo "        Download all additional project files needed to run tests."
 	@echo "    test"
 	@echo "        Run pytest on tests/."
-	@echo "        Use the JOBS environment variable to configure number of workers (default: auto)."
+	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
 	@echo "    check-readme"
 	@echo "        Check if the README can be converted from .md to .rst for PyPI."
 	@echo "    doctest"
