@@ -128,6 +128,7 @@ class PreTrainedLMTokenizer(Tokenizer):
                     current_token_offset += len(string)
 
             expanded_tokens_list = self.add_cls_token(expanded_tokens_list, attribute)
+            expanded_tokens_list.insert(0, Token("__CLS__", 0, end=0))
 
             # print(message_attribute_text, len(space_tokens_list), len(expanded_tokens_list))
 

@@ -32,6 +32,9 @@ from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturiz
 from rasa.nlu.featurizers.dense_featurizer.pretrained_lm_featurizer import (
     PreTrainedLMFeaturizer,
 )
+from rasa.nlu.featurizers.dense_featurizer.bert_tokenid_featurizer import (
+    BERTTokenFeaturizer,
+)
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConvertFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
@@ -78,6 +81,7 @@ component_classes = [
     CountVectorsFeaturizer,
     PreTrainedLMFeaturizer,
     ConvertFeaturizer,
+    BERTTokenFeaturizer,
     # classifiers
     SklearnIntentClassifier,
     MitieIntentClassifier,

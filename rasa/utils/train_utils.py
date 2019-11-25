@@ -349,7 +349,7 @@ def prepare_batch(
     """Slices session data into batch using given start and end value."""
 
     batch_data = []
-
+    # batch_data_mask = []
     for key, values in session_data.items():
         # add None for not present values during processing
         if not values:
@@ -373,9 +373,14 @@ def prepare_batch(
                 batch_data.extend(scipy_matrix_to_values(_data))
             else:
                 batch_data.append(pad_dense_data(_data))
+                # batch_data_ids, batch_data_pad_mask = pad_dense_data(_data)
+                # batch_data.append(batch_data_ids)
+                # if key == "text_features":
+                #     batch_data_mask = batch_data_pad_mask
 
     # len of batch_data is equal to the number of keys in session data
     return tuple(batch_data)
+    # return tuple(batch_data.append(batch_data_mask))
 
 
 def scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
@@ -416,8 +421,15 @@ def pad_dense_data(array_of_dense: np.ndarray) -> np.ndarray:
         [data_size, max_seq_len, array_of_dense[0].shape[-1]],
         dtype=array_of_dense[0].dtype,
     )
+
+    # data_pad_mask = np.zeros(
+    #     [data_size, max_seq_len, array_of_dense[0].shape[-1]],
+    #     dtype=array_of_dense[0].dtype,
+    # )
+
     for i in range(data_size):
         data_padded[i, : array_of_dense[i].shape[0], :] = array_of_dense[i]
+        # data_pad_mask[i, : array_of_dense[i].shape[0], :] = np.ones_like(array_of_dense[i])
 
     return data_padded.astype(np.float32)
 
@@ -499,6 +511,7 @@ def get_shapes_types(session_data: SessionDataType) -> Tuple:
             shapes.append((None, v[0].shape[-1]))
         else:
             shapes.append((None, None, v[0].shape[-1]))
+            # shapes.append((None, None, v[0].shape[-1])) # padding
 
     def append_type(v: np.ndarray):
         if isinstance(v[0], scipy.sparse.spmatrix):

@@ -30,6 +30,7 @@ from rasa.nlu.constants import (
 )
 
 import tensorflow as tf
+import tensorflow_hub as hub
 
 # avoid warning println on contrib import - remove for tf 2
 tf.contrib._warning = None
@@ -102,7 +103,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         "random_seed": None,
         # optimizer
         "optimizer": "Adam",  # can be either 'Adam' (default) or 'Nadam'
-        "learning_rate": 0.001,
+        "learning_rate": 0.00001,
         "normalize_loss": False,
         # embedding parameters
         # default dense dimension used if no dense features are present
@@ -437,6 +438,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         session_data: SessionDataType, key: Text, from_key: Text
     ):
 
+        # print(from_key)
+
         session_data[key] = []
 
         for data in session_data[from_key]:
@@ -444,6 +447,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 # explicitly add last dimension to mask
                 # to track correctly dynamic sequences
                 mask = np.array([np.ones((x.shape[0], 1)) for x in data])
+                # print('Mask while building data', mask, mask.shape)
                 session_data[key].append(mask)
                 break
 
@@ -643,6 +647,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         mask: "tf.Tensor",
         name: Text,
         sparse_dropout: bool = False,
+        apply_bert: bool = False,
+        trainable: bool = True,
     ) -> "tf.Tensor":
 
         dense_features = []
@@ -672,12 +678,36 @@ class EmbeddingIntentClassifier(EntityExtractor):
                     )
                 )
             else:
-                dense_features.append(f)
+
+                if apply_bert:
+
+                    print(f.shape)
+                    _f = tf.cast(tf.squeeze(f, axis=-1), tf.int32)
+                    batch_mask = tf.cast(tf.squeeze(mask, axis=-1), tf.int32)
+                    batch_segment_id = tf.zeros_like(_f)
+
+                    print(batch_mask.shape)
+                    print(batch_segment_id.shape)
+
+                    bert_inputs = dict(
+                        input_ids=_f,
+                        input_mask=batch_mask,
+                        segment_ids=batch_segment_id,
+                    )
+                    bert_outputs = self.module(
+                        inputs=bert_inputs, signature="tokens", as_dict=True
+                    )
+
+                    sequence_output = bert_outputs["sequence_output"]
+                    dense_features.append(sequence_output)
+                else:
+                    dense_features.append(f)
 
         # if self._in_layer_norm.get(name) is None:
         #     self._in_layer_norm[name] = tf.keras.layers.LayerNormalization(name=name)
         # return self._in_layer_norm[name](tf.concat(dense_features, axis=-1))
 
+        # return tf.concat(dense_features, axis=-1)
         return tf.concat(dense_features, axis=-1) * mask
 
     def _mask_input(
@@ -758,13 +788,25 @@ class EmbeddingIntentClassifier(EntityExtractor):
         batch_data, _ = train_utils.batch_to_session_data(self.batch_in, session_data)
         label_data, _ = train_utils.batch_to_session_data(label_batch, self._label_data)
 
+        BERT_MODEL_HUB = "https://tfhub.dev/google/bert_uncased_L-12_H-768_A-12/1"
+
+        # BERT Layer
+        # reuse = True if not trainable else False
+        # with tf.variable_scope("bert") as scope:
+
+        self.module = hub.Module(BERT_MODEL_HUB, trainable=True)
+
         mask = batch_data["text_mask"][0]
+        print("mask", mask.dtype, mask.shape)
         a = self.combine_sparse_dense_features(
             batch_data["text_features"],
             mask,
             "text",
             sparse_dropout=self.sparse_input_dropout,
+            apply_bert=True,
         )
+
+        print("Shape after bert", a.shape)
 
         if self.masked_lm_loss:
             a_pre, lm_mask_bool = self._mask_input(a, mask)
@@ -874,10 +916,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
     def _train_intent_graph(
         self, a: "tf.Tensor", b: "tf.Tensor", all_bs: "tf.Tensor", mask: "tf.Tensor"
     ) -> Tuple["tf.Tensor", "tf.Tensor"]:
-        last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
+        # last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
 
         # get _cls_ vector for intent classification
-        self.cls_embed = tf.reduce_sum(a * last, 1)
+        # self.cls_embed = tf.reduce_sum(a * last, 1)
+        self.cls_embed = a[:, 0, :]
         self.cls_embed = train_utils.create_tf_embed(
             self.cls_embed, self.embed_dim, self.C2, "cls", self.similarity_type
         )
@@ -949,7 +992,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         mask = batch_data["text_mask"][0]
         a = self.combine_sparse_dense_features(
-            batch_data["text_features"], mask, "text"
+            batch_data["text_features"], mask, "text", apply_bert=True, trainable=False
         )
 
         # transformer
@@ -967,10 +1010,12 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self._pred_entity_graph(a, mask)
 
     def _pred_intent_graph(self, a: "tf.Tensor", b: "tf.Tensor", mask: "tf.Tensor"):
-        last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
+        # last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
 
         # get _cls_ embedding
-        self.cls_embed = tf.reduce_sum(a * last, 1)
+        # self.cls_embed = tf.reduce_sum(a * last, 1)
+
+        self.cls_embed = a[:, 0, :]
         self.cls_embed = train_utils.create_tf_embed(
             self.cls_embed, self.embed_dim, self.C2, "cls", self.similarity_type
         )
