@@ -9,7 +9,7 @@ from _pytest.tmpdir import TempdirFactory
 
 import rasa.model
 
-from rasa.train import train
+from rasa.train import train_core, train_nlu, train
 from tests.core.test_model import _fingerprint
 
 
@@ -72,11 +72,13 @@ def test_train_temp_files(
     default_nlu_data: Text,
 ):
     monkeypatch.setattr(tempfile, "tempdir", tmp_path)
+    output = "test_train_temp_files_models"
 
     train(
         default_domain_path,
         default_stack_config,
         [default_stories_file, default_nlu_data],
+        output=output,
         force_training=True,
     )
 
@@ -89,6 +91,45 @@ def test_train_temp_files(
         default_domain_path,
         default_stack_config,
         [default_stories_file, default_nlu_data],
+        output=output,
+    )
+
+    assert count_temp_rasa_files(tempfile.tempdir) == 0
+
+
+def test_train_core_temp_files(
+    tmp_path: Text,
+    monkeypatch: MonkeyPatch,
+    default_domain_path: Text,
+    default_stories_file: Text,
+    default_stack_config: Text,
+):
+    monkeypatch.setattr(tempfile, "tempdir", tmp_path)
+
+    train_core(
+        default_domain_path,
+        default_stack_config,
+        default_stories_file,
+        output="test_train_core_temp_files_models",
+    )
+
+    assert count_temp_rasa_files(tempfile.tempdir) == 0
+
+
+def test_train_nlu_temp_files(
+    tmp_path: Text,
+    monkeypatch: MonkeyPatch,
+    default_domain_path: Text,
+    default_stories_file: Text,
+    default_stack_config: Text,
+    default_nlu_data: Text,
+):
+    monkeypatch.setattr(tempfile, "tempdir", tmp_path)
+
+    train_nlu(
+        default_stack_config,
+        default_nlu_data,
+        output="test_train_nlu_temp_files_models",
     )
 
     assert count_temp_rasa_files(tempfile.tempdir) == 0
