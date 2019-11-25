@@ -133,6 +133,7 @@ def _overwrite_endpoints_for_local_x(
         wait_time_between_pulls=custom_wait_time_pulls or 2,
     )
 
+    overwrite_existing_event_broker = False
     if endpoints.event_broker and not _is_correct_event_broker(endpoints.event_broker):
         cli_utils.print_error(
             "Rasa X currently only supports a SQLite event broker with path '{}' "
@@ -147,9 +148,8 @@ def _overwrite_endpoints_for_local_x(
         if not overwrite_existing_event_broker:
             exit(0)
 
-    endpoints.event_broker = EndpointConfig(
-        type="sql", db=DEFAULT_EVENTS_DB, dialect="sqlite"
-    )
+    if not endpoints.tracker_store or overwrite_existing_event_broker:
+        endpoints.event_broker = EndpointConfig(type="sql", db=DEFAULT_EVENTS_DB)
 
 
 def _is_correct_event_broker(event_broker: EndpointConfig) -> bool:
