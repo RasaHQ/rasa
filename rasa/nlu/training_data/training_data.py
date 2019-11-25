@@ -2,20 +2,20 @@ import logging
 import os
 import random
 import warnings
-from collections import Counter
+from collections import Counter, OrderedDict
 from copy import deepcopy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
-from rasa.nlu.utils import list_to_str
 import rasa.nlu.utils
 import rasa.utils.common as rasa_utils
-from rasa.nlu.training_data.message import Message
-from rasa.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.constants import (
     MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_RESPONSE_KEY_ATTRIBUTE,
 )
+from rasa.nlu.training_data.message import Message
+from rasa.nlu.training_data.util import check_duplicate_synonym
+from rasa.nlu.utils import list_to_str
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
 
@@ -106,14 +106,16 @@ class TrainingData:
     def sanitize_examples(examples: List[Message]) -> List[Message]:
         """Makes sure the training data is clean.
 
-        removes trailing whitespaces from intent annotations."""
+        Remove trailing whitespaces from intent and response annotations and drop duplicate examples."""
 
         for ex in examples:
             if ex.get("intent"):
                 ex.set("intent", ex.get("intent").strip())
+
             if ex.get("response"):
                 ex.set("response", ex.get("response").strip())
-        return examples
+
+        return list(OrderedDict.fromkeys(examples))
 
     @rasa_utils.lazy_property
     def intent_examples(self) -> List[Message]:
@@ -207,9 +209,10 @@ class TrainingData:
 
     def as_json(self) -> Text:
 
-        logger.warning(
-            "DEPRECATION warning: function as_json() is deprecated and will be removed "
-            "in future versions. Use nlu_as_json() instead."
+        warnings.warn(
+            "Function 'as_json()' is deprecated and will be removed "
+            "in future versions. Use 'nlu_as_json()' instead.",
+            DeprecationWarning,
         )
 
         return self.nlu_as_json()
@@ -234,9 +237,11 @@ class TrainingData:
 
     def as_markdown(self) -> Text:
 
-        logger.warning(
-            "DEPRECATION warning: function as_markdown() is deprecated and will be removed "
-            "in future versions. Use nlu_as_markdown() and nlg_as_markdown() instead"
+        warnings.warn(
+            "Function 'as_markdown()' is deprecated and will be removed "
+            "in future versions. Use 'nlu_as_markdown()' and 'nlg_as_markdown()' "
+            "instead.",
+            DeprecationWarning,
         )
 
         return self.nlu_as_markdown()
@@ -325,19 +330,16 @@ class TrainingData:
         for intent, count in self.examples_per_intent.items():
             if count < self.MIN_EXAMPLES_PER_INTENT:
                 warnings.warn(
-                    "Intent '{}' has only {} training examples! "
-                    "Minimum is {}, training may fail.".format(
-                        intent, count, self.MIN_EXAMPLES_PER_INTENT
-                    )
+                    f"Intent '{intent}' has only {count} training examples! "
+                    f"Minimum is {self.MIN_EXAMPLES_PER_INTENT}, training may fail."
                 )
 
         # emit warnings for entities with only a few training samples
         for entity_type, count in self.examples_per_entity.items():
             if count < self.MIN_EXAMPLES_PER_ENTITY:
                 warnings.warn(
-                    "Entity '{}' has only {} training examples! "
-                    "minimum is {}, training may fail."
-                    "".format(entity_type, count, self.MIN_EXAMPLES_PER_ENTITY)
+                    f"Entity '{entity_type}' has only {count} training examples! "
+                    f"minimum is {self.MIN_EXAMPLES_PER_ENTITY}, training may fail."
                 )
 
     def train_test_split(

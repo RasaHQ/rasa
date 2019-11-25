@@ -1,4 +1,5 @@
 import pytest
+import logging
 from rasa.core.validator import Validator
 from rasa.importers.rasa import RasaFileImporter
 from tests.core.conftest import (
@@ -76,15 +77,33 @@ async def test_verify_logging_message_for_repetition_in_intents(caplog):
         training_data_paths=["examples/moodbot/data/nlu.md"],
     )
     validator = await Validator.from_importer(importer)
-    validator.verify_example_repetition_in_intents(False)
-    log_object = caplog.records[-1]
-    level = log_object.levelname
-    message = log_object.message
-    assert "WARNING" == level
+    caplog.clear()  # clear caplog to avoid counting earlier debug messages
+    with pytest.warns(UserWarning) as record:
+        validator.verify_example_repetition_in_intents(False)
+    assert len(record) == 1
     assert (
         "The example 'good afternoon' was found in these "
-        + "multiples intents: goodbye, greet"
-        == message
+        "multiples intents: goodbye, greet" in record[0].message.args[0]
+    )
+
+
+async def test_early_exit_on_invalid_domain():
+    domain_path = "data/test_domains/duplicate_intents.yml"
+
+    importer = RasaFileImporter(domain_path=domain_path)
+    with pytest.warns(UserWarning) as record:
+        validator = await Validator.from_importer(importer)
+    validator.verify_domain_validity()
+    assert len(record) == 2
+    assert (
+        f"Loading domain from '{domain_path}' failed. Using empty domain. "
+        "Error: 'Intents are not unique! Found two intents with name "
+        "'default'. Either rename or remove one of them.'" in record[0].message.args[0]
+    )
+    assert (
+        f"Loading domain from '{domain_path}' failed. Using empty domain. "
+        "Error: 'Intents are not unique! Found two intents with name "
+        "'default'. Either rename or remove one of them.'" in record[1].message.args[0]
     )
 
 
