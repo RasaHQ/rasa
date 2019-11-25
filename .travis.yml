@@ -31,7 +31,7 @@ jobs:
     name: "Test Stage"
     python: 3.6
     script:
-    - py.test -s /Users/federico/Workspace/rasa/tests/nlu/training/test_train.py\:\:test_train_model_on_test_pipelines
+    - py.test -s tests/nlu/training/test_train.py\:\:test_train_model_on_test_pipelines
   - stage: test
     name: "Code Formatting"
     python: 3.6
