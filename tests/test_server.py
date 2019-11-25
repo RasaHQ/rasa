@@ -178,7 +178,7 @@ def test_train_status(server_process):
             )
             status_request_duration = time.time() - start
             if server_ready:
-                print(f"before training: {status_request_duration}")
+                print(f"no training: {status_request_duration}")
         except requests.exceptions.ConnectionError:
             pass
         time.sleep(1)
@@ -199,7 +199,7 @@ def test_train_status(server_process):
         time.sleep(0.5)
         # hit status endpoint with short timeout to ensure training doesn't block
         start = time.time()
-        status_resp = requests.get("http://localhost:5005/status", timeout=5)
+        status_resp = requests.get("http://localhost:5005/status")
         status_request_duration = time.time() - start
         if training_started and not training_finished:
             print(f"while training: {status_request_duration}")
