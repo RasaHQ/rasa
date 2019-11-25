@@ -1,15 +1,16 @@
 import tempfile
 import os
 import shutil
+from typing import Text
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
+from _pytest.tmpdir import TempdirFactory
 
 import rasa.model
 
 from rasa.train import train
 from tests.core.test_model import _fingerprint
-
-TEST_TEMP = "test_tmp"
 
 
 @pytest.mark.parametrize(
@@ -45,24 +46,28 @@ def test_package_model(trained_rasa_model, parameters):
     assert file_name.endswith(".tar.gz")
 
 
-@pytest.fixture
-def move_tempdir():
-    # Create a new *empty* tmp directory
-    shutil.rmtree(TEST_TEMP, ignore_errors=True)
-    os.mkdir(TEST_TEMP)
-    tempfile.tempdir = TEST_TEMP
-    yield
-    tempfile.tempdir = None
-    shutil.rmtree(TEST_TEMP)
+def count_temp_rasa_files(directory: Text) -> int:
+    return len([
+        entry for entry in os.listdir(directory)
+        if not any([
+                # Ignore the following files/directories:
+                entry == "__pycache__",  # Python bytecode
+                entry.endswith(".py")    # Temp .py files created by TF
+                # Anything else is considered to be created by Rasa
+        ])
+    ])
 
 
 def test_train_temp_files(
-    move_tempdir,
-    default_domain_path,
-    default_stories_file,
-    default_stack_config,
-    default_nlu_data,
+    tmp_path: Text,
+    monkeypatch: MonkeyPatch,
+    default_domain_path: Text,
+    default_stories_file: Text,
+    default_stack_config: Text,
+    default_nlu_data: Text,
 ):
+    monkeypatch.setattr(tempfile, "tempdir", tmp_path)
+
     train(
         default_domain_path,
         default_stack_config,
@@ -70,7 +75,7 @@ def test_train_temp_files(
         force_training=True,
     )
 
-    assert len(os.listdir(TEST_TEMP)) == 0
+    assert count_temp_rasa_files(tempfile.tempdir) == 0
 
     # After training the model, try to do it again. This shouldn't try to train
     # a new model because nothing has been changed. It also shouldn't create
@@ -81,4 +86,4 @@ def test_train_temp_files(
         [default_stories_file, default_nlu_data],
     )
 
-    assert len(os.listdir(TEST_TEMP)) == 0
+    assert count_temp_rasa_files(tempfile.tempdir) == 0
