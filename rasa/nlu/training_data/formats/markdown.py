@@ -1,6 +1,7 @@
 import logging
 import re
 import typing
+from collections import OrderedDict
 from typing import Any, Text, Optional, Tuple, List, Dict
 
 from rasa.nlu.training_data.formats.readerwriter import (
@@ -211,13 +212,12 @@ class MarkdownWriter(TrainingDataWriter):
     def _generate_training_examples_md(self, training_data: "TrainingData") -> Text:
         """Generates markdown training examples."""
 
-        from collections import defaultdict
-
-        training_examples = defaultdict(list)
+        training_examples = OrderedDict()
 
         # Sort by intent while keeping basic intent order
         for example in [e.as_dict_nlu() for e in training_data.training_examples]:
             intent = example[MESSAGE_INTENT_ATTRIBUTE]
+            training_examples.setdefault(intent, [])
             training_examples[intent].append(example)
 
         # Don't prepend newline for first line
