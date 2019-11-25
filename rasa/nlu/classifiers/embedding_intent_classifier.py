@@ -10,6 +10,7 @@ import warnings
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 from shutil import copyfile
 
+from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from tf_metrics import f1
 
 import rasa.utils.io as io_utils
@@ -41,6 +42,9 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
     from rasa.nlu.model import Metadata
     from rasa.nlu.training_data import Message
+
+
+MESSAGE_BILOU_ENTITIES_ATTRIBUTE = "BILOU_entities"
 
 
 class EmbeddingIntentClassifier(EntityExtractor):
@@ -146,6 +150,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         "named_entity_recognition": True,
         "masked_lm_loss": False,
         "sparse_input_dropout": False,
+        "bilou_flag": False,
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -246,6 +251,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         ]
         self.masked_lm_loss = self.component_config["masked_lm_loss"]
         self.sparse_input_dropout = self.component_config["sparse_input_dropout"]
+        self.bilou_flag = self.component_config["bilou_flag"]
 
     # package safety checks
     @classmethod
@@ -328,21 +334,43 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     @staticmethod
     def _create_tag_id_dict(
-        training_data: "TrainingData", attribute: Text
+        training_data: "TrainingData", bilou_flag: bool
     ) -> Dict[Text, int]:
         """Create label_id dictionary"""
+
+        if bilou_flag:
+            bilou_prefix = ["B-", "I-", "L-", "U-"]
+            distinct_tag_ids = set(
+                [
+                    e[2:]
+                    for example in training_data.training_examples
+                    if example.get(MESSAGE_BILOU_ENTITIES_ATTRIBUTE)
+                    for e in example.get(MESSAGE_BILOU_ENTITIES_ATTRIBUTE)
+                ]
+            ) - {""}
+
+            tag_id_dict = {
+                f"{prefix}{tag_id}": idx_1 * len(bilou_prefix) + idx_2
+                for idx_1, tag_id in enumerate(sorted(distinct_tag_ids))
+                for idx_2, prefix in enumerate(bilou_prefix)
+            }
+            tag_id_dict["O"] = len(distinct_tag_ids) * len(bilou_prefix)
+
+            return tag_id_dict
 
         distinct_tag_ids = set(
             [
                 e["entity"]
                 for example in training_data.entity_examples
-                for e in example.get(attribute)
+                for e in example.get(MESSAGE_ENTITIES_ATTRIBUTE)
             ]
         ) - {None}
+
         tag_id_dict = {
             tag_id: idx for idx, tag_id in enumerate(sorted(distinct_tag_ids), 1)
         }
         tag_id_dict["O"] = 0
+
         return tag_id_dict
 
     @staticmethod
@@ -578,12 +606,26 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 label_ids.append(label_id_dict[e.get(label_attribute)])
 
             if self.named_entity_recognition and tag_id_dict:
-                _tags = []
-                for t in e.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]):
-                    _tag = determine_token_labels(
-                        t, e.get(MESSAGE_ENTITIES_ATTRIBUTE), None
-                    )
-                    _tags.append(tag_id_dict[_tag])
+                if self.bilou_flag:
+                    if e.get(MESSAGE_BILOU_ENTITIES_ATTRIBUTE):
+                        _tags = [
+                            tag_id_dict[_tag]
+                            if _tag in tag_id_dict
+                            else tag_id_dict["O"]
+                            for _tag in e.get(MESSAGE_BILOU_ENTITIES_ATTRIBUTE)
+                        ]
+                    else:
+                        _tags = [
+                            tag_id_dict["O"]
+                            for _ in e.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+                        ]
+                else:
+                    _tags = []
+                    for t in e.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]):
+                        _tag = determine_token_labels(
+                            t, e.get(MESSAGE_ENTITIES_ATTRIBUTE), None
+                        )
+                        _tags.append(tag_id_dict[_tag])
                 # transpose to have seq_len x 1
                 tag_ids.append(np.array([_tags]).T)
 
@@ -1009,6 +1051,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         Performs sanity checks on training data, extracts encodings for labels.
         """
+        if self.bilou_flag:
+            self.apply_bilou_schema(training_data)
+
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=MESSAGE_INTENT_ATTRIBUTE
         )
@@ -1018,9 +1063,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             training_data, label_id_dict, attribute=MESSAGE_INTENT_ATTRIBUTE
         )
 
-        tag_id_dict = self._create_tag_id_dict(
-            training_data, attribute=MESSAGE_ENTITIES_ATTRIBUTE
-        )
+        tag_id_dict = self._create_tag_id_dict(training_data, self.bilou_flag)
         self.inverted_tag_dict = {v: k for k, v in tag_id_dict.items()}
 
         session_data = self._create_session_data(
@@ -1035,6 +1078,23 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.check_input_dimension_consistency(session_data)
 
         return session_data
+
+    def apply_bilou_schema(self, training_data: "TrainingData"):
+        if not self.named_entity_recognition:
+            return
+
+        for example in training_data.training_examples:
+            entities = example.get(MESSAGE_ENTITIES_ATTRIBUTE)
+
+            if not entities:
+                continue
+
+            entities = CRFEntityExtractor._convert_example(example)
+            output = CRFEntityExtractor._bilou_tags_from_offsets(
+                example.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]), entities
+            )
+
+            example.set(MESSAGE_BILOU_ENTITIES_ATTRIBUTE, output)
 
     # process helpers
     def predict_label(
@@ -1122,6 +1182,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
         tags = [self.inverted_tag_dict[p] for p in predictions[0]]
+
+        if self.bilou_flag:
+            tags = [t[2:] if t[:2] in ["B-", "I-", "U-", "L-"] else t for t in tags]
 
         entities = self._convert_tags_to_entities(
             message.text, message.get("tokens", []), tags
