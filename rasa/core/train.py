@@ -107,18 +107,17 @@ async def train_comparison_models(
                 )
 
                 with TempDirectoryPath(tempfile.mkdtemp()) as train_path:
-                    train_coroutine = train(
-                        domain,
-                        file_importer,
-                        train_path,
-                        policy_config=policy_config,
-                        exclusion_percentage=percentage,
-                        kwargs=kwargs,
-                        dump_stories=dump_stories,
-                    )
-
                     _, new_fingerprint = await asyncio.gather(
-                        train_coroutine, model.model_fingerprint(file_importer)
+                        train(
+                            domain,
+                            file_importer,
+                            train_path,
+                            policy_config=policy_config,
+                            exclusion_percentage=percentage,
+                            kwargs=kwargs,
+                            dump_stories=dump_stories,
+                        ),
+                        model.model_fingerprint(file_importer),
                     )
 
                     output_dir = os.path.join(output_path, "run_" + str(r + 1))
@@ -147,19 +146,18 @@ async def do_compare_training(
     story_file: Text,
     additional_arguments: Optional[Dict] = None,
 ):
-    train_coroutine = train_comparison_models(
-        story_file,
-        args.domain,
-        args.out,
-        args.percentages,
-        args.config,
-        args.runs,
-        args.dump_stories,
-        additional_arguments,
-    )
-
     _, no_stories = await asyncio.gather(
-        train_coroutine, get_no_of_stories(args.stories, args.domain)
+        train_comparison_models(
+            story_file,
+            args.domain,
+            args.out,
+            args.percentages,
+            args.config,
+            args.runs,
+            args.dump_stories,
+            additional_arguments,
+        ),
+        get_no_of_stories(args.stories, args.domain),
     )
 
     # store the list of the number of stories present at each exclusion
