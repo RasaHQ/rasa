@@ -9,9 +9,8 @@ import warnings
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
-from rasa.nlu.featurizers.dense_featurizer.pretrained_lm_featurizer import (
-    PreTrainedLMFeaturizer,
-)
+from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
+from rasa.nlu.tokenizers.convert_tokenizer import ConvertTokenizer
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
@@ -32,14 +31,12 @@ from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturiz
 from rasa.nlu.featurizers.dense_featurizer.pretrained_lm_featurizer import (
     PreTrainedLMFeaturizer,
 )
-from rasa.nlu.featurizers.convert_featurizer import ConveRTFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.tokenizers.pretrained_lm_tokenizer import PreTrainedLMTokenizer
-from rasa.nlu.tokenizers.convert_tokenizer import ConvertTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.utils.common import class_from_module_path
@@ -112,6 +109,7 @@ old_style_names = {
     "intent_classifier_mitie": "MitieIntentClassifier",
     "intent_classifier_keyword": "KeywordIntentClassifier",
     "intent_classifier_tensorflow_embedding": "EmbeddingIntentClassifier",
+    "ConvertFeaturizer": "ConveRTFeaturizer",
 }
 
 # To simplify usage, there are a couple of model templates, that already add

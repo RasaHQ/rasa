@@ -1009,7 +1009,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         Performs sanity checks on training data, extracts encodings for labels.
         """
-
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=MESSAGE_INTENT_ATTRIBUTE
         )
