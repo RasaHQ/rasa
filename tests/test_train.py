@@ -47,15 +47,20 @@ def test_package_model(trained_rasa_model, parameters):
 
 
 def count_temp_rasa_files(directory: Text) -> int:
-    return len([
-        entry for entry in os.listdir(directory)
-        if not any([
-                # Ignore the following files/directories:
-                entry == "__pycache__",  # Python bytecode
-                entry.endswith(".py")    # Temp .py files created by TF
-                # Anything else is considered to be created by Rasa
-        ])
-    ])
+    return len(
+        [
+            entry
+            for entry in os.listdir(directory)
+            if not any(
+                [
+                    # Ignore the following files/directories:
+                    entry == "__pycache__",  # Python bytecode
+                    entry.endswith(".py")  # Temp .py files created by TF
+                    # Anything else is considered to be created by Rasa
+                ]
+            )
+        ]
+    )
 
 
 def test_train_temp_files(
