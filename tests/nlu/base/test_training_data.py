@@ -639,4 +639,3 @@ def test_dump_nlu_with_responses():
 
     dumped = nlu_data.nlu_as_markdown()
     assert dumped == md
-    # assert False
