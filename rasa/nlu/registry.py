@@ -23,9 +23,9 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
 from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizer
-from rasa.nlu.featurizers.sparse_featurizer.ngram_featurizer import NGramFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
+from rasa.nlu.featurizers.convert_featurizer import ConveRTFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
@@ -65,6 +65,7 @@ component_classes = [
     MitieFeaturizer,
     RegexFeaturizer,
     CountVectorsFeaturizer,
+    ConveRTFeaturizer,
     # classifiers
     SklearnIntentClassifier,
     MitieIntentClassifier,
@@ -127,6 +128,11 @@ registered_pipeline_templates = {
             "min_ngram": 1,
             "max_ngram": 4,
         },
+        {"name": "EmbeddingIntentClassifier"},
+    ],
+    "pretrained_embeddings_convert": [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "ConveRTFeaturizer"},
         {"name": "EmbeddingIntentClassifier"},
     ],
 }
