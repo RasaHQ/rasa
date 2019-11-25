@@ -9,7 +9,7 @@ import warnings
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
-from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
+from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConvertFeaturizer
 from rasa.nlu.tokenizers.convert_tokenizer import ConvertTokenizer
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
@@ -74,7 +74,7 @@ component_classes = [
     RegexFeaturizer,
     CountVectorsFeaturizer,
     PreTrainedLMFeaturizer,
-    ConveRTFeaturizer,
+    ConvertFeaturizer,
     # classifiers
     SklearnIntentClassifier,
     MitieIntentClassifier,
@@ -109,7 +109,6 @@ old_style_names = {
     "intent_classifier_mitie": "MitieIntentClassifier",
     "intent_classifier_keyword": "KeywordIntentClassifier",
     "intent_classifier_tensorflow_embedding": "EmbeddingIntentClassifier",
-    "ConvertFeaturizer": "ConveRTFeaturizer",
 }
 
 # To simplify usage, there are a couple of model templates, that already add
