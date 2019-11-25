@@ -208,12 +208,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.4.6
+          viewing: 1.5.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.5.0/user-guide/validate-files/">1.5.0</a>
               <a href="../.././1.4.6/user-guide/validate-files/">1.4.6</a>
               <a href="../.././1.4.5/user-guide/validate-files/">1.4.5</a>
               <a href="../.././1.4.4/user-guide/validate-files/">1.4.4</a>
@@ -310,6 +311,7 @@ which has the following methods:</p>
 actions.</p>
 <p><strong>verify_utterances_in_stories():</strong> Verification for utterances in stories, to check if they are valid.</p>
 <p><strong>verify_all():</strong> Runs all verifications above.</p>
+<p><strong>verify_domain_validity():</strong> Check if domain is valid.</p>
 <p>To use these functions it is necessary to create a <cite>Validator</cite> object and initialize the logger. See the following code:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">rasa</span> <span class="kn">import</span> <span class="n">utils</span>

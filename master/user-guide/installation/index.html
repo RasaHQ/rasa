@@ -224,6 +224,7 @@ entity extraction and customisation of the language models." />
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../1.5.0/user-guide/installation/">1.5.0</a>
               <a href="../../../1.4.6/user-guide/installation/">1.4.6</a>
               <a href="../../../1.4.5/user-guide/installation/">1.4.5</a>
               <a href="../../../1.4.4/user-guide/installation/">1.4.4</a>
@@ -276,7 +277,7 @@ entity extraction and customisation of the language models." />
 
 
 
-    <p class="scv-banner"><a href="../../../1.4.6/user-guide/installation/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.4.6.</a></p>
+    <p class="scv-banner"><a href="../../../1.5.0/user-guide/installation/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.5.0.</a></p>
 <div class="section" id="installation">
 <span id="id1"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
 
@@ -284,7 +285,7 @@ entity extraction and customisation of the language models." />
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/user-guide/installation.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
   </div><div class="section" id="quick-installation">
 <h2>Quick Installation<a class="headerlink" href="#quick-installation" title="Permalink to this headline">¶</a></h2>
-<p>You can install both Rasa and Rasa X using pip (requires Python 3.6.0 or higher).</p>
+<p>You can install both Rasa Open Source and Rasa X using pip (requires Python 3.6 or 3.7).</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip3 install rasa-x --extra-index-url https://pypi.rasa.com/simple
 </pre></div>
 </div>
@@ -406,21 +407,29 @@ Windows</div>
 <div class="ui top attached tabular menu sphinx-menu docutils container">
 <div class="active item sphinx-data-tab-2-0 docutils container">
 <div class="docutils container">
-Rasa and Rasa X</div>
+Rasa Open Source and Rasa X</div>
 </div>
 <div class="item sphinx-data-tab-2-1 docutils container">
 <div class="docutils container">
-Rasa only</div>
+Rasa Open Source only</div>
 </div>
 </div>
 <div class="ui bottom attached sphinx-tab tab segment sphinx-data-tab-2-0 active docutils container">
-<p>To install both Rasa and Rasa X in one go:</p>
+<p>First make sure your <code class="docutils literal notranslate"><span class="pre">pip</span></code> version is up to date:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install -U pip
+</pre></div>
+</div>
+<p>To install both Rasa Open Source and Rasa X in one go:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
 </pre></div>
 </div>
 </div>
 <div class="ui bottom attached sphinx-tab tab segment sphinx-data-tab-2-1 docutils container">
-<p>If you just want to install Rasa without Rasa X:</p>
+<p>First make sure your <code class="docutils literal notranslate"><span class="pre">pip</span></code> version is up to date:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install -U pip
+</pre></div>
+</div>
+<p>To install Rasa Open Source without Rasa X:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install rasa
 </pre></div>
 </div>
@@ -441,7 +450,7 @@ Rasa only</div>
 </div>
 <div class="section" id="building-from-source">
 <span id="build-from-source"></span><h2>Building from Source<a class="headerlink" href="#building-from-source" title="Permalink to this headline">¶</a></h2>
-<p>If you want to use the development version of Rasa, you can get it from GitHub:</p>
+<p>If you want to use the development version of Rasa Open Source, you can get it from GitHub:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/RasaHQ/rasa.git
 $ <span class="nb">cd</span> rasa
 $ pip install -r requirements.txt
@@ -462,7 +471,7 @@ for your assistant.</p>
 </div>
 <div class="section" id="i-have-decided-on-a-pipeline-how-do-i-install-the-dependencies-for-it">
 <h3>I have decided on a pipeline. How do I install the dependencies for it?<a class="headerlink" href="#i-have-decided-on-a-pipeline-how-do-i-install-the-dependencies-for-it" title="Permalink to this headline">¶</a></h3>
-<p>When you install Rasa, the dependencies for the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> - TensorFlow
+<p>When you install Rasa Open Source, the dependencies for the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> - TensorFlow
 and sklearn_crfsuite get automatically installed. However, spaCy and MITIE need to be separately installed if you want to use pipelines containing components from those libraries.</p>
 <div class="admonition-just-give-me-everything admonition">
 <p class="first admonition-title">Just give me everything!</p>
@@ -483,9 +492,9 @@ $ python -m spacy download en_core_web_md
 $ python -m spacy link en_core_web_md en
 </pre></div>
 </div>
-<p>This will install Rasa NLU as well as spacy and its language model
+<p>This will install Rasa Open Source as well as spaCy and its language model
 for the English language. We recommend using at least the
-“medium” sized models (<code class="docutils literal notranslate"><span class="pre">_md</span></code>) instead of the spacy’s
+“medium” sized models (<code class="docutils literal notranslate"><span class="pre">_md</span></code>) instead of the spaCy’s
 default small <code class="docutils literal notranslate"><span class="pre">en_core_web_sm</span></code> model. Small models require less
 memory to run, but will somewhat reduce intent classification performance.</p>
 </div>
