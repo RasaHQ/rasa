@@ -612,3 +612,31 @@ def test_markdown_order():
 
     training_data = r.reads(md)
     assert training_data.nlu_as_markdown() == md
+
+
+def test_dump_nlu_with_responses():
+    md = """## intent:greet
+- hey
+- howdy
+- hey there
+- hello
+- hi
+- good morning
+- good evening
+- dear sir
+
+## intent:chitchat/ask_name
+- What's your name?
+- What can I call you?
+
+## intent:chitchat/ask_weather
+- How's the weather?
+- Is it too hot outside?
+"""
+
+    r = MarkdownReader()
+    nlu_data = r.reads(md)
+
+    dumped = nlu_data.nlu_as_markdown()
+    assert dumped == md
+    # assert False

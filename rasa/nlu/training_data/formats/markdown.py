@@ -220,24 +220,24 @@ class MarkdownWriter(TrainingDataWriter):
             intent = example[MESSAGE_INTENT_ATTRIBUTE]
             training_examples[intent].append(example)
 
-        md = ""
+        # Don't prepend newline for first line
+        prepend_newline = False
+        lines = []
 
         for intent, examples in training_examples.items():
-            for i, example in enumerate(examples):
-                did_intent_change = i == 0
-                is_first_line = md == ""
+            section_header = self._generate_section_header_md(
+                INTENT, intent, prepend_newline=prepend_newline
+            )
+            lines.append(section_header)
 
-                if did_intent_change:
-                    md += self._generate_section_header_md(
-                        INTENT,
-                        intent,
-                        example.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE, None),
-                        not is_first_line,
-                    )
+            prepend_newline = True
 
-                md += self._generate_item_md(self._generate_message_md(example))
+            lines += [
+                self._generate_item_md(self._generate_message_md(example))
+                for example in examples
+            ]
 
-        return md
+        return "".join(lines)
 
     def _generate_synonyms_md(self, training_data: "TrainingData") -> Text:
         """Generates markdown for entity synomyms."""
@@ -286,20 +286,12 @@ class MarkdownWriter(TrainingDataWriter):
 
     @staticmethod
     def _generate_section_header_md(
-        section_type: Text,
-        title: Text,
-        subtitle: Optional[Text] = None,
-        prepend_newline: bool = True,
+        section_type: Text, title: Text, prepend_newline: bool = True
     ) -> Text:
         """Generates markdown section header."""
 
         prefix = "\n" if prepend_newline else ""
-        subtitle_suffix = (
-            f"{RESPONSE_IDENTIFIER_DELIMITER}{subtitle}" if subtitle else ""
-        )
-        return prefix + "## {}:{}{}\n".format(
-            section_type, encode_string(title), encode_string(subtitle_suffix)
-        )
+        return f"{prefix}## {section_type}:{title}\n"
 
     @staticmethod
     def _generate_item_md(text: Text) -> Text:
