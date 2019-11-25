@@ -1,21 +1,25 @@
 from pathlib import Path
+from unittest.mock import Mock
 
+from typing import Callable, Dict, Text, Any
 import pytest
-from typing import Callable, Dict
 from _pytest.pytester import RunResult
+from _pytest.monkeypatch import MonkeyPatch
+import questionary
 
 from aioresponses import aioresponses
 
 import rasa.utils.io as io_utils
 from rasa.cli import x
+from rasa.core.utils import AvailableEndpoints
 from rasa.utils.endpoints import EndpointConfig
 
 
 def test_x_help(run: Callable[..., RunResult]):
     output = run("x", "--help")
 
-    help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [--no-prompt]
-              [--production] [--rasa-x-port RASA_X_PORT]
+    help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [-c CONFIG]
+              [--no-prompt] [--production] [--rasa-x-port RASA_X_PORT]
               [--config-endpoint CONFIG_ENDPOINT] [--log-file LOG_FILE]
               [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
               [--cors [CORS [CORS ...]]] [--enable-api]
@@ -59,6 +63,33 @@ def test_prepare_credentials_if_already_valid(tmpdir: Path):
     actual = io_utils.read_config_file(credentials_path)
 
     assert actual == credentials
+
+
+@pytest.mark.parametrize(
+    "event_broker",
+    [
+        # Event broker was not configured.
+        {},
+        # Event broker was explicitly configured to work with Rasa X in local mode.
+        {"type": "sql", "dialect": "sqlite", "db": x.DEFAULT_EVENTS_DB},
+        # Event broker was configured but the values are not compatible for running Rasa
+        # X in local mode.
+        {"type": "sql", "dialect": "postgresql"},
+    ],
+)
+def test_overwrite_endpoints_for_local_x(
+    event_broker: Dict[Text, Any], monkeypatch: MonkeyPatch
+):
+    confirm = Mock()
+    confirm.return_value.ask.return_value = True
+    monkeypatch.setattr(questionary, "confirm", confirm)
+
+    event_broker_config = EndpointConfig.from_dict(event_broker)
+    endpoints = AvailableEndpoints(event_broker=event_broker_config)
+
+    x._overwrite_endpoints_for_local_x(endpoints, "test-token", "http://localhost:5002")
+
+    assert x._is_correct_event_broker(endpoints.event_broker)
 
 
 def test_if_endpoint_config_is_valid_in_local_mode():
