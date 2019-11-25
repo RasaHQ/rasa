@@ -137,9 +137,7 @@ async def _train_async_internal(
     """
 
     stories, nlu_data = await asyncio.gather(
-        model.model_fingerprint(file_importer),
-        file_importer.get_stories(),
-        file_importer.get_nlu_data(),
+        file_importer.get_stories(), file_importer.get_nlu_data()
     )
 
     if stories.is_empty() and nlu_data.is_empty():
