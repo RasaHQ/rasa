@@ -49,7 +49,8 @@ class EndToEndReader(MarkdownReader):
         # 2) The correct intent
         # 3) Optional entities
         # 4) The message text
-        item_regex = re.compile(r"\s*(form:\s*)*(.+?)({.*})*:\s*(.*)")
+        form_group = fr"({FORM_PREFIX}\s*)*"
+        item_regex = re.compile(r"\s*" + form_group + r"(.+?)({.*})*:\s*(.*)")
         match = re.match(item_regex, line)
         if match:
             intent = match.group(2)
