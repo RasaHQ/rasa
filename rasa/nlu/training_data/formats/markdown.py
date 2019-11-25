@@ -229,7 +229,6 @@ class MarkdownWriter(TrainingDataWriter):
                 INTENT, intent, prepend_newline=prepend_newline
             )
             lines.append(section_header)
-
             prepend_newline = True
 
             lines += [
@@ -297,13 +296,13 @@ class MarkdownWriter(TrainingDataWriter):
     def _generate_item_md(text: Text) -> Text:
         """Generates markdown for a list item."""
 
-        return "- {}\n".format(encode_string(text))
+        return f"- {encode_string(text)}\n"
 
     @staticmethod
     def _generate_fname_md(text: Text) -> Text:
         """Generates markdown for a lookup table file path."""
 
-        return "  {}\n".format(encode_string(text))
+        return f"  {encode_string(text)}\n"
 
     def _generate_message_md(self, message: Dict[Text, Any]) -> Text:
         """Generates markdown for a message object."""
