@@ -119,8 +119,6 @@ def test_train_core_temp_files(
 def test_train_nlu_temp_files(
     tmp_path: Text,
     monkeypatch: MonkeyPatch,
-    default_domain_path: Text,
-    default_stories_file: Text,
     default_stack_config: Text,
     default_nlu_data: Text,
 ):
