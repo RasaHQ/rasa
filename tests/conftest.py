@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import contextmanager
 from typing import Text, List
 
@@ -36,10 +37,15 @@ pytest_plugins = ["pytester"]
 
 @pytest.fixture(autouse=True)
 def set_log_level_debug(caplog: LogCaptureFixture) -> None:
+    print("-------------------------- Before:")
+    os.system("free -m")
     # Set the post-test log level to DEBUG for failing tests.  For all tests
     # (failing and successful), the live log level can be additionally set in
     # `setup.cfg`. It should be set to WARNING.
     caplog.set_level(logging.DEBUG)
+    yield
+    print("-------------------------- After:")
+    os.system("free -m")
 
 
 @pytest.fixture
