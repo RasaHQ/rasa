@@ -290,6 +290,8 @@ class MarkdownWriter(TrainingDataWriter):
         """Generates markdown section header."""
 
         prefix = "\n" if prepend_newline else ""
+        title = encode_string(title)
+
         return f"{prefix}## {section_type}:{title}\n"
 
     @staticmethod
