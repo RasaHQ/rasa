@@ -2,7 +2,7 @@ import itertools
 
 import contextlib
 import typing
-from typing import Text, List, Optional
+from typing import Text, List, Optional, Text, Any, Dict
 
 import jsonpickle
 import os
@@ -55,7 +55,7 @@ def mocked_cmd_input(package, text: Text):
 
     def mocked_input(*args, **kwargs):
         value = next(text_generator)
-        print("wrote '{}' to input".format(value))
+        print(f"wrote '{value}' to input")
         return value
 
     package.get_user_input = mocked_input
@@ -65,10 +65,15 @@ def mocked_cmd_input(package, text: Text):
         package.get_user_input = i
 
 
-def user_uttered(text: Text, confidence: float) -> UserUttered:
+def user_uttered(
+    text: Text, confidence: float, metadata: Dict[Text, Any] = None
+) -> UserUttered:
     parse_data = {"intent": {"name": text, "confidence": confidence}}
     return UserUttered(
-        text="Random", intent=parse_data["intent"], parse_data=parse_data
+        text="Random",
+        intent=parse_data["intent"],
+        parse_data=parse_data,
+        metadata=metadata,
     )
 
 

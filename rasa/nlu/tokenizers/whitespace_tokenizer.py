@@ -32,7 +32,7 @@ class WhitespaceTokenizer(Tokenizer, Component):
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
 
-        super(WhitespaceTokenizer, self).__init__(component_config)
+        super().__init__(component_config)
         # flag to check whether to split intents
         self.intent_tokenization_flag = self.component_config.get(
             "intent_tokenization_flag"

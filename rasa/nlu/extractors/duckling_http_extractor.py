@@ -1,6 +1,7 @@
 import time
 import json
 import logging
+import warnings
 import os
 import requests
 from typing import Any, List, Optional, Text, Dict
@@ -73,7 +74,7 @@ class DucklingHTTPExtractor(EntityExtractor):
         language: Optional[Text] = None,
     ) -> None:
 
-        super(DucklingHTTPExtractor, self).__init__(component_config)
+        super().__init__(component_config)
         self.language = language
 
     @classmethod
@@ -174,7 +175,7 @@ class DucklingHTTPExtractor(EntityExtractor):
             )
         else:
             extracted = []
-            logger.warning(
+            warnings.warn(
                 "Duckling HTTP component in pipeline, but no "
                 "`url` configuration in the config "
                 "file nor is `RASA_DUCKLING_HTTP_URL` "

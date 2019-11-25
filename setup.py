@@ -36,7 +36,7 @@ install_requires = [
     "pymongo[tls,srv]~=3.8",
     "numpy~=1.16",
     "scipy~=1.2",
-    "tensorflow~=1.14.0",
+    "tensorflow~=1.15.0",
     # absl is a tensorflow dependency, but produces double logging before 0.8
     # should be removed once tensorflow requires absl > 0.8 on its own
     "absl-py>=0.8.0",
@@ -62,15 +62,15 @@ install_requires = [
     "rocketchat_API~=0.6.0",
     "colorhash~=1.0",
     "pika~=1.0.0",
-    "jsonschema~=2.6",
+    "jsonschema~=3.0",
     "packaging~=19.0",
     "gevent~=1.4",
     "pytz~=2019.1",
     "python-dateutil~=2.8",
-    "rasa-sdk~=1.4.0",
+    "rasa-sdk~=1.5.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
-    "sanic~=19.6",
+    "sanic~=19.9",
     "sanic-cors==0.9.9.post1",
     "sanic-jwt~=1.3",
     "aiohttp~=3.5",
@@ -92,6 +92,7 @@ install_requires = [
 extras_requires = {
     "test": tests_requires,
     "spacy": ["spacy>=2.1,<2.2"],
+    "convert": ["tensorflow_text~=1.15.1", "tensorflow_hub~=0.6.0"],
     "mitie": ["mitie"],
     "sql": ["psycopg2~=2.8.2", "SQLAlchemy~=1.3"],
 }
