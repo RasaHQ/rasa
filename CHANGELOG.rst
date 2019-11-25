@@ -32,6 +32,7 @@ Changed
 - Do not retrain the entire Core model if only the ``templates`` section of the domain
   is changed.
 - Upgraded ``jsonschema`` version.
+- Updated ``/status`` endpoint to show correct path to model archive
 
 Removed
 -------
@@ -77,6 +78,9 @@ Changed
 - Updated Mattermost connector documentation to be more clear.
 - Updated format strings to f-strings where appropriate.
 - Updated tensorflow requirement to ``1.15.0``
+
+Removed
+-------
 - Dump domain using UTF-8 (to avoid ``\UXXXX`` sequences in the dumped files)
 
 Fixed
