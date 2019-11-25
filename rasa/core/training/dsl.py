@@ -45,16 +45,16 @@ class EndToEndReader(MarkdownReader):
         )
 
         # Match three groups:
-        # 1) The correct intent
-        # 2) Optional entities
-        # 3) The message text
-        item_regex = re.compile(r"\s*(.+?)({.*})*:\s*(.*)")
+        # 1) Potential "form" annotation
+        # 2) The correct intent
+        # 3) Optional entities
+        # 4) The message text
+        item_regex = re.compile(r"\s*(form:\s*)*(.+?)({.*})*:\s*(.*)")
         match = re.match(item_regex, line)
         if match:
-            intent = match.group(1)
-
+            intent = match.group(2)
             self.current_title = intent
-            message = match.group(3)
+            message = match.group(4)
             example = self._parse_training_example(message)
 
             # If the message starts with the `INTENT_MESSAGE_PREFIX` potential entities

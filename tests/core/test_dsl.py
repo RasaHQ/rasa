@@ -414,6 +414,17 @@ async def test_read_stories_with_multiline_comments(tmpdir, default_domain):
                 "text": "great",
             },
         ),
+        (
+            'form: greet{"test": "test"}: /greet{"test": "test"}',
+            {
+                "intent": "greet",
+                "entities": [
+                    {"end": 22, "entity": "test", "start": 6, "value": "test"}
+                ],
+                "true_intent": "greet",
+                "text": '/greet{"test": "test"}',
+            },
+        ),
     ],
 )
 def test_e2e_parsing(line: Text, expected: Dict):
