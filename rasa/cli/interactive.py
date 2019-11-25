@@ -55,7 +55,6 @@ def interactive(args: argparse.Namespace):
     _set_not_required_args(args)
 
     if args.model is None:
-        check_training_data(args)
         zipped_model = train.train(args)
     else:
         zipped_model = get_provided_model(args.model)
@@ -108,17 +107,3 @@ def get_provided_model(arg_model: Text):
         model_path = get_latest_model(model_path)
 
     return model_path
-
-
-def check_training_data(args) -> None:
-    training_files = [
-        get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)
-        for f in args.data
-    ]
-    story_files, nlu_files = data.get_core_nlu_files(training_files)
-    if not story_files or not nlu_files:
-        print_error(
-            "Cannot train initial Rasa model. Please provide NLU and Core data "
-            "using the '--data' argument."
-        )
-        exit(1)
