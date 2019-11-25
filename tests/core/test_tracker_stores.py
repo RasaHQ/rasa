@@ -376,6 +376,6 @@ def test_set_fail_safe_tracker_store_domain(default_domain: Domain):
     failsafe_store = FailSafeTrackerStore(tracker_store, None, fallback_tracker_store)
 
     failsafe_store.domain = default_domain
-    assert failsafe_store.domain == default_domain
+    assert failsafe_store.domain is default_domain
     assert tracker_store.domain is failsafe_store.domain
     assert fallback_tracker_store.domain is failsafe_store.domain
