@@ -177,10 +177,13 @@ def test_train_status(server_process):
                 requests.get("http://localhost:5005/status").status_code == 200
             )
             status_request_duration = time.time() - start
+            if server_ready:
+                print(f"before training: {status_request_duration}")
         except requests.exceptions.ConnectionError:
             pass
         time.sleep(1)
 
+    print("server reeady")
     # use another process to hit the first server with a training request
     training_result = Manager().dict()
     working_directory = os.getcwd()
@@ -195,7 +198,11 @@ def test_train_status(server_process):
     while not training_finished:
         time.sleep(0.5)
         # hit status endpoint with short timeout to ensure training doesn't block
-        status_resp = requests.get("http://localhost:5005/status", timeout=1)
+        start = time.time()
+        status_resp = requests.get("http://localhost:5005/status", timeout=5)
+        status_request_duration = time.time() - start
+        if training_started and not training_finished:
+            print(f"while training: {status_request_duration}")
         assert status_resp.status_code == 200
 
         if not training_started:
@@ -212,6 +219,7 @@ def test_train_status(server_process):
                 assert status_resp.json()["num_active_training_jobs"] == 0
 
     training_request.join()
+    assert False
 
 
 @pytest.mark.parametrize(
