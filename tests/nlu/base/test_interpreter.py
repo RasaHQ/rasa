@@ -15,7 +15,6 @@ from rasa.utils.endpoints import EndpointConfig
 from tests.nlu import utilities
 
 
-@utilities.slowtest
 @pytest.mark.parametrize(
     "pipeline_template", list(registry.registered_pipeline_templates.keys())
 )
