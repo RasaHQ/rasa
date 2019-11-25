@@ -7,33 +7,35 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-
-[Unreleased 1.5.0a1] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[1.5.0] - 2019-11-22
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- Added data validator that checks if domain object returned is empty. If so, exit early from the command ``rasa data validate``
-- Added the KeywordIntentClassifier
-- Added documentation for ``AugmentedMemoizationPolicy``
+- Added data validator that checks if domain object returned is empty. If so, exit early
+  from the command ``rasa data validate``.
+- Added the KeywordIntentClassifier.
+- Added documentation for ``AugmentedMemoizationPolicy``.
 - Fall back to ``InMemoryTrackerStore`` in case there is any problem with the current
-  tracker store
+  tracker store.
 - Arbitrary metadata can now be attached to any ``Event`` subclass. The data must be
   stored under the ``metadata`` key when reading the event from a JSON object or
   dictionary.
-- Add command line argument ``rasa x --config CONFIG``, to specify path to the policy and
-  NLU pipeline configuration of your bot (default: ``config.yml``)
-- Added a new NLU featurizer - ``ConveRTFeaturizer`` based on `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model released by PolyAI.
+- Add command line argument ``rasa x --config CONFIG``, to specify path to the policy
+  and NLU pipeline configuration of your bot (default: ``config.yml``).
+- Added a new NLU featurizer - ``ConveRTFeaturizer`` based on `ConveRT
+  <https://github.com/PolyAI-LDN/polyai-models>`_ model released by PolyAI.
 - Added a new preconfigured pipeline - ``pretrained_embeddings_convert``.
 
 Changed
 -------
-- Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
-- Upgraded ``jsonschema`` version
+- Do not retrain the entire Core model if only the ``templates`` section of the domain
+  is changed.
+- Upgraded ``jsonschema`` version.
 
 Removed
 -------
-- Remove duplicate messages when creating training data (issues/1446)
+- Remove duplicate messages when creating training data (issues/1446).
 
 Fixed
 -----
@@ -43,6 +45,14 @@ Fixed
 - ``CountVectorsFeaturizer`` featurizes intents only if its analyzer is set to ``word``
 - Fixed bug where facebooks generic template was not rendered when buttons were ``None``
 - Fixed default intents unnecessarily raising undefined parsing error
+
+[1.4.6] - 2019-11-22
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Fixed Rasa X not working when any tracker store was configured for Rasa.
+- Use the matplotlib backend ``agg`` in case the ``tkinter`` package is not installed.
 
 [1.4.5] - 2019-11-14
 ^^^^^^^^^^^^^^^^^^^^
