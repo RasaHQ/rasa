@@ -156,6 +156,15 @@ def test_nlg_fill_template_custom(slot_name, slot_value):
     }
 
 
+def test_nlg_fill_template_custom_with_list():
+    template = {
+        "custom": {"blocks": [{"fields": [{"text": "*Departure date:*\n{test}"}]}]}
+    }
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template(template=template, filled_slots={"test": 5})
+    assert result["custom"]["blocks"][0]["fields"][0]["text"] == "*Departure date:*\n5"
+
+
 @pytest.mark.parametrize(
     "template_text, expected",
     [

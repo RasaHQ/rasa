@@ -46,6 +46,9 @@ def interpolate(template, values):
         for k, v in template.items():
             if isinstance(v, dict):
                 interpolate(v, values)
+            elif isinstance(v, list):
+                print("is list")
+                template[k] = [interpolate(i, values) for i in v]
             else:
                 template[k] = interpolate_text(v, values)
         return template
