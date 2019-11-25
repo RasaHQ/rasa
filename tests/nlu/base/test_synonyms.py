@@ -15,12 +15,3 @@ def test_entity_synonyms():
     assert entities[0]["value"] == "chinese"
     assert entities[1]["value"] == "chinese"
     assert entities[2]["value"] == "china"
-
-
-def test_loading_no_warning():
-    syn = EntitySynonymMapper(synonyms=None)
-    syn.persist("test", "test")
-    meta = Metadata({"test": 1}, "test")
-    with pytest.warns(None) as warn:
-        syn.load(meta.for_component(0), "test", meta)
-    assert len(warn) == 0

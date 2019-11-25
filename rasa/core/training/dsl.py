@@ -90,10 +90,10 @@ class StoryStepBuilder:
             self.start_checkpoints.append(Checkpoint(name, conditions))
         else:
             if conditions:
-                logger.warning(
+                warnings.warn(
                     "End or intermediate checkpoints "
                     "do not support conditions! "
-                    "(checkpoint: {})".format(name)
+                    f"(checkpoint: {name})"
                 )
             additional_steps = []
             for t in self.current_steps:
@@ -349,10 +349,9 @@ class StoryFileReader:
                 else:
                     # reached an unknown type of line
                     logger.warning(
-                        "Skipping line {}. "
+                        f"Skipping line {line_num}. "
                         "No valid command found. "
-                        "Line Content: '{}'"
-                        "".format(line_num, line)
+                        f"Line Content: '{line}'"
                     )
             except Exception as e:
                 msg = f"Error in line {line_num}: {e}"
@@ -412,11 +411,10 @@ class StoryFileReader:
         )
         intent_name = utterance.intent.get("name")
         if intent_name not in self.domain.intents:
-            logger.warning(
-                "Found unknown intent '{}' on line {}. "
+            warnings.warn(
+                f"Found unknown intent '{intent_name}' on line {line_num}. "
                 "Please, make sure that all intents are "
                 "listed in your domain yaml."
-                "".format(intent_name, line_num)
             )
         return utterance
 
