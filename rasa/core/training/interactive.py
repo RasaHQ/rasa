@@ -130,7 +130,7 @@ async def send_message(
     }
 
     return await endpoint.request(
-        json=payload, method="post", subpath=f"/conversations/{sender_id}/messages",
+        json=payload, method="post", subpath=f"/conversations/{sender_id}/messages"
     )
 
 

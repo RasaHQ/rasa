@@ -1,0 +1,3 @@
+language: "en"
+
+pipeline: "pretrained_embeddings_convert"
