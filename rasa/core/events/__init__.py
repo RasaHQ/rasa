@@ -7,13 +7,13 @@ import jsonpickle
 import logging
 import uuid
 from dateutil import parser
+from datetime import datetime
 from typing import List, Dict, Text, Any, Type, Optional
 
 from rasa.core import utils
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
-    from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -592,7 +592,7 @@ class ReminderScheduled(Event):
     def __init__(
         self,
         action_name: Text,
-        trigger_date_time: "datetime",
+        trigger_date_time: datetime,
         name: Optional[Text] = None,
         kill_on_user_message: bool = True,
         timestamp: Optional[int] = None,
