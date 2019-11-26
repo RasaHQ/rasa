@@ -27,6 +27,8 @@ help:
 	@echo "        Run all doctests embedded in the documentation."
 	@echo "    livedocs"
 	@echo "        Build the docs locally."
+	@echo "    release"
+	@echo "        Prepare a release."
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
@@ -55,9 +57,9 @@ prepare-tests-ubuntu: prepare-tests-files
 
 prepare-tests-files:
 	pip3 install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir -q
-	python -m spacy link en_core_web_md en --force
+	python3 -m spacy link en_core_web_md en --force
 	pip3 install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir -q
-	python -m spacy link de_core_news_sm de --force
+	python3 -m spacy link de_core_news_sm de --force
 	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 
 test: clean
@@ -72,4 +74,7 @@ livedocs:
 
 # if this runs through we can be sure the readme is properly shown on pypi
 check-readme:
-	python setup.py check --restructuredtext --strict
+	python3 setup.py check --restructuredtext --strict
+
+release:
+	python3 scripts/release.py

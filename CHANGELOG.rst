@@ -7,31 +7,21 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.5.1]
-^^^^^^^^^^^^^^^^^^
+..
+    You should **NOT** be adding new change log entries to this file, this
+    file is managed by `towncrier`.
+    You **may** edit previous change logs to fix problems like typo corrections or such.
+    You can find more information on how to add a new change log entry at
+    https://github.com/RasaHQ/rasa/tree/master/changelogs
 
-Added
------
+.. towncrier release notes start
 
-Changed
--------
-- When NLU training data is dumped as Markdown file the intents are not longer ordered
-  alphabetically, but in the original order of given training data
-
-Removed
--------
-
-Fixed
------
-- End to end stories now support literal payloads which specify entities, e.g.
-  ``greet: /greet{"name": "John"}``
-- Slots will be correctly interpolated if there are lists in custom response templates.
 
 [1.5.0] - 2019-11-26
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - Added data validator that checks if domain object returned is empty. If so, exit early
   from the command ``rasa data validate``.
 - Added the KeywordIntentClassifier.
@@ -54,12 +44,12 @@ Changed
 - Upgraded ``jsonschema`` version.
 - Updated ``/status`` endpoint to show correct path to model archive
 
-Removed
--------
+Deprecations and Removals
+-------------------------
 - Remove duplicate messages when creating training data (issues/1446).
 
-Fixed
------
+Bugfixes
+--------
 - ``MultiProjectImporter`` now imports files in the order of the import statements
 - Fixed server hanging forever on leaving ``rasa shell`` before first message
 - Fixed rasa init showing traceback error when user does Keyboard Interrupt before choosing a project path
@@ -70,16 +60,16 @@ Fixed
 [1.4.6] - 2019-11-22
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - Fixed Rasa X not working when any tracker store was configured for Rasa.
 - Use the matplotlib backend ``agg`` in case the ``tkinter`` package is not installed.
 
 [1.4.5] - 2019-11-14
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - NLU-only models no longer throw warnings about parsing features not defined in the domain
 - Fixed bug that stopped Dockerfiles from building version 1.4.4.
 - Fixed format guessing for e2e stories with intent restated as ``/intent``
@@ -87,8 +77,8 @@ Fixed
 [1.4.4] - 2019-11-13
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - ``PikaEventProducer`` adds the RabbitMQ ``App ID`` message property to published
   messages with the value of the ``RASA_ENVIRONMENT`` environment variable. The
   message property will not be assigned if this environment variable isn't set.
@@ -100,28 +90,28 @@ Changed
 - Updated tensorflow requirement to ``1.15.0``
 - Dump domain using UTF-8 (to avoid ``\UXXXX`` sequences in the dumped files)
 
-Fixed
------
+Bugfixes
+--------
 - Fixed exporting NLU training data in ``json`` format from ``rasa interactive``
 - Fixed numpy deprecation warnings
 
 [1.4.3] - 2019-10-29
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - Fixed ``Connection reset by peer`` errors and bot response delays when using the
   RabbitMQ event broker.
 
 [1.4.2] - 2019-10-28
 ^^^^^^^^^^^^^^^^^^^^
 
-Removed
--------
+Deprecations and Removals
+-------------------------
 - TensorFlow deprecation warnings are no longer shown when running ``rasa x``
 
-Fixed
------
+Bugfixes
+--------
 - Fixed ``'Namespace' object has no attribute 'persist_nlu_data'`` error during
   interactive learning
 - Pinned `networkx~=2.3.0` to fix visualization in `rasa interactive` and Rasa X
@@ -135,8 +125,8 @@ Regression: changes from ``1.2.12`` were missing from ``1.4.0``, readded them
 [1.4.0] - 2019-10-19
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - add flag to CLI to persist NLU training data if needed
 - log a warning if the ``Interpreter`` picks up an intent or an entity that does not
   exist in the domain file.
@@ -172,12 +162,12 @@ Changed
 - Use multi-stage builds to reduce the size of the Rasa Docker image.
 - Updated the ``/status`` api route to use the actual model file location instead of the ``tmp`` location.
 
-Removed
--------
+Deprecations and Removals
+-------------------------
 - **Removed Python 3.5 support**
 
-Fixed
------
+Bugfixes
+--------
 - fixed missing ``tkinter`` dependency for running tests on Ubuntu
 - fixed issue with ``conversation`` JSON serialization
 - fixed the hanging HTTP call with ``ner_duckling_http`` pipeline
@@ -188,28 +178,28 @@ Fixed
 [1.3.10] - 2019-10-18
 ^^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - Can now pass a package as an argument to the ``--actions`` parameter of the
   ``rasa run actions`` command.
 
-Fixed
------
+Bugfixes
+--------
 - Fixed visualization of stories with entities which led to a failing
   visualization in Rasa X
 
 [1.3.9] - 2019-10-10
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - Port of 1.2.10 (support for RabbitMQ TLS authentication and ``port`` key in
   event broker endpoint config).
 - Port of 1.2.11 (support for passing a CA file for SSL certificate verification via the
   --ssl-ca-file flag).
 
-Fixed
------
+Bugfixes
+--------
 - Fixed the hanging HTTP call with ``ner_duckling_http`` pipeline.
 - Fixed text processing of ``intent`` attribute inside ``CountVectorFeaturizer``.
 - Fixed ``argument of type 'NoneType' is not iterable`` when using ``rasa shell``,
@@ -223,8 +213,8 @@ Changed
 - Policies now only get imported if they are actually used. This removes
   TensorFlow warnings when starting Rasa X
 
-Fixed
------
+Bugfixes
+--------
 - Fixed error ``Object of type 'MaxHistoryTrackerFeaturizer' is not JSON serializable``
   when running ``rasa train core``
 - Default channel ``send_`` methods no longer support kwargs as they caused issues in incompatible channels
@@ -232,8 +222,8 @@ Fixed
 [1.3.7] - 2019-09-27
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - re-added TLS, SRV dependencies for PyMongo
 - socketio can now be run without turning on the ``--enable-api`` flag
 - MappingPolicy no longer fails when the latest action doesn't have a policy
@@ -241,31 +231,31 @@ Fixed
 [1.3.6] - 2019-09-21
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - Added the ability for users to specify a conversation id to send a message to when
   using the ``RasaChat`` input channel.
 
 [1.3.5] - 2019-09-20
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - Fixed issue where ``rasa init`` would fail without spaCy being installed
 
 [1.3.4] - 2019-09-20
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - Added the ability to set the ``backlog`` parameter in Sanics ``run()`` method using
   the ``SANIC_BACKLOG`` environment variable. This parameter sets the
   number of unaccepted connections the server allows before refusing new
   connections. A default value of 100 is used if the variable is not set.
 - Status endpoint (``/status``) now also returns the number of training processes currently running
 
-Fixed
------
+Bugfixes
+--------
 - Added the ability to properly deal with spaCy ``Doc``-objects created on
   empty strings as discussed `here <https://github.com/RasaHQ/rasa/issues/4445>`_.
   Only training samples that actually bear content are sent to ``self.nlp.pipe``
@@ -287,8 +277,8 @@ Changed
 [1.3.3] - 2019-09-13
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - Added a check to avoid training ``CountVectorizer`` for a particular
   attribute of a message if no text is provided for that attribute across
   the training data.
@@ -297,15 +287,15 @@ Fixed
   mapping policy is present.
 - "test" from ``utter_custom_json`` now correctly saved to tracker when using telegram channel
 
-Removed
--------
+Deprecations and Removals
+-------------------------
 - Removed computation of ``intent_spacy_doc``. As a result, none of the spacy components process intents now.
 
 [1.3.2] - 2019-09-10
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - SQL tracker events are retrieved ordered by timestamps. This fixes interactive
   learning events being shown in the wrong order.
 
@@ -319,8 +309,8 @@ Changed
 [1.3.0] - 2019-09-05
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - Added option to persist nlu training data (default: False)
 - option to save stories in e2e format for interactive learning
 - bot messages contain the ``timestamp`` of the ``BotUttered`` event, which can be used in channels
@@ -392,37 +382,37 @@ Changed
 - pin python-engineio >= 3.9.3
 - update python-socketio req to >= 4.3.1
 
-Fixed
------
+Bugfixes
+--------
 - ``rasa test nlu`` with a folder of configuration files
 - ``MappingPolicy`` standard featurizer is set to ``None``
 - Removed ``text`` parameter from send_attachment function in slack.py to avoid duplication of text output to slackbot
 - server ``/status`` endpoint reports status when an NLU-only model is loaded
 
-Removed
--------
+Deprecations and Removals
+-------------------------
 - Removed ``--report`` argument from ``rasa test nlu``. All output files are stored in the ``--out`` directory.
 
 [1.2.12] - 2019-10-16
 ^^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - Support for transit encryption with Redis via ``use_ssl: True`` in the tracker store config in endpoints.yml
 
 [1.2.11] - 2019-10-09
 ^^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - Support for passing a CA file for SSL certificate verification via the
   --ssl-ca-file flag
 
 [1.2.10] - 2019-10-08
 ^^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - Added support for RabbitMQ TLS authentication. The following environment variables
   need to be set:
   ``RABBITMQ_SSL_CLIENT_CERTIFICATE`` - path to the SSL client certificate (required)
@@ -436,16 +426,16 @@ Added
 [1.2.9] - 2019-09-17
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - Correctly pass SSL flag values to x CLI command (backport of
 
 
 [1.2.8] - 2019-09-10
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - SQL tracker events are retrieved ordered by timestamps. This fixes interactive
   learning events being shown in the wrong order. Backport of ``1.3.2`` patch
   (PR #4427).
@@ -454,8 +444,8 @@ Fixed
 [1.2.7] - 2019-09-02
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - Added ``query`` dictionary argument to ``SQLTrackerStore`` which will be appended
   to the SQL connection URL as query parameters.
 
@@ -463,20 +453,20 @@ Fixed
 [1.2.6] - 2019-09-02
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - fixed bug that occurred when sending template ``elements`` through a channel that doesn't support them
 
 [1.2.5] - 2019-08-26
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - SSL support for ``rasa run`` command. Certificate can be specified using
   ``--ssl-certificate`` and ``--ssl-keyfile``.
 
-Fixed
------
+Bugfixes
+--------
 - made default augmentation value consistent across repo
 - ``'/restart'`` will now also restart the bot if the tracker is paused
 
@@ -484,8 +474,8 @@ Fixed
 [1.2.4] - 2019-08-23
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - the ``SocketIO`` input channel now allows accesses from other origins
   (fixes ``SocketIO`` channel on Rasa X)
 
@@ -506,35 +496,35 @@ Changed
 - messages with multiple entities are now handled properly with e2e evaluation
 - ``data/test_evaluations/end_to_end_story.md`` was re-written in the restaurantbot domain
 
-Fixed
------
+Bugfixes
+--------
 - Free text input was not allowed in the Rasa shell when the response template
   contained buttons, which has now been fixed.
 
 [1.2.2] - 2019-08-07
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - ``UserUttered`` events always got the same timestamp
 
 [1.2.1] - 2019-08-06
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - Docs now have an ``EDIT THIS PAGE`` button
 
-Fixed
------
+Bugfixes
+--------
 - ``Flood control exceeded`` error in Telegram connector which happened because the
   webhook was set twice
 
 [1.2.0] - 2019-08-01
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - add root route to server started without ``--enable-api`` parameter
 - add ``--evaluate-model-directory`` to ``rasa test core`` to evaluate models
   from ``rasa train core -c <config-1> <config-2>``
@@ -553,8 +543,8 @@ Changed
   old behavior)
 - ``metadata`` attribute added to ``UserMessage``
 
-Fixed
------
+Bugfixes
+--------
 - ``rasa test core`` can handle compressed model files
 - rasa can handle story files containing multi line comments
 - template will retain `{` if escaped with `{`. e.g. `{{"foo": {bar}}}` will result in `{"foo": "replaced value"}`
@@ -562,8 +552,8 @@ Fixed
 [1.1.8] - 2019-07-25
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - ``TrainingFileImporter`` interface to support customizing the process of loading
   training data
 - fill slots for custom templates
@@ -574,8 +564,8 @@ Changed
   or a policy ensemble
 - update pytype to ``2019.7.11``
 
-Fixed
------
+Bugfixes
+--------
 - interactive learning bug where reverted user utterances were dumped to training data
 - added timeout to terminal input channel to avoid freezing input in case of server
   errors
@@ -587,13 +577,13 @@ Fixed
 [1.1.7] - 2019-07-18
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - added optional pymongo dependencies ``[tls, srv]`` to ``requirements.txt`` for better mongodb support
 - ``case_sensitive`` option added to ``WhiteSpaceTokenizer`` with ``true`` as default.
 
-Fixed
------
+Bugfixes
+--------
 - validation no longer throws an error during interactive learning
 - fixed wrong cleaning of ``use_entities`` in case it was a list and not ``True``
 - updated the server endpoint ``/model/parse`` to handle also messages with the intent prefix
@@ -603,8 +593,8 @@ Fixed
 [1.1.6] - 2019-07-12
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - rest channel supports setting a message's input_channel through a field
   ``input_channel`` in the request body
 
@@ -613,8 +603,8 @@ Changed
 - recommended syntax for empty ``use_entities`` and ``ignore_entities`` in the domain file
   has been updated from ``False`` or ``None`` to an empty list (``[]``)
 
-Fixed
------
+Bugfixes
+--------
 - ``rasa run`` without ``--enable-api`` does not require a local model anymore
 - using ``rasa run`` with ``--enable-api`` to run a server now prints
   "running Rasa server" instead of "running Rasa Core server"
@@ -624,8 +614,8 @@ Fixed
 [1.1.5] - 2019-07-10
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - debug logging now tells you which tracker store is connected
 - the response of ``/model/train`` now includes a response header for the trained model filename
 - ``Validator`` class to help developing by checking if the files have any errors
@@ -640,14 +630,14 @@ Changed
   or ``rasa.core.run.configure_app`` instead.
 - ``Agent.load()`` also accepts ``tar.gz`` model file
 
-Removed
--------
+Deprecations and Removals
+-------------------------
 - revert the stripping of trailing slashes in endpoint URLs since this can lead to
   problems in case the trailing slash is actually wanted
 - starter packs were removed from Github and are therefore no longer tested by Travis script
 
-Fixed
------
+Bugfixes
+--------
 - all temporal model files are now deleted after stopping the Rasa server
 - ``rasa shell nlu`` now outputs unicode characters instead of ``\uxxxx`` codes
 - fixed PUT /model with model_server by deserializing the model_server to
@@ -665,8 +655,8 @@ Fixed
 [1.1.4] - 2019-06-18
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - unfeaturize single entities
 - added agent readiness check to the ``/status`` resource
 
@@ -674,8 +664,8 @@ Changed
 -------
 - removed leading underscore from name of '_create_initial_project' function.
 
-Fixed
------
+Bugfixes
+--------
 - fixed bug where facebook quick replies were not rendering
 - take FB quick reply payload rather than text as input
 - fixed bug where `training_data` path in `metadata.json` was an absolute path
@@ -683,31 +673,31 @@ Fixed
 [1.1.3] - 2019-06-14
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - fixed any inconsistent type annotations in code and some bugs revealed by
   type checker
 
 [1.1.2] - 2019-06-13
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - fixed duplicate events appearing in tracker when using a PostgreSQL tracker store
 
 [1.1.1] - 2019-06-13
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - fixed compatibility with Rasa SDK
 - bot responses can contain ``custom`` messages besides other message types
 
 [1.1.0] - 2019-06-13
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - nlu configs can now be directly compared for performance on a dataset
   in ``rasa test nlu``
 
@@ -717,8 +707,8 @@ Changed
   instead of replacing the tracker
 - ``POST /conversations/{conversation_id}/tracker/events`` supports a list of events
 
-Fixed
------
+Bugfixes
+--------
 - fixed creation of ``RasaNLUHttpInterpreter``
 - form actions are included in domain warnings
 - default actions, which are overriden by custom actions and are listed in the
@@ -737,8 +727,8 @@ Changed
 [1.0.8] - 2019-06-10
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - support for specifying full database urls in the ``SQLTrackerStore`` configuration
 - maximum number of predictions can be set via the environment variable
   ``MAX_NUMBER_OF_PREDICTIONS`` (default is 10)
@@ -748,20 +738,20 @@ Changed
 - default ``PikaProducer`` and ``KafkaProducer`` queues to ``rasa_production_events``
 - exclude unfeaturized slots from domain warnings
 
-Fixed
------
+Bugfixes
+--------
 - loading of additional training data with the ``SkillSelector``
 - strip trailing slashes in endpoint URLs
 
 [1.0.7] - 2019-06-06
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - added argument ``--rasa-x-port`` to specify the port of Rasa X when running Rasa X locally via ``rasa x``
 
-Fixed
------
+Bugfixes
+--------
 - slack notifications from bots correctly render text
 - fixed usage of ``--log-file`` argument for ``rasa run`` and ``rasa shell``
 - check if correct tracker store is configured in local mode
@@ -769,22 +759,22 @@ Fixed
 [1.0.6] - 2019-06-03
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - fixed backwards incompatible utils changes
 
 [1.0.5] - 2019-06-03
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - fixed spacy being a required dependency (regression)
 
 [1.0.4] - 2019-06-03
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - automatic creation of index on the ``sender_id`` column when using an SQL
   tracker store. If you have an existing data and you are running into performance
   issues, please make sure to add an index manually using
@@ -798,8 +788,8 @@ Changed
 [1.0.3] - 2019-05-30
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - non-ascii characters render correctly in stories generated from interactive learning
 - validate domain file before usage, e.g. print proper error messages if domain file
   is invalid instead of raising errors
@@ -807,14 +797,14 @@ Fixed
 [1.0.2] - 2019-05-29
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - added ``domain_warnings()`` method to ``Domain`` which returns a dict containing the
   diff between supplied {actions, intents, entities, slots} and what's contained in the
   domain
 
-Fixed
------
+Bugfixes
+--------
 - fix lookup table files failed to load issues/3622
 - buttons can now be properly selected during cmdline chat or when in interactive learning
 - set slots correctly when events are added through the API
@@ -825,15 +815,15 @@ Fixed
 [1.0.1] - 2019-05-21
 ^^^^^^^^^^^^^^^^^^^^
 
-Fixed
------
+Bugfixes
+--------
 - updated installation command in docs for Rasa X
 
 [1.0.0] - 2019-05-21
 ^^^^^^^^^^^^^^^^^^^^
 
-Added
------
+Features
+--------
 - added arguments to set the file paths for interactive training
 - added quick reply representation for command-line output
 - added option to specify custom button type for Facebook buttons
@@ -889,16 +879,16 @@ Changed
 - make sure all command line arguments for ``rasa test`` and ``rasa interactive`` are actually used, removed arguments
   that were not used at all (e.g. ``--core`` for ``rasa test``)
 
-Removed
--------
+Deprecations and Removals
+-------------------------
 - removed possibility to execute ``python -m rasa_core.train`` etc. (e.g. scripts in ``rasa.core`` and ``rasa.nlu``).
   Use the CLI for rasa instead, e.g. ``rasa train core``.
 - removed ``_sklearn_numpy_warning_fix`` from the ``SklearnIntentClassifier``
 - removed ``Dispatcher`` class from core
 - removed projects: the Rasa NLU server now has a maximum of one model at a time loaded.
 
-Fixed
------
+Bugfixes
+--------
 - evaluating core stories with two stage fallback gave an error, trying to handle None for a policy
 - the ``/evaluate`` route for the Rasa NLU server now runs evaluation
   in a parallel process, which prevents the currently loaded model unloading
