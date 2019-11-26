@@ -420,10 +420,7 @@ class StoryGraph:
         ordered_ids, cyclic_edges = StoryGraph.order_steps(story_steps)
         self.ordered_ids = ordered_ids
         self.cyclic_edge_ids = cyclic_edges
-        if story_end_checkpoints:
-            self.story_end_checkpoints = story_end_checkpoints
-        else:
-            self.story_end_checkpoints = {}
+        self.story_end_checkpoints = story_end_checkpoints or {}
 
     def __hash__(self) -> int:
         self_as_string = self.as_story_string()

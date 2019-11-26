@@ -43,10 +43,7 @@ class PolicyEnsemble:
         self.training_trackers = None
         self.date_trained = None
 
-        if action_fingerprints:
-            self.action_fingerprints = action_fingerprints
-        else:
-            self.action_fingerprints = {}
+        self.action_fingerprints = action_fingerprints or {}
 
         self._check_priorities()
         self._check_for_important_policies()

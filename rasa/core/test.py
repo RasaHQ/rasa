@@ -152,10 +152,11 @@ class WronglyClassifiedUserUtterance(UserUttered):
 
     def __init__(self, event: UserUttered, eval_store: EvaluationStore):
 
-        if not eval_store.intent_predictions:
-            self.predicted_intent = None
-        else:
-            self.predicted_intent = eval_store.intent_predictions[0]
+        self.predicted_intent = (
+            None
+            if not eval_store.intent_predictions
+            else eval_store.intent_predictions[0]
+        )
         self.predicted_entities = eval_store.entity_predictions
 
         intent = {"name": eval_store.intent_targets[0]}
