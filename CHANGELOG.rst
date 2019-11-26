@@ -21,6 +21,7 @@ Removed
 
 Fixed
 -----
+- Slots will be correctly interpolated if there are lists in custom response templates.
 
 [1.5.0] - 2019-11-26
 ^^^^^^^^^^^^^^^^^^^^
