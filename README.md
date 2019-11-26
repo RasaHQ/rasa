@@ -31,7 +31,7 @@ conversations with lots of back-and-forth. To have a real conversation,
 your bot needs to have some memory and build on things said previously.
 Rasa lets you do that in a scalable way.
 
-There is more background information here:
+Find more background information in this
 [blog post](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a).
 
 ---
