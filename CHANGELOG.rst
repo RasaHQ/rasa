@@ -23,7 +23,7 @@ Fixed
 -----
 - Slots will be correctly interpolated if there are lists in custom response templates.
 
-[1.5.0] - 2019-11-22
+[1.5.0] - 2019-11-26
 ^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -48,6 +48,7 @@ Changed
 - Do not retrain the entire Core model if only the ``templates`` section of the domain
   is changed.
 - Upgraded ``jsonschema`` version.
+- Updated ``/status`` endpoint to show correct path to model archive
 
 Removed
 -------

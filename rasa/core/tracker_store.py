@@ -785,11 +785,22 @@ class FailSafeTrackerStore(TrackerStore):
                 in the primary tracker store.
         """
 
-        super().__init__(tracker_store.domain, tracker_store.event_broker)
-
         self._fallback_tracker_store: Optional[TrackerStore] = fallback_tracker_store
         self._tracker_store = tracker_store
         self._on_tracker_store_error = on_tracker_store_error
+
+        super().__init__(tracker_store.domain, tracker_store.event_broker)
+
+    @property
+    def domain(self) -> Optional[Domain]:
+        return self._tracker_store.domain
+
+    @domain.setter
+    def domain(self, domain: Optional[Domain]) -> None:
+        self._tracker_store.domain = domain
+
+        if self._fallback_tracker_store:
+            self._fallback_tracker_store.domain = domain
 
     @property
     def fallback_tracker_store(self) -> TrackerStore:
