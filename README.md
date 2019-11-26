@@ -60,7 +60,7 @@ Find more background information in this
 ## Where to get help
 
 There is extensive documentation in the [Rasa Docs](https://rasa.com/docs/rasa).
-Make sure to select the correct version to use the correct corresponding documentation.
+Make sure to select the version you installed to see the correct corresponding documentation.
 
 Please use [Rasa Community Forum](https://forum.rasa.com) for quick answers to
 questions.
