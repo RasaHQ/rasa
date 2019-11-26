@@ -72,7 +72,7 @@ questions.
 
 ### How to contribute
 We are very happy to receive and merge your contributions. You can
-find more information about contributing to Rasa (in lots of
+find more information about how to contribute to Rasa (in lots of
 different ways!) [here](http://rasa.com/community/contribute).
 
 To contribute via pull request, follow these steps:
