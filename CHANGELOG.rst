@@ -15,7 +15,7 @@ Added
 
 Changed
 -------
-- Print info message when running Rasa X and and custom model server url was specified in ``endpoints.yml``
+- Print info message when running Rasa X and a custom model server url was specified in ``endpoints.yml``
 - If a ``wait_time_between_pulls`` is configured for the model server in ``endpoints.yml``,
   this will be used instead of the default one when running Rasa X
 
