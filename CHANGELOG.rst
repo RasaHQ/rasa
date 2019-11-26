@@ -49,6 +49,7 @@ Changed
 - Do not retrain the entire Core model if only the ``templates`` section of the domain
   is changed.
 - Upgraded ``jsonschema`` version.
+- Updated ``/status`` endpoint to show correct path to model archive
 
 Removed
 -------
