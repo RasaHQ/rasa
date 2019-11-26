@@ -62,8 +62,7 @@ class KerasPolicy(Policy):
         max_history: Optional[int] = None,
         **kwargs: Any,
     ) -> None:
-        if not featurizer:
-            featurizer = self._standard_featurizer(max_history)
+        featurizer = featurizer or self._standard_featurizer(max_history)
         super().__init__(featurizer, priority)
 
         self._load_params(**kwargs)

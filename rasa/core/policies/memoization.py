@@ -65,9 +65,7 @@ class MemoizationPolicy(Policy):
         lookup: Optional[Dict] = None,
     ) -> None:
 
-        if not featurizer:
-            featurizer = self._standard_featurizer(max_history)
-
+        featurizer = featurizer or self._standard_featurizer(max_history)
         super().__init__(featurizer, priority)
 
         self.max_history = self.featurizer.max_history

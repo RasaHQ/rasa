@@ -177,10 +177,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
 class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
     def __init__(self, endpoint: EndpointConfig = None) -> None:
-        if endpoint:
-            self.endpoint = endpoint
-        else:
-            self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
+        self.endpoint = endpoint or EndpointConfig(constants.DEFAULT_SERVER_URL)
 
     async def parse(
         self,

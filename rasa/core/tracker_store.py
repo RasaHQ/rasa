@@ -5,6 +5,7 @@ import logging
 import os
 import pickle
 import typing
+from collections import namedtuple
 from datetime import datetime, timezone
 from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable
 
@@ -523,23 +524,57 @@ class SQLTrackerStore(TrackerStore):
     def __init__(
         self,
         domain: Optional[Domain] = None,
+        event_broker: Optional[EventChannel] = None,
         dialect: Text = "sqlite",
+        db: Text = "rasa.db",
         host: Optional[Text] = None,
         port: Optional[int] = None,
-        db: Text = "rasa.db",
         username: Text = None,
         password: Text = None,
-        event_broker: Optional[EventChannel] = None,
         login_db: Optional[Text] = None,
         query: Optional[Dict] = None,
     ) -> None:
+        """
+        Database Information Args:
+            event_broker: Optional[EventChannel] = None,
+            dialect: SQL database type.
+            host: Database network host.
+            port: Database network port.
+            db: Database name.
+            username: User name to use when connecting to the database.
+            password: Password for database user.
+            login_db: Alternative database name to which initially connect, and create
+                the database specified by `db` (PostgreSQL only).
+            query: Dictionary of options to be passed to the dialect and/or the
+                DBAPI upon connect.
+        """
+        self.DatabaseInformation = namedtuple(
+            "DatabaseInformation",
+            (
+                "dialect",
+                "host",
+                "port",
+                "db",
+                "username",
+                "password",
+                "event_broker",
+                "login_db",
+                "query",
+            ),
+        )
+        self.db_info = self.DatabaseInformation(
+            dialect, host, port, db, username, password, login_db, query
+        )
+
+        self._connect_to_database()
+        super().__init__(domain, event_broker)
+
+    def _connect_to_database(self):
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy import create_engine
         import sqlalchemy.exc
 
-        engine_url = self.get_db_url(
-            dialect, host, port, db, username, password, login_db, query
-        )
+        engine_url = self._get_db_url(self.db_info)
         logger.debug(
             "Attempting to connect to database via '{}'.".format(repr(engine_url))
         )
@@ -551,7 +586,7 @@ class SQLTrackerStore(TrackerStore):
                 # connections that are kept in the connection pool. Not available
                 # for SQLite, and only  tested for postgresql. See
                 # https://docs.sqlalchemy.org/en/13/core/pooling.html#sqlalchemy.pool.QueuePool
-                if dialect == "postgresql":
+                if self.db.info.dialect == "postgresql":
                     self.engine = create_engine(
                         engine_url,
                         pool_size=int(os.environ.get("SQL_POOL_SIZE", "50")),
@@ -562,8 +597,8 @@ class SQLTrackerStore(TrackerStore):
 
                 # if `login_db` has been provided, use current channel with
                 # that database to create working database `db`
-                if login_db:
-                    self._create_database_and_update_engine(db, engine_url)
+                if self.db_info.login_db:
+                    self._create_database_and_update_engine(self.db_info.db, engine_url)
 
                 try:
                     self.Base.metadata.create_all(self.engine)
@@ -582,39 +617,14 @@ class SQLTrackerStore(TrackerStore):
                 sqlalchemy.exc.OperationalError,
                 sqlalchemy.exc.IntegrityError,
             ) as error:
-
                 logger.warning(error)
                 sleep(5)
 
-        logger.debug(f"Connection to SQL database '{db}' successful.")
+        logger.debug(f"Connection to SQL database '{self.db_info.db}' successful.")
 
-        super().__init__(domain, event_broker)
-
-    @staticmethod
-    def get_db_url(
-        dialect: Text = "sqlite",
-        host: Optional[Text] = None,
-        port: Optional[int] = None,
-        db: Text = "rasa.db",
-        username: Text = None,
-        password: Text = None,
-        login_db: Optional[Text] = None,
-        query: Optional[Dict] = None,
-    ) -> Union[Text, "URL"]:
+    def _get_db_url(self) -> Union[Text, "URL"]:
         """Builds an SQLAlchemy `URL` object representing the parameters needed
         to connect to an SQL database.
-
-        Args:
-            dialect: SQL database type.
-            host: Database network host.
-            port: Database network port.
-            db: Database name.
-            username: User name to use when connecting to the database.
-            password: Password for database user.
-            login_db: Alternative database name to which initially connect, and create
-                the database specified by `db` (PostgreSQL only).
-            query: Dictionary of options to be passed to the dialect and/or the
-                DBAPI upon connect.
 
         Returns:
             URL ready to be used with an SQLAlchemy `Engine` object.
@@ -624,26 +634,28 @@ class SQLTrackerStore(TrackerStore):
         from sqlalchemy.engine.url import URL
 
         # Users might specify a url in the host
-        parsed = urlsplit(host or "")
+        parsed = urlsplit(self.db_info.host or "")
         if parsed.scheme:
-            return host
+            return self.db_info.host
 
-        if host:
+        if self.db_info.host:
             # add fake scheme to properly parse components
-            parsed = urlsplit("schema://" + host)
+            parsed = urlsplit("schema://" + self.db_info.host)
 
             # users might include the port in the url
-            port = parsed.port or port
-            host = parsed.hostname or host
+            port = parsed.port or self.db_info.port
+            host = parsed.hostname or self.db_info.host
 
         return URL(
-            dialect,
-            username,
-            password,
+            self.db_info.dialect,
+            self.db_info.username,
+            self.db_info.password,
             host,
             port,
-            database=login_db if login_db else db,
-            query=query,
+            database=(
+                self.db_info.login_db if self.db_info.login_db else self.db_info.db
+            ),
+            query=self.db_info.query,
         )
 
     def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):

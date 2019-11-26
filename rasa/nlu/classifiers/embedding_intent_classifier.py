@@ -521,10 +521,11 @@ class EmbeddingIntentClassifier(Component):
         possible_to_train = self._check_enough_labels(session_data)
 
         if not possible_to_train:
-            raise ValueError("Can not train a classifier. "
-                            "Need at least 2 different classes. "
-                            "Skipping training of classifier.")
-
+            logger.error(
+                "Can not train a classifier. "
+                "Need at least 2 different classes. "
+                "Skipping training of classifier."
+            )
             return
 
         if self.evaluate_on_num_examples:
