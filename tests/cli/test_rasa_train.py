@@ -263,31 +263,6 @@ def test_train_core_no_domain_exists(run_in_default_project: Callable[..., RunRe
     assert not os.path.isfile("train_rasa_models_no_domain/rasa-model.tar.gz")
 
 
-def count_rasa_temp_files() -> int:
-    count = 0
-    for entry in os.scandir(tempfile.gettempdir()):
-        if not entry.is_dir():
-            continue
-
-        try:
-            for f in os.listdir(entry.path):
-                if f.endswith("_nlu.md") or f.endswith("_stories.md"):
-                    count += 1
-        except PermissionError:
-            # Ignore permission errors
-            pass
-
-    return count
-
-
-def test_train_core_temp_files(
-    run_in_default_project: Callable[..., RunResult]
-) -> None:
-    count = count_rasa_temp_files()
-    run_in_default_project("train", "core")
-    assert count == count_rasa_temp_files()
-
-
 def test_train_nlu(run_in_default_project: Callable[..., RunResult]):
     run_in_default_project(
         "train",
@@ -339,12 +314,6 @@ def test_train_nlu_persist_nlu_data(
     assert os.path.exists(
         os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
     )
-
-
-def test_train_nlu_temp_files(run_in_default_project: Callable[..., RunResult]):
-    count = count_rasa_temp_files()
-    run_in_default_project("train", "nlu")
-    assert count == count_rasa_temp_files()
 
 
 def test_train_help(run):
