@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 class EndToEndReader(MarkdownReader):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._regex_interpreter = RegexInterpreter()
 

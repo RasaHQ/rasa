@@ -171,7 +171,7 @@ class StoryStep:
         self.story_string_helper.form_prefix_string = ""
         self.story_string_helper.no_form_prefix_string = ""
 
-    def as_story_string(self, flat: bool = False, e2e: bool = False):
+    def as_story_string(self, flat: bool = False, e2e: bool = False) -> Text:
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
 
