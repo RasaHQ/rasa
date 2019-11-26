@@ -399,7 +399,7 @@ class TrainingData:
         train, test = [], []
         for intent, count in self.examples_per_intent.items():
             ex = [e for e in self.intent_examples if e.data["intent"] == intent]
-            if seed is not None:
+            if random_seed is not None:
                 random.Random(random_seed).shuffle(ex)
             else:
                 random.shuffle(ex)
