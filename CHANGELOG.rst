@@ -15,6 +15,8 @@ Added
 
 Changed
 -------
+- When NLU training data is dumped as Markdown file the intents are not longer ordered
+  alphabetically, but in the original order of given training data
 
 Removed
 -------
