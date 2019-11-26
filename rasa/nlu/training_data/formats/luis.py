@@ -11,42 +11,65 @@ logger = logging.getLogger(__name__)
 
 
 class LuisReader(JsonTrainingDataReader):
-    def read_from_json(self, js: Dict[Text, Any], **kwargs: Any) -> "TrainingData":
-        """Loads training data stored in the LUIS.ai data format."""
-        from rasa.nlu.training_data import Message, TrainingData
+    def is_luis_version_compatible(self, luisSchemaJson: Dict[Text, Any]):
+        luisSchemaVersionChecked = 4
+        version = int(luisSchemaJson["luis_schema_version"].split(".")[0])
+        if version <= luisSchemaVersionChecked:
+            return True
+        else:
+            return False
 
-        training_examples = []
+    def extract_regex_features_from_schema(self, luisSchemaJson: Dict[Text, Any]):
         regex_features = []
+        for regex in luisSchemaJson.get("regex_features", []):
+            if regex.get("activated", False):
+                regex_features.append(
+                    {"name": regex.get("name"), "pattern": regex.get("pattern")}
+                )
+        return regex_features
 
-        # Simple check to ensure we support this luis data schema version
-        if not js["luis_schema_version"].startswith("2"):
-            raise Exception(
-                "Invalid luis data schema version {}, "
-                "should be 2.x.x. "
-                "Make sure to use the latest luis version "
-                "(e.g. by downloading your data again)."
-                "".format(js["luis_schema_version"])
+    def extract_entitie_fromUtter(self, utter, text):
+        entities = []
+        for entitie in utter.get("entities") or []:
+            start, end = entitie["startPos"], entitie["endPos"] + 1
+            val = text[start:end]
+            entities.append(
+                {"entity": entitie["entity"], "value": val, "start": start, "end": end}
             )
 
-        for r in js.get("regex_features", []):
-            if r.get("activated", False):
-                regex_features.append(
-                    {"name": r.get("name"), "pattern": r.get("pattern")}
-                )
+        return entities
 
-        for s in js["utterances"]:
-            text = s.get("text")
-            intent = s.get("intent")
-            entities = []
-            for e in s.get("entities") or []:
-                start, end = e["startPos"], e["endPos"] + 1
-                val = text[start:end]
-                entities.append(
-                    {"entity": e["entity"], "value": val, "start": start, "end": end}
-                )
+    def extract_utters_from_schema(self, luisSchemaJson: Dict[Text, Any]):
+        from rasa.nlu.training_data import Message
 
+        training_examples = []
+        for utter in luisSchemaJson["utterances"]:
+            text = utter.get("text")
+            entities = self.extract_entitie_fromUtter(utter, text)
+
+            intent = utter.get("intent")
             data = {"entities": entities}
             if intent:
                 data["intent"] = intent
             training_examples.append(Message(text, data))
+
+        return training_examples
+
+    def read_from_json(
+        self, luisSchemaJson: Dict[Text, Any], **kwargs: Any
+    ) -> "TrainingData":
+        """Loads training data stored in the LUIS.ai data format."""
+        from rasa.nlu.training_data import TrainingData
+
+        if not self.is_luis_version_compatible(luisSchemaJson):
+            logger.warning(
+                "Your luis data schema version {} "
+                "is higher than 4.x.x. "
+                "Traning may not be performed correctly. "
+                "".format(luisSchemaJson["luis_schema_version"])
+            )
+
+        regex_features = self.extract_regex_features_from_schema(luisSchemaJson)
+        training_examples = self.extract_utters_from_schema(luisSchemaJson)
+
         return TrainingData(training_examples, regex_features=regex_features)
