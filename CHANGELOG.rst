@@ -18,6 +18,8 @@ Changed
 - ``rasa interactive`` will skip the story visualization of training stories in case
   there are more than 200 stories in your training data. Stories created during
   interactive learning will be visualized as before.
+- When NLU training data is dumped as Markdown file the intents are not longer ordered
+  alphabetically, but in the original order of given training data
 
 Removed
 -------
@@ -26,6 +28,9 @@ Fixed
 -----
 - ``rasa interactive`` will not load training stories in case the visualization is
   skipped
+- End to end stories now support literal payloads which specify entities, e.g.
+  ``greet: /greet{"name": "John"}``
+- Slots will be correctly interpolated if there are lists in custom response templates.
 
 [1.5.0] - 2019-11-26
 ^^^^^^^^^^^^^^^^^^^^

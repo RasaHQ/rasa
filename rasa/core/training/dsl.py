@@ -31,6 +31,10 @@ logger = logging.getLogger(__name__)
 
 
 class EndToEndReader(MarkdownReader):
+    def __init__(self) -> None:
+        super().__init__()
+        self._regex_interpreter = RegexInterpreter()
+
     def _parse_item(self, line: Text) -> Optional["Message"]:
         """Parses an md list item line based on the current section type.
 
@@ -40,22 +44,36 @@ class EndToEndReader(MarkdownReader):
             DOCS_BASE_URL
         )
 
-        item_regex = re.compile(r"\s*(.+?):\s*(.*)")
+        # Match three groups:
+        # 1) Potential "form" annotation
+        # 2) The correct intent
+        # 3) Optional entities
+        # 4) The message text
+        form_group = fr"({FORM_PREFIX}\s*)*"
+        item_regex = re.compile(r"\s*" + form_group + r"([^{}]+?)({.*})*:\s*(.*)")
         match = re.match(item_regex, line)
-        if match:
-            intent = match.group(1)
-            self.current_title = intent
-            message = match.group(2)
-            example = self._parse_training_example(message)
-            example.data["true_intent"] = intent
-            return example
 
-        raise ValueError(
-            "Encountered invalid end-to-end format for message "
-            "`{}`. Please visit the documentation page on "
-            "end-to-end evaluation at {}/user-guide/evaluating-models/"
-            "end-to-end-evaluation/".format(line, DOCS_BASE_URL)
-        )
+        if not match:
+            raise ValueError(
+                "Encountered invalid end-to-end format for message "
+                "`{}`. Please visit the documentation page on "
+                "end-to-end evaluation at {}/user-guide/evaluating-models/"
+                "end-to-end-evaluation/".format(line, DOCS_BASE_URL)
+            )
+
+        intent = match.group(2)
+        self.current_title = intent
+        message = match.group(4)
+        example = self._parse_training_example(message)
+
+        # If the message starts with the `INTENT_MESSAGE_PREFIX` potential entities
+        # are annotated in the json format (e.g. `/greet{"name": "Rasa"})
+        if message.startswith(INTENT_MESSAGE_PREFIX):
+            parsed = self._regex_interpreter.synchronous_parse(message)
+            example.data["entities"] = parsed["entities"]
+
+        example.data["true_intent"] = intent
+        return example
 
 
 class StoryStepBuilder:
@@ -412,7 +430,7 @@ class StoryFileReader:
         )
         self.current_step_builder.add_user_messages(parsed_messages)
 
-    async def add_e2e_messages(self, e2e_messages, line_num):
+    async def add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
                 "End-to-end message '{}' at invalid "
