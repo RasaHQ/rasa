@@ -220,6 +220,7 @@ writing your own importer." />
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../1.5.0/api/training-data-importers/">1.5.0</a>
               <a href="../../../1.4.6/api/training-data-importers/">1.4.6</a>
               <a href="../../../1.4.5/api/training-data-importers/">1.4.5</a>
               <a href="../../../1.4.4/api/training-data-importers/">1.4.4</a>
@@ -272,7 +273,7 @@ writing your own importer." />
 
 
 
-    <p class="scv-banner"><a href="../../../1.4.6/api/training-data-importers/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.4.6.</a></p>
+    <p class="scv-banner"><a href="../../../1.5.0/api/training-data-importers/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.5.0.</a></p>
 <div class="section" id="training-data-importers">
 <span id="id1"></span><h1>Training Data Importers<a class="headerlink" href="#training-data-importers" title="Permalink to this headline">¶</a></h1>
 
@@ -591,17 +592,6 @@ reading the story files.</li>
         </div>
       </div>
     <div class="clearer"></div>
-    <!-- consent-banner -->
-    <div class="consent-banner">
-        <div class="container">
-            <img class="cookie-icon" src="../../_static/cookie.svg" alt="cookie">
-            <p>
-                In order to give you a better service Rasa uses cookies.
-                By continuing to browse the site you are agreeing to our use of <a href="//rasa.com/privacy-policy" target="_blank">cookies</a>.
-                <a class="agree" href="#">I agree</a>.
-            </p>
-        </div>
-    </div>
   </div>
 
     
@@ -641,19 +631,6 @@ reading the story files.</li>
       console.log(e);
     });
 
-    /* Consent Manager */
-    $(document).ready(function() {
-      if(!document.cookie.match(/^(.*;)?\s*rasa-cookie-consent\s*=\s*[^;]+(.*)?$/))
-        $('.consent-banner').addClass('visible');
-
-      $('.consent-banner .agree').click(function(e){
-        e.preventDefault();
-        var CookieDate = new Date;
-        CookieDate.setFullYear(CookieDate.getFullYear() + 1);
-        document.cookie = 'rasa-cookie-consent=true; expires=' + CookieDate.toUTCString() + '; domain=.rasa.com';
-        $('.consent-banner').remove();
-      });
-    });
   </script>
 
   <!-- Dismissable announcement banner -->

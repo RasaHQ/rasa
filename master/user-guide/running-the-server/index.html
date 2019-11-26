@@ -220,6 +220,7 @@ with your backend components." />
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../1.5.0/user-guide/running-the-server/">1.5.0</a>
               <a href="../../../1.4.6/user-guide/running-the-server/">1.4.6</a>
               <a href="../../../1.4.5/user-guide/running-the-server/">1.4.5</a>
               <a href="../../../1.4.4/user-guide/running-the-server/">1.4.4</a>
@@ -272,7 +273,7 @@ with your backend components." />
 
 
 
-    <p class="scv-banner"><a href="../../../1.4.6/user-guide/running-the-server/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.4.6.</a></p>
+    <p class="scv-banner"><a href="../../../1.5.0/user-guide/running-the-server/"><b>Warning:</b> This document is for the development version of Rasa. The latest version is 1.5.0.</a></p>
 <div class="section" id="running-the-server">
 <span id="id1"></span><h1>Running the Server<a class="headerlink" href="#running-the-server" title="Permalink to this headline">¶</a></h1>
 
@@ -514,17 +515,6 @@ see <a class="reference internal" href="../../api/event-brokers/#event-brokers">
         </div>
       </div>
     <div class="clearer"></div>
-    <!-- consent-banner -->
-    <div class="consent-banner">
-        <div class="container">
-            <img class="cookie-icon" src="../../_static/cookie.svg" alt="cookie">
-            <p>
-                In order to give you a better service Rasa uses cookies.
-                By continuing to browse the site you are agreeing to our use of <a href="//rasa.com/privacy-policy" target="_blank">cookies</a>.
-                <a class="agree" href="#">I agree</a>.
-            </p>
-        </div>
-    </div>
   </div>
 
     
@@ -564,19 +554,6 @@ see <a class="reference internal" href="../../api/event-brokers/#event-brokers">
       console.log(e);
     });
 
-    /* Consent Manager */
-    $(document).ready(function() {
-      if(!document.cookie.match(/^(.*;)?\s*rasa-cookie-consent\s*=\s*[^;]+(.*)?$/))
-        $('.consent-banner').addClass('visible');
-
-      $('.consent-banner .agree').click(function(e){
-        e.preventDefault();
-        var CookieDate = new Date;
-        CookieDate.setFullYear(CookieDate.getFullYear() + 1);
-        document.cookie = 'rasa-cookie-consent=true; expires=' + CookieDate.toUTCString() + '; domain=.rasa.com';
-        $('.consent-banner').remove();
-      });
-    });
   </script>
 
   <!-- Dismissable announcement banner -->

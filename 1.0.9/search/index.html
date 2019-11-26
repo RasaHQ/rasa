@@ -185,17 +185,6 @@
         </div>
       </div>
     <div class="clearer"></div>
-    <!-- consent-banner -->
-    <div class="consent-banner">
-        <div class="container">
-            <img class="cookie-icon" src="../_static/cookie.svg" alt="cookie">
-            <p>
-                In order to give you a better service Rasa uses cookies.
-                By continuing to browse the site you are agreeing to our use of <a href="//rasa.com/privacy-policy" target="_blank">cookies</a>.
-                <a class="agree" href="#">I agree</a>.
-            </p>
-        </div>
-    </div>
   </div>
 
     
@@ -235,19 +224,6 @@
       console.log(e);
     });
 
-    /* Consent Manager */
-    $(document).ready(function() {
-      if(!document.cookie.match(/^(.*;)?\s*rasa-cookie-consent\s*=\s*[^;]+(.*)?$/))
-        $('.consent-banner').addClass('visible');
-
-      $('.consent-banner .agree').click(function(e){
-        e.preventDefault();
-        var CookieDate = new Date;
-        CookieDate.setFullYear(CookieDate.getFullYear() + 1);
-        document.cookie = 'rasa-cookie-consent=true; expires=' + CookieDate.toUTCString() + '; domain=.rasa.com';
-        $('.consent-banner').remove();
-      });
-    });
   </script>
 
   <!-- Dismissable announcement banner -->

@@ -214,12 +214,13 @@ from providing the basis for a scalable machine learning dialogue management." /
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.4.6
+          viewing: 1.5.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.5.0/core/stories/">1.5.0</a>
               <a href="../.././1.4.6/core/stories/">1.4.6</a>
               <a href="../.././1.4.5/core/stories/">1.4.5</a>
               <a href="../.././1.4.4/core/stories/">1.4.4</a>
@@ -288,7 +289,7 @@ from providing the basis for a scalable machine learning dialogue management." /
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#writing-fewer-and-shorter-stories" id="id9">Writing Fewer and Shorter Stories</a><ul>
+<li><a class="reference internal" href="#checkpoints-and-or-statements" id="id9">Checkpoints and OR statements</a><ul>
 <li><a class="reference internal" href="#checkpoints" id="id10">Checkpoints</a></li>
 <li><a class="reference internal" href="#or-statements" id="id11">OR Statements</a></li>
 </ul>
@@ -404,8 +405,11 @@ way to write these stories is to use <a class="reference internal" href="../inte
 </div>
 </div>
 </div>
-<div class="section" id="writing-fewer-and-shorter-stories">
-<h2><a class="toc-backref" href="#id9">Writing Fewer and Shorter Stories</a><a class="headerlink" href="#writing-fewer-and-shorter-stories" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="checkpoints-and-or-statements">
+<h2><a class="toc-backref" href="#id9">Checkpoints and OR statements</a><a class="headerlink" href="#checkpoints-and-or-statements" title="Permalink to this headline">¶</a></h2>
+<p>Checkpoints and OR statements should both be used with caution, if at all.
+There is usually a better way to achieve what you want by using forms and/or
+retrieval actions.</p>
 <div class="section" id="checkpoints">
 <h3><a class="toc-backref" href="#id10">Checkpoints</a><a class="headerlink" href="#checkpoints" title="Permalink to this headline">¶</a></h3>
 <p>You can use <code class="docutils literal notranslate"><span class="pre">&gt;</span> <span class="pre">checkpoints</span></code> to modularize and simplify your training
@@ -439,13 +443,6 @@ at a time):</p>
 <span class="vm">* goodbye</span>
 <span class="vm">  </span>- utter_goodbye
 </pre></div>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Unlike regular stories, checkpoints are not restricted to starting with an
-input from the user. As long as the checkpoint is inserted at the right points
-in the main stories, the first event can be an action or an utterance
-as well.</p>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -525,17 +522,6 @@ into a single file for evaluation. You can read more about it
         </div>
       </div>
     <div class="clearer"></div>
-    <!-- consent-banner -->
-    <div class="consent-banner">
-        <div class="container">
-            <img class="cookie-icon" src="../../_static/cookie.svg" alt="cookie">
-            <p>
-                In order to give you a better service Rasa uses cookies.
-                By continuing to browse the site you are agreeing to our use of <a href="//rasa.com/privacy-policy" target="_blank">cookies</a>.
-                <a class="agree" href="#">I agree</a>.
-            </p>
-        </div>
-    </div>
   </div>
 
     
@@ -575,19 +561,6 @@ into a single file for evaluation. You can read more about it
       console.log(e);
     });
 
-    /* Consent Manager */
-    $(document).ready(function() {
-      if(!document.cookie.match(/^(.*;)?\s*rasa-cookie-consent\s*=\s*[^;]+(.*)?$/))
-        $('.consent-banner').addClass('visible');
-
-      $('.consent-banner .agree').click(function(e){
-        e.preventDefault();
-        var CookieDate = new Date;
-        CookieDate.setFullYear(CookieDate.getFullYear() + 1);
-        document.cookie = 'rasa-cookie-consent=true; expires=' + CookieDate.toUTCString() + '; domain=.rasa.com';
-        $('.consent-banner').remove();
-      });
-    });
   </script>
 
   <!-- Dismissable announcement banner -->

@@ -210,12 +210,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.4.6
+          viewing: 1.5.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.5.0/nlu/using-nlu-only/">1.5.0</a>
               <a href="../.././1.4.6/nlu/using-nlu-only/">1.4.6</a>
               <a href="../.././1.4.5/nlu/using-nlu-only/">1.4.5</a>
               <a href="../.././1.4.4/nlu/using-nlu-only/">1.4.4</a>
@@ -344,17 +345,6 @@ To do this, run:</p>
         </div>
       </div>
     <div class="clearer"></div>
-    <!-- consent-banner -->
-    <div class="consent-banner">
-        <div class="container">
-            <img class="cookie-icon" src="../../_static/cookie.svg" alt="cookie">
-            <p>
-                In order to give you a better service Rasa uses cookies.
-                By continuing to browse the site you are agreeing to our use of <a href="//rasa.com/privacy-policy" target="_blank">cookies</a>.
-                <a class="agree" href="#">I agree</a>.
-            </p>
-        </div>
-    </div>
   </div>
 
     
@@ -394,19 +384,6 @@ To do this, run:</p>
       console.log(e);
     });
 
-    /* Consent Manager */
-    $(document).ready(function() {
-      if(!document.cookie.match(/^(.*;)?\s*rasa-cookie-consent\s*=\s*[^;]+(.*)?$/))
-        $('.consent-banner').addClass('visible');
-
-      $('.consent-banner .agree').click(function(e){
-        e.preventDefault();
-        var CookieDate = new Date;
-        CookieDate.setFullYear(CookieDate.getFullYear() + 1);
-        document.cookie = 'rasa-cookie-consent=true; expires=' + CookieDate.toUTCString() + '; domain=.rasa.com';
-        $('.consent-banner').remove();
-      });
-    });
   </script>
 
   <!-- Dismissable announcement banner -->

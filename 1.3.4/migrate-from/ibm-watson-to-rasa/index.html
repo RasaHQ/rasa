@@ -215,6 +215,7 @@
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../1.5.0/migrate-from/ibm-watson-to-rasa/">1.5.0</a>
               <a href="../../../1.4.6/migrate-from/ibm-watson-to-rasa/">1.4.6</a>
               <a href="../../../1.4.5/migrate-from/ibm-watson-to-rasa/">1.4.5</a>
               <a href="../../../1.4.4/migrate-from/ibm-watson-to-rasa/">1.4.4</a>
@@ -267,7 +268,7 @@
 
 
 
-    <p class="scv-banner"><a href="../../../1.4.6/migrate-from/ibm-watson-to-rasa/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.4.6.</a></p>
+    <p class="scv-banner"><a href="../../../1.5.0/migrate-from/ibm-watson-to-rasa/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.5.0.</a></p>
 <div class="section" id="rasa-as-open-source-alternative-to-ibm-watson-migration-tips">
 <span id="ibm-watson-to-rasa"></span><h1>Rasa as open source alternative to IBM Watson - Migration Tips<a class="headerlink" href="#rasa-as-open-source-alternative-to-ibm-watson-migration-tips" title="Permalink to this headline">¶</a></h1>
 
@@ -321,17 +322,6 @@ In addition, our open source tools allow developers to build contextual AI assis
         </div>
       </div>
     <div class="clearer"></div>
-    <!-- consent-banner -->
-    <div class="consent-banner">
-        <div class="container">
-            <img class="cookie-icon" src="../../_static/cookie.svg" alt="cookie">
-            <p>
-                In order to give you a better service Rasa uses cookies.
-                By continuing to browse the site you are agreeing to our use of <a href="//rasa.com/privacy-policy" target="_blank">cookies</a>.
-                <a class="agree" href="#">I agree</a>.
-            </p>
-        </div>
-    </div>
   </div>
 
     
@@ -371,19 +361,6 @@ In addition, our open source tools allow developers to build contextual AI assis
       console.log(e);
     });
 
-    /* Consent Manager */
-    $(document).ready(function() {
-      if(!document.cookie.match(/^(.*;)?\s*rasa-cookie-consent\s*=\s*[^;]+(.*)?$/))
-        $('.consent-banner').addClass('visible');
-
-      $('.consent-banner .agree').click(function(e){
-        e.preventDefault();
-        var CookieDate = new Date;
-        CookieDate.setFullYear(CookieDate.getFullYear() + 1);
-        document.cookie = 'rasa-cookie-consent=true; expires=' + CookieDate.toUTCString() + '; domain=.rasa.com';
-        $('.consent-banner').remove();
-      });
-    });
   </script>
 
   <!-- Dismissable announcement banner -->

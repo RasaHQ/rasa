@@ -148,7 +148,7 @@ training models, and configuring your bot." />
 
 
 
-    <p class="scv-banner"><a href="../../../1.4.6/api/http-api/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.4.6.</a></p>
+    <p class="scv-banner"><a href="../../../1.5.0/api/http-api/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.5.0.</a></p>
 <div class="section" id="http-api">
 <span id="id1"></span><h1>HTTP API<a class="headerlink" href="#http-api" title="Permalink to this headline">¶</a></h1>
 <redoc spec-url='../../_static/spec/rasa.yml'></redoc>
@@ -188,17 +188,6 @@ training models, and configuring your bot." />
           
       </div>
     <div class="clearer"></div>
-    <!-- consent-banner -->
-    <div class="consent-banner">
-        <div class="container">
-            <img class="cookie-icon" src="../../_static/cookie.svg" alt="cookie">
-            <p>
-                In order to give you a better service Rasa uses cookies.
-                By continuing to browse the site you are agreeing to our use of <a href="//rasa.com/privacy-policy" target="_blank">cookies</a>.
-                <a class="agree" href="#">I agree</a>.
-            </p>
-        </div>
-    </div>
   </div>
 
     
@@ -238,19 +227,6 @@ training models, and configuring your bot." />
       console.log(e);
     });
 
-    /* Consent Manager */
-    $(document).ready(function() {
-      if(!document.cookie.match(/^(.*;)?\s*rasa-cookie-consent\s*=\s*[^;]+(.*)?$/))
-        $('.consent-banner').addClass('visible');
-
-      $('.consent-banner .agree').click(function(e){
-        e.preventDefault();
-        var CookieDate = new Date;
-        CookieDate.setFullYear(CookieDate.getFullYear() + 1);
-        document.cookie = 'rasa-cookie-consent=true; expires=' + CookieDate.toUTCString() + '; domain=.rasa.com';
-        $('.consent-banner').remove();
-      });
-    });
   </script>
 
   <!-- Dismissable announcement banner -->

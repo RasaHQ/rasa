@@ -198,6 +198,7 @@
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../../../1.5.0/user-guide/connectors/microsoft-bot-framework/">1.5.0</a>
               <a href="../../../../1.4.6/user-guide/connectors/microsoft-bot-framework/">1.4.6</a>
               <a href="../../../../1.4.5/user-guide/connectors/microsoft-bot-framework/">1.4.5</a>
               <a href="../../../../1.4.4/user-guide/connectors/microsoft-bot-framework/">1.4.4</a>
@@ -250,7 +251,7 @@
 
 
 
-    <p class="scv-banner"><a href="../../../../1.4.6/user-guide/connectors/microsoft-bot-framework/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.4.6.</a></p>
+    <p class="scv-banner"><a href="../../../../1.5.0/user-guide/connectors/microsoft-bot-framework/"><b>Warning:</b> This document is for an old version of Rasa. The latest version is 1.5.0.</a></p>
 <div class="section" id="microsoft-bot-framework">
 <span id="id1"></span><h1>Microsoft Bot Framework<a class="headerlink" href="#microsoft-bot-framework" title="Permalink to this headline">¶</a></h1>
 <p>You first have to create a Microsoft app to get credentials.
@@ -306,17 +307,6 @@ run script, e.g. using:</p>
         </div>
       </div>
     <div class="clearer"></div>
-    <!-- consent-banner -->
-    <div class="consent-banner">
-        <div class="container">
-            <img class="cookie-icon" src="../../../_static/cookie.svg" alt="cookie">
-            <p>
-                In order to give you a better service Rasa uses cookies.
-                By continuing to browse the site you are agreeing to our use of <a href="//rasa.com/privacy-policy" target="_blank">cookies</a>.
-                <a class="agree" href="#">I agree</a>.
-            </p>
-        </div>
-    </div>
   </div>
 
     
@@ -356,19 +346,6 @@ run script, e.g. using:</p>
       console.log(e);
     });
 
-    /* Consent Manager */
-    $(document).ready(function() {
-      if(!document.cookie.match(/^(.*;)?\s*rasa-cookie-consent\s*=\s*[^;]+(.*)?$/))
-        $('.consent-banner').addClass('visible');
-
-      $('.consent-banner .agree').click(function(e){
-        e.preventDefault();
-        var CookieDate = new Date;
-        CookieDate.setFullYear(CookieDate.getFullYear() + 1);
-        document.cookie = 'rasa-cookie-consent=true; expires=' + CookieDate.toUTCString() + '; domain=.rasa.com';
-        $('.consent-banner').remove();
-      });
-    });
   </script>
 
   <!-- Dismissable announcement banner -->
