@@ -7,6 +7,22 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
+[Unreleased 1.5.1]
+^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+- Slots will be correctly interpolated if there are lists in custom response templates.
+
 [1.5.0] - 2019-11-22
 ^^^^^^^^^^^^^^^^^^^^
 
