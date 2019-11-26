@@ -26,7 +26,7 @@ or voice assistants as:
 - Alexa Skills
 - Google Home Actions
 
-Rasa's primary purpose is to help build contextual, and layered
+Rasa's primary purpose is to help build contextual, layered
 conversations with lots of back-and-forth. To have a real conversation,
 you need to use your memory and build on things said previously.
 Rasa lets you do that in a scalable way.
