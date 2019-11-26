@@ -24,7 +24,7 @@ Fixed
 - End to end stories now support literal payloads which specify entities, e.g.
   ``greet: /greet{"name": "John"}``
 
-[1.5.0] - 2019-11-22
+[1.5.0] - 2019-11-26
 ^^^^^^^^^^^^^^^^^^^^
 
 Added
