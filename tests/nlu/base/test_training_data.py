@@ -196,28 +196,16 @@ def test_train_test_split_with_random_seed(filepaths):
 
     td = training_data_from_paths(filepaths, language="en")
 
-    first_td_train, td_test = td.train_test_split(train_frac=0.8, random_seed=1)
-    second_td_train, td_test = td.train_test_split(train_frac=0.8, random_seed=1)
-    first_intents = []
-    second_intents = []
-    for intent, count in first_td_train.examples_per_intent.items():
-        first_intents.extend(
-            [
-                e.text
-                for e in first_td_train.intent_examples
-                if e.data["intent"] == intent
-            ]
-        )
+    td_train_1, td_test_1 = td.train_test_split(train_frac=0.8, random_seed=1)
+    td_train_2, td_test_2 = td.train_test_split(train_frac=0.8, random_seed=1)
+    train_1_intent_examples = [e.text for e in td_train_1.intent_examples]
+    train_2_intent_examples = [e.text for e in td_train_2.intent_examples]
 
-    for intent, count in second_td_train.examples_per_intent.items():
-        second_intents.extend(
-            [
-                e.text
-                for e in second_td_train.intent_examples
-                if e.data["intent"] == intent
-            ]
-        )
-    assert first_intents == second_intents
+    test_1_intent_examples = [e.text for e in td_test_1.intent_examples]
+    test_2_intent_examples = [e.text for e in td_test_2.intent_examples]
+
+    assert train_1_intent_examples == train_2_intent_examples
+    assert test_1_intent_examples == test_2_intent_examples
 
 
 @pytest.mark.parametrize(
