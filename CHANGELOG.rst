@@ -7,7 +7,25 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[1.5.0] - 2019-11-22
+[Unreleased 1.6.0a1] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Changed
+-------
+- Print info message when running Rasa X and a custom model server url was specified in ``endpoints.yml``
+- If a ``wait_time_between_pulls`` is configured for the model server in ``endpoints.yml``,
+  this will be used instead of the default one when running Rasa X
+
+Removed
+-------
+
+Fixed
+-----
+
+[1.5.0] - 2019-11-26
 ^^^^^^^^^^^^^^^^^^^^
 
 Added
