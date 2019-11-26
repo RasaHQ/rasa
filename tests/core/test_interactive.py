@@ -11,8 +11,8 @@ from aioresponses import aioresponses
 from mock import Mock
 
 import rasa.utils.io
-from core.channels import UserMessage
-from core.trackers import DialogueStateTracker
+from rasa.core.channels import UserMessage
+from rasa.core.trackers import DialogueStateTracker
 from rasa.core.events import BotUttered
 from rasa.core.training import interactive
 from rasa.nlu.training_data.loading import RASA, MARKDOWN
