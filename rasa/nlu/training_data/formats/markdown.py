@@ -4,6 +4,8 @@ import typing
 from collections import OrderedDict
 from typing import Any, Text, Optional, Tuple, List, Dict
 
+from rasa.core.constants import INTENT_MESSAGE_PREFIX
+
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
@@ -311,13 +313,20 @@ class MarkdownWriter(TrainingDataWriter):
 
         md = ""
         text = message.get("text", "")
-        entities = sorted(message.get("entities", []), key=lambda k: k["start"])
 
         pos = 0
-        for entity in entities:
-            md += text[pos : entity["start"]]
-            md += self._generate_entity_md(text, entity)
-            pos = entity["end"]
+
+        # If a message was prefixed with `INTENT_MESSAGE_PREFIX` (this can only happen
+        # in end-to-end stories) then potential entities were provided in the json
+        # format (e.g. `/greet{"name": "Rasa"}) and we don't have to add the NLU
+        # entity annotation
+        if not text.startswith(INTENT_MESSAGE_PREFIX):
+            entities = sorted(message.get("entities", []), key=lambda k: k["start"])
+
+            for entity in entities:
+                md += text[pos : entity["start"]]
+                md += self._generate_entity_md(text, entity)
+                pos = entity["end"]
 
         md += text[pos:]
 

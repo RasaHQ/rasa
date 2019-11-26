@@ -242,10 +242,23 @@ def trained_model(loop, project) -> Text:
 
 
 @pytest.fixture
-async def restaurantbot(trained_async, tmpdir_factory) -> Text:
+async def restaurantbot(trained_async) -> Text:
     restaurant_domain = os.path.join(RESTAURANTBOT_PATH, "domain.yml")
     restaurant_config = os.path.join(RESTAURANTBOT_PATH, "config.yml")
     restaurant_data = os.path.join(RESTAURANTBOT_PATH, "data/")
 
-    agent = await trained_async(restaurant_domain, restaurant_config, restaurant_data)
-    return agent
+    return await trained_async(restaurant_domain, restaurant_config, restaurant_data)
+
+
+@pytest.fixture
+async def form_bot(trained_async) -> Agent:
+    zipped_model = await trained_async(
+        domain="examples/formbot/domain.yml",
+        config="examples/formbot/config.yml",
+        training_files=[
+            "examples/formbot/data/stories.md",
+            "examples/formbot/data/nlu.md",
+        ],
+    )
+
+    return Agent.load_local_model(zipped_model)
