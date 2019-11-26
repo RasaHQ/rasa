@@ -86,6 +86,8 @@ NEW_TEMPLATES = {}
 
 MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION = 200
 
+DEFAULT_STORY_GRAPH_FILE = "story_graph.dot"
+
 
 class RestartConversation(Exception):
     """Exception used to break out the flow and restart the conversation."""
@@ -1385,22 +1387,11 @@ async def record_messages(
         num_messages = 0
 
         if not skip_visualization:
-            training_trackers = await _get_training_trackers(stories, domain)
-            number_of_trackers = len(training_trackers)
-            if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
-                rasa.cli.utils.print_warning(
-                    f"You have {number_of_trackers} different story paths in "
-                    f"your training data. Visualizing them is very resource "
-                    f"consuming. Hence, the visualization will only show the stories "
-                    f"which you created during interactive learning, but not your "
-                    f"training stories."
-                )
-                training_trackers = []
+            events_including_current_user_id = await _get_trackers_to_plot(
+                domain, stories, sender_id
+            )
 
-            training_data_events = [t.events for t in training_trackers]
-            events_including_current_user_id = training_data_events + [sender_id]
-
-            plot_file = "story_graph.dot"
+            plot_file = DEFAULT_STORY_GRAPH_FILE
             await _plot_trackers(events_including_current_user_id, plot_file, endpoint)
         else:
             # `None` means that future `_plot_trackers` calls will also skip the
@@ -1454,6 +1445,27 @@ async def record_messages(
     except Exception:
         logger.exception("An exception occurred while recording messages.")
         raise
+
+
+async def _get_trackers_to_plot(
+    domain: Dict[Text, Any], stories: Optional[Text], sender_id: Text
+) -> List[Union[Text, List[Event]]]:
+    training_trackers = await _get_training_trackers(stories, domain)
+    number_of_trackers = len(training_trackers)
+    if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
+        rasa.cli.utils.print_warning(
+            f"You have {number_of_trackers} different story paths in "
+            f"your training data. Visualizing them is very resource "
+            f"consuming. Hence, the visualization will only show the stories "
+            f"which you created during interactive learning, but not your "
+            f"training stories."
+        )
+        training_trackers = []
+
+    training_data_events = [t.events for t in training_trackers]
+    events_including_current_user_id = training_data_events + [sender_id]
+
+    return events_including_current_user_id
 
 
 async def _get_training_trackers(
@@ -1592,7 +1604,7 @@ def run_interactive_learning(
     SAVE_IN_E2E = server_args["e2e"]
 
     if not skip_visualization:
-        p = Process(target=start_visualization, args=("story_graph.dot",))
+        p = Process(target=start_visualization, args=(DEFAULT_STORY_GRAPH_FILE,))
         p.daemon = True
         p.start()
     else:
