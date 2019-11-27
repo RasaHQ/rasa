@@ -168,9 +168,7 @@ def get_component_class(component_name: Text) -> Type["Component"]:
 
                 if is_path:
                     module_name, _, _ = component_name.rpartition(".")
-                    exception_message = (
-                        f"Failed to find module '{module_name}'. \n{e}"
-                    )
+                    exception_message = f"Failed to find module '{module_name}'. \n{e}"
                 else:
                     exception_message = (
                         f"Cannot find class '{component_name}' from global namespace. "

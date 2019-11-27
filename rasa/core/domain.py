@@ -868,7 +868,7 @@ class Domain:
                     message += (
                         f"Duplicate {name} in domain. "
                         f"These {name} occur more than once in "
-                        f"the domain: '{"', '".join(d)}'"
+                        f"the domain: '{', '.join(d)}'."
                     )
             return message
 
