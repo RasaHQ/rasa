@@ -416,10 +416,10 @@ class RemoteAction(Action):
             else:
                 draft = {}
 
-            if "buttons" in response:
+            buttons = response.pop("buttons", []) or []
+            if buttons:
                 draft.setdefault("buttons", [])
-                response_buttons = response.pop("buttons") or []
-                draft["buttons"].extend(response_buttons)
+                draft["buttons"].extend(buttons)
 
             # Avoid overwriting `draft` values with `None` values
             response = {k: v for k, v in response.items() if v is not None}
