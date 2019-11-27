@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import importlib.util
 import logging
+import warnings
 import os
 import signal
 import traceback
@@ -112,12 +113,27 @@ def _overwrite_endpoints_for_local_x(
     from rasa.utils.endpoints import EndpointConfig
     import questionary
 
-    endpoints.model = EndpointConfig(
-        f"{rasa_x_url}/projects/default/models/tags/production",
-        token=rasa_x_token,
-        wait_time_between_pulls=2,
+    # Checking if endpoint.yml has existing url and wait time values set, if so give
+    # warning we are overwriting the endpoint.yml file.
+    custom_wait_time_pulls = endpoints.model.kwargs.get("wait_time_between_pulls")
+    custom_url = endpoints.model.url
+    default_rasax_model_server_url = (
+        f"{rasa_x_url}/projects/default/models/tag/production"
     )
 
+    if custom_url != default_rasax_model_server_url:
+        warnings.warn(
+            f"Ignoring url '{custom_url}' from 'endpoints.yml' and using "
+            f"'{default_rasax_model_server_url}' instead."
+        )
+
+    endpoints.model = EndpointConfig(
+        default_rasax_model_server_url,
+        token=rasa_x_token,
+        wait_time_between_pulls=custom_wait_time_pulls or 2,
+    )
+
+    overwrite_existing_event_broker = False
     if endpoints.event_broker and not _is_correct_event_broker(endpoints.event_broker):
         cli_utils.print_error(
             "Rasa X currently only supports a SQLite event broker with path '{}' "
@@ -132,9 +148,8 @@ def _overwrite_endpoints_for_local_x(
         if not overwrite_existing_event_broker:
             exit(0)
 
-    endpoints.event_broker = EndpointConfig(
-        type="sql", db=DEFAULT_EVENTS_DB, dialect="sqlite"
-    )
+    if not endpoints.tracker_store or overwrite_existing_event_broker:
+        endpoints.event_broker = EndpointConfig(type="sql", db=DEFAULT_EVENTS_DB)
 
 
 def _is_correct_event_broker(event_broker: EndpointConfig) -> bool:
