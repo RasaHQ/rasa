@@ -1,6 +1,6 @@
 """
 Script used to publish GitHub release notes extracted from CHANGELOG.rst.
-This script is meant to be executed after a successful deployment in Travis.
+This script is executed by Travis after a new release was successfully built.
 
 Uses the following environment variables:
 * TRAVIS_TAG: the name of the tag of the current commit.

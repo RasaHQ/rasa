@@ -13,7 +13,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
     You **may** edit previous change logs to fix problems like typo corrections or such.
     You can find more information on how to add a new change log entry at
-    https://github.com/RasaHQ/rasa/tree/master/changelog/
+    https://github.com/RasaHQ/rasa/tree/master/changelog/ .
 
 .. towncrier release notes start
 

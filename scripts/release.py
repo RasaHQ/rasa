@@ -38,7 +38,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
 
 def project_root() -> Path:
     """Root directory of the project."""
-    return Path(os.path.dirname(__file__)) / ".."
+    return Path(os.path.dirname(__file__)).parent
 
 
 def version_file_path() -> Path:
@@ -51,7 +51,7 @@ def write_version_file(version: Text) -> None:
 
     with version_file_path().open("w") as f:
         f.write(
-            f"# this file will automatically be changed, \n"
+            f"# this file will automatically be changed,\n"
             f"# do not add anything but the version number here!\n"
             f'__version__ = "{version}"\n'
         )

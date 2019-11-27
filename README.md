@@ -139,10 +139,10 @@ Releasing a new version is quite simple, as the packages are build and distribut
 
 *Release steps*:
 0. Make sure all dependencies are up to date (**especially Rasa SDK**)
-1. Switch to the branch you want to cut the release from.
-2. Run `make release`
-2. Create a PR against master or the release branch (e.g. `1.2.x`)
-3. Once your PR is merged, tag a new release (this SHOULD always happen on master or release branches), e.g. using
+1. Switch to the branch you want to cut the release from (`master` in case of a major / minor, the current feature branch for patch releases) 
+3. Run `make release`
+4. Create a PR against master or the release branch (e.g. `1.2.x`)
+4. Once your PR is merged, tag a new release (this SHOULD always happen on master or release branches), e.g. using
     ```
     git tag 1.2.0 -m "next release"
     git push origin 1.2.0 --tags
