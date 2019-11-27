@@ -413,7 +413,7 @@ async def test_not_getting_trackers_when_skipping_visualization(
     mock_endpoint: EndpointConfig, monkeypatch: MonkeyPatch
 ):
     get_trackers = Mock()
-    monkeypatch.setattr(interactive, "_get_trackers_to_plot", get_trackers)
+    monkeypatch.setattr(interactive, "_get_tracker_events_to_plot", get_trackers)
 
     monkeypatch.setattr(interactive.utils, "is_limit_reached", lambda _, __: True)
 
