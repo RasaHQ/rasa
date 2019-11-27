@@ -1,4 +1,5 @@
 import logging
+import warnings
 
 from typing import Any, Dict, Optional, Text
 
@@ -11,7 +12,7 @@ class NGramFeaturizer(Featurizer):
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None):
         super(NGramFeaturizer, self).__init__(component_config)
 
-        logger.warning(
+        warnings.warn(
             "DEPRECATION warning: Using `NGramFeaturizer` is deprecated. "
             "Please use `CountVectorsFeaturizer` instead. The following settings"
             "should match the previous `NGramFeaturizer`:"
@@ -21,5 +22,6 @@ class NGramFeaturizer(Featurizer):
             "  min_ngram: 3"
             "  max_ngram: 17"
             "  max_features: 10"
-            "  min_df: 5"
+            "  min_df: 5",
+            FutureWarning,
         )

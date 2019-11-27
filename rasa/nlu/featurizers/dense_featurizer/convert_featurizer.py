@@ -23,6 +23,7 @@ class ConveRTFeaturizer(Featurizer):
 
     def _load_model(self) -> None:
 
+        # needed in order to load model
         import tensorflow_text
         import tensorflow_hub as tfhub
 
