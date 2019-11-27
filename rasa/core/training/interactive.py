@@ -1444,8 +1444,12 @@ async def record_messages(
         raise
 
 
-def _serve_application(app, stories, skip_visualization):
+def _serve_application(app, stories, skip_visualization, server_args):
     """Start a core server and attach the interactive learning IO."""
+
+    if server_args.get("port") :
+        port = server_args.get("port")
+        DEFAULT_SERVER_URL  = "{}://localhost:{}".format("http", port)
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
 
@@ -1467,7 +1471,10 @@ def _serve_application(app, stories, skip_visualization):
 
     update_sanic_log_level()
 
-    app.run(host="0.0.0.0", port=DEFAULT_SERVER_PORT)
+    if port:
+        app.run(host="0.0.0.0", port = port)
+    else:
+        app.run(host="0.0.0.0", port=DEFAULT_SERVER_PORT)
 
     return app
 
@@ -1563,6 +1570,9 @@ def run_interactive_learning(
 
     if server_args.get("domain"):
         PATHS["domain"] = server_args["domain"]
+    
+    if server_args.get("port"):
+        port = server_args.get("port")
 
     SAVE_IN_E2E = server_args["e2e"]
 
@@ -1573,7 +1583,7 @@ def run_interactive_learning(
     else:
         p = None
 
-    app = run.configure_app(enable_api=True)
+    app = run.configure_app(port=port,enable_api=True)
     endpoints = AvailableEndpoints.read_endpoints(server_args.get("endpoints"))
 
     # before_server_start handlers make sure the agent is loaded before the
@@ -1589,7 +1599,7 @@ def run_interactive_learning(
             "before_server_start",
         )
 
-    _serve_application(app, stories, skip_visualization)
+    _serve_application(app, stories, skip_visualization, server_args)
 
     if not skip_visualization and p is not None:
         p.terminate()  # pytype: disable=attribute-error
