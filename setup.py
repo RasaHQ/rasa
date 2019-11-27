@@ -67,10 +67,10 @@ install_requires = [
     "gevent~=1.4",
     "pytz~=2019.1",
     "python-dateutil~=2.8",
-    "rasa-sdk~=1.4.0",
+    "rasa-sdk~=1.5.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
-    "sanic~=19.6",
+    "sanic~=19.9",
     "sanic-cors==0.9.9.post1",
     "sanic-jwt~=1.3",
     "aiohttp~=3.5",
@@ -92,6 +92,7 @@ install_requires = [
 extras_requires = {
     "test": tests_requires,
     "spacy": ["spacy>=2.1,<2.2"],
+    "convert": ["tensorflow_text~=1.15.1", "tensorflow_hub~=0.6.0"],
     "mitie": ["mitie"],
     "sql": ["psycopg2~=2.8.2", "SQLAlchemy~=1.3"],
 }
