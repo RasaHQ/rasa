@@ -7,19 +7,12 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.5.1]
-^^^^^^^^^^^^^^^^^^
-
-Added
------
-
+[1.5.1] - 2019-11-27
+^^^^^^^^^^^^^^^^^^^^
 Changed
 -------
 - When NLU training data is dumped as Markdown file the intents are not longer ordered
   alphabetically, but in the original order of given training data
-
-Removed
--------
 
 Fixed
 -----
