@@ -1387,7 +1387,7 @@ async def record_messages(
         num_messages = 0
 
         if not skip_visualization:
-            events_including_current_user_id = await _get_trackers_to_plot(
+            events_including_current_user_id = await _get_tracker_events_to_plot(
                 domain, stories, sender_id
             )
 
@@ -1447,7 +1447,7 @@ async def record_messages(
         raise
 
 
-async def _get_trackers_to_plot(
+async def _get_tracker_events_to_plot(
     domain: Dict[Text, Any], stories: Optional[Text], sender_id: Text
 ) -> List[Union[Text, List[Event]]]:
     training_trackers = await _get_training_trackers(stories, domain)
