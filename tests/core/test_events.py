@@ -1,4 +1,5 @@
 import time
+from typing import Type
 
 import pytz
 from datetime import datetime
@@ -270,11 +271,12 @@ def test_correct_timestamp_setting(event_class):
 
 
 @pytest.mark.parametrize("event_class", utils.all_subclasses(Event))
-def test_event_metadata_dict(event_class):
+def test_event_metadata_dict(event_class: Type[Event]):
     metadata = {"foo": "bar", "quux": 42}
 
-    # Create the event from a dict that will be accepted by the _from_parameters
-    # method of any Event subclass (the values themselves are not important).
+    # Create the event from a `dict` that will be accepted by the
+    # `_from_parameters` method of any `Event` subclass (the values themselves
+    # are not important).
     event = Event.from_parameters(
         {
             "metadata": metadata,
@@ -287,13 +289,12 @@ def test_event_metadata_dict(event_class):
 
 
 @pytest.mark.parametrize("event_class", utils.all_subclasses(Event))
-def test_event_default_metadata(event_class):
+def test_event_default_metadata(event_class: Type[Event]):
 
-    # Create an event without metadata.
-    # When converting the Event to a dict, it should not include a `metadata`
-    # property - unless it's a UserUttered or a BotUttered event (or subclasses
-    # of them), in which case the metadata should be included with a default
-    # value of {}.
+    # Create an event without metadata. When converting the `Event` to a
+    # `dict`, it should not include a `metadata` property - unless it's a
+    # `UserUttered` or a `BotUttered` event (or subclasses of them), in which
+    # case the metadata should be included with a default value of {}.
     event = Event.from_parameters(
         {
             "event": event_class.type_name,
