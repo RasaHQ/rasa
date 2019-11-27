@@ -18,6 +18,7 @@ from rasa.core.events import (
     ActionExecutionRejected,
     Form,
     FormValidation,
+    SessionStarted,
 )
 from rasa.core.training.structures import Story
 from rasa.core.featurizers import (
@@ -478,6 +479,11 @@ def test_user_uttered_to_e2e(parse_data: Dict, expected_story_string: Text):
 
     assert isinstance(event, UserUttered)
     assert event.as_story_string(e2e=True) == expected_story_string
+
+
+def test_session_started_event_cannot_be_serialised():
+    with pytest.raises(NotImplementedError):
+        SessionStarted().as_story_string()
 
 
 @pytest.mark.parametrize("line", [" greet{: hi"])

@@ -1,13 +1,12 @@
+import json
+import logging
+
+import jsonpickle
 import time
 import typing
-
-import json
-import warnings
-import jsonpickle
-import logging
 import uuid
 from dateutil import parser
-from typing import List, Dict, Text, Any, Type, Optional
+from typing import List, Dict, Text, Any, Type, Optional, NoReturn
 
 from rasa.core import utils
 
@@ -1172,3 +1171,27 @@ class ActionExecutionRejected(Event):
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker.reject_action(self.action_name)
+
+
+class SessionStarted(Event):
+    """Mark the beginning of a new conversation session."""
+
+    type_name = "session_started"
+
+    def __hash__(self) -> int:
+        return hash(32143124320)
+
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, SessionStarted)
+
+    def __str__(self) -> Text:
+        return "SessionStarted()"
+
+    def as_story_string(self) -> NoReturn:
+        raise NotImplementedError(
+            f"'{self.type_name}' events cannot be serialised as story strings."
+        )
+
+    # todo
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
+        tracker._paused = True
