@@ -1,2 +1,0 @@
-When NLU training data is dumped as Markdown file the intents are not longer ordered
-alphabetically, instead the original order of the training data is preserved.

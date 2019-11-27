@@ -17,6 +17,20 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.5.1] - 2019-11-27
+^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- When NLU training data is dumped as Markdown file the intents are not longer ordered
+  alphabetically, but in the original order of given training data
+
+Bugfixes
+--------
+- End to end stories now support literal payloads which specify entities, e.g.
+  ``greet: /greet{"name": "John"}``
+- Slots will be correctly interpolated if there are lists in custom response templates.
+- Fixed compatibility issues with ``rasa-sdk`` ``1.5``
 
 [1.5.0] - 2019-11-26
 ^^^^^^^^^^^^^^^^^^^^
