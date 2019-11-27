@@ -165,7 +165,7 @@ def _get_event_broker_endpoint(
         if not overwrite_existing_event_broker:
             exit(0)
 
-        return EndpointConfig(type="sql", db=DEFAULT_EVENTS_DB)
+        return default_event_broker
     else:
         return event_broker_endpoint
 
