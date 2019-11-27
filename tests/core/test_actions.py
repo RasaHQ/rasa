@@ -260,7 +260,7 @@ async def test_remote_action_utterances_with_none_values(
         )
 
     assert events == [
-        BotUttered("what dou want to eat?", data={"buttons": [], "elements": []}),
+        BotUttered("what dou want to eat?"),
         Form("restaurant_form"),
         SlotSet("requested_slot", "cuisine"),
     ]

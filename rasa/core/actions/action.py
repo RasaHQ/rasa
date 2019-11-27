@@ -421,8 +421,8 @@ class RemoteAction(Action):
                 draft.setdefault("buttons", [])
                 draft["buttons"].extend(buttons)
 
-            # Avoid overwriting `draft` values with `None` values
-            response = {k: v for k, v in response.items() if v is not None}
+            # Avoid overwriting `draft` values with empty values
+            response = {k: v for k, v in response.items() if v}
             draft.update(response)
             bot_messages.append(create_bot_utterance(draft))
 
