@@ -142,7 +142,7 @@ def _get_model_endpoint(
 
 
 def _get_event_broker_endpoint(
-    event_broker_endpoint: Optional[EndpointConfig]
+    event_broker_endpoint: Optional[EndpointConfig],
 ) -> EndpointConfig:
     import questionary
 
