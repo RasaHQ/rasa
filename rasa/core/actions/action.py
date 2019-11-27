@@ -406,8 +406,8 @@ class RemoteAction(Action):
 
         bot_messages = []
         for response in responses:
-            if "template" in response:
-                template = response.pop("template")
+            template = response.pop("template", None)
+            if template:
                 draft = await nlg.generate(
                     template, tracker, output_channel.name(), **response
                 )

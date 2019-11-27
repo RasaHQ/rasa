@@ -168,7 +168,11 @@ async def test_remote_action_logs_events(
     response = {
         "events": [{"event": "slot", "value": "rasa", "name": "name"}],
         "responses": [
-            {"text": "test text", "buttons": [{"title": "cheap", "payload": "cheap"}]},
+            {
+                "text": "test text",
+                "template": None,
+                "buttons": [{"title": "cheap", "payload": "cheap"}],
+            },
             {"template": "utter_greet"},
         ],
     }
@@ -216,7 +220,7 @@ async def test_remote_action_logs_events(
     assert events[2] == SlotSet("name", "rasa")
 
 
-async def test_remote_action_utterances_with_None_values(
+async def test_remote_action_utterances_with_none_values(
     default_channel, default_tracker, default_domain
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
