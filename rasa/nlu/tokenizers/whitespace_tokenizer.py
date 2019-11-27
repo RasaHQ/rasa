@@ -24,7 +24,7 @@ class WhitespaceTokenizer(Tokenizer):
         # Text will be tokenized with case sensitive as default
         "case_sensitive": True,
         # add __CLS__ token to the end of the list of tokens
-        "use_cls_token": True,
+        "use_cls_token": False,
     }
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:

@@ -37,7 +37,7 @@ class JiebaTokenizer(Tokenizer):
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
         # add __CLS__ token to the end of the list of tokens
-        "use_cls_token": True,
+        "use_cls_token": False,
     }  # default don't load custom dictionary
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:

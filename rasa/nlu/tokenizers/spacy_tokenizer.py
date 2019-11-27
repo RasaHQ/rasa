@@ -29,7 +29,7 @@ class SpacyTokenizer(Tokenizer):
 
     defaults = {
         # add __CLS__ token to the end of the list of tokens
-        "use_cls_token": True
+        "use_cls_token": False
     }
 
     def train(
