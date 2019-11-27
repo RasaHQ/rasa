@@ -1,3 +1,10 @@
+"""Prepare a Rasa OSS release.
+
+- creates a release branch
+- creates a new changelog section in CHANGELOG.rst based on all collected changes
+- increases the version number
+- pushes the new branch to GitHub
+"""
 import argparse
 import os
 import sys
@@ -76,7 +83,8 @@ def confirm_version(version: Text) -> bool:
     else:
         confirmed = questionary.confirm(
             f"Is the next version '{version}' correct "
-            f"(current version is '{get_current_version()}')?", default=True
+            f"(current version is '{get_current_version()}')?",
+            default=True,
         ).ask()
     if confirmed:
         return True
@@ -193,6 +201,11 @@ def print_done_message(branch: Text, base: Text, version: Text) -> None:
 def main(args: argparse.Namespace) -> None:
     """Start a release preparation."""
 
+    print(
+        "The release script will increase the version number, "
+        "create a changelog and create a release branch. Let's go!"
+    )
+
     ensure_clean_git()
     version = next_version(args)
     confirm_version(version)
@@ -202,8 +215,10 @@ def main(args: argparse.Namespace) -> None:
     generate_changelog(version)
     base = git_current_branch()
     branch = create_release_branch(version)
+
     create_commit(version)
     push_changes()
+
     print_done_message(branch, base, version)
 
 
