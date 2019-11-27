@@ -21,7 +21,7 @@
     directory = "./changelog"
     underlines = "^-_"
     title_format = "[{version}] - {project_date}"
-    template = "./changelog/_template.rst"
+    template = "./changelog/_template.jinja2"
 
     [[tool.towncrier.type]]
         directory = "removal"

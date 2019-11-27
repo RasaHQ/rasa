@@ -29,3 +29,4 @@ coveralls==1.7.0
 
 # release tools
 semantic_version==2.8.3
+towncrier==19.2.0

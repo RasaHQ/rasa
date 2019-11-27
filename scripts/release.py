@@ -66,6 +66,9 @@ def get_current_version() -> Text:
             f"Failed to find version file at {version_file_path().absolute()}"
         )
 
+    # context in which we evaluate the version py -
+    # to be able to access the defined version, it already needs to live in the
+    # context passed to exec
     _globals = {"__version__": ""}
     with version_file_path().open() as f:
         exec(f.read(), _globals)

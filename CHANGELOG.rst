@@ -38,8 +38,8 @@ Features
   <https://github.com/PolyAI-LDN/polyai-models>`_ model released by PolyAI.
 - Added a new preconfigured pipeline - ``pretrained_embeddings_convert``.
 
-Changed
--------
+Improvements
+------------
 - Do not retrain the entire Core model if only the ``templates`` section of the domain
   is changed.
 - Upgraded ``jsonschema`` version.
@@ -84,8 +84,8 @@ Features
   messages with the value of the ``RASA_ENVIRONMENT`` environment variable. The
   message property will not be assigned if this environment variable isn't set.
 
-Changed
--------
+Improvements
+------------
 - Updated Mattermost connector documentation to be more clear.
 - Updated format strings to f-strings where appropriate.
 - Updated tensorflow requirement to ``1.15.0``
@@ -147,8 +147,8 @@ Features
 - Botframework channel can handle uploaded files in ``UserMessage`` metadata.
 - Added data validator that checks there is no duplicated example data across multiples intents
 
-Changed
--------
+Improvements
+------------
 - Unknown sections in markdown format (NLU data) are not ignored anymore, but instead an error is raised.
 - It is now easier to add metadata to a ``UserMessage`` in existing channels.
   You can do so by overwriting the method ``get_metadata``. The return value of this
@@ -209,8 +209,8 @@ Bugfixes
 [1.3.8] - 2019-10-08
 ^^^^^^^^^^^^^^^^^^^^
 
-Changed
--------
+Improvements
+------------
 - Policies now only get imported if they are actually used. This removes
   TensorFlow warnings when starting Rasa X
 
@@ -267,8 +267,8 @@ Bugfixes
   (up from 1ms).
 - ``agent.load_model_from_server`` no longer affects logging.
 
-Changed
--------
+Improvements
+------------
 - The endpoint ``POST /model/train`` no longer supports specifying an output directory
   for the trained model using the field ``out``. Instead you can choose whether you
   want to save the trained model in the default model directory (``models``)
@@ -303,8 +303,8 @@ Bugfixes
 [1.3.1] - 2019-09-09
 ^^^^^^^^^^^^^^^^^^^^
 
-Changed
--------
+Improvements
+------------
 - Pin gast to == 0.2.2
 
 [1.3.0] - 2019-09-05
@@ -350,8 +350,8 @@ Features
 - Allow sending attachments when using the socketio channel
 - ``rasa data validate`` will fail with a non-zero exit code if validation fails
 
-Changed
--------
+Improvements
+------------
 - added character-level ``CountVectorsFeaturizer`` with empirically found parameters
   into the ``supervised_embeddings`` NLU pipeline template
 - NLU evaluations now also stores its output in the output directory like the core evaluation
@@ -483,8 +483,8 @@ Bugfixes
 [1.2.3] - 2019-08-15
 ^^^^^^^^^^^^^^^^^^^^
 
-Changed
--------
+Improvements
+------------
 - messages with multiple entities are now handled properly with e2e evaluation
 - ``data/test_evaluations/end_to_end_story.md`` was re-written in the
   restaurantbot domain
@@ -492,8 +492,8 @@ Changed
 [1.2.3] - 2019-08-15
 ^^^^^^^^^^^^^^^^^^^^
 
-Changed
--------
+Improvements
+------------
 - messages with multiple entities are now handled properly with e2e evaluation
 - ``data/test_evaluations/end_to_end_story.md`` was re-written in the restaurantbot domain
 
@@ -532,8 +532,8 @@ Features
 - option to send messages to the user by calling
   ``POST /conversations/{conversation_id}/execute``
 
-Changed
--------
+Improvements
+------------
 - ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
   or a policy ensemble
 - Update pytype to ``2019.7.11``
@@ -559,8 +559,8 @@ Features
   training data
 - fill slots for custom templates
 
-Changed
--------
+Improvements
+------------
 - ``Agent.update_model()`` and ``Agent.handle_message()`` now work without needing to set a domain
   or a policy ensemble
 - update pytype to ``2019.7.11``
@@ -599,8 +599,8 @@ Features
 - rest channel supports setting a message's input_channel through a field
   ``input_channel`` in the request body
 
-Changed
--------
+Improvements
+------------
 - recommended syntax for empty ``use_entities`` and ``ignore_entities`` in the domain file
   has been updated from ``False`` or ``None`` to an empty list (``[]``)
 
@@ -625,8 +625,8 @@ Features
   ``--connector`` argument was specified at the same time
 - validate export paths in interactive learning
 
-Changed
--------
+Improvements
+------------
 - deprecate ``rasa.core.agent.handle_channels(...)`. Please use ``rasa.run(...)``
   or ``rasa.core.run.configure_app`` instead.
 - ``Agent.load()`` also accepts ``tar.gz`` model file
@@ -661,8 +661,8 @@ Features
 - unfeaturize single entities
 - added agent readiness check to the ``/status`` resource
 
-Changed
--------
+Improvements
+------------
 - removed leading underscore from name of '_create_initial_project' function.
 
 Bugfixes
@@ -702,8 +702,8 @@ Features
 - nlu configs can now be directly compared for performance on a dataset
   in ``rasa test nlu``
 
-Changed
--------
+Improvements
+------------
 - update the tracker in interactive learning through reverting and appending events
   instead of replacing the tracker
 - ``POST /conversations/{conversation_id}/tracker/events`` supports a list of events
@@ -720,8 +720,8 @@ Bugfixes
 [1.0.9] - 2019-06-10
 ^^^^^^^^^^^^^^^^^^^^
 
-Changed
--------
+Improvements
+------------
 - revert PR #3739 (as this is a breaking change): set ``PikaProducer`` and
   ``KafkaProducer`` default queues back to ``rasa_core_events``
 
@@ -734,8 +734,8 @@ Features
 - maximum number of predictions can be set via the environment variable
   ``MAX_NUMBER_OF_PREDICTIONS`` (default is 10)
 
-Changed
--------
+Improvements
+------------
 - default ``PikaProducer`` and ``KafkaProducer`` queues to ``rasa_production_events``
 - exclude unfeaturized slots from domain warnings
 
@@ -781,8 +781,8 @@ Features
   issues, please make sure to add an index manually using
   ``CREATE INDEX event_idx_sender_id ON events (sender_id);``.
 
-Changed
--------
+Improvements
+------------
 - NLU evaluation in cross-validation mode now also provides intent/entity reports,
   confusion matrix, etc.
 
@@ -855,8 +855,8 @@ Features
 - if no spaCy model is linked upon building a spaCy pipeline, an appropriate error message
   is now raised with instructions for linking one
 
-Changed
--------
+Improvements
+------------
 - renamed all CLI parameters containing any ``_`` to use dashes ``-`` instead (GNU standard)
 - renamed ``rasa_core`` package to ``rasa.core``
 - for interactive learning only include manually annotated and ner_crf entities in nlu export
