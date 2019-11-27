@@ -1,18 +1,19 @@
-:desc: Rasa Changelog
+:desc: Rasa OSS Changelog
 
 
-Rasa Change Log
-===============
+Rasa OSS Change Log
+===================
 
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 ..
     You should **NOT** be adding new change log entries to this file, this
-    file is managed by `towncrier`.
+    file is managed by ``towncrier``.
+
     You **may** edit previous change logs to fix problems like typo corrections or such.
     You can find more information on how to add a new change log entry at
-    https://github.com/RasaHQ/rasa/tree/master/changelogs
+    https://github.com/RasaHQ/rasa/tree/master/changelog/
 
 .. towncrier release notes start
 

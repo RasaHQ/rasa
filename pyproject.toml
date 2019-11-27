@@ -18,10 +18,10 @@
     package = "rasa"
     package_dir = "rasa"
     filename = "CHANGELOG.rst"
-    directory = "./changelogs"
+    directory = "./changelog"
     underlines = "^-_"
     title_format = "[{version}] - {project_date}"
-    template = "./changelogs/_template.rst"
+    template = "./changelog/_template.rst"
 
     [[tool.towncrier.type]]
         directory = "removal"
@@ -34,12 +34,17 @@
         showcontent = true
 
     [[tool.towncrier.type]]
+        directory = "improvement"
+        name = "Improvements"
+        showcontent = true
+
+    [[tool.towncrier.type]]
         directory = "bugfix"
         name = "Bugfixes"
         showcontent = true
 
     [[tool.towncrier.type]]
-        directory = "docs"
+        directory = "doc"
         name = "Improved Documentation"
         showcontent = true
 
