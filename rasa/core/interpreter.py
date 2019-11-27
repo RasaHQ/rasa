@@ -1,5 +1,6 @@
 import aiohttp
 
+import warnings
 import json
 import logging
 import re
@@ -15,7 +16,7 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 
-class NaturalLanguageInterpreter(object):
+class NaturalLanguageInterpreter:
     async def parse(
         self,
         text: Text,
@@ -37,20 +38,17 @@ class NaturalLanguageInterpreter(object):
 
         if not isinstance(obj, str):
             if obj is not None:
-                logger.warning(
+                warnings.warn(
                     "Tried to create NLU interpreter "
-                    "from '{}', which is not possible."
+                    f"from '{obj}', which is not possible. "
                     "Using RegexInterpreter instead."
-                    "".format(obj)
                 )
             return RegexInterpreter()
 
         if endpoint is None:
             if not os.path.exists(obj):
                 logger.warning(
-                    "No local NLU model '{}' found. Using RegexInterpreter instead.".format(
-                        obj
-                    )
+                    f"No local NLU model '{obj}' found. Using RegexInterpreter instead."
                 )
                 return RegexInterpreter()
             else:
@@ -102,12 +100,12 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                     ".".format(type(parsed_entities))
                 )
         except Exception as e:
-            logger.warning(
+            warnings.warn(
                 "Invalid to parse arguments in line "
-                "'{}'. Failed to decode parameters "
+                f"'{user_input}'. Failed to decode parameters "
                 "as a json object. Make sure the intent "
                 "is followed by a proper json object. "
-                "Error: {}".format(user_input, e)
+                f"Error: {e}"
             )
             return []
 
@@ -119,11 +117,11 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         try:
             return float(confidence_str.strip()[1:])
         except Exception as e:
-            logger.warning(
+            warnings.warn(
                 "Invalid to parse confidence value in line "
-                "'{}'. Make sure the intent confidence is an "
+                "'{confidence_str}'. Make sure the intent confidence is an "
                 "@ followed by a decimal number. "
-                "Error: {}".format(confidence_str, e)
+                f"Error: {e}"
             )
             return 0.0
 
@@ -151,9 +149,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
             return event_name, confidence, entities
         else:
-            logger.warning(
-                "Failed to parse intent end entities from '{}'. ".format(user_input)
-            )
+            logger.warning(f"Failed to parse intent end entities from '{user_input}'.")
             return None, 0.0, []
 
     async def parse(
@@ -242,9 +238,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
                         )
                         return None
         except Exception:
-            logger.exception(
-                "Failed to parse text '{}' using rasa NLU over http.".format(text)
-            )
+            logger.exception(f"Failed to parse text '{text}' using rasa NLU over http.")
             return None
 
 

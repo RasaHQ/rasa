@@ -5,6 +5,7 @@ Hence, it imports all of the components. To avoid cycles, no component should
 import this in module scope."""
 
 import logging
+import warnings
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
@@ -166,7 +167,7 @@ def get_component_class(component_name: Text) -> Type["Component"]:
                     )
                 else:
                     exception_message = (
-                        "Cannot find class '{0}' from global namespace. "
+                        "Cannot find class '{}' from global namespace. "
                         "Please check that there is no typo in the class "
                         "name and that you have imported the class into the global "
                         "namespace.".format(component_name)
@@ -175,11 +176,12 @@ def get_component_class(component_name: Text) -> Type["Component"]:
                 raise ModuleNotFoundError(exception_message)
         else:
             # DEPRECATED ensures compatibility, remove in future versions
-            logger.warning(
-                "DEPRECATION warning: your nlu config file "
-                "contains old style component name `{}`, "
-                "you should change it to its class name: `{}`."
-                "".format(component_name, old_style_names[component_name])
+            warnings.warn(
+                "Your nlu config file "
+                f"contains old style component name `{component_name}`, "
+                f"you should change it to its class name: "
+                f"`{old_style_names[component_name]}`.",
+                DeprecationWarning,
             )
             component_name = old_style_names[component_name]
 

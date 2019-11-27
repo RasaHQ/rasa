@@ -8,7 +8,7 @@ from rasa.nlu import persistor, train
 from tests.nlu import utilities
 
 
-class Object(object):
+class Object:
     pass
 
 

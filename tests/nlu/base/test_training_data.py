@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import pytest
 import tempfile
 from jsonschema import ValidationError
@@ -194,6 +192,7 @@ def test_train_test_split(filepaths):
     [
         ("data/examples/rasa/demo-rasa.json", "data/test/multiple_files_json"),
         ("data/examples/rasa/demo-rasa.md", "data/test/multiple_files_markdown"),
+        ("data/examples/rasa/demo-rasa.md", "data/test/duplicate_intents_markdown"),
     ],
 )
 def test_data_merging(files):
@@ -381,7 +380,7 @@ def cmp_dict_list(firsts, seconds):
                 break
         else:
             others = ", ".join([e.text for e in seconds])
-            assert False, "Failed to find message {} in {}".format(a.text, others)
+            assert False, f"Failed to find message {a.text} in {others}"
     return not seconds
 
 
@@ -590,3 +589,10 @@ def test_markdown_not_existing_section():
         training_data.load_data(
             "data/test/markdown_single_sections/not_existing_section.md"
         )
+
+
+def test_section_value_with_delimiter():
+    td_section_with_delimiter = training_data.load_data(
+        "data/test/markdown_single_sections/section_with_delimiter.md"
+    )
+    assert td_section_with_delimiter.entity_synonyms == {"10:00 am": "10:00"}

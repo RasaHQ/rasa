@@ -1,11 +1,12 @@
 import contextlib
+import warnings
 import json
 import logging
 import os
 import pickle
 import typing
 from datetime import datetime, timezone
-from typing import Iterator, Optional, Text, Iterable, Union, Dict
+from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable
 
 import itertools
 from boto3.dynamodb.conditions import Key
@@ -31,7 +32,7 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class TrackerStore(object):
+class TrackerStore:
     """Class to hold all of the TrackerStore classes"""
 
     def __init__(
@@ -48,9 +49,33 @@ class TrackerStore(object):
         event_broker: Optional[EventChannel] = None,
     ) -> "TrackerStore":
         """Returns the tracker_store type"""
-        if store is None or store.type is None:
-            tracker_store = InMemoryTrackerStore(domain, event_broker=event_broker)
-        elif store.type.lower() == "redis":
+
+        tracker_store = None
+        if store is not None and store.type is not None:
+            try:
+                tracker_store = TrackerStore._create_tracker_store(
+                    domain, store, event_broker
+                )
+            except Exception as e:
+                logger.error(
+                    f"Error when trying to connect to '{store.type}' "
+                    f"tracker store. Using "
+                    f"'{InMemoryTrackerStore.__name__}'' instead. "
+                    f"The causing error was: {e}."
+                )
+
+        if not tracker_store:
+            tracker_store = InMemoryTrackerStore(domain, event_broker)
+
+        logger.debug("Connected to {}.".format(tracker_store.__class__.__name__))
+
+        return tracker_store
+
+    @staticmethod
+    def _create_tracker_store(
+        domain: Domain, store: EndpointConfig, event_broker: Optional[EventChannel]
+    ) -> "TrackerStore":
+        if store.type.lower() == "redis":
             tracker_store = RedisTrackerStore(
                 domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
             )
@@ -71,7 +96,6 @@ class TrackerStore(object):
                 domain, store, event_broker
             )
 
-        logger.debug("Connected to {}.".format(tracker_store.__class__.__name__))
         return tracker_store
 
     @staticmethod
@@ -96,9 +120,9 @@ class TrackerStore(object):
         try:
             custom_tracker = class_from_module_path(store.type)
         except (AttributeError, ImportError):
-            logger.warning(
-                "Store type '{}' not found. "
-                "Using InMemoryTrackerStore instead".format(store.type)
+            warnings.warn(
+                f"Store type '{store.type}' not found. "
+                "Using InMemoryTrackerStore instead"
             )
 
         if custom_tracker:
@@ -176,7 +200,7 @@ class TrackerStore(object):
     ) -> Dialogue:
 
         logger.warning(
-            f"DEPRECATION warning: Found pickled tracker for "
+            f"Found pickled tracker for "
             f"conversation ID '{sender_id}'. Deserialisation of pickled "
             f"trackers will be deprecated in version 2.0. Rasa will perform any "
             f"future save operations of this tracker using json serialisation."
@@ -211,7 +235,7 @@ class InMemoryTrackerStore(TrackerStore):
         self, domain: Domain, event_broker: Optional[EventChannel] = None
     ) -> None:
         self.store = {}
-        super(InMemoryTrackerStore, self).__init__(domain, event_broker)
+        super().__init__(domain, event_broker)
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Updates and saves the current conversation state"""
@@ -229,10 +253,10 @@ class InMemoryTrackerStore(TrackerStore):
             DialogueStateTracker
         """
         if sender_id in self.store:
-            logger.debug("Recreating tracker for id '{}'".format(sender_id))
+            logger.debug(f"Recreating tracker for id '{sender_id}'")
             return self.deserialise_tracker(sender_id, self.store[sender_id])
         else:
-            logger.debug("Creating a new tracker for id '{}'.".format(sender_id))
+            logger.debug(f"Creating a new tracker for id '{sender_id}'.")
             return None
 
     def keys(self) -> Iterable[Text]:
@@ -261,7 +285,7 @@ class RedisTrackerStore(TrackerStore):
             host=host, port=port, db=db, password=password, ssl=use_ssl
         )
         self.record_exp = record_exp
-        super(RedisTrackerStore, self).__init__(domain, event_broker)
+        super().__init__(domain, event_broker)
 
     def save(self, tracker, timeout=None):
         """Saves the current conversation state"""
@@ -394,14 +418,14 @@ class MongoTrackerStore(TrackerStore):
 
     def __init__(
         self,
-        domain,
-        host="mongodb://localhost:27017",
-        db="rasa",
-        username=None,
-        password=None,
-        auth_source="admin",
-        collection="conversations",
-        event_broker=None,
+        domain: Domain,
+        host: Optional[Text] = "mongodb://localhost:27017",
+        db: Optional[Text] = "rasa",
+        username: Optional[Text] = None,
+        password: Optional[Text] = None,
+        auth_source: Optional[Text] = "admin",
+        collection: Optional[Text] = "conversations",
+        event_broker: Optional[EventChannel] = None,
     ):
         from pymongo.database import Database
         from pymongo import MongoClient
@@ -417,7 +441,7 @@ class MongoTrackerStore(TrackerStore):
 
         self.db = Database(self.client, db)
         self.collection = collection
-        super(MongoTrackerStore, self).__init__(domain, event_broker)
+        super().__init__(domain, event_broker)
 
         self._ensure_indices()
 
@@ -463,17 +487,9 @@ class MongoTrackerStore(TrackerStore):
             )
 
         if stored is not None:
-            if self.domain:
-                return DialogueStateTracker.from_dict(
-                    sender_id, stored.get("events"), self.domain.slots
-                )
-            else:
-                logger.warning(
-                    "Can't recreate tracker from mongo storage "
-                    "because no domain is set. Returning `None` "
-                    "instead."
-                )
-                return None
+            return DialogueStateTracker.from_dict(
+                sender_id, stored.get("events"), self.domain.slots
+            )
         else:
             return None
 
@@ -558,21 +574,21 @@ class SQLTrackerStore(TrackerStore):
                     # Several Rasa services started in parallel may attempt to
                     # create tables at the same time. That is okay so long as
                     # the first services finishes the table creation.
-                    logger.error("Could not create tables: {}".format(e))
+                    logger.error(f"Could not create tables: {e}")
 
                 self.sessionmaker = sessionmaker(bind=self.engine)
                 break
             except (
                 sqlalchemy.exc.OperationalError,
                 sqlalchemy.exc.IntegrityError,
-            ) as e:
+            ) as error:
 
-                logger.warning(e)
+                logger.warning(error)
                 sleep(5)
 
-        logger.debug("Connection to SQL database '{}' successful.".format(db))
+        logger.debug(f"Connection to SQL database '{db}' successful.")
 
-        super(SQLTrackerStore, self).__init__(domain, event_broker)
+        super().__init__(domain, event_broker)
 
     @staticmethod
     def get_db_url(
@@ -649,15 +665,13 @@ class SQLTrackerStore(TrackerStore):
 
         cursor = conn.connection.cursor()
         cursor.execute("COMMIT")
-        cursor.execute(
-            ("SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{}'".format(db))
-        )
+        cursor.execute(f"SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{db}'")
         exists = cursor.fetchone()
         if not exists:
             try:
-                cursor.execute("CREATE DATABASE {}".format(db))
+                cursor.execute(f"CREATE DATABASE {db}")
             except psycopg2.IntegrityError as e:
-                logger.error("Could not create database '{}': {}".format(db, e))
+                logger.error(f"Could not create database '{db}': {e}")
 
         cursor.close()
         conn.close()
@@ -691,7 +705,7 @@ class SQLTrackerStore(TrackerStore):
             events = [json.loads(event.data) for event in result]
 
             if self.domain and len(events) > 0:
-                logger.debug("Recreating tracker from sender id '{}'".format(sender_id))
+                logger.debug(f"Recreating tracker from sender id '{sender_id}'")
                 return DialogueStateTracker.from_dict(
                     sender_id, events, self.domain.slots
                 )
@@ -751,3 +765,69 @@ class SQLTrackerStore(TrackerStore):
         )
 
         return itertools.islice(tracker.events, n_events, len(tracker.events))
+
+
+class FailSafeTrackerStore(TrackerStore):
+    """Wraps a tracker store so that we can fallback to a different tracker store in
+    case of errors."""
+
+    def __init__(
+        self,
+        tracker_store: TrackerStore,
+        on_tracker_store_error: Optional[Callable[[Exception], None]] = None,
+        fallback_tracker_store: Optional[TrackerStore] = None,
+    ) -> None:
+        """Create a `FailSafeTrackerStore`.
+
+        Args:
+            tracker_store: Primary tracker store.
+            on_tracker_store_error: Callback which is called when there is an error
+                in the primary tracker store.
+        """
+
+        super().__init__(tracker_store.domain, tracker_store.event_broker)
+
+        self._fallback_tracker_store: Optional[TrackerStore] = fallback_tracker_store
+        self._tracker_store = tracker_store
+        self._on_tracker_store_error = on_tracker_store_error
+
+    @property
+    def fallback_tracker_store(self) -> TrackerStore:
+        if not self._fallback_tracker_store:
+            self._fallback_tracker_store = InMemoryTrackerStore(
+                self._tracker_store.domain, self._tracker_store.event_broker
+            )
+
+        return self._fallback_tracker_store
+
+    def on_tracker_store_error(self, error: Exception) -> None:
+        if self._on_tracker_store_error:
+            self._on_tracker_store_error(error)
+        else:
+            logger.error(
+                f"Error happened when trying to save conversation tracker to "
+                f"'{self._tracker_store.__class__.__name__}'. Falling back to use "
+                f"the '{InMemoryTrackerStore.__name__}'. Please "
+                f"investigate the following error: {error}."
+            )
+
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        try:
+            return self._tracker_store.retrieve(sender_id)
+        except Exception as e:
+            self.on_tracker_store_error(e)
+            return None
+
+    def keys(self) -> Iterable[Text]:
+        try:
+            return self._tracker_store.keys()
+        except Exception as e:
+            self.on_tracker_store_error(e)
+            return []
+
+    def save(self, tracker: DialogueStateTracker) -> None:
+        try:
+            self._tracker_store.save(tracker)
+        except Exception as e:
+            self.on_tracker_store_error(e)
+            self.fallback_tracker_store.save(tracker)
