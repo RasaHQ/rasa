@@ -19,14 +19,12 @@ it on your dataset.
 The Short Answer
 ----------------
 
-If you have less than 1000 total training examples, and there is a spaCy model for your
-language, use the ``pretrained_embeddings_spacy`` pipeline:
+If your training data is in english, a good starting point is using ``pretrained_embeddings_convert`` pipeline.
 
-.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_spacy.yml
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_convert.yml
     :language: yaml
 
-
-If you have 1000 or more labelled utterances,
+In case your training data is multi-lingual and is rich with domain specific vocabulary,
 use the ``supervised_embeddings`` pipeline:
 
 .. literalinclude:: ../../sample_configs/config_supervised_embeddings.yml
@@ -36,19 +34,39 @@ use the ``supervised_embeddings`` pipeline:
 A Longer Answer
 ---------------
 
-The two most important pipelines are ``supervised_embeddings`` and ``pretrained_embeddings_spacy``.
-The biggest difference between them is that the ``pretrained_embeddings_spacy`` pipeline uses pre-trained
-word vectors from either GloVe or fastText. The ``supervised_embeddings`` pipeline, on the other hand,
-doesn't use any pre-trained word vectors, but instead fits these specifically for your dataset.
+The three most important pipelines are ``supervised_embeddings``, ``pretrained_embeddings_convert`` and ``pretrained_embeddings_spacy``.
+The ``pretrained_embeddings_spacy`` pipeline uses pre-trained
+word vectors from either GloVe or fastText, whereas ``pretrained_embeddings_convert`` uses a pretrained sentence encoding model `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ to
+extract vector representations of complete user utterance as a whole. On the other hand, the ``supervised_embeddings`` pipeline
+doesn't use any pre-trained word vectors or sentence vectors, but instead fits these specifically for your dataset.
 
+.. note::
+    These recommendations are highly dependent on your dataset and hence approximate. We suggest experimenting with different pipelines to train the best model.
 
 pretrained_embeddings_spacy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The advantage of the ``pretrained_embeddings_spacy`` pipeline is that if you have a training example like:
+The advantage of ``pretrained_embeddings_spacy`` pipeline is that if you have a training example like:
 "I want to buy apples", and Rasa is asked to predict the intent for "get pears", your model
 already knows that the words "apples" and "pears" are very similar. This is especially useful
-if you don't have very much training data.
+if you don't have large enough training data.
+
+
+pretrained_embeddings_convert
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    .. warning::
+        Since ``ConveRT`` model is trained only on an **English** corpus of conversations, this pipeline should only be used if your training data is in English language.
+
+
+This pipeline uses `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model to extract vector representation of a sentence and feeds them to ``EmbeddingIntentClassifier`` for intent classification.
+The advantage of using ``pretrained_embeddings_convert`` pipeline is that it doesn't treat each word of the user message independently,
+but creates a contextual vector representation for the complete sentence. For example, if you have a training example, like:
+"can I book a car?", and Rasa is asked to predict the intent for "I need a ride from my place", since the contextual vector representation for both
+examples are already very similar, the intent classified for both is highly likely to be the same. This is also useful if you don't have
+large enough training data.
+
+    .. note::
+        To use ``pretrained_embeddings_convert`` pipeline, you should install ``tensorflow_text==1.15.1`` and ``tensorflow_hub==0.6.0``. Otherwise, you can also pip install Rasa with ``pip install rasa[convert]``
 
 supervised_embeddings
 ~~~~~~~~~~~~~~~~~~~~~

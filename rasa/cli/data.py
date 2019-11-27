@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 # noinspection PyProtectedMember
 def add_subparser(
-        subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
     data_parser = subparsers.add_parser(
         "data",
@@ -32,10 +32,9 @@ def add_subparser(
     _add_data_clean_parsers(data_subparsers, parents)
 
 
-def _add_data_convert_parsers(
-        data_subparsers, parents: List[argparse.ArgumentParser]
-):
+def _add_data_convert_parsers(data_subparsers, parents: List[argparse.ArgumentParser]):
     import rasa.nlu.convert as convert
+
     convert_parser = data_subparsers.add_parser(
         "convert",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -56,9 +55,7 @@ def _add_data_convert_parsers(
     arguments.set_convert_arguments(convert_nlu_parser)
 
 
-def _add_data_split_parsers(
-        data_subparsers, parents: List[argparse.ArgumentParser]
-):
+def _add_data_split_parsers(data_subparsers, parents: List[argparse.ArgumentParser]):
     split_parser = data_subparsers.add_parser(
         "split",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -73,24 +70,26 @@ def _add_data_split_parsers(
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Performs a split of your NLU data into training and test data "
-             "according to the specified percentages.",
+        "according to the specified percentages.",
     )
     nlu_split_parser.set_defaults(func=split_nlu_data)
 
     arguments.set_split_arguments(nlu_split_parser)
 
 
-def _add_data_validate_parsers(
-        data_subparsers, parents: List[argparse.ArgumentParser]
-):
+def _add_data_validate_parsers(data_subparsers, parents: List[argparse.ArgumentParser]):
     validate_parser = data_subparsers.add_parser(
         "validate",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
         help="Validates domain and data files to check for possible mistakes.",
     )
-    validate_parser.add_argument("--max-history", type=int, default=None,
-                                 help="Assume this max_history setting for story structure validation.")
+    validate_parser.add_argument(
+        "--max-history",
+        type=int,
+        default=None,
+        help="Assume this max_history setting for story structure validation.",
+    )
     validate_parser.set_defaults(func=validate_files)
     arguments.set_validator_arguments(validate_parser)
 
@@ -101,17 +100,22 @@ def _add_data_validate_parsers(
         parents=parents,
         help="Checks for inconsistencies in the story files.",
     )
-    story_structure_parser.add_argument("--max-history", type=int,
-                                        help="Assume this max_history setting for validation.")
-    story_structure_parser.add_argument("--prompt", action="store_true", default=False,
-                                        help="Ask how conflicts should be fixed")
+    story_structure_parser.add_argument(
+        "--max-history",
+        type=int,
+        help="Assume this max_history setting for validation.",
+    )
+    story_structure_parser.add_argument(
+        "--prompt",
+        action="store_true",
+        default=False,
+        help="Ask how conflicts should be fixed",
+    )
     story_structure_parser.set_defaults(func=validate_stories)
     arguments.set_validator_arguments(story_structure_parser)
 
 
-def _add_data_clean_parsers(
-    data_subparsers, parents: List[argparse.ArgumentParser]
-):
+def _add_data_clean_parsers(data_subparsers, parents: List[argparse.ArgumentParser]):
 
     clean_parser = data_subparsers.add_parser(
         "clean",
@@ -158,13 +162,16 @@ def validate_files(args):
 
     everything_is_alright = validator.verify_all(not args.fail_on_warnings)
     if not args.max_history:
-        logger.info("Will not test for inconsistencies in stories since "
-                    "you did not provide --max-history.")
+        logger.info(
+            "Will not test for inconsistencies in stories since "
+            "you did not provide --max-history."
+        )
     if everything_is_alright and args.max_history:
         # Only run story structure validation if everything else is fine
         # since this might take a while
-        everything_is_alright = validator.verify_story_structure(not args.fail_on_warnings,
-                                                                 max_history=args.max_history)
+        everything_is_alright = validator.verify_story_structure(
+            not args.fail_on_warnings, max_history=args.max_history
+        )
     sys.exit(0) if everything_is_alright else sys.exit(1)
 
 
@@ -190,11 +197,13 @@ def validate_stories(args):
     story_names_unique = validator.verify_story_names(not args.fail_on_warnings)
 
     # If names are unique, look for inconsistencies
-    everything_is_alright = validator.verify_story_structure(
-        not args.fail_on_warnings,
-        max_history=args.max_history,
-        prompt=args.prompt
-    ) if story_names_unique else False
+    everything_is_alright = (
+        validator.verify_story_structure(
+            not args.fail_on_warnings, max_history=args.max_history, prompt=args.prompt
+        )
+        if story_names_unique
+        else False
+    )
 
     sys.exit(0) if everything_is_alright else sys.exit(1)
 
@@ -222,8 +231,9 @@ def deduplicate_story_names(args):
 
         shutil.copy2(file_name, file_name + ".bak")
 
-        with open(file_name, "r") as in_file, \
-                open(file_name + ".new", "w+") as out_file:
+        with open(file_name, "r") as in_file, open(
+            file_name + ".new", "w+"
+        ) as out_file:
             for line in in_file:
                 line = line.rstrip()
                 if line.startswith("## "):

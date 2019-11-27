@@ -1,4 +1,3 @@
-
 from typing import List, Optional, Dict, Text
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -9,16 +8,15 @@ from rasa.core.training.generator import TrackerWithCachedStates
 
 
 class StoryConflict:
-
     def __init__(
-            self,
-            sliced_states: List[Optional[Dict[Text, float]]],
-            tracker: TrackerWithCachedStates,
-            event
+        self,
+        sliced_states: List[Optional[Dict[Text, float]]],
+        tracker: TrackerWithCachedStates,
+        event,
     ):
         self.sliced_states = sliced_states
         self.hash = hash(str(list(sliced_states)))
-        self.tracker = tracker,
+        self.tracker = (tracker,)
         self.event = event
         self._conflicting_actions = {}  # {"action": ["story_1", ...], ...}
         self.correct_response = None
@@ -33,10 +31,10 @@ class StoryConflict:
         result = None
         for k in state:
             if k.startswith(PREV_PREFIX):
-                if k[len(PREV_PREFIX):] != ACTION_LISTEN_NAME:
-                    result = ("action", k[len(PREV_PREFIX):])
+                if k[len(PREV_PREFIX) :] != ACTION_LISTEN_NAME:
+                    result = ("action", k[len(PREV_PREFIX) :])
             elif k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_") and not result:
-                result = ("intent", k[len(MESSAGE_INTENT_ATTRIBUTE + '_'):])
+                result = ("intent", k[len(MESSAGE_INTENT_ATTRIBUTE + "_") :])
         return result
 
     def add_conflicting_action(self, action: Text, story_name: Text):
@@ -57,7 +55,11 @@ class StoryConflict:
     def incorrect_stories(self):
         if self.correct_response:
             incorrect_stories = []
-            for stories in [s for (a, s) in self._conflicting_actions.items() if a != self.correct_response]:
+            for stories in [
+                s
+                for (a, s) in self._conflicting_actions.items()
+                if a != self.correct_response
+            ]:
                 for story in stories:
                     incorrect_stories.append(story)
             return incorrect_stories
