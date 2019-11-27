@@ -85,3 +85,4 @@ events.db
 env
 venv
 .dir-locals.el
+.history
