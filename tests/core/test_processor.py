@@ -212,13 +212,16 @@ async def test_reminder_cancelled(
         tracker.update(ActionExecuted("action_reminder_reminder"))
         tracker.update(
             ReminderScheduled(
-                "utter_greet", datetime.datetime.now(), kill_on_user_message=True
+                "utter_greet",
+                datetime.datetime.now(),
+                kill_on_user_message=True,
+                event_is_action=True
             )
         )
         trackers.append(tracker)
 
     # cancel reminder for the first user
-    trackers[0].update(ReminderCancelled("utter_greet"))
+    trackers[0].update(ReminderCancelled("utter_greet", event_is_action=True))
 
     for tracker in trackers:
         default_processor.tracker_store.save(tracker)

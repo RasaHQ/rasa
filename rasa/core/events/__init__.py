@@ -671,21 +671,21 @@ class ReminderCancelled(Event):
             event_is_action: True if event is action; False if event is intent
         """
 
-        self.event_name = event_name
+        self.future_event = event_name
         self.event_is_action = event_is_action
         super(ReminderCancelled, self).__init__(timestamp)
 
     def __hash__(self):
-        return hash(self.event_name)
+        return hash(self.future_event)
 
     def __eq__(self, other):
         return isinstance(other, ReminderCancelled)
 
     def __str__(self):
-        return "ReminderCancelled(event: {}, event_is_action: {})".format(self.event_name, self.event_is_action)
+        return "ReminderCancelled(event: {}, event_is_action: {})".format(self.future_event, self.event_is_action)
 
     def as_story_string(self):
-        props = json.dumps({"event": self.event_name, "event_is_action": self.event_is_action})
+        props = json.dumps({"event": self.future_event, "event_is_action": self.event_is_action})
         return "{name}{props}".format(name=self.type_name, props=props)
 
     @classmethod
