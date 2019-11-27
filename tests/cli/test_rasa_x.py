@@ -1,10 +1,8 @@
 from pathlib import Path
-import warnings
 
 import pytest
 from typing import Callable, Dict
 from _pytest.pytester import RunResult
-from _pytest.logging import LogCaptureFixture
 
 
 from aioresponses import aioresponses
@@ -65,10 +63,10 @@ def test_prepare_credentials_if_already_valid(tmpdir: Path):
     assert actual == credentials
 
 
-def test_if_endpoint_config_is_valid_in_local_mode():
-    config = EndpointConfig(type="sql", dialect="sqlite", db=x.DEFAULT_EVENTS_DB)
+def test_if_default_endpoint_config_is_valid_in_local_mode():
+    event_broker_endpoint = x._get_event_broker_endpoint(None)
 
-    assert x._is_correct_event_broker(config)
+    assert x._is_correct_event_broker(event_broker_endpoint)
 
 
 @pytest.mark.parametrize(

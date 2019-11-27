@@ -110,28 +110,8 @@ def _prepare_credentials_for_rasa_x(
 def _overwrite_endpoints_for_local_x(
     endpoints: AvailableEndpoints, rasa_x_token: Text, rasa_x_url: Text
 ):
-    from rasa.utils.endpoints import EndpointConfig
-    import questionary
-
     endpoints.model = _get_model_endpoint(endpoints.model, rasa_x_token, rasa_x_url)
-
-    overwrite_existing_event_broker = False
-    if endpoints.event_broker and not _is_correct_event_broker(endpoints.event_broker):
-        cli_utils.print_error(
-            "Rasa X currently only supports a SQLite event broker with path '{}' "
-            "when running locally. You can deploy Rasa X with Docker "
-            "(https://rasa.com/docs/rasa-x/deploy/) if you want to use "
-            "other event broker configurations.".format(DEFAULT_EVENTS_DB)
-        )
-        overwrite_existing_event_broker = questionary.confirm(
-            "Do you want to continue with the default SQLite event broker?"
-        ).ask()
-
-        if not overwrite_existing_event_broker:
-            exit(0)
-
-    if not endpoints.tracker_store or overwrite_existing_event_broker:
-        endpoints.event_broker = EndpointConfig(type="sql", db=DEFAULT_EVENTS_DB)
+    endpoints.event_broker = _get_event_broker_endpoint(endpoints.event_broker)
 
 
 def _get_model_endpoint(
@@ -159,6 +139,35 @@ def _get_model_endpoint(
         token=rasa_x_token,
         wait_time_between_pulls=custom_wait_time_pulls or 2,
     )
+
+
+def _get_event_broker_endpoint(
+    event_broker_endpoint: Optional[EndpointConfig]
+) -> EndpointConfig:
+    import questionary
+
+    default_event_broker = EndpointConfig(
+        type="sql", dialect="sqlite", db=DEFAULT_EVENTS_DB
+    )
+    if not event_broker_endpoint:
+        return default_event_broker
+    elif not _is_correct_event_broker(event_broker_endpoint):
+        cli_utils.print_error(
+            "Rasa X currently only supports a SQLite event broker with path '{}' "
+            "when running locally. You can deploy Rasa X with Docker "
+            "(https://rasa.com/docs/rasa-x/deploy/) if you want to use "
+            "other event broker configurations.".format(DEFAULT_EVENTS_DB)
+        )
+        overwrite_existing_event_broker = questionary.confirm(
+            "Do you want to continue with the default SQLite event broker?"
+        ).ask()
+
+        if not overwrite_existing_event_broker:
+            exit(0)
+
+        return EndpointConfig(type="sql", db=DEFAULT_EVENTS_DB)
+    else:
+        return event_broker_endpoint
 
 
 def _is_correct_event_broker(event_broker: EndpointConfig) -> bool:
