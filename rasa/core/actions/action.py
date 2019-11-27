@@ -420,10 +420,9 @@ class RemoteAction(Action):
                 draft = {}
 
             if "buttons" in response:
-                if "buttons" not in draft:
-                    draft["buttons"] = []
-                draft["buttons"].extend(response["buttons"])
-                del response["buttons"]
+                draft.setdefault("buttons", [])
+                response_buttons = response.pop("buttons") or []
+                draft["buttons"].extend(response_buttons)
 
             draft.update(response)
 
