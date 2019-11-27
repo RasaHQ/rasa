@@ -113,25 +113,7 @@ def _overwrite_endpoints_for_local_x(
     from rasa.utils.endpoints import EndpointConfig
     import questionary
 
-    # Checking if endpoint.yml has existing url and wait time values set, if so give
-    # warning we are overwriting the endpoint.yml file.
-    custom_wait_time_pulls = endpoints.model.kwargs.get("wait_time_between_pulls")
-    custom_url = endpoints.model.url
-    default_rasax_model_server_url = (
-        f"{rasa_x_url}/projects/default/models/tag/production"
-    )
-
-    if custom_url != default_rasax_model_server_url:
-        warnings.warn(
-            f"Ignoring url '{custom_url}' from 'endpoints.yml' and using "
-            f"'{default_rasax_model_server_url}' instead."
-        )
-
-    endpoints.model = EndpointConfig(
-        default_rasax_model_server_url,
-        token=rasa_x_token,
-        wait_time_between_pulls=custom_wait_time_pulls or 2,
-    )
+    endpoints.model = _get_model_endpoint(endpoints.model, rasa_x_token, rasa_x_url)
 
     overwrite_existing_event_broker = False
     if endpoints.event_broker and not _is_correct_event_broker(endpoints.event_broker):
@@ -150,6 +132,33 @@ def _overwrite_endpoints_for_local_x(
 
     if not endpoints.tracker_store or overwrite_existing_event_broker:
         endpoints.event_broker = EndpointConfig(type="sql", db=DEFAULT_EVENTS_DB)
+
+
+def _get_model_endpoint(
+    model_endpoint: Optional[EndpointConfig], rasa_x_token: Text, rasa_x_url: Text
+) -> EndpointConfig:
+    default_rasax_model_server_url = (
+        f"{rasa_x_url}/projects/default/models/tag/production"
+    )
+
+    model_endpoint = model_endpoint or EndpointConfig()
+
+    # Checking if endpoint.yml has existing url and wait time values set, if so give
+    # warning we are overwriting the endpoint.yml file.
+    custom_wait_time_pulls = model_endpoint.kwargs.get("wait_time_between_pulls")
+    custom_url = model_endpoint.url
+
+    if custom_url and custom_url != default_rasax_model_server_url:
+        warnings.warn(
+            f"Ignoring url '{custom_url}' from 'endpoints.yml' and using "
+            f"'{default_rasax_model_server_url}' instead."
+        )
+
+    return EndpointConfig(
+        default_rasax_model_server_url,
+        token=rasa_x_token,
+        wait_time_between_pulls=custom_wait_time_pulls or 2,
+    )
 
 
 def _is_correct_event_broker(event_broker: EndpointConfig) -> bool:
