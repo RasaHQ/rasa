@@ -27,13 +27,13 @@ class StoryConflict:
     @staticmethod
     def _get_prev_event(state) -> [Event, None]:
         if not state:
-            return None
-        result = None
+            return None, None
+        result = (None, None)
         for k in state:
             if k.startswith(PREV_PREFIX):
                 if k[len(PREV_PREFIX) :] != ACTION_LISTEN_NAME:
                     result = ("action", k[len(PREV_PREFIX) :])
-            elif k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_") and not result:
+            elif k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_") and not result[0]:
                 result = ("intent", k[len(MESSAGE_INTENT_ATTRIBUTE + "_") :])
         return result
 
@@ -66,6 +66,10 @@ class StoryConflict:
         else:
             return []
 
+    @property
+    def has_prior_events(self):
+        return self._get_prev_event(self.sliced_states[-1])[0] is not None
+
     def story_prior_to_conflict(self):
         result = ""
         for state in self.sliced_states:
@@ -79,7 +83,10 @@ class StoryConflict:
 
     def __str__(self):
         last_event_type, last_event_name = self._get_prev_event(self.sliced_states[-1])
-        conflict_string = f"CONFLICT after {last_event_type} '{last_event_name}':\n"
+        if last_event_type:
+            conflict_string = f"CONFLICT after {last_event_type} '{last_event_name}':\n"
+        else:
+            conflict_string = f"CONFLICT at the beginning of stories:\n"
         for action, stories in self._conflicting_actions.items():
             if len(stories) == 1:
                 stories = f"'{stories[0]}'"

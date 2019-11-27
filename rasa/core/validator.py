@@ -223,7 +223,7 @@ class Validator:
         trackers = TrainingDataGenerator(
             self.story_graph,
             domain=self.domain,
-            remove_duplicates=False,  # ToDo: Q&A: Why don't we deduplicate the graph here?
+            remove_duplicates=False,  # ToDo: Q&A: Why not remove_duplicates=True?
             augmentation_factor=0,
         ).generate()
         rules = {}
@@ -274,6 +274,9 @@ class Validator:
                             action=event.as_story_string(), story_name=tracker.sender_id
                         )
                     idx += 1
+
+        # Remove conflicts that arise from unpredictable actions
+        conflicts = {h: c for (h, c) in conflicts.items() if c.has_prior_events}
 
         if len(conflicts) == 0:
             logger.info("No story structure conflicts found.")

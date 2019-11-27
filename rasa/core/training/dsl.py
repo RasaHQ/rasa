@@ -20,6 +20,7 @@ from rasa.core.training.structures import (
     GENERATED_CHECKPOINT_PREFIX,
     GENERATED_HASH_LENGTH,
     FORM_PREFIX,
+    STORY_NAME_TALLY,
 )
 from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.core.domain import Domain
@@ -388,6 +389,12 @@ class StoryFileReader:
     def new_story_part(self, name):
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name)
+
+        # Tally names of stories, so we can identify duplicate names
+        if name not in STORY_NAME_TALLY:
+            STORY_NAME_TALLY[name] = 1
+        else:
+            STORY_NAME_TALLY[name] += 1
 
     def add_checkpoint(self, name: Text, conditions: Optional[Dict[Text, Any]]) -> None:
 
