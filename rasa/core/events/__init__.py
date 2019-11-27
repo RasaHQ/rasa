@@ -490,7 +490,7 @@ class SlotSet(Event):
         except KeyError as e:
             raise ValueError(f"Failed to parse set slot event. {e}")
 
-    def apply_to(self, tracker):
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker._set_slot(self.key, self.value)
 
 
@@ -516,7 +516,7 @@ class Restarted(Event):
     def as_story_string(self):
         return self.type_name
 
-    def apply_to(self, tracker):
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
         from rasa.core.actions.action import (  # pytype: disable=pyi-error
             ACTION_LISTEN_NAME,
         )
@@ -1192,6 +1192,9 @@ class SessionStarted(Event):
             f"'{self.type_name}' events cannot be serialised as story strings."
         )
 
-    # todo
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        tracker._paused = True
+        from rasa.core.actions.action import (  # pytype: disable=pyi-error
+            ACTION_LISTEN_NAME,
+        )
+
+        tracker.trigger_followup_action(ACTION_LISTEN_NAME)

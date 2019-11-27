@@ -17,6 +17,7 @@ from rasa.core.events import (
     Restarted,
     ActionReverted,
     UserUtteranceReverted,
+    SessionStarted,
 )
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
@@ -37,14 +38,14 @@ domain = Domain.load("examples/moodbot/domain.yml")
 
 
 class MockRedisTrackerStore(RedisTrackerStore):
-    def __init__(self, domain):
+    def __init__(self, _domain: Domain) -> None:
         self.red = fakeredis.FakeStrictRedis()
         self.record_exp = None
 
         # added in redis==3.3.0, but not yet in fakeredis
         self.red.connection_pool.connection_class.health_check_interval = 0
 
-        TrackerStore.__init__(self, domain)
+        TrackerStore.__init__(self, _domain)
 
 
 def stores_to_be_tested():
@@ -113,7 +114,7 @@ def test_tracker_store(store, pair):
     assert restored == tracker
 
 
-async def test_tracker_write_to_story(tmpdir, moodbot_domain):
+async def test_tracker_write_to_story(tmpdir, moodbot_domain: Domain):
     tracker = tracker_from_dialogue_file(
         "data/test_dialogues/moodbot.json", moodbot_domain
     )
@@ -181,7 +182,7 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
     assert [e.type_name for e in tracker.events] == expected
 
 
-def test_tracker_entity_retrieval(default_domain):
+def test_tracker_entity_retrieval(default_domain: Domain):
     tracker = DialogueStateTracker("default", default_domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
@@ -207,7 +208,7 @@ def test_tracker_entity_retrieval(default_domain):
     assert list(tracker.get_latest_entity_values("unknown")) == []
 
 
-def test_tracker_update_slots_with_entity(default_domain):
+def test_tracker_update_slots_with_entity(default_domain: Domain):
     tracker = DialogueStateTracker("default", default_domain.slots)
 
     test_entity = default_domain.entities[0]
@@ -234,7 +235,7 @@ def test_tracker_update_slots_with_entity(default_domain):
     assert tracker.get_slot(test_entity) == expected_slot_value
 
 
-def test_restart_event(default_domain):
+def test_restart_event(default_domain: Domain):
     tracker = DialogueStateTracker("default", default_domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
@@ -268,7 +269,22 @@ def test_restart_event(default_domain):
     assert len(list(recovered.generate_all_prior_trackers())) == 1
 
 
-def test_revert_action_event(default_domain):
+def test_session_start(default_domain: Domain):
+    tracker = DialogueStateTracker("default", default_domain.slots)
+    # the retrieved tracker should be empty
+    assert len(tracker.events) == 0
+
+    # add a SessionStarted event
+    tracker.update(SessionStarted())
+
+    # tracker has one event
+    assert len(tracker.events) == 1
+
+    # follow-up action should be 'action_listen'
+    assert tracker.followup_action == ACTION_LISTEN_NAME
+
+
+def test_revert_action_event(default_domain: Domain):
     tracker = DialogueStateTracker("default", default_domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
@@ -304,7 +320,7 @@ def test_revert_action_event(default_domain):
     assert len(list(tracker.generate_all_prior_trackers())) == 3
 
 
-def test_revert_user_utterance_event(default_domain):
+def test_revert_user_utterance_event(default_domain: Domain):
     tracker = DialogueStateTracker("default", default_domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
@@ -346,7 +362,7 @@ def test_revert_user_utterance_event(default_domain):
     assert len(list(tracker.generate_all_prior_trackers())) == 3
 
 
-def test_traveling_back_in_time(default_domain):
+def test_traveling_back_in_time(default_domain: Domain):
     tracker = DialogueStateTracker("default", default_domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
