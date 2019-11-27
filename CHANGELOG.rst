@@ -26,6 +26,7 @@ Fixed
 - End to end stories now support literal payloads which specify entities, e.g.
   ``greet: /greet{"name": "John"}``
 - Slots will be correctly interpolated if there are lists in custom response templates.
+- Fixed compatibility issues with ``rasa-sdk`` ``1.5``
 
 [1.5.0] - 2019-11-26
 ^^^^^^^^^^^^^^^^^^^^
