@@ -25,6 +25,22 @@ Removed
 Fixed
 -----
 
+[1.5.1] - 2019-11-27
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- When NLU training data is dumped as Markdown file the intents are not longer ordered
+  alphabetically, but in the original order of given training data
+
+Fixed
+-----
+- End to end stories now support literal payloads which specify entities, e.g.
+  ``greet: /greet{"name": "John"}``
+- Slots will be correctly interpolated if there are lists in custom response templates.
+- Fixed compatibility issues with ``rasa-sdk`` ``1.5``
+- Updated ``/status`` endpoint to show correct path to model archive
+
 [1.5.0] - 2019-11-26
 ^^^^^^^^^^^^^^^^^^^^
 

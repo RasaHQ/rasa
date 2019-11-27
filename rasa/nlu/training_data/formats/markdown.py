@@ -1,7 +1,10 @@
 import logging
 import re
 import typing
+from collections import OrderedDict
 from typing import Any, Text, Optional, Tuple, List, Dict
+
+from rasa.core.constants import INTENT_MESSAGE_PREFIX
 
 from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
@@ -211,25 +214,31 @@ class MarkdownWriter(TrainingDataWriter):
     def _generate_training_examples_md(self, training_data: "TrainingData") -> Text:
         """Generates markdown training examples."""
 
-        # Sort training data by intent
-        training_examples = sorted(
-            [e.as_dict_nlu() for e in training_data.training_examples],
-            key=lambda k: k[MESSAGE_INTENT_ATTRIBUTE],
-        )
-        md = ""
-        for i, example in enumerate(training_examples):
-            intent = training_examples[i - 1][MESSAGE_INTENT_ATTRIBUTE]
-            if i == 0 or intent != example[MESSAGE_INTENT_ATTRIBUTE]:
-                md += self._generate_section_header_md(
-                    INTENT,
-                    example[MESSAGE_INTENT_ATTRIBUTE],
-                    example.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE, None),
-                    i != 0,
-                )
+        training_examples = OrderedDict()
 
-            md += self._generate_item_md(self._generate_message_md(example))
+        # Sort by intent while keeping basic intent order
+        for example in [e.as_dict_nlu() for e in training_data.training_examples]:
+            intent = example[MESSAGE_INTENT_ATTRIBUTE]
+            training_examples.setdefault(intent, [])
+            training_examples[intent].append(example)
 
-        return md
+        # Don't prepend newline for first line
+        prepend_newline = False
+        lines = []
+
+        for intent, examples in training_examples.items():
+            section_header = self._generate_section_header_md(
+                INTENT, intent, prepend_newline=prepend_newline
+            )
+            lines.append(section_header)
+            prepend_newline = True
+
+            lines += [
+                self._generate_item_md(self._generate_message_md(example))
+                for example in examples
+            ]
+
+        return "".join(lines)
 
     def _generate_synonyms_md(self, training_data: "TrainingData") -> Text:
         """Generates markdown for entity synomyms."""
@@ -278,45 +287,46 @@ class MarkdownWriter(TrainingDataWriter):
 
     @staticmethod
     def _generate_section_header_md(
-        section_type: Text,
-        title: Text,
-        subtitle: Optional[Text] = None,
-        prepend_newline: bool = True,
+        section_type: Text, title: Text, prepend_newline: bool = True
     ) -> Text:
         """Generates markdown section header."""
 
         prefix = "\n" if prepend_newline else ""
-        subtitle_suffix = (
-            f"{RESPONSE_IDENTIFIER_DELIMITER}{subtitle}" if subtitle else ""
-        )
-        return prefix + "## {}:{}{}\n".format(
-            section_type, encode_string(title), encode_string(subtitle_suffix)
-        )
+        title = encode_string(title)
+
+        return f"{prefix}## {section_type}:{title}\n"
 
     @staticmethod
     def _generate_item_md(text: Text) -> Text:
         """Generates markdown for a list item."""
 
-        return "- {}\n".format(encode_string(text))
+        return f"- {encode_string(text)}\n"
 
     @staticmethod
     def _generate_fname_md(text: Text) -> Text:
         """Generates markdown for a lookup table file path."""
 
-        return "  {}\n".format(encode_string(text))
+        return f"  {encode_string(text)}\n"
 
     def _generate_message_md(self, message: Dict[Text, Any]) -> Text:
         """Generates markdown for a message object."""
 
         md = ""
         text = message.get("text", "")
-        entities = sorted(message.get("entities", []), key=lambda k: k["start"])
 
         pos = 0
-        for entity in entities:
-            md += text[pos : entity["start"]]
-            md += self._generate_entity_md(text, entity)
-            pos = entity["end"]
+
+        # If a message was prefixed with `INTENT_MESSAGE_PREFIX` (this can only happen
+        # in end-to-end stories) then potential entities were provided in the json
+        # format (e.g. `/greet{"name": "Rasa"}) and we don't have to add the NLU
+        # entity annotation
+        if not text.startswith(INTENT_MESSAGE_PREFIX):
+            entities = sorted(message.get("entities", []), key=lambda k: k["start"])
+
+            for entity in entities:
+                md += text[pos : entity["start"]]
+                md += self._generate_entity_md(text, entity)
+                pos = entity["end"]
 
         md += text[pos:]
 
