@@ -2,13 +2,13 @@ import argparse
 import os
 from typing import List, Text
 
+from rasa.cli import utils
 import rasa.cli.train as train
 from rasa.cli.arguments import interactive as arguments
 from rasa import data, model
 
 
 # noinspection PyProtectedMember
-from rasa.cli.utils import get_validated_path, print_error
 from rasa.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_MODELS_PATH,
@@ -56,8 +56,19 @@ def interactive(args: argparse.Namespace):
 
     if args.model is None:
         zipped_model = train.train(args)
+        if not zipped_model:
+            utils.print_error_and_exit(
+                "Could not train an initial model. Either pass paths "
+                "to the relevant training files (`--data`, `--config`, `--domain`), "
+                "or use 'rasa train' to train a model."
+            )
     else:
         zipped_model = get_provided_model(args.model)
+        if not (zipped_model and os.path.exists(zipped_model)):
+            utils.print_error_and_exit(
+                f"Interactive learning process cannot be started as no initial model was "
+                f"found at path '{args.model}'.  Use 'rasa train' to train a model."
+            )
 
     perform_interactive_learning(args, zipped_model)
 
@@ -72,8 +83,19 @@ def interactive_core(args: argparse.Namespace):
 
     if args.model is None:
         zipped_model = train.train_core(args)
+        if not zipped_model:
+            utils.print_error_and_exit(
+                "Could not train an initial model. Either pass paths "
+                "to the relevant training files (`--data`, `--config`, `--domain`), "
+                "or use 'rasa train' to train a model."
+            )
     else:
         zipped_model = get_provided_model(args.model)
+        if not (zipped_model and os.path.exists(zipped_model)):
+            utils.print_error_and_exit(
+                f"Interactive learning process cannot be started as no initial model was "
+                f"found at path '{args.model}'.  Use 'rasa train' to train a model."
+            )
 
     perform_interactive_learning(args, zipped_model)
 
@@ -81,27 +103,21 @@ def interactive_core(args: argparse.Namespace):
 def perform_interactive_learning(args, zipped_model) -> None:
     from rasa.core.train import do_interactive_learning
 
-    if zipped_model and os.path.exists(zipped_model):
-        args.model = zipped_model
+    args.model = zipped_model
 
-        with model.unpack_model(zipped_model) as model_path:
-            args.core, args.nlu = model.get_model_subdirectories(model_path)
-            stories_directory = data.get_core_directory(args.data)
+    with model.unpack_model(zipped_model) as model_path:
+        args.core, args.nlu = model.get_model_subdirectories(model_path)
+        stories_directory = data.get_core_directory(args.data)
 
-            args.endpoints = get_validated_path(
-                args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
-            )
-
-            do_interactive_learning(args, stories_directory)
-    else:
-        print_error(
-            "Interactive learning process cannot be started as no initial model was "
-            "found.  Use 'rasa train' to train a model."
+        args.endpoints = utils.get_validated_path(
+            args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
         )
+
+        do_interactive_learning(args, stories_directory)
 
 
 def get_provided_model(arg_model: Text):
-    model_path = get_validated_path(arg_model, "model", DEFAULT_MODELS_PATH)
+    model_path = utils.get_validated_path(arg_model, "model", DEFAULT_MODELS_PATH)
 
     if os.path.isdir(model_path):
         model_path = get_latest_model(model_path)
