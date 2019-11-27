@@ -145,7 +145,9 @@ async def test_reminder_scheduled(
 ):
     sender_id = uuid.uuid4().hex
 
-    reminder = ReminderScheduled("utter_greet", datetime.datetime.now())
+    reminder = ReminderScheduled("utter_greet",
+                                 datetime.datetime.now(),
+                                 event_is_action=True)
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     tracker.update(UserUttered("test"))
