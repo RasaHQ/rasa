@@ -1,11 +1,11 @@
 import logging
-from rasa.nlu.featurizers import Featurizer
+from rasa.nlu.featurizers.featurzier import Featurizer
 from typing import Any, Dict, List, Optional, Text, Tuple
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_VECTOR_FEATURE_NAMES,
+    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
     SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 import numpy as np
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class ConveRTFeaturizer(Featurizer):
 
     provides = [
-        MESSAGE_VECTOR_FEATURE_NAMES[attribute]
+        MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
 
@@ -96,11 +96,11 @@ class ConveRTFeaturizer(Featurizer):
                 for index, ex in enumerate(batch_examples):
 
                     ex.set(
-                        MESSAGE_VECTOR_FEATURE_NAMES[attribute],
-                        self._combine_with_existing_features(
+                        MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute],
+                        self._combine_with_existing_dense_features(
                             ex,
                             batch_features[index],
-                            MESSAGE_VECTOR_FEATURE_NAMES[attribute],
+                            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute],
                         ),
                     )
 
@@ -110,8 +110,10 @@ class ConveRTFeaturizer(Featurizer):
 
         feats = self._compute_features([message])[0]
         message.set(
-            MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
-            self._combine_with_existing_features(
-                message, feats, MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            self._combine_with_existing_dense_features(
+                message,
+                feats,
+                MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
             ),
         )

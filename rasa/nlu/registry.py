@@ -25,7 +25,7 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
 from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
-from rasa.nlu.featurizers.convert_featurizer import ConveRTFeaturizer
+from nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
