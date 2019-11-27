@@ -939,6 +939,10 @@ def create_app(
                         entityArray.append(data)
                 elif data["name"]  == "sauthor":
                     entityArray.append(data)
+                elif data["name"] == 'type' or data["name"] == 'timeline' or data[
+                    "name"] == 'mtype' or data["name"] == 'renew' or data["name"] == 'renewAll' or data["name"] == 'cancelhold':
+                    data["name"] = data["name"].lower()
+                    entityArray.append(data)
                 elif data["name"] == "pubyear":
                     if conditionMap.__contains__("pubyear"):
                         pass
@@ -951,11 +955,7 @@ def create_app(
                     else:
                         conditionMap['pubyear'] = data['value']
                         data["name"] = "pubyear"
-                        entityArray.append(data)                    
-                elif data["name"] == 'type' or data["name"] == 'timeline' or data[
-                    "name"] == 'mtype' or data["name"] == 'renew' or data["name"] == 'renewAll':
-                    data["name"] = data["name"].lower()
-                    entityArray.append(data)
+                        entityArray.append(data)
                 else:
                     pass
         elif intent == "eventsearchintent":
