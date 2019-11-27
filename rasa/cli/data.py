@@ -11,6 +11,7 @@ from rasa.constants import DEFAULT_DATA_PATH
 
 logger = logging.getLogger(__name__)
 
+
 # noinspection PyProtectedMember
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
@@ -214,12 +215,12 @@ def deduplicate_story_names(args):
 
     # ToDo: Make this work with multiple story files
 
-    from rasa.importers.rasa import RasaFileImporter
-
-    loop = asyncio.get_event_loop()
-    file_importer = RasaFileImporter(
-        domain_path=args.domain, training_data_paths=args.data
-    )
+    # from rasa.importers.rasa import RasaFileImporter
+    #
+    # loop = asyncio.get_event_loop()
+    # file_importer = RasaFileImporter(
+    #     domain_path=args.domain, training_data_paths=args.data
+    # )
 
     import shutil
 
