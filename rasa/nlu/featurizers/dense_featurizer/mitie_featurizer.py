@@ -1,6 +1,6 @@
 import numpy as np
 import typing
-from typing import Any, List, Text
+from typing import Any, List, Text, Dict
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurzier import Featurizer
@@ -28,6 +28,19 @@ class MitieFeaturizer(Featurizer):
     requires = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES] + [
         "mitie_feature_extractor"
     ]
+
+    defaults = {
+        # if True return a sequence of features (return vector has size
+        # token-size x feature-dimension)
+        # if False token-size will be equal to 1
+        "return_sequence": False
+    }
+
+    def __init__(self, component_config: Dict[Text, Any] = None):
+
+        super().__init__(component_config)
+
+        self.return_sequence = component_config["return_sequence"]
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -99,7 +112,16 @@ class MitieFeaturizer(Featurizer):
         feature_extractor: "mitie.total_word_feature_extractor",
     ) -> np.ndarray:
 
-        vec = []
+        if self.return_sequence:
+            vec = []
+            for token in tokens:
+                vec.append(feature_extractor.get_feature_vector(token.text))
+            return np.array(vec)
+
+        vec = np.zeros(self.ndim(feature_extractor))
         for token in tokens:
-            vec.append(feature_extractor.get_feature_vector(token.text))
-        return np.array(vec)
+            vec += feature_extractor.get_feature_vector(token.text)
+        if tokens:
+            return vec / len(tokens)
+        else:
+            return vec

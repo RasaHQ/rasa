@@ -1,6 +1,6 @@
 import numpy as np
 import typing
-from typing import Any, Optional
+from typing import Any, Optional, Dict, Text
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurzier import Featurizer
@@ -31,9 +31,24 @@ class SpacyFeaturizer(Featurizer):
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ] + [MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES]
 
+    defaults = {
+        # if True return a sequence of features (return vector has size
+        # token-size x feature-dimension)
+        # if False token-size will be equal to 1
+        "return_sequence": False
+    }
+
+    def __init__(self, component_config: Dict[Text, Any] = None):
+
+        super().__init__(component_config)
+
+        self.return_sequence = component_config["return_sequence"]
+
     def _features_for_doc(self, doc: "Doc") -> np.ndarray:
-        """Feature vector for a single document / sentence."""
-        return np.array([t.vector for t in doc])
+        """Feature vector for a single document / sentence / tokens."""
+        if self.return_sequence:
+            return np.array([t.vector for t in doc])
+        return np.array([doc.vector])
 
     def train(
         self,

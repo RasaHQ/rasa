@@ -21,7 +21,9 @@ def test_count_vector_featurizer(sentence, expected):
         CountVectorsFeaturizer,
     )
 
-    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    ftr = CountVectorsFeaturizer(
+        {"token_pattern": r"(?u)\b\w+\b", "return_sequence": True}
+    )
     train_message = Message(sentence)
     # this is needed for a valid training example
     train_message.set("intent", "bla")
@@ -53,7 +55,9 @@ def test_count_vector_featurizer_attribute_featurization(
         CountVectorsFeaturizer,
     )
 
-    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    ftr = CountVectorsFeaturizer(
+        {"token_pattern": r"(?u)\b\w+\b", "return_sequence": True}
+    )
     train_message = Message(sentence)
 
     # this is needed for a valid training example
@@ -101,7 +105,11 @@ def test_count_vector_featurizer_shared_vocab(
     )
 
     ftr = CountVectorsFeaturizer(
-        {"token_pattern": r"(?u)\b\w+\b", "use_shared_vocab": True}
+        {
+            "token_pattern": r"(?u)\b\w+\b",
+            "use_shared_vocab": True,
+            "return_sequence": True,
+        }
     )
     train_message = Message(sentence)
 
@@ -138,7 +146,11 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
     )
 
     ftr = CountVectorsFeaturizer(
-        {"token_pattern": r"(?u)\b\w+\b", "OOV_token": "__oov__"}
+        {
+            "token_pattern": r"(?u)\b\w+\b",
+            "OOV_token": "__oov__",
+            "return_sequence": True,
+        }
     )
     train_message = Message(sentence)
     # this is needed for a valid training example
@@ -171,6 +183,7 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
             "token_pattern": r"(?u)\b\w+\b",
             "OOV_token": "__oov__",
             "OOV_words": ["oov_word0", "OOV_word1"],
+            "return_sequence": True,
         }
     )
     train_message = Message(sentence)
@@ -202,7 +215,9 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
         CountVectorsFeaturizer,
     )
 
-    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    ftr = CountVectorsFeaturizer(
+        {"token_pattern": r"(?u)\b\w+\b", "return_sequence": True}
+    )
 
     # using empty string instead of real text string to make sure
     # count vector only can come from `tokens` feature.
@@ -239,7 +254,9 @@ def test_count_vector_featurizer_char(sentence, expected):
         CountVectorsFeaturizer,
     )
 
-    ftr = CountVectorsFeaturizer({"min_ngram": 1, "max_ngram": 2, "analyzer": "char"})
+    ftr = CountVectorsFeaturizer(
+        {"min_ngram": 1, "max_ngram": 2, "analyzer": "char", "return_sequence": True}
+    )
     train_message = Message(sentence)
     # this is needed for a valid training example
     train_message.set("intent", "bla")
@@ -269,6 +286,7 @@ def test_count_vector_featurizer_persist_load(tmpdir):
         "max_ngram": 3,
         "max_features": 10,
         "lowercase": False,
+        "return_sequence": True,
     }
     train_ftr = CountVectorsFeaturizer(config)
 

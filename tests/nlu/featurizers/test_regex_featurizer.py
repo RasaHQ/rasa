@@ -55,7 +55,7 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
         {"pattern": "[0-1]+", "name": "binary", "usage": "intent"},
     ]
-    ftr = RegexFeaturizer(known_patterns=patterns)
+    ftr = RegexFeaturizer({"return_sequence": True}, known_patterns=patterns)
 
     # adds tokens to the message
     tokenizer = SpacyTokenizer({"use_cls_token": False})
@@ -104,7 +104,7 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
         },
         {"name": "plates", "elements": "data/test/lookup_tables/plates.txt"},
     ]
-    ftr = RegexFeaturizer(lookup_tables=lookups)
+    ftr = RegexFeaturizer({"return_sequence": True}, lookup_tables=lookups)
 
     # adds tokens to the message
     component_config = {"name": "SpacyTokenizer", "use_cls_token": False}

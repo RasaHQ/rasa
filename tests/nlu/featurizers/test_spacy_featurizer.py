@@ -11,7 +11,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 def test_spacy_featurizer(sentence, spacy_nlp):
     from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 
-    ftr = SpacyFeaturizer.create({}, RasaNLUModelConfig())
+    ftr = SpacyFeaturizer.create({"return_sequence": True}, RasaNLUModelConfig())
 
     doc = spacy_nlp(sentence)
     vecs = ftr._features_for_doc(doc)
@@ -49,7 +49,7 @@ def test_spacy_intent_featurizer(spacy_nlp_component):
 
     td = training_data.load_data("data/examples/rasa/demo-rasa.json")
     spacy_nlp_component.train(td, config=None)
-    spacy_featurizer = SpacyFeaturizer()
+    spacy_featurizer = SpacyFeaturizer({"return_sequence": True})
     spacy_featurizer.train(td, config=None)
 
     intent_features_exist = np.array(
@@ -73,7 +73,7 @@ def test_spacy_ner_featurizer(sentence, expected, spacy_nlp):
     doc = spacy_nlp(sentence)
     token_vectors = [t.vector for t in doc]
 
-    spacy_config = {}
+    spacy_config = {"return_sequence": True}
     ftr = SpacyFeaturizer.create(spacy_config, RasaNLUModelConfig())
 
     greet = {"intent": "greet", "text_features": [0.5]}
@@ -97,7 +97,7 @@ def test_spacy_featurizer_casing(spacy_nlp):
     # retrieves vectors. For compressed spacy models (e.g. models
     # ending in _sm) this test will most likely fail.
 
-    ftr = SpacyFeaturizer.create({}, RasaNLUModelConfig())
+    ftr = SpacyFeaturizer.create({"return_sequence": True}, RasaNLUModelConfig())
 
     td = training_data.load_data("data/examples/rasa/demo-rasa.json")
     for e in td.intent_examples:

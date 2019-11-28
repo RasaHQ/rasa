@@ -7,7 +7,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 def test_mitie_featurizer(mitie_feature_extractor, default_config):
     from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizer
 
-    mitie_component_config = {"name": "MitieFeaturizer"}
+    mitie_component_config = {"name": "MitieFeaturizer", "return_sequence": True}
     ftr = MitieFeaturizer.create(mitie_component_config, RasaNLUModelConfig())
 
     sentence = "Hey how are you today"
