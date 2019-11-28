@@ -1,4 +1,5 @@
 import logging
+import warnings
 import os
 import typing
 from typing import Any, Dict, List, Optional, Text
@@ -104,17 +105,17 @@ class MitieEntityExtractor(EntityExtractor):
                 # if the token is not aligned an exception will be raised
                 start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
             except ValueError as e:
-                logger.warning("Example skipped: {}".format(str(e)))
+                warnings.warn(f"Example skipped: {e}")
                 continue
             try:
                 # mitie will raise an exception on malicious
                 # input - e.g. on overlapping entities
                 sample.add_entity(list(range(start, end)), ent["entity"])
             except Exception as e:
-                logger.warning(
+                warnings.warn(
                     "Failed to add entity example "
-                    "'{}' of sentence '{}'. Reason: "
-                    "{}".format(str(e), str(text), e)
+                    f"'{str(e)}' of sentence '{str(text)}'. Reason: "
+                    f"{e}"
                 )
                 continue
         return sample

@@ -42,8 +42,8 @@ SessionDataType = Dict[Text, List[np.ndarray]]
 
 # namedtuple for training metrics
 class TrainingMetrics(NamedTuple):
-    loss: Dict[Text, tf.Tensor]
-    score: Dict[Text, tf.Tensor]
+    loss: Dict[Text, Union[tf.Tensor, float]]
+    score: Dict[Text, Union[tf.Tensor, float]]
 
 
 def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto]:
@@ -146,8 +146,6 @@ def check_train_test_sizes(
 def convert_train_test_split(
     output_values: List[Any], session_data: SessionDataType, solo_values: List[Any]
 ):
-    keys = [k for k in session_data.keys()]
-
     session_data_train = defaultdict(list)
     session_data_val = defaultdict(list)
 
@@ -155,14 +153,20 @@ def convert_train_test_split(
     # order is kept, e.g. same order as session data keys
 
     # train datasets have an even index
-    for i in range(len(session_data)):
-        session_data_train[keys[i]].append(
-            combine_features(output_values[i * 2], solo_values[i])
-        )
+    index = 0
+    for key, values in session_data.items():
+        for _ in range(len(values)):
+            session_data_train[key].append(
+                combine_features(output_values[index * 2], solo_values[index])
+            )
+            index += 1
 
     # val datasets have an odd index
-    for i in range(len(session_data)):
-        session_data_val[keys[i]].append(output_values[(i * 2) + 1])
+    index = 0
+    for key, values in session_data.items():
+        for _ in range(len(values)):
+            session_data_val[key].append(output_values[(index * 2) + 1])
+            index += 1
 
     return session_data_train, session_data_val
 
@@ -553,6 +557,7 @@ def tf_dense_layer_for_sparse(
     C2: float,
     activation: Optional[Callable] = tf.nn.relu,
     use_bias: bool = True,
+    input_dim: Optional[int] = None,
 ) -> tf.Tensor:
     """Dense layer for sparse input tensor"""
 
@@ -561,18 +566,17 @@ def tf_dense_layer_for_sparse(
 
     with tf.variable_scope("dense_layer_for_sparse_" + name, reuse=tf.AUTO_REUSE):
         kernel_regularizer = tf.contrib.layers.l2_regularizer(C2)
+        input_dim = input_dim or int(inputs.shape[-1])
         kernel = tf.get_variable(
             "kernel",
-            shape=[inputs.shape[-1], units],
+            shape=[input_dim, units],
             dtype=inputs.dtype,
             regularizer=kernel_regularizer,
         )
         bias = tf.get_variable("bias", shape=[units], dtype=inputs.dtype)
 
         # outputs will be 2D
-        outputs = tf.sparse.matmul(
-            tf.sparse.reshape(inputs, [-1, int(inputs.shape[-1])]), kernel
-        )
+        outputs = tf.sparse.matmul(tf.sparse.reshape(inputs, [-1, input_dim]), kernel)
 
         if len(inputs.shape) == 3:
             # reshape back
@@ -880,7 +884,9 @@ def sample_negatives(
         _tf_make_flat(a_embed), _tf_make_flat(b_raw), b_raw, num_neg
     )
 
-    neg_bot_embed, bot_bad_negs = _tf_get_negs(all_b_embed, all_b_raw, b_raw, num_neg)
+    neg_bot_embed, bot_bad_negs = _tf_get_negs(
+        _tf_make_flat(all_b_embed), _tf_make_flat(all_b_raw), b_raw, num_neg
+    )
     return (
         tf.expand_dims(a_embed, -2),
         tf.expand_dims(b_embed, -2),
@@ -1035,12 +1041,8 @@ def tf_loss_softmax(
 
     if scale_loss:
         # mask loss by prediction confidence
-        pred = tf.nn.softmax(logits)
-        if len(pred.shape) == 3:
-            pos_pred = pred[:, :, 0]
-        else:  # len(pred.shape) == 2
-            pos_pred = pred[:, 0]
-        mask *= tf.pow((1 - pos_pred) / 0.5, 4)
+        pos_pred = tf.nn.softmax(logits)[..., 0]
+        mask *= tf.pow(tf.minimum(0.5, 1 - pos_pred) / 0.5, 4)
 
     loss = tf.losses.softmax_cross_entropy(labels, logits, mask)
     # add regularization losses
@@ -1233,6 +1235,7 @@ def train_tf_dataset(
     batch_size: Union[List[int], int],
     evaluate_on_num_examples: int,
     evaluate_every_num_epochs: int,
+    output_file: Optional[Text] = None,
 ) -> None:
     """Train tf graph"""
 
@@ -1295,6 +1298,8 @@ def train_tf_dataset(
 
         pbar.set_postfix(postfix_dict)
 
+        _write_training_metrics(output_file, ep, train_metrics, val_metrics)
+
     logger.info("Finished training.")
 
 
@@ -1306,6 +1311,38 @@ def _update_postfix_dict(
     for name, value in metrics.score.items():
         postfix_dict[f"{prefix}{name}"] = f"{value:.3f}"
     return postfix_dict
+
+
+def _write_training_metrics(
+    output_file: Text,
+    epoch: int,
+    train_metrics: TrainingMetrics,
+    val_metrics: TrainingMetrics,
+):
+    if output_file:
+        import datetime
+
+        # output log file
+        with open(output_file, "a") as f:
+            # make headers on first epoch
+            if epoch == 0:
+                f.write(f"EPOCH\tTIMESTAMP")
+                [f.write(f"\t{key.upper()}") for key in train_metrics.loss.keys()]
+                [f.write(f"\t{key.upper()}") for key in train_metrics.score.keys()]
+                [f.write(f"\tVAL_{key.upper()}") for key in train_metrics.loss.keys()]
+                [f.write(f"\tVAL_{key.upper()}") for key in train_metrics.score.keys()]
+
+            f.write(f"\n{epoch}\t{datetime.datetime.now():%H:%M:%S}")
+            [f.write(f"\t{val:.3f}") for val in train_metrics.loss.values()]
+            [f.write(f"\t{val:.3f}") for val in train_metrics.score.values()]
+            [
+                f.write(f"\t{val:.3f}") if val else f.write("\t0.0")
+                for val in val_metrics.loss.values()
+            ]
+            [
+                f.write(f"\t{val:.3f}") if val else f.write("\t0.0")
+                for val in val_metrics.score.values()
+            ]
 
 
 def extract_attention(attention_weights) -> Optional["tf.Tensor"]:

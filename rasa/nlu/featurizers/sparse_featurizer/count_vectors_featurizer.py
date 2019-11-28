@@ -1,4 +1,5 @@
 import logging
+import warnings
 import os
 import re
 import scipy.sparse
@@ -290,11 +291,13 @@ class CountVectorsFeaturizer(Featurizer):
                     ):
                         return
 
-            logger.warning(
-                f"OOV_token='{self.OOV_token}' was given, but it is not present "
-                f"in the training data. All unseen words will be ignored during "
-                f"prediction."
-            )
+            if any(text for tokens in all_tokens for text in tokens):
+                # if there is some text in tokens, warn if there is no oov token
+                logger.warning(
+                    f"OOV_token='{self.OOV_token}' was given, but it is not present "
+                    "in the training data. All unseen words "
+                    "will be ignored during prediction."
+                )
 
     def _get_all_attributes_processed_tokens(
         self, training_data: "TrainingData"

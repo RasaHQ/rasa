@@ -5,9 +5,12 @@ Hence, it imports all of the components. To avoid cycles, no component should
 import this in module scope."""
 
 import logging
+import warnings
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
+from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConvertFeaturizer
+from rasa.nlu.tokenizers.convert_tokenizer import ConvertTokenizer
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
@@ -22,14 +25,19 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
 from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizer
-from rasa.nlu.featurizers.sparse_featurizer.ngram_featurizer import NGramFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
+
+from rasa.nlu.featurizers.dense_featurizer.pretrained_lm_featurizer import (
+    PreTrainedLMFeaturizer,
+)
+
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.tokenizers.pretrained_lm_tokenizer import PreTrainedLMTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.utils.common import class_from_module_path
@@ -53,6 +61,8 @@ component_classes = [
     SpacyTokenizer,
     WhitespaceTokenizer,
     JiebaTokenizer,
+    PreTrainedLMTokenizer,
+    ConvertTokenizer,
     # extractors
     SpacyEntityExtractor,
     MitieEntityExtractor,
@@ -64,6 +74,8 @@ component_classes = [
     MitieFeaturizer,
     RegexFeaturizer,
     CountVectorsFeaturizer,
+    PreTrainedLMFeaturizer,
+    ConvertFeaturizer,
     # classifiers
     SklearnIntentClassifier,
     MitieIntentClassifier,
@@ -128,6 +140,11 @@ registered_pipeline_templates = {
         },
         {"name": "EmbeddingIntentClassifier"},
     ],
+    "pretrained_embeddings_convert": [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "ConveRTFeaturizer"},
+        {"name": "EmbeddingIntentClassifier"},
+    ],
 }
 
 
@@ -176,11 +193,12 @@ def get_component_class(component_name: Text) -> Type["Component"]:
                 raise ModuleNotFoundError(exception_message)
         else:
             # DEPRECATED ensures compatibility, remove in future versions
-            logger.warning(
-                "DEPRECATION warning: your nlu config file "
-                "contains old style component name `{}`, "
-                "you should change it to its class name: `{}`."
-                "".format(component_name, old_style_names[component_name])
+            warnings.warn(
+                "Your nlu config file "
+                f"contains old style component name `{component_name}`, "
+                f"you should change it to its class name: "
+                f"`{old_style_names[component_name]}`.",
+                DeprecationWarning,
             )
             component_name = old_style_names[component_name]
 

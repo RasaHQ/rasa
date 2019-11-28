@@ -1,4 +1,5 @@
 import importlib
+import warnings
 import json
 import logging
 import os
@@ -106,14 +107,12 @@ class PolicyEnsemble:
 
         for k, v in priority_dict.items():
             if len(v) > 1:
-                logger.warning(
-                    (
-                        "Found policies {} with same priority {} "
-                        "in PolicyEnsemble. When personalizing "
-                        "priorities, be sure to give all policies "
-                        "different priorities. More information: "
-                        "{}/core/policies/"
-                    ).format(v, k, DOCS_BASE_URL)
+                warnings.warn(
+                    f"Found policies {v} with same priority {k} "
+                    "in PolicyEnsemble. When personalizing "
+                    "priorities, be sure to give all policies "
+                    "different priorities. More information: "
+                    f"{DOCS_BASE_URL}/core/policies/"
                 )
 
     def train(

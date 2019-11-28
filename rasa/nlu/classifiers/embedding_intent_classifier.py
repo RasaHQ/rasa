@@ -1,16 +1,20 @@
 import logging
-from collections import defaultdict
 
 import numpy as np
 import os
 import pickle
 import scipy.sparse
 import typing
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import warnings
 
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from shutil import copyfile
+
+from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from tf_metrics import f1
 
+import rasa.utils.io as io_utils
+from rasa.utils.plotter import Plotter
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -38,6 +42,9 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
     from rasa.nlu.model import Metadata
     from rasa.nlu.training_data import Message
+
+
+MESSAGE_BILOU_ENTITIES_ATTRIBUTE = "BILOU_entities"
 
 
 class EmbeddingIntentClassifier(EntityExtractor):
@@ -97,6 +104,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
         "epochs": 300,
         # set random seed to any int to get reproducible results
         "random_seed": None,
+        # optimizer
+        "optimizer": "Adam",  # can be either 'Adam' (default) or 'Nadam'
+        "learning_rate": 0.001,
+        "normalize_loss": False,
         # embedding parameters
         # default dense dimension used if no dense features are present
         "dense_dim": 512,
@@ -139,7 +150,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
         "named_entity_recognition": True,
         # number of entity tags
         "num_tags": None,
-        "var_layers": []  # ["pre", "cls", "crf"]
+        "var_layers": [],  # ["pre", "cls", "crf"]
+        "masked_lm_loss": False,
+        "sparse_input_dropout": False,
+        "bilou_flag": False,
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -158,7 +172,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
                     f"Your config still mentions '{removed_param}'. Tokenization may "
                     f"fail if you specify the parameter here. Please specify the "
                     f"parameter 'intent_tokenization_flag' and 'intent_split_symbol' "
-                    f"in the tokenizer of your NLU pipeline."
+                    f"in the tokenizer of your NLU pipeline.",
+                    DeprecationWarning,
                 )
 
     # init helpers
@@ -181,6 +196,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.batch_in_size = config["batch_size"]
         self.batch_in_strategy = config["batch_strategy"]
 
+        self.optimizer = config["optimizer"]
+        self.normalize_loss = config["normalize_loss"]
+        self.learning_rate = config["learning_rate"]
         self.epochs = config["epochs"]
 
         self.random_seed = self.component_config["random_seed"]
@@ -234,8 +252,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.named_entity_recognition = self.component_config[
             "named_entity_recognition"
         ]
+
         self.num_tags = self.component_config["num_tags"]
         self.var_layers = self.component_config["var_layers"]
+
+        self.masked_lm_loss = self.component_config["masked_lm_loss"]
+        self.sparse_input_dropout = self.component_config["sparse_input_dropout"]
+        self.bilou_flag = self.component_config["bilou_flag"]
 
     # package safety checks
     @classmethod
@@ -293,12 +316,18 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self._iterator = None
         self._train_op = None
         self._is_training = None
+        self._in_layer_norm = {}
+
+        # number of entity tags
+        self.num_tags = 0
 
         self.pre_embed_layer = None
         self.cls_embed_layer = None
         self.crf_embed_layer = None
 
         self.attention_weights = attention_weights
+
+        self.training_log_file = io_utils.create_temporary_file("")
 
     # training data helpers:
     @staticmethod
@@ -316,21 +345,43 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     @staticmethod
     def _create_tag_id_dict(
-        training_data: "TrainingData", attribute: Text
+        training_data: "TrainingData", bilou_flag: bool
     ) -> Dict[Text, int]:
         """Create label_id dictionary"""
+
+        if bilou_flag:
+            bilou_prefix = ["B-", "I-", "L-", "U-"]
+            distinct_tag_ids = set(
+                [
+                    e[2:]
+                    for example in training_data.training_examples
+                    if example.get(MESSAGE_BILOU_ENTITIES_ATTRIBUTE)
+                    for e in example.get(MESSAGE_BILOU_ENTITIES_ATTRIBUTE)
+                ]
+            ) - {""}
+
+            tag_id_dict = {
+                f"{prefix}{tag_id}": idx_1 * len(bilou_prefix) + idx_2
+                for idx_1, tag_id in enumerate(sorted(distinct_tag_ids))
+                for idx_2, prefix in enumerate(bilou_prefix)
+            }
+            tag_id_dict["O"] = len(distinct_tag_ids) * len(bilou_prefix)
+
+            return tag_id_dict
 
         distinct_tag_ids = set(
             [
                 e["entity"]
                 for example in training_data.entity_examples
-                for e in example.get(attribute)
+                for e in example.get(MESSAGE_ENTITIES_ATTRIBUTE)
             ]
         ) - {None}
+
         tag_id_dict = {
             tag_id: idx for idx, tag_id in enumerate(sorted(distinct_tag_ids), 1)
         }
         tag_id_dict["O"] = 0
+
         return tag_id_dict
 
     @staticmethod
@@ -566,12 +617,26 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 label_ids.append(label_id_dict[e.get(label_attribute)])
 
             if self.named_entity_recognition and tag_id_dict:
-                _tags = []
-                for t in e.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]):
-                    _tag = determine_token_labels(
-                        t, e.get(MESSAGE_ENTITIES_ATTRIBUTE), None
-                    )
-                    _tags.append(tag_id_dict[_tag])
+                if self.bilou_flag:
+                    if e.get(MESSAGE_BILOU_ENTITIES_ATTRIBUTE):
+                        _tags = [
+                            tag_id_dict[_tag]
+                            if _tag in tag_id_dict
+                            else tag_id_dict["O"]
+                            for _tag in e.get(MESSAGE_BILOU_ENTITIES_ATTRIBUTE)
+                        ]
+                    else:
+                        _tags = [
+                            tag_id_dict["O"]
+                            for _ in e.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+                        ]
+                else:
+                    _tags = []
+                    for t in e.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]):
+                        _tag = determine_token_labels(
+                            t, e.get(MESSAGE_ENTITIES_ATTRIBUTE), None
+                        )
+                        _tags.append(tag_id_dict[_tag])
                 # transpose to have seq_len x 1
                 tag_ids.append(np.array([_tags]).T)
 
@@ -585,19 +650,21 @@ class EmbeddingIntentClassifier(EntityExtractor):
         session_data = {}
         self._add_to_session_data(session_data, "text_features", [X_sparse, X_dense])
         self._add_to_session_data(session_data, "intent_features", [Y_sparse, Y_dense])
+        if label_attribute and (
+            "intent_features" not in session_data or not session_data["intent_features"]
+        ):
+            # no label features are present, get default features from _label_data
+            session_data["intent_features"] = self.use_default_label_features(label_ids)
+
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         self._add_to_session_data(
             session_data, "intent_ids", [np.expand_dims(label_ids, -1)]
         )
         self._add_to_session_data(session_data, "tag_ids", [tag_ids])
-        self._add_mask_to_session_data(session_data, "text_mask", "text_features")
 
-        if label_attribute and (
-            "intent_features" not in session_data or not session_data["intent_features"]
-        ):
-            # no label features are present, get default features from _label_data
-            session_data["intent_features"] = self.use_default_label_features(label_ids)
+        self._add_mask_to_session_data(session_data, "text_mask", "text_features")
+        self._add_mask_to_session_data(session_data, "intent_mask", "intent_features")
 
         return session_data
 
@@ -624,7 +691,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
     def combine_sparse_dense_features(
-        self, features: List[Union["tf.Tensor", "tf.SparseTensor"]], name: Text
+        self,
+        features: List[Union["tf.Tensor", "tf.SparseTensor"]],
+        mask: "tf.Tensor",
+        name: Text,
+        sparse_dropout: bool = False,
     ) -> "tf.Tensor":
 
         dense_features = []
@@ -638,15 +709,67 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         for f in features:
             if isinstance(f, tf.SparseTensor):
+                if sparse_dropout:
+                    to_retain_prob = tf.random.uniform(
+                        tf.shape(f.values), 0, 1, f.values.dtype
+                    )
+                    to_retain = tf.greater_equal(to_retain_prob, self.droprate)
+                    _f = tf.sparse.retain(f, to_retain)
+                    _f = tf.cond(self._is_training, lambda: _f, lambda: f)
+                else:
+                    _f = f
+
                 dense_features.append(
-                    train_utils.tf_dense_layer_for_sparse(f, dense_dim, name, self.C2)
+                    train_utils.tf_dense_layer_for_sparse(
+                        _f, dense_dim, name, self.C2, input_dim=int(f.shape[-1])
+                    )
                 )
             else:
                 dense_features.append(f)
 
-        return tf.concat(dense_features, axis=-1)
+        # if self._in_layer_norm.get(name) is None:
+        #     self._in_layer_norm[name] = tf.keras.layers.LayerNormalization(name=name)
+        # return self._in_layer_norm[name](tf.concat(dense_features, axis=-1))
 
-    def _create_tf_sequence(self, a_in, mask) -> "tf.Tensor":
+        return tf.concat(dense_features, axis=-1) * mask
+
+    def _mask_input(
+        self, a: "tf.Tensor", mask: "tf.Tensor"
+    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+        """Randomly mask input sequences."""
+
+        # do not mask cls token
+        pad_mask_up_to_last = tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
+        mask_up_to_last = 1 - pad_mask_up_to_last
+
+        a_random_pad = (
+            tf.random.uniform(tf.shape(a), tf.reduce_min(a), tf.reduce_max(a), a.dtype)
+            * pad_mask_up_to_last
+        )
+        a_shuffle = tf.stop_gradient(
+            tf.random.shuffle(a * mask_up_to_last + a_random_pad)
+        )
+
+        mask_vector = tf.get_variable("mask_vector", (1, 1, a.shape[-1]), a.dtype)
+        a_mask = tf.tile(mask_vector, (tf.shape(a)[0], tf.shape(a)[1], 1))
+
+        other_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype)
+        other_prob = tf.tile(other_prob, (1, 1, a.shape[-1]))
+        a_other = tf.where(
+            other_prob < 0.70, a_mask, tf.where(other_prob < 0.80, a_shuffle, a)
+        )
+
+        lm_mask_prob = (
+            tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype) * mask_up_to_last
+        )
+        lm_mask_bool = tf.greater_equal(lm_mask_prob, 0.85)
+        a_pre = tf.where(tf.tile(lm_mask_bool, (1, 1, a.shape[-1])), a_other, a)
+
+        a_pre = tf.cond(self._is_training, lambda: a_pre, lambda: a)
+
+        return a_pre, lm_mask_bool
+
+    def _create_tf_sequence(self, a_in: "tf.Tensor", mask: "tf.Tensor") -> "tf.Tensor":
         """Create sequence level embedding and mask."""
 
         a_in = train_utils.create_tf_fnn(
@@ -691,34 +814,88 @@ class EmbeddingIntentClassifier(EntityExtractor):
         batch_data, _ = train_utils.batch_to_session_data(self.batch_in, session_data)
         label_data, _ = train_utils.batch_to_session_data(label_batch, self._label_data)
 
-        a = self.combine_sparse_dense_features(batch_data["text_features"], "text")
         mask = batch_data["text_mask"][0]
+        a = self.combine_sparse_dense_features(
+            batch_data["text_features"],
+            mask,
+            "text",
+            sparse_dropout=self.sparse_input_dropout,
+        )
+
+        if self.masked_lm_loss:
+            a_pre, lm_mask_bool = self._mask_input(a, mask)
+        else:
+            a_pre, lm_mask_bool = (a, None)
 
         # transformer
-        a = self._create_tf_sequence(a, mask)
+        a_transformed = self._create_tf_sequence(a_pre, mask)
 
         metrics = TrainingMetrics(loss={}, score={})
 
+        if self.masked_lm_loss:
+            loss, acc = self._train_mask_graph(a_transformed, a, lm_mask_bool)
+
+            metrics.loss["m_loss"] = loss
+            metrics.score["m_acc"] = acc
+
         if self.intent_classification:
             b = self.combine_sparse_dense_features(
-                batch_data["intent_features"], "intent"
+                batch_data["intent_features"], batch_data["intent_mask"][0], "intent"
             )
             all_bs = self.combine_sparse_dense_features(
-                label_data["intent_features"], "intent"
+                label_data["intent_features"], label_data["intent_mask"][0], "intent"
             )
 
-            loss, acc = self._train_intent_graph(a, b, all_bs, mask)
+            loss, acc = self._train_intent_graph(a_transformed, b, all_bs, mask)
             metrics.loss["i_loss"] = loss
             metrics.score["i_acc"] = acc
 
         if self.named_entity_recognition:
-            c = self.combine_sparse_dense_features(batch_data["tag_ids"], "tag")
+            c = self.combine_sparse_dense_features(batch_data["tag_ids"], mask, "tag")
 
-            loss, f1_score = self._train_entity_graph(a, c, mask)
+            loss, f1_score = self._train_entity_graph(a_transformed, c, mask)
             metrics.loss["e_loss"] = loss
             metrics.score["e_f1"] = f1_score
 
         return metrics
+
+    def _train_mask_graph(self, a_transformed, a, lm_mask_bool):
+
+        # make sure there is at least one element in the mask
+        lm_mask_bool = tf.cond(
+            tf.reduce_any(lm_mask_bool),
+            lambda: lm_mask_bool,
+            lambda: tf.scatter_nd([[0, 0, 0]], [True], tf.shape(lm_mask_bool)),
+        )
+
+        lm_mask_bool = tf.squeeze(lm_mask_bool, -1)
+        a_t_masked = tf.boolean_mask(a_transformed, lm_mask_bool)
+        a_masked = tf.boolean_mask(a, lm_mask_bool)
+
+        a_t_masked_embed = train_utils.create_tf_embed(
+            a_t_masked, self.embed_dim, self.C2, "a_transformed", self.similarity_type
+        )
+
+        a_embed = train_utils.create_tf_embed(
+            a, self.embed_dim, self.C2, "a", self.similarity_type
+        )
+        a_embed_masked = tf.boolean_mask(a_embed, lm_mask_bool)
+
+        return train_utils.calculate_loss_acc(
+            a_t_masked_embed,
+            a_embed_masked,
+            a_masked,
+            a_embed,
+            a,
+            self.num_neg,
+            None,
+            self.loss_type,
+            self.mu_pos,
+            self.mu_neg,
+            self.use_max_sim_neg,
+            self.C_emb,
+            self.scale_loss,
+        )
 
     def _train_entity_graph(
         self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor"
@@ -839,15 +1016,17 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.batch_in, session_data
         )
 
-        a = self.combine_sparse_dense_features(batch_data["text_features"], "text")
         mask = batch_data["text_mask"][0]
+        a = self.combine_sparse_dense_features(
+            batch_data["text_features"], mask, "text"
+        )
 
         # transformer
         a = self._create_tf_sequence(a, mask)
 
         if self.intent_classification:
             b = self.combine_sparse_dense_features(
-                batch_data["intent_features"], "intent"
+                batch_data["intent_features"], batch_data["intent_mask"][0], "intent"
             )
             self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
 
@@ -905,6 +1084,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         Performs sanity checks on training data, extracts encodings for labels.
         """
+        if self.bilou_flag:
+            self.apply_bilou_schema(training_data)
 
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=MESSAGE_INTENT_ATTRIBUTE
@@ -915,9 +1096,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             training_data, label_id_dict, attribute=MESSAGE_INTENT_ATTRIBUTE
         )
 
-        tag_id_dict = self._create_tag_id_dict(
-            training_data, attribute=MESSAGE_ENTITIES_ATTRIBUTE
-        )
+        tag_id_dict = self._create_tag_id_dict(training_data, self.bilou_flag)
         self.inverted_tag_dict = {v: k for k, v in tag_id_dict.items()}
 
         session_data = self._create_session_data(
@@ -932,6 +1111,23 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.check_input_dimension_consistency(session_data)
 
         return session_data
+
+    def apply_bilou_schema(self, training_data: "TrainingData"):
+        if not self.named_entity_recognition:
+            return
+
+        for example in training_data.training_examples:
+            entities = example.get(MESSAGE_ENTITIES_ATTRIBUTE)
+
+            if not entities:
+                continue
+
+            entities = CRFEntityExtractor._convert_example(example)
+            output = CRFEntityExtractor._bilou_tags_from_offsets(
+                example.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]), entities
+            )
+
+            example.set(MESSAGE_BILOU_ENTITIES_ATTRIBUTE, output)
 
     # process helpers
     def predict_label(
@@ -1056,6 +1252,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         tags = [self.inverted_tag_dict[p] for p in predictions[0]]
 
+        if self.bilou_flag:
+            tags = [t[2:] if t[:2] in ["B-", "I-", "U-", "L-"] else t for t in tags]
+
         entities = self._convert_tags_to_entities(
             message.text, message.get("tokens", []), tags
         )
@@ -1157,9 +1356,26 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
             metrics = self._build_tf_train_graph(session_data)
 
+            # calculate overall loss
+            if self.normalize_loss:
+                loss = tf.add_n(
+                    [
+                        _loss / (tf.stop_gradient(_loss) + 1e-8)
+                        for _loss in metrics.loss.values()
+                    ]
+                )
+            else:
+                loss = tf.add_n(list(metrics.loss.values()))
+
             # define which optimizer to use
-            loss = tf.add_n(list(metrics.loss.values()))
-            self._train_op = tf.train.AdamOptimizer().minimize(loss)
+            if self.optimizer.lower() == "nadam":
+                self._train_op = tf.contrib.opt.NadamOptimizer(
+                    learning_rate=self.learning_rate
+                ).minimize(loss)
+            else:
+                self._train_op = tf.train.AdamOptimizer(
+                    learning_rate=self.learning_rate
+                ).minimize(loss)
 
             # train tensorflow graph
             self.session = tf.Session(config=self._tf_config)
@@ -1176,6 +1392,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 self.batch_in_size,
                 self.evaluate_on_num_examples,
                 self.evaluate_every_num_epochs,
+                output_file=self.training_log_file,
             )
 
             # rebuild the graph for prediction
@@ -1209,6 +1426,12 @@ class EmbeddingIntentClassifier(EntityExtractor):
             return {"file": None}
 
         checkpoint = os.path.join(model_dir, file_name + ".ckpt")
+
+        # plot training curves
+        plotter = Plotter()
+        plotter.plot_training_curves(self.training_log_file, model_dir)
+        # copy trainig log file
+        copyfile(self.training_log_file, os.path.join(model_dir, "training-log.tsv"))
 
         try:
             os.makedirs(os.path.dirname(checkpoint))
@@ -1333,8 +1556,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
             )
 
         else:
-            logger.warning(
-                f"Failed to load nlu model. Maybe path {os.path.abspath(model_dir)} "
-                f"doesn't exist"
+            warnings.warn(
+                f"Failed to load nlu model. Maybe path '{os.path.abspath(model_dir)}' "
+                "doesn't exist."
             )
             return cls(component_config=meta)
