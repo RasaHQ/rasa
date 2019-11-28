@@ -123,17 +123,17 @@ def _get_model_endpoint(
 
     model_endpoint = model_endpoint or EndpointConfig()
 
-    # Checking if endpoint.yml has existing url and wait time values set, if so give
+    # Checking if endpoint.yml has existing url, if so give
     # warning we are overwriting the endpoint.yml file.
-    custom_wait_time_pulls = model_endpoint.kwargs.get("wait_time_between_pulls")
     custom_url = model_endpoint.url
 
     if custom_url and custom_url != default_rasax_model_server_url:
-        warnings.warn(
+        logger.info(
             f"Ignoring url '{custom_url}' from 'endpoints.yml' and using "
             f"'{default_rasax_model_server_url}' instead."
         )
 
+    custom_wait_time_pulls = model_endpoint.kwargs.get("wait_time_between_pulls")
     return EndpointConfig(
         default_rasax_model_server_url,
         token=rasa_x_token,
@@ -146,11 +146,11 @@ def _get_event_broker_endpoint(
 ) -> EndpointConfig:
     import questionary
 
-    default_event_broker = EndpointConfig(
+    default_event_broker_endpoint = EndpointConfig(
         type="sql", dialect="sqlite", db=DEFAULT_EVENTS_DB
     )
     if not event_broker_endpoint:
-        return default_event_broker
+        return default_event_broker_endpoint
     elif not _is_correct_event_broker(event_broker_endpoint):
         cli_utils.print_error(
             "Rasa X currently only supports a SQLite event broker with path '{}' "
@@ -158,14 +158,14 @@ def _get_event_broker_endpoint(
             "(https://rasa.com/docs/rasa-x/deploy/) if you want to use "
             "other event broker configurations.".format(DEFAULT_EVENTS_DB)
         )
-        overwrite_existing_event_broker = questionary.confirm(
+        continue_with_default_event_broker = questionary.confirm(
             "Do you want to continue with the default SQLite event broker?"
         ).ask()
 
-        if not overwrite_existing_event_broker:
+        if not continue_with_default_event_broker:
             exit(0)
 
-        return default_event_broker
+        return default_event_broker_endpoint
     else:
         return event_broker_endpoint
 
