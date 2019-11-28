@@ -1,5 +1,4 @@
 {% for section in sections %}{% set underline = "-" %}{% if section %}{{section}}{{ underline * section|length }}{% set underline = "~" %}
-
 {% endif %}{% if sections[section] %}{% for category, val in definitions.items() if category in sections[section] %}
 
 {{ definitions[category]['name'] }}
