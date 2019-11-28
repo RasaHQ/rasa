@@ -20,7 +20,8 @@ import questionary
 import rasa.cli.utils
 from questionary import Choice, Form, Question
 
-from rasa.cli import utils as cliutils
+from rasa import model
+from rasa.cli import utils as cli_utils
 from rasa.core import constants, run, train, utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa.core.channels.channel import UserMessage
@@ -169,9 +170,7 @@ async def retrieve_tracker(
 ) -> Dict[Text, Any]:
     """Retrieve a tracker from core."""
 
-    path = "/conversations/{}/tracker?include_events={}".format(
-        sender_id, verbosity.name
-    )
+    path = f"/conversations/{sender_id}/tracker?include_events={verbosity.name}"
     return await endpoint.request(
         method="get", subpath=path, headers={"Accept": "application/json"}
     )
@@ -197,25 +196,23 @@ async def send_action(
         if is_new_action:
             if action_name in NEW_TEMPLATES:
                 warning_questions = questionary.confirm(
-                    "WARNING: You have created a new action: '{}', "
-                    "with matching template: '{}'. "
-                    "This action will not return its message in this session, "
-                    "but the new utterance will be saved to your domain file "
-                    "when you exit and save this session. "
-                    "You do not need to do anything further. "
-                    "".format(action_name, [*NEW_TEMPLATES[action_name]][0])
+                    f"WARNING: You have created a new action: '{action_name}', "
+                    f"with matching template: '{[*NEW_TEMPLATES[action_name]][0]}'. "
+                    f"This action will not return its message in this session, "
+                    f"but the new utterance will be saved to your domain file "
+                    f"when you exit and save this session. "
+                    f"You do not need to do anything further."
                 )
                 await _ask_questions(warning_questions, sender_id, endpoint)
             else:
                 warning_questions = questionary.confirm(
-                    "WARNING: You have created a new action: '{}', "
-                    "which was not successfully executed. "
-                    "If this action does not return any events, "
-                    "you do not need to do anything. "
-                    "If this is a custom action which returns events, "
-                    "you are recommended to implement this action "
-                    "in your action server and try again."
-                    "".format(action_name)
+                    f"WARNING: You have created a new action: '{action_name}', "
+                    f"which was not successfully executed. "
+                    f"If this action does not return any events, "
+                    f"you do not need to do anything. "
+                    f"If this is a custom action which returns events, "
+                    f"you are recommended to implement this action "
+                    f"in your action server and try again."
                 )
                 await _ask_questions(warning_questions, sender_id, endpoint)
 
@@ -257,7 +254,7 @@ def format_bot_output(message: BotUttered) -> Text:
 
     if data.get("buttons"):
         output += "\nButtons:"
-        choices = cliutils.button_choices_from_message_data(
+        choices = cli_utils.button_choices_from_message_data(
             data, allow_free_text_input=True
         )
         for choice in choices:
@@ -266,13 +263,13 @@ def format_bot_output(message: BotUttered) -> Text:
     if data.get("elements"):
         output += "\nElements:"
         for idx, element in enumerate(data.get("elements")):
-            element_str = cliutils.element_to_string(element, idx)
+            element_str = cli_utils.element_to_string(element, idx)
             output += "\n" + element_str
 
     if data.get("quick_replies"):
         output += "\nQuick replies:"
         for idx, element in enumerate(data.get("quick_replies")):
-            element_str = cliutils.element_to_string(element, idx)
+            element_str = cli_utils.element_to_string(element, idx)
             output += "\n" + element_str
     return output
 
@@ -326,9 +323,7 @@ def _selection_choices_from_intent_prediction(
 
     choices = []
     for p in sorted_intents:
-        name_with_confidence = "{:03.2f} {:40}".format(
-            p.get("confidence"), p.get("name")
-        )
+        name_with_confidence = f'{p.get("confidence"):03.2f} {p.get("name"):40}'
         choice = {"name": name_with_confidence, "value": p.get("name")}
         choices.append(choice)
 
@@ -357,8 +352,7 @@ async def _request_free_text_utterance(
 
     question = questionary.text(
         message=(
-            "Please type the message for your new utterance "
-            "template '{}':".format(action)
+            f"Please type the message for your new utterance " f"template '{action}':"
         ),
         validate=io_utils.not_empty_validator("Please enter a template message"),
     )
@@ -449,15 +443,15 @@ async def _print_history(sender_id: Text, endpoint: EndpointConfig) -> None:
     events = tracker_dump.get("events", [])
 
     table = _chat_history_table(events)
-    slot_strs = _slot_history(tracker_dump)
+    slot_strings = _slot_history(tracker_dump)
 
     print("------")
     print("Chat History\n")
     print(table)
 
-    if slot_strs:
+    if slot_strings:
         print("\n")
-        print("Current slots: \n\t{}\n".format(", ".join(slot_strs)))
+        print(f"Current slots: \n\t{', '.join(slot_strings)}\n")
 
     print("------")
 
@@ -555,13 +549,13 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
 def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
     """Create an array of slot representations to be displayed."""
 
-    slot_strs = []
+    slot_strings = []
     for k, s in tracker_dump.get("slots", {}).items():
-        colored_value = cliutils.wrap_with_color(
+        colored_value = cli_utils.wrap_with_color(
             str(s), color=rasa.cli.utils.bcolors.WARNING
         )
-        slot_strs.append(f"{k}: {colored_value}")
-    return slot_strs
+        slot_strings.append(f"{k}: {colored_value}")
+    return slot_strings
 
 
 async def _write_data_to_file(sender_id: Text, endpoint: EndpointConfig):
@@ -623,7 +617,7 @@ async def _request_action_from_user(
 
     choices = [
         {
-            "name": "{:03.2f} {:40}".format(a.get("score"), a.get("action")),
+            "name": f'{a.get("score"):03.2f} {a.get("action"):40}',
             "value": a.get("action"),
         }
         for a in predictions
@@ -737,7 +731,7 @@ def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
     from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
     from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 
-    msgs = []
+    messages = []
 
     for event in events:
         if event.get("event") == UserUttered.type_name:
@@ -751,21 +745,21 @@ def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
                     MitieEntityExtractor.__name__,
                 ]
                 logger.debug(
-                    "Exclude entity marking of following extractors"
-                    " {} when writing nlu data "
-                    "to file.".format(excluded_extractors)
+                    f"Exclude entity marking of following extractors "
+                    f"{excluded_extractors} when writing nlu data "
+                    f"to file."
                 )
 
                 if entity.get("extractor") in excluded_extractors:
                     data["entities"].remove(entity)
 
             msg = Message.build(data["text"], data["intent"]["name"], data["entities"])
-            msgs.append(msg)
+            messages.append(msg)
 
-        elif event.get("event") == UserUtteranceReverted.type_name and msgs:
-            msgs.pop()  # user corrected the nlu, remove incorrect example
+        elif event.get("event") == UserUtteranceReverted.type_name and messages:
+            messages.pop()  # user corrected the nlu, remove incorrect example
 
-    return msgs
+    return messages
 
 
 def _collect_actions(events: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]:
@@ -827,7 +821,7 @@ async def _write_nlu_to_file(
         previous_examples = loading.load_data(export_nlu_path)
     except Exception as e:
         logger.debug(
-            "An exception occurred while trying to load the NLU data. {}".format(str(e))
+            f"An exception occurred while trying to load the NLU data. {str(e)}"
         )
         # No previous file exists, use empty training data as replacement.
         previous_examples = TrainingData()
@@ -942,7 +936,7 @@ async def _predict_till_next_listen(
             "buttons", None
         ):
             response = _get_button_choice(last_event)
-            if response != cliutils.FREE_TEXT_INPUT_PROMPT:
+            if response != cli_utils.FREE_TEXT_INPUT_PROMPT:
                 await send_message(endpoint, sender_id, response)
 
 
@@ -950,11 +944,11 @@ def _get_button_choice(last_event: Dict[Text, Any]) -> Text:
     data = last_event["data"]
     message = last_event.get("text", "")
 
-    choices = cliutils.button_choices_from_message_data(
+    choices = cli_utils.button_choices_from_message_data(
         data, allow_free_text_input=True
     )
     question = questionary.select(message, choices)
-    response = cliutils.payload_from_button_question(question)
+    response = cli_utils.payload_from_button_question(question)
     return response
 
 
@@ -1022,8 +1016,8 @@ async def _confirm_form_validation(action_name, tracker, endpoint, sender_id) ->
     requested_slot = tracker.get("slots", {}).get(REQUESTED_SLOT)
 
     validation_questions = questionary.confirm(
-        "Should '{}' validate user input to fill "
-        "the slot '{}'?".format(action_name, requested_slot)
+        f"Should '{action_name}' validate user input to fill "
+        f"the slot '{requested_slot}'?"
     )
     validate_input = await _ask_questions(validation_questions, sender_id, endpoint)
 
@@ -1141,13 +1135,13 @@ async def _validate_user_text(
     entities = parse_data.get("entities", [])
     if entities:
         message = (
-            "Is the intent '{}' correct for '{}' and are "
-            "all entities labeled correctly?".format(intent, text)
+            f"Is the intent '{intent}' correct for '{text}' and are "
+            f"all entities labeled correctly?"
         )
     else:
         message = (
-            "Your NLU model classified '{}' with intent '{}'"
-            " and there are no entities, is this correct?".format(text, intent)
+            f"Your NLU model classified '{text}' with intent '{intent}'"
+            f" and there are no entities, is this correct?"
         )
 
     if intent is None:
@@ -1351,17 +1345,16 @@ def _print_help(skip_visualization: bool) -> None:
         visualization_url = DEFAULT_SERVER_FORMAT.format(
             "http", DEFAULT_SERVER_PORT + 1
         )
-        visualization_help = "Visualisation at {}/visualization.html .".format(
-            visualization_url
+        visualization_help = (
+            f"Visualisation at {visualization_url}/visualization.html ."
         )
     else:
         visualization_help = ""
 
     rasa.cli.utils.print_success(
-        "Bot loaded. {}\n"
-        "Type a message and press enter "
-        "(press 'Ctr-c' to exit). "
-        "".format(visualization_help)
+        f"Bot loaded. {visualization_help}\n"
+        f"Type a message and press enter "
+        f"(press 'Ctr-c' to exit)."
     )
 
 
@@ -1379,8 +1372,8 @@ async def record_messages(
             domain = await retrieve_domain(endpoint)
         except ClientError:
             logger.exception(
-                "Failed to connect to Rasa Core server at '{}'. "
-                "Is the server running?".format(endpoint.url)
+                f"Failed to connect to Rasa Core server at '{endpoint.url}'. "
+                f"Is the server running?"
             )
             return
 
@@ -1622,6 +1615,12 @@ def run_interactive_learning(
     # before_server_start handlers make sure the agent is loaded before the
     # interactive learning IO starts
     if server_args.get("model"):
+        unpacked_model = model.get_model(server_args.get("model"))
+        core_path, nlu_path = model.get_model_subdirectories(unpacked_model)
+        if nlu_path and not core_path:
+            rasa.cli.utils.print_error_and_exit(
+                "Can not run interactive learning on an NLU-only model."
+            )
         app.register_listener(
             partial(run.load_agent_on_start, server_args.get("model"), endpoints, None),
             "before_server_start",
