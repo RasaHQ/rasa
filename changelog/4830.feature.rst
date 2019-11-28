@@ -1,0 +1,2 @@
+Added a new event ``SessionStarted`` that marks the beginning of a new conversation
+session.
