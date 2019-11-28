@@ -98,7 +98,9 @@ class RegexFeaturizer(Featurizer):
 
         return np.array(found_patterns).astype(float)
 
-    def _generate_lookup_regex(self, lookup_table: Union[Text, List]) -> Text:
+    def _generate_lookup_regex(
+        self, lookup_table: Dict[Text, Union[Text, List[Text]]]
+    ) -> Text:
         """creates a regex out of the contents of a lookup table file"""
         lookup_elements = lookup_table["elements"]
         elements_to_regex = []
