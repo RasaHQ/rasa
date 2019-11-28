@@ -87,7 +87,7 @@ with. So your story might look like this:
       - utter_help_message
 
 For Rasa Core to learn this pattern, the ``max_history``
-has to be `at least` 3.
+has to be `at least` 4.
 
 If you increase your ``max_history``, your model will become bigger and
 training will take longer. If you have some information that should
