@@ -150,7 +150,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         "named_entity_recognition": True,
         # number of entity tags
         "num_tags": None,
-        "var_layers": [],  # ["pre", "cls", "crf"]
+        "var_layers": [],  # [ "cls", "crf", "mask"]
         "masked_lm_loss": False,
         "sparse_input_dropout": False,
         "bilou_flag": False,
@@ -324,6 +324,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.pre_embed_layer = None
         self.cls_embed_layer = None
         self.crf_embed_layer = None
+        self.mask_embed_layer = None
 
         self.attention_weights = attention_weights
 
@@ -835,7 +836,12 @@ class EmbeddingIntentClassifier(EntityExtractor):
         if self.masked_lm_loss:
             loss, acc = self._train_mask_graph(a_transformed, a, lm_mask_bool)
 
-            metrics.loss["m_loss"] = loss
+            if self.mask_embed_layer is not None:
+                var_loss = sum(self.mask_embed_layer.losses) / tf.reduce_sum(tf.cast(lm_mask_bool, loss.dtype))
+            else:
+                var_loss = 0
+
+            metrics.loss["m_loss"] = loss + var_loss
             metrics.score["m_acc"] = acc
 
         if self.intent_classification:
@@ -847,14 +853,26 @@ class EmbeddingIntentClassifier(EntityExtractor):
             )
 
             loss, acc = self._train_intent_graph(a_transformed, b, all_bs, mask)
-            metrics.loss["i_loss"] = loss
+
+            if self.cls_embed_layer is not None:
+                var_loss = sum(self.cls_embed_layer.losses) / tf.cast(tf.shape(a)[0], loss.dtype)
+            else:
+                var_loss = 0
+
+            metrics.loss["i_loss"] = loss + var_loss
             metrics.score["i_acc"] = acc
 
         if self.named_entity_recognition:
             c = self.combine_sparse_dense_features(batch_data["tag_ids"], mask, "tag")
 
             loss, f1_score = self._train_entity_graph(a_transformed, c, mask)
-            metrics.loss["e_loss"] = loss
+
+            if self.crf_embed_layer is not None:
+                var_loss = sum(self.crf_embed_layer.losses) / tf.reduce_sum(mask)
+            else:
+                var_loss = 0
+
+            metrics.loss["e_loss"] = loss + var_loss
             metrics.score["e_f1"] = f1_score
 
         return metrics
@@ -872,9 +890,14 @@ class EmbeddingIntentClassifier(EntityExtractor):
         a_t_masked = tf.boolean_mask(a_transformed, lm_mask_bool)
         a_masked = tf.boolean_mask(a, lm_mask_bool)
 
-        a_t_masked_embed = train_utils.create_tf_embed(
-            a_t_masked, self.embed_dim, self.C2, "a_transformed", self.similarity_type
-        )
+        if "mask" in self.var_layers:
+            if self.mask_embed_layer is None:
+                self.mask_embed_layer = train_utils.create_tfp_embed_layer(self.embed_dim, layer_name_suffix="mask")
+            a_t_masked_embed = self.mask_embed_layer(a_t_masked)
+        else:
+            a_t_masked_embed = train_utils.create_tf_embed(
+                a_t_masked, self.embed_dim, self.C2, "mask", self.similarity_type
+            )
 
         a_embed = train_utils.create_tf_embed(
             a, self.embed_dim, self.C2, "a", self.similarity_type
@@ -981,10 +1004,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         with tf.variable_scope("ner", reuse=tf.AUTO_REUSE):
 
-            if "crf-logits" in self.var_layers:
+            if "crf" in self.var_layers:
                 if self.crf_embed_layer is None:
                     self.crf_embed_layer = train_utils.create_tfp_embed_layer(self.num_tags, layer_name_suffix="crf-logits")
-                logits = self.cls_embed_layer(input)
+                logits = self.crf_embed_layer(input)
             else:
                 logits = train_utils.create_tf_embed(
                     input, self.num_tags, self.C2, "crf-logits"
