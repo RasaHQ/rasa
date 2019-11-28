@@ -114,9 +114,19 @@ example:
 Kafka Event Broker
 ------------------
 
-It is possible to use `Kafka <https://kafka.apache.org/>`_ as main broker for your events. In this example
-we are going to use the `python-kafka <https://kafka-python.readthedocs.io/en/master/usage.html>`_
-library, a Kafka client written in Python.
+It is possible to use `Kafka <https://kafka.apache.org/>`_ as main broker for your
+events. In this example we are going to use the `python-kafka <https://kafka-python
+.readthedocs.io/en/master/usage.html>`_ library, a Kafka client written in Python.
+
+.. note::
+
+  In order to use the Kafka event broker, ``rasa`` has to be installed with the
+  ``kafka`` option:
+
+  .. code-block::
+
+    $ pip install rasa[kafka]
+
 
 Adding a Kafka Event Broker Using the Endpoint Configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
