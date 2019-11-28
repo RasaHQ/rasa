@@ -20,7 +20,7 @@ from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 from rasa.core.utils import replace_floats_with_decimals
-from rasa.utils.common import class_from_module_path
+from rasa.utils.common import class_from_module_path, arguments_of
 from rasa.utils.endpoints import EndpointConfig
 
 if typing.TYPE_CHECKING:
@@ -60,7 +60,7 @@ class TrackerStore:
                 logger.error(
                     f"Error when trying to connect to '{store.type}' "
                     f"tracker store. Using "
-                    f"'{InMemoryTrackerStore.__name__}'' instead. "
+                    f"'{InMemoryTrackerStore.__name__}' instead. "
                     f"The causing error was: {e}."
                 )
 
@@ -126,8 +126,24 @@ class TrackerStore:
             )
 
         if custom_tracker:
+            init_args = arguments_of(custom_tracker.__init__)
+            if "url" in init_args and "host" not in init_args:
+                warnings.warn(
+                    "The `url` initialization argument for custom tracker stores is deprecated. Your "
+                    "custom tracker store should take a `host` argument in ``__init__()`` instead.",
+                    DeprecationWarning,
+                )
+                return custom_tracker(
+                    domain=domain,
+                    url=store.url,
+                    event_broker=event_broker,
+                    **store.kwargs,
+                )
             return custom_tracker(
-                domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
+                domain=domain,
+                host=store.url,
+                event_broker=event_broker,
+                **store.kwargs,
             )
         else:
             return InMemoryTrackerStore(domain)
