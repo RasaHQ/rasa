@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 import os
@@ -9,7 +8,6 @@ import pytest
 
 import rasa.utils.io
 from rasa.core import training, restore
-from rasa.core import utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import (
