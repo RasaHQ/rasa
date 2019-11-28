@@ -85,8 +85,8 @@ def confirm_version(version: Text) -> bool:
         ).ask()
     else:
         confirmed = questionary.confirm(
-            f"Is the next version '{version}' correct "
-            f"(current version is '{get_current_version()}')?",
+            f"Current version is '{get_current_version()}. "
+            f"Is the next version '{version}' correct ?",
             default=True,
         ).ask()
     if confirmed:
