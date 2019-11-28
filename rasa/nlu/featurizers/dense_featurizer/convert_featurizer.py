@@ -100,7 +100,7 @@ class ConveRTFeaturizer(Featurizer):
                         MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute],
                         self._combine_with_existing_dense_features(
                             ex,
-                            batch_features[index],
+                            [batch_features[index]],
                             MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute],
                         ),
                     )
@@ -114,7 +114,7 @@ class ConveRTFeaturizer(Featurizer):
             MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
             self._combine_with_existing_dense_features(
                 message,
-                feats,
+                [feats],
                 MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
             ),
         )
