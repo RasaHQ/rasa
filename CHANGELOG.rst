@@ -69,7 +69,6 @@ Bugfixes
 - Fixed server hanging forever on leaving ``rasa shell`` before first message
 - Fixed rasa init showing traceback error when user does Keyboard Interrupt before choosing a project path
 - ``CountVectorsFeaturizer`` featurizes intents only if its analyzer is set to ``word``
-- Fixed bug with unnecessary ``kwargs`` unpacking in ``rasa.test.test_core`` call in ``rasa.test.test`` function
 - Fixed bug where facebooks generic template was not rendered when buttons were ``None``
 - Fixed default intents unnecessarily raising undefined parsing error
 
