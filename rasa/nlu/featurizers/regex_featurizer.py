@@ -1,4 +1,3 @@
-import io
 import logging
 import warnings
 
@@ -6,7 +5,7 @@ import numpy as np
 import os
 import re
 import typing
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Optional, Text, Union, List
 
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
@@ -18,6 +17,7 @@ from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_VECTOR_FEATURE_NAMES,
 )
+from rasa.constants import DOCS_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +98,7 @@ class RegexFeaturizer(Featurizer):
 
         return np.array(found_patterns).astype(float)
 
-    def _generate_lookup_regex(self, lookup_table):
+    def _generate_lookup_regex(self, lookup_table: Union[Text, List]) -> Text:
         """creates a regex out of the contents of a lookup table file"""
         lookup_elements = lookup_table["elements"]
         elements_to_regex = []
