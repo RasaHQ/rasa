@@ -393,7 +393,7 @@ simple example that dispatches a bot utterance and then reverts the interaction:
       return "action_is_bot"
 
   def run(self, dispatcher, tracker, domain):
-      dispatcher.utter_template("utter_is_bot", tracker)
+      dispatcher.utter_template(template="utter_is_bot")
       return [UserUtteranceReverted()]
 
 .. note::

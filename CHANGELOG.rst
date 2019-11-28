@@ -300,7 +300,7 @@ Bugfixes
 - Default one-hot representation for label featurization inside ``EmbeddingIntentClassifier`` if label features don't exist.
 - Policy ensemble no longer incorrectly wrings "missing mapping policy" when
   mapping policy is present.
-- "test" from ``utter_custom_json`` now correctly saved to tracker when using telegram channel
+- "text" from ``utter_custom_json`` now correctly saved to tracker when using telegram channel
 
 Deprecations and Removals
 -------------------------
