@@ -24,7 +24,7 @@ from rasa.core.actions.action import (
     RemoteAction,
 )
 from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.events import Restarted, SlotSet, UserUtteranceReverted, BotUttered
+from rasa.core.events import Restarted, SlotSet, UserUtteranceReverted, BotUttered, Form
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
@@ -144,7 +144,7 @@ async def test_remote_action_runs(
                     "intent": {},
                     "text": None,
                     "message_id": None,
-                    "metadata": None,
+                    "metadata": {},
                 },
                 "active_form": {},
                 "latest_action_name": None,
@@ -168,7 +168,11 @@ async def test_remote_action_logs_events(
     response = {
         "events": [{"event": "slot", "value": "rasa", "name": "name"}],
         "responses": [
-            {"text": "test text", "buttons": [{"title": "cheap", "payload": "cheap"}]},
+            {
+                "text": "test text",
+                "template": None,
+                "buttons": [{"title": "cheap", "payload": "cheap"}],
+            },
             {"template": "utter_greet"},
         ],
     }
@@ -194,7 +198,7 @@ async def test_remote_action_logs_events(
                     "intent": {},
                     "text": None,
                     "message_id": None,
-                    "metadata": None,
+                    "metadata": {},
                 },
                 "active_form": {},
                 "latest_action_name": None,
@@ -214,6 +218,52 @@ async def test_remote_action_logs_events(
     )
     assert events[1] == BotUttered("hey there None!")
     assert events[2] == SlotSet("name", "rasa")
+
+
+async def test_remote_action_utterances_with_none_values(
+    default_channel, default_tracker, default_domain
+):
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+
+    response = {
+        "events": [
+            {"event": "form", "name": "restaurant_form", "timestamp": None},
+            {
+                "event": "slot",
+                "timestamp": None,
+                "name": "requested_slot",
+                "value": "cuisine",
+            },
+        ],
+        "responses": [
+            {
+                "text": None,
+                "buttons": None,
+                "elements": [],
+                "custom": None,
+                "template": "utter_ask_cuisine",
+                "image": None,
+                "attachment": None,
+            }
+        ],
+    }
+
+    nlg = TemplatedNaturalLanguageGenerator(
+        {"utter_ask_cuisine": [{"text": "what dou want to eat?"}]}
+    )
+    with aioresponses() as mocked:
+        mocked.post("https://example.com/webhooks/actions", payload=response)
+
+        events = await remote_action.run(
+            default_channel, nlg, default_tracker, default_domain
+        )
+
+    assert events == [
+        BotUttered("what dou want to eat?"),
+        Form("restaurant_form"),
+        SlotSet("requested_slot", "cuisine"),
+    ]
 
 
 async def test_remote_action_without_endpoint(

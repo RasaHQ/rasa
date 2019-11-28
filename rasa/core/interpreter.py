@@ -160,6 +160,16 @@ class RegexInterpreter(NaturalLanguageInterpreter):
     ) -> Dict[Text, Any]:
         """Parse a text message."""
 
+        return self.synchronous_parse(text, message_id, tracker)
+
+    def synchronous_parse(
+        self,
+        text: Text,
+        message_id: Optional[Text] = None,
+        tracker: DialogueStateTracker = None,
+    ) -> Dict[Text, Any]:
+        """Parse a text message."""
+
         intent, confidence, entities = self.extract_intent_and_entities(text)
 
         if self._starts_with_intent_prefix(text):
