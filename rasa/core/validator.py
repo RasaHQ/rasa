@@ -78,7 +78,7 @@ class Validator:
                 everything_is_alright = ignore_warnings and everything_is_alright
                 intents_string = ", ".join(sorted(intents))
                 warnings.warn(
-                    f"The example '{text}' was found in these multiples intents: "
+                    f"The example '{text}' was found in multiple intents: "
                     f"{intents_string}.",
                     stacklevel=2,
                 )
