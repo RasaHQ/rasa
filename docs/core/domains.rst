@@ -262,7 +262,7 @@ arguments to ``utter_message``:
 
 .. code-block:: python
 
-  dispatcher.utter_message(template="utter_greet" my_variable="my text")
+  dispatcher.utter_message(template="utter_greet", my_variable="my text")
 
 Variations
 ----------
