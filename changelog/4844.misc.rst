@@ -1,0 +1,4 @@
+Added ``release`` command to makefile.
+
+The release command will automatically prepare all necessary
+things (changelog, version file, ...) for the next release.

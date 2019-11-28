@@ -47,16 +47,9 @@ Added
 
 Changed
 -------
-<<<<<<< HEAD
-- Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
-- Upgraded ``jsonschema`` version
-- Changed ``url`` ``__init__()`` parameter for custom tracker stores to ``host`` to reflect the ``__init__()``
-  methods of the other tracker stores. Note that in ``endpoints.py``, it is still declared as a ``url``.
-=======
 - Do not retrain the entire Core model if only the ``templates`` section of the domain
   is changed.
 - Upgraded ``jsonschema`` version.
->>>>>>> master
 
 Removed
 -------
