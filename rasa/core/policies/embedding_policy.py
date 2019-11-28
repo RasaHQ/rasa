@@ -379,9 +379,19 @@ class EmbeddingPolicy(Policy):
         #     # add time dimension if max history featurizer is used
         #     self.b_in = self.b_in[:, tf.newaxis, :]
 
-        all_bot_raw = tf.constant(
-            self._encoded_all_label_ids.toarray(), dtype=tf.float32, name="all_bot_raw"
+        # Cannot use tf.constant due to 2GB restriction
+        # --> use placeholder_with_default instead
+        all_bot_raw = tf.cast(
+            tf.placeholder_with_default(
+                self._encoded_all_label_ids.toarray(),
+                shape=self._encoded_all_label_ids.shape,
+                name="all_bot_raw"
+            ),
+            tf.float32
         )
+        # all_bot_raw = tf.constant(
+        #     self._encoded_all_label_ids.toarray(), dtype=tf.float32, name="all_bot_raw"
+        # )
 
         self.dial_embed, mask = self._create_tf_dial(self.a_in)
 
