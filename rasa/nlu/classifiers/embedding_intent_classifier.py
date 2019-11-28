@@ -621,9 +621,12 @@ class EmbeddingIntentClassifier(Component):
                     "name": self.inverted_label_dict[label_ids[0]],
                     "confidence": message_sim[0],
                 }
-
+                label_ids = label_ids[:LABEL_RANKING_LENGTH]
+                message_sim = message_sim[:LABEL_RANKING_LENGTH]
+                print(message_sim)
+                message_sim = message_sim/np.sum(message_sim)
+                print(message_sim)
                 ranking = list(zip(list(label_ids), message_sim))
-                ranking = ranking[:LABEL_RANKING_LENGTH]
                 label_ranking = [
                     {"name": self.inverted_label_dict[label_idx], "confidence": score}
                     for label_idx, score in ranking
