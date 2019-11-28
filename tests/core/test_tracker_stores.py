@@ -359,3 +359,14 @@ def test_fail_safe_tracker_store_with_retrieve_error():
 
     assert tracker_store.retrieve("sender_id") is None
     on_error_callback.assert_called_once()
+
+
+def test_set_fail_safe_tracker_store_domain(default_domain: Domain):
+    tracker_store = InMemoryTrackerStore(domain)
+    fallback_tracker_store = InMemoryTrackerStore(None)
+    failsafe_store = FailSafeTrackerStore(tracker_store, None, fallback_tracker_store)
+
+    failsafe_store.domain = default_domain
+    assert failsafe_store.domain is default_domain
+    assert tracker_store.domain is failsafe_store.domain
+    assert fallback_tracker_store.domain is failsafe_store.domain

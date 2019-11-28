@@ -1,21 +1,25 @@
 from pathlib import Path
+import warnings
 
 import pytest
 from typing import Callable, Dict
 from _pytest.pytester import RunResult
+from _pytest.logging import LogCaptureFixture
+
 
 from aioresponses import aioresponses
 
 import rasa.utils.io as io_utils
 from rasa.cli import x
 from rasa.utils.endpoints import EndpointConfig
+from rasa.core.utils import AvailableEndpoints
 
 
 def test_x_help(run: Callable[..., RunResult]):
     output = run("x", "--help")
 
-    help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [--no-prompt]
-              [--production] [--rasa-x-port RASA_X_PORT]
+    help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [-c CONFIG]
+              [--no-prompt] [--production] [--rasa-x-port RASA_X_PORT]
               [--config-endpoint CONFIG_ENDPOINT] [--log-file LOG_FILE]
               [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
               [--cors [CORS [CORS ...]]] [--enable-api]
@@ -78,6 +82,42 @@ def test_if_endpoint_config_is_valid_in_local_mode():
 def test_if_endpoint_config_is_invalid_in_local_mode(kwargs: Dict):
     config = EndpointConfig(**kwargs)
     assert not x._is_correct_event_broker(config)
+
+
+def test_overwrite_model_server_url():
+    endpoint_config = EndpointConfig(url="http://testserver:5002/models/default@latest")
+    endpoints = AvailableEndpoints(model=endpoint_config)
+    with pytest.warns(UserWarning):
+        x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
+    assert (
+        endpoints.model.url == "http://localhost/projects/default/models/tag/production"
+    )
+
+
+def test_reuse_wait_time_between_pulls():
+    test_wait_time = 5
+    endpoint_config = EndpointConfig(
+        url="http://localhost:5002/models/default@latest",
+        wait_time_between_pulls=test_wait_time,
+    )
+    endpoints = AvailableEndpoints(model=endpoint_config)
+    assert endpoints.model.kwargs["wait_time_between_pulls"] == test_wait_time
+
+
+def test_default_wait_time_between_pulls():
+    endpoint_config = EndpointConfig(url="http://localhost:5002/models/default@latest")
+    endpoints = AvailableEndpoints(model=endpoint_config)
+    x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
+    assert endpoints.model.kwargs["wait_time_between_pulls"] == 2
+
+
+def test_default_model_server_url():
+    endpoint_config = EndpointConfig()
+    endpoints = AvailableEndpoints(model=endpoint_config)
+    x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
+    assert (
+        endpoints.model.url == "http://localhost/projects/default/models/tag/production"
+    )
 
 
 async def test_pull_runtime_config_from_server():
