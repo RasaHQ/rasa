@@ -7,23 +7,19 @@ Rasa Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
-[Unreleased 1.6.0a1] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Added
------
-
+[1.5.1] - 2019-11-27
+^^^^^^^^^^^^^^^^^^^^
 Changed
 -------
-- Print info message when running Rasa X and a custom model server url was specified in ``endpoints.yml``
-- If a ``wait_time_between_pulls`` is configured for the model server in ``endpoints.yml``,
-  this will be used instead of the default one when running Rasa X
-
-Removed
--------
+- When NLU training data is dumped as Markdown file the intents are not longer ordered
+  alphabetically, but in the original order of given training data
 
 Fixed
 -----
+- End to end stories now support literal payloads which specify entities, e.g.
+  ``greet: /greet{"name": "John"}``
+- Slots will be correctly interpolated if there are lists in custom response templates.
+- Fixed compatibility issues with ``rasa-sdk`` ``1.5``
 
 [1.5.0] - 2019-11-26
 ^^^^^^^^^^^^^^^^^^^^
@@ -50,6 +46,7 @@ Changed
 - Do not retrain the entire Core model if only the ``templates`` section of the domain
   is changed.
 - Upgraded ``jsonschema`` version.
+- Updated ``/status`` endpoint to show correct path to model archive
 
 Removed
 -------
