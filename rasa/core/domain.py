@@ -251,17 +251,17 @@ class Domain:
                 # templates should be a dict with options
                 if isinstance(t, str):
                     warnings.warn(
-                        "Deprecated: Templates should not be strings anymore. "
+                        f"Templates should not be strings anymore. "
                         f"Utterance template '{template_key}' should contain either '- text: ' or "
-                        "'- custom: ' attribute to be a proper template.",
-                        DeprecationWarning,
+                        f"'- custom: ' attribute to be a proper template.",
+                        FutureWarning,
                     )
                     validated_variations.append({"text": t})
                 elif "text" not in t and "custom" not in t:
                     raise InvalidDomain(
-                        "Utter template '{}' needs to contain either "
-                        "'- text: ' or '- custom: ' attribute to be a proper "
-                        "template.".format(template_key)
+                        f"Utter template '{template_key}' needs to contain either "
+                        f"'- text: ' or '- custom: ' attribute to be a proper "
+                        f"template."
                     )
                 else:
                     validated_variations.append(t)
@@ -405,11 +405,10 @@ class Domain:
     def _raise_action_not_found_exception(self, action_name):
         action_names = "\n".join([f"\t - {a}" for a in self.action_names])
         raise NameError(
-            "Cannot access action '{}', "
-            "as that name is not a registered "
-            "action for this domain. "
-            "Available actions are: \n{}"
-            "".format(action_name, action_names)
+            f"Cannot access action '{action_name}', "
+            f"as that name is not a registered "
+            f"action for this domain. "
+            f"Available actions are: \n{action_names}"
         )
 
     def random_template_for(self, utter_action):
@@ -539,8 +538,8 @@ class Domain:
             warnings.warn(
                 f"Entities: '{ambiguous_entities}' are explicitly included and"
                 f" excluded for intent '{intent_name}'."
-                "Excluding takes precedence in this case. "
-                "Please resolve that ambiguity."
+                f"Excluding takes precedence in this case. "
+                f"Please resolve that ambiguity."
             )
 
         return entity_names.intersection(wanted_entities)
@@ -558,10 +557,10 @@ class Domain:
             else:
                 warnings.warn(
                     f"Failed to use action '{latest_action}' in history. "
-                    "Please make sure all actions are listed in the "
-                    "domains action list. If you recently removed an "
-                    "action, don't worry about this warning. It "
-                    "should stop appearing after a while. "
+                    f"Please make sure all actions are listed in the "
+                    f"domains action list. If you recently removed an "
+                    f"action, don't worry about this warning. It "
+                    f"should stop appearing after a while."
                 )
                 return {}
         else:
@@ -638,12 +637,12 @@ class Domain:
             missing = ",".join(set(states) - set(self.input_states))
             additional = ",".join(set(self.input_states) - set(states))
             raise InvalidDomain(
-                "Domain specification has changed. "
-                "You MUST retrain the policy. "
-                + "Detected mismatch in domain specification. "
-                + "The following states have been \n"
-                "\t - removed: {} \n"
-                "\t - added:   {} ".format(missing, additional)
+                f"Domain specification has changed. "
+                f"You MUST retrain the policy. "
+                f"Detected mismatch in domain specification. "
+                f"The following states have been \n"
+                f"\t - removed: {missing} \n"
+                f"\t - added:   {additional} "
             )
         else:
             return True
@@ -867,9 +866,9 @@ class Domain:
                     if message:
                         message += "\n"
                     message += (
-                        "Duplicate {0} in domain. "
-                        "These {0} occur more than once in "
-                        "the domain: '{1}'".format(name, "', '".join(d))
+                        f"Duplicate {name} in domain. "
+                        f"These {name} occur more than once in "
+                        f"the domain: '{', '.join(d)}'."
                     )
             return message
 
@@ -910,9 +909,9 @@ class Domain:
             for template in missing_templates:
                 warnings.warn(
                     f"Utterance '{template}' is listed as an "
-                    "action in the domain file, but there is "
-                    "no matching utterance template. Please "
-                    "check your domain."
+                    f"action in the domain file, but there is "
+                    f"no matching utterance template. Please "
+                    f"check your domain."
                 )
 
     def is_empty(self) -> bool:

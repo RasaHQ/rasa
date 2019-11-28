@@ -6,7 +6,10 @@ import time
 import typing
 import uuid
 from dateutil import parser
+
+from datetime import datetime
 from typing import List, Dict, Text, Any, Type, Optional, NoReturn
+
 
 from rasa.core import utils
 
@@ -90,14 +93,14 @@ class Event:
 
     @property
     def metadata(self) -> Dict[Text, Any]:
-        # Needed for compatibility for Rasa versions <1.4.0.
-        # Previous versions of Rasa serialized trackers using the pickle
-        # module.  For the moment, Rasa still supports loading these serialized
-        # trackers with pickle, but will use JSON in any subsequent save
-        # operations.  Versions of trackers serialized with pickle won't
-        # include the `_metadata` attribute in their events, so it is necessary
-        # to define this getter in case the attribute does not exist.
-        # For more information see CHANGELOG.rst.
+        # Needed for compatibility with Rasa versions <1.4.0. Previous versions
+        # of Rasa serialized trackers using the pickle module. For the moment,
+        # Rasa still supports loading these serialized trackers with pickle,
+        # but will use JSON in any subsequent save operations. Versions of
+        # trackers serialized with pickle won't include the `_metadata`
+        # attribute in their events, so it is necessary to define this getter
+        # in case the attribute does not exist. For more information see
+        # CHANGELOG.rst.
         return getattr(self, "_metadata", {})
 
     def __ne__(self, other: Any) -> bool:
@@ -130,7 +133,7 @@ class Event:
         if event_name is None:
             return None
 
-        event_class = Event.resolve_by_type(event_name, default)
+        event_class: Type[Event] = Event.resolve_by_type(event_name, default)
         if not event_class:
             return None
 
@@ -141,7 +144,7 @@ class Event:
         """Called to convert a parsed story line into an event."""
         return [cls(parameters.get("timestamp"), parameters.get("metadata"))]
 
-    def as_dict(self):
+    def as_dict(self) -> Dict[Text, Any]:
         d = {
             "event": self.type_name,
             "timestamp": self.timestamp,
@@ -589,12 +592,12 @@ class ReminderScheduled(Event):
 
     def __init__(
         self,
-        action_name,
-        trigger_date_time,
-        name=None,
-        kill_on_user_message=True,
-        timestamp=None,
-        metadata=None,
+        action_name: Text,
+        trigger_date_time: datetime,
+        name: Optional[Text] = None,
+        kill_on_user_message: bool = True,
+        timestamp: Optional[int] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
     ):
         """Creates the reminder
 
@@ -678,7 +681,12 @@ class ReminderCancelled(Event):
 
     type_name = "cancel_reminder"
 
-    def __init__(self, action_name, timestamp=None, metadata=None):
+    def __init__(
+        self,
+        action_name: Text,
+        timestamp: Optional[int] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ):
         """
         Args:
             action_name: name of the scheduled action to be cancelled
@@ -747,7 +755,12 @@ class StoryExported(Event):
 
     type_name = "export"
 
-    def __init__(self, path=None, timestamp=None, metadata=None):
+    def __init__(
+        self,
+        path: Optional[Text] = None,
+        timestamp: Optional[int] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ):
         self.path = path
         super().__init__(timestamp, metadata)
 
