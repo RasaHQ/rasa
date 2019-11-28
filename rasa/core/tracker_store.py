@@ -14,20 +14,20 @@ from boto3.dynamodb.conditions import Key
 # noinspection PyPep8Naming
 from time import sleep
 
+from rasa.core import utils
+from rasa.utils import common
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.event_channel import EventChannel
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
-from rasa.core.utils import replace_floats_with_decimals
-from rasa.utils.common import class_from_module_path, arguments_of
 from rasa.utils.endpoints import EndpointConfig
 
 if typing.TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine.base import Engine
     from sqlalchemy.orm import Session
-    import boto3
+    import boto3.resources.factory.dynamodb.Table
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class TrackerStore:
         if not tracker_store:
             tracker_store = InMemoryTrackerStore(domain, event_broker)
 
-        logger.debug("Connected to {}.".format(tracker_store.__class__.__name__))
+        logger.debug(f"Connected to {tracker_store.__class__.__name__}.")
 
         return tracker_store
 
@@ -118,15 +118,15 @@ class TrackerStore:
         """
         custom_tracker = None
         try:
-            custom_tracker = class_from_module_path(store.type)
+            custom_tracker = common.class_from_module_path(store.type)
         except (AttributeError, ImportError):
             warnings.warn(
                 f"Store type '{store.type}' not found. "
-                "Using InMemoryTrackerStore instead"
+                f"Using InMemoryTrackerStore instead."
             )
 
         if custom_tracker:
-            init_args = arguments_of(custom_tracker.__init__)
+            init_args = common.arguments_of(custom_tracker.__init__)
             if "url" in init_args and "host" not in init_args:
                 warnings.warn(
                     "The `url` initialization argument for custom tracker stores is deprecated. Your "
@@ -188,10 +188,10 @@ class TrackerStore:
     def stream_events(self, tracker: DialogueStateTracker) -> None:
         """Streams events to a message broker"""
         offset = self.number_of_existing_events(tracker.sender_id)
-        evts = tracker.events
-        for evt in list(itertools.islice(evts, offset, len(evts))):
+        events = tracker.events
+        for event in list(itertools.islice(events, offset, len(events))):
             body = {"sender_id": tracker.sender_id}
-            body.update(evt.as_dict())
+            body.update(event.as_dict())
             self.event_broker.publish(body)
 
     def number_of_existing_events(self, sender_id: Text) -> int:
@@ -294,7 +294,6 @@ class RedisTrackerStore(TrackerStore):
         record_exp: Optional[float] = None,
         use_ssl: bool = False,
     ):
-
         import redis
 
         self.red = redis.StrictRedis(
@@ -397,7 +396,7 @@ class DynamoTrackerStore(TrackerStore):
                 "session_date": int(datetime.now(tz=timezone.utc).timestamp()),
             }
         )
-        return replace_floats_with_decimals(d)
+        return utils.replace_floats_with_decimals(d)
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
@@ -556,9 +555,7 @@ class SQLTrackerStore(TrackerStore):
         engine_url = self.get_db_url(
             dialect, host, port, db, username, password, login_db, query
         )
-        logger.debug(
-            "Attempting to connect to database via '{}'.".format(repr(engine_url))
-        )
+        logger.debug(f"Attempting to connect to database via '{engine_url}'.")
 
         # Database might take a while to come up
         while True:
@@ -727,9 +724,9 @@ class SQLTrackerStore(TrackerStore):
                 )
             else:
                 logger.debug(
-                    "Can't retrieve tracker matching "
-                    "sender id '{}' from SQL storage. "
-                    "Returning `None` instead.".format(sender_id)
+                    f"Can't retrieve tracker matching "
+                    f"sender id '{sender_id}' from SQL storage. "
+                    f"Returning `None` instead."
                 )
                 return None
 
@@ -764,8 +761,7 @@ class SQLTrackerStore(TrackerStore):
             session.commit()
 
         logger.debug(
-            "Tracker with sender_id '{}' "
-            "stored to database".format(tracker.sender_id)
+            f"Tracker with sender_id '{tracker.sender_id}' " f"stored to database."
         )
 
     def _additional_events(
