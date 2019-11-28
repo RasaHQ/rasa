@@ -1,5 +1,7 @@
 import io
 import logging
+import warnings
+
 import numpy as np
 import os
 import re
@@ -104,6 +106,12 @@ class RegexFeaturizer(Featurizer):
         # if it's a list, it should be the elements directly
         if isinstance(lookup_elements, list):
             elements_to_regex = lookup_elements
+            warnings.warn(
+                f"Directly including lookup tables as a list is deprecated since Rasa "
+                f"1.6. See {DOCS_BASE_URL}/nlu/training-data-format/#lookup-tables "
+                f"how to do so.",
+                FutureWarning,
+            )
 
         # otherwise it's a file path.
         else:
