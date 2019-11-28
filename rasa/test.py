@@ -45,7 +45,7 @@ def test(
     if kwargs is None:
         kwargs = {}
 
-    test_core(model, stories, endpoints, output, **kwargs)
+    test_core(model, stories, endpoints, output, kwargs)
     test_nlu(model, nlu_data, output, kwargs)
 
 
