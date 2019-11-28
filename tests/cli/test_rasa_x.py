@@ -85,8 +85,7 @@ def test_if_endpoint_config_is_invalid_in_local_mode(kwargs: Dict):
 def test_overwrite_model_server_url():
     endpoint_config = EndpointConfig(url="http://testserver:5002/models/default@latest")
     endpoints = AvailableEndpoints(model=endpoint_config)
-    with pytest.warns(UserWarning):
-        x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
+    x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
     assert (
         endpoints.model.url == "http://localhost/projects/default/models/tag/production"
     )
