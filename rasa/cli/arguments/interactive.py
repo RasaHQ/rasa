@@ -18,6 +18,7 @@ from rasa.cli.arguments.train import (
 )
 from rasa.core import constants
 
+
 def set_interactive_arguments(parser: argparse.ArgumentParser):
     add_model_param(parser, default=None)
     add_data_param(parser)
@@ -73,6 +74,7 @@ def add_skip_visualization_param(parser: argparse.ArgumentParser):
         action="store_true",
         help="Disable plotting the visualization during interactive learning.",
     )
+
 
 def add_port_param(parser: argparse.ArgumentParser):
     parser.add_argument(

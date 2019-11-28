@@ -1447,9 +1447,9 @@ async def record_messages(
 def _serve_application(app, stories, skip_visualization, server_args):
     """Start a core server and attach the interactive learning IO."""
 
-    if server_args.get("port") :
+    if server_args.get("port"):
         port = server_args.get("port")
-        DEFAULT_SERVER_URL  = "{}://localhost:{}".format("http", port)
+        DEFAULT_SERVER_URL = "{}://localhost:{}".format("http", port)
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
 
@@ -1472,7 +1472,7 @@ def _serve_application(app, stories, skip_visualization, server_args):
     update_sanic_log_level()
 
     if port:
-        app.run(host="0.0.0.0", port = port)
+        app.run(host="0.0.0.0", port=port)
     else:
         app.run(host="0.0.0.0", port=DEFAULT_SERVER_PORT)
 
@@ -1570,7 +1570,7 @@ def run_interactive_learning(
 
     if server_args.get("domain"):
         PATHS["domain"] = server_args["domain"]
-    
+
     if server_args.get("port"):
         port = server_args.get("port")
 
@@ -1583,7 +1583,7 @@ def run_interactive_learning(
     else:
         p = None
 
-    app = run.configure_app(port=port,enable_api=True)
+    app = run.configure_app(port=port, enable_api=True)
     endpoints = AvailableEndpoints.read_endpoints(server_args.get("endpoints"))
 
     # before_server_start handlers make sure the agent is loaded before the
