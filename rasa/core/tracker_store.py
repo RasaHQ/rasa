@@ -131,19 +131,13 @@ class TrackerStore:
                 warnings.warn(
                     "The `url` initialization argument for custom tracker stores is deprecated. Your "
                     "custom tracker store should take a `host` argument in ``__init__()`` instead.",
-                    DeprecationWarning,
+                    FutureWarning,
                 )
-                return custom_tracker(
-                    domain=domain,
-                    url=store.url,
-                    event_broker=event_broker,
-                    **store.kwargs,
-                )
+                store.kwargs["url"] = store.url
+            else:
+                store.kwargs["host"] = store.url
             return custom_tracker(
-                domain=domain,
-                host=store.url,
-                event_broker=event_broker,
-                **store.kwargs,
+                domain=domain, event_broker=event_broker, **store.kwargs,
             )
         else:
             return InMemoryTrackerStore(domain)
