@@ -20,7 +20,6 @@ import questionary
 import rasa.cli.utils
 from questionary import Choice, Form, Question
 
-from rasa import model
 from rasa.cli import utils as cli_utils
 from rasa.core import constants, run, train, utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
@@ -698,7 +697,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
     if not answers:
         raise Abort()
 
-    return (answers["export_stories"], answers["export_nlu"], answers["export_domain"])
+    return answers["export_stories"], answers["export_nlu"], answers["export_domain"]
 
 
 def _split_conversation_at_restarts(
@@ -1585,7 +1584,6 @@ def run_interactive_learning(
     stories: Text = None,
     skip_visualization: bool = False,
     server_args: Dict[Text, Any] = None,
-    additional_arguments: Dict[Text, Any] = None,
 ):
     """Start the interactive learning with the model of the agent."""
     global SAVE_IN_E2E
@@ -1614,22 +1612,10 @@ def run_interactive_learning(
 
     # before_server_start handlers make sure the agent is loaded before the
     # interactive learning IO starts
-    if server_args.get("model"):
-        unpacked_model = model.get_model(server_args.get("model"))
-        core_path, nlu_path = model.get_model_subdirectories(unpacked_model)
-        if nlu_path and not core_path:
-            rasa.cli.utils.print_error_and_exit(
-                "Can not run interactive learning on an NLU-only model."
-            )
-        app.register_listener(
-            partial(run.load_agent_on_start, server_args.get("model"), endpoints, None),
-            "before_server_start",
-        )
-    else:
-        app.register_listener(
-            partial(train_agent_on_start, server_args, endpoints, additional_arguments),
-            "before_server_start",
-        )
+    app.register_listener(
+        partial(run.load_agent_on_start, server_args.get("model"), endpoints, None),
+        "before_server_start",
+    )
 
     _serve_application(app, stories, skip_visualization)
 

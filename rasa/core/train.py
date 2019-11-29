@@ -173,17 +173,12 @@ async def do_compare_training(
 
 
 def do_interactive_learning(
-    args: argparse.Namespace,
-    stories: Optional[Text] = None,
-    additional_arguments: Dict[Text, typing.Any] = None,
+    args: argparse.Namespace, stories: Optional[Text] = None,
 ):
     from rasa.core.training import interactive
 
     interactive.run_interactive_learning(
-        stories,
-        skip_visualization=args.skip_visualization,
-        server_args=args.__dict__,
-        additional_arguments=additional_arguments,
+        stories, skip_visualization=args.skip_visualization, server_args=args.__dict__,
     )
 
 

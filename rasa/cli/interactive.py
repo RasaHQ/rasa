@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import List, Text, Optional
+from typing import List, Text
 
 from rasa.cli import utils
 import rasa.cli.train as train
@@ -27,7 +27,7 @@ def add_subparser(
         help="Starts an interactive learning session to create new training data for a "
         "Rasa model by chatting.",
     )
-    interactive_parser.set_defaults(func=interactive)
+    interactive_parser.set_defaults(func=interactive, core_only=False)
     interactive_parser.add_argument(
         "--e2e",
         action="store_true",
@@ -50,7 +50,7 @@ def add_subparser(
     arguments.set_interactive_core_arguments(interactive_core_parser)
 
 
-def interactive(args: argparse.Namespace):
+def interactive(args: argparse.Namespace) -> None:
     _set_not_required_args(args)
 
     if args.model is None:
@@ -75,16 +75,19 @@ def interactive(args: argparse.Namespace):
 def _set_not_required_args(args: argparse.Namespace) -> None:
     args.fixed_model_name = None
     args.store_uncompressed = False
-    args.core_only = False
 
 
-def perform_interactive_learning(args, zipped_model) -> None:
+def perform_interactive_learning(args: argparse.Namespace, zipped_model: Text) -> None:
     from rasa.core.train import do_interactive_learning
 
     args.model = zipped_model
 
     with model.unpack_model(zipped_model) as model_path:
         args.core, args.nlu = model.get_model_subdirectories(model_path)
+        if args.nlu is not None and args.core is None:
+            utils.print_error_and_exit(
+                "Can not run interactive learning on an NLU-only model."
+            )
         stories_directory = data.get_core_directory(args.data)
 
         args.endpoints = utils.get_validated_path(
@@ -94,7 +97,7 @@ def perform_interactive_learning(args, zipped_model) -> None:
         do_interactive_learning(args, stories_directory)
 
 
-def get_provided_model(arg_model: Text):
+def get_provided_model(arg_model: Text) -> Text:
     model_path = utils.get_validated_path(arg_model, "model", DEFAULT_MODELS_PATH)
 
     if os.path.isdir(model_path):
