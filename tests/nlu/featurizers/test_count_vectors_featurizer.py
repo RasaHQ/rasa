@@ -41,6 +41,39 @@ def test_count_vector_featurizer(sentence, expected):
 
 
 @pytest.mark.parametrize(
+    "sentence, expected",
+    [
+        ("hello hello hello hello hello ", [[5]]),
+        ("hello goodbye hello", [[1, 2]]),
+        ("a b c d e f", [[1, 1, 1, 1, 1, 1]]),
+        ("a 1 2", [[2, 1]]),
+    ],
+)
+def test_count_vector_featurizer_no_sequence(sentence, expected):
+    from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+        CountVectorsFeaturizer,
+    )
+
+    ftr = CountVectorsFeaturizer(
+        {"token_pattern": r"(?u)\b\w+\b", "return_sequence": False}
+    )
+    train_message = Message(sentence)
+    # this is needed for a valid training example
+    train_message.set("intent", "bla")
+    data = TrainingData([train_message])
+    ftr.train(data)
+
+    test_message = Message(sentence)
+    ftr.process(test_message)
+
+    assert isinstance(test_message.get("text_sparse_features"), scipy.sparse.coo_matrix)
+
+    actual = test_message.get("text_sparse_features").toarray()
+
+    assert np.all(actual == expected)
+
+
+@pytest.mark.parametrize(
     "sentence, intent, response, intent_features, response_features",
     [
         ("hello hello hello hello hello ", "greet", None, [[1]], None),

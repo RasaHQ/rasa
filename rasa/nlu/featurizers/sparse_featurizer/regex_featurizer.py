@@ -51,7 +51,7 @@ class RegexFeaturizer(Featurizer):
         lookup_tables = lookup_tables or []
         self._add_lookup_table_regexes(lookup_tables)
 
-        self.return_sequence = component_config["return_sequence"]
+        self.return_sequence = self.component_config["return_sequence"]
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
@@ -115,7 +115,7 @@ class RegexFeaturizer(Featurizer):
                 if self.return_sequence:
                     seq_index = token_index
                 else:
-                    seq_index = 1
+                    seq_index = 0
 
                 for match in matches:
                     if t.offset < match.end() and t.end > match.start():

@@ -596,8 +596,12 @@ class CRFEntityExtractor(EntityExtractor):
 
         tokens = message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], [])
         if len(tokens) != len(features):
-            warn_string = f"Number of word embeddings ({len(features)}) does not match number of tokens ({len(tokens)})"
-            raise Exception(warn_string)
+            warnings.warn(
+                f"Number of features ({len(features)}) for attribute "
+                f"'{MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]}' "
+                f"does not match number of tokens ({len(tokens)})"
+            )
+            return None
 
         # convert to python-crfsuite feature format
         features_out = []

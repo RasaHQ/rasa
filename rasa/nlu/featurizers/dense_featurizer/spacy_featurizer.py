@@ -42,7 +42,7 @@ class SpacyFeaturizer(Featurizer):
 
         super().__init__(component_config)
 
-        self.return_sequence = component_config["return_sequence"]
+        self.return_sequence = self.component_config["return_sequence"]
 
     def _features_for_doc(self, doc: "Doc") -> np.ndarray:
         """Feature vector for a single document / sentence / tokens."""

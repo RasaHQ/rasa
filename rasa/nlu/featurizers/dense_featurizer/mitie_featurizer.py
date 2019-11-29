@@ -40,7 +40,7 @@ class MitieFeaturizer(Featurizer):
 
         super().__init__(component_config)
 
-        self.return_sequence = component_config["return_sequence"]
+        self.return_sequence = self.component_config["return_sequence"]
 
     @classmethod
     def required_packages(cls) -> List[Text]:
