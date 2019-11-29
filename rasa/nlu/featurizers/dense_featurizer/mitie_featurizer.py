@@ -106,6 +106,16 @@ class MitieFeaturizer(Featurizer):
             )
         return mitie_feature_extractor
 
+    def _features_as_sequence(
+        self,
+        tokens: List[Token],
+        feature_extractor: "mitie.total_word_feature_extractor",
+    ) -> np.ndarray:
+        vec = []
+        for token in tokens:
+            vec.append(feature_extractor.get_feature_vector(token.text))
+        return np.array(vec)
+
     def features_for_tokens(
         self,
         tokens: List[Token],
@@ -113,10 +123,7 @@ class MitieFeaturizer(Featurizer):
     ) -> np.ndarray:
 
         if self.return_sequence:
-            vec = []
-            for token in tokens:
-                vec.append(feature_extractor.get_feature_vector(token.text))
-            return np.array(vec)
+            return self._features_as_sequence(tokens, feature_extractor)
 
         vec = np.zeros(self.ndim(feature_extractor))
         for token in tokens:
