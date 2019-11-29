@@ -117,8 +117,9 @@ def _overwrite_endpoints_for_local_x(
 def _get_model_endpoint(
     model_endpoint: Optional[EndpointConfig], rasa_x_token: Text, rasa_x_url: Text
 ) -> EndpointConfig:
+    # If you change that, please run a test with Rasa X and speak to the bot
     default_rasax_model_server_url = (
-        f"{rasa_x_url}/projects/default/models/tag/production"
+        f"{rasa_x_url}/projects/default/models/tags/production"
     )
 
     model_endpoint = model_endpoint or EndpointConfig()
