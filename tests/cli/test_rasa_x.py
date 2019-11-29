@@ -1,10 +1,8 @@
 from pathlib import Path
-import warnings
 
 import pytest
 from typing import Callable, Dict
 from _pytest.pytester import RunResult
-from _pytest.logging import LogCaptureFixture
 
 
 from aioresponses import aioresponses
@@ -65,10 +63,10 @@ def test_prepare_credentials_if_already_valid(tmpdir: Path):
     assert actual == credentials
 
 
-def test_if_endpoint_config_is_valid_in_local_mode():
-    config = EndpointConfig(type="sql", dialect="sqlite", db=x.DEFAULT_EVENTS_DB)
+def test_if_default_endpoint_config_is_valid_in_local_mode():
+    event_broker_endpoint = x._get_event_broker_endpoint(None)
 
-    assert x._is_correct_event_broker(config)
+    assert x._is_correct_event_broker(event_broker_endpoint)
 
 
 @pytest.mark.parametrize(
@@ -87,10 +85,19 @@ def test_if_endpoint_config_is_invalid_in_local_mode(kwargs: Dict):
 def test_overwrite_model_server_url():
     endpoint_config = EndpointConfig(url="http://testserver:5002/models/default@latest")
     endpoints = AvailableEndpoints(model=endpoint_config)
-    with pytest.warns(UserWarning):
-        x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
+    x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
     assert (
-        endpoints.model.url == "http://localhost/projects/default/models/tag/production"
+        endpoints.model.url
+        == "http://localhost/projects/default/models/tags/production"
+    )
+
+
+def test_overwrite_model_server_url_with_no_model_endpoint():
+    endpoints = AvailableEndpoints()
+    x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
+    assert (
+        endpoints.model.url
+        == "http://localhost/projects/default/models/tags/production"
     )
 
 
@@ -116,7 +123,8 @@ def test_default_model_server_url():
     endpoints = AvailableEndpoints(model=endpoint_config)
     x._overwrite_endpoints_for_local_x(endpoints, "test", "http://localhost")
     assert (
-        endpoints.model.url == "http://localhost/projects/default/models/tag/production"
+        endpoints.model.url
+        == "http://localhost/projects/default/models/tags/production"
     )
 
 
