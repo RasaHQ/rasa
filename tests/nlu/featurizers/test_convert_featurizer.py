@@ -1,6 +1,6 @@
 import numpy as np
 
-from nlu.constants import (
+from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
     MESSAGE_TOKENS_NAMES,
