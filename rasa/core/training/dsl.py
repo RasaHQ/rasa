@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 class EndToEndReader(MarkdownReader):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._regex_interpreter = RegexInterpreter()
 
@@ -46,33 +46,35 @@ class EndToEndReader(MarkdownReader):
         )
 
         # Match three groups:
-        # 1) The correct intent
-        # 2) Optional entities
-        # 3) The message text
-        item_regex = re.compile(r"\s*(.+?)({.*})*:\s*(.*)")
+        # 1) Potential "form" annotation
+        # 2) The correct intent
+        # 3) Optional entities
+        # 4) The message text
+        form_group = fr"({FORM_PREFIX}\s*)*"
+        item_regex = re.compile(r"\s*" + form_group + r"([^{}]+?)({.*})*:\s*(.*)")
         match = re.match(item_regex, line)
-        if match:
-            intent = match.group(1)
 
-            self.current_title = intent
-            message = match.group(3)
-            example = self._parse_training_example(message)
+        if not match:
+            raise ValueError(
+                "Encountered invalid end-to-end format for message "
+                "`{}`. Please visit the documentation page on "
+                "end-to-end evaluation at {}/user-guide/evaluating-models/"
+                "end-to-end-evaluation/".format(line, DOCS_BASE_URL)
+            )
 
-            # If the message starts with the `INTENT_MESSAGE_PREFIX` the entities are
-            # are also annotated
-            if message.startswith(INTENT_MESSAGE_PREFIX):
-                parsed = self._regex_interpreter.synchronous_parse(message)
-                example.data["entities"] = parsed["entities"]
+        intent = match.group(2)
+        self.current_title = intent
+        message = match.group(4)
+        example = self._parse_training_example(message)
 
-            example.data["true_intent"] = intent
-            return example
+        # If the message starts with the `INTENT_MESSAGE_PREFIX` potential entities
+        # are annotated in the json format (e.g. `/greet{"name": "Rasa"})
+        if message.startswith(INTENT_MESSAGE_PREFIX):
+            parsed = self._regex_interpreter.synchronous_parse(message)
+            example.data["entities"] = parsed["entities"]
 
-        raise ValueError(
-            "Encountered invalid end-to-end format for message "
-            "`{}`. Please visit the documentation page on "
-            "end-to-end evaluation at {}/user-guide/evaluating-models/"
-            "end-to-end-evaluation/".format(line, DOCS_BASE_URL)
-        )
+        example.data["true_intent"] = intent
+        return example
 
 
 class StoryStepBuilder:
