@@ -121,7 +121,8 @@ class MitieFeaturizer(Featurizer):
         vec = np.zeros(self.ndim(feature_extractor))
         for token in tokens:
             vec += feature_extractor.get_feature_vector(token.text)
+
         if tokens:
-            return vec / len(tokens)
-        else:
-            return vec
+            vec = vec / len(tokens)
+
+        return np.expand_dims(vec, axis=0)

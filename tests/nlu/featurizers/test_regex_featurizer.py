@@ -114,7 +114,6 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     tokenizer.process(message)
 
     result = ftr._features_for_patterns(message, MESSAGE_TEXT_ATTRIBUTE)
-    print(result.toarray())
     assert np.allclose(result.toarray(), expected, atol=1e-10)
 
     # the tokenizer should have added tokens
@@ -124,3 +123,32 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
         token_matches = token.get("pattern").values()
         num_matches = sum(token_matches)
         assert num_matches == labeled_tokens.count(i)
+
+
+@pytest.mark.parametrize(
+    "sentence, expected ",
+    [
+        ("hey how are you today", [0.0, 1.0, 0.0]),
+        ("hey 456 how are you", [1.0, 1.0, 0.0]),
+        ("blah balh random eh", [0.0, 0.0, 0.0]),
+        ("a 1 digit number", [1.0, 0.0, 1.0]),
+    ],
+)
+def test_regex_featurizer_no_sequence(sentence, expected, spacy_nlp):
+    from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
+
+    patterns = [
+        {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
+        {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
+        {"pattern": "[0-1]+", "name": "binary", "usage": "intent"},
+    ]
+    ftr = RegexFeaturizer({"return_sequence": False}, known_patterns=patterns)
+
+    # adds tokens to the message
+    tokenizer = SpacyTokenizer()
+    message = Message(sentence)
+    message.set("spacy_doc", spacy_nlp(sentence))
+    tokenizer.process(message)
+
+    result = ftr._features_for_patterns(message, MESSAGE_TEXT_ATTRIBUTE)
+    assert np.allclose(result.toarray()[0], expected, atol=1e-10)
