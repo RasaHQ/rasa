@@ -31,6 +31,8 @@ class SpacyFeaturizer(Featurizer):
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ] + [MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES]
 
+    defaults = {"use_mean_vec": False}
+
     def _features_for_doc(self, doc: "Doc") -> np.ndarray:
         """Feature vector for a single document / sentence."""
         return np.array([t.vector for t in doc])
@@ -66,7 +68,11 @@ class SpacyFeaturizer(Featurizer):
 
             if cls_token_used:
                 # cls token is used, need to append a vector
-                cls_token_vec = np.mean(fs, axis=0, keepdims=True)
+                if self.component_config["use_mean_vec"]:
+                    cls_token_vec = np.mean(fs, axis=0, keepdims=True)
+                else:
+                    cls_token_vec = np.zeros([1, fs.shape[-1]])
+
                 fs = np.concatenate([fs, cls_token_vec])
 
             features = self._combine_with_existing_dense_features(
