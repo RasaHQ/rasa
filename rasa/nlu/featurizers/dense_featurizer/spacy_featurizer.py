@@ -66,7 +66,11 @@ class SpacyFeaturizer(Featurizer):
 
             if cls_token_used:
                 # cls token is used, need to append a vector
-                cls_token_vec = np.zeros([1, fs.shape[-1]])
+                # print(fs.shape)
+                cls_token_vec = np.mean(fs, axis=0, keepdims=True)
+                # print(cls_token_vec.shape)
+                # exit()
+                # cls_token_vec = np.zeros([1, fs.shape[-1]])
                 fs = np.concatenate([fs, cls_token_vec])
 
             features = self._combine_with_existing_dense_features(
