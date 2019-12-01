@@ -20,6 +20,7 @@ from rasa.core.training.structures import (
     GENERATED_CHECKPOINT_PREFIX,
     GENERATED_HASH_LENGTH,
     FORM_PREFIX,
+    STORY_NAME_TALLY,
 )
 from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.core.domain import Domain
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 class EndToEndReader(MarkdownReader):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._regex_interpreter = RegexInterpreter()
 
@@ -45,33 +46,35 @@ class EndToEndReader(MarkdownReader):
         )
 
         # Match three groups:
-        # 1) The correct intent
-        # 2) Optional entities
-        # 3) The message text
-        item_regex = re.compile(r"\s*(.+?)({.*})*:\s*(.*)")
+        # 1) Potential "form" annotation
+        # 2) The correct intent
+        # 3) Optional entities
+        # 4) The message text
+        form_group = fr"({FORM_PREFIX}\s*)*"
+        item_regex = re.compile(r"\s*" + form_group + r"([^{}]+?)({.*})*:\s*(.*)")
         match = re.match(item_regex, line)
-        if match:
-            intent = match.group(1)
 
-            self.current_title = intent
-            message = match.group(3)
-            example = self._parse_training_example(message)
+        if not match:
+            raise ValueError(
+                "Encountered invalid end-to-end format for message "
+                "`{}`. Please visit the documentation page on "
+                "end-to-end evaluation at {}/user-guide/evaluating-models/"
+                "end-to-end-evaluation/".format(line, DOCS_BASE_URL)
+            )
 
-            # If the message starts with the `INTENT_MESSAGE_PREFIX` the entities are
-            # are also annotated
-            if message.startswith(INTENT_MESSAGE_PREFIX):
-                parsed = self._regex_interpreter.synchronous_parse(message)
-                example.data["entities"] = parsed["entities"]
+        intent = match.group(2)
+        self.current_title = intent
+        message = match.group(4)
+        example = self._parse_training_example(message)
 
-            example.data["true_intent"] = intent
-            return example
+        # If the message starts with the `INTENT_MESSAGE_PREFIX` potential entities
+        # are annotated in the json format (e.g. `/greet{"name": "Rasa"})
+        if message.startswith(INTENT_MESSAGE_PREFIX):
+            parsed = self._regex_interpreter.synchronous_parse(message)
+            example.data["entities"] = parsed["entities"]
 
-        raise ValueError(
-            "Encountered invalid end-to-end format for message "
-            "`{}`. Please visit the documentation page on "
-            "end-to-end evaluation at {}/user-guide/evaluating-models/"
-            "end-to-end-evaluation/".format(line, DOCS_BASE_URL)
-        )
+        example.data["true_intent"] = intent
+        return example
 
 
 class StoryStepBuilder:
@@ -89,10 +92,10 @@ class StoryStepBuilder:
             self.start_checkpoints.append(Checkpoint(name, conditions))
         else:
             if conditions:
-                logger.warning(
+                warnings.warn(
                     "End or intermediate checkpoints "
                     "do not support conditions! "
-                    "(checkpoint: {})".format(name)
+                    f"(checkpoint: {name})"
                 )
             additional_steps = []
             for t in self.current_steps:
@@ -348,10 +351,9 @@ class StoryFileReader:
                 else:
                     # reached an unknown type of line
                     logger.warning(
-                        "Skipping line {}. "
+                        f"Skipping line {line_num}. "
                         "No valid command found. "
-                        "Line Content: '{}'"
-                        "".format(line_num, line)
+                        f"Line Content: '{line}'"
                     )
             except Exception as e:
                 msg = f"Error in line {line_num}: {e}"
@@ -390,6 +392,12 @@ class StoryFileReader:
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name)
 
+        # Tally names of stories, so we can identify duplicate names
+        if name not in STORY_NAME_TALLY:
+            STORY_NAME_TALLY[name] = 1
+        else:
+            STORY_NAME_TALLY[name] += 1
+
     def add_checkpoint(self, name: Text, conditions: Optional[Dict[Text, Any]]) -> None:
 
         # Ensure story part already has a name
@@ -411,11 +419,10 @@ class StoryFileReader:
         )
         intent_name = utterance.intent.get("name")
         if intent_name not in self.domain.intents:
-            logger.warning(
-                "Found unknown intent '{}' on line {}. "
+            warnings.warn(
+                f"Found unknown intent '{intent_name}' on line {line_num}. "
                 "Please, make sure that all intents are "
                 "listed in your domain yaml."
-                "".format(intent_name, line_num)
             )
         return utterance
 

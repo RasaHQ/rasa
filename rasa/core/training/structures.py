@@ -38,6 +38,9 @@ FORM_PREFIX = "form: "
 # will get increased with each new instance
 STEP_COUNT = 1
 
+# Tally over story names
+STORY_NAME_TALLY = {}
+
 
 class StoryStringHelper:
     """A helper class to mark story steps that are inside a form with `form: `
@@ -136,15 +139,17 @@ class StoryStep:
         self.events.append(event)
 
     @staticmethod
-    def _checkpoint_string(story_step_element):
+    def _checkpoint_string(story_step_element: UserUttered) -> Text:
         return "> {}\n".format(story_step_element.as_story_string())
 
     @staticmethod
-    def _user_string(story_step_element, e2e, prefix=""):
+    def _user_string(
+        story_step_element: UserUttered, e2e: bool, prefix: Text = ""
+    ) -> Text:
         return "* {}{}\n".format(prefix, story_step_element.as_story_string(e2e))
 
     def _store_user_strings(
-        self, story_step_element, e2e: bool, prefix: Text = ""
+        self, story_step_element: UserUttered, e2e: bool, prefix: Text = ""
     ) -> None:
         self.story_string_helper.no_form_prefix_string += self._user_string(
             story_step_element, e2e
@@ -169,7 +174,7 @@ class StoryStep:
         self.story_string_helper.form_prefix_string = ""
         self.story_string_helper.no_form_prefix_string = ""
 
-    def as_story_string(self, flat: bool = False, e2e: bool = False):
+    def as_story_string(self, flat: bool = False, e2e: bool = False) -> Text:
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
 

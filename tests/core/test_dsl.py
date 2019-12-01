@@ -414,6 +414,17 @@ async def test_read_stories_with_multiline_comments(tmpdir, default_domain):
                 "text": "great",
             },
         ),
+        (
+            'form: greet{"test": "test"}: /greet{"test": "test"}',
+            {
+                "intent": "greet",
+                "entities": [
+                    {"end": 22, "entity": "test", "start": 6, "value": "test"}
+                ],
+                "true_intent": "greet",
+                "text": '/greet{"test": "test"}',
+            },
+        ),
     ],
 )
 def test_e2e_parsing(line: Text, expected: Dict):
@@ -467,3 +478,11 @@ def test_user_uttered_to_e2e(parse_data: Dict, expected_story_string: Text):
 
     assert isinstance(event, UserUttered)
     assert event.as_story_string(e2e=True) == expected_story_string
+
+
+@pytest.mark.parametrize("line", [" greet{: hi"])
+def test_invalid_end_to_end_format(line: Text):
+    reader = EndToEndReader()
+
+    with pytest.raises(ValueError):
+        _ = reader._parse_item(line)

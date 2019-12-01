@@ -32,7 +32,7 @@ def _check_prediction_aligns_with_story(
         warnings.warn(
             "Model predicted different actions than the "
             "model used to create the story! Expected: "
-            "{} but got {}.".format(p, a)
+            f"{p} but got {a}."
         )
 
 

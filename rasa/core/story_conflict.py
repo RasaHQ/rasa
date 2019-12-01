@@ -1,4 +1,3 @@
-
 from typing import List, Optional, Dict, Text
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -9,16 +8,15 @@ from rasa.core.training.generator import TrackerWithCachedStates
 
 
 class StoryConflict:
-
     def __init__(
-            self,
-            sliced_states: List[Optional[Dict[Text, float]]],
-            tracker: TrackerWithCachedStates,
-            event
+        self,
+        sliced_states: List[Optional[Dict[Text, float]]],
+        tracker: TrackerWithCachedStates,
+        event,
     ):
         self.sliced_states = sliced_states
         self.hash = hash(str(list(sliced_states)))
-        self.tracker = tracker,
+        self.tracker = (tracker,)
         self.event = event
         self._conflicting_actions = {}  # {"action": ["story_1", ...], ...}
         self.correct_response = None
@@ -29,14 +27,14 @@ class StoryConflict:
     @staticmethod
     def _get_prev_event(state) -> [Event, None]:
         if not state:
-            return None
-        result = None
+            return None, None
+        result = (None, None)
         for k in state:
             if k.startswith(PREV_PREFIX):
-                if k[len(PREV_PREFIX):] != ACTION_LISTEN_NAME:
-                    result = ("action", k[len(PREV_PREFIX):])
-            elif k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_") and not result:
-                result = ("intent", k[len(MESSAGE_INTENT_ATTRIBUTE + '_'):])
+                if k[len(PREV_PREFIX) :] != ACTION_LISTEN_NAME:
+                    result = ("action", k[len(PREV_PREFIX) :])
+            elif k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_") and not result[0]:
+                result = ("intent", k[len(MESSAGE_INTENT_ATTRIBUTE + "_") :])
         return result
 
     def add_conflicting_action(self, action: Text, story_name: Text):
@@ -57,12 +55,20 @@ class StoryConflict:
     def incorrect_stories(self):
         if self.correct_response:
             incorrect_stories = []
-            for stories in [s for (a, s) in self._conflicting_actions.items() if a != self.correct_response]:
+            for stories in [
+                s
+                for (a, s) in self._conflicting_actions.items()
+                if a != self.correct_response
+            ]:
                 for story in stories:
                     incorrect_stories.append(story)
             return incorrect_stories
         else:
             return []
+
+    @property
+    def has_prior_events(self):
+        return self._get_prev_event(self.sliced_states[-1])[0] is not None
 
     def story_prior_to_conflict(self):
         result = ""
@@ -77,7 +83,10 @@ class StoryConflict:
 
     def __str__(self):
         last_event_type, last_event_name = self._get_prev_event(self.sliced_states[-1])
-        conflict_string = f"CONFLICT after {last_event_type} '{last_event_name}':\n"
+        if last_event_type:
+            conflict_string = f"CONFLICT after {last_event_type} '{last_event_name}':\n"
+        else:
+            conflict_string = f"CONFLICT at the beginning of stories:\n"
         for action, stories in self._conflicting_actions.items():
             if len(stories) == 1:
                 stories = f"'{stories[0]}'"

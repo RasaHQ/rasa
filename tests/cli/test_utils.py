@@ -95,11 +95,10 @@ def test_validate_with_none_if_default_is_valid(caplog: LogCaptureFixture):
 def test_validate_with_invalid_directory_if_default_is_valid(caplog: LogCaptureFixture):
     tempdir = tempfile.mkdtemp()
     invalid_directory = "gcfhvjkb"
-
-    with caplog.at_level(logging.WARNING, rasa.cli.utils.logger.name):
+    with pytest.warns(UserWarning) as record:
         assert get_validated_path(invalid_directory, "out", tempdir) == tempdir
-
-    assert f"'{invalid_directory}' does not exist" in caplog.text
+    assert len(record) == 1
+    assert "does not exist" in record[0].message.args[0]
 
 
 def test_print_error_and_exit():

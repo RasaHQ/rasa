@@ -406,28 +406,26 @@ class RemoteAction(Action):
 
         bot_messages = []
         for response in responses:
-            if "template" in response:
-                kwargs = response.copy()
-                del kwargs["template"]
+            template = response.pop("template", None)
+            if template:
                 draft = await nlg.generate(
-                    response["template"], tracker, output_channel.name(), **kwargs
+                    template, tracker, output_channel.name(), **response
                 )
                 if not draft:
                     continue
-
-                del response["template"]
             else:
                 draft = {}
 
-            if "buttons" in response:
-                if "buttons" not in draft:
-                    draft["buttons"] = []
-                draft["buttons"].extend(response["buttons"])
-                del response["buttons"]
+            buttons = response.pop("buttons", []) or []
+            if buttons:
+                draft.setdefault("buttons", [])
+                draft["buttons"].extend(buttons)
 
+            # Avoid overwriting `draft` values with empty values
+            response = {k: v for k, v in response.items() if v}
             draft.update(response)
-
             bot_messages.append(create_bot_utterance(draft))
+
         return bot_messages
 
     async def run(self, output_channel, nlg, tracker, domain) -> List[Event]:
@@ -452,6 +450,7 @@ class RemoteAction(Action):
             response = await self.action_endpoint.request(
                 json=json_body, method="post", timeout=DEFAULT_REQUEST_TIMEOUT
             )
+
             self._validate_action_result(response)
 
             events_json = response.get("events", [])
