@@ -362,5 +362,8 @@ class SlackInput(InputChannel):
 
         return slack_webhook
 
+    def get_metadata(self, request: Request) -> Optional[Dict[Text, Any]]:
+        return request.json
+
     def get_output_channel(self) -> OutputChannel:
         return SlackBot(self.slack_token, self.slack_channel)
