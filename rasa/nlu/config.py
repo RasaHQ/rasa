@@ -69,9 +69,9 @@ def component_config_from_pipeline(
         return override_defaults(defaults, c)
     except IndexError:
         warnings.warn(
-            "Tried to get configuration value for component "
+            f"Tried to get configuration value for component "
             f"number {index} which is not part of the pipeline. "
-            "Returning `defaults`."
+            f"Returning `defaults`."
         )
         return override_defaults(defaults, {})
 
@@ -106,10 +106,10 @@ class RasaNLUModelConfig:
                     f"You have specified the pipeline template "
                     f"'{template_name}' which has been renamed to "
                     f"'{new_names[template_name]}'. "
-                    "Please update your code as it will no "
-                    "longer work with future versions of "
-                    "Rasa",
-                    DeprecationWarning,
+                    f"Please update your code as it will no "
+                    f"longer work with future versions of "
+                    f"Rasa.",
+                    FutureWarning,
                 )
                 template_name = new_names[template_name]
 
@@ -124,10 +124,9 @@ class RasaNLUModelConfig:
                 )
 
                 raise InvalidConfigError(
-                    "No pipeline specified and unknown "
-                    "pipeline template '{}' passed. Known "
-                    "pipeline templates: {}"
-                    "".format(template_name, known_templates)
+                    f"No pipeline specified and unknown "
+                    f"pipeline template '{template_name}' passed. Known "
+                    f"pipeline templates: {known_templates}"
                 )
 
         for key, value in self.items():
@@ -181,7 +180,7 @@ class RasaNLUModelConfig:
             self.pipeline[index].update(kwargs)
         except IndexError:
             warnings.warn(
-                "Tried to set configuration value for component "
+                f"Tried to set configuration value for component "
                 f"number {index} which is not part of the pipeline."
             )
 

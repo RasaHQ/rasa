@@ -7,8 +7,6 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter
 from rasa.nlu.train import train
 
-slowtest = pytest.mark.slowtest
-
 
 def base_test_conf(pipeline_template):
     # 'response_log': temp_log_file_dir(),
