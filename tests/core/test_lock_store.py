@@ -173,9 +173,7 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
     # record messages as they come and and as they're processed in files so we
     # can check the order later on. We don't need the return value of this method so
     # we'll just return None.
-    async def mocked_handle_message(
-        self, message: UserMessage, wait: float
-    ) -> None:
+    async def mocked_handle_message(self, message: UserMessage, wait: float) -> None:
         # write incoming message to file
         with open(str(incoming_order_file), "a+") as f_0:
             f_0.write(message.text + "\n")

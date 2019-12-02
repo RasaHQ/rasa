@@ -143,10 +143,7 @@ class LockStore:
             self.cleanup(conversation_id, ticket)
 
     async def _acquire_lock(
-        self,
-        conversation_id: Text,
-        ticket: int,
-        wait_time_in_seconds: float,
+        self, conversation_id: Text, ticket: int, wait_time_in_seconds: float,
     ) -> TicketLock:
 
         while True:
