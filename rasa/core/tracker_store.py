@@ -153,12 +153,18 @@ class TrackerStore:
         )
 
     def create_tracker(
-        self, sender_id: Text, append_action_listen: bool = True,
+        self,
+        sender_id: Text,
+        append_action_listen: bool = True,
+        should_append_session_started=True,
     ) -> DialogueStateTracker:
         """Creates a new tracker for the sender_id. The tracker is initially listening.
         """
         tracker = self.init_tracker(sender_id)
         if tracker:
+            if should_append_session_started:
+                tracker.update(ActionExecuted(ACTION_SESSION_START_NAME))
+
             if append_action_listen:
                 tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
 

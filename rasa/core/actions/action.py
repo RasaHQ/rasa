@@ -310,9 +310,9 @@ class ActionRestart(ActionUtterTemplate):
 
 
 class ActionSessionStart(Action):
-    """Resets the tracker to its initial state.
+    """Applies.
 
-    Utters the restart template if available."""
+    Utters the 'session start' template if available."""
 
     def name(self) -> Text:
         return ACTION_SESSION_START_NAME
@@ -338,7 +338,7 @@ class ActionSessionStart(Action):
 
         # noinspection PyTypeChecker
         return (
-            [SessionStarted()]
+            [ActionExecuted(action_name=ACTION_SESSION_START_NAME)]
             + list(slot_set_events)
             + [ActionExecuted(action_name=ACTION_LISTEN_NAME)]
         )

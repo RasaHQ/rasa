@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 import time
 
@@ -14,6 +14,11 @@ from unittest.mock import patch
 
 import rasa.utils.io
 from rasa.core import jobs
+from rasa.core.actions.action import (
+    ACTION_LISTEN_NAME,
+    ActionSessionStart,
+    ACTION_SESSION_START_NAME,
+)
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.events import (
@@ -203,7 +208,7 @@ async def test_reminder_aborted(
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
-    assert len(t.events) == 3  # nothing should have been executed
+    assert len(t.events) == 4  # nothing should have been executed
 
 
 async def test_reminder_cancelled(
@@ -272,24 +277,40 @@ async def test_reminder_restart(
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
-    assert len(t.events) == 4  # nothing should have been executed
+    assert len(t.events) == 5  # nothing should have been executed
 
 
 # noinspection PyProtectedMember
-async def test_is_new_tracker(default_processor: MessageProcessor):
+@pytest.mark.parametrize(
+    "events_to_apply,is_legacy",
+    [
+        # just an action listen means it's legacy
+        ([ActionExecuted(ACTION_LISTEN_NAME)], True),
+        # action listen and session start means it isn't legacy
+        (
+            [
+                ActionExecuted(ACTION_SESSION_START_NAME),
+                ActionExecuted(ACTION_LISTEN_NAME),
+            ],
+            False,
+        ),
+        # just a single event means it's legacy
+        ([UserUttered("hello")], True),
+    ],
+)
+async def test_is_new_tracker(
+    events_to_apply: List[Event], is_legacy: bool, default_processor: MessageProcessor,
+):
     sender_id = uuid.uuid4().hex
 
-    # tracker with just an action_listen is a new tacker
+    # new tracker without events
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
-    assert default_processor._is_new_tracker(tracker)
-
-    # adding another event means it's no longer considered a new tracker
-    tracker.update(UserUttered("hello"))
-    assert not default_processor._is_new_tracker(tracker)
-
-    # a tracker without any events is also a new tracker
     tracker.events.clear()
-    assert default_processor._is_new_tracker(tracker)
+
+    for event in events_to_apply:
+        tracker.update(event)
+
+    assert default_processor._is_legacy_tracker(tracker) == is_legacy
 
 
 # noinspection PyProtectedMember

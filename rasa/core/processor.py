@@ -9,7 +9,7 @@ import numpy as np
 import time
 
 from rasa.core import jobs
-from rasa.core.actions.action import Action
+from rasa.core.actions.action import Action, ACTION_SESSION_START_NAME
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
@@ -97,8 +97,11 @@ class MessageProcessor:
         await self._predict_and_execute_next_action(message, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
-
+        print("have tracker events")
+        for e in tracker.events:
+            print(e)
         if isinstance(message.output_channel, CollectingOutputChannel):
+            print("done in processor")
             return message.output_channel.messages
         else:
             return None
@@ -596,7 +599,8 @@ class MessageProcessor:
 
         """
         if not tracker.events:
-            return None
+            # this is a legacy tracker (pre-sessions)
+            return time.time()
 
         # try to fetch the timestamp of the latest `SessionStarted` event
         last_session_started_event = tracker.get_last_event_for(SessionStarted)
@@ -604,6 +608,7 @@ class MessageProcessor:
             return last_session_started_event.timestamp
 
         # otherwise fetch the timestamp of the first event
+        # this also is a legacy tracker (pre-sessions)
         return tracker.events[0].timestamp
 
     def _has_session_expired(
@@ -621,16 +626,12 @@ class MessageProcessor:
         """
         session_start_timestamp = self._session_start_timestamp_for(tracker)
 
-        # this is a legacy tracker (pre-sessions)
-        if not session_start_timestamp:
-            return False
-
         time_delta_in_seconds = time.time() - session_start_timestamp
 
         return time_delta_in_seconds / 60 > session_length_in_minutes
 
     @staticmethod
-    def _is_new_tracker(tracker: DialogueStateTracker) -> bool:
+    def _is_legacy_tracker(tracker: DialogueStateTracker) -> bool:
         """Determine whether `tracker` is new.
 
         A new tracker is a tracker that has either no events, or one event that is an
@@ -645,14 +646,10 @@ class MessageProcessor:
 
         """
 
-        if len(tracker.events) > 1:
-            return False
-
-        last_action_executed_event = tracker.get_last_event_for(ActionExecuted)
-
-        return not tracker.events or (
-            last_action_executed_event
-            and last_action_executed_event.action_name == ACTION_LISTEN_NAME
+        return not any(
+            isinstance(event, ActionExecuted)
+            and event.action_name == ACTION_SESSION_START_NAME
+            for event in tracker.events
         )
 
     def _get_tracker(
@@ -661,9 +658,10 @@ class MessageProcessor:
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
         tracker = self.tracker_store.get_or_create_tracker(sender_id)
 
-        if self._is_new_tracker(tracker) or self._has_session_expired(
-            tracker, session_length_in_minutes
+        if self._is_legacy_tracker(tracker) or self._has_session_expired(
+            tracker, 0.083
         ):
+            print("has expired")
             tracker.update(SessionStarted())
 
         return tracker

@@ -17,6 +17,7 @@ from rasa.core.events import (  # pytype: disable=pyi-error
     UserUtteranceReverted,
     BotUttered,
     Form,
+    SessionStarted,
 )
 from rasa.core.domain import Domain  # pytype: disable=pyi-error
 from rasa.core.slots import Slot
@@ -261,13 +262,13 @@ class DialogueStateTracker:
             UserMessage.DEFAULT_SENDER_ID, self.slots.values(), self._max_event_history
         )
 
+    # TODO: exclude SessionStart from prior states
     def generate_all_prior_trackers(
         self,
     ) -> Generator["DialogueStateTracker", None, None]:
         """Returns a generator of the previous trackers of this tracker.
 
-        The resulting array is representing
-        the trackers before each action."""
+        The resulting array is representing the trackers before each action."""
 
         tracker = self.init_copy()
 
@@ -344,7 +345,7 @@ class DialogueStateTracker:
 
         applied_events = []
         for event in self.events:
-            if isinstance(event, Restarted):
+            if isinstance(event, (Restarted, SessionStarted)):
                 applied_events = []
             elif isinstance(event, ActionReverted):
                 undo_till_previous(ActionExecuted, applied_events)
