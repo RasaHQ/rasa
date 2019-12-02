@@ -719,8 +719,7 @@ class SQLTrackerStore(TrackerStore):
                     sa.or_(
                         self.SQLEvent.timestamp
                         >= session_start_sub_query.c.session_start,
-                        # Compare `None` with `==` since this happens in SQL
-                        session_start_sub_query.c.session_start == None,
+                        session_start_sub_query.c.session_start.is_(None),
                     ),
                 )
                 .order_by(self.SQLEvent.timestamp)
