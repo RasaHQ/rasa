@@ -12,6 +12,7 @@ from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
+    ACTION_SESSION_START_NAME,
     ActionBack,
     ActionDefaultAskAffirmation,
     ActionDefaultAskRephrase,
@@ -22,9 +23,17 @@ from rasa.core.actions.action import (
     ActionUtterTemplate,
     ActionRetrieveResponse,
     RemoteAction,
+    ActionSessionStart,
 )
 from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.events import Restarted, SlotSet, UserUtteranceReverted, BotUttered, Form
+from rasa.core.events import (
+    Restarted,
+    SlotSet,
+    UserUtteranceReverted,
+    BotUttered,
+    Form,
+    SessionStarted,
+)
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
@@ -98,18 +107,19 @@ def test_domain_action_instantiation():
 
     instantiated_actions = domain.actions(None)
 
-    assert len(instantiated_actions) == 11
+    assert len(instantiated_actions) == 12
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
-    assert instantiated_actions[2].name() == ACTION_DEFAULT_FALLBACK_NAME
-    assert instantiated_actions[3].name() == ACTION_DEACTIVATE_FORM_NAME
-    assert instantiated_actions[4].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
-    assert instantiated_actions[5].name() == (ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
-    assert instantiated_actions[6].name() == (ACTION_DEFAULT_ASK_REPHRASE_NAME)
-    assert instantiated_actions[7].name() == ACTION_BACK_NAME
-    assert instantiated_actions[8].name() == "my_module.ActionTest"
-    assert instantiated_actions[9].name() == "utter_test"
-    assert instantiated_actions[10].name() == "respond_test"
+    assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
+    assert instantiated_actions[3].name() == ACTION_DEFAULT_FALLBACK_NAME
+    assert instantiated_actions[4].name() == ACTION_DEACTIVATE_FORM_NAME
+    assert instantiated_actions[5].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
+    assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
+    assert instantiated_actions[7].name() == ACTION_DEFAULT_ASK_REPHRASE_NAME
+    assert instantiated_actions[8].name() == ACTION_BACK_NAME
+    assert instantiated_actions[9].name() == "my_module.ActionTest"
+    assert instantiated_actions[10].name() == "utter_test"
+    assert instantiated_actions[11].name() == "respond_test"
 
 
 async def test_remote_action_runs(
@@ -480,6 +490,15 @@ async def test_action_restart(
     )
 
     assert events == [BotUttered("congrats, you've restarted me!"), Restarted()]
+
+
+async def test_action_session_start(
+    default_channel, template_nlg, template_sender_tracker, default_domain
+):
+    events = await ActionSessionStart().run(
+        default_channel, template_nlg, template_sender_tracker, default_domain
+    )
+    assert events == [SessionStarted(), ActionExecuted()]
 
 
 async def test_action_default_fallback(

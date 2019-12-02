@@ -317,19 +317,31 @@ class ActionSessionStart(Action):
     def name(self) -> Text:
         return ACTION_SESSION_START_NAME
 
-    async def run(self, output_channel, nlg, tracker, domain):
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "DialogueStateTracker",
+    ) -> List[Event]:
         from rasa.core.events import SessionStarted, SlotSet
 
         # TODO: config check whether slots should be carried over
-        # fetch SlotSet events from tracker
-        # carry over key, value and metadata
-        slot_set_events: List[Event] = [
+        # fetch SlotSet events from tracker and carry over key, value and metadata
+        # use generator so the timestamps are greater than that of the returned
+        # `SessionStarted` event
+        slot_set_events = (
             SlotSet(key=event.key, value=event.value, metadata=event.metadata)
             for event in tracker.events
             if isinstance(event, SlotSet)
-        ]
+        )
 
-        return slot_set_events + [SessionStarted()]
+        # noinspection PyTypeChecker
+        return (
+            [SessionStarted()]
+            + list(slot_set_events)
+            + [ActionExecuted(action_name=ACTION_LISTEN_NAME)]
+        )
 
 
 class ActionDefaultFallback(ActionUtterTemplate):
