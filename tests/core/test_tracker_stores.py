@@ -10,7 +10,14 @@ from moto import mock_dynamodb2
 
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
-from rasa.core.events import SlotSet, ActionExecuted, Restarted
+from rasa.core.events import (
+    SlotSet,
+    ActionExecuted,
+    Restarted,
+    UserUttered,
+    SessionStarted,
+    BotUttered,
+)
 from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
@@ -379,3 +386,55 @@ def test_set_fail_safe_tracker_store_domain(default_domain: Domain):
     assert failsafe_store.domain is default_domain
     assert tracker_store.domain is failsafe_store.domain
     assert fallback_tracker_store.domain is failsafe_store.domain
+
+
+def test_sql_tracker_store_retrieve_with_session_started_events(default_domain: Domain):
+    tracker_store = SQLTrackerStore(default_domain, host="sqlite:///")
+
+    # Create tracker with a SessionStarted event
+    events = [
+        UserUttered("Hola", {"name": "greet"}),
+        BotUttered("Hi"),
+        SessionStarted(),
+        UserUttered("Ciao", {"name": "greet"}),
+    ]
+    sender_id = "test_sql_tracker_store_with_session_events"
+    tracker = DialogueStateTracker.from_events(sender_id, events)
+    tracker_store.save(tracker)
+
+    # Save other tracker to ensure that we don't run into problems with other senders
+    other_tracker = DialogueStateTracker.from_events("other-sender", [SessionStarted()])
+    tracker_store.save(other_tracker)
+
+    # Retrieve tracker with events since latest restart
+    tracker = tracker_store.retrieve(sender_id)
+
+    assert len(tracker.events) == 2
+    assert all((event == tracker.events[i] for i, event in enumerate(events[2:])))
+
+
+def test_sql_tracker_store_retrieve_without_session_started_events(
+    default_domain: Domain,
+):
+    tracker_store = SQLTrackerStore(default_domain, host="sqlite:///")
+
+    # Create tracker with a SessionStarted event
+    events = [
+        UserUttered("Hola", {"name": "greet"}),
+        BotUttered("Hi"),
+        UserUttered("Ciao", {"name": "greet"}),
+        BotUttered("Hi2"),
+    ]
+
+    sender_id = "test_sql_tracker_store_retrieve_without_session_started_events"
+    tracker = DialogueStateTracker.from_events(sender_id, events)
+    tracker_store.save(tracker)
+
+    # Save other tracker to ensure that we don't run into problems with other senders
+    other_tracker = DialogueStateTracker.from_events("other-sender", [SessionStarted()])
+    tracker_store.save(other_tracker)
+
+    tracker = tracker_store.retrieve(sender_id)
+
+    assert len(tracker.events) == 4
+    assert all(event == tracker.events[i] for i, event in enumerate(events))

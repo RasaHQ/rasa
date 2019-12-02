@@ -694,15 +694,40 @@ class SQLTrackerStore(TrackerStore):
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
 
+        import sqlalchemy as sa
+        from rasa.core.events import SessionStarted
+
         with self.session_scope() as session:
-            query = session.query(self.SQLEvent)
-            result = (
-                query.filter_by(sender_id=sender_id)
+            # Subquery to find the timestamp of the first `SessionStartedEvent`.
+            session_start_sub_query = (
+                session.query(
+                    sa.func.max(self.SQLEvent.timestamp).label("session_start")
+                )
+                .filter(
+                    self.SQLEvent.sender_id == sender_id,
+                    self.SQLEvent.type_name == SessionStarted.type_name,
+                )
+                .subquery()
+            )
+
+            results = (
+                session.query(self.SQLEvent)
+                .filter(
+                    self.SQLEvent.sender_id == sender_id,
+                    # Find events after the latest `SessionStarted` event or return all
+                    # events
+                    sa.or_(
+                        self.SQLEvent.timestamp
+                        >= session_start_sub_query.c.session_start,
+                        # Compare `None` with `==` since this happens in SQL
+                        session_start_sub_query.c.session_start == None,
+                    ),
+                )
                 .order_by(self.SQLEvent.timestamp)
                 .all()
             )
 
-            events = [json.loads(event.data) for event in result]
+            events = [json.loads(event.data) for event in results]
 
             if self.domain and len(events) > 0:
                 logger.debug(f"Recreating tracker from sender id '{sender_id}'")
