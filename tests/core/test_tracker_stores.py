@@ -155,8 +155,10 @@ def test_tracker_store_with_host_argument_from_string(default_domain: Domain):
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "tests.core.test_tracker_stores.HostExampleTrackerStore"
 
-    with pytest.warns(None):
+    with pytest.warns(None) as record:
         tracker_store = TrackerStore.find_tracker_store(default_domain, store_config)
+        
+    assert len(record) == 0
 
     assert isinstance(tracker_store, HostExampleTrackerStore)
 
