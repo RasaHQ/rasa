@@ -42,8 +42,7 @@ RUN apt-get update -qq \
 RUN pip install -U pip
 
 # Install spacy model
-RUN pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir > /dev/null \
-    && python -m spacy link de_core_news_sm de
+RUN pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir > /dev/null
 
 # Copy only what we really need
 COPY README.md .
@@ -54,12 +53,12 @@ COPY alt_requirements/ ./alt_requirements
 COPY requirements.txt .
 COPY LICENSE.txt .
 
-# Install Rasa and its dependencies
+# Install dependencies
 RUN pip install --no-cache-dir -r alt_requirements/requirements_pretrained_embeddings_spacy.txt
 
-# Install Rasa as package
+# Install Rasa as package and link spacy model
 COPY rasa ./rasa
-RUN pip install .[sql,spacy]
+RUN pip install .[sql,spacy] && python -m spacy link de_core_news_sm de
 
 # Runtime stage which uses the virtualenv which we built in the previous stage
 FROM base AS runner

@@ -62,9 +62,11 @@ COPY LICENSE.txt .
 # Install Rasa and its dependencies
 RUN pip install --no-cache-dir -r alt_requirements/requirements_full.txt
 
-# Install Rasa as package
+# Install Rasa as package and link spacy models
 COPY rasa ./rasa
-RUN pip install .[sql,spacy,mitie]
+RUN pip install .[sql,spacy,mitie] \
+    && python -m spacy link en_core_web_md en \
+    && python -m spacy link de_core_news_sm de
 
 # Runtime stage which uses the virtualenv which we built in the previous stage
 FROM base AS runner
