@@ -31,7 +31,7 @@ class SpacyFeaturizer(Featurizer):
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ] + [MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES]
 
-    defaults = {"use_mean_vec": False}
+    defaults = {"use_mean_vec": True}
 
     def _features_for_doc(self, doc: "Doc") -> np.ndarray:
         """Feature vector for a single document / sentence."""

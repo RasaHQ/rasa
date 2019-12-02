@@ -727,7 +727,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
     ) -> Tuple["tf.Tensor", "tf.Tensor"]:
         """Randomly mask input sequences."""
 
-        # do not mask cls token
+        # do not substitute with cls token
         pad_mask_up_to_last = tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
         mask_up_to_last = 1 - pad_mask_up_to_last
 
@@ -749,7 +749,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
         lm_mask_prob = (
-            tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype) * mask_up_to_last
+            tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype) * mask
         )
         lm_mask_bool = tf.greater_equal(lm_mask_prob, 0.85)
         a_pre = tf.where(tf.tile(lm_mask_bool, (1, 1, a.shape[-1])), a_other, a)
@@ -886,7 +886,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
     def _train_entity_graph(
         self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor"
     ) -> Tuple["tf.Tensor", "tf.Tensor"]:
-        sequence_lengths = tf.cast(tf.reduce_sum(mask[:, :, 0], 1), tf.int32)
+        mask_up_to_last = 1 - tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
+        sequence_lengths = tf.cast(tf.reduce_sum(mask_up_to_last[:, :, 0], 1), tf.int32)
         sequence_lengths.set_shape([mask.shape[0]])
 
         c = tf.reduce_sum(tf.nn.relu(c), -1)
@@ -907,9 +908,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         loss = tf.reduce_mean(-log_likelihood)
 
         # calculate f1 score for train predictions
-        weights = tf.sequence_mask(sequence_lengths)
         pos_tag_indices = [k for k, v in self.inverted_tag_dict.items() if v != "O"]
-        score = f1(c, pred_ids, self.num_tags, pos_tag_indices, weights)
+        score = f1(c, pred_ids, self.num_tags, pos_tag_indices, mask_up_to_last)
 
         return loss, score[1]
 
@@ -1039,7 +1039,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
     def _pred_entity_graph(self, a: "tf.Tensor", mask: "tf.Tensor"):
-        sequence_lengths = tf.cast(tf.reduce_sum(mask[:, :, 0], 1), tf.int32)
+        mask_up_to_last = 1 - tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
+        sequence_lengths = tf.cast(tf.reduce_sum(mask_up_to_last[:, :, 0], 1), tf.int32)
 
         # predict tagsx
         _, _, pred_ids = self._create_crf(a, sequence_lengths)
