@@ -44,12 +44,6 @@ RUN pip install -U pip
 # Download mitie model
 RUN wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 
-# Install spacy models
-RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > /dev/null \
- && python -m spacy link en_core_web_md en \
- && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir > /dev/null \
- && python -m spacy link de_core_news_sm de
-
 # Copy only what we really need
 COPY README.md .
 COPY setup.py .
@@ -62,11 +56,15 @@ COPY LICENSE.txt .
 # Install dependencies
 RUN pip install --no-cache-dir -r alt_requirements/requirements_full.txt
 
-# Install Rasa as package and link spacy models
+# Install and link spacy models
+RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > /dev/null \
+ && python -m spacy link en_core_web_md en \
+ && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir > /dev/null \
+ && python -m spacy link de_core_news_sm de
+
+# Install Rasa as package
 COPY rasa ./rasa
-RUN pip install .[sql,spacy,mitie] \
-    && python -m spacy link en_core_web_md en \
-    && python -m spacy link de_core_news_sm de
+RUN pip install .[sql,spacy,mitie]
 
 # Runtime stage which uses the virtualenv which we built in the previous stage
 FROM base AS runner
