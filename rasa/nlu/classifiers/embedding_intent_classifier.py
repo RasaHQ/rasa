@@ -908,10 +908,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         loss = tf.reduce_mean(-log_likelihood)
 
         # calculate f1 score for train predictions
-        # weights = tf.sequence_mask(sequence_lengths)
-        weights = tf.cast(mask_up_to_last, tf.int32)
         pos_tag_indices = [k for k, v in self.inverted_tag_dict.items() if v != "O"]
-        score = f1(c, pred_ids, self.num_tags, pos_tag_indices, weights)
+        score = f1(c, pred_ids, self.num_tags, pos_tag_indices, mask_up_to_last)
 
         return loss, score[1]
 
@@ -1043,7 +1041,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
     def _pred_entity_graph(self, a: "tf.Tensor", mask: "tf.Tensor"):
         mask_up_to_last = 1 - tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
         sequence_lengths = tf.cast(tf.reduce_sum(mask_up_to_last[:, :, 0], 1), tf.int32)
-        # sequence_lengths = tf.cast(tf.reduce_sum(mask[:, :, 0], 1), tf.int32)
 
         # predict tagsx
         _, _, pred_ids = self._create_crf(a, sequence_lengths)
