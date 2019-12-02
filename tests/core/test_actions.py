@@ -530,9 +530,7 @@ async def test_action_session_start_with_slots(
     ]
 
     # make sure that the list of events has ascending timestamps
-    assert all(
-        events[i].timestamp <= events[i + 1].timestamp for i in range(len(events) - 1)
-    )
+    assert sorted(events, key=lambda x: x.timestamp) == events
 
 
 async def test_action_default_fallback(

@@ -141,7 +141,7 @@ class TrackerStore:
         tracker = self.retrieve(sender_id)
         self.max_event_history = max_event_history
         if tracker is None:
-            tracker = self.create_tracker(sender_id, append_action_listen=True,)
+            tracker = self.create_tracker(sender_id)
         return tracker
 
     def init_tracker(self, sender_id: Text) -> "DialogueStateTracker":

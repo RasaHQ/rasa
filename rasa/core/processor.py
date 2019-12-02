@@ -292,7 +292,8 @@ class MessageProcessor:
             logger.debug(f"Current slot values: \n{slot_values}")
 
     def _log_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
-        """Check if the NLU interpreter picks up intents or entities that aren't recognized."""
+        """Check if the NLU interpreter picks up intents or entities that aren't
+        recognized."""
 
         domain_is_not_empty = self.domain and not self.domain.is_empty()
 
@@ -582,48 +583,77 @@ class MessageProcessor:
             tracker.update(e, self.domain)
 
     @staticmethod
-    def _session_start_timestamp_from(tracker: DialogueStateTracker) -> Optional[float]:
+    def _session_start_timestamp_for(tracker: DialogueStateTracker) -> Optional[float]:
         """Retrieve timestamp of the beginning of the last session start for
         `tracker`.
 
         Args:
-            tracker: pass.
+            tracker: Tracker to inspect.
 
         Returns:
+            Timestamp of last `SessionStarted` event if available, else timestamp of
+            oldest event. `None` if no events are available.
 
         """
-
         if not tracker.events:
             return None
 
         # try to fetch the timestamp of the latest `SessionStarted` event
-        for event in reversed(tracker.events):
-            if isinstance(event, SessionStarted):
-                return event.timestamp
+        last_session_started_event = tracker.get_last_event_for(SessionStarted)
+        if last_session_started_event:
+            return last_session_started_event.timestamp
 
         # otherwise fetch the timestamp of the first event
         return tracker.events[0].timestamp
 
-    def _tracker_has_valid_session(
+    def _has_session_expired(
         self, tracker: DialogueStateTracker, session_length_in_minutes: int
     ) -> bool:
-        """Determine whether `tracker` requires a new session.
+        """Determine whether the latest session in `tracker` has expired.
 
         Args:
             tracker: Tracker to inspect.
             session_length_in_minutes: Session length in minutes.
+
         Returns:
-            `True` if a new session is required, else `False`.
+            `True` if the session has expired, else `False`.
 
         """
-        session_start_timestamp = self._session_start_timestamp_from(tracker)
+        session_start_timestamp = self._session_start_timestamp_for(tracker)
 
+        # this is a legacy tracker (pre-sessions)
         if not session_start_timestamp:
-            return True
+            return False
 
         time_delta_in_seconds = time.time() - session_start_timestamp
 
         return time_delta_in_seconds / 60 > session_length_in_minutes
+
+    @staticmethod
+    def _is_new_tracker(tracker: DialogueStateTracker) -> bool:
+        """Determine whether `tracker` is new.
+
+        A new tracker is a tracker that has either no events, or one event that is an
+        executed 'action_listen'.
+
+        Args:
+            tracker: Tracker to inspect.
+
+        Returns:
+            `True` if the tracker contains no events, `True` if the tracker contains
+            one event that is an executed "ActionListen", `False` otherwise.
+
+        """
+
+        if len(tracker.events) > 1:
+            return False
+
+        last_action_executed_event = tracker.get_last_event_for(ActionExecuted)
+
+        return not tracker.events or (
+            last_action_executed_event
+            and last_action_executed_event.action_name == ACTION_LISTEN_NAME
+        )
 
     def _get_tracker(
         self, sender_id: Text, session_length_in_minutes: int = 60
@@ -631,7 +661,9 @@ class MessageProcessor:
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
         tracker = self.tracker_store.get_or_create_tracker(sender_id)
 
-        if not self._tracker_has_valid_session(tracker, session_length_in_minutes):
+        if self._is_new_tracker(tracker) or self._has_session_expired(
+            tracker, session_length_in_minutes
+        ):
             tracker.update(SessionStarted())
 
         return tracker

@@ -1,3 +1,7 @@
+from typing import Optional
+
+import time
+
 import aiohttp
 import asyncio
 import datetime
@@ -19,6 +23,8 @@ from rasa.core.events import (
     ReminderScheduled,
     Restarted,
     UserUttered,
+    SessionStarted,
+    Event,
 )
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.slots import Slot
@@ -267,3 +273,58 @@ async def test_reminder_restart(
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
     assert len(t.events) == 4  # nothing should have been executed
+
+
+# noinspection PyProtectedMember
+async def test_is_new_tracker(default_processor: MessageProcessor):
+    sender_id = uuid.uuid4().hex
+
+    # tracker with just an action_listen is a new tacker
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    assert default_processor._is_new_tracker(tracker)
+
+    # adding another event means it's no longer considered a new tracker
+    tracker.update(UserUttered("hello"))
+    assert not default_processor._is_new_tracker(tracker)
+
+    # a tracker without any events is also a new tracker
+    tracker.events.clear()
+    assert default_processor._is_new_tracker(tracker)
+
+
+# noinspection PyProtectedMember
+@pytest.mark.parametrize(
+    "event_to_apply,session_length_in_minutes,has_expired",
+    [
+        # session start is way in the past
+        (SessionStarted(timestamp=1), 60, True),
+        # session start is very recent
+        (SessionStarted(timestamp=time.time()), 1, False),
+        # there is no session start event (legacy tracker)
+        (UserUttered("hello", timestamp=time.time()), 1, False),
+        # there is no event
+        (None, 1, False),
+    ],
+)
+async def test_has_session_expired(
+    event_to_apply: Optional[Event],
+    session_length_in_minutes: int,
+    has_expired: bool,
+    default_processor: MessageProcessor,
+):
+    sender_id = uuid.uuid4().hex
+
+    # create new tracker without events
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker.events.clear()
+
+    # apply desired event
+    if event_to_apply:
+        tracker.update(event_to_apply)
+
+    assert (
+        default_processor._has_session_expired(
+            tracker, session_length_in_minutes=session_length_in_minutes
+        )
+        == has_expired
+    )

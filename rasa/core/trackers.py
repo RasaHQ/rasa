@@ -466,10 +466,10 @@ class DialogueStateTracker:
         def filter_function(e: Event):
             has_instance = isinstance(e, event_type)
             excluded = isinstance(e, ActionExecuted) and e.action_name in to_exclude
-
             return has_instance and not excluded
 
         filtered = filter(filter_function, reversed(self.applied_events()))
+
         for i in range(skip):
             next(filtered, None)
 
