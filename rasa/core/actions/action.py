@@ -43,6 +43,8 @@ ACTION_LISTEN_NAME = "action_listen"
 
 ACTION_RESTART_NAME = "action_restart"
 
+ACTION_SESSION_START_NAME = "action_session_start"
+
 ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 
 ACTION_DEACTIVATE_FORM_NAME = "action_deactivate_form"
@@ -61,6 +63,7 @@ def default_actions() -> List["Action"]:
     return [
         ActionListen(),
         ActionRestart(),
+        ActionSessionStart(),
         ActionDefaultFallback(),
         ActionDeactivateForm(),
         ActionRevertFallbackEvents(),
@@ -304,6 +307,29 @@ class ActionRestart(ActionUtterTemplate):
         evts = await super().run(output_channel, nlg, tracker, domain)
 
         return evts + [Restarted()]
+
+
+class ActionSessionStart(Action):
+    """Resets the tracker to its initial state.
+
+    Utters the restart template if available."""
+
+    def name(self) -> Text:
+        return ACTION_SESSION_START_NAME
+
+    async def run(self, output_channel, nlg, tracker, domain):
+        from rasa.core.events import SessionStarted, SlotSet
+
+        # TODO: config check whether slots should be carried over
+        # fetch SlotSet events from tracker
+        # carry over key, value and metadata
+        slot_set_events: List[Event] = [
+            SlotSet(key=event.key, value=event.value, metadata=event.metadata)
+            for event in tracker.events
+            if isinstance(event, SlotSet)
+        ]
+
+        return slot_set_events + [SessionStarted()]
 
 
 class ActionDefaultFallback(ActionUtterTemplate):

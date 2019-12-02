@@ -525,7 +525,6 @@ class Restarted(Event):
         )
 
         tracker._reset()
-        tracker.trigger_followup_action(ACTION_LISTEN_NAME)
 
 
 # noinspection PyProtectedMember

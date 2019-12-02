@@ -2,7 +2,7 @@ import copy
 import logging
 from collections import deque
 from enum import Enum
-from typing import Dict, Text, Any, Optional, Iterator, Generator, Type, List
+from typing import Dict, Text, Any, Optional, Iterator, Generator, Type, List, Deque
 
 from rasa.core import events  # pytype: disable=pyi-error
 from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
@@ -525,7 +525,7 @@ class DialogueStateTracker:
                 "".format(key)
             )
 
-    def _create_events(self, evts: List[Event]) -> deque:
+    def _create_events(self, evts: List[Event]) -> Deque[Event]:
 
         if evts and not isinstance(evts[0], Event):  # pragma: no cover
             raise ValueError("events, if given, must be a list of events")

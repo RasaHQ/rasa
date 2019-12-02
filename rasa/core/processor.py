@@ -33,6 +33,7 @@ from rasa.core.events import (
     SlotSet,
     UserUttered,
     BotUttered,
+    SessionStarted,
 )
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
@@ -580,9 +581,60 @@ class MessageProcessor:
             e.timestamp = time.time()
             tracker.update(e, self.domain)
 
-    def _get_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+    @staticmethod
+    def _session_start_timestamp_from(tracker: DialogueStateTracker) -> Optional[float]:
+        """Retrieve timestamp of the beginning of the last session start for
+        `tracker`.
+
+        Args:
+            tracker: pass.
+
+        Returns:
+
+        """
+
+        if not tracker.events:
+            return None
+
+        # try to fetch the timestamp of the latest `SessionStarted` event
+        for event in reversed(tracker.events):
+            if isinstance(event, SessionStarted):
+                return event.timestamp
+
+        # otherwise fetch the timestamp of the first event
+        return tracker.events[0].timestamp
+
+    def _tracker_has_valid_session(
+        self, tracker: DialogueStateTracker, session_length_in_minutes: int
+    ) -> bool:
+        """Determine whether `tracker` requires a new session.
+
+        Args:
+            tracker: Tracker to inspect.
+            session_length_in_minutes: Session length in minutes.
+        Returns:
+            `True` if a new session is required, else `False`.
+
+        """
+        session_start_timestamp = self._session_start_timestamp_from(tracker)
+
+        if not session_start_timestamp:
+            return True
+
+        time_delta_in_seconds = time.time() - session_start_timestamp
+
+        return time_delta_in_seconds / 60 > session_length_in_minutes
+
+    def _get_tracker(
+        self, sender_id: Text, session_length_in_minutes: int = 60
+    ) -> Optional[DialogueStateTracker]:
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
-        return self.tracker_store.get_or_create_tracker(sender_id)
+        tracker = self.tracker_store.get_or_create_tracker(sender_id)
+
+        if not self._tracker_has_valid_session(tracker, session_length_in_minutes):
+            tracker.update(SessionStarted())
+
+        return tracker
 
     def _save_tracker(self, tracker: DialogueStateTracker) -> None:
         self.tracker_store.save(tracker)
@@ -601,8 +653,7 @@ class MessageProcessor:
     def _get_next_action_probabilities(
         self, tracker: DialogueStateTracker
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
-        """Collect predictions from ensemble and return action and predictions.
-        """
+        """Collect predictions from ensemble and return action and predictions."""
 
         followup_action = tracker.followup_action
         if followup_action:

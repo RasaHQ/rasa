@@ -6,7 +6,8 @@ import os
 import pickle
 import typing
 from datetime import datetime, timezone
-from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable
+
+from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable, List
 
 import itertools
 from boto3.dynamodb.conditions import Key
@@ -14,7 +15,7 @@ from boto3.dynamodb.conditions import Key
 # noinspection PyPep8Naming
 from time import sleep
 
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.brokers.event_channel import EventChannel
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
@@ -28,6 +29,7 @@ if typing.TYPE_CHECKING:
     from sqlalchemy.engine.base import Engine
     from sqlalchemy.orm import Session
     import boto3
+    from rasa.core.events import Event
 
 logger = logging.getLogger(__name__)
 
@@ -133,13 +135,13 @@ class TrackerStore:
             return InMemoryTrackerStore(domain)
 
     def get_or_create_tracker(
-        self, sender_id: Text, max_event_history: Optional[int] = None
+        self, sender_id: Text, max_event_history: Optional[int] = None,
     ) -> "DialogueStateTracker":
         """Returns tracker or creates one if the retrieval returns None"""
         tracker = self.retrieve(sender_id)
         self.max_event_history = max_event_history
         if tracker is None:
-            tracker = self.create_tracker(sender_id)
+            tracker = self.create_tracker(sender_id, append_action_listen=True,)
         return tracker
 
     def init_tracker(self, sender_id: Text) -> "DialogueStateTracker":
@@ -151,14 +153,17 @@ class TrackerStore:
         )
 
     def create_tracker(
-        self, sender_id: Text, append_action_listen: bool = True
+        self, sender_id: Text, append_action_listen: bool = True,
     ) -> DialogueStateTracker:
-        """Creates a new tracker for the sender_id. The tracker is initially listening."""
+        """Creates a new tracker for the sender_id. The tracker is initially listening.
+        """
         tracker = self.init_tracker(sender_id)
         if tracker:
             if append_action_listen:
                 tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+
             self.save(tracker)
+
         return tracker
 
     def save(self, tracker):
