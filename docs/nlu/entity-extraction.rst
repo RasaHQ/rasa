@@ -149,3 +149,17 @@ associate that with a location entity.
 
 If you just want to match regular expressions exactly, you can do this in your code,
 as a postprocessing step after receiving the response from Rasa NLU.
+
+
+Passing Custom Features to ``CRFEntityExtractor``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you want to pass custom features, such as pre-trained word embeddings, to ``CRFEntityExtractor``, you can
+add any dense featurizer to the pipeline before the ``CRFEntityExtractor``.
+Make sure to set ``"return_sequence"`` to ``True`` for the corresponding dense featurizer.
+``CRFEntityExtractor`` automatically finds the additional dense features and checks if the dense features are an
+iterable of ``len(tokens)``, where each entry is a vector.
+A warning will be shown in case the check fails.
+However, ``CRFEntityExtractor`` will continue to train just without the additional custom features.
+In case dense features are present ``CRFEntityExtractor`` will pass the dense feature vectors to ``sklearn_crfsuite``
+and used for training.
