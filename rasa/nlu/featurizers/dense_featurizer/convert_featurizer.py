@@ -47,7 +47,7 @@ class ConveRTFeaturizer(Featurizer):
 
         logger.warning(
             f"ConveRTFeaturizer always returns a feature vector of size "
-            f"(1 x feature-dimensions. If you use any other featurizer with "
+            f"(1 x feature-dimensions). If you use any other featurizer with "
             f"'return_sequence' equal to True, training will fail."
         )
 

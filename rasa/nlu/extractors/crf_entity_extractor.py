@@ -596,11 +596,14 @@ class CRFEntityExtractor(EntityExtractor):
 
         tokens = message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], [])
         if len(tokens) != len(features):
-            raise ValueError(
+            warnings.warn(
                 f"Number of features ({len(features)}) for attribute "
                 f"'{MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]}' "
-                f"does not match number of tokens ({len(tokens)})."
+                f"does not match number of tokens ({len(tokens)}). Set "
+                f"'return_sequence' to true in the corresponding featurizer in order "
+                f"to make use of the features in 'CRFEntityExtractor'."
             )
+            return None
 
         # convert to python-crfsuite feature format
         features_out = []
