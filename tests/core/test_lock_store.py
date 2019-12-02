@@ -1,15 +1,14 @@
 import asyncio
 import copy
 import os
-from typing import Union, Text
-from unittest.mock import patch
 
 import numpy as np
 import pytest
 import time
 from _pytest.tmpdir import TempdirFactory
+from typing import Text
+from unittest.mock import patch
 
-import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.constants import INTENT_MESSAGE_PREFIX, DEFAULT_LOCK_LIFETIME
@@ -122,9 +121,7 @@ def test_lock_expiration():
 
 def test_ticket_exists_error():
     def mocked_issue_ticket(
-        self,
-        conversation_id: Text,
-        lock_lifetime: Union[float, int] = DEFAULT_LOCK_LIFETIME,
+        self, conversation_id: Text, lock_lifetime: float = DEFAULT_LOCK_LIFETIME,
     ) -> None:
         # mock LockStore.issue_ticket() so it issues two tickets for the same
         # conversation ID simultaneously
@@ -177,7 +174,7 @@ async def test_message_order(tmpdir_factory: TempdirFactory, default_agent: Agen
     # can check the order later on. We don't need the return value of this method so
     # we'll just return None.
     async def mocked_handle_message(
-        self, message: UserMessage, wait: Union[int, float]
+        self, message: UserMessage, wait: float
     ) -> None:
         # write incoming message to file
         with open(str(incoming_order_file), "a+") as f_0:

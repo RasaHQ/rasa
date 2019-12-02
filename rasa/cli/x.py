@@ -2,12 +2,11 @@ import argparse
 import asyncio
 import importlib.util
 import logging
-import warnings
 import os
 import signal
 import traceback
 from multiprocessing import get_context
-from typing import List, Text, Optional, Tuple, Union, Iterable
+from typing import List, Text, Optional, Tuple, Iterable
 
 import aiohttp
 import ruamel.yaml as yaml
@@ -328,7 +327,7 @@ def rasa_x(args: argparse.Namespace):
 async def _pull_runtime_config_from_server(
     config_endpoint: Optional[Text],
     attempts: int = 60,
-    wait_time_between_pulls: Union[int, float] = 5,
+    wait_time_between_pulls: float = 5,
     keys: Iterable[Text] = ("endpoints", "credentials"),
 ) -> Optional[List[Text]]:
     """Pull runtime config from `config_endpoint`.

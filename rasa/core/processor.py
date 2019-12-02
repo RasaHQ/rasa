@@ -3,7 +3,7 @@ import warnings
 import logging
 import os
 from types import LambdaType
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import numpy as np
 import time
@@ -607,7 +607,7 @@ class MessageProcessor:
         return tracker.events[0].timestamp
 
     def _has_session_expired(
-        self, tracker: DialogueStateTracker, session_length_in_minutes: int
+        self, tracker: DialogueStateTracker, session_length_in_minutes: float
     ) -> bool:
         """Determine whether the latest session in `tracker` has expired.
 
