@@ -25,6 +25,7 @@ from rasa.core.actions.action import (
     RemoteAction,
     ActionSessionStart,
 )
+from rasa.core.channels import CollectingOutputChannel
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import (
     Restarted,
@@ -33,6 +34,7 @@ from rasa.core.events import (
     BotUttered,
     Form,
     SessionStarted,
+    ActionExecuted,
 )
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
@@ -492,13 +494,45 @@ async def test_action_restart(
     assert events == [BotUttered("congrats, you've restarted me!"), Restarted()]
 
 
-async def test_action_session_start(
-    default_channel, template_nlg, template_sender_tracker, default_domain
+async def test_action_session_start_without_slots(
+    default_channel: CollectingOutputChannel,
+    template_nlg: TemplatedNaturalLanguageGenerator,
+    template_sender_tracker: DialogueStateTracker,
+    default_domain: Domain,
 ):
     events = await ActionSessionStart().run(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
-    assert events == [SessionStarted(), ActionExecuted()]
+    assert events == [SessionStarted(), ActionExecuted(action_name=ACTION_LISTEN_NAME)]
+
+
+async def test_action_session_start_with_slots(
+    default_channel: CollectingOutputChannel,
+    template_nlg: TemplatedNaturalLanguageGenerator,
+    template_sender_tracker: DialogueStateTracker,
+    default_domain: Domain,
+):
+    # set a few slots on tracker
+    slot_set_event_1 = SlotSet("my_slot", "value")
+    slot_set_event_2 = SlotSet("another-slot", "value2")
+    for event in [slot_set_event_1, slot_set_event_2]:
+        template_sender_tracker.update(event)
+
+    events = await ActionSessionStart().run(
+        default_channel, template_nlg, template_sender_tracker, default_domain
+    )
+
+    assert events == [
+        SessionStarted(),
+        slot_set_event_1,
+        slot_set_event_2,
+        ActionExecuted(action_name=ACTION_LISTEN_NAME),
+    ]
+
+    # make sure that the list of events has ascending timestamps
+    assert all(
+        events[i].timestamp <= events[i + 1].timestamp for i in range(len(events) - 1)
+    )
 
 
 async def test_action_default_fallback(

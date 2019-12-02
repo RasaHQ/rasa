@@ -322,7 +322,7 @@ class ActionSessionStart(Action):
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
-        domain: "DialogueStateTracker",
+        domain: "Domain",
     ) -> List[Event]:
         from rasa.core.events import SessionStarted, SlotSet
 
