@@ -44,6 +44,7 @@ COPY setup.py .
 COPY setup.cfg .
 COPY MANIFEST.in .
 COPY requirements.txt .
+COPY LICENSE.txt .
 
 # Install Rasa and its dependencies
 RUN pip install -U pip && pip install --no-cache-dir -r requirements.txt
