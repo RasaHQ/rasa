@@ -123,7 +123,7 @@ events. In this example we are going to use the `python-kafka <https://kafka-pyt
   In order to use the Kafka event broker, ``rasa`` has to be installed with the
   ``kafka`` option:
 
-  .. code-block::
+  .. code-block:: bash
 
     $ pip install rasa[kafka]
 
