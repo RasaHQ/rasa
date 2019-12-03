@@ -1,3 +1,4 @@
+import warnings
 import logging
 import typing
 from typing import Any, Dict, Text
@@ -18,12 +19,12 @@ class LuisReader(JsonTrainingDataReader):
         training_examples = []
         regex_features = []
 
-        luisSchemaVersionChecked = 4
+        luisSchemaVersionChecked = 5
         version = int(js["luis_schema_version"].split(".")[0])
         if version > luisSchemaVersionChecked:
-            logger.warning(
+            warnings.warn(
                 "Your luis data schema version {} "
-                "is higher than 4.x.x. "
+                "is higher than 5.x.x. "
                 "Traning may not be performed correctly. "
                 "".format(js["luis_schema_version"])
             )
