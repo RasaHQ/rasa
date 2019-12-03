@@ -518,13 +518,37 @@ class EmbeddingIntentClassifier(Component):
         np.random.seed(self.random_seed)
 
         session_data = self.preprocess_train_data(training_data)
+        
 
         possible_to_train = self._check_enough_labels(session_data)
+        
+
+        # print("aaaaaa")
+        # print(training_data.intent_examples[0].get([MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]))
+        # print(training_data.intent_examples[0].get(MESSAGE_INTENT_ATTRIBUTE))
+        # print(training_data.intent_examples[0].get(MESSAGE_TEXT_ATTRIBUTE))
+        # for e in training_data.intent_examples:
+        #     print(e.get(MESSAGE_TEXT_ATTRIBUTE))
+        # print(example.get(attribute) for example in training_data.intent_examples)
+        # print(label_id_dict.items())
+        # print(message_sim)
 
         if not possible_to_train:
-            raise ValueError("Can not train a classifier. "
-                            "Need at least 2 different classes. "
-                            "Skipping training of classifier.")
+            
+            intent_attribute = training_data.intent_examples[0].get(MESSAGE_INTENT_ATTRIBUTE)
+            text_attribute = training_data.intent_examples
+            intent_content = []
+            for e in text_attribute:
+                intent_content.append(e.get(MESSAGE_TEXT_ATTRIBUTE))
+                
+            logger.error(
+                "Can not train a classifier. "
+                "Need at least 2 different classes. "
+                "Skipping training of classifier. "
+                "This is the only intent found \n"
+                f"{intent_attribute} " 
+                f"{intent_content}"
+            )
 
             return
 
