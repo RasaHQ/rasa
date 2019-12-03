@@ -146,7 +146,18 @@ class MessageProcessor:
         output_channel: OutputChannel,
         session_length_in_minutes: float,
     ) -> None:
+        """Check the current session in `tracker` and update it if expired.
 
+        A 'session_start' is run if the tracker is a legacy tracker, or if the latest
+        tracker session has expired.
+
+        Args:
+            tracker: Tracker to inspect.
+            output_channel: Output channel for potential utterances in a custom
+                `ActionSessionStart`.
+            session_length_in_minutes: Session length in minutes.
+            
+        """
         if self._is_legacy_tracker(tracker) or self._has_session_expired(
             tracker, session_length_in_minutes
         ):

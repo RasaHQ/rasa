@@ -346,9 +346,8 @@ async def test_update_tracker_session(
     sender_id = uuid.uuid4().hex
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
-    # make sure session expires
+    # make sure session expires and run tracker session update
     await asyncio.sleep(1e-2)  # in seconds
-
     await default_processor._update_tracker_session(tracker, default_channel, 1e-5)
 
     # the save is not called in _update_tracker_session()
