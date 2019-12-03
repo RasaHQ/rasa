@@ -82,7 +82,7 @@ async def test_verify_logging_message_for_repetition_in_intents(caplog):
         validator.verify_example_repetition_in_intents(False)
     assert len(record) == 1
     assert (
-        "The example 'good afternoon' was found in these "
+        "The example 'good afternoon' was found "
         "multiples intents: goodbye, greet" in record[0].message.args[0]
     )
 
