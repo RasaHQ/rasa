@@ -58,9 +58,13 @@ Details of the ``run()`` method:
 .. automethod:: rasa_sdk.Action.run
 
 
-There is an example of a ``SlotSet`` event
-:ref:`above <custom_action_example>`, and a full list of possible
-events in :ref:`Events <events>`.
+``Events``
+----------
+
+An action's ``run`` method returns a list of events. For more information on
+events see :ref:`Events`. The action itself will automatically be added to the
+tracker as an ``ActionExecuted`` event. If the action should not trigger any
+other events it must return an empty list.
 
 ``Tracker``
 -----------
