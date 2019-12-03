@@ -45,7 +45,7 @@ class Validator:
             if intent not in nlu_data_intents:
                 logger.debug(
                     f"The intent '{intent}' is listed in the domain file, but "
-                    f"is not found in the NLU training data.",
+                    f"is not found in the NLU training data."
                 )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
@@ -134,7 +134,7 @@ class Validator:
             if utterance not in actions:
                 logger.debug(
                     f"The utterance '{utterance}' is not listed under 'actions' in the "
-                    f"domain file. It can only be used as a template.",
+                    f"domain file. It can only be used as a template."
                 )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
