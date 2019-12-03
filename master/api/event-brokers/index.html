@@ -362,9 +362,16 @@ example:</p>
 </div>
 <div class="section" id="kafka-event-broker">
 <h2>Kafka Event Broker<a class="headerlink" href="#kafka-event-broker" title="Permalink to this headline">¶</a></h2>
-<p>It is possible to use <a class="reference external" href="https://kafka.apache.org/">Kafka</a> as main broker for your events. In this example
-we are going to use the <a class="reference external" href="https://kafka-python.readthedocs.io/en/master/usage.html">python-kafka</a>
-library, a Kafka client written in Python.</p>
+<p>It is possible to use <a class="reference external" href="https://kafka.apache.org/">Kafka</a> as main broker for your
+events. In this example we are going to use the <a class="reference external" href="https://kafka-python.readthedocs.io/en/master/usage.html">python-kafka</a> library, a Kafka client written in Python.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>In order to use the Kafka event broker, <code class="docutils literal notranslate"><span class="pre">rasa</span></code> has to be installed with the
+<code class="docutils literal notranslate"><span class="pre">kafka</span></code> option:</p>
+<div class="last highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install rasa<span class="o">[</span>kafka<span class="o">]</span>
+</pre></div>
+</div>
+</div>
 <div class="section" id="adding-a-kafka-event-broker-using-the-endpoint-configuration">
 <h3>Adding a Kafka Event Broker Using the Endpoint Configuration<a class="headerlink" href="#adding-a-kafka-event-broker-using-the-endpoint-configuration" title="Permalink to this headline">¶</a></h3>
 <p>As for the other brokers, you can use an endpoint configuration file to instruct Rasa Core to stream
