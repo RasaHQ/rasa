@@ -30,6 +30,22 @@ def test_combine_with_existing_dense_features():
     assert np.all(expected_features == actual_features)
 
 
+def test_combine_with_existing_dense_features_shape_mismatch():
+    featurizer = Featurizer()
+    attribute = MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+
+    existing_features = [[1, 0, 2, 3], [2, 0, 0, 1]]
+    new_features = [[0, 1]]
+
+    message = Message("This is a text.")
+    message.set(attribute, existing_features)
+
+    with pytest.raises(ValueError):
+        featurizer._combine_with_existing_dense_features(
+            message, new_features, attribute
+        )
+
+
 def test_combine_with_existing_sparse_features():
 
     featurizer = Featurizer()
@@ -48,6 +64,23 @@ def test_combine_with_existing_sparse_features():
     actual_features = actual_features.toarray()
 
     assert np.all(expected_features == actual_features)
+
+
+def test_combine_with_existing_sparse_features_shape_mismatch():
+
+    featurizer = Featurizer()
+    attribute = MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+
+    existing_features = scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]])
+    new_features = scipy.sparse.csr_matrix([[0, 1]])
+
+    message = Message("This is a text.")
+    message.set(attribute, existing_features)
+
+    with pytest.raises(ValueError):
+        featurizer._combine_with_existing_sparse_features(
+            message, new_features, attribute
+        )
 
 
 @pytest.mark.parametrize(

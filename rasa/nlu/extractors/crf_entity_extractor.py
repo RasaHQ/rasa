@@ -592,7 +592,7 @@ class CRFEntityExtractor(EntityExtractor):
         )
 
         if features is None:
-            return features
+            return None
 
         tokens = message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], [])
         if len(tokens) != len(features):

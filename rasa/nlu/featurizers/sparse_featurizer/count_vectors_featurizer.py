@@ -404,13 +404,13 @@ class CountVectorsFeaturizer(Featurizer):
         X = []
 
         for i, tokens in enumerate(all_tokens):
+            input = tokens
             if self.return_sequence:
-                x = self.vectorizers[attribute].transform(tokens)
-                x.sort_indices()
-                X.append(x.tocoo())
-            else:
-                x = self.vectorizers[attribute].transform([" ".join(tokens)])
-                X.append(x.tocoo())
+                input = [" ".join(tokens)]
+
+            x = self.vectorizers[attribute].transform(input)
+            x.sort_indices()
+            X.append(x.tocoo())
 
         return X
 
