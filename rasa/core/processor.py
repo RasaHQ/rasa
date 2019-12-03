@@ -102,10 +102,7 @@ class MessageProcessor:
         await self._predict_and_execute_next_action(message, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
-        print("\n\nhave tracker events")
-        for e in tracker.events:
-            print(e)
-        print("done in processor\n\n")
+
         if isinstance(message.output_channel, CollectingOutputChannel):
             return message.output_channel.messages
         else:
@@ -282,8 +279,7 @@ class MessageProcessor:
         """Handle a reminder that is triggered asynchronously."""
 
         tracker = self._get_tracker(sender_id)
-        print("fetched", sender_id, tracker.as_dialogue())
-        raise
+
         if not tracker:
             logger.warning(
                 f"Failed to retrieve or create tracker for sender '{sender_id}'."
@@ -632,12 +628,8 @@ class MessageProcessor:
             # this is a legacy tracker (pre-sessions), return current time
             return time.time()
 
-        #     return last_executed_session_started_action.timestamp
-
         last_session_started_event = tracker.get_last_session_started_event()
 
-        for e in tracker.applied_events():
-            print(e)
         if last_session_started_event:
             return last_session_started_event.timestamp
 
@@ -702,9 +694,7 @@ class MessageProcessor:
 
     def _get_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
-        tracker = self.tracker_store.get_or_create_tracker(sender_id)
-
-        return tracker
+        return self.tracker_store.get_or_create_tracker(sender_id)
 
     def _save_tracker(self, tracker: DialogueStateTracker) -> None:
         self.tracker_store.save(tracker)

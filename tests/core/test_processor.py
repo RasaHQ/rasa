@@ -158,8 +158,6 @@ async def test_reminder_scheduled(
 
     default_processor.tracker_store.save(tracker)
 
-    print("before", default_processor._get_tracker(sender_id).as_dialogue())
-    print("before", default_processor.tracker_store.retrieve(sender_id).as_dialogue())
     await default_processor.handle_reminder(
         reminder, sender_id, default_channel, default_processor.nlg
     )
