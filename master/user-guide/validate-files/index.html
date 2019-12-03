@@ -291,6 +291,10 @@ Python Logging Options:
                         None)
 </pre></div>
 </div>
+<p>By default the validator searches only for errors in the data (e.g. the same
+example being listed as an example for two intents), but does not report other
+minor issues (such as unused intents, utterances that are not listed as
+actions). To also report the later use the <code class="docutils literal notranslate"><span class="pre">-debug</span></code> flag.</p>
 <p>You can also run these validations through the Python API by importing the <cite>Validator</cite> class,
 which has the following methods:</p>
 <p><strong>from_files():</strong> Creates the instance from string paths to the necessary files.</p>
