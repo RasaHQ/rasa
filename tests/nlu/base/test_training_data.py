@@ -290,7 +290,7 @@ def test_multiword_entities():
 def test_nonascii_entities():
     data = """
 {
-  "luis_schema_version": "2.0",
+  "luis_schema_version": "5.0",
   "utterances" : [
     {
       "text": "I am looking for a ßäæ ?€ö) item",
