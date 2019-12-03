@@ -585,8 +585,9 @@ class MessageProcessor:
             e.timestamp = time.time()
             tracker.update(e, self.domain)
 
-    @staticmethod
-    def _session_start_timestamp_for(tracker: DialogueStateTracker) -> Optional[float]:
+    def _session_start_timestamp_for(
+        self, tracker: DialogueStateTracker
+    ) -> Optional[float]:
         """Retrieve timestamp of the beginning of the last session start for
         `tracker`.
 
@@ -595,17 +596,19 @@ class MessageProcessor:
 
         Returns:
             Timestamp of last `SessionStarted` event if available, else timestamp of
-            oldest event. `None` if no events are available.
+            oldest event. Current time if no events are available.
 
         """
         if not tracker.events:
-            # this is a legacy tracker (pre-sessions)
+            # this is a legacy tracker (pre-sessions), return current time
             return time.time()
 
         # try to fetch the timestamp of the latest `SessionStarted` event
-        last_session_started_event = tracker.get_last_event_for(SessionStarted)
-        if last_session_started_event:
-            return last_session_started_event.timestamp
+        last_executed_session_started_action = tracker.get_last_executed(
+            ACTION_SESSION_START_NAME
+        )
+        if last_executed_session_started_action:
+            return last_executed_session_started_action.timestamp
 
         # otherwise fetch the timestamp of the first event
         # this also is a legacy tracker (pre-sessions)
@@ -621,7 +624,7 @@ class MessageProcessor:
             session_length_in_minutes: Session length in minutes.
 
         Returns:
-            `True` if the session has expired, else `False`.
+            `True` if the session in `tracker` has expired, `False` otherwise.
 
         """
         session_start_timestamp = self._session_start_timestamp_for(tracker)
@@ -632,25 +635,24 @@ class MessageProcessor:
 
     @staticmethod
     def _is_legacy_tracker(tracker: DialogueStateTracker) -> bool:
-        """Determine whether `tracker` is new.
+        """Determine whether `tracker` is a legacy tracker.
 
-        A new tracker is a tracker that has either no events, or one event that is an
-        executed 'action_listen'.
+        A legacy tracker is a tracker that has been created before the introduction
+        of sessions in release 1.7.0.
 
         Args:
             tracker: Tracker to inspect.
 
         Returns:
-            `True` if the tracker contains no events, `True` if the tracker contains
-            one event that is an executed "ActionListen", `False` otherwise.
+            `True` if the tracker contains `SessionStarted` event, `False` otherwise.
 
         """
 
-        return not any(
-            isinstance(event, ActionExecuted)
-            and event.action_name == ACTION_SESSION_START_NAME
-            for event in tracker.events
+        last_executed_session_started_action = tracker.get_last_executed(
+            ACTION_SESSION_START_NAME
         )
+
+        return last_executed_session_started_action is None
 
     def _get_tracker(
         self, sender_id: Text, session_length_in_minutes: int = 60
@@ -659,9 +661,8 @@ class MessageProcessor:
         tracker = self.tracker_store.get_or_create_tracker(sender_id)
 
         if self._is_legacy_tracker(tracker) or self._has_session_expired(
-            tracker, 0.083
+            tracker, session_length_in_minutes
         ):
-            print("has expired")
             tracker.update(SessionStarted())
 
         return tracker

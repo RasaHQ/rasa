@@ -503,7 +503,10 @@ async def test_action_session_start_without_slots(
     events = await ActionSessionStart().run(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
-    assert events == [SessionStarted(), ActionExecuted(action_name=ACTION_LISTEN_NAME)]
+    assert events == [
+        ActionExecuted(action_name=ACTION_SESSION_START_NAME),
+        ActionExecuted(action_name=ACTION_LISTEN_NAME),
+    ]
 
 
 async def test_action_session_start_with_slots(
@@ -523,7 +526,7 @@ async def test_action_session_start_with_slots(
     )
 
     assert events == [
-        SessionStarted(),
+        ActionExecuted(action_name=ACTION_SESSION_START_NAME),
         slot_set_event_1,
         slot_set_event_2,
         ActionExecuted(action_name=ACTION_LISTEN_NAME),

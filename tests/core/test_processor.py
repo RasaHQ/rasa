@@ -280,17 +280,16 @@ async def test_reminder_restart(
     assert len(t.events) == 5  # nothing should have been executed
 
 
-# noinspection PyProtectedMember
 @pytest.mark.parametrize(
     "events_to_apply,is_legacy",
     [
         # just an action listen means it's legacy
-        ([ActionExecuted(ACTION_LISTEN_NAME)], True),
-        # action listen and session start means it isn't legacy
+        ([ActionExecuted(action_name=ACTION_LISTEN_NAME)], True),
+        # action listen and session at the beginning start means it isn't legacy
         (
             [
-                ActionExecuted(ACTION_SESSION_START_NAME),
-                ActionExecuted(ACTION_LISTEN_NAME),
+                ActionExecuted(action_name=ACTION_SESSION_START_NAME),
+                ActionExecuted(action_name=ACTION_LISTEN_NAME),
             ],
             False,
         ),
@@ -298,22 +297,22 @@ async def test_reminder_restart(
         ([UserUttered("hello")], True),
     ],
 )
-async def test_is_new_tracker(
+async def test_is_legacy_tracker(
     events_to_apply: List[Event], is_legacy: bool, default_processor: MessageProcessor,
 ):
     sender_id = uuid.uuid4().hex
 
-    # new tracker without events
+    # create a new tracker without events
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
     tracker.events.clear()
 
     for event in events_to_apply:
         tracker.update(event)
 
+    # noinspection PyProtectedMember
     assert default_processor._is_legacy_tracker(tracker) == is_legacy
 
 
-# noinspection PyProtectedMember
 @pytest.mark.parametrize(
     "event_to_apply,session_length_in_minutes,has_expired",
     [
@@ -343,6 +342,7 @@ async def test_has_session_expired(
     if event_to_apply:
         tracker.update(event_to_apply)
 
+    # noinspection PyProtectedMember
     assert (
         default_processor._has_session_expired(
             tracker, session_length_in_minutes=session_length_in_minutes

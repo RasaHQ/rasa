@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import tempfile
+from typing import List, Optional
 
 import fakeredis
 import pytest
@@ -18,6 +19,7 @@ from rasa.core.events import (
     ActionReverted,
     UserUtteranceReverted,
     SessionStarted,
+    Event,
 )
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
@@ -605,3 +607,30 @@ def test_tracker_without_slots(key, value, caplog):
         v = tracker.get_slot(key)
         assert v == value
     assert len(caplog.records) == 0
+
+
+@pytest.mark.parametrize(
+    "events,index_of_last_executed_event",
+    [
+        ([ActionExecuted("one")], 0),
+        ([ActionExecuted("a"), ActionExecuted("b")], 1),
+        ([ActionExecuted("first"), UserUttered("b"), ActionExecuted("second")], 2),
+        ([ActionExecuted("this"), UserUttered("b")], 0),
+        ([UserUttered("b")], None),  # no `ActionExecuted` event
+    ],
+)
+def test_get_last_executed(events: List[Event], index_of_last_executed_event: int):
+    tracker = get_tracker(events)
+
+    # noinspection PyTypeChecker
+    expected_event: Optional[ActionExecuted] = events[
+        index_of_last_executed_event
+    ] if index_of_last_executed_event is not None else None
+
+    fetched_event = (
+        tracker.get_last_executed(expected_event.action_name)
+        if expected_event
+        else None
+    )
+
+    assert expected_event == fetched_event
