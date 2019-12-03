@@ -385,7 +385,7 @@ class AvailableEndpoints:
     """Collection of configured endpoints."""
 
     @classmethod
-    def read_endpoints(cls, endpoint_file):
+    def read_endpoints(cls, endpoint_file: Text) -> "AvailableEndpoints":
         nlg = read_endpoint_config(endpoint_file, endpoint_type="nlg")
         nlu = read_endpoint_config(endpoint_file, endpoint_type="nlu")
         action = read_endpoint_config(endpoint_file, endpoint_type="action_endpoint")
@@ -400,14 +400,14 @@ class AvailableEndpoints:
 
     def __init__(
         self,
-        nlg=None,
-        nlu=None,
-        action=None,
-        model=None,
-        tracker_store=None,
-        lock_store=None,
-        event_broker=None,
-    ):
+        nlg: Optional[EndpointConfig] = None,
+        nlu: Optional[EndpointConfig] = None,
+        action: Optional[EndpointConfig] = None,
+        model: Optional[EndpointConfig] = None,
+        tracker_store: Optional[EndpointConfig] = None,
+        lock_store: Optional[EndpointConfig] = None,
+        event_broker: Optional[EndpointConfig] = None,
+    ) -> None:
         self.model = model
         self.action = action
         self.nlu = nlu

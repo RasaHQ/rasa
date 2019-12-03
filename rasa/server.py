@@ -417,7 +417,8 @@ def create_app(
 
         return response.json(
             {
-                "model_file": model.get_latest_model(),
+                "model_file": app.agent.path_to_model_archive
+                or app.agent.model_directory,
                 "fingerprint": model.fingerprint_from_path(app.agent.model_directory),
                 "num_active_training_jobs": app.active_training_processes.value,
             }
