@@ -2,7 +2,6 @@ from typing import Optional, List
 
 import time
 
-import aiohttp
 import asyncio
 import datetime
 import uuid
@@ -12,13 +11,8 @@ from aioresponses import aioresponses
 
 from unittest.mock import patch
 
-import rasa.utils.io
 from rasa.core import jobs
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ActionSessionStart,
-    ACTION_SESSION_START_NAME,
-)
+from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.events import (
@@ -33,14 +27,11 @@ from rasa.core.events import (
 )
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.slots import Slot
-from rasa.core.processor import MessageProcessor
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.core.processor import MessageProcessor
 from rasa.utils.endpoints import EndpointConfig
-from tests.utilities import json_of_latest_request, latest_request
+from tests.utilities import latest_request
 
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
-from rasa.core.domain import Domain
 
 import logging
 
@@ -166,12 +157,16 @@ async def test_reminder_scheduled(
     tracker.update(reminder)
 
     default_processor.tracker_store.save(tracker)
+
+    print("before", default_processor._get_tracker(sender_id).as_dialogue())
+    print("before", default_processor.tracker_store.retrieve(sender_id).as_dialogue())
     await default_processor.handle_reminder(
         reminder, sender_id, default_channel, default_processor.nlg
     )
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
+
     assert t.events[-4] == UserUttered(None)
     assert t.events[-3] == ActionExecuted("utter_greet")
     assert t.events[-2] == BotUttered(
@@ -208,7 +203,7 @@ async def test_reminder_aborted(
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
-    assert len(t.events) == 4  # nothing should have been executed
+    assert len(t.events) == 2  # nothing should have been executed
 
 
 async def test_reminder_cancelled(
@@ -286,13 +281,7 @@ async def test_reminder_restart(
         # just an action listen means it's legacy
         ([ActionExecuted(action_name=ACTION_LISTEN_NAME)], True),
         # action listen and session at the beginning start means it isn't legacy
-        (
-            [
-                ActionExecuted(action_name=ACTION_SESSION_START_NAME),
-                ActionExecuted(action_name=ACTION_LISTEN_NAME),
-            ],
-            False,
-        ),
+        ([SessionStarted(), ActionExecuted(action_name=ACTION_LISTEN_NAME)], False),
         # just a single event means it's legacy
         ([UserUttered("hello")], True),
     ],

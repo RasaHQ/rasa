@@ -1210,4 +1210,6 @@ class SessionStarted(Event):
             ACTION_SESSION_START_NAME,
         )
 
+        # noinspection PyProtectedMember
+        tracker._reset()
         tracker.trigger_followup_action(ACTION_SESSION_START_NAME)

@@ -612,14 +612,15 @@ def test_tracker_without_slots(key, value, caplog):
 @pytest.mark.parametrize(
     "events,index_of_last_executed_event",
     [
-        ([ActionExecuted("one")], 0),
-        ([ActionExecuted("a"), ActionExecuted("b")], 1),
-        ([ActionExecuted("first"), UserUttered("b"), ActionExecuted("second")], 2),
-        ([ActionExecuted("this"), UserUttered("b")], 0),
-        ([UserUttered("b")], None),  # no `ActionExecuted` event
+        ([ActionExecuted("one")], None),  # no SessionStarted event
+        ([ActionExecuted("a"), SessionStarted()], 1),
+        ([ActionExecuted("first"), UserUttered("b"), SessionStarted()], 2),
+        ([SessionStarted(), UserUttered("b")], 0),
     ],
 )
-def test_get_last_executed(events: List[Event], index_of_last_executed_event: int):
+def test_last_session_started_event(
+    events: List[Event], index_of_last_executed_event: int
+):
     tracker = get_tracker(events)
 
     # noinspection PyTypeChecker
@@ -627,10 +628,6 @@ def test_get_last_executed(events: List[Event], index_of_last_executed_event: in
         index_of_last_executed_event
     ] if index_of_last_executed_event is not None else None
 
-    fetched_event = (
-        tracker.get_last_executed(expected_event.action_name)
-        if expected_event
-        else None
-    )
+    fetched_event = tracker.get_last_session_started_event() if expected_event else None
 
     assert expected_event == fetched_event

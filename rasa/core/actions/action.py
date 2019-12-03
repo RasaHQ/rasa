@@ -324,9 +324,9 @@ class ActionSessionStart(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        from rasa.core.events import SessionStarted, SlotSet
+        from rasa.core.events import SessionStarted, SlotSet, FollowupAction
 
-        # TODO: config check whether slots should be carried over
+        # TODO: check in domain whether slots should be carried over
         # fetch SlotSet events from tracker and carry over key, value and metadata
         # use generator so the timestamps are greater than that of the returned
         # `SessionStarted` event
@@ -335,14 +335,15 @@ class ActionSessionStart(Action):
             for event in tracker.events
             if isinstance(event, SlotSet)
         )
+        slot_set_events = [
+            SlotSet(f"dummy slot {i}", f"dummy slot {i}") for i in range(4)
+        ]
 
         # noinspection PyTypeChecker
         return (
-            # TODO: should return a `SessionStarted()` event rather than an
-            #  ActionExecuted(action_name=ACTION_SESSION_START_NAME)?
-            [ActionExecuted(action_name=ACTION_SESSION_START_NAME)]
+            [SessionStarted()]
             + list(slot_set_events)
-            + [ActionExecuted(action_name=ACTION_LISTEN_NAME)]
+            + [FollowupAction(ACTION_LISTEN_NAME)]
         )
 
 
