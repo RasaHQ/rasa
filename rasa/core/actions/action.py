@@ -338,7 +338,8 @@ class ActionSessionStart(Action):
 
         # noinspection PyTypeChecker
         return (
-            # TODO: should this rather return a `SessionStarted()` event rather than a SessionExecuted()?
+            # TODO: should return a `SessionStarted()` event rather than an
+            #  ActionExecuted(action_name=ACTION_SESSION_START_NAME)?
             [ActionExecuted(action_name=ACTION_SESSION_START_NAME)]
             + list(slot_set_events)
             + [ActionExecuted(action_name=ACTION_LISTEN_NAME)]
