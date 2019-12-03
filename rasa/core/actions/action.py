@@ -335,9 +335,9 @@ class ActionSessionStart(Action):
             for event in tracker.events
             if isinstance(event, SlotSet)
         )
-        slot_set_events = [
-            SlotSet(f"dummy slot {i}", f"dummy slot {i}") for i in range(4)
-        ]
+        # slot_set_events = [
+        #     SlotSet(f"dummy slot {i}", f"dummy slot {i}") for i in range(4)
+        # ]
 
         # noinspection PyTypeChecker
         return (

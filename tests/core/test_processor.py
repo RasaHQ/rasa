@@ -12,7 +12,7 @@ from aioresponses import aioresponses
 from unittest.mock import patch
 
 from rasa.core import jobs
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.events import (
@@ -24,6 +24,7 @@ from rasa.core.events import (
     UserUttered,
     SessionStarted,
     Event,
+    FollowupAction,
 )
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.slots import Slot
@@ -201,7 +202,7 @@ async def test_reminder_aborted(
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
-    assert len(t.events) == 2  # nothing should have been executed
+    assert len(t.events) == 4  # nothing should have been executed
 
 
 async def test_reminder_cancelled(
@@ -336,3 +337,29 @@ async def test_has_session_expired(
         )
         == has_expired
     )
+
+
+# noinspection PyProtectedMember
+async def test_update_tracker_session(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor,
+):
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+    # make sure session expires
+    await asyncio.sleep(1e-2)  # in seconds
+
+    await default_processor._update_tracker_session(tracker, default_channel, 1e-5)
+
+    # the save is not called in _update_tracker_session()
+    default_processor._save_tracker(tracker)
+
+    # inspect tracker and make sure all events are present
+    tracker = default_processor.tracker_store.retrieve(sender_id)
+    assert list(tracker.events) == [
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        FollowupAction(ACTION_LISTEN_NAME),
+    ]

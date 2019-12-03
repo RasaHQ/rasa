@@ -35,6 +35,7 @@ from rasa.core.events import (
     Form,
     SessionStarted,
     ActionExecuted,
+    FollowupAction,
 )
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
@@ -504,8 +505,8 @@ async def test_action_session_start_without_slots(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
     assert events == [
-        ActionExecuted(action_name=ACTION_SESSION_START_NAME),
-        ActionExecuted(action_name=ACTION_LISTEN_NAME),
+        SessionStarted(),
+        FollowupAction(ACTION_LISTEN_NAME),
     ]
 
 
@@ -526,10 +527,10 @@ async def test_action_session_start_with_slots(
     )
 
     assert events == [
-        ActionExecuted(action_name=ACTION_SESSION_START_NAME),
+        SessionStarted(),
         slot_set_event_1,
         slot_set_event_2,
-        ActionExecuted(action_name=ACTION_LISTEN_NAME),
+        FollowupAction(ACTION_LISTEN_NAME),
     ]
 
     # make sure that the list of events has ascending timestamps
