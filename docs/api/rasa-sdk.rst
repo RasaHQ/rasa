@@ -2,12 +2,12 @@
 
 .. _rasa-sdk:
 
-Rasa-SDK
-=======
+Rasa SDK
+========
 
 .. edit-link::
 
-``Rasa-SDK`` provides the tools you need to write :ref:`custom actions`.
+Rasa SDK provides the tools you need to write :ref:`custom-actions`.
 
 .. contents::
    :local:
@@ -56,7 +56,7 @@ back to the user with the ``dispatcher`` object, by calling
 Details of the ``run()`` method:
 
 .. automethod:: rasa_sdk.Action.run
-
+   :noindex:
 
 ``Events``
 ----------
@@ -74,6 +74,7 @@ actions. You can get information about past events and the current state of the
 conversation through ``Tracker`` attributes.
 
 In no particular order the attributes of the ``Tracker`` are:
+
 - ``sender_id`` - The unique ID of person talking to the bot.
 - ``slots`` - The list of slots that can be filled as defined in the
   "ref"`domains`.
