@@ -23,9 +23,9 @@ class LuisReader(JsonTrainingDataReader):
         major_version = int(js["luis_schema_version"].split(".")[0])
         if major_version > max_tested_luis_schema_version:
             warnings.warn(
-                f"Your luis data schema version {js["luis_schema_version"]} "
+                f"Your luis data schema version {js['luis_schema_version']} "
                 f"is higher than 5.x.x. "
-                f"Traning may not be performed correctly. "
+                f"Training may not be performed correctly. "
             )
 
         for r in js.get("regex_features", []):
