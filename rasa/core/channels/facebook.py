@@ -6,6 +6,7 @@ from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
 from fbmessenger.quick_replies import QuickReplies, QuickReply
+from fbmessenger.thread_settings import PersistentMenu, PersistentMenuItem, MessengerProfile, GetStartedButton
 from sanic import Blueprint, response
 from sanic.request import Request
 from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optional
@@ -225,18 +226,72 @@ class MessengerBot(OutputChannel):
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends custom json data to the output."""
-
-        recipient_id = json_message.pop("sender", {}).pop("id", None) or recipient_id
-
-        self.messenger_client.send(json_message, recipient_id, "RESPONSE")
-
+        for custom_json in json_message:
+            try:
+                get_started = self._convert_to_get_started(custom_json.pop('get_started'))
+                menu = self._convert_to_persistent_menu(custom_json.pop('persistent_menu'))                            
+                messenger_profile = MessengerProfile(persistent_menus=[menu], get_started=get_started)
+                self.messenger_client.set_messenger_profile(messenger_profile.to_dict())
+            except KeyError as e:
+                logger.exception(
+                'Facebook Persistant Menu and Get Started button must contains {} fields'.format(e.args[0])
+                )
+            else:
+                self.messenger_client.send(json_message, recipient_id, "RESPONSE")
+                break
+    
     @staticmethod
     def _add_postback_info(buttons: List[Dict[Text, Any]]) -> None:
         """Make sure every button has a type. Modifications happen in place."""
         for button in buttons:
             if "type" not in button:
                 button["type"] = "postback"
+    @staticmethod
+    def _convert_to_get_started(custom_json: Dict[Text, Any]) -> GetStartedButton:        
+        return GetStartedButton(payload = custom_json['payload'])
+    
+    @staticmethod
+    def _convert_to_persistent_menu(custom_json: Dict[Text, Any]) -> PersistentMenu:
+        """Convert json custom message for persitent Menu into a PersistentMenu object support 
+                by fbmessenger api   Happens in place."""
+        pers_menu_item_0 = []
+        pers_menu_item_1 = []
+        nested_menu_item_depth_0 = []
+        nested_menu_item_depth_1 = []
+        for json_message in custom_json:
+            try:
+                payload_depth_0 = json_message['payload']
+                title_depth_0 = json_message['title']
 
+                type_depth_0=json_message['type']
+                if type_depth_0 == 'nested' and ('nested_items' in json_message.keys()):
+                    for json_item_depth_1 in json_message['nested_items']:
+                        payload_depth_1 = json_item_depth_1['payload']
+                        title_depth_1 = json_item_depth_1['title']
+
+                        type_depth_1 = json_item_depth_1['type']
+                        if type_depth_1 == 'nested' and ('nested_items' in json_item_depth_1.keys()):
+                            for json_item_depth_2 in json_item_depth_1['nested_items']:
+                                payload = json_item_depth_2['payload']
+                                title = json_item_depth_2['title']
+                                type_depth_2 = json_item_depth_2['type']
+                                if type_depth_2 == 'nested':
+                                    raise ValueError("You must have at most two nested menus!")
+                                nested_menu_item_depth_1.append(
+                                        PersistentMenuItem(title=title, item_type=type_depth_2, payload=payload))
+                            PersistentMenuItem(title=title_depth_1, item_type=type_depth_1, nested_items=nested_menu_item_depth_1)
+                        else:
+                            nested_menu_item_depth_0.append(PersistentMenuItem(title=title_depth_1, item_type=type_depth_1, payload=payload_depth_1))
+                    pers_menu_item_1.append(
+                        PersistentMenuItem(item_type=type_depth_0, title=title_depth_0, nested_items=nested_menu_item_depth_0))
+                else:
+                    pers_menu_item_0.append(PersistentMenuItem(item_type=type_depth_0, title=title_depth_0, payload=payload_depth_0)) 
+                                              
+            except KeyError as e:
+                raise ValueError("You must specify {} for your menu items.".format(e.args))
+        pers_menu_item_0.extend(pers_menu_item_1)
+        return PersistentMenu(menu_items=pers_menu_item_0)
+    
     @staticmethod
     def _convert_to_quick_reply(quick_replies: List[Dict[Text, Any]]) -> QuickReplies:
         """Convert quick reply dictionary to FB QuickReplies object"""
