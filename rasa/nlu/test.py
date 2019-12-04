@@ -397,6 +397,32 @@ def evaluate_response_selections(
         "accuracy": accuracy,
     }
 
+def add_confused_intents_to_report(
+    report,
+    target_intents,
+    predicted_intents):
+
+    from sklearn.metrics import confusion_matrix
+    from sklearn.utils.multiclass import unique_labels
+
+    cnf_matrix = confusion_matrix(target_intents, predicted_intents)
+
+    indices = np.argsort(cnf_matrix, axis=1)
+    labels = unique_labels(target_intents, predicted_intents)
+
+    for label in labels:
+        if report.get(label):
+            report[label]["confused_with"] = {}
+    for i, label in enumerate(labels):
+        for j in range(3):
+            label_idx = indices[i, -j]
+            _label = labels[label_idx]
+            num_hits = int(cnf_matrix[i,label_idx])
+            if _label != label and num_hits > 0:
+                report[label]["confused_with"][_label] = num_hits
+
+    return report
+
 
 def evaluate_intents(
     intent_results: List[IntentEvaluationResult],
@@ -435,6 +461,7 @@ def evaluate_intents(
         report, precision, f1, accuracy = get_evaluation_metrics(
             target_intents, predicted_intents, output_dict=True
         )
+        report = add_confused_intents_to_report(report, target_intents, predicted_intents)
 
         report_filename = os.path.join(output_directory, "intent_report.json")
 
@@ -473,6 +500,7 @@ def evaluate_intents(
 
         cnf_matrix = confusion_matrix(target_intents, predicted_intents)
         labels = unique_labels(target_intents, predicted_intents)
+
         plot_confusion_matrix(
             cnf_matrix,
             classes=labels,
