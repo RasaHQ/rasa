@@ -306,7 +306,13 @@ def test_intent_evaluation_report(tmpdir_factory):
 
     report = json.loads(rasa.utils.io.read_file(report_filename))
 
-    greet_results = {"precision": 1.0, "recall": 1.0, "f1-score": 1.0, "support": 1}
+    greet_results = {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 1,
+        "confused_with": {},
+    }
 
     prediction = {
         "text": "hello",
