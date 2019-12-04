@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import importlib.util
 import logging
+import warnings
 import os
 import signal
 import traceback
@@ -109,32 +110,65 @@ def _prepare_credentials_for_rasa_x(
 def _overwrite_endpoints_for_local_x(
     endpoints: AvailableEndpoints, rasa_x_token: Text, rasa_x_url: Text
 ):
-    from rasa.utils.endpoints import EndpointConfig
-    import questionary
+    endpoints.model = _get_model_endpoint(endpoints.model, rasa_x_token, rasa_x_url)
+    endpoints.event_broker = _get_event_broker_endpoint(endpoints.event_broker)
 
-    endpoints.model = EndpointConfig(
-        "{}/projects/default/models/tags/production".format(rasa_x_url),
-        token=rasa_x_token,
-        wait_time_between_pulls=2,
+
+def _get_model_endpoint(
+    model_endpoint: Optional[EndpointConfig], rasa_x_token: Text, rasa_x_url: Text
+) -> EndpointConfig:
+    # If you change that, please run a test with Rasa X and speak to the bot
+    default_rasax_model_server_url = (
+        f"{rasa_x_url}/projects/default/models/tags/production"
     )
 
-    overwrite_existing_event_broker = False
-    if endpoints.event_broker and not _is_correct_event_broker(endpoints.event_broker):
+    model_endpoint = model_endpoint or EndpointConfig()
+
+    # Checking if endpoint.yml has existing url, if so give
+    # warning we are overwriting the endpoint.yml file.
+    custom_url = model_endpoint.url
+
+    if custom_url and custom_url != default_rasax_model_server_url:
+        logger.info(
+            f"Ignoring url '{custom_url}' from 'endpoints.yml' and using "
+            f"'{default_rasax_model_server_url}' instead."
+        )
+
+    custom_wait_time_pulls = model_endpoint.kwargs.get("wait_time_between_pulls")
+    return EndpointConfig(
+        default_rasax_model_server_url,
+        token=rasa_x_token,
+        wait_time_between_pulls=custom_wait_time_pulls or 2,
+    )
+
+
+def _get_event_broker_endpoint(
+    event_broker_endpoint: Optional[EndpointConfig],
+) -> EndpointConfig:
+    import questionary
+
+    default_event_broker_endpoint = EndpointConfig(
+        type="sql", dialect="sqlite", db=DEFAULT_EVENTS_DB
+    )
+    if not event_broker_endpoint:
+        return default_event_broker_endpoint
+    elif not _is_correct_event_broker(event_broker_endpoint):
         cli_utils.print_error(
             "Rasa X currently only supports a SQLite event broker with path '{}' "
             "when running locally. You can deploy Rasa X with Docker "
             "(https://rasa.com/docs/rasa-x/deploy/) if you want to use "
             "other event broker configurations.".format(DEFAULT_EVENTS_DB)
         )
-        overwrite_existing_event_broker = questionary.confirm(
+        continue_with_default_event_broker = questionary.confirm(
             "Do you want to continue with the default SQLite event broker?"
         ).ask()
 
-        if not overwrite_existing_event_broker:
+        if not continue_with_default_event_broker:
             exit(0)
 
-    if not endpoints.tracker_store or overwrite_existing_event_broker:
-        endpoints.event_broker = EndpointConfig(type="sql", db=DEFAULT_EVENTS_DB)
+        return default_event_broker_endpoint
+    else:
+        return event_broker_endpoint
 
 
 def _is_correct_event_broker(event_broker: EndpointConfig) -> bool:
@@ -153,7 +187,7 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
     credentials_path, endpoints_path = _get_credentials_and_endpoints_paths(args)
     endpoints = AvailableEndpoints.read_endpoints(endpoints_path)
 
-    rasa_x_url = "http://localhost:{}/api".format(args.rasa_x_port)
+    rasa_x_url = f"http://localhost:{args.rasa_x_port}/api"
     _overwrite_endpoints_for_local_x(endpoints, rasa_x_token, rasa_x_url)
 
     vars(args).update(
@@ -220,8 +254,9 @@ def _configure_logging(args: argparse.Namespace):
         logging.getLogger("py.warnings").setLevel(logging.ERROR)
 
 
-def is_rasa_project_setup(project_path: Text):
-    mandatory_files = [DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH]
+def is_rasa_project_setup(args: argparse.Namespace, project_path: Text) -> bool:
+    config_path = _get_config_path(args)
+    mandatory_files = [config_path, DEFAULT_DOMAIN_PATH]
 
     for f in mandatory_files:
         if not os.path.exists(os.path.join(project_path, f)):
@@ -249,7 +284,7 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
             )
         )
 
-    if not is_rasa_project_setup(project_path):
+    if not is_rasa_project_setup(args, project_path):
         cli_utils.print_error_and_exit(
             "This directory is not a valid Rasa project. Use 'rasa init' "
             "to create a new Rasa project or switch to a valid Rasa project "
@@ -324,7 +359,7 @@ async def _pull_runtime_config_from_server(
                             "".format(resp.status, await resp.text())
                         )
         except aiohttp.ClientError as e:
-            logger.debug("Failed to connect to server. Retrying. {}".format(e))
+            logger.debug(f"Failed to connect to server. Retrying. {e}")
 
         await asyncio.sleep(wait_time_between_pulls)
         attempts -= 1
@@ -346,8 +381,16 @@ def run_in_production(args: argparse.Namespace):
     _rasa_service(args, endpoints, None, credentials_path)
 
 
+def _get_config_path(args: argparse.Namespace,) -> Optional[Text]:
+    config_path = cli_utils.get_validated_path(
+        args.config, "config", DEFAULT_CONFIG_PATH
+    )
+
+    return config_path
+
+
 def _get_credentials_and_endpoints_paths(
-    args: argparse.Namespace
+    args: argparse.Namespace,
 ) -> Tuple[Optional[Text], Optional[Text]]:
     config_endpoint = args.config_endpoint
     if config_endpoint:
@@ -380,8 +423,12 @@ def run_locally(args: argparse.Namespace):
     rasa_x_token = generate_rasa_x_token()
     process = start_rasa_for_local_rasa_x(args, rasa_x_token=rasa_x_token)
 
+    config_path = _get_config_path(args)
+
     try:
-        local.main(args, project_path, args.data, token=rasa_x_token)
+        local.main(
+            args, project_path, args.data, token=rasa_x_token, config_path=config_path
+        )
     except Exception:
         print(traceback.format_exc())
         cli_utils.print_error(

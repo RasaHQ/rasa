@@ -121,11 +121,9 @@ class TestKeywordClassifier(ClassifierTestCollection):
         rasa_reader = RasaReader()
         data = rasa_reader.read_from_json(json_data)
 
-        with caplog.at_level(
-            logging.DEBUG, logger="rasa.nlu.classifiers.keyword__intent_classifer"
-        ):
+        with pytest.warns(None) as record:
             self._train_classifier(classifier_class, data, component_config, **kwargs)
-        assert len(caplog.records) == 0
+        assert len(record) == 0
 
     @pytest.mark.filterwarnings("ignore:Keyword.* of keywords:UserWarning")
     def test_identical_data(
@@ -142,11 +140,13 @@ class TestKeywordClassifier(ClassifierTestCollection):
         rasa_reader = RasaReader()
         data = rasa_reader.read_from_json(json_data)
 
-        with caplog.at_level(
-            logging.DEBUG, logger="rasa.nlu.classifiers.keyword__intent_classifer"
-        ):
+        with pytest.warns(UserWarning) as record:
             self._train_classifier(classifier_class, data, component_config, **kwargs)
-        assert len(caplog.records) == 1
+        assert len(record) == 1
+        assert (
+            "Remove (one of) the duplicates from the training data."
+            in record[0].message.args[0]
+        )
 
     @pytest.mark.filterwarnings("ignore:Keyword.* of keywords:UserWarning")
     def test_ambiguous_data(
@@ -165,8 +165,6 @@ class TestKeywordClassifier(ClassifierTestCollection):
         rasa_reader = RasaReader()
         data = rasa_reader.read_from_json(json_data)
 
-        with caplog.at_level(
-            logging.DEBUG, logger="rasa.nlu.classifiers.keyword__intent_classifer"
-        ):
+        with pytest.warns(UserWarning) as record:
             self._train_classifier(classifier_class, data, component_config, **kwargs)
-        assert len(caplog.records) == 2
+        assert len(record) == 2

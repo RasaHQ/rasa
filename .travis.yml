@@ -42,7 +42,7 @@ jobs:
     name: "Test 3.6"
     python: "3.6"
     script:
-      - make test -j 4
+      - make test
   - <<: *run-tests
     name: "Test 3.7"
     python: '3.7'
@@ -59,6 +59,7 @@ jobs:
   - stage: test
     name: "Test Docs"
     install:
+    - pip install -r requirements.txt
     - pip install -r requirements-docs.txt
     - pip install -e .[sql]
     - pip list
@@ -72,6 +73,7 @@ jobs:
     - RASABASTER=rasabaster-0.7.23.tar.gz
     - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
     - pip install $RASABASTER
+    - pip install -r requirements.txt
     - pip install --no-cache-dir -r requirements-docs.txt
     - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
     - pip install -e .
@@ -100,7 +102,15 @@ jobs:
     name: "Deploy to PyPI"
     python: 3.6
     if: tag IS present
-    install: skip
+    env:
+      # GH_RELEASE_NOTES_TOKEN (github token on `rasabot` account. Used to publish releases to GH.)
+      - secure: "dlgHiKPl5Gk0CSZU4ZuNAx+8WqsG/RSYISN0TiiWAq5nHtKxklWfkBiyQqR92bEmh9y4s24yfgM4MHdcYpIfb+ZfDDIi0p7IXt3pZag0fsQGm075e2j4rVZf3MDd+Ybt4MbdBnwgm1u5xqLyuG7mRM8O4fPuPtLh8WH/GCIfSW/vQYUHciBNMIQGkvTicMHhGjDuSvk8dJswo8Fz9dizze2Udk8oIMV46ofGrH3k03fQ6kRsNY0rDLzNViVBPIpeAUNtL63SeBIQHCJe971S2dLCC/J08pa6y9d/qTa3/kqNe05Wpuj/Fm18ARGZTwI0OZg2CeNbb/3W2pup5hh34s+7Dgt3GGokAtV+/RPpuZXZAXkuw7Pnnr3A4GB8T4yprYixrSm/8FebX3Z3kMXJSE8nHaOYKmBfIrQZssbtnM+arq3of3gMGhYSyq+foa8fXSv1flp6PhR+1WycJDk3uN+wvBN+zoU1uQ58txZWXEhcsYD6mI7EVMi/MPJdRKFRr5+zt/sO87OfSx61cW52ZLb2kYaNVyDZ7Oeda35ZwV1cHauH5/SLp+kXMAfkz48aV6vahKO3L/Jd9Xb89iLRPY6Yek6KGFVic0GAe91uW3QAO6qXfjk6/1tdzW9VF1+KDRI7YhDdqbd03LCgJeDFdPOFAuI9bsmnqVQCIIV3eGM="
+    addons:
+      apt:
+        packages:
+          # required by scripts/publish_gh_release_notes.py
+          - pandoc
+    install: pip install -U github3.py pypandoc
     script: skip
     deploy:
       provider: pypi
@@ -111,4 +121,6 @@ jobs:
       distributions: "sdist bdist_wheel"
       password:
         secure: "MeL1Ve97eBY+VbNWuQNuLzkPs0TPc+Zh8OfZkhw69ez5imsiWpvp0LrUOLVW3CcC0vNTANEBOVX/n1kHxfcqkf/cChNqAkZ6zTMmvR9zHDwQxXVGZ3jEQSQM+fHdQpjwtH7BwojyxaCIC/5iza7DFMcca/Q6Xr+atdTd0V8Q7Nc5jFHEQf3/4oIIm6YeCUiHcEu981LRdS04+jvuFUN0Ejy+KLukGVyIWyYDjjGjs880Mj4J1mgmCihvVkJ1ujB65rYBdTjls3JpP3eTk63+xH8aHilIuvqB8TDYih8ovE/Vv6YwLI+u2HoEHAtBD4Ez3r71Ju6JKJM7DhWb5aurN4M7K6DC8AvpUl+PsJbNP4ZeW2jXMH6lT6qXKVaSw7lhZ0XY3wunyVcAbArX4RS0B9pb1nHBYUBWZjxXtr8lhkpGFu7H43hw63Y19qb8z4+1cGnijgz1mqXSAssuc+3r0W0cSr+OsCjmOs7cwT6HMQvPEKxLohwBOS/I3EbuKQOYMjFN5BWP5JXbsG45awV9tquxEW8zxjMetR+AOcYoyrDeiR8sAnj1/F99DE0bL1KyW/G5VNu2Xi/c+0M3KvP3+F8XTCuUY/5zTvqh1Qz1jcdiwsiAhO4eBQzQnjeFlxdiVeue2kmD5qsh+VLKKuKLfyVoaV7b1kBlAtBDu7+hDpA="
-    after_deploy: ./scripts/ping_slack_about_package_release.sh
+    after_deploy:
+    - python3 scripts/publish_gh_release_notes.py
+    - ./scripts/ping_slack_about_package_release.sh

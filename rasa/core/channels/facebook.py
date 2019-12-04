@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import warnings
 import logging
 from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
@@ -88,7 +89,7 @@ class Messenger:
         else:
             logger.warning(
                 "Received a message from facebook that we can not "
-                "handle. Message: {}".format(message)
+                f"handle. Message: {message}"
             )
             return
 
@@ -132,7 +133,7 @@ class MessengerBot(OutputChannel):
     def __init__(self, messenger_client: MessengerClient) -> None:
 
         self.messenger_client = messenger_client
-        super(MessengerBot, self).__init__()
+        super().__init__()
 
     def send(self, recipient_id: Text, element: Any) -> None:
         """Sends a message to the recipient using the messenger client."""
@@ -168,7 +169,7 @@ class MessengerBot(OutputChannel):
 
         # buttons is a list of tuples: [(option_name,payload)]
         if len(buttons) > 3:
-            logger.warning(
+            warnings.warn(
                 "Facebook API currently allows only up to 3 buttons. "
                 "If you add more, all will be ignored."
             )
@@ -209,7 +210,8 @@ class MessengerBot(OutputChannel):
         """Sends elements to the output."""
 
         for element in elements:
-            self._add_postback_info(element["buttons"])
+            if "buttons" in element:
+                self._add_postback_info(element["buttons"])
 
         payload = {
             "attachment": {

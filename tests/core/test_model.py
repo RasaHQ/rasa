@@ -2,7 +2,9 @@ import os
 import tempfile
 import time
 import shutil
-from typing import Text, Optional
+from pathlib import Path
+from typing import Text, Optional, Any
+from unittest.mock import Mock
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
@@ -11,27 +13,37 @@ import rasa
 import rasa.core
 import rasa.nlu
 from rasa.importers.rasa import RasaFileImporter
-from rasa.constants import DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH
+from rasa.constants import (
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DATA_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_CORE_SUBDIRECTORY_NAME,
+)
 from rasa.core.domain import Domain
+from rasa.core.utils import get_dict_hash
+from rasa import model
 from rasa.model import (
     FINGERPRINT_CONFIG_KEY,
-    FINGERPRINT_DOMAIN_KEY,
+    FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY,
+    FINGERPRINT_NLG_KEY,
     FINGERPRINT_FILE_PATH,
     FINGERPRINT_NLU_DATA_KEY,
     FINGERPRINT_RASA_VERSION_KEY,
     FINGERPRINT_STORIES_KEY,
     FINGERPRINT_TRAINED_AT_KEY,
-    core_fingerprint_changed,
+    FINGERPRINT_CONFIG_CORE_KEY,
+    FINGERPRINT_CONFIG_NLU_KEY,
+    SECTION_CORE,
+    SECTION_NLU,
     create_package_rasa,
     get_latest_model,
     get_model,
     get_model_subdirectories,
     model_fingerprint,
-    nlu_fingerprint_changed,
     Fingerprint,
+    did_section_fingerprint_change,
     should_retrain,
-    FINGERPRINT_CONFIG_CORE_KEY,
-    FINGERPRINT_CONFIG_NLU_KEY,
+    FingerprintComparisonResult,
 )
 from rasa.exceptions import ModelNotFound
 
@@ -50,7 +62,7 @@ def test_get_latest_model(trained_model):
 def test_get_model_from_directory(trained_model):
     unpacked = get_model(trained_model)
 
-    assert os.path.exists(os.path.join(unpacked, "core"))
+    assert os.path.exists(os.path.join(unpacked, DEFAULT_CORE_SUBDIRECTORY_NAME))
     assert os.path.exists(os.path.join(unpacked, "nlu"))
 
 
@@ -83,7 +95,7 @@ def test_get_model_from_directory_with_subdirectories(
 
 def test_get_model_from_directory_nlu_only(trained_model):
     unpacked = get_model(trained_model)
-    shutil.rmtree(os.path.join(unpacked, "core"))
+    shutil.rmtree(os.path.join(unpacked, DEFAULT_CORE_SUBDIRECTORY_NAME))
     unpacked_core, unpacked_nlu = get_model_subdirectories(unpacked)
 
     assert not unpacked_core
@@ -91,13 +103,14 @@ def test_get_model_from_directory_nlu_only(trained_model):
 
 
 def _fingerprint(
-    config: Optional[Text] = None,
-    config_nlu: Optional[Text] = None,
-    config_core: Optional[Text] = None,
-    domain: Optional[int] = None,
+    config: Optional[Any] = None,
+    config_nlu: Optional[Any] = None,
+    config_core: Optional[Any] = None,
+    domain: Optional[Any] = None,
+    nlg: Optional[Any] = None,
+    stories: Optional[Any] = None,
+    nlu: Optional[Any] = None,
     rasa_version: Text = "1.0",
-    stories: Optional[int] = None,
-    nlu: Optional[int] = None,
 ):
     return {
         FINGERPRINT_CONFIG_KEY: config if config is not None else ["test"],
@@ -105,7 +118,8 @@ def _fingerprint(
         if config_core is not None
         else ["test"],
         FINGERPRINT_CONFIG_NLU_KEY: config_nlu if config_nlu is not None else ["test"],
-        FINGERPRINT_DOMAIN_KEY: domain if domain is not None else ["test"],
+        FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: domain if domain is not None else ["test"],
+        FINGERPRINT_NLG_KEY: nlg if nlg is not None else ["test"],
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa_version,
         FINGERPRINT_STORIES_KEY: stories if stories is not None else ["test"],
@@ -126,39 +140,52 @@ def test_persist_and_load_fingerprint():
 
 
 @pytest.mark.parametrize(
-    "fingerprint2",
+    "fingerprint2, changed",
     [
-        _fingerprint(config=["other"]),
-        _fingerprint(domain=["other"]),
-        _fingerprint(domain=Domain.empty()),
-        _fingerprint(stories=["test", "other"]),
-        _fingerprint(rasa_version="100"),
-        _fingerprint(config=["other"], domain=["other"]),
+        (_fingerprint(config=["other"]), True),
+        (_fingerprint(config_core=["other"]), True),
+        (_fingerprint(domain=["other"]), True),
+        (_fingerprint(domain=Domain.empty()), True),
+        (_fingerprint(stories=["test", "other"]), True),
+        (_fingerprint(rasa_version="100"), True),
+        (_fingerprint(config=["other"], domain=["other"]), True),
+        (_fingerprint(nlg=["other"]), False),
+        (_fingerprint(nlu=["test", "other"]), False),
+        (_fingerprint(config_nlu=["other"]), False),
     ],
 )
-def test_core_fingerprint_changed(fingerprint2):
+def test_core_fingerprint_changed(fingerprint2, changed):
     fingerprint1 = _fingerprint()
-    assert core_fingerprint_changed(fingerprint1, fingerprint2)
+    assert (
+        did_section_fingerprint_change(fingerprint1, fingerprint2, SECTION_CORE)
+        is changed
+    )
 
 
 @pytest.mark.parametrize(
-    "fingerprint2",
+    "fingerprint2, changed",
     [
-        _fingerprint(config=["other"]),
-        _fingerprint(nlu=["test", "other"]),
-        _fingerprint(rasa_version="100"),
-        _fingerprint(rasa_version="100", config=["other"]),
+        (_fingerprint(config=["other"]), True),
+        (_fingerprint(nlu=["test", "other"]), True),
+        (_fingerprint(rasa_version="100"), True),
+        (_fingerprint(rasa_version="100", config=["other"]), True),
+        (_fingerprint(nlg=["other"]), False),
+        (_fingerprint(config_core=["other"]), False),
+        (_fingerprint(stories=["other"]), False),
     ],
 )
-def test_nlu_fingerprint_changed(fingerprint2):
+def test_nlu_fingerprint_changed(fingerprint2, changed):
     fingerprint1 = _fingerprint()
-    assert nlu_fingerprint_changed(fingerprint1, fingerprint2)
+    assert (
+        did_section_fingerprint_change(fingerprint1, fingerprint2, SECTION_NLU)
+        is changed
+    )
 
 
 def _project_files(
     project,
     config_file=DEFAULT_CONFIG_PATH,
-    domain="domain.yml",
+    domain=DEFAULT_DOMAIN_PATH,
     training_files=DEFAULT_DATA_PATH,
 ):
     paths = {
@@ -192,9 +219,10 @@ async def test_create_fingerprint_from_invalid_paths(project, project_files):
         config_nlu="",
         config_core="",
         domain=hash(Domain.empty()),
-        rasa_version=rasa.__version__,
+        nlg=get_dict_hash(Domain.empty().templates),
         stories=hash(StoryGraph([])),
         nlu=hash(TrainingData()),
+        rasa_version=rasa.__version__,
     )
 
     actual = await model_fingerprint(project_files)
@@ -226,7 +254,7 @@ async def test_rasa_packaging(trained_model, project, use_fingerprint):
     assert (
         os.path.exists(os.path.join(unpacked, FINGERPRINT_FILE_PATH)) == use_fingerprint
     )
-    assert os.path.exists(os.path.join(unpacked, "core"))
+    assert os.path.exists(os.path.join(unpacked, DEFAULT_CORE_SUBDIRECTORY_NAME))
     assert os.path.exists(os.path.join(unpacked, "nlu"))
 
     assert not os.path.exists(unpacked_model_path)
@@ -240,60 +268,66 @@ async def test_rasa_packaging(trained_model, project, use_fingerprint):
             "old": _fingerprint(stories=["others"]),
             "retrain_core": True,
             "retrain_nlu": False,
+            "retrain_nlg": True,
         },
         {
             "new": _fingerprint(nlu=["others"]),
             "old": _fingerprint(),
             "retrain_core": False,
             "retrain_nlu": True,
+            "retrain_nlg": False,
         },
         {
             "new": _fingerprint(config="others"),
             "old": _fingerprint(),
             "retrain_core": True,
             "retrain_nlu": True,
+            "retrain_nlg": True,
         },
         {
             "new": _fingerprint(config_core="others"),
             "old": _fingerprint(),
             "retrain_core": True,
             "retrain_nlu": False,
+            "retrain_nlg": True,
         },
         {
             "new": _fingerprint(),
             "old": _fingerprint(config_nlu="others"),
             "retrain_core": False,
             "retrain_nlu": True,
+            "retrain_nlg": False,
         },
         {
             "new": _fingerprint(),
             "old": _fingerprint(),
             "retrain_core": False,
             "retrain_nlu": False,
+            "retrain_nlg": False,
+        },
+        {
+            "new": _fingerprint(),
+            "old": _fingerprint(nlg=["others"]),
+            "retrain_core": False,
+            "retrain_nlu": False,
+            "retrain_nlg": True,
         },
     ],
 )
-def test_should_retrain(trained_model, fingerprint):
+def test_should_retrain(trained_model: Text, fingerprint: Fingerprint):
     old_model = set_fingerprint(trained_model, fingerprint["old"])
 
-    retrain_core, retrain_nlu = should_retrain(
-        fingerprint["new"], old_model, tempfile.mkdtemp()
-    )
+    retrain = should_retrain(fingerprint["new"], old_model, tempfile.mkdtemp())
 
-    assert retrain_core == fingerprint["retrain_core"]
-    assert retrain_nlu == fingerprint["retrain_nlu"]
+    assert retrain.should_retrain_core() == fingerprint["retrain_core"]
+    assert retrain.should_retrain_nlg() == fingerprint["retrain_nlg"]
+    assert retrain.should_retrain_nlu() == fingerprint["retrain_nlu"]
 
 
-def set_fingerprint(
-    trained_model: Text, fingerprint: Fingerprint, use_fingerprint: bool = True
-) -> Text:
+def set_fingerprint(trained_model: Text, fingerprint: Fingerprint) -> Text:
     unpacked_model_path = get_model(trained_model)
 
     os.remove(os.path.join(unpacked_model_path, FINGERPRINT_FILE_PATH))
-    if use_fingerprint:
-        fingerprint = fingerprint
-    else:
-        fingerprint = None
 
     tempdir = tempfile.mkdtemp()
     output_path = os.path.join(tempdir, "test.tar.gz")
@@ -301,3 +335,62 @@ def set_fingerprint(
     create_package_rasa(unpacked_model_path, output_path, fingerprint)
 
     return output_path
+
+
+@pytest.mark.parametrize(
+    "comparison_result,retrain_all,retrain_core,retrain_nlg,retrain_nlu",
+    [
+        (FingerprintComparisonResult(force_training=True), True, True, True, True),
+        (
+            FingerprintComparisonResult(core=True, nlu=False, nlg=False),
+            True,
+            True,
+            True,
+            False,
+        ),
+        (
+            FingerprintComparisonResult(core=False, nlu=True, nlg=False),
+            True,
+            False,
+            False,
+            True,
+        ),
+        (
+            FingerprintComparisonResult(core=True, nlu=True, nlg=False),
+            True,
+            True,
+            True,
+            True,
+        ),
+    ],
+)
+def test_fingerprint_comparison_result(
+    comparison_result: FingerprintComparisonResult,
+    retrain_all: bool,
+    retrain_core: bool,
+    retrain_nlg: bool,
+    retrain_nlu: bool,
+):
+    assert comparison_result.is_training_required() == retrain_all
+    assert comparison_result.should_retrain_core() == retrain_core
+    assert comparison_result.should_retrain_nlg() == retrain_nlg
+    assert comparison_result.should_retrain_nlu() == retrain_nlu
+
+
+async def test_update_with_new_domain(trained_model: Text, tmpdir: Path):
+    _ = model.unpack_model(trained_model, tmpdir)
+
+    new_domain = Domain.empty()
+
+    mocked_importer = Mock()
+
+    async def get_domain() -> Domain:
+        return new_domain
+
+    mocked_importer.get_domain = get_domain
+
+    await model.update_model_with_new_domain(mocked_importer, tmpdir)
+
+    actual = Domain.load(tmpdir / DEFAULT_CORE_SUBDIRECTORY_NAME / DEFAULT_DOMAIN_PATH)
+
+    assert actual.is_empty()

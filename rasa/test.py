@@ -45,7 +45,7 @@ def test(
     if kwargs is None:
         kwargs = {}
 
-    test_core(model, stories, endpoints, output, **kwargs)
+    test_core(model, stories, endpoints, output, kwargs)
     test_nlu(model, nlu_data, output, kwargs)
 
 
@@ -203,7 +203,7 @@ def perform_nlu_cross_validation(
     data = drop_intents_below_freq(data, cutoff=folds)
     kwargs = utils.minimal_kwargs(kwargs, cross_validate)
     results, entity_results = cross_validate(data, folds, nlu_config, output, **kwargs)
-    logger.info("CV evaluation (n={})".format(folds))
+    logger.info(f"CV evaluation (n={folds})")
 
     if any(results):
         logger.info("Intent evaluation results")
