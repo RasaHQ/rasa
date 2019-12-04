@@ -573,9 +573,9 @@ def test_add_knowledge_base_slots(default_domain):
     [
         (
             """config:
-    session_length: 20
+    session_length: 0
     carry_over_slots_to_new_session: true""",
-            20,
+            0,
             True,
         ),
         ("", 60, True),

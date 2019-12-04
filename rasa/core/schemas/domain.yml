@@ -39,5 +39,7 @@ mapping:
         type: "bool"
       session_length:
         type: "number"
+        range:
+          min: 0
       carry_over_slots_to_new_session:
         type: "bool"
