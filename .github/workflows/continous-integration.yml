@@ -45,7 +45,6 @@ jobs:
 
   test:
     name: Run Tests
-    needs: quality
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 2
