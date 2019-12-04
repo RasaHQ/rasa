@@ -11,7 +11,11 @@ import rasa.core.constants
 import rasa.utils.common as common_utils
 import rasa.utils.io
 from rasa.cli.utils import bcolors
-from rasa.constants import DOMAIN_SCHEMA_FILE
+from rasa.constants import (
+    DOMAIN_SCHEMA_FILE,
+    DEFAULT_SESSION_LENGTH_IN_MINUTES,
+    DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+)
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
 from rasa.core.actions.action import Action  # pytype: disable=pyi-error
@@ -31,8 +35,6 @@ logger = logging.getLogger(__name__)
 
 PREV_PREFIX = "prev_"
 ACTIVE_FORM_PREFIX = "active_form_"
-DEFAULT_SESSION_LENGTH = 60
-DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION = True
 
 CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
 SESSION_LENGTH_KEY = "session_length"
@@ -136,7 +138,7 @@ class Domain:
     @staticmethod
     def _get_session_config(additional_arguments: Dict) -> SessionConfig:
         session_length = additional_arguments.pop(
-            SESSION_LENGTH_KEY, DEFAULT_SESSION_LENGTH
+            SESSION_LENGTH_KEY, DEFAULT_SESSION_LENGTH_IN_MINUTES
         )
         carry_over_slots = additional_arguments.pop(
             CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
@@ -302,7 +304,7 @@ class Domain:
         form_names: List[Text],
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig(
-            DEFAULT_SESSION_LENGTH, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
+            DEFAULT_SESSION_LENGTH_IN_MINUTES, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
         ),
     ) -> None:
 
