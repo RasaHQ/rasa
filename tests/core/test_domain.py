@@ -600,7 +600,7 @@ config:
     ],
 )
 def test_session_config(
-    input_domain, expected_session_length: int, expected_carry_over_slots: bool
+    input_domain, expected_session_length: float, expected_carry_over_slots: bool
 ):
     domain = Domain.from_yaml(input_domain)
     assert domain.session_config.session_length == expected_session_length
