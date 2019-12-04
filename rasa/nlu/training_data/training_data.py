@@ -177,7 +177,7 @@ class TrainingData:
             self.regex_features, key=lambda e: "{}+{}".format(e["name"], e["pattern"])
         )
 
-    def fill_response_phrases(self):
+    def fill_response_phrases(self) -> None:
         """Set response phrase for all examples by looking up NLG stories"""
         for example in self.training_examples:
             response_key = example.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE)
@@ -258,7 +258,7 @@ class TrainingData:
                 "and 'md'."
             )
 
-    def persist_nlg(self, filename):
+    def persist_nlg(self, filename: Text) -> None:
 
         nlg_serialized_data = self.nlg_as_markdown()
         if nlg_serialized_data == "":
@@ -267,7 +267,7 @@ class TrainingData:
         rasa.nlu.utils.write_to_file(filename, self.nlg_as_markdown())
 
     @staticmethod
-    def get_nlg_persist_filename(nlu_filename):
+    def get_nlg_persist_filename(nlu_filename: Text) -> Text:
 
         # Add nlg_ as prefix and change extension to .md
         filename = os.path.join(
@@ -374,14 +374,16 @@ class TrainingData:
 
         return data_train, data_test
 
-    def split_nlg_responses(self, test, train):
+    def split_nlg_responses(
+        self, test, train
+    ) -> Tuple[Dict[Text, list], Dict[Text, list]]:
 
         train_nlg_stories = self.build_nlg_stories_from_examples(train)
         test_nlg_stories = self.build_nlg_stories_from_examples(test)
         return test_nlg_stories, train_nlg_stories
 
     @staticmethod
-    def build_nlg_stories_from_examples(examples):
+    def build_nlg_stories_from_examples(examples) -> Dict[Text, list]:
 
         nlg_stories = {}
         for ex in examples:
@@ -393,7 +395,7 @@ class TrainingData:
                 ]
         return nlg_stories
 
-    def split_nlu_examples(self, train_frac):
+    def split_nlu_examples(self, train_frac) -> Tuple[list, list]:
         train, test = [], []
         for intent, count in self.examples_per_intent.items():
             ex = [e for e in self.intent_examples if e.data["intent"] == intent]

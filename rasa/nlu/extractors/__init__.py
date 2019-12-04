@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Text, Tuple
 
 from rasa.nlu.components import Component
 from rasa.nlu.training_data import Message
@@ -21,7 +21,7 @@ class EntityExtractor(Component):
         return entity
 
     @staticmethod
-    def filter_irrelevant_entities(extracted, requested_dimensions):
+    def filter_irrelevant_entities(extracted: list, requested_dimensions: set) -> list:
         """Only return dimensions the user configured"""
 
         if requested_dimensions:
@@ -34,7 +34,7 @@ class EntityExtractor(Component):
             return extracted
 
     @staticmethod
-    def find_entity(ent, text, tokens):
+    def find_entity(ent, text, tokens) -> Tuple[int, int]:
         offsets = [token.offset for token in tokens]
         ends = [token.end for token in tokens]
 
