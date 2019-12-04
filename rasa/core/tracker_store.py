@@ -7,7 +7,7 @@ import pickle
 import typing
 from datetime import datetime, timezone
 
-from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable
+from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable, List
 
 import itertools
 from boto3.dynamodb.conditions import Key
@@ -471,11 +471,36 @@ class MongoTrackerStore(TrackerStore):
         if self.event_broker:
             self.stream_events(tracker)
 
-        state = tracker.current_state(EventVerbosity.ALL)
-
+        additional_events = list(self._additional_events(tracker))
+        print("have additional events", len(additional_events))
+        for e in additional_events:
+            print(e)
         self.conversations.update_one(
-            {"sender_id": tracker.sender_id}, {"$set": state}, upsert=True
+            {"sender_id": tracker.sender_id},
+            {"$push": {"events": {"$each": additional_events}}},
+            upsert=True,
         )
+
+    def _additional_events(self, tracker: DialogueStateTracker) -> List[Dict]:
+        """Return events from the tracker which aren't currently stored."""
+
+        stored = self.conversations.find_one({"sender_id": tracker.sender_id})
+        n_events = len(stored.get("events", [])) if stored else 0
+
+        return [
+            event.as_dict()
+            for event in itertools.islice(tracker.events, n_events, len(tracker.events))
+        ]
+
+    @staticmethod
+    def _events_since_last_session_start(serialised_tracker: Dict) -> List[Dict]:
+        events = []
+        for event in serialised_tracker.get("events", []):
+            events.append(event)
+            if event["event"] == SessionStarted.type_name:
+                break
+
+        return list(reversed(events))
 
     def retrieve(self, sender_id):
         """
@@ -499,9 +524,8 @@ class MongoTrackerStore(TrackerStore):
             )
 
         if stored is not None:
-            return DialogueStateTracker.from_dict(
-                sender_id, stored.get("events"), self.domain.slots
-            )
+            events = self._events_since_last_session_start(stored)
+            return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
         else:
             return None
 
@@ -762,7 +786,10 @@ class SQLTrackerStore(TrackerStore):
         with self.session_scope() as session:
             # only store recent events
             events = self._additional_events(session, tracker)
-
+            events = list(events)
+            print("have additional events", len(events))
+            for e in events:
+                print(e)
             for event in events:
                 data = event.as_dict()
 

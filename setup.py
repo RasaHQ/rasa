@@ -24,6 +24,7 @@ tests_requires = [
     "aioresponses~=0.6.0",
     "moto~=1.3.8",
     "fakeredis~=1.0",
+    "mongomock~=3.18.0",
 ]
 
 install_requires = [
