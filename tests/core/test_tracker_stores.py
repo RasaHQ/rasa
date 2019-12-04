@@ -157,7 +157,7 @@ def test_tracker_store_with_host_argument_from_string(default_domain: Domain):
 
     with pytest.warns(None) as record:
         tracker_store = TrackerStore.find_tracker_store(default_domain, store_config)
-        
+
     assert len(record) == 0
 
     assert isinstance(tracker_store, HostExampleTrackerStore)
