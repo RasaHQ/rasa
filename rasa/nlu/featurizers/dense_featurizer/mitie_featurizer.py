@@ -15,6 +15,7 @@ from rasa.nlu.constants import (
     MESSAGE_TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
+    CLS_TOKEN,
 )
 
 
@@ -111,20 +112,17 @@ class MitieFeaturizer(Featurizer):
         tokens: List[Token],
         feature_extractor: "mitie.total_word_feature_extractor",
     ) -> np.ndarray:
-        vec = []
+        features = []
         for token in tokens:
-            vec.append(feature_extractor.get_feature_vector(token.text))
-        return np.array(vec)
+            features.append(feature_extractor.get_feature_vector(token.text))
 
-    def features_for_tokens(
+        return np.array(features)
+
+    def _features_as_non_sequence(
         self,
         tokens: List[Token],
         feature_extractor: "mitie.total_word_feature_extractor",
     ) -> np.ndarray:
-
-        if self.return_sequence:
-            return self._features_as_sequence(tokens, feature_extractor)
-
         vec = np.zeros(self.ndim(feature_extractor))
         for token in tokens:
             vec += feature_extractor.get_feature_vector(token.text)
@@ -133,3 +131,26 @@ class MitieFeaturizer(Featurizer):
             vec = vec / len(tokens)
 
         return np.expand_dims(vec, axis=0)
+
+    def features_for_tokens(
+        self,
+        tokens: List[Token],
+        feature_extractor: "mitie.total_word_feature_extractor",
+    ) -> np.ndarray:
+        cls_token_used = tokens[-1].text == CLS_TOKEN if tokens else False
+
+        input_tokens = tokens
+        if cls_token_used:
+            input_tokens = tokens[:-1]
+
+        if self.return_sequence:
+            features = self._features_as_sequence(input_tokens, feature_extractor)
+        else:
+            features = self._features_as_non_sequence(input_tokens, feature_extractor)
+
+        if cls_token_used and self.return_sequence:
+            # cls token is used, need to append a vector
+            cls_token_vec = np.mean(features, axis=0, keepdims=True)
+            features = np.concatenate([features, cls_token_vec])
+
+        return features

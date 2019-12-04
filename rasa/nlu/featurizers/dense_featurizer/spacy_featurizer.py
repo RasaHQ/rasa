@@ -79,7 +79,7 @@ class SpacyFeaturizer(Featurizer):
         if message_attribute_doc is not None:
             fs = self._features_for_doc(message_attribute_doc)
 
-            if cls_token_used:
+            if cls_token_used and self.return_sequence:
                 # cls token is used, need to append a vector
                 cls_token_vec = np.mean(fs, axis=0, keepdims=True)
                 fs = np.concatenate([fs, cls_token_vec])

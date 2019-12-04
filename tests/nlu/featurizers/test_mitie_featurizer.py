@@ -2,6 +2,7 @@ import numpy as np
 
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.constants import CLS_TOKEN
 
 
 def test_mitie_featurizer(mitie_feature_extractor, default_config):
@@ -10,7 +11,7 @@ def test_mitie_featurizer(mitie_feature_extractor, default_config):
     component_config = {"name": "MitieFeaturizer", "return_sequence": True}
     featurizer = MitieFeaturizer.create(component_config, RasaNLUModelConfig())
 
-    sentence = "Hey how are you today"
+    sentence = f"Hey how are you today {CLS_TOKEN}"
 
     tokens = MitieTokenizer().tokenize(sentence)
 
@@ -28,7 +29,7 @@ def test_mitie_featurizer_no_sequence(mitie_feature_extractor, default_config):
     component_config = {"name": "MitieFeaturizer", "return_sequence": False}
     featurizer = MitieFeaturizer.create(component_config, RasaNLUModelConfig())
 
-    sentence = "Hey how are you today"
+    sentence = f"Hey how are you today {CLS_TOKEN}"
     tokens = MitieTokenizer().tokenize(sentence)
 
     vecs = featurizer.features_for_tokens(tokens, mitie_feature_extractor)[0]
