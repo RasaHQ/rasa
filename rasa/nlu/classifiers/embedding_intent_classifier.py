@@ -522,19 +522,21 @@ class EmbeddingIntentClassifier(Component):
         possible_to_train = self._check_enough_labels(session_data)
 
         if not possible_to_train:
-            
-            intent_attribute = {e.get(MESSAGE_INTENT_ATTRIBUTE) for e in training_data.intent_examples}
+
+            intent_attribute = {
+                e.get(MESSAGE_INTENT_ATTRIBUTE) for e in training_data.intent_examples
+            }
             text_attribute = training_data.intent_examples
             intent_content = []
             for e in text_attribute:
                 intent_content.append(e.get(MESSAGE_TEXT_ATTRIBUTE))
-                
+
             logger.error(
                 "Can not train a classifier. "
                 "Need at least 2 different classes. "
                 "Skipping training of classifier. "
                 "This is the only intent found \n"
-                f"{intent_attribute} " 
+                f"{intent_attribute}"
                 f"{intent_content}"
             )
 
