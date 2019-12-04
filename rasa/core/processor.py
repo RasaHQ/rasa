@@ -191,9 +191,7 @@ class MessageProcessor:
         tracker = self._get_tracker(message.sender_id)
 
         if tracker:
-            # TODO: get session length from domain
-            await self._update_tracker_session(tracker, message.output_channel, 1)
-
+            await self._update_tracker_session(tracker, message.output_channel)
             await self._handle_message_with_tracker(message, tracker)
 
             if should_save_tracker:
