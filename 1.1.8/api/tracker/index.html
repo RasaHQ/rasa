@@ -410,8 +410,7 @@ the tracker, these events will be replayed to recreate the state.</p>
 <dt id="rasa.core.trackers.DialogueStateTracker.generate_all_prior_trackers">
 <code class="descname">generate_all_prior_trackers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.generate_all_prior_trackers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a generator of the previous trackers of this tracker.</p>
-<p>The resulting array is representing
-the trackers before each action.</p>
+<p>The resulting array is representing the trackers before each action.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -444,6 +443,23 @@ should be excluded from the results. Can be used to skip
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code>]</p>
 </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rasa.core.trackers.DialogueStateTracker.get_last_session_started_event">
+<code class="descname">get_last_session_started_event</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.trackers.DialogueStateTracker.get_last_session_started_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the last <cite>SessionStarted</cite> event.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The last <cite>SessionStarted</cite> marking a session start if available,
+otherwise <cite>None</cite>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">SessionStarted</span></code>]</td>
 </tr>
 </tbody>
 </table>
