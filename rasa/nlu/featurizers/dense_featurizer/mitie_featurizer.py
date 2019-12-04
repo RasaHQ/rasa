@@ -107,31 +107,6 @@ class MitieFeaturizer(Featurizer):
             )
         return mitie_feature_extractor
 
-    def _features_as_sequence(
-        self,
-        tokens: List[Token],
-        feature_extractor: "mitie.total_word_feature_extractor",
-    ) -> np.ndarray:
-        features = []
-        for token in tokens:
-            features.append(feature_extractor.get_feature_vector(token.text))
-
-        return np.array(features)
-
-    def _features_as_non_sequence(
-        self,
-        tokens: List[Token],
-        feature_extractor: "mitie.total_word_feature_extractor",
-    ) -> np.ndarray:
-        vec = np.zeros(self.ndim(feature_extractor))
-        for token in tokens:
-            vec += feature_extractor.get_feature_vector(token.text)
-
-        if tokens:
-            vec = vec / len(tokens)
-
-        return np.expand_dims(vec, axis=0)
-
     def features_for_tokens(
         self,
         tokens: List[Token],
@@ -139,18 +114,22 @@ class MitieFeaturizer(Featurizer):
     ) -> np.ndarray:
         cls_token_used = tokens[-1].text == CLS_TOKEN if tokens else False
 
-        input_tokens = tokens
+        tokens_without_cls = tokens
         if cls_token_used:
-            input_tokens = tokens[:-1]
+            tokens_without_cls = tokens[:-1]
 
-        if self.return_sequence:
-            features = self._features_as_sequence(input_tokens, feature_extractor)
-        else:
-            features = self._features_as_non_sequence(input_tokens, feature_extractor)
+        # calculate features
+        features = []
+        for token in tokens_without_cls:
+            features.append(feature_extractor.get_feature_vector(token.text))
+        features = np.array(features)
 
         if cls_token_used and self.return_sequence:
             # cls token is used, need to append a vector
             cls_token_vec = np.mean(features, axis=0, keepdims=True)
             features = np.concatenate([features, cls_token_vec])
+
+        if not self.return_sequence:
+            features = np.mean(features, axis=0, keepdims=True)
 
         return features

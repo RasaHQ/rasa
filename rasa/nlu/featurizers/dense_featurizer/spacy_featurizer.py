@@ -77,14 +77,14 @@ class SpacyFeaturizer(Featurizer):
         cls_token_used = tokens[-1].text == CLS_TOKEN if tokens else False
 
         if message_attribute_doc is not None:
-            fs = self._features_for_doc(message_attribute_doc)
+            features = self._features_for_doc(message_attribute_doc)
 
             if cls_token_used and self.return_sequence:
                 # cls token is used, need to append a vector
-                cls_token_vec = np.mean(fs, axis=0, keepdims=True)
-                fs = np.concatenate([fs, cls_token_vec])
+                cls_token_vec = np.mean(features, axis=0, keepdims=True)
+                features = np.concatenate([features, cls_token_vec])
 
             features = self._combine_with_existing_dense_features(
-                message, fs, MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
+                message, features, MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
             )
             message.set(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute], features)
