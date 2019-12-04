@@ -1,2 +1,8 @@
 Added a new event ``SessionStarted`` that marks the beginning of a new conversation
 session.
+
+Added a new default action ``ActionSessionStart``. This action takes all ``SlotSet``
+events from the previous session and applies it to the next session.
+
+Added new default intent ``session_start`` which triggers the start of a new
+conversation session.
