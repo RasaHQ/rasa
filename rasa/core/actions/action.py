@@ -230,6 +230,8 @@ class ActionRetrieveResponse(Action):
                 OPEN_UTTERANCE_PREDICTION_KEY
             ]["name"]
         }
+        message["template_name"] = self.action_name
+
         return [create_bot_utterance(message)]
 
     def name(self) -> Text:
@@ -506,6 +508,7 @@ class RemoteAction(Action):
                 )
                 if not draft:
                     continue
+                draft["template_name"] = template
             else:
                 draft = {}
 
@@ -721,6 +724,7 @@ class ActionDefaultAskAffirmation(Action):
                 {"title": "No", "payload": f"/{USER_INTENT_OUT_OF_SCOPE}"},
             ],
         }
+        message["template_name"] = self.name()
 
         return [create_bot_utterance(message)]
 

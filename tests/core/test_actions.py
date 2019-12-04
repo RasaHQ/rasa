@@ -232,7 +232,9 @@ async def test_remote_action_logs_events(
     assert events[0] == BotUttered(
         "test text", {"buttons": [{"title": "cheap", "payload": "cheap"}]}
     )
-    assert events[1] == BotUttered("hey there None!")
+    assert events[1] == BotUttered(
+        "hey there None!", metadata={"template_name": "utter_greet"}
+    )
     assert events[2] == SlotSet("name", "rasa")
 
 
@@ -276,7 +278,9 @@ async def test_remote_action_utterances_with_none_values(
         )
 
     assert events == [
-        BotUttered("what dou want to eat?"),
+        BotUttered(
+            "what dou want to eat?", metadata={"template_name": "utter_ask_cuisine"}
+        ),
         Form("restaurant_form"),
         SlotSet("requested_slot", "cuisine"),
     ]
@@ -364,6 +368,7 @@ async def test_action_utter_retrieved_response(
     assert events[0].as_dict().get("text") == BotUttered("I am a bot.").as_dict().get(
         "text"
     )
+    assert events[0].as_dict().get("metadata").get("template_name") == action_name
 
 
 async def test_action_utter_default_retrieved_response(
@@ -626,6 +631,7 @@ async def test_action_default_ask_affirmation(
                     {"title": "No", "payload": "/out_of_scope"},
                 ]
             },
+            {"template_name": "action_default_ask_affirmation"},
         )
     ]
 
