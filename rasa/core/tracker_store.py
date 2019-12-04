@@ -690,9 +690,7 @@ class SQLTrackerStore(TrackerStore):
                 )
             session.commit()
 
-        logger.debug(
-            f"Tracker with sender_id '{tracker.sender_id}' stored to database"
-        )
+        logger.debug(f"Tracker with sender_id '{tracker.sender_id}' stored to database")
 
     def _additional_events(
         self, session: "Session", tracker: DialogueStateTracker

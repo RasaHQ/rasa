@@ -98,9 +98,7 @@ def test_file_broker_from_config():
 def test_file_broker_logs_to_file(tmpdir):
     fname = tmpdir.join("events.log").strpath
 
-    actual = EventBroker.create(
-        EndpointConfig(**{"type": "file", "path": fname})
-    )
+    actual = EventBroker.create(EndpointConfig(**{"type": "file", "path": fname}))
 
     for e in TEST_EVENTS:
         actual.publish(e.as_dict())
@@ -117,9 +115,7 @@ def test_file_broker_logs_to_file(tmpdir):
 def test_file_broker_properly_logs_newlines(tmpdir):
     fname = tmpdir.join("events.log").strpath
 
-    actual = EventBroker.create(
-        EndpointConfig(**{"type": "file", "path": fname})
-    )
+    actual = EventBroker.create(EndpointConfig(**{"type": "file", "path": fname}))
 
     event_with_newline = UserUttered("hello \n there")
 
