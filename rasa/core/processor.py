@@ -101,15 +101,10 @@ class MessageProcessor:
             return None
 
         await self._predict_and_execute_next_action(message, tracker)
+
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
-        print("have tracker events")
-        for e in tracker.events:
-            print(e)
 
-        print("\napplied events")
-        for e in tracker.applied_events():
-            print(e)
         if isinstance(message.output_channel, CollectingOutputChannel):
             return message.output_channel.messages
         else:
