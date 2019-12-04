@@ -42,6 +42,10 @@ jobs:
     - name: Check types
       run: |
         make types
+    - name: Cleanup
+      run: |
+        # tries to reduce package install folder - makes sure cache limit of 400MB is not exceeded
+        pip uninstall tensorflow
 
   test:
     name: Run Tests
@@ -74,7 +78,7 @@ jobs:
     - name: Test code
       run: |
         make test
-    - name: cleanup
+    - name: Cleanup
       run: |
         # tries to reduce package install folder - makes sure cache limit of 400MB is not exceeded
         pip uninstall tensorflow
