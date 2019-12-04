@@ -523,7 +523,7 @@ class EmbeddingIntentClassifier(Component):
 
         if not possible_to_train:
             
-            intent_attribute = training_data.intent_examples[0].get(MESSAGE_INTENT_ATTRIBUTE)
+            intent_attribute = {e.get(MESSAGE_INTENT_ATTRIBUTE) for e in training_data.intent_examples}
             text_attribute = training_data.intent_examples
             intent_content = []
             for e in text_attribute:
