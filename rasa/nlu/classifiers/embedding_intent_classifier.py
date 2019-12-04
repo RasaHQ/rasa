@@ -104,6 +104,8 @@ class EmbeddingIntentClassifier(Component):
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
         "evaluate_on_num_examples": 0,  # large values may hurt performance
+        # whether to normalize scores or not, softmax loss_type only
+        "normalize": False,
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -206,6 +208,7 @@ class EmbeddingIntentClassifier(Component):
             elif self.loss_type == "margin":
                 self.similarity_type = "cosine"
 
+        self.normalize = config["normalize"]
         self.mu_pos = config["mu_pos"]
         self.mu_neg = config["mu_neg"]
         self.use_max_sim_neg = config["use_max_sim_neg"]
@@ -623,9 +626,9 @@ class EmbeddingIntentClassifier(Component):
                 }
                 label_ids = label_ids[:LABEL_RANKING_LENGTH]
                 message_sim = message_sim[:LABEL_RANKING_LENGTH]
-                print(message_sim)
-                message_sim = message_sim/np.sum(message_sim)
-                print(message_sim)
+                # normalise scores if turned on
+                if self.loss_type == "softmax" and self.normalize == True:
+                    message_sim = message_sim/np.sum(message_sim)
                 ranking = list(zip(list(label_ids), message_sim))
                 label_ranking = [
                     {"name": self.inverted_label_dict[label_idx], "confidence": score}
