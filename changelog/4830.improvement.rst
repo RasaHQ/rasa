@@ -1,1 +1,2 @@
-``SQLTrackerStore`` only retrieves events from the last session from the database.
+``SQLTrackerStore`` and ``MongoTrackerStore`` only retrieve events from the last
+session from the database.

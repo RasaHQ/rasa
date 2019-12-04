@@ -1,7 +1,8 @@
 import logging
 import tempfile
+import uuid
 
-from typing import Tuple, Text, Callable, Type
+from typing import Tuple, Text, Callable, Type, Dict
 from unittest.mock import Mock
 
 import pytest
@@ -9,6 +10,7 @@ from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_dynamodb2
 
+from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.event_channel import EventChannel
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
@@ -403,13 +405,39 @@ def test_set_fail_safe_tracker_store_domain(default_domain: Domain):
     assert fallback_tracker_store.domain is failsafe_store.domain
 
 
+def test_mongo_additional_events(default_domain: Domain):
+    tracker_store = MockedMongoTrackerStore(default_domain)
+    sender_id = uuid.uuid4().hex
+
+    # create tracker with two events and save it
+    events_1 = [UserUttered("hello"), BotUttered("what")]
+    tracker = DialogueStateTracker.from_events(sender_id, events_1)
+    tracker_store.save(tracker)
+
+    # add more events to the tracker, do not yet save it
+    events_2 = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("123"),
+        BotUttered("yes"),
+    ]
+    for event in events_2:
+        tracker.update(event)
+
+    # make sure only new events are returned
+    # noinspection PyProtectedMember
+    assert list(tracker_store._additional_events(tracker)) == events_2
+
+
 @pytest.mark.parametrize(
-    "tracker_store_type", [MockedMongoTrackerStore, SQLTrackerStore],
+    "tracker_store_type,tracker_store_kwargs",
+    [(MockedMongoTrackerStore, {}), (SQLTrackerStore, {"host": "sqlite:///"})],
 )
-def test_sql_tracker_store_retrieve_with_session_started_events(
-    tracker_store_type: Type[TrackerStore], default_domain: Domain
+def test_tracker_store_retrieve_with_session_started_events(
+    tracker_store_type: Type[TrackerStore],
+    tracker_store_kwargs: Dict,
+    default_domain: Domain,
 ):
-    tracker_store = tracker_store_type(default_domain)
+    tracker_store = tracker_store_type(default_domain, **tracker_store_kwargs)
     events = [
         UserUttered("Hola", {"name": "greet"}),
         BotUttered("Hi"),
@@ -426,20 +454,21 @@ def test_sql_tracker_store_retrieve_with_session_started_events(
 
     # Retrieve tracker with events since latest SessionStarted
     tracker = tracker_store.retrieve(sender_id)
-    print("fetched")
-    for e in tracker.events:
-        print(e)
+
     assert len(tracker.events) == 2
     assert all((event == tracker.events[i] for i, event in enumerate(events[2:])))
 
 
 @pytest.mark.parametrize(
-    "tracker_store_factory", [SQLTrackerStore],
+    "tracker_store_type,tracker_store_kwargs",
+    [(MockedMongoTrackerStore, {}), (SQLTrackerStore, {"host": "sqlite:///"})],
 )
-def test_sql_tracker_store_retrieve_without_session_started_events(
-    tracker_store_factory: Callable, default_domain: Domain
+def test_tracker_store_retrieve_without_session_started_events(
+    tracker_store_type: Type[TrackerStore],
+    tracker_store_kwargs: Dict,
+    default_domain: Domain,
 ):
-    tracker_store = tracker_store_factory(default_domain)
+    tracker_store = tracker_store_type(default_domain, **tracker_store_kwargs)
 
     # Create tracker with a SessionStarted event
     events = [
