@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import os
-from typing import Text, Optional, Union, AsyncGenerator
+from typing import Text, Optional, AsyncGenerator
 
 from async_generator import asynccontextmanager
 
@@ -93,7 +93,7 @@ class LockStore:
         raise NotImplementedError
 
     def issue_ticket(
-        self, conversation_id: Text, lock_lifetime: Union[float, int] = LOCK_LIFETIME
+        self, conversation_id: Text, lock_lifetime: float = LOCK_LIFETIME
     ) -> int:
         """Issue new ticket with `lock_lifetime` for lock associated with
         `conversation_id`.
@@ -124,7 +124,7 @@ class LockStore:
         self,
         conversation_id: Text,
         lock_lifetime: int = LOCK_LIFETIME,
-        wait_time_in_seconds: Union[int, float] = 1,
+        wait_time_in_seconds: float = 1,
     ) -> AsyncGenerator[TicketLock, None]:
         """Acquire lock with lifetime `lock_lifetime`for `conversation_id`.
 
@@ -143,10 +143,7 @@ class LockStore:
             self.cleanup(conversation_id, ticket)
 
     async def _acquire_lock(
-        self,
-        conversation_id: Text,
-        ticket: int,
-        wait_time_in_seconds: Union[int, float],
+        self, conversation_id: Text, ticket: int, wait_time_in_seconds: float,
     ) -> TicketLock:
 
         while True:

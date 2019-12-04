@@ -1,9 +1,9 @@
 import json
 import logging
 from collections import deque
-from typing import Text, Optional, Union, Deque, Dict, Any
 
 import time
+from typing import Text, Optional, Union, Deque, Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class TicketLock:
 
         return self.now_serving != ticket_number
 
-    def issue_ticket(self, lifetime: Union[float, int]) -> int:
+    def issue_ticket(self, lifetime: float) -> int:
         """Issue a new ticket and return its number."""
 
         self.remove_expired_tickets()

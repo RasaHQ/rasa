@@ -1,5 +1,6 @@
 import json
 import logging
+import warnings
 
 import jsonpickle
 import time
@@ -8,7 +9,7 @@ import uuid
 from dateutil import parser
 
 from datetime import datetime
-from typing import List, Dict, Text, Any, Type, Optional, NoReturn
+from typing import List, Dict, Text, Any, Type, Optional
 
 
 from rasa.core import utils
@@ -145,10 +146,7 @@ class Event:
         return [cls(parameters.get("timestamp"), parameters.get("metadata"))]
 
     def as_dict(self) -> Dict[Text, Any]:
-        d = {
-            "event": self.type_name,
-            "timestamp": self.timestamp,
-        }
+        d = {"event": self.type_name, "timestamp": self.timestamp}
 
         if self.metadata:
             d["metadata"] = self.metadata
@@ -209,7 +207,7 @@ class UserUttered(Event):
         intent=None,
         entities=None,
         parse_data: Optional[Dict[Text, Any]] = None,
-        timestamp: Optional[int] = None,
+        timestamp: Optional[float] = None,
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
@@ -237,7 +235,7 @@ class UserUttered(Event):
     def _from_parse_data(
         text: Text,
         parse_data: Dict[Text, Any],
-        timestamp: Optional[int] = None,
+        timestamp: Optional[float] = None,
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
@@ -441,7 +439,7 @@ class SlotSet(Event):
         self,
         key: Text,
         value: Optional[Any] = None,
-        timestamp: Optional[int] = None,
+        timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         self.key = key
@@ -596,7 +594,7 @@ class ReminderScheduled(Event):
         trigger_date_time: datetime,
         name: Optional[Text] = None,
         kill_on_user_message: bool = True,
-        timestamp: Optional[int] = None,
+        timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ):
         """Creates the reminder
@@ -684,7 +682,7 @@ class ReminderCancelled(Event):
     def __init__(
         self,
         action_name: Text,
-        timestamp: Optional[int] = None,
+        timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ):
         """
@@ -758,7 +756,7 @@ class StoryExported(Event):
     def __init__(
         self,
         path: Optional[Text] = None,
-        timestamp: Optional[int] = None,
+        timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ):
         self.path = path
@@ -800,7 +798,7 @@ class FollowupAction(Event):
     def __init__(
         self,
         name: Text,
-        timestamp: Optional[int] = None,
+        timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         self.action_name = name
@@ -906,7 +904,7 @@ class ActionExecuted(Event):
         action_name: Text,
         policy: Optional[Text] = None,
         confidence: Optional[float] = None,
-        timestamp: Optional[int] = None,
+        timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
     ):
         self.action_name = action_name
@@ -975,7 +973,7 @@ class AgentUttered(Event):
         self,
         text: Optional[Text] = None,
         data: Optional[Any] = None,
-        timestamp: Optional[int] = None,
+        timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         self.text = text
@@ -1038,7 +1036,7 @@ class Form(Event):
     def __init__(
         self,
         name: Optional[Text],
-        timestamp: Optional[int] = None,
+        timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         self.name = name
@@ -1089,7 +1087,7 @@ class FormValidation(Event):
     def __init__(
         self,
         validate: bool,
-        timestamp: Optional[int] = None,
+        timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         self.validate = validate
@@ -1134,7 +1132,7 @@ class ActionExecutionRejected(Event):
         action_name: Text,
         policy: Optional[Text] = None,
         confidence: Optional[float] = None,
-        timestamp: Optional[int] = None,
+        timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         self.action_name = action_name
@@ -1200,14 +1198,17 @@ class SessionStarted(Event):
     def __str__(self) -> Text:
         return "SessionStarted()"
 
-    def as_story_string(self) -> NoReturn:
-        raise NotImplementedError(
+    def as_story_string(self) -> None:
+        warnings.warn(
             f"'{self.type_name}' events cannot be serialised as story strings."
         )
+        return None
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         from rasa.core.actions.action import (  # pytype: disable=pyi-error
-            ACTION_LISTEN_NAME,
+            ACTION_SESSION_START_NAME,
         )
 
-        tracker.trigger_followup_action(ACTION_LISTEN_NAME)
+        # noinspection PyProtectedMember
+        tracker._reset()
+        tracker.trigger_followup_action(ACTION_SESSION_START_NAME)

@@ -29,7 +29,7 @@ def initialise_pika_connection(
     password: Text,
     port: Union[Text, int] = 5672,
     connection_attempts: int = 20,
-    retry_delay_in_seconds: Union[int, float] = 5,
+    retry_delay_in_seconds: float = 5,
 ) -> "BlockingConnection":
     """Create a Pika `BlockingConnection`.
 
@@ -60,7 +60,7 @@ def _get_pika_parameters(
     password: Text,
     port: Union[Text, int] = 5672,
     connection_attempts: int = 20,
-    retry_delay_in_seconds: Union[int, float] = 5,
+    retry_delay_in_seconds: float = 5,
 ) -> "Parameters":
     """Create Pika `Parameters`.
 
@@ -135,7 +135,7 @@ def initialise_pika_channel(
     password: Text,
     port: Union[Text, int] = 5672,
     connection_attempts: int = 20,
-    retry_delay_in_seconds: Union[int, float] = 5,
+    retry_delay_in_seconds: float = 5,
 ) -> "BlockingChannel":
     """Initialise a Pika channel with a durable queue.
 
