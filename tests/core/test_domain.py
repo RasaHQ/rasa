@@ -230,6 +230,8 @@ def test_domain_to_yaml():
     test_yaml = """actions:
 - utter_greet
 config:
+  carry_over_slots_to_new_session: true
+  session_length: 60
   store_entities_as_slots: true
 entities: []
 forms: []
@@ -567,7 +569,7 @@ def test_add_knowledge_base_slots(default_domain):
 
 
 @pytest.mark.parametrize(
-    "input_domain, expected_session_length, expected_carry_over_slots, ",
+    "input_domain, expected_session_length, expected_carry_over_slots",
     [
         (
             """config:
