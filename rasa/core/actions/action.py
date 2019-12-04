@@ -343,7 +343,7 @@ class ActionSessionStart(Action):
         return (
             [SessionStarted()]
             + list(slot_set_events)
-            + [FollowupAction(ACTION_LISTEN_NAME)]
+            + [ActionExecuted(ACTION_LISTEN_NAME)]
         )
 
 

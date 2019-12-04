@@ -1,10 +1,8 @@
-import asyncio
-import json
 import warnings
 import logging
 import os
 from types import LambdaType
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, Text, Tuple
 
 import numpy as np
 import time
@@ -13,7 +11,6 @@ from rasa.core import jobs
 from rasa.core.actions.action import (
     Action,
     ACTION_SESSION_START_NAME,
-    ActionSessionStart,
 )
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
 from rasa.core.channels.channel import (
@@ -27,6 +24,7 @@ from rasa.core.constants import (
     UTTER_PREFIX,
     USER_INTENT_BACK,
     USER_INTENT_OUT_OF_SCOPE,
+    USER_INTENT_SESSION_START,
 )
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -38,7 +36,6 @@ from rasa.core.events import (
     SlotSet,
     UserUttered,
     BotUttered,
-    SessionStarted,
 )
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
@@ -55,6 +52,13 @@ logger = logging.getLogger(__name__)
 
 
 MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
+
+DEFAULT_INTENTS = [
+    USER_INTENT_RESTART,
+    USER_INTENT_BACK,
+    USER_INTENT_OUT_OF_SCOPE,
+    USER_INTENT_SESSION_START,
+]
 
 
 class MessageProcessor:
@@ -102,7 +106,13 @@ class MessageProcessor:
         await self._predict_and_execute_next_action(message, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
+        print("have tracker events")
+        for e in tracker.events:
+            print(e)
 
+        print("\napplied events")
+        for e in tracker.applied_events():
+            print(e)
         if isinstance(message.output_channel, CollectingOutputChannel):
             return message.output_channel.messages
         else:
@@ -156,7 +166,7 @@ class MessageProcessor:
             output_channel: Output channel for potential utterances in a custom
                 `ActionSessionStart`.
             session_length_in_minutes: Session length in minutes.
-            
+
         """
         if self._is_legacy_tracker(tracker) or self._has_session_expired(
             tracker, session_length_in_minutes
@@ -179,6 +189,7 @@ class MessageProcessor:
         Optionally save the tracker if `should_save_tracker` is `True`. Tracker saving
         can be skipped if the tracker returned by this method is used for further
         processing and saved at a later stage.
+
         """
 
         # preprocess message if necessary
@@ -199,7 +210,7 @@ class MessageProcessor:
                 self._save_tracker(tracker)
         else:
             logger.warning(
-                "Failed to retrieve or create tracker for sender "
+                "Failed to retrieve or create tracker for conversation ID "
                 f"'{message.sender_id}'."
             )
         return tracker
@@ -227,7 +238,8 @@ class MessageProcessor:
             self._save_tracker(tracker)
         else:
             logger.warning(
-                f"Failed to retrieve or create tracker for sender '{sender_id}'."
+                f"Failed to retrieve or create tracker for conversation ID "
+                f"'{sender_id}'."
             )
         return tracker
 
@@ -293,7 +305,7 @@ class MessageProcessor:
 
         if not tracker:
             logger.warning(
-                f"Failed to retrieve or create tracker for sender '{sender_id}'."
+                f"Failed to retrieve tracker for conversation ID '{sender_id}'."
             )
             return None
 
@@ -337,17 +349,11 @@ class MessageProcessor:
 
         domain_is_not_empty = self.domain and not self.domain.is_empty()
 
-        default_intents = [
-            USER_INTENT_RESTART,
-            USER_INTENT_BACK,
-            USER_INTENT_OUT_OF_SCOPE,
-        ]
-
         intent = parse_data["intent"]["name"]
         if intent:
             intent_is_recognized = (
                 domain_is_not_empty and intent in self.domain.intents
-            ) or intent in default_intents
+            ) or intent in DEFAULT_INTENTS
             if not intent_is_recognized:
                 warnings.warn(
                     f"Interpreter parsed an intent '{intent}' "

@@ -157,7 +157,7 @@ def test_domain_from_template():
 
     assert not domain.is_empty()
     assert len(domain.intents) == 10
-    assert len(domain.action_names) == 11
+    assert len(domain.action_names) == 12
 
 
 def test_utter_templates():

@@ -5,10 +5,7 @@ from enum import Enum
 from typing import Dict, Text, Any, Optional, Iterator, Generator, Type, List, Deque
 
 from rasa.core import events  # pytype: disable=pyi-error
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_SESSION_START_NAME,
-)  # pytype: disable=pyi-error
+from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
 from rasa.core.conversation import Dialogue  # pytype: disable=pyi-error
 from rasa.core.events import (  # pytype: disable=pyi-error
     UserUttered,

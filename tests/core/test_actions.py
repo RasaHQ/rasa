@@ -26,7 +26,7 @@ from rasa.core.actions.action import (
     ActionSessionStart,
 )
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.domain import Domain, InvalidDomain
+from rasa.core.domain import Domain
 from rasa.core.events import (
     Restarted,
     SlotSet,
@@ -35,13 +35,11 @@ from rasa.core.events import (
     Form,
     SessionStarted,
     ActionExecuted,
-    FollowupAction,
 )
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
-from rasa.core.constants import UTTER_PREFIX, RESPOND_PREFIX
 
 
 @pytest.fixture(scope="module")
@@ -506,7 +504,7 @@ async def test_action_session_start_without_slots(
     )
     assert events == [
         SessionStarted(),
-        FollowupAction(ACTION_LISTEN_NAME),
+        ActionExecuted(ACTION_LISTEN_NAME),
     ]
 
 
@@ -530,7 +528,7 @@ async def test_action_session_start_with_slots(
         SessionStarted(),
         slot_set_event_1,
         slot_set_event_2,
-        FollowupAction(ACTION_LISTEN_NAME),
+        ActionExecuted(ACTION_LISTEN_NAME),
     ]
 
     # make sure that the list of events has ascending timestamps
