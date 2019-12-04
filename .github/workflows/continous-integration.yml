@@ -57,6 +57,11 @@ jobs:
     - name: Check types
       run: |
         make types
+    - name: Test Docs
+      run: |
+        pip install -r requirements-docs.txt
+        pip install -e .[sql]
+        cd docs && make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
     - name: Cleanup
       run: |
         # tries to reduce package install folder - makes sure cache limit of 400MB is not exceeded
