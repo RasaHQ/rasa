@@ -1,8 +1,9 @@
 import logging
 import tempfile
 import uuid
+from sqlalchemy.orm import Session
 
-from typing import Tuple, Text, Callable, Type, Dict
+from typing import Tuple, Text, Callable, Type, Dict, List
 from unittest.mock import Mock
 
 import pytest
@@ -21,6 +22,7 @@ from rasa.core.events import (
     UserUttered,
     SessionStarted,
     BotUttered,
+    Event,
 )
 from rasa.core.tracker_store import (
     TrackerStore,
@@ -32,7 +34,7 @@ from rasa.core.tracker_store import (
     MongoTrackerStore,
 )
 import rasa.core.tracker_store
-from rasa.core.trackers import DialogueStateTracker
+from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
@@ -405,27 +407,72 @@ def test_set_fail_safe_tracker_store_domain(default_domain: Domain):
     assert fallback_tracker_store.domain is failsafe_store.domain
 
 
-def test_mongo_additional_events(default_domain: Domain):
-    tracker_store = MockedMongoTrackerStore(default_domain)
+def create_tracker_with_partially_saved_events(
+    tracker_store: TrackerStore,
+) -> Tuple[List[Event], DialogueStateTracker]:
+    # creates a tracker with two events and saved it to the tracker store
+    # following that, it adds three more events that are not saved to the tracker store
     sender_id = uuid.uuid4().hex
 
     # create tracker with two events and save it
-    events_1 = [UserUttered("hello"), BotUttered("what")]
-    tracker = DialogueStateTracker.from_events(sender_id, events_1)
+    events = [UserUttered("hello"), BotUttered("what")]
+    tracker = DialogueStateTracker.from_events(sender_id, events)
     tracker_store.save(tracker)
 
     # add more events to the tracker, do not yet save it
-    events_2 = [
+    events = [
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("123"),
         BotUttered("yes"),
     ]
-    for event in events_2:
+    for event in events:
         tracker.update(event)
+
+    return events, tracker
+
+
+def test_mongo_additional_events(default_domain: Domain):
+    tracker_store = MockedMongoTrackerStore(default_domain)
+    events, tracker = create_tracker_with_partially_saved_events(tracker_store)
 
     # make sure only new events are returned
     # noinspection PyProtectedMember
-    assert list(tracker_store._additional_events(tracker)) == events_2
+    assert list(tracker_store._additional_events(tracker)) == events
+
+
+# we cannot parametrise over this and the previous test due to the different ways of
+# calling _additional_events()
+def test_sql_additional_events(default_domain: Domain):
+    tracker_store = SQLTrackerStore(default_domain)
+    events, tracker = create_tracker_with_partially_saved_events(tracker_store)
+
+    # make sure only new events are returned
+    with tracker_store.session_scope() as session:
+        # noinspection PyProtectedMember
+        assert list(tracker_store._additional_events(session, tracker)) == events
+
+
+def test_mongo_events_since_last_session_start(default_domain: Domain):
+    tracker_store = MockedMongoTrackerStore(default_domain)
+
+    # create tracker with events
+    events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("123"),
+        BotUttered("yes"),
+        SessionStarted(),
+        UserUttered("hello"),
+        BotUttered("welcome to your new session"),
+    ]
+
+    tracker = DialogueStateTracker.from_events("conversation with session", events)
+    serialised = tracker.current_state(EventVerbosity.ALL)
+
+    # make sure only events post session start are returned
+    # noinspection PyProtectedMember
+    assert tracker_store._events_since_last_session_start(serialised) == [
+        event.as_dict() for event in events[3:]
+    ]
 
 
 @pytest.mark.parametrize(
