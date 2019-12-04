@@ -30,17 +30,12 @@ jobs:
           ${{ runner.os }}-${{ matrix.python-version }}-pip-
     - name: Install dependencies
       run: |
+        sudo apt-get update -qq
         python -m pip install --upgrade pip
         pip install -r requirements-dev.txt
         pip install -e .
         make prepare-tests-ubuntu
         pip list
-    - name: Lint code
-      run: |
-        make lint
-    - name: Check types
-      run: |
-        make types
     - name: Test code
       run: |
         make test

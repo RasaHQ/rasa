@@ -1,0 +1,37 @@
+name: Code Quality
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - uses: actions/cache@v1
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-3.7-pip-${{ hashFiles('**/requirements-dev.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-3.7-pip-
+    - uses: actions/cache@v1
+      with:
+        path: .pytype
+        key: pytype-${{ hashFiles('rasa/**') }}
+        restore-keys: |
+          pytype-
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-dev.txt
+        pip install -e .
+    - name: Lint code
+      run: |
+        make lint
+    - name: Check types
+      run: |
+        make types
