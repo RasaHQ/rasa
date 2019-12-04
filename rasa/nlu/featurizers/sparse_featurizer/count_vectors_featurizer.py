@@ -405,7 +405,7 @@ class CountVectorsFeaturizer(Featurizer):
 
         for i, tokens in enumerate(all_tokens):
             input = tokens
-            if self.return_sequence:
+            if not self.return_sequence:
                 input = [" ".join(tokens)]
 
             x = self.vectorizers[attribute].transform(input)
