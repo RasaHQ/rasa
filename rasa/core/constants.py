@@ -27,6 +27,8 @@ INTENT_MESSAGE_PREFIX = "/"
 
 USER_INTENT_RESTART = "restart"
 
+USER_INTENT_SESSION_START = "session_start"
+
 USER_INTENT_BACK = "back"
 
 USER_INTENT_OUT_OF_SCOPE = "out_of_scope"

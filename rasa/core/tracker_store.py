@@ -6,6 +6,7 @@ import os
 import pickle
 import typing
 from datetime import datetime, timezone
+
 from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable
 
 import itertools
@@ -16,6 +17,8 @@ from time import sleep
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.event_channel import EventChannel
+from rasa.core.events import SessionStarted
+
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
@@ -133,7 +136,7 @@ class TrackerStore:
             return InMemoryTrackerStore(domain)
 
     def get_or_create_tracker(
-        self, sender_id: Text, max_event_history: Optional[int] = None
+        self, sender_id: Text, max_event_history: Optional[int] = None,
     ) -> "DialogueStateTracker":
         """Returns tracker or creates one if the retrieval returns None"""
         tracker = self.retrieve(sender_id)
@@ -151,14 +154,23 @@ class TrackerStore:
         )
 
     def create_tracker(
-        self, sender_id: Text, append_action_listen: bool = True
+        self,
+        sender_id: Text,
+        append_action_listen: bool = True,
+        should_append_session_started: bool = True,
     ) -> DialogueStateTracker:
-        """Creates a new tracker for the sender_id. The tracker is initially listening."""
+        """Creates a new tracker for the sender_id. The tracker is initially listening.
+        """
         tracker = self.init_tracker(sender_id)
         if tracker:
+            if should_append_session_started:
+                tracker.update(SessionStarted())
+
             if append_action_listen:
                 tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+
             self.save(tracker)
+
         return tracker
 
     def save(self, tracker):

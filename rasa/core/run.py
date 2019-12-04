@@ -129,7 +129,7 @@ def configure_app(
             )
 
             logger.info("Killing Sanic server now.")
-            running_app.stop()  # kill the sanic serverx
+            running_app.stop()  # kill the sanic server
 
         app.add_task(run_cmdline_io)
 

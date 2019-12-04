@@ -11,8 +11,13 @@ from rasa.core.actions.action import (
     ACTION_BACK_NAME,
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
 )
-from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
+from rasa.core.constants import (
+    USER_INTENT_BACK,
+    USER_INTENT_RESTART,
+    USER_INTENT_SESSION_START,
+)
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import ActionExecuted
 from rasa.core.policies.policy import Policy
@@ -91,6 +96,8 @@ class MappingPolicy(Policy):
             action = ACTION_RESTART_NAME
         elif intent == USER_INTENT_BACK:
             action = ACTION_BACK_NAME
+        elif intent == USER_INTENT_SESSION_START:
+            action = ACTION_SESSION_START_NAME
         else:
             action = domain.intent_properties.get(intent, {}).get("triggers")
 
