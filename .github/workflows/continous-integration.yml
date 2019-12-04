@@ -45,7 +45,7 @@ jobs:
     - name: Cleanup
       run: |
         # tries to reduce package install folder - makes sure cache limit of 400MB is not exceeded
-        pip uninstall tensorflow
+        pip uninstall -y tensorflow
 
   test:
     name: Run Tests
@@ -81,4 +81,4 @@ jobs:
     - name: Cleanup
       run: |
         # tries to reduce package install folder - makes sure cache limit of 400MB is not exceeded
-        pip uninstall tensorflow
+        pip uninstall -y tensorflow
