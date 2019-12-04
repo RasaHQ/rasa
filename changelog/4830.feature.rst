@@ -6,3 +6,6 @@ events from the previous session and applies it to the next session.
 
 Added new default intent ``session_start`` which triggers the start of a new
 conversation session.
+
+``SQLTrackerStore`` and ``MongoTrackerStore`` only retrieve events from the last
+session from the database.
