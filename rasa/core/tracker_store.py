@@ -710,7 +710,7 @@ class SQLTrackerStore(TrackerStore):
         from rasa.core.events import SessionStarted
 
         with self.session_scope() as session:
-            # Subquery to find the timestamp of the first `SessionStartedEvent`.
+            # Subquery to find the timestamp of the first `SessionStarted` event
             session_start_sub_query = (
                 session.query(
                     sa.func.max(self.SQLEvent.timestamp).label("session_start")
