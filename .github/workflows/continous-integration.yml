@@ -9,6 +9,20 @@ env:
   PIP_USE_PEP517: false
 
 jobs:
+  api:
+    name: "API specification"
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2-beta
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '10.x'
+    - run: npm install -g swagger-cli
+    - name: Run Swagger
+      run: |
+        swagger-cli validate docs/_static/spec/action-server.yml
+        swagger-cli validate docs/_static/spec/rasa.yml
   quality:
     name: Code Quality
     runs-on: ubuntu-latest
