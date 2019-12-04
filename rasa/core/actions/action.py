@@ -2,7 +2,7 @@ import copy
 import json
 import logging
 import typing
-from typing import List, Text, Optional, Dict, Any
+from typing import List, Text, Optional, Dict, Any, Generator
 
 import aiohttp
 
@@ -36,6 +36,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.domain import Domain
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
+    from rasa.core.events import SlotSet
 
 logger = logging.getLogger(__name__)
 
@@ -317,6 +318,21 @@ class ActionSessionStart(Action):
     def name(self) -> Text:
         return ACTION_SESSION_START_NAME
 
+    @staticmethod
+    def _slot_set_events_from_tracker(
+        tracker: "DialogueStateTracker",
+    ) -> Generator["SlotSet", None, None]:
+        """Fetch SlotSet events from tracker and carry over key, value and metadata."""
+
+        from rasa.core.events import SlotSet
+
+        # use generator so the timestamps are greater than that of the returned
+        return (
+            SlotSet(key=event.key, value=event.value, metadata=event.metadata)
+            for event in tracker.events
+            if isinstance(event, SlotSet)
+        )
+
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -324,20 +340,10 @@ class ActionSessionStart(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        from rasa.core.events import SessionStarted, SlotSet, FollowupAction
+        from rasa.core.events import SessionStarted
 
         # TODO: check in domain whether slots should be carried over
-        # fetch SlotSet events from tracker and carry over key, value and metadata
-        # use generator so the timestamps are greater than that of the returned
-        # `SessionStarted` event
-        slot_set_events = (
-            SlotSet(key=event.key, value=event.value, metadata=event.metadata)
-            for event in tracker.events
-            if isinstance(event, SlotSet)
-        )
-        # slot_set_events = [
-        #     SlotSet(f"dummy slot {i}", f"dummy slot {i}") for i in range(4)
-        # ]
+        slot_set_events = self._slot_set_events_from_tracker(tracker)
 
         # noinspection PyTypeChecker
         return (
