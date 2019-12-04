@@ -9,7 +9,7 @@ import pytest
 
 import rasa.utils.io
 from rasa.core import training, restore
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import (
     SlotSet,
@@ -85,7 +85,10 @@ def test_tracker_store_storage_and_retrieval(store):
     assert tracker.sender_id == "some-id"
 
     # Action listen should be in there
-    assert list(tracker.events) == [ActionExecuted(ACTION_LISTEN_NAME)]
+    assert list(tracker.events) == [
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
 
     # lets log a test message
     intent = {"name": "greet", "confidence": 1.0}
@@ -96,13 +99,13 @@ def test_tracker_store_storage_and_retrieval(store):
     # retrieving the same tracker should result in the same tracker
     retrieved_tracker = store.get_or_create_tracker("some-id")
     assert retrieved_tracker.sender_id == "some-id"
-    assert len(retrieved_tracker.events) == 2
+    assert len(retrieved_tracker.events) == 3
     assert retrieved_tracker.latest_message.intent.get("name") == "greet"
 
     # getting another tracker should result in an empty tracker again
     other_tracker = store.get_or_create_tracker("some-other-id")
     assert other_tracker.sender_id == "some-other-id"
-    assert len(other_tracker.events) == 1
+    assert len(other_tracker.events) == 2
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
@@ -158,6 +161,7 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent):
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     expected = [
+        None,
         "action_listen",
         "greet",
         "utter_greet",
@@ -179,7 +183,7 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
 
     # important is, that the 'bot' comes after the second 'action' and not
     # before
-    expected = ["action", "user", "action", "bot", "action"]
+    expected = ["session_started", "action", "user", "action", "bot", "action"]
 
     assert [e.type_name for e in tracker.events] == expected
 
@@ -282,8 +286,8 @@ def test_session_start(default_domain: Domain):
     # tracker has one event
     assert len(tracker.events) == 1
 
-    # follow-up action should be 'action_listen'
-    assert tracker.followup_action == ACTION_LISTEN_NAME
+    # follow-up action should be 'session_start'
+    assert tracker.followup_action == ACTION_SESSION_START_NAME
 
 
 def test_revert_action_event(default_domain: Domain):
@@ -612,14 +616,15 @@ def test_tracker_without_slots(key, value, caplog):
 @pytest.mark.parametrize(
     "events,index_of_last_executed_event",
     [
-        ([ActionExecuted("one")], 0),
-        ([ActionExecuted("a"), ActionExecuted("b")], 1),
-        ([ActionExecuted("first"), UserUttered("b"), ActionExecuted("second")], 2),
-        ([ActionExecuted("this"), UserUttered("b")], 0),
-        ([UserUttered("b")], None),  # no `ActionExecuted` event
+        ([ActionExecuted("one")], None),  # no SessionStarted event
+        ([ActionExecuted("a"), SessionStarted()], 1),
+        ([ActionExecuted("first"), UserUttered("b"), SessionStarted()], 2),
+        ([SessionStarted(), UserUttered("b")], 0),
     ],
 )
-def test_get_last_executed(events: List[Event], index_of_last_executed_event: int):
+def test_last_session_started_event(
+    events: List[Event], index_of_last_executed_event: int
+):
     tracker = get_tracker(events)
 
     # noinspection PyTypeChecker
@@ -627,10 +632,6 @@ def test_get_last_executed(events: List[Event], index_of_last_executed_event: in
         index_of_last_executed_event
     ] if index_of_last_executed_event is not None else None
 
-    fetched_event = (
-        tracker.get_last_executed(expected_event.action_name)
-        if expected_event
-        else None
-    )
+    fetched_event = tracker.get_last_session_started_event() if expected_event else None
 
     assert expected_event == fetched_event

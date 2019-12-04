@@ -5,10 +5,7 @@ from enum import Enum
 from typing import Dict, Text, Any, Optional, Iterator, Generator, Type, List, Deque
 
 from rasa.core import events  # pytype: disable=pyi-error
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_SESSION_START_NAME,
-)  # pytype: disable=pyi-error
+from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
 from rasa.core.conversation import Dialogue  # pytype: disable=pyi-error
 from rasa.core.events import (  # pytype: disable=pyi-error
     UserUttered,
@@ -495,16 +492,16 @@ class DialogueStateTracker:
         )
         return last is not None and last.action_name == name
 
-    def get_last_executed(self, action_name: Text) -> Optional[ActionExecuted]:
-        """Get the last executed `action_name`.
+    def get_last_session_started_event(self) -> Optional[SessionStarted]:
+        """Get the last `SessionStarted` event.
 
         Returns:
-            The last `ActionExecuted` marking a session start if available,
+            The last `SessionStarted` marking a session start if available,
             otherwise `None`.
 
         """
-        for event in reversed(self.applied_events()):
-            if isinstance(event, ActionExecuted) and event.action_name == action_name:
+        for event in reversed(self.events):
+            if isinstance(event, SessionStarted):
                 return event
 
     ###

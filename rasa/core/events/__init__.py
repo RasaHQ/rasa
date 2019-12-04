@@ -1,5 +1,6 @@
 import json
 import logging
+import warnings
 
 import jsonpickle
 import time
@@ -8,7 +9,7 @@ import uuid
 from dateutil import parser
 
 from datetime import datetime
-from typing import List, Dict, Text, Any, Type, Optional, NoReturn
+from typing import List, Dict, Text, Any, Type, Optional
 
 
 from rasa.core import utils
@@ -145,10 +146,7 @@ class Event:
         return [cls(parameters.get("timestamp"), parameters.get("metadata"))]
 
     def as_dict(self) -> Dict[Text, Any]:
-        d = {
-            "event": self.type_name,
-            "timestamp": self.timestamp,
-        }
+        d = {"event": self.type_name, "timestamp": self.timestamp}
 
         if self.metadata:
             d["metadata"] = self.metadata
@@ -1200,14 +1198,17 @@ class SessionStarted(Event):
     def __str__(self) -> Text:
         return "SessionStarted()"
 
-    def as_story_string(self) -> NoReturn:
-        raise NotImplementedError(
+    def as_story_string(self) -> None:
+        warnings.warn(
             f"'{self.type_name}' events cannot be serialised as story strings."
         )
+        return None
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         from rasa.core.actions.action import (  # pytype: disable=pyi-error
             ACTION_SESSION_START_NAME,
         )
 
+        # noinspection PyProtectedMember
+        tracker._reset()
         tracker.trigger_followup_action(ACTION_SESSION_START_NAME)

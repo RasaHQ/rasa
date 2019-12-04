@@ -28,7 +28,7 @@ from rasa.core.actions.action import (
     ActionSessionStart,
 )
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.domain import Domain, InvalidDomain, SessionConfig
+from rasa.core.domain import Domain, SessionConfig
 from rasa.core.events import (
     Restarted,
     SlotSet,
@@ -43,7 +43,6 @@ from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
-from rasa.core.constants import UTTER_PREFIX, RESPOND_PREFIX
 
 
 @pytest.fixture(scope="module")
@@ -506,10 +505,7 @@ async def test_action_session_start_without_slots(
     events = await ActionSessionStart().run(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
-    assert events == [
-        ActionExecuted(action_name=ACTION_SESSION_START_NAME),
-        ActionExecuted(action_name=ACTION_LISTEN_NAME),
-    ]
+    assert events == [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)]
 
 
 @pytest.mark.parametrize(
@@ -518,7 +514,7 @@ async def test_action_session_start_without_slots(
         (
             SessionConfig(123, True),
             [
-                ActionExecuted(action_name=ACTION_SESSION_START_NAME),
+                SessionStarted(),
                 SlotSet("my_slot", "value"),
                 SlotSet("another-slot", "value2"),
                 ActionExecuted(action_name=ACTION_LISTEN_NAME),
@@ -526,10 +522,7 @@ async def test_action_session_start_without_slots(
         ),
         (
             SessionConfig(123, False),
-            [
-                ActionExecuted(action_name=ACTION_SESSION_START_NAME),
-                ActionExecuted(action_name=ACTION_LISTEN_NAME),
-            ],
+            [SessionStarted(), ActionExecuted(action_name=ACTION_LISTEN_NAME)],
         ),
     ],
 )

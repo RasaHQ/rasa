@@ -7,7 +7,7 @@ import pickle
 import typing
 from datetime import datetime, timezone
 
-from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable, List
+from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable
 
 import itertools
 from boto3.dynamodb.conditions import Key
@@ -15,8 +15,10 @@ from boto3.dynamodb.conditions import Key
 # noinspection PyPep8Naming
 from time import sleep
 
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
+from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.event_channel import EventChannel
+from rasa.core.events import SessionStarted
+
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
@@ -29,7 +31,6 @@ if typing.TYPE_CHECKING:
     from sqlalchemy.engine.base import Engine
     from sqlalchemy.orm import Session
     import boto3
-    from rasa.core.events import Event
 
 logger = logging.getLogger(__name__)
 
@@ -156,14 +157,14 @@ class TrackerStore:
         self,
         sender_id: Text,
         append_action_listen: bool = True,
-        should_append_session_started=True,
+        should_append_session_started: bool = True,
     ) -> DialogueStateTracker:
         """Creates a new tracker for the sender_id. The tracker is initially listening.
         """
         tracker = self.init_tracker(sender_id)
         if tracker:
             if should_append_session_started:
-                tracker.update(ActionExecuted(ACTION_SESSION_START_NAME))
+                tracker.update(SessionStarted())
 
             if append_action_listen:
                 tracker.update(ActionExecuted(ACTION_LISTEN_NAME))

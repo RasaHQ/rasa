@@ -1,8 +1,7 @@
-from typing import Optional, List
+from typing import Optional, List, Text
 
 import time
 
-import aiohttp
 import asyncio
 import datetime
 import uuid
@@ -12,13 +11,8 @@ from aioresponses import aioresponses
 
 from unittest.mock import patch
 
-import rasa.utils.io
 from rasa.core import jobs
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ActionSessionStart,
-    ACTION_SESSION_START_NAME,
-)
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.events import (
@@ -30,16 +24,15 @@ from rasa.core.events import (
     UserUttered,
     SessionStarted,
     Event,
+    SlotSet,
 )
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.slots import Slot
-from rasa.core.processor import MessageProcessor
 from rasa.core.interpreter import RasaNLUHttpInterpreter
-from rasa.core.processor import MessageProcessor
+from rasa.core.processor import MessageProcessor, DEFAULT_INTENTS
 from rasa.utils.endpoints import EndpointConfig
-from tests.utilities import json_of_latest_request, latest_request
+from tests.utilities import latest_request
 
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 from rasa.core.domain import Domain, SessionConfig
 
 import logging
@@ -94,8 +87,11 @@ async def test_log_unseen_feature(default_processor: MessageProcessor):
     )
 
 
-async def test_default_intent_recognized(default_processor: MessageProcessor):
-    message = UserMessage("/restart")
+@pytest.mark.parametrize("default_intent", DEFAULT_INTENTS)
+async def test_default_intent_recognized(
+    default_processor: MessageProcessor, default_intent: Text
+):
+    message = UserMessage(default_intent)
     parsed = await default_processor._parse_message(message)
     with pytest.warns(None) as record:
         default_processor._log_unseen_features(parsed)
@@ -166,12 +162,14 @@ async def test_reminder_scheduled(
     tracker.update(reminder)
 
     default_processor.tracker_store.save(tracker)
+
     await default_processor.handle_reminder(
         reminder, sender_id, default_channel, default_processor.nlg
     )
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
+
     assert t.events[-4] == UserUttered(None)
     assert t.events[-3] == ActionExecuted("utter_greet")
     assert t.events[-2] == BotUttered(
@@ -286,13 +284,7 @@ async def test_reminder_restart(
         # just an action listen means it's legacy
         ([ActionExecuted(action_name=ACTION_LISTEN_NAME)], True),
         # action listen and session at the beginning start means it isn't legacy
-        (
-            [
-                ActionExecuted(action_name=ACTION_SESSION_START_NAME),
-                ActionExecuted(action_name=ACTION_LISTEN_NAME),
-            ],
-            False,
-        ),
+        ([SessionStarted(), ActionExecuted(action_name=ACTION_LISTEN_NAME)], False),
         # just a single event means it's legacy
         ([UserUttered("hello")], True),
     ],
@@ -319,16 +311,16 @@ async def test_is_legacy_tracker(
         # session start is way in the past
         (SessionStarted(timestamp=1), 60, True),
         # session start is very recent
-        (SessionStarted(timestamp=time.time()), 1, False),
+        (SessionStarted(timestamp=time.time()), 60, False),
         # there is no session start event (legacy tracker)
-        (UserUttered("hello", timestamp=time.time()), 1, False),
+        (UserUttered("hello", timestamp=time.time()), 10, False),
         # there is no event
         (None, 1, False),
     ],
 )
 async def test_has_session_expired(
     event_to_apply: Optional[Event],
-    session_length_in_minutes: int,
+    session_length_in_minutes: float,
     has_expired: bool,
     default_processor: MessageProcessor,
 ):
@@ -347,3 +339,77 @@ async def test_has_session_expired(
 
     # noinspection PyProtectedMember
     assert default_processor._has_session_expired(tracker) == has_expired
+
+
+# noinspection PyProtectedMember
+async def test_update_tracker_session(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+    # make sure session expires and run tracker session update
+    await asyncio.sleep(1e-2)  # in seconds
+    default_processor.domain.session_config = SessionConfig(1e-5, True)
+    await default_processor._update_tracker_session(tracker, default_channel)
+
+    # the save is not called in _update_tracker_session()
+    default_processor._save_tracker(tracker)
+
+    # inspect tracker and make sure all events are present
+    tracker = default_processor.tracker_store.retrieve(sender_id)
+    assert list(tracker.events) == [
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+
+
+# noinspection PyProtectedMember
+async def test_update_tracker_session_with_slots(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+    # apply a user uttered and five slots
+    user_event = UserUttered("some utterance")
+    tracker.update(user_event)
+
+    slot_set_events = [SlotSet(f"slot key {i}", f"test value {i}") for i in range(5)]
+
+    for event in slot_set_events:
+        tracker.update(event)
+
+    # make sure session expires and run tracker session update
+    await asyncio.sleep(1e-2)  # in seconds
+    default_processor.domain.session_config = SessionConfig(1e-5, True)
+    await default_processor._update_tracker_session(tracker, default_channel)
+
+    # the save is not called in _update_tracker_session()
+    default_processor._save_tracker(tracker)
+
+    # inspect tracker and make sure all events are present
+    tracker = default_processor.tracker_store.retrieve(sender_id)
+    events = list(tracker.events)
+
+    # the first three events should be up to the user utterance
+    assert events[:3] == [
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        user_event,
+    ]
+
+    # next come the five slots
+    assert events[3:8] == slot_set_events
+
+    # the next two events are the session start sequence
+    assert events[8:10] == [ActionExecuted(ACTION_SESSION_START_NAME), SessionStarted()]
+
+    # the five slots should be reapplied
+    assert events[10:15] == slot_set_events
+
+    # finally an action listen, this should also be the last event
+    assert events[15] == events[-1] == ActionExecuted(ACTION_LISTEN_NAME)

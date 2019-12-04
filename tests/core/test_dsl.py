@@ -218,7 +218,7 @@ async def test_read_story_file_with_cycles(tmpdir, default_domain):
     assert len(graph_without_cycles.story_end_checkpoints) == 2
 
 
-async def test_generate_training_data_with_cycles(tmpdir, default_domain):
+async def test_generate_training_data_with_cycles(default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(
         BinarySingleStateFeaturizer(), max_history=4
     )
@@ -232,11 +232,11 @@ async def test_generate_training_data_with_cycles(tmpdir, default_domain):
     # deterministic way but should always be 3 or 4
     assert len(training_trackers) == 3 or len(training_trackers) == 4
 
-    # if we have 4 trackers, there is going to be one example more for label 4
-    num_threes = len(training_trackers) - 1
+    # if we have 4 trackers, there is going to be one example more for label 9
+    num_nines = len(training_trackers) - 1
     # if new default actions are added the keys of the actions will be changed
 
-    assert Counter(y) == {0: 6, 9: 3, 8: num_threes, 1: 2, 10: 1}
+    assert Counter(y) == {0: 6, 10: 3, 9: num_nines, 1: 2, 11: 1}
 
 
 async def test_generate_training_data_with_unused_checkpoints(tmpdir, default_domain):
@@ -481,9 +481,8 @@ def test_user_uttered_to_e2e(parse_data: Dict, expected_story_string: Text):
     assert event.as_story_string(e2e=True) == expected_story_string
 
 
-def test_session_started_event_cannot_be_serialised():
-    with pytest.raises(NotImplementedError):
-        SessionStarted().as_story_string()
+def test_session_started_event_is_not_serialised():
+    assert SessionStarted().as_story_string() is None
 
 
 @pytest.mark.parametrize("line", [" greet{: hi"])
@@ -491,4 +490,5 @@ def test_invalid_end_to_end_format(line: Text):
     reader = EndToEndReader()
 
     with pytest.raises(ValueError):
+        # noinspection PyProtectedMember
         _ = reader._parse_item(line)

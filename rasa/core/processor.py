@@ -1,9 +1,8 @@
-import json
 import warnings
 import logging
 import os
 from types import LambdaType
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, Text, Tuple
 
 import numpy as np
 import time
@@ -22,6 +21,7 @@ from rasa.core.constants import (
     UTTER_PREFIX,
     USER_INTENT_BACK,
     USER_INTENT_OUT_OF_SCOPE,
+    USER_INTENT_SESSION_START,
 )
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -33,7 +33,6 @@ from rasa.core.events import (
     SlotSet,
     UserUttered,
     BotUttered,
-    SessionStarted,
 )
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
@@ -50,6 +49,13 @@ logger = logging.getLogger(__name__)
 
 
 MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
+
+DEFAULT_INTENTS = [
+    USER_INTENT_RESTART,
+    USER_INTENT_BACK,
+    USER_INTENT_OUT_OF_SCOPE,
+    USER_INTENT_SESSION_START,
+]
 
 
 class MessageProcessor:
@@ -100,8 +106,11 @@ class MessageProcessor:
         print("have tracker events")
         for e in tracker.events:
             print(e)
+
+        print("\napplied events")
+        for e in tracker.applied_events():
+            print(e)
         if isinstance(message.output_channel, CollectingOutputChannel):
-            print("done in processor")
             return message.output_channel.messages
         else:
             return None
@@ -138,6 +147,31 @@ class MessageProcessor:
             "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART),
         }
 
+    async def _update_tracker_session(
+        self, tracker: DialogueStateTracker, output_channel: OutputChannel
+    ) -> None:
+        """Check the current session in `tracker` and update it if expired.
+
+        A 'session_start' is run if the tracker is a legacy tracker, or if the latest
+        tracker session has expired.
+
+        Args:
+            tracker: Tracker to inspect.
+            output_channel: Output channel for potential utterances in a custom
+                `ActionSessionStart`.
+
+        """
+        if self._is_legacy_tracker(tracker) or self._has_session_expired(tracker):
+            logger.debug(
+                f"Starting a new session for conversation ID '{tracker.sender_id}'."
+            )
+            await self._run_action(
+                action=self._get_action(ACTION_SESSION_START_NAME),
+                tracker=tracker,
+                output_channel=output_channel,
+                nlg=self.nlg,
+            )
+
     async def log_message(
         self, message: UserMessage, should_save_tracker: bool = True
     ) -> Optional[DialogueStateTracker]:
@@ -146,6 +180,7 @@ class MessageProcessor:
         Optionally save the tracker if `should_save_tracker` is `True`. Tracker saving
         can be skipped if the tracker returned by this method is used for further
         processing and saved at a later stage.
+
         """
 
         # preprocess message if necessary
@@ -154,7 +189,11 @@ class MessageProcessor:
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = self._get_tracker(message.sender_id)
+
         if tracker:
+            # TODO: get session length from domain
+            await self._update_tracker_session(tracker, message.output_channel, 1)
+
             await self._handle_message_with_tracker(message, tracker)
 
             if should_save_tracker:
@@ -162,7 +201,7 @@ class MessageProcessor:
                 self._save_tracker(tracker)
         else:
             logger.warning(
-                "Failed to retrieve or create tracker for sender "
+                "Failed to retrieve or create tracker for conversation ID "
                 f"'{message.sender_id}'."
             )
         return tracker
@@ -190,7 +229,8 @@ class MessageProcessor:
             self._save_tracker(tracker)
         else:
             logger.warning(
-                f"Failed to retrieve or create tracker for sender '{sender_id}'."
+                f"Failed to retrieve or create tracker for conversation ID "
+                f"'{sender_id}'."
             )
         return tracker
 
@@ -256,7 +296,7 @@ class MessageProcessor:
 
         if not tracker:
             logger.warning(
-                f"Failed to retrieve or create tracker for sender '{sender_id}'."
+                f"Failed to retrieve tracker for conversation ID '{sender_id}'."
             )
             return None
 
@@ -300,17 +340,11 @@ class MessageProcessor:
 
         domain_is_not_empty = self.domain and not self.domain.is_empty()
 
-        default_intents = [
-            USER_INTENT_RESTART,
-            USER_INTENT_BACK,
-            USER_INTENT_OUT_OF_SCOPE,
-        ]
-
         intent = parse_data["intent"]["name"]
         if intent:
             intent_is_recognized = (
                 domain_is_not_empty and intent in self.domain.intents
-            ) or intent in default_intents
+            ) or intent in DEFAULT_INTENTS
             if not intent_is_recognized:
                 warnings.warn(
                     f"Interpreter parsed an intent '{intent}' "
@@ -585,9 +619,8 @@ class MessageProcessor:
             e.timestamp = time.time()
             tracker.update(e, self.domain)
 
-    def _session_start_timestamp_for(
-        self, tracker: DialogueStateTracker
-    ) -> Optional[float]:
+    @staticmethod
+    def _session_start_timestamp_for(tracker: DialogueStateTracker) -> Optional[float]:
         """Retrieve timestamp of the beginning of the last session start for
         `tracker`.
 
@@ -603,12 +636,10 @@ class MessageProcessor:
             # this is a legacy tracker (pre-sessions), return current time
             return time.time()
 
-        # try to fetch the timestamp of the latest `SessionStarted` event
-        last_executed_session_started_action = tracker.get_last_executed(
-            ACTION_SESSION_START_NAME
-        )
-        if last_executed_session_started_action:
-            return last_executed_session_started_action.timestamp
+        last_session_started_event = tracker.get_last_session_started_event()
+
+        if last_session_started_event:
+            return last_session_started_event.timestamp
 
         # otherwise fetch the timestamp of the first event
         # this also is a legacy tracker (pre-sessions)
@@ -628,14 +659,24 @@ class MessageProcessor:
 
         time_delta_in_seconds = time.time() - session_start_timestamp
 
-        return time_delta_in_seconds / 60 > self.domain.session_config.session_length
+        has_expired = (
+            time_delta_in_seconds / 60 > self.domain.session_config.session_length
+        )
+
+        if has_expired:
+            logger.debug(
+                f"The latest session for conversation ID {tracker.sender_id} has "
+                f"expired."
+            )
+
+        return has_expired
 
     @staticmethod
     def _is_legacy_tracker(tracker: DialogueStateTracker) -> bool:
         """Determine whether `tracker` is a legacy tracker.
 
         A legacy tracker is a tracker that has been created before the introduction
-        of sessions in release 1.7.0.
+        of sessions in release 1.6.0.
 
         Args:
             tracker: Tracker to inspect.
@@ -644,22 +685,23 @@ class MessageProcessor:
             `True` if the tracker contains `SessionStarted` event, `False` otherwise.
 
         """
+        last_session_started_event = tracker.get_last_session_started_event()
 
-        last_executed_session_started_action = tracker.get_last_executed(
-            ACTION_SESSION_START_NAME
-        )
+        is_legacy_tracker = last_session_started_event is None
 
-        return last_executed_session_started_action is None
+        if is_legacy_tracker:
+            logger.debug(
+                f"Tracker for conversation ID '{tracker.sender_id}' is a legacy "
+                f"tracker. A legacy tracker is a tracker that contains no "
+                f"'SessionStarted' and was last saved before the introduction of "
+                f"tracker sessions in release 1.6.0."
+            )
+
+        return is_legacy_tracker
 
     def _get_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
-        tracker = self.tracker_store.get_or_create_tracker(sender_id)
-
-        if self._is_legacy_tracker(tracker) or self._has_session_expired(tracker):
-
-            tracker.update(SessionStarted())
-
-        return tracker
+        return self.tracker_store.get_or_create_tracker(sender_id)
 
     def _save_tracker(self, tracker: DialogueStateTracker) -> None:
         self.tracker_store.save(tracker)
