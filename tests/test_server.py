@@ -536,13 +536,7 @@ def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
     assert content["slots"] == {"location": None, "cuisine": None}
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [
-        {
-            "event": "action",
-            "name": "session_start",
-            "policy": None,
-            "confidence": None,
-            "timestamp": 1514764800,
-        },
+        {"event": "session_started", "timestamp": 1514764800,},
         {
             "event": "action",
             "name": "action_listen",
@@ -578,7 +572,7 @@ def test_pushing_event(rasa_app, event):
     assert tracker is not None
     assert len(tracker.get("events")) == 3
 
-    evt = tracker.get("events")[1]
+    evt = tracker.get("events")[2]
     assert Event.from_parameters(evt) == event
 
 
@@ -601,7 +595,7 @@ def test_push_multiple_events(rasa_app: SanicTestClient):
 
     # there is also an `ACTION_LISTEN` event at the start
     assert len(tracker.get("events")) == len(test_events) + 2
-    assert tracker.get("events")[1:] == events
+    assert tracker.get("events")[2:] == events
 
 
 def test_put_tracker(rasa_app: SanicTestClient):

@@ -310,7 +310,7 @@ async def test_is_legacy_tracker(
         # session start is way in the past
         (SessionStarted(timestamp=1), 60, True),
         # session start is very recent
-        (SessionStarted(timestamp=time.time()), 10, False),
+        (SessionStarted(timestamp=time.time()), 60, False),
         # there is no session start event (legacy tracker)
         (UserUttered("hello", timestamp=time.time()), 10, False),
         # there is no event
