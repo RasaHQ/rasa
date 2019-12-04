@@ -614,14 +614,11 @@ class MessageProcessor:
         # this also is a legacy tracker (pre-sessions)
         return tracker.events[0].timestamp
 
-    def _has_session_expired(
-        self, tracker: DialogueStateTracker, session_length_in_minutes: float
-    ) -> bool:
+    def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:
         """Determine whether the latest session in `tracker` has expired.
 
         Args:
             tracker: Tracker to inspect.
-            session_length_in_minutes: Session length in minutes.
 
         Returns:
             `True` if the session in `tracker` has expired, `False` otherwise.
@@ -631,7 +628,7 @@ class MessageProcessor:
 
         time_delta_in_seconds = time.time() - session_start_timestamp
 
-        return time_delta_in_seconds / 60 > session_length_in_minutes
+        return time_delta_in_seconds / 60 > self.domain.session_config.session_length
 
     @staticmethod
     def _is_legacy_tracker(tracker: DialogueStateTracker) -> bool:
@@ -654,15 +651,12 @@ class MessageProcessor:
 
         return last_executed_session_started_action is None
 
-    def _get_tracker(
-        self, sender_id: Text, session_length_in_minutes: int = 60
-    ) -> Optional[DialogueStateTracker]:
+    def _get_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
         tracker = self.tracker_store.get_or_create_tracker(sender_id)
 
-        if self._is_legacy_tracker(tracker) or self._has_session_expired(
-            tracker, session_length_in_minutes
-        ):
+        if self._is_legacy_tracker(tracker) or self._has_session_expired(tracker):
+
             tracker.update(SessionStarted())
 
         return tracker

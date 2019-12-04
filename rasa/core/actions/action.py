@@ -330,11 +330,13 @@ class ActionSessionStart(Action):
         # fetch SlotSet events from tracker and carry over key, value and metadata
         # use generator so the timestamps are greater than that of the returned
         # `SessionStarted` event
-        slot_set_events = (
-            SlotSet(key=event.key, value=event.value, metadata=event.metadata)
-            for event in tracker.events
-            if isinstance(event, SlotSet)
-        )
+        slot_set_events = []
+        if domain.session_config.carry_over_slots:
+            slot_set_events = (
+                SlotSet(key=event.key, value=event.value, metadata=event.metadata)
+                for event in tracker.events
+                if isinstance(event, SlotSet)
+            )
 
         # noinspection PyTypeChecker
         return (

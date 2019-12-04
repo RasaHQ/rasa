@@ -11,7 +11,7 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT_TYPE,
 )
 from rasa.core import training, utils
-from rasa.core.domain import Domain, InvalidDomain
+from rasa.core.domain import Domain, InvalidDomain, SessionConfig
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.slots import TextSlot, UnfeaturizedSlot
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
@@ -564,3 +564,55 @@ def test_add_knowledge_base_slots(default_domain):
     assert SLOT_LISTED_ITEMS in slot_names
     assert SLOT_LAST_OBJECT in slot_names
     assert SLOT_LAST_OBJECT_TYPE in slot_names
+
+
+@pytest.mark.parametrize(
+    "input_domain, expected_session_length, expected_carry_over_slots, ",
+    [
+        (
+            """config:
+    session_length: 20
+    carry_over_slots_to_new_session: true""",
+            20,
+            True,
+        ),
+        ("", 60, True),
+        (
+            """config:
+    carry_over_slots_to_new_session: false""",
+            60,
+            False,
+        ),
+        (
+            """config:
+    carry_over_slots_to_new_session: false""",
+            60,
+            False,
+        ),
+        (
+            """
+config:
+    session_length: 20
+    carry_over_slots_to_new_session: False""",
+            20,
+            False,
+        ),
+    ],
+)
+def test_session_config(
+    input_domain, expected_session_length: int, expected_carry_over_slots: bool
+):
+    domain = Domain.from_yaml(input_domain)
+    assert domain.session_config.session_length == expected_session_length
+    assert domain.session_config.carry_over_slots == expected_carry_over_slots
+
+
+def test_domain_as_dict_with_session_config():
+    session_config = SessionConfig(123, False)
+    domain = Domain.empty()
+    domain.session_config = session_config
+
+    serialized = domain.as_dict()
+    deserialized = Domain.from_dict(serialized)
+
+    assert deserialized.session_config == session_config

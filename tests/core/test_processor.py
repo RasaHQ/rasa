@@ -40,7 +40,7 @@ from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
 
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, SessionConfig
 
 import logging
 
@@ -298,7 +298,7 @@ async def test_reminder_restart(
     ],
 )
 async def test_is_legacy_tracker(
-    events_to_apply: List[Event], is_legacy: bool, default_processor: MessageProcessor,
+    events_to_apply: List[Event], is_legacy: bool, default_processor: MessageProcessor
 ):
     sender_id = uuid.uuid4().hex
 
@@ -334,6 +334,9 @@ async def test_has_session_expired(
 ):
     sender_id = uuid.uuid4().hex
 
+    default_processor.domain.session_config = SessionConfig(
+        session_length_in_minutes, True
+    )
     # create new tracker without events
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
     tracker.events.clear()
@@ -343,9 +346,4 @@ async def test_has_session_expired(
         tracker.update(event_to_apply)
 
     # noinspection PyProtectedMember
-    assert (
-        default_processor._has_session_expired(
-            tracker, session_length_in_minutes=session_length_in_minutes
-        )
-        == has_expired
-    )
+    assert default_processor._has_session_expired(tracker) == has_expired
