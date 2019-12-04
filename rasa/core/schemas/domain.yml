@@ -38,6 +38,6 @@ mapping:
       store_entities_as_slots:
         type: "bool"
       session_length:
-        type: "int"
+        type: "number"
       carry_over_slots_to_new_session:
         type: "bool"

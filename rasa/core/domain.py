@@ -53,7 +53,7 @@ class InvalidDomain(Exception):
 
 
 class SessionConfig(NamedTuple):
-    session_length: int
+    session_length: Union[int, float]
     carry_over_slots: bool
 
 
