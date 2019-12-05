@@ -314,6 +314,8 @@ async def test_is_legacy_tracker(
         (SessionStarted(timestamp=time.time()), 60, False),
         # there is no session start event (legacy tracker)
         (UserUttered("hello", timestamp=time.time()), 60, False),
+        # Old event, but sessions are disabled
+        (UserUttered("hello", timestamp=1), 0, False),
         # there is no event
         (None, 1, False),
     ],

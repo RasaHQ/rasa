@@ -64,6 +64,9 @@ class SessionConfig(NamedTuple):
             DEFAULT_SESSION_LENGTH_IN_MINUTES, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
         )
 
+    def are_session_enabled(self) -> bool:
+        return self.session_length > 0
+
 
 class Domain:
     """The domain specifies the universe in which the bot's policy acts.

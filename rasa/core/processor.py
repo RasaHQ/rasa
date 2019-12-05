@@ -648,6 +648,11 @@ class MessageProcessor:
             `True` if the session in `tracker` has expired, `False` otherwise.
 
         """
+
+        if not self.domain.session_config.are_session_enabled():
+            # Tracker is never expired when sessions are disabled
+            return False
+
         session_start_timestamp = self._session_start_timestamp_for(tracker)
 
         time_delta_in_seconds = time.time() - session_start_timestamp

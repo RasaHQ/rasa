@@ -618,3 +618,15 @@ def test_domain_as_dict_with_session_config():
     deserialized = Domain.from_dict(serialized)
 
     assert deserialized.session_config == session_config
+
+
+@pytest.mark.parametrize(
+    "session_config, enabled",
+    [
+        (SessionConfig(0, True), False),
+        (SessionConfig(1, True), True),
+        (SessionConfig(-1, False), False),
+    ],
+)
+def test_are_sessions_enabled(session_config: SessionConfig, enabled: bool):
+    assert session_config.are_session_enabled() == enabled
