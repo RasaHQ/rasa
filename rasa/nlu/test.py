@@ -398,7 +398,7 @@ def evaluate_response_selections(
     }
 
 
-def add_confused_intents_to_report(
+def _add_confused_intents_to_report(
     report: Dict, target_intents: Iterable[Any], predicted_intents: Iterable[Any]
 ) -> Dict:
 
