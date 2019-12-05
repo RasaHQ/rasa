@@ -324,7 +324,7 @@ that <code class="docutils literal notranslate"><span class="pre">tracker.slots[
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
-<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">tracker</span><span class="o">.</span><span class="n">_set_slot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -359,7 +359,7 @@ the slots).</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
-<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">rasa.core.actions.action</span> <span class="k">import</span> <span class="p">(</span>  <span class="c1"># pytype: disable=pyi-error</span>
         <span class="n">ACTION_LISTEN_NAME</span><span class="p">,</span>
     <span class="p">)</span>
@@ -399,7 +399,7 @@ values.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
-<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">tracker</span><span class="o">.</span><span class="n">_reset_slots</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -471,7 +471,7 @@ be set to <code class="docutils literal notranslate"><span class="pre">True</spa
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
-<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">tracker</span><span class="o">.</span><span class="n">_paused</span> <span class="o">=</span> <span class="kc">True</span>
 </pre></div>
 </div>
@@ -506,7 +506,7 @@ predicting actions again.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
-<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">tracker</span><span class="o">.</span><span class="n">_paused</span> <span class="o">=</span> <span class="kc">False</span>
 </pre></div>
 </div>
