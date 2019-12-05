@@ -442,12 +442,17 @@ def test_mongo_additional_events(default_domain: Domain):
 # calling _additional_events()
 def test_sql_additional_events(default_domain: Domain):
     tracker_store = SQLTrackerStore(default_domain)
-    additional_events, tracker = create_tracker_with_partially_saved_events(tracker_store)
+    additional_events, tracker = create_tracker_with_partially_saved_events(
+        tracker_store
+    )
 
     # make sure only new events are returned
     with tracker_store.session_scope() as session:
         # noinspection PyProtectedMember
-        assert list(tracker_store._additional_events(session, tracker)) == additional_events
+        assert (
+            list(tracker_store._additional_events(session, tracker))
+            == additional_events
+        )
 
 
 def test_mongo_events_since_last_session_start(default_domain: Domain):
