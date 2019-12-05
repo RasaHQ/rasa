@@ -20,7 +20,9 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
     def __init__(self, templates: Dict[Text, List[Dict[Text, Any]]]) -> None:
         self.templates = templates
 
-    def _templates_for_utter_action(self, utter_action, output_channel):
+    def _templates_for_utter_action(
+        self, utter_action: Text, output_channel: Text
+    ) -> List[Dict[Text, Any]]:
         """Return array of templates that fit the channel and action."""
 
         channel_templates = []

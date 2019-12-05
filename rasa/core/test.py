@@ -95,7 +95,7 @@ class EvaluationStore:
             self.action_targets
             + self.intent_targets
             + [
-                MarkdownWriter._generate_entity_md(gold.get("text"), gold)
+                MarkdownWriter.generate_entity_md(gold.get("text"), gold)
                 for gold in self.entity_targets
             ]
         )
@@ -103,7 +103,7 @@ class EvaluationStore:
             self.action_predictions
             + self.intent_predictions
             + [
-                MarkdownWriter._generate_entity_md(predicted.get("text"), predicted)
+                MarkdownWriter.generate_entity_md(predicted.get("text"), predicted)
                 for predicted in self.entity_predictions
             ]
         )

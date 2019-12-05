@@ -1,12 +1,10 @@
 import asyncio
-import warnings
 import logging
 import os
 import shutil
+import warnings
 from functools import partial
-from typing import List, Optional, Text, Union
-
-from sanic import Sanic
+from typing import Any, List, Optional, Text, Union
 
 import rasa.core.utils
 import rasa.utils
@@ -22,6 +20,7 @@ from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.lock_store import LockStore
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
+from sanic import Sanic
 
 logger = logging.getLogger()  # get the root logger
 
@@ -49,7 +48,7 @@ def create_http_input_channels(
         return [_create_single_channel(c, k) for c, k in all_credentials.items()]
 
 
-def _create_single_channel(channel, credentials):
+def _create_single_channel(channel, credentials) -> Any:
     from rasa.core.channels import BUILTIN_CHANNELS
 
     if channel in BUILTIN_CHANNELS:
