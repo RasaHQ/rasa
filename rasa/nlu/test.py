@@ -418,7 +418,7 @@ def _add_confused_intents_to_report(
             label_idx = indices[i, -j]
             false_pos_label = labels[label_idx]
             false_positives = int(cnf_matrix[i, label_idx])
-            if false_pos_label != label and num_hits > 0:
+            if false_pos_label != label and false_positives > 0:
                 report[label]["confused_with"][false_pos_label] = false_positives
 
     return report
@@ -466,7 +466,7 @@ def evaluate_intents(
         report, precision, f1, accuracy = get_evaluation_metrics(
             target_intents, predicted_intents, output_dict=True
         )
-        report = add_confused_intents_to_report(report, cnf_matrix, labels)
+        report = _add_confused_intents_to_report(report, cnf_matrix, labels)
 
         report_filename = os.path.join(output_directory, "intent_report.json")
 
