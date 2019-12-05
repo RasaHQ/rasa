@@ -347,7 +347,7 @@ def test_intent_evaluation_report_large(tmpdir_factory):
 
     intent_results = a_results + b_results + c_results + d_results + e_results
 
-    result = evaluate_intents(
+    evaluate_intents(
         intent_results,
         report_folder,
         successes=False,
