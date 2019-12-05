@@ -7,7 +7,7 @@ Rasa SDK
 
 .. edit-link::
 
-Rasa SDK provides the tools you need to write :ref:`custom-actions`.
+Rasa SDK provides the tools you need to write :ref:`custom-actions` in Python.
 
 .. contents::
    :local:
@@ -16,7 +16,7 @@ Rasa SDK provides the tools you need to write :ref:`custom-actions`.
 ----------
 
 The ``Action`` class is the base class for any custom action. It has two methods
-that both need to be overwritten, `.name()` and `.run()`.
+that both need to be overwritten, ``name()`` and ``run()``.
 
 .. _custom_action_example_verbose:
 
@@ -64,12 +64,12 @@ Details of the ``run()`` method:
 An action's ``run`` method returns a list of events. For more information on
 events see :ref:`Events`. The action itself will automatically be added to the
 tracker as an ``ActionExecuted`` event. If the action should not trigger any
-other events it must return an empty list.
+other events, it must return an empty list.
 
 ``Tracker``
 -----------
 
-The ``rasa_sdk.Tracker`` lets you access the bots memory in your custom
+The ``rasa_sdk.Tracker`` lets you access the bot's memory in your custom
 actions. You can get information about past events and the current state of the
 conversation through ``Tracker`` attributes.
 
@@ -87,4 +87,3 @@ In no particular order the attributes of the ``Tracker`` are:
   ``UserUttered`` event.
 - ``active_form`` - The name of the currently active form.
 - ``latest_action_name`` - The name of the last action the bot executed.
-
