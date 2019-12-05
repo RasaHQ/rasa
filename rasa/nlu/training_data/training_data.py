@@ -154,6 +154,16 @@ class TrainingData:
         intents = [ex.get("intent") for ex in self.training_examples]
         return dict(Counter(intents))
 
+    def count_intent_examples(self, split_retrieval_intents=False) -> Dict[Text, int]:
+        """Calculates the number of examples per intent."""
+        if split_retrieval_intents:
+            intents = [
+                ex.get_combined_intent_response_key() for ex in self.training_examples
+            ]
+        else:
+            intents = [ex.get("intent") for ex in self.training_examples]
+        return dict(Counter(intents))
+
     @rasa_utils.lazy_property
     def examples_per_response(self) -> Dict[Text, int]:
         """Calculates the number of examples per response."""
@@ -395,8 +405,14 @@ class TrainingData:
 
     def split_nlu_examples(self, train_frac):
         train, test = [], []
-        for intent, count in self.examples_per_intent.items():
-            ex = [e for e in self.intent_examples if e.data["intent"] == intent]
+        for intent, count in self.count_intent_examples(
+            split_retrieval_intents=True
+        ).items():
+            ex = [
+                e
+                for e in self.training_examples
+                if e.get_combined_intent_response_key() == intent
+            ]
             random.shuffle(ex)
             n_train = int(count * train_frac)
             train.extend(ex[:n_train])
