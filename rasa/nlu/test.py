@@ -403,6 +403,14 @@ def _add_confused_intents_to_report(
     cnf_matrix: np.ndarray,
     labels: Iterable[Text],
 ) -> Dict[Text, Dict[Text, Union[Dict, float]]]:
+    """Adds a field "confused_with" to the intents in the
+    intent evaluation report. The value is a dict of
+    {"false_positive_label": false_positive_count} pairs.
+    If there are no false positives in the confusion matrix,
+    the dict will be empty. Typically we include the two most
+    commonly false positive labels, three in the rare case that
+    the diagonal element in the confusion matrix is not one of the 
+    three highest values in the row"""
 
     # sort confusion matrix by false positives
     indices = np.argsort(cnf_matrix, axis=1)
