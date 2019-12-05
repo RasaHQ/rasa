@@ -418,7 +418,7 @@ def _add_confused_intents_to_report(
         for j in range(n_candidates):
             label_idx = indices[i, -j]
             _label = labels[label_idx]
-            num_hits = int(cnf_matrix[i, label_idx])
+            false_positives = int(cnf_matrix[i, label_idx])
             if _label != label and num_hits > 0:
                 report[label]["confused_with"][_label] = num_hits
 
