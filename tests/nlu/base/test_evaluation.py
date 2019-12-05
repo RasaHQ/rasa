@@ -326,6 +326,59 @@ def test_intent_evaluation_report(tmpdir_factory):
     assert result["predictions"][0] == prediction
 
 
+def test_intent_evaluation_report_large(tmpdir_factory):
+    path = tmpdir_factory.mktemp("evaluation").strpath
+    report_folder = os.path.join(path, "reports")
+    report_filename = os.path.join(report_folder, "intent_report.json")
+
+    rasa.utils.io.create_directory(report_folder)
+
+    def correct(label):
+        return IntentEvaluationResult(label, label, "", 1.0)
+
+    def incorrect(label, _label):
+        return IntentEvaluationResult(label, _label, "", 1.0)
+
+    a_results = [correct("A")] * 10
+    b_results = [correct("B")] * 7 + [incorrect("B", "C")] * 3
+    c_results = [correct("C")] * 3 + [incorrect("C", "D")] + [incorrect("C", "E")]
+    d_results = [correct("D")] * 29 + [incorrect("D", "A")] * 3
+    e_results = [incorrect("E", "C")] * 5 + [incorrect("E", "D")] * 5
+
+    intent_results = a_results + b_results + c_results + d_results + e_results
+
+    result = evaluate_intents(
+        intent_results,
+        report_folder,
+        successes=False,
+        errors=False,
+        confmat_filename=None,
+        intent_hist_filename=None,
+    )
+
+    report = json.loads(rasa.utils.io.read_file(report_filename))
+
+    a_results = {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 10,
+        "confused_with": {},
+    }
+
+    e_results = {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 10,
+        "confused_with": {"C": 5, "D": 5},
+    }
+
+    assert len(report.keys()) == 4
+    assert report["A"] == a_results
+    assert result["E"] == e_results
+
+
 def test_response_evaluation_report(tmpdir_factory):
     path = tmpdir_factory.mktemp("evaluation").strpath
     report_folder = os.path.join(path, "reports")
