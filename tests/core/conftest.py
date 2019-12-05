@@ -9,7 +9,7 @@ from _pytest.tmpdir import TempdirFactory
 import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, SessionConfig
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
@@ -123,6 +123,7 @@ async def _default_agent(default_domain: Domain) -> Agent:
 async def default_agent(_default_agent: Agent) -> Agent:
     # Clean tracker store after each test so tests don't affect each other
     _default_agent.tracker_store = InMemoryTrackerStore(_default_agent.domain)
+    _default_agent.domain.session_config = SessionConfig.default()
     return _default_agent
 
 

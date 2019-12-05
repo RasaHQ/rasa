@@ -58,6 +58,12 @@ class SessionConfig(NamedTuple):
     session_length: float
     carry_over_slots: bool
 
+    @staticmethod
+    def default() -> "SessionConfig":
+        return SessionConfig(
+            DEFAULT_SESSION_LENGTH_IN_MINUTES, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
+        )
+
 
 class Domain:
     """The domain specifies the universe in which the bot's policy acts.
@@ -303,9 +309,7 @@ class Domain:
         action_names: List[Text],
         form_names: List[Text],
         store_entities_as_slots: bool = True,
-        session_config: SessionConfig = SessionConfig(
-            DEFAULT_SESSION_LENGTH_IN_MINUTES, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
-        ),
+        session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
 
         self.intent_properties = self.collect_intent_properties(intents)
