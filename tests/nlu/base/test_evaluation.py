@@ -342,8 +342,8 @@ def test_intent_evaluation_report_large(tmpdir_factory):
     a_results = [correct("A")] * 10
     b_results = [correct("B")] * 7 + [incorrect("B", "C")] * 3
     c_results = [correct("C")] * 3 + [incorrect("C", "D")] + [incorrect("C", "E")]
-    d_results = [correct("D")] * 29 + [incorrect("D", "A")] * 3
-    e_results = [incorrect("E", "C")] * 5 + [incorrect("E", "D")] * 5
+    d_results = [correct("D")] * 29 + [incorrect("D", "B")] * 3
+    e_results = [incorrect("E", "C")] * 5 + [incorrect("E", "")] * 5
 
     intent_results = a_results + b_results + c_results + d_results + e_results
 
@@ -371,7 +371,7 @@ def test_intent_evaluation_report_large(tmpdir_factory):
         "recall": 0.0,
         "f1-score": 0.0,
         "support": 10,
-        "confused_with": {"C": 5, "D": 5},
+        "confused_with": {"C": 5, "": 5},
     }
 
     assert len(report.keys()) == 8

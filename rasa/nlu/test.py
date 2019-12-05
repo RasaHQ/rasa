@@ -402,7 +402,7 @@ def _add_confused_intents_to_report(
     report: Dict[Text, Dict[Text, float]],
     cnf_matrix: np.ndarray,
     labels: Iterable[Text],
-) -> Dict:
+) -> Dict[Text, Dict[Text, Union[Dict, float]]]:
 
     # sort confusion matrix by false positives
     indices = np.argsort(cnf_matrix, axis=1)
