@@ -1,5 +1,6 @@
 import copy
 import logging
+import warnings
 import os
 import ruamel.yaml as yaml
 from typing import Any, Dict, List, Optional, Text, Union
@@ -15,7 +16,7 @@ class InvalidConfigError(ValueError):
     """Raised if an invalid configuration is encountered."""
 
     def __init__(self, message: Text) -> None:
-        super(InvalidConfigError, self).__init__(message)
+        super().__init__(message)
 
 
 def load(
@@ -33,7 +34,7 @@ def load(
             file_config = rasa.utils.io.read_config_file(config)
         except yaml.parser.ParserError as e:
             raise InvalidConfigError(
-                "Failed to read configuration file '{}'. Error: {}".format(config, e)
+                f"Failed to read configuration file '{config}'. Error: {e}"
             )
 
     return _load_from_dict(file_config, **kwargs)
@@ -67,16 +68,15 @@ def component_config_from_pipeline(
         c = pipeline[index]
         return override_defaults(defaults, c)
     except IndexError:
-        logger.warning(
-            "Tried to get configuration value for component "
-            "number {} which is not part of the pipeline. "
-            "Returning `defaults`."
-            "".format(index)
+        warnings.warn(
+            f"Tried to get configuration value for component "
+            f"number {index} which is not part of the pipeline. "
+            f"Returning `defaults`."
         )
         return override_defaults(defaults, {})
 
 
-class RasaNLUModelConfig(object):
+class RasaNLUModelConfig:
     def __init__(self, configuration_values=None):
         """Create a model configuration, optionally overriding
         defaults with a dictionary ``configuration_values``.
@@ -102,12 +102,14 @@ class RasaNLUModelConfig(object):
                 "tensorflow_embedding": "supervised_embeddings",
             }
             if template_name in new_names:
-                logger.warning(
-                    "You have specified the pipeline template "
-                    "'{}' which has been renamed to '{}'. "
-                    "Please update your code as it will no "
-                    "longer work with future versions of "
-                    "Rasa NLU.".format(template_name, new_names[template_name])
+                warnings.warn(
+                    f"You have specified the pipeline template "
+                    f"'{template_name}' which has been renamed to "
+                    f"'{new_names[template_name]}'. "
+                    f"Please update your code as it will no "
+                    f"longer work with future versions of "
+                    f"Rasa.",
+                    FutureWarning,
                 )
                 template_name = new_names[template_name]
 
@@ -122,10 +124,9 @@ class RasaNLUModelConfig(object):
                 )
 
                 raise InvalidConfigError(
-                    "No pipeline specified and unknown "
-                    "pipeline template '{}' passed. Known "
-                    "pipeline templates: {}"
-                    "".format(template_name, known_templates)
+                    f"No pipeline specified and unknown "
+                    f"pipeline template '{template_name}' passed. Known "
+                    f"pipeline templates: {known_templates}"
                 )
 
         for key, value in self.items():
@@ -178,10 +179,9 @@ class RasaNLUModelConfig(object):
         try:
             self.pipeline[index].update(kwargs)
         except IndexError:
-            logger.warning(
-                "Tried to set configuration value for component "
-                "number {} which is not part of the pipeline."
-                "".format(index)
+            warnings.warn(
+                f"Tried to set configuration value for component "
+                f"number {index} which is not part of the pipeline."
             )
 
     def override(self, config):

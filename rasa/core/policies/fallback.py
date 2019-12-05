@@ -49,7 +49,7 @@ class FallbackPolicy(Policy):
                 between confidences of the top two predictions
             fallback_action_name: name of the action to execute as a fallback
         """
-        super(FallbackPolicy, self).__init__(priority=priority)
+        super().__init__(priority=priority)
 
         self.nlu_threshold = nlu_threshold
         self.ambiguity_threshold = ambiguity_threshold

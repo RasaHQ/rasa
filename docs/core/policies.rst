@@ -87,7 +87,7 @@ with. So your story might look like this:
       - utter_help_message
 
 For Rasa Core to learn this pattern, the ``max_history``
-has to be `at least` 3.
+has to be `at least` 4.
 
 If you increase your ``max_history``, your model will become bigger and
 training will take longer. If you have some information that should
@@ -393,7 +393,7 @@ simple example that dispatches a bot utterance and then reverts the interaction:
       return "action_is_bot"
 
   def run(self, dispatcher, tracker, domain):
-      dispatcher.utter_template("utter_is_bot", tracker)
+      dispatcher.utter_template(template="utter_is_bot")
       return [UserUtteranceReverted()]
 
 .. note::
@@ -416,6 +416,24 @@ The ``MemoizationPolicy`` just memorizes the conversations in your
 training data. It predicts the next action with confidence ``1.0``
 if this exact conversation exists in the training data, otherwise it
 predicts ``None`` with confidence ``0.0``.
+
+Augmented Memoization Policy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``AugmentedMemoizationPolicy`` remembers examples from training
+stories for up to ``max_history`` turns, just like the ``MemoizationPolicy``.
+Additionally, it has a forgetting mechanism that will forget a certain amount
+of steps in the conversation history and try to find a match in your stories
+with the reduced history. It predicts the next action with confidence ``1.0``
+if a match is found, otherwise it predicts ``None`` with confidence ``0.0``.
+
+.. note::
+
+  If you have dialogues where some slots that are set during
+  prediction time might not be set in training stories (e.g. in training
+  stories starting with a reminder not all previous slots are set),
+  make sure to add the relevant stories without slots to your training
+  data as well.
 
 .. _fallback-policy:
 

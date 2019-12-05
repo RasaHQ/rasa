@@ -1,4 +1,5 @@
 import logging
+import warnings
 
 from rasa.core import utils
 from rasa.utils.common import class_from_module_path
@@ -6,7 +7,7 @@ from rasa.utils.common import class_from_module_path
 logger = logging.getLogger(__name__)
 
 
-class Slot(object):
+class Slot:
     type_name = None
 
     def __init__(
@@ -53,10 +54,10 @@ class Slot(object):
         self.value = self.initial_value
 
     def __str__(self):
-        return "{}({}: {})".format(self.__class__.__name__, self.name, self.value)
+        return f"{self.__class__.__name__}({self.name}: {self.value})"
 
     def __repr__(self):
-        return "<{}({}: {})>".format(self.__class__.__name__, self.name, self.value)
+        return f"<{self.__class__.__name__}({self.name}: {self.value})>"
 
     @staticmethod
     def resolve_by_type(type_name):
@@ -93,9 +94,7 @@ class FloatSlot(Slot):
         max_value=1.0,
         min_value=0.0,
     ):
-        super(FloatSlot, self).__init__(
-            name, initial_value, value_reset_delay, auto_fill
-        )
+        super().__init__(name, initial_value, value_reset_delay, auto_fill)
         self.max_value = max_value
         self.min_value = min_value
 
@@ -108,10 +107,10 @@ class FloatSlot(Slot):
             )
 
         if initial_value is not None and not (min_value <= initial_value <= max_value):
-            logger.warning(
-                "Float slot ('{}') created with an initial value {}"
-                "outside of configured min ({}) and max ({}) values."
-                "".format(self.name, self.value, self.min_value, self.max_value)
+            warnings.warn(
+                f"Float slot ('{self.name}') created with an initial value "
+                f"{self.value} outside of configured min ({self.min_value}) "
+                f"and max ({self.max_value}) values."
             )
 
     def as_feature(self):
@@ -126,7 +125,7 @@ class FloatSlot(Slot):
             return [0.0]
 
     def persistence_info(self):
-        d = super(FloatSlot, self).persistence_info()
+        d = super().persistence_info()
         d["max_value"] = self.max_value
         d["min_value"] = self.min_value
         return d
@@ -191,13 +190,11 @@ class CategoricalSlot(Slot):
         value_reset_delay=None,
         auto_fill=True,
     ):
-        super(CategoricalSlot, self).__init__(
-            name, initial_value, value_reset_delay, auto_fill
-        )
+        super().__init__(name, initial_value, value_reset_delay, auto_fill)
         self.values = [str(v).lower() for v in values] if values else []
 
     def persistence_info(self):
-        d = super(CategoricalSlot, self).persistence_info()
+        d = super().persistence_info()
         d["values"] = self.values
         return d
 
@@ -211,14 +208,14 @@ class CategoricalSlot(Slot):
                     break
             else:
                 if self.value is not None:
-                    logger.warning(
-                        "Categorical slot '{}' is set to a value ('{}') "
+                    warnings.warn(
+                        f"Categorical slot '{self.name}' is set to a value "
+                        f"('{self.value}') "
                         "that is not specified in the domain. "
                         "Value will be ignored and the slot will "
                         "behave as if no value is set. "
                         "Make sure to add all values a categorical "
                         "slot should store to the domain."
-                        "".format(self.name, self.value)
                     )
         except (TypeError, ValueError):
             logger.exception("Failed to featurize categorical slot.")
@@ -231,9 +228,7 @@ class CategoricalSlot(Slot):
 
 class DataSlot(Slot):
     def __init__(self, name, initial_value=None, value_reset_delay=1, auto_fill=True):
-        super(DataSlot, self).__init__(
-            name, initial_value, value_reset_delay, auto_fill
-        )
+        super().__init__(name, initial_value, value_reset_delay, auto_fill)
 
     def as_feature(self):
         raise NotImplementedError(

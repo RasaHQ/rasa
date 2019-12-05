@@ -1,4 +1,5 @@
 import logging
+import warnings
 import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
@@ -88,7 +89,7 @@ class CRFEntityExtractor(EntityExtractor):
         ent_tagger: Optional["CRF"] = None,
     ) -> None:
 
-        super(CRFEntityExtractor, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.ent_tagger = ent_tagger
 
@@ -528,14 +529,14 @@ class CRFEntityExtractor(EntityExtractor):
                 collected.append(t)
             elif collected:
                 collected_text = " ".join([t.text for t in collected])
-                logger.warning(
-                    "Misaligned entity annotation for '{}' "
-                    "in sentence '{}' with intent '{}'. "
-                    "Make sure the start and end values of the "
-                    "annotated training examples end at token "
-                    "boundaries (e.g. don't include trailing "
-                    "whitespaces or punctuation)."
-                    "".format(collected_text, message.text, message.get("intent"))
+                warnings.warn(
+                    f"Misaligned entity annotation for '{collected_text}' "
+                    f"in sentence '{message.text}' with intent "
+                    f"'{message.get('intent')}'. "
+                    f"Make sure the start and end values of the "
+                    f"annotated training examples end at token "
+                    f"boundaries (e.g. don't include trailing "
+                    f"whitespaces or punctuation)."
                 )
                 collected = []
 

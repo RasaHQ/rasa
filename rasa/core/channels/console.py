@@ -1,6 +1,7 @@
 # this builtin is needed so we can overwrite in test
 import json
 import logging
+import asyncio
 from typing import Text, Optional
 
 import aiohttp
@@ -80,7 +81,7 @@ def get_user_input(button_question: questionary.Question) -> Optional[Text]:
 async def send_message_receive_block(server_url, auth_token, sender_id, message):
     payload = {"sender": sender_id, "message": message}
 
-    url = "{}/webhooks/rest/webhook?token={}".format(server_url, auth_token)
+    url = f"{server_url}/webhooks/rest/webhook?token={auth_token}"
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload, raise_for_status=True) as resp:
             return await resp.json()
@@ -89,7 +90,7 @@ async def send_message_receive_block(server_url, auth_token, sender_id, message)
 async def send_message_receive_stream(server_url, auth_token, sender_id, message):
     payload = {"sender": sender_id, "message": message}
 
-    url = "{}/webhooks/rest/webhook?stream=true&token={}".format(server_url, auth_token)
+    url = f"{server_url}/webhooks/rest/webhook?stream=true&token={auth_token}"
 
     # Define timeout to not keep reading in case the server crashed in between
     timeout = ClientTimeout(DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS)
@@ -104,14 +105,12 @@ async def send_message_receive_stream(server_url, auth_token, sender_id, message
 
 async def record_messages(
     server_url=DEFAULT_SERVER_URL,
-    auth_token=None,
+    auth_token="",
     sender_id=UserMessage.DEFAULT_SENDER_ID,
     max_message_limit=None,
     use_response_stream=True,
 ):
     """Read messages from the command line and print bot responses."""
-
-    auth_token = auth_token if auth_token else ""
 
     exit_text = INTENT_MESSAGE_PREFIX + "stop"
 
@@ -122,6 +121,7 @@ async def record_messages(
 
     num_messages = 0
     button_question = None
+    await asyncio.sleep(0.5)  # Wait for server to start
     while not utils.is_limit_reached(num_messages, max_message_limit):
         text = get_user_input(button_question)
 
@@ -142,6 +142,7 @@ async def record_messages(
                 button_question = print_bot_output(response)
 
         num_messages += 1
+        await asyncio.sleep(0)  # Yield event loop for others coroutines
     return num_messages
 
 

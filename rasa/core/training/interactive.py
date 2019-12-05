@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 import numpy as np
 from aiohttp import ClientError
 from colorclass import Color
+from rasa.nlu.training_data.loading import MARKDOWN, RASA
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
 from terminaltables import AsciiTable, SingleTable
@@ -83,6 +84,10 @@ NEW_ACTION = uuid.uuid4().hex
 
 NEW_TEMPLATES = {}
 
+MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION = 200
+
+DEFAULT_STORY_GRAPH_FILE = "story_graph.dot"
+
 
 class RestartConversation(Exception):
     """Exception used to break out the flow and restart the conversation."""
@@ -129,9 +134,7 @@ async def send_message(
     }
 
     return await endpoint.request(
-        json=payload,
-        method="post",
-        subpath="/conversations/{}/messages".format(sender_id),
+        json=payload, method="post", subpath=f"/conversations/{sender_id}/messages"
     )
 
 
@@ -141,7 +144,7 @@ async def request_prediction(
     """Request the next action prediction from core."""
 
     return await endpoint.request(
-        method="post", subpath="/conversations/{}/predict".format(sender_id)
+        method="post", subpath=f"/conversations/{sender_id}/predict"
     )
 
 
@@ -186,7 +189,7 @@ async def send_action(
 
     payload = ActionExecuted(action_name, policy, confidence).as_dict()
 
-    subpath = "/conversations/{}/execute".format(sender_id)
+    subpath = f"/conversations/{sender_id}/execute"
 
     try:
         return await endpoint.request(json=payload, method="post", subpath=subpath)
@@ -194,8 +197,8 @@ async def send_action(
         if is_new_action:
             if action_name in NEW_TEMPLATES:
                 warning_questions = questionary.confirm(
-                    "WARNING: You have created a new action: '{0}', "
-                    "with matching template: '{1}'. "
+                    "WARNING: You have created a new action: '{}', "
+                    "with matching template: '{}'. "
                     "This action will not return its message in this session, "
                     "but the new utterance will be saved to your domain file "
                     "when you exit and save this session. "
@@ -230,7 +233,7 @@ async def send_event(
 ) -> Dict[Text, Any]:
     """Log an event to a conversation."""
 
-    subpath = "/conversations/{}/tracker/events".format(sender_id)
+    subpath = f"/conversations/{sender_id}/tracker/events"
 
     return await endpoint.request(json=evt, method="post", subpath=subpath)
 
@@ -479,7 +482,7 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
 
         _lines = [
             colored(wrap(_md, max_width), "hired"),
-            "intent: {} {:03.2f}".format(intent_name, _confidence),
+            f"intent: {intent_name} {_confidence:03.2f}",
         ]
         return "\n".join(_lines)
 
@@ -517,9 +520,7 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
         if isinstance(event, ActionExecuted):
             bot_column.append(colored(event.action_name, "autocyan"))
             if event.confidence is not None:
-                bot_column[-1] += colored(
-                    " {:03.2f}".format(event.confidence), "autowhite"
-                )
+                bot_column[-1] += colored(f" {event.confidence:03.2f}", "autowhite")
 
         elif isinstance(event, UserUttered):
             if bot_column:
@@ -559,7 +560,7 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
         colored_value = cliutils.wrap_with_color(
             str(s), color=rasa.cli.utils.bcolors.WARNING
         )
-        slot_strs.append("{}: {}".format(k, colored_value))
+        slot_strs.append(f"{k}: {colored_value}")
     return slot_strs
 
 
@@ -661,7 +662,7 @@ async def _request_action_from_user(
         is_new_action = True
         action_name = action_name[32:]
 
-    print("Thanks! The bot will now run {}.\n".format(action_name))
+    print(f"Thanks! The bot will now run {action_name}.\n")
     return action_name, is_new_action
 
 
@@ -684,7 +685,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "merge learned data with previous training examples)",
             default=PATHS["nlu"],
             validate=io_utils.file_type_validator(
-                [".md"],
+                [".md", ".json"],
                 "Please provide a valid export path for the NLU data, e.g. 'nlu.md'.",
             ),
         ),
@@ -792,7 +793,7 @@ async def _write_stories_to_file(
         for conversation in sub_conversations:
             parsed_events = rasa.core.events.deserialise_events(conversation)
             tracker = DialogueStateTracker.from_events(
-                "interactive_story_{}".format(i), evts=parsed_events, slots=domain.slots
+                f"interactive_story_{i}", evts=parsed_events, slots=domain.slots
             )
 
             if any(
@@ -835,12 +836,8 @@ async def _write_nlu_to_file(
 
     # need to guess the format of the file before opening it to avoid a read
     # in a write
-    if loading.guess_format(export_nlu_path) in {"md", "unk"}:
-        fformat = "md"
-    else:
-        fformat = "json"
-
-    if fformat == "md":
+    nlu_format = _get_nlu_target_format(export_nlu_path)
+    if nlu_format == MARKDOWN:
         stringified_training_data = nlu_data.nlu_as_markdown()
     else:
         stringified_training_data = nlu_data.nlu_as_json()
@@ -848,8 +845,20 @@ async def _write_nlu_to_file(
     io_utils.write_text_file(stringified_training_data, export_nlu_path)
 
 
+def _get_nlu_target_format(export_path: Text) -> Text:
+    guessed_format = loading.guess_format(export_path)
+
+    if guessed_format not in {MARKDOWN, RASA}:
+        if export_path.endswith(".json"):
+            guessed_format = RASA
+        else:
+            guessed_format = MARKDOWN
+
+    return guessed_format
+
+
 def _entities_from_messages(messages):
-    """Return all entities that occur in atleast one of the messages."""
+    """Return all entities that occur in at least one of the messages."""
     return list({e["entity"] for m in messages for e in m.data.get("entities", [])})
 
 
@@ -1054,9 +1063,7 @@ async def _validate_action(
 
     Returns `True` if the prediction is correct, `False` otherwise."""
 
-    question = questionary.confirm(
-        "The bot wants to run '{}', correct?".format(action_name)
-    )
+    question = questionary.confirm(f"The bot wants to run '{action_name}', correct?")
 
     is_correct = await _ask_questions(question, sender_id, endpoint)
 
@@ -1144,7 +1151,7 @@ async def _validate_user_text(
         )
 
     if intent is None:
-        print("The NLU classification for '{}' returned '{}'".format(text, intent))
+        print(f"The NLU classification for '{text}' returned '{intent}'")
         return False
     else:
         question = questionary.confirm(message)
@@ -1365,11 +1372,7 @@ async def record_messages(
 ):
     """Read messages from the command line and print bot responses."""
 
-    from rasa.core import training
-
     try:
-        _print_help(skip_visualization)
-
         try:
             domain = await retrieve_domain(endpoint)
         except ClientError:
@@ -1379,23 +1382,24 @@ async def record_messages(
             )
             return
 
-        trackers = await training.load_data(
-            stories,
-            Domain.from_dict(domain),
-            augmentation_factor=0,
-            use_story_concatenation=False,
-        )
-
         intents = [next(iter(i)) for i in (domain.get("intents") or [])]
 
         num_messages = 0
-        sender_ids = [t.events for t in trackers] + [sender_id]
 
         if not skip_visualization:
-            plot_file = "story_graph.dot"
-            await _plot_trackers(sender_ids, plot_file, endpoint)
+            events_including_current_user_id = await _get_tracker_events_to_plot(
+                domain, stories, sender_id
+            )
+
+            plot_file = DEFAULT_STORY_GRAPH_FILE
+            await _plot_trackers(events_including_current_user_id, plot_file, endpoint)
         else:
+            # `None` means that future `_plot_trackers` calls will also skip the
+            # visualization.
             plot_file = None
+            events_including_current_user_id = []
+
+        _print_help(skip_visualization)
 
         while not utils.is_limit_reached(num_messages, max_message_limit):
             try:
@@ -1404,7 +1408,7 @@ async def record_messages(
                     await _validate_nlu(intents, endpoint, sender_id)
 
                 await _predict_till_next_listen(
-                    endpoint, sender_id, sender_ids, plot_file
+                    endpoint, sender_id, events_including_current_user_id, plot_file
                 )
 
                 num_messages += 1
@@ -1432,13 +1436,49 @@ async def record_messages(
                 logger.info("Restarted conversation at fork.")
 
                 await _print_history(sender_id, endpoint)
-                await _plot_trackers(sender_ids, plot_file, endpoint)
+                await _plot_trackers(
+                    events_including_current_user_id, plot_file, endpoint
+                )
 
     except Abort:
         return
     except Exception:
         logger.exception("An exception occurred while recording messages.")
         raise
+
+
+async def _get_tracker_events_to_plot(
+    domain: Dict[Text, Any], stories: Optional[Text], sender_id: Text
+) -> List[Union[Text, List[Event]]]:
+    training_trackers = await _get_training_trackers(stories, domain)
+    number_of_trackers = len(training_trackers)
+    if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
+        rasa.cli.utils.print_warning(
+            f"You have {number_of_trackers} different story paths in "
+            f"your training data. Visualizing them is very resource "
+            f"consuming. Hence, the visualization will only show the stories "
+            f"which you created during interactive learning, but not your "
+            f"training stories."
+        )
+        training_trackers = []
+
+    training_data_events = [t.events for t in training_trackers]
+    events_including_current_user_id = training_data_events + [sender_id]
+
+    return events_including_current_user_id
+
+
+async def _get_training_trackers(
+    stories: Optional[Text], domain: Dict[str, Any]
+) -> List[DialogueStateTracker]:
+    from rasa.core import training
+
+    return await training.load_data(
+        stories,
+        Domain.from_dict(domain),
+        augmentation_factor=0,
+        use_story_concatenation=False,
+    )
 
 
 def _serve_application(app, stories, skip_visualization):
@@ -1524,7 +1564,7 @@ async def wait_til_server_is_running(endpoint, max_retries=30, sleep_between_ret
     while max_retries:
         try:
             r = await retrieve_status(endpoint)
-            logger.info("Reached core: {}".format(r))
+            logger.info(f"Reached core: {r}")
             if not r.get("is_ready"):
                 # server did not finish loading the agent yet
                 # in this case, we need to wait till the model trained
@@ -1564,7 +1604,7 @@ def run_interactive_learning(
     SAVE_IN_E2E = server_args["e2e"]
 
     if not skip_visualization:
-        p = Process(target=start_visualization, args=("story_graph.dot",))
+        p = Process(target=start_visualization, args=(DEFAULT_STORY_GRAPH_FILE,))
         p.daemon = True
         p.start()
     else:

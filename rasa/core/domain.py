@@ -1,8 +1,10 @@
 import collections
+import warnings
 import json
 import logging
 import os
 import typing
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
 
 import rasa.core.constants
@@ -45,7 +47,7 @@ class InvalidDomain(Exception):
         return bcolors.FAIL + self.message + bcolors.ENDC
 
 
-class Domain(object):
+class Domain:
     """The domain specifies the universe in which the bot's policy acts.
 
     A Domain subclass provides the actions the bot can take, the intents
@@ -248,19 +250,18 @@ class Domain(object):
 
                 # templates should be a dict with options
                 if isinstance(t, str):
-                    logger.warning(
-                        "Deprecated: Templates should not be strings anymore. "
-                        "Utterance template '{}' should contain either '- text: ' or "
-                        "'- custom: ' attribute to be a proper template.".format(
-                            template_key
-                        )
+                    warnings.warn(
+                        f"Templates should not be strings anymore. "
+                        f"Utterance template '{template_key}' should contain either '- text: ' or "
+                        f"'- custom: ' attribute to be a proper template.",
+                        FutureWarning,
                     )
                     validated_variations.append({"text": t})
                 elif "text" not in t and "custom" not in t:
                     raise InvalidDomain(
-                        "Utter template '{}' needs to contain either "
-                        "'- text: ' or '- custom: ' attribute to be a proper "
-                        "template.".format(template_key)
+                        f"Utter template '{template_key}' needs to contain either "
+                        f"'- text: ' or '- custom: ' attribute to be a proper "
+                        f"template."
                     )
                 else:
                     validated_variations.append(t)
@@ -402,13 +403,12 @@ class Domain(object):
             self._raise_action_not_found_exception(action_name)
 
     def _raise_action_not_found_exception(self, action_name):
-        action_names = "\n".join(["\t - {}".format(a) for a in self.action_names])
+        action_names = "\n".join([f"\t - {a}" for a in self.action_names])
         raise NameError(
-            "Cannot access action '{}', "
-            "as that name is not a registered "
-            "action for this domain. "
-            "Available actions are: \n{}"
-            "".format(action_name, action_names)
+            f"Cannot access action '{action_name}', "
+            f"as that name is not a registered "
+            f"action for this domain. "
+            f"Available actions are: \n{action_names}"
         )
 
     def random_template_for(self, utter_action):
@@ -425,7 +425,7 @@ class Domain(object):
         """Returns all available slot state strings."""
 
         return [
-            "slot_{}_{}".format(s.name, i)
+            f"slot_{s.name}_{i}"
             for s in self.slots
             for i in range(0, s.feature_dimensionality())
         ]
@@ -442,19 +442,19 @@ class Domain(object):
     def intent_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
-        return ["intent_{0}".format(i) for i in self.intents]
+        return [f"intent_{i}" for i in self.intents]
 
     # noinspection PyTypeChecker
     @common_utils.lazy_property
     def entity_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
-        return ["entity_{0}".format(e) for e in self.entities]
+        return [f"entity_{e}" for e in self.entities]
 
     # noinspection PyTypeChecker
     @common_utils.lazy_property
     def form_states(self) -> List[Text]:
-        return ["active_form_{0}".format(f) for f in self.form_names]
+        return [f"active_form_{f}" for f in self.form_names]
 
     def index_of_state(self, state_name: Text) -> Optional[int]:
         """Provides the index of a state."""
@@ -492,7 +492,7 @@ class Domain(object):
 
         if intent_name:
             for entity_name in self._get_featurized_entities(latest_message):
-                key = "entity_{0}".format(entity_name)
+                key = f"entity_{entity_name}"
                 state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
@@ -500,7 +500,7 @@ class Domain(object):
             if slot is not None:
                 for i, slot_value in enumerate(slot.as_feature()):
                     if slot_value != 0:
-                        slot_id = "slot_{}_{}".format(key, i)
+                        slot_id = f"slot_{key}_{i}"
                         state_dict[slot_id] = slot_value
 
         if "intent_ranking" in latest_message.parse_data:
@@ -535,11 +535,11 @@ class Domain(object):
         explicitly_included = isinstance(include, list)
         ambiguous_entities = included_entities.intersection(excluded_entities)
         if explicitly_included and ambiguous_entities:
-            logger.warning(
-                "Entities: '{}' are explicitly included and excluded for intent '{}'. "
-                "Excluding takes precedence in this case. "
-                "Please resolve that ambiguity."
-                "".format(ambiguous_entities, intent_name)
+            warnings.warn(
+                f"Entities: '{ambiguous_entities}' are explicitly included and"
+                f" excluded for intent '{intent_name}'."
+                f"Excluding takes precedence in this case. "
+                f"Please resolve that ambiguity."
             )
 
         return entity_names.intersection(wanted_entities)
@@ -555,13 +555,12 @@ class Domain(object):
             if prev_action_name in self.input_state_map:
                 return {prev_action_name: 1.0}
             else:
-                logger.warning(
-                    "Failed to use action '{}' in history. "
-                    "Please make sure all actions are listed in the "
-                    "domains action list. If you recently removed an "
-                    "action, don't worry about this warning. It "
-                    "should stop appearing after a while. "
-                    "".format(latest_action)
+                warnings.warn(
+                    f"Failed to use action '{latest_action}' in history. "
+                    f"Please make sure all actions are listed in the "
+                    f"domains action list. If you recently removed an "
+                    f"action, don't worry about this warning. It "
+                    f"should stop appearing after a while."
                 )
                 return {}
         else:
@@ -638,12 +637,12 @@ class Domain(object):
             missing = ",".join(set(states) - set(self.input_states))
             additional = ",".join(set(self.input_states) - set(states))
             raise InvalidDomain(
-                "Domain specification has changed. "
-                "You MUST retrain the policy. "
-                + "Detected mismatch in domain specification. "
-                + "The following states have been \n"
-                "\t - removed: {} \n"
-                "\t - added:   {} ".format(missing, additional)
+                f"Domain specification has changed. "
+                f"You MUST retrain the policy. "
+                f"Detected mismatch in domain specification. "
+                f"The following states have been \n"
+                f"\t - removed: {missing} \n"
+                f"\t - added:   {additional} "
             )
         else:
             return True
@@ -664,7 +663,7 @@ class Domain(object):
             "forms": self.form_names,
         }
 
-    def persist(self, filename: Text) -> None:
+    def persist(self, filename: Union[Text, Path]) -> None:
         """Write domain to a file."""
 
         domain_data = self.as_dict()
@@ -867,9 +866,9 @@ class Domain(object):
                     if message:
                         message += "\n"
                     message += (
-                        "Duplicate {0} in domain. "
-                        "These {0} occur more than once in "
-                        "the domain: '{1}'".format(name, "', '".join(d))
+                        f"Duplicate {name} in domain. "
+                        f"These {name} occur more than once in "
+                        f"the domain: '{', '.join(d)}'."
                     )
             return message
 
@@ -908,11 +907,11 @@ class Domain(object):
 
         if missing_templates:
             for template in missing_templates:
-                logger.warning(
-                    "Utterance '{}' is listed as an "
-                    "action in the domain file, but there is "
-                    "no matching utterance template. Please "
-                    "check your domain.".format(template)
+                warnings.warn(
+                    f"Utterance '{template}' is listed as an "
+                    f"action in the domain file, but there is "
+                    f"no matching utterance template. Please "
+                    f"check your domain."
                 )
 
     def is_empty(self) -> bool:

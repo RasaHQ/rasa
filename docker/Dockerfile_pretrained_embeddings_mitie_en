@@ -38,6 +38,9 @@ RUN apt-get update -qq \
     libffi-dev \
     libpng-dev
 
+# Make sure we have the latest pip version
+RUN pip install -U pip
+
 # Download mitie model
 RUN wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 
@@ -48,8 +51,9 @@ COPY setup.cfg .
 COPY MANIFEST.in .
 COPY alt_requirements/ ./alt_requirements
 COPY requirements.txt .
+COPY LICENSE.txt .
 
-# Install Rasa and its dependencies
+# Install dependencies
 RUN pip install --no-cache-dir -r alt_requirements/requirements_pretrained_embeddings_mitie.txt
 
 # Install Rasa as package

@@ -272,26 +272,33 @@ CountVectorsFeaturizer
           OOV_token: None  # string or None
           OOV_words: []  # list of strings
 
+
+ConveRTFeaturizer
+~~~~~~~~~~~~~~~~~
+
+:Short: Creates a vector representation of user message and response (if specified) using `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model.
+:Outputs: nothing, used as an input to intent classifiers and response selectors that need intent features and response features respectively(e.g. ``EmbeddingIntentClassifier`` and ``ResponseSelector``)
+:Requires: nothing
+:Description:
+    Creates features for intent classification and response selection.
+    Uses the `default signature <https://github.com/PolyAI-LDN/polyai-models#tfhub-signatures>`_ to compute vector representations of input text.
+
+    .. warning::
+        Since ``ConveRT`` model is trained only on an english corpus of conversations, this featurizer should only be used if your training data is in english language.
+
+    .. note::
+        To use ``ConveRTFeaturizer`` you should install ``tensorflow_text==1.15.1`` and ``tensorflow_hub==0.6.0``. Otherwise, you can also do a pip install of Rasa with ``pip install rasa[convert]``
+
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "ConveRTFeaturizer"
+
 Intent Classifiers
 ------------------
 
-KeywordIntentClassifier
-~~~~~~~~~~~~~~~~~~~~~~~
-
-:Short: Simple keyword matching intent classifier. Not intended to be used.
-:Outputs: ``intent``
-:Requires: nothing
-:Output-Example:
-
-    .. code-block:: json
-
-        {
-            "intent": {"name": "greet", "confidence": 0.98343}
-        }
-
-:Description:
-    This classifier is mostly used as a placeholder. It is able to recognize `hello` and
-    `goodbye` intents by searching for these keywords in the passed messages.
 
 MitieIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~
@@ -485,6 +492,41 @@ EmbeddingIntentClassifier
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
 
+.. _keyword_intent_classifier:
+
+KeywordIntentClassifier
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Short: Simple keyword matching intent classifier, intended for small, short-term projects.
+:Outputs: ``intent``
+:Requires: nothing
+
+:Output-Example:
+
+    .. code-block:: json
+
+        {
+            "intent": {"name": "greet", "confidence": 1.0}
+        }
+
+:Description:
+    This classifier works by searching a message for keywords.
+    The matching is case sensitive by default and searches only for exact matches of the keyword-string in the user message.
+    The keywords for an intent are the examples of that intent in the NLU training data.
+    This means the entire example is the keyword, not the individual words in the example.
+
+    .. note:: This classifier is intended only for small projects or to get started. If
+              you have few NLU training data you can use one of our pipelines
+              :ref:`choosing-a-pipeline`.
+
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "KeywordIntentClassifier"
+          case_sensitive: True
+
 Selectors
 ----------
 
@@ -496,6 +538,7 @@ Response Selector
 :Short: Response Selector
 :Outputs: A dictionary with key as ``direct_response_intent`` and value containing ``response`` and ``ranking``
 :Requires: A featurizer
+
 :Output-Example:
 
     .. code-block:: json

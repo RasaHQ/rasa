@@ -3,6 +3,7 @@
 JOBS ?= 1
 
 help:
+	@echo "make"
 	@echo "    clean"
 	@echo "        Remove Python/build artifacts."
 	@echo "    formatter"
@@ -19,12 +20,15 @@ help:
 	@echo "        Download all additional project files needed to run tests."
 	@echo "    test"
 	@echo "        Run pytest on tests/."
+	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
 	@echo "    check-readme"
 	@echo "        Check if the README can be converted from .md to .rst for PyPI."
 	@echo "    doctest"
 	@echo "        Run all doctests embedded in the documentation."
 	@echo "    livedocs"
 	@echo "        Build the docs locally."
+	@echo "    release"
+	@echo "        Prepare a release."
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
@@ -46,25 +50,21 @@ types:
 	pytype --keep-going rasa
 
 prepare-tests-macos: prepare-tests-files
-	brew install graphviz
+	brew install graphviz wget || true
 
 prepare-tests-ubuntu: prepare-tests-files
 	sudo apt-get -y install graphviz graphviz-dev python3-tk
 
 prepare-tests-files:
 	pip3 install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir -q
-	python -m spacy link en_core_web_md en --force
+	python3 -m spacy link en_core_web_md en --force
 	pip3 install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir -q
-	python -m spacy link de_core_news_sm de --force
+	python3 -m spacy link de_core_news_sm de --force
 	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 
-test: clean get-num-jobs
+test: clean
 	# OMP_NUM_THREADS can improve overral performance using one thread by process (on tensorflow), avoiding overload
 	OMP_NUM_THREADS=1 pytest tests -n $(JOBS) --cov rasa
-
-get-num-jobs:
-	$(eval JOBS := $(if $(findstring -j, $(MAKEFLAGS)), $(shell echo $(MAKEFLAGS) | sed -E "s@.*-j([0-9]+).*@\1@"), $(JOBS)))
-	$(eval JOBS := $(if $(findstring -j, $(JOBS)), auto, $(JOBS)))
 
 doctest: clean
 	cd docs && make doctest
@@ -74,4 +74,7 @@ livedocs:
 
 # if this runs through we can be sure the readme is properly shown on pypi
 check-readme:
-	python setup.py check --restructuredtext --strict
+	python3 setup.py check --restructuredtext --strict
+
+release:
+	python3 scripts/release.py

@@ -2,6 +2,7 @@ import time
 import typing
 
 import json
+import warnings
 import jsonpickle
 import logging
 import uuid
@@ -32,8 +33,8 @@ def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"
                 deserialised.append(event)
             else:
                 logger.warning(
-                    "Ignoring event ({}) while deserialising "
-                    "events. Couldn't parse it."
+                    f"Unable to parse event '{event}' while deserialising. The event"
+                    " will be ignored."
                 )
 
     return deserialised
@@ -73,15 +74,32 @@ def first_key(d, default_key):
 
 
 # noinspection PyProtectedMember
-class Event(object):
+class Event:
     """Events describe everything that occurs in
     a conversation and tell the :class:`rasa.core.trackers.DialogueStateTracker`
     how to update its state."""
 
     type_name = "event"
 
-    def __init__(self, timestamp: Optional[float] = None):
-        self.timestamp = timestamp if timestamp else time.time()
+    def __init__(
+        self,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        self.timestamp = timestamp or time.time()
+        self._metadata = metadata or {}
+
+    @property
+    def metadata(self) -> Dict[Text, Any]:
+        # Needed for compatibility for Rasa versions <1.4.0.
+        # Previous versions of Rasa serialized trackers using the pickle
+        # module.  For the moment, Rasa still supports loading these serialized
+        # trackers with pickle, but will use JSON in any subsequent save
+        # operations.  Versions of trackers serialized with pickle won't
+        # include the `_metadata` attribute in their events, so it is necessary
+        # to define this getter in case the attribute does not exist.
+        # For more information see CHANGELOG.rst.
+        return getattr(self, "_metadata", {})
 
     def __ne__(self, other: Any) -> bool:
         # Not strictly necessary, but to avoid having both x==y and x!=y
@@ -97,12 +115,12 @@ class Event(object):
         parameters: Dict[Text, Any],
         default: Optional[Type["Event"]] = None,
     ) -> Optional[List["Event"]]:
-        event = Event.resolve_by_type(event_name, default)
+        event_class = Event.resolve_by_type(event_name, default)
 
-        if event:
-            return event._from_story_string(parameters)
-        else:
+        if not event_class:
             return None
+
+        return event_class._from_story_string(parameters)
 
     @staticmethod
     def from_parameters(
@@ -110,25 +128,30 @@ class Event(object):
     ) -> Optional["Event"]:
 
         event_name = parameters.get("event")
-        if event_name is not None:
-            copied = parameters.copy()
-            del copied["event"]
-
-            event = Event.resolve_by_type(event_name, default)
-            if event:
-                return event._from_parameters(parameters)
-            else:
-                return None
-        else:
+        if event_name is None:
             return None
+
+        event_class = Event.resolve_by_type(event_name, default)
+        if not event_class:
+            return None
+
+        return event_class._from_parameters(parameters)
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List["Event"]]:
         """Called to convert a parsed story line into an event."""
-        return [cls(parameters.get("timestamp"))]
+        return [cls(parameters.get("timestamp"), parameters.get("metadata"))]
 
     def as_dict(self):
-        return {"event": self.type_name, "timestamp": self.timestamp}
+        d = {
+            "event": self.type_name,
+            "timestamp": self.timestamp,
+        }
+
+        if self.metadata:
+            d["metadata"] = self.metadata
+
+        return d
 
     @classmethod
     def _from_parameters(cls, parameters: Dict[Text, Any]) -> Optional["Event"]:
@@ -142,10 +165,10 @@ class Event(object):
         result = cls._from_story_string(parameters)
         if len(result) > 1:
             logger.warning(
-                "Event from parameters called with parameters "
-                "for multiple events. This is not supported, "
-                "only the first event will be returned. "
-                "Parameters: {}".format(parameters)
+                f"Event from parameters called with parameters "
+                f"for multiple events. This is not supported, "
+                f"only the first event will be returned. "
+                f"Parameters: {parameters}"
             )
         return result[0] if result else None
 
@@ -164,7 +187,7 @@ class Event(object):
         elif default is not None:
             return default
         else:
-            raise ValueError("Unknown event name '{}'.".format(type_name))
+            raise ValueError(f"Unknown event name '{type_name}'.")
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         pass
@@ -194,7 +217,8 @@ class UserUttered(Event):
         self.entities = entities if entities else []
         self.input_channel = input_channel
         self.message_id = message_id
-        self.metadata = metadata
+
+        super().__init__(timestamp, metadata)
 
         if parse_data:
             self.parse_data = parse_data
@@ -206,8 +230,6 @@ class UserUttered(Event):
                 "message_id": self.message_id,
                 "metadata": self.metadata,
             }
-
-        super(UserUttered, self).__init__(timestamp)
 
     @staticmethod
     def _from_parse_data(
@@ -258,14 +280,14 @@ class UserUttered(Event):
         return UserUttered(None)
 
     def as_dict(self) -> Dict[Text, Any]:
-        _dict = super(UserUttered, self).as_dict()
+        _dict = super().as_dict()
         _dict.update(
             {
                 "text": self.text,
                 "parse_data": self.parse_data,
                 "input_channel": getattr(self, "input_channel", None),
                 "message_id": getattr(self, "message_id", None),
-                "metadata": getattr(self, "metadata", None),
+                "metadata": self.metadata,
             }
         )
         return _dict
@@ -284,9 +306,9 @@ class UserUttered(Event):
                 )
             ]
         except KeyError as e:
-            raise ValueError("Failed to parse bot uttered event. {}".format(e))
+            raise ValueError(f"Failed to parse bot uttered event. {e}")
 
-    def as_story_string(self, e2e=False):
+    def as_story_string(self, e2e: bool = False) -> Text:
         if self.intent:
             if self.entities:
                 ent_string = json.dumps(
@@ -325,17 +347,7 @@ class BotUttered(Event):
     def __init__(self, text=None, data=None, metadata=None, timestamp=None):
         self.text = text
         self.data = data or {}
-        self._metadata = metadata or {}
-        super(BotUttered, self).__init__(timestamp)
-
-    @property
-    def metadata(self):
-        # needed for backwards compatibility <1.0.0 - previously pickled events
-        # won't have the `_metadata` attribute
-        if hasattr(self, "_metadata"):
-            return self._metadata
-        else:
-            return {}
+        super().__init__(timestamp, metadata)
 
     def __members(self):
         data_no_nones = utils.remove_none_values(self.data)
@@ -394,7 +406,7 @@ class BotUttered(Event):
         return BotUttered()
 
     def as_dict(self):
-        d = super(BotUttered, self).as_dict()
+        d = super().as_dict()
         d.update({"text": self.text, "data": self.data, "metadata": self.metadata})
         return d
 
@@ -408,7 +420,7 @@ class BotUttered(Event):
                 parameters.get("timestamp"),
             )
         except KeyError as e:
-            raise ValueError("Failed to parse bot uttered event. {}".format(e))
+            raise ValueError(f"Failed to parse bot uttered event. {e}")
 
 
 # noinspection PyProtectedMember
@@ -423,13 +435,19 @@ class SlotSet(Event):
 
     type_name = "slot"
 
-    def __init__(self, key, value=None, timestamp=None):
+    def __init__(
+        self,
+        key: Text,
+        value: Optional[Any] = None,
+        timestamp: Optional[int] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
         self.key = key
         self.value = value
-        super(SlotSet, self).__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __str__(self):
-        return "SlotSet(key: {}, value: {})".format(self.key, self.value)
+        return f"SlotSet(key: {self.key}, value: {self.value})"
 
     def __hash__(self):
         return hash((self.key, jsonpickle.encode(self.value)))
@@ -442,7 +460,7 @@ class SlotSet(Event):
 
     def as_story_string(self):
         props = json.dumps({self.key: self.value}, ensure_ascii=False)
-        return "{name}{props}".format(name=self.type_name, props=props)
+        return f"{self.type_name}{props}"
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
@@ -457,7 +475,7 @@ class SlotSet(Event):
             return None
 
     def as_dict(self):
-        d = super(SlotSet, self).as_dict()
+        d = super().as_dict()
         d.update({"name": self.key, "value": self.value})
         return d
 
@@ -468,9 +486,10 @@ class SlotSet(Event):
                 parameters.get("name"),
                 parameters.get("value"),
                 parameters.get("timestamp"),
+                parameters.get("metadata"),
             )
         except KeyError as e:
-            raise ValueError("Failed to parse set slot event. {}".format(e))
+            raise ValueError(f"Failed to parse set slot event. {e}")
 
     def apply_to(self, tracker):
         tracker._set_slot(self.key, self.value)
@@ -576,6 +595,7 @@ class ReminderScheduled(Event):
         name=None,
         kill_on_user_message=True,
         timestamp=None,
+        metadata=None,
     ):
         """Creates the reminder
 
@@ -588,13 +608,14 @@ class ReminderScheduled(Event):
             kill_on_user_message: ``True`` means a user message before the
                  trigger date will abort the reminder
             timestamp: creation date of the event
+            metadata: optional event metadata
         """
 
         self.action_name = action_name
         self.trigger_date_time = trigger_date_time
         self.kill_on_user_message = kill_on_user_message
         self.name = name if name is not None else str(uuid.uuid1())
-        super(ReminderScheduled, self).__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __hash__(self):
         return hash(
@@ -629,10 +650,10 @@ class ReminderScheduled(Event):
 
     def as_story_string(self):
         props = json.dumps(self._data_obj())
-        return "{name}{props}".format(name=self.type_name, props=props)
+        return f"{self.type_name}{props}"
 
     def as_dict(self):
-        d = super(ReminderScheduled, self).as_dict()
+        d = super().as_dict()
         d.update(self._data_obj())
         return d
 
@@ -647,6 +668,7 @@ class ReminderScheduled(Event):
                 parameters.get("name", None),
                 parameters.get("kill_on_user_msg", True),
                 parameters.get("timestamp"),
+                parameters.get("metadata"),
             )
         ]
 
@@ -657,14 +679,15 @@ class ReminderCancelled(Event):
 
     type_name = "cancel_reminder"
 
-    def __init__(self, action_name, timestamp=None):
+    def __init__(self, action_name, timestamp=None, metadata=None):
         """
         Args:
             action_name: name of the scheduled action to be cancelled
+            metadata: optional event metadata
         """
 
         self.action_name = action_name
-        super(ReminderCancelled, self).__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __hash__(self):
         return hash(self.action_name)
@@ -673,16 +696,20 @@ class ReminderCancelled(Event):
         return isinstance(other, ReminderCancelled)
 
     def __str__(self):
-        return "ReminderCancelled(action: {})".format(self.action_name)
+        return f"ReminderCancelled(action: {self.action_name})"
 
     def as_story_string(self):
         props = json.dumps({"action": self.action_name})
-        return "{name}{props}".format(name=self.type_name, props=props)
+        return f"{self.type_name}{props}"
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
         return [
-            ReminderCancelled(parameters.get("action"), parameters.get("timestamp"))
+            ReminderCancelled(
+                parameters.get("action"),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
         ]
 
 
@@ -721,9 +748,9 @@ class StoryExported(Event):
 
     type_name = "export"
 
-    def __init__(self, path=None, timestamp=None):
+    def __init__(self, path=None, timestamp=None, metadata=None):
         self.path = path
-        super(StoryExported, self).__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __hash__(self):
         return hash(32143124319)
@@ -733,6 +760,16 @@ class StoryExported(Event):
 
     def __str__(self):
         return "StoryExported()"
+
+    @classmethod
+    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+        return [
+            StoryExported(
+                parameters.get("path"),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
+        ]
 
     def as_story_string(self):
         return self.type_name
@@ -748,9 +785,14 @@ class FollowupAction(Event):
 
     type_name = "followup"
 
-    def __init__(self, name, timestamp=None):
+    def __init__(
+        self,
+        name: Text,
+        timestamp: Optional[int] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
         self.action_name = name
-        super(FollowupAction, self).__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __hash__(self):
         return hash(self.action_name)
@@ -762,19 +804,25 @@ class FollowupAction(Event):
             return self.action_name == other.action_name
 
     def __str__(self):
-        return "FollowupAction(action: {})".format(self.action_name)
+        return f"FollowupAction(action: {self.action_name})"
 
     def as_story_string(self):
         props = json.dumps({"name": self.action_name})
-        return "{name}{props}".format(name=self.type_name, props=props)
+        return f"{self.type_name}{props}"
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
 
-        return [FollowupAction(parameters.get("name"), parameters.get("timestamp"))]
+        return [
+            FollowupAction(
+                parameters.get("name"),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
+        ]
 
     def as_dict(self):
-        d = super(FollowupAction, self).as_dict()
+        d = super().as_dict()
         d.update({"name": self.action_name})
         return d
 
@@ -847,12 +895,13 @@ class ActionExecuted(Event):
         policy: Optional[Text] = None,
         confidence: Optional[float] = None,
         timestamp: Optional[int] = None,
+        metadata: Optional[Dict] = None,
     ):
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
         self.unpredictable = False
-        super(ActionExecuted, self).__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __str__(self):
         return "ActionExecuted(action: {}, policy: {}, confidence: {})".format(
@@ -880,11 +929,12 @@ class ActionExecuted(Event):
                 parameters.get("policy"),
                 parameters.get("confidence"),
                 parameters.get("timestamp"),
+                parameters.get("metadata"),
             )
         ]
 
     def as_dict(self):
-        d = super(ActionExecuted, self).as_dict()
+        d = super().as_dict()
         policy = None  # for backwards compatibility (persisted evemts)
         if hasattr(self, "policy"):
             policy = self.policy
@@ -909,10 +959,16 @@ class AgentUttered(Event):
 
     type_name = "agent"
 
-    def __init__(self, text=None, data=None, timestamp=None):
+    def __init__(
+        self,
+        text: Optional[Text] = None,
+        data: Optional[Any] = None,
+        timestamp: Optional[int] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
         self.text = text
         self.data = data
-        super(AgentUttered, self).__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __hash__(self):
         return hash((self.text, jsonpickle.encode(self.data)))
@@ -939,7 +995,7 @@ class AgentUttered(Event):
         return None
 
     def as_dict(self):
-        d = super(AgentUttered, self).as_dict()
+        d = super().as_dict()
         d.update({"text": self.text, "data": self.data})
         return d
 
@@ -954,9 +1010,10 @@ class AgentUttered(Event):
                 parameters.get("text"),
                 parameters.get("data"),
                 parameters.get("timestamp"),
+                parameters.get("metadata"),
             )
         except KeyError as e:
-            raise ValueError("Failed to parse agent uttered event. {}".format(e))
+            raise ValueError(f"Failed to parse agent uttered event. {e}")
 
 
 class Form(Event):
@@ -966,12 +1023,17 @@ class Form(Event):
 
     type_name = "form"
 
-    def __init__(self, name, timestamp=None):
+    def __init__(
+        self,
+        name: Optional[Text],
+        timestamp: Optional[int] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
         self.name = name
-        super(Form, self).__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __str__(self):
-        return "Form({})".format(self.name)
+        return f"Form({self.name})"
 
     def __hash__(self):
         return hash(self.name)
@@ -984,15 +1046,21 @@ class Form(Event):
 
     def as_story_string(self):
         props = json.dumps({"name": self.name})
-        return "{name}{props}".format(name=self.type_name, props=props)
+        return f"{self.type_name}{props}"
 
     @classmethod
     def _from_story_string(cls, parameters):
         """Called to convert a parsed story line into an event."""
-        return [Form(parameters.get("name"), parameters.get("timestamp"))]
+        return [
+            Form(
+                parameters.get("name"),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
+        ]
 
     def as_dict(self):
-        d = super(Form, self).as_dict()
+        d = super().as_dict()
         d.update({"name": self.name})
         return d
 
@@ -1006,12 +1074,17 @@ class FormValidation(Event):
 
     type_name = "form_validation"
 
-    def __init__(self, validate, timestamp=None):
+    def __init__(
+        self,
+        validate: bool,
+        timestamp: Optional[int] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
         self.validate = validate
-        super(FormValidation, self).__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __str__(self):
-        return "FormValidation({})".format(self.validate)
+        return f"FormValidation({self.validate})"
 
     def __hash__(self):
         return hash(self.validate)
@@ -1024,10 +1097,14 @@ class FormValidation(Event):
 
     @classmethod
     def _from_parameters(cls, parameters):
-        return FormValidation(parameters.get("validate"), parameters.get("timestamp"))
+        return FormValidation(
+            parameters.get("validate"),
+            parameters.get("timestamp"),
+            parameters.get("metadata"),
+        )
 
     def as_dict(self):
-        d = super(FormValidation, self).as_dict()
+        d = super().as_dict()
         d.update({"validate": self.validate})
         return d
 
@@ -1040,11 +1117,18 @@ class ActionExecutionRejected(Event):
 
     type_name = "action_execution_rejected"
 
-    def __init__(self, action_name, policy=None, confidence=None, timestamp=None):
+    def __init__(
+        self,
+        action_name: Text,
+        policy: Optional[Text] = None,
+        confidence: Optional[float] = None,
+        timestamp: Optional[int] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
         self.action_name = action_name
         self.policy = policy
         self.confidence = confidence
-        super(ActionExecutionRejected, self).__init__(timestamp)
+        super().__init__(timestamp, metadata)
 
     def __str__(self):
         return (
@@ -1069,13 +1153,14 @@ class ActionExecutionRejected(Event):
             parameters.get("policy"),
             parameters.get("confidence"),
             parameters.get("timestamp"),
+            parameters.get("metadata"),
         )
 
     def as_story_string(self):
         return None
 
     def as_dict(self):
-        d = super(ActionExecutionRejected, self).as_dict()
+        d = super().as_dict()
         d.update(
             {
                 "name": self.action_name,

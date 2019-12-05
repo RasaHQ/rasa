@@ -12,13 +12,18 @@ from rasa.core.events import ActionExecuted, UserUttered
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.io import DEFAULT_ENCODING
+import matplotlib
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
 
-import matplotlib
+try:
+    # If the `tkinter` package is available, we can use the `TkAgg` backend
+    import tkinter
 
-matplotlib.use("TkAgg")
+    matplotlib.use("TkAgg")
+except ImportError:
+    matplotlib.use("agg")
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +33,7 @@ StoryEvalution = namedtuple(
 )
 
 
-class EvaluationStore(object):
+class EvaluationStore:
     """Class storing action, intent and entity predictions and targets."""
 
     def __init__(
@@ -119,9 +124,7 @@ class WronglyPredictedAction(ActionExecuted):
         self, correct_action, predicted_action, policy, confidence, timestamp=None
     ):
         self.predicted_action = predicted_action
-        super(WronglyPredictedAction, self).__init__(
-            correct_action, policy, confidence, timestamp=timestamp
-        )
+        super().__init__(correct_action, policy, confidence, timestamp=timestamp)
 
     def as_story_string(self):
         return "{}   <!-- predicted: {} -->".format(
@@ -136,7 +139,7 @@ class EndToEndUserUtterance(UserUttered):
     `failed_stories.md` output file."""
 
     def as_story_string(self, e2e=True):
-        return super(EndToEndUserUtterance, self).as_story_string(e2e=True)
+        return super().as_story_string(e2e=True)
 
 
 class WronglyClassifiedUserUtterance(UserUttered):
@@ -157,7 +160,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
 
         intent = {"name": eval_store.intent_targets[0]}
 
-        super(WronglyClassifiedUserUtterance, self).__init__(
+        super().__init__(
             event.text,
             intent,
             eval_store.entity_targets,
@@ -345,7 +348,11 @@ def _predict_tracker_actions(
 
     for event in events[1:]:
         if isinstance(event, ActionExecuted):
-            action_executed_result, policy, confidence = _collect_action_executed_predictions(
+            (
+                action_executed_result,
+                policy,
+                confidence,
+            ) = _collect_action_executed_predictions(
                 processor, partial_tracker, event, fail_on_prediction_errors
             )
             tracker_eval_store.merge_store(action_executed_result)
@@ -399,7 +406,7 @@ def collect_story_predictions(
     correct_dialogues = []
     number_of_stories = len(completed_trackers)
 
-    logger.info("Evaluating {} stories\nProgress:".format(number_of_stories))
+    logger.info(f"Evaluating {number_of_stories} stories\nProgress:")
 
     action_list = []
 
@@ -530,17 +537,17 @@ def log_evaluation_table(
     include_report=True,
 ):  # pragma: no cover
     """Log the sklearn evaluation metrics."""
-    logger.info("Evaluation Results on {} level:".format(name))
+    logger.info(f"Evaluation Results on {name} level:")
     logger.info(
         "\tCorrect:          {} / {}".format(int(len(golds) * accuracy), len(golds))
     )
-    logger.info("\tF1-Score:         {:.3f}".format(f1))
-    logger.info("\tPrecision:        {:.3f}".format(precision))
-    logger.info("\tAccuracy:         {:.3f}".format(accuracy))
-    logger.info("\tIn-data fraction: {:.3g}".format(in_training_data_fraction))
+    logger.info(f"\tF1-Score:         {f1:.3f}")
+    logger.info(f"\tPrecision:        {precision:.3f}")
+    logger.info(f"\tAccuracy:         {accuracy:.3f}")
+    logger.info(f"\tIn-data fraction: {in_training_data_fraction:.3g}")
 
     if include_report:
-        logger.info("\tClassification report: \n{}".format(report))
+        logger.info(f"\tClassification report: \n{report}")
 
 
 def plot_story_evaluation(
@@ -587,7 +594,6 @@ async def compare_models_in_dir(
     model_dir: Text, stories_file: Text, output: Text
 ) -> None:
     """Evaluates multiple trained models in a directory on a test set."""
-    from rasa.core import utils
     import rasa.utils.io as io_utils
 
     number_correct = defaultdict(list)
@@ -615,7 +621,6 @@ async def compare_models_in_dir(
 
 async def compare_models(models: List[Text], stories_file: Text, output: Text) -> None:
     """Evaluates provided trained models on a test set."""
-    from rasa.core import utils
 
     number_correct = defaultdict(list)
 
@@ -631,7 +636,7 @@ async def compare_models(models: List[Text], stories_file: Text, output: Text) -
 async def _evaluate_core_model(model: Text, stories_file: Text) -> int:
     from rasa.core.agent import Agent
 
-    logger.info("Evaluating model '{}'".format(model))
+    logger.info(f"Evaluating model '{model}'")
 
     agent = Agent.load(model)
     completed_trackers = await _generate_trackers(stories_file, agent)
@@ -715,7 +720,7 @@ def _plot_curve(
 
     plt.savefig(graph_path, format="pdf")
 
-    logger.info("Comparison graph saved to '{}'.".format(graph_path))
+    logger.info(f"Comparison graph saved to '{graph_path}'.")
 
 
 if __name__ == "__main__":
