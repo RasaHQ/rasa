@@ -134,7 +134,9 @@ def test_same_file_names_get_resolved(tmpdir):
                 "data/examples/dialogflow/intents/inform_usersays_es.json",
             },
         ),
-        ("luis", {"data/examples/luis/demo-restaurants_v5.json"}),
+        ("luis", {"data/examples/luis/demo-restaurants_v5.json",
+                  "data/examples/luis/demo-restaurants_v4.json",
+                  "data/examples/luis/demo-restaurants_v2.json"}),
         (
             "rasa",
             {
