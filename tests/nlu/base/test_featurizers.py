@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -
 import numpy as np
 import pytest
 
@@ -71,6 +70,53 @@ def test_spacy_intent_featurizer(spacy_nlp_component):
 
     # no intent features should have been set
     assert not any(intent_features_exist)
+
+
+def test_convert_intent_featurizer():
+    from rasa.nlu.featurizers.convert_featurizer import ConveRTFeaturizer
+
+    td = training_data.load_data("data/examples/rasa/demo-rasa.json")
+
+    convert_featurizer = ConveRTFeaturizer()
+    convert_featurizer.train(td, config=None)
+
+    intent_features_exist = np.array(
+        [
+            True if example.get("intent_features") is not None else False
+            for example in td.intent_examples
+        ]
+    )
+
+    # no intent features should have been set
+    assert not any(intent_features_exist)
+
+
+def test_convert_featurizer_output_shape():
+    from rasa.nlu.featurizers.convert_featurizer import ConveRTFeaturizer
+
+    td = training_data.load_data("data/examples/rasa/demo-rasa.json")
+
+    convert_featurizer = ConveRTFeaturizer()
+    convert_featurizer.train(td, config=None)
+
+    text_features_dim = np.array(
+        [
+            example.get("text_features").shape[0]
+            for example in td.intent_examples
+            if example.get("text_features") is not None
+        ]
+    )
+
+    response_features_dim = np.array(
+        [
+            example.get("response_features").shape[0]
+            for example in td.intent_examples
+            if example.get("response_features") is not None
+        ]
+    )
+
+    assert np.all(text_features_dim == 1024)
+    assert np.all(response_features_dim == 1024)
 
 
 @pytest.mark.parametrize(
@@ -459,6 +505,24 @@ def test_count_vector_featurizer_char(sentence, expected):
     ftr.process(test_message)
 
     assert np.all(test_message.get("text_features") == expected)
+
+
+def test_count_vector_featurizer_char_intent_featurizer():
+    from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+
+    ftr = CountVectorsFeaturizer({"min_ngram": 1, "max_ngram": 2, "analyzer": "char"})
+    td = training_data.load_data("data/examples/rasa/demo-rasa.json")
+    ftr.train(td, config=None)
+
+    intent_features_exist = np.array(
+        [
+            True if example.get("intent_features") is not None else False
+            for example in td.intent_examples
+        ]
+    )
+
+    # no intent features should have been set
+    assert not any(intent_features_exist)
 
 
 def test_count_vector_featurizer_persist_load(tmpdir):

@@ -139,7 +139,7 @@ def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
     return bot_message
 
 
-class Action(object):
+class Action:
     """Next action to be taken in response to a dialogue state."""
 
     def name(self) -> Text:
@@ -211,7 +211,7 @@ class ActionRetrieveResponse(Action):
                 )
             return []
 
-        logger.debug("Picking response from selector of type {}".format(query_key))
+        logger.debug(f"Picking response from selector of type {query_key}")
         message = {
             "text": response_selector_properties[query_key][
                 OPEN_UTTERANCE_PREDICTION_KEY
@@ -264,11 +264,11 @@ class ActionBack(ActionUtterTemplate):
         return ACTION_BACK_NAME
 
     def __init__(self):
-        super(ActionBack, self).__init__("utter_back", silent_fail=True)
+        super().__init__("utter_back", silent_fail=True)
 
     async def run(self, output_channel, nlg, tracker, domain):
         # only utter the template if it is available
-        evts = await super(ActionBack, self).run(output_channel, nlg, tracker, domain)
+        evts = await super().run(output_channel, nlg, tracker, domain)
 
         return evts + [UserUtteranceReverted(), UserUtteranceReverted()]
 
@@ -295,15 +295,13 @@ class ActionRestart(ActionUtterTemplate):
         return ACTION_RESTART_NAME
 
     def __init__(self):
-        super(ActionRestart, self).__init__("utter_restart", silent_fail=True)
+        super().__init__("utter_restart", silent_fail=True)
 
     async def run(self, output_channel, nlg, tracker, domain):
         from rasa.core.events import Restarted
 
         # only utter the template if it is available
-        evts = await super(ActionRestart, self).run(
-            output_channel, nlg, tracker, domain
-        )
+        evts = await super().run(output_channel, nlg, tracker, domain)
 
         return evts + [Restarted()]
 
@@ -316,15 +314,13 @@ class ActionDefaultFallback(ActionUtterTemplate):
         return ACTION_DEFAULT_FALLBACK_NAME
 
     def __init__(self):
-        super(ActionDefaultFallback, self).__init__("utter_default", silent_fail=True)
+        super().__init__("utter_default", silent_fail=True)
 
     async def run(self, output_channel, nlg, tracker, domain):
         from rasa.core.events import UserUtteranceReverted
 
         # only utter the template if it is available
-        evts = await super(ActionDefaultFallback, self).run(
-            output_channel, nlg, tracker, domain
-        )
+        evts = await super().run(output_channel, nlg, tracker, domain)
 
         return evts + [UserUtteranceReverted()]
 
@@ -410,28 +406,26 @@ class RemoteAction(Action):
 
         bot_messages = []
         for response in responses:
-            if "template" in response:
-                kwargs = response.copy()
-                del kwargs["template"]
+            template = response.pop("template", None)
+            if template:
                 draft = await nlg.generate(
-                    response["template"], tracker, output_channel.name(), **kwargs
+                    template, tracker, output_channel.name(), **response
                 )
                 if not draft:
                     continue
-
-                del response["template"]
             else:
                 draft = {}
 
-            if "buttons" in response:
-                if "buttons" not in draft:
-                    draft["buttons"] = []
-                draft["buttons"].extend(response["buttons"])
-                del response["buttons"]
+            buttons = response.pop("buttons", []) or []
+            if buttons:
+                draft.setdefault("buttons", [])
+                draft["buttons"].extend(buttons)
 
+            # Avoid overwriting `draft` values with empty values
+            response = {k: v for k, v in response.items() if v}
             draft.update(response)
-
             bot_messages.append(create_bot_utterance(draft))
+
         return bot_messages
 
     async def run(self, output_channel, nlg, tracker, domain) -> List[Event]:
@@ -456,6 +450,7 @@ class RemoteAction(Action):
             response = await self.action_endpoint.request(
                 json=json_body, method="post", timeout=DEFAULT_REQUEST_TIMEOUT
             )
+
             self._validate_action_result(response)
 
             events_json = response.get("events", [])
@@ -618,13 +613,13 @@ class ActionDefaultAskAffirmation(Action):
         domain: "Domain",
     ) -> List[Event]:
         intent_to_affirm = tracker.latest_message.intent.get("name")
-        affirmation_message = "Did you mean '{}'?".format(intent_to_affirm)
+        affirmation_message = f"Did you mean '{intent_to_affirm}'?"
 
         message = {
             "text": affirmation_message,
             "buttons": [
-                {"title": "Yes", "payload": "/{}".format(intent_to_affirm)},
-                {"title": "No", "payload": "/{}".format(USER_INTENT_OUT_OF_SCOPE)},
+                {"title": "Yes", "payload": f"/{intent_to_affirm}"},
+                {"title": "No", "payload": f"/{USER_INTENT_OUT_OF_SCOPE}"},
             ],
         }
 
@@ -638,6 +633,4 @@ class ActionDefaultAskRephrase(ActionUtterTemplate):
         return ACTION_DEFAULT_ASK_REPHRASE_NAME
 
     def __init__(self):
-        super(ActionDefaultAskRephrase, self).__init__(
-            "utter_ask_rephrase", silent_fail=True
-        )
+        super().__init__("utter_ask_rephrase", silent_fail=True)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import argparse
 import json
 import logging
@@ -112,7 +111,7 @@ def generate_id(prefix="", max_chars=None):
     if max_chars:
         gid = gid[:max_chars]
 
-    return "{}{}".format(prefix, gid)
+    return f"{prefix}{gid}"
 
 
 def request_input(valid_values=None, prompt=None, max_suggested=3):
@@ -139,7 +138,7 @@ def request_input(valid_values=None, prompt=None, max_suggested=3):
 # noinspection PyPep8Naming
 
 
-class HashableNDArray(object):
+class HashableNDArray:
     """Hashable wrapper for ndarray objects.
 
     Instances of ndarray are not hashable, meaning they cannot be added to
@@ -234,7 +233,7 @@ def list_routes(app: Sanic):
 
         options = {}
         for arg in route.parameters:
-            options[arg] = "[{0}]".format(arg)
+            options[arg] = f"[{arg}]"
 
         if not isinstance(route.handler, CompositionView):
             handlers = [(list(route.methods)[0], route.name)]
@@ -245,11 +244,11 @@ def list_routes(app: Sanic):
             ]
 
         for method, name in handlers:
-            line = unquote("{:50s} {:30s} {}".format(endpoint, method, name))
+            line = unquote(f"{endpoint:50s} {method:30s} {name}")
             output[name] = line
 
     url_table = "\n".join(output[url] for url in sorted(output))
-    logger.debug("Available web server routes: \n{}".format(url_table))
+    logger.debug(f"Available web server routes: \n{url_table}")
 
     return output
 
@@ -382,11 +381,11 @@ def pad_lists_to_size(
         return list_x, list_y
 
 
-class AvailableEndpoints(object):
+class AvailableEndpoints:
     """Collection of configured endpoints."""
 
     @classmethod
-    def read_endpoints(cls, endpoint_file):
+    def read_endpoints(cls, endpoint_file: Text) -> "AvailableEndpoints":
         nlg = read_endpoint_config(endpoint_file, endpoint_type="nlg")
         nlu = read_endpoint_config(endpoint_file, endpoint_type="nlu")
         action = read_endpoint_config(endpoint_file, endpoint_type="action_endpoint")
@@ -401,14 +400,14 @@ class AvailableEndpoints(object):
 
     def __init__(
         self,
-        nlg=None,
-        nlu=None,
-        action=None,
-        model=None,
-        tracker_store=None,
-        lock_store=None,
-        event_broker=None,
-    ):
+        nlg: Optional[EndpointConfig] = None,
+        nlu: Optional[EndpointConfig] = None,
+        action: Optional[EndpointConfig] = None,
+        model: Optional[EndpointConfig] = None,
+        tracker_store: Optional[EndpointConfig] = None,
+        lock_store: Optional[EndpointConfig] = None,
+        event_broker: Optional[EndpointConfig] = None,
+    ) -> None:
         self.model = model
         self.action = action
         self.nlu = nlu

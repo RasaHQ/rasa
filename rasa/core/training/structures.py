@@ -39,7 +39,7 @@ FORM_PREFIX = "form: "
 STEP_COUNT = 1
 
 
-class StoryStringHelper(object):
+class StoryStringHelper:
     """A helper class to mark story steps that are inside a form with `form: `
     """
 
@@ -63,7 +63,7 @@ class StoryStringHelper(object):
         self.no_form_prefix_string = no_form_prefix_string
 
 
-class Checkpoint(object):
+class Checkpoint:
     def __init__(
         self, name: Optional[Text], conditions: Optional[Dict[Text, Any]] = None
     ) -> None:
@@ -73,7 +73,7 @@ class Checkpoint(object):
 
     def as_story_string(self):
         dumped_conds = json.dumps(self.conditions) if self.conditions else ""
-        return "{}{}".format(self.name, dumped_conds)
+        return f"{self.name}{dumped_conds}"
 
     def filter_trackers(self, trackers):
         """Filters out all trackers that do not satisfy the conditions."""
@@ -91,7 +91,7 @@ class Checkpoint(object):
         )
 
 
-class StoryStep(object):
+class StoryStep:
     """A StoryStep is a section of a story block between two checkpoints.
 
     NOTE: Checkpoints are not only limited to those manually written
@@ -136,14 +136,18 @@ class StoryStep(object):
         self.events.append(event)
 
     @staticmethod
-    def _checkpoint_string(story_step_element):
+    def _checkpoint_string(story_step_element: UserUttered) -> Text:
         return "> {}\n".format(story_step_element.as_story_string())
 
     @staticmethod
-    def _user_string(story_step_element, e2e, prefix=""):
+    def _user_string(
+        story_step_element: UserUttered, e2e: bool, prefix: Text = ""
+    ) -> Text:
         return "* {}{}\n".format(prefix, story_step_element.as_story_string(e2e))
 
-    def _store_user_strings(self, story_step_element, e2e, prefix=""):
+    def _store_user_strings(
+        self, story_step_element: UserUttered, e2e: bool, prefix: Text = ""
+    ) -> None:
         self.story_string_helper.no_form_prefix_string += self._user_string(
             story_step_element, e2e
         )
@@ -167,7 +171,7 @@ class StoryStep(object):
         self.story_string_helper.form_prefix_string = ""
         self.story_string_helper.no_form_prefix_string = ""
 
-    def as_story_string(self, flat=False, e2e=False):
+    def as_story_string(self, flat: bool = False, e2e: bool = False) -> Text:
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
 
@@ -179,7 +183,7 @@ class StoryStep(object):
         if flat:
             result = ""
         else:
-            result = "\n## {}\n".format(self.block_name)
+            result = f"\n## {self.block_name}\n"
             for s in self.start_checkpoints:
                 if s.name != STORY_START:
                     result += self._checkpoint_string(s)
@@ -280,7 +284,7 @@ class StoryStep(object):
                         self._store_bot_strings(s, FORM_PREFIX)
 
             else:
-                raise Exception("Unexpected element in story step: {}".format(s))
+                raise Exception(f"Unexpected element in story step: {s}")
 
         if (
             not self.end_checkpoints
@@ -350,7 +354,7 @@ class StoryStep(object):
         )
 
 
-class Story(object):
+class Story:
     def __init__(
         self, story_steps: List[StoryStep] = None, story_name: Optional[Text] = None
     ) -> None:
@@ -376,7 +380,7 @@ class Story(object):
         events.append(ActionExecuted(ACTION_LISTEN_NAME))
         return Dialogue(sender_id, events)
 
-    def as_story_string(self, flat=False, e2e=False):
+    def as_story_string(self, flat: bool = False, e2e: bool = False) -> Text:
         story_content = ""
 
         # initialize helper for first story step
@@ -395,7 +399,7 @@ class Story(object):
                 name = self.story_name
             else:
                 name = "Generated Story {}".format(hash(story_content))
-            return "## {}\n{}".format(name, story_content)
+            return f"## {name}\n{story_content}"
         else:
             return story_content
 
@@ -407,7 +411,7 @@ class Story(object):
         io.write_text_file(self.as_story_string(flat, e2e), filename, append=True)
 
 
-class StoryGraph(object):
+class StoryGraph:
     """Graph of the story-steps pooled from all stories in the training data."""
 
     def __init__(
@@ -653,7 +657,7 @@ class StoryGraph(object):
 
     @staticmethod
     def order_steps(
-        story_steps: List[StoryStep]
+        story_steps: List[StoryStep],
     ) -> Tuple[deque, List[Tuple[Text, Text]]]:
         """Topological sort of the steps returning the ids of the steps."""
 
@@ -668,7 +672,7 @@ class StoryGraph(object):
 
     @staticmethod
     def _group_by_start_checkpoint(
-        story_steps: List[StoryStep]
+        story_steps: List[StoryStep],
     ) -> Dict[Text, List[StoryStep]]:
         """Returns all the start checkpoint of the steps"""
 

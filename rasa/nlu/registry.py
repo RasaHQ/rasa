@@ -5,6 +5,7 @@ Hence, it imports all of the components. To avoid cycles, no component should
 import this in module scope."""
 
 import logging
+import warnings
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
@@ -23,6 +24,7 @@ from rasa.nlu.featurizers.mitie_featurizer import MitieFeaturizer
 from rasa.nlu.featurizers.ngram_featurizer import NGramFeaturizer
 from rasa.nlu.featurizers.regex_featurizer import RegexFeaturizer
 from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+from rasa.nlu.featurizers.convert_featurizer import ConveRTFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
@@ -63,6 +65,7 @@ component_classes = [
     NGramFeaturizer,
     RegexFeaturizer,
     CountVectorsFeaturizer,
+    ConveRTFeaturizer,
     # classifiers
     SklearnIntentClassifier,
     MitieIntentClassifier,
@@ -127,6 +130,11 @@ registered_pipeline_templates = {
         },
         {"name": "EmbeddingIntentClassifier"},
     ],
+    "pretrained_embeddings_convert": [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "ConveRTFeaturizer"},
+        {"name": "EmbeddingIntentClassifier"},
+    ],
 }
 
 
@@ -150,8 +158,7 @@ def get_component_class(component_name: Text) -> Type["Component"]:
                 # that class
                 module_name, _, class_name = component_name.rpartition(".")
                 raise Exception(
-                    "Failed to find class '{}' in module '{}'.\n"
-                    "".format(component_name, class_name, module_name)
+                    f"Failed to find class '{class_name}' in module '{module_name}'.\n"
                 )
             except ImportError as e:
                 # when component_name is a path to a class but that path is invalid or
@@ -161,25 +168,24 @@ def get_component_class(component_name: Text) -> Type["Component"]:
 
                 if is_path:
                     module_name, _, _ = component_name.rpartition(".")
-                    exception_message = "Failed to find module '{}'. \n{}".format(
-                        module_name, e
-                    )
+                    exception_message = f"Failed to find module '{module_name}'. \n{e}"
                 else:
                     exception_message = (
-                        "Cannot find class '{0}' from global namespace. "
-                        "Please check that there is no typo in the class "
-                        "name and that you have imported the class into the global "
-                        "namespace.".format(component_name)
+                        f"Cannot find class '{component_name}' from global namespace. "
+                        f"Please check that there is no typo in the class "
+                        f"name and that you have imported the class into the global "
+                        f"namespace."
                     )
 
                 raise ModuleNotFoundError(exception_message)
         else:
             # DEPRECATED ensures compatibility, remove in future versions
-            logger.warning(
-                "DEPRECATION warning: your nlu config file "
-                "contains old style component name `{}`, "
-                "you should change it to its class name: `{}`."
-                "".format(component_name, old_style_names[component_name])
+            warnings.warn(
+                "Your nlu config file "
+                f"contains old style component name `{component_name}`, "
+                f"you should change it to its class name: "
+                f"`{old_style_names[component_name]}`.",
+                FutureWarning,
             )
             component_name = old_style_names[component_name]
 
