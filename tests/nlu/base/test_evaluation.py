@@ -376,7 +376,7 @@ def test_intent_evaluation_report_large(tmpdir_factory):
 
     assert len(report.keys()) == 8
     assert report["A"] == a_results
-    assert result["E"] == e_results
+    assert report["E"] == e_results
 
 
 def test_response_evaluation_report(tmpdir_factory):
