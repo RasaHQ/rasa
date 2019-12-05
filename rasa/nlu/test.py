@@ -399,28 +399,27 @@ def evaluate_response_selections(
 
 
 def _add_confused_intents_to_report(
-    report: Dict[Text, Dict[Text, float]], target_intents: Iterable[Any], predicted_intents: Iterable[Any]
+    report: Dict[Text, Dict[Text, float]],
+    cnf_matrix: np.ndarray,
+    labels: Iterable[Text],
 ) -> Dict:
 
-    from sklearn.metrics import confusion_matrix
-    from sklearn.utils.multiclass import unique_labels
-
-    cnf_matrix = confusion_matrix(target_intents, predicted_intents)
-
+    # sort confusion matrix by false positives
     indices = np.argsort(cnf_matrix, axis=1)
-    labels = unique_labels(target_intents, predicted_intents)
     n_candidates = min(3, len(labels))
 
     for label in labels:
+        # it is possible to predict intent 'None'
         if report.get(label):
             report[label]["confused_with"] = {}
+
     for i, label in enumerate(labels):
         for j in range(n_candidates):
             label_idx = indices[i, -j]
-            _label = labels[label_idx]
+            false_pos_label = labels[label_idx]
             false_positives = int(cnf_matrix[i, label_idx])
-            if _label != label and num_hits > 0:
-                report[label]["confused_with"][_label] = num_hits
+            if false_pos_label != label and num_hits > 0:
+                report[label]["confused_with"][false_pos_label] = false_positives
 
     return report
 
@@ -443,6 +442,8 @@ def evaluate_intents(
     Others are filtered out. Returns a dictionary of containing the
     evaluation result.
     """
+    import sklearn.metrics
+    import sklearn.utils.multiclass
 
     # remove empty intent targets
     num_examples = len(intent_results)
@@ -458,13 +459,14 @@ def evaluate_intents(
         intent_results, "intent_target", "intent_prediction"
     )
 
+    cnf_matrix = sklearn.metrics.confusion_matrix(target_intents, predicted_intents)
+    labels = sklearn.utils.multiclass.unique_labels(target_intents, predicted_intents)
+
     if output_directory:
         report, precision, f1, accuracy = get_evaluation_metrics(
             target_intents, predicted_intents, output_dict=True
         )
-        report = add_confused_intents_to_report(
-            report, target_intents, predicted_intents
-        )
+        report = add_confused_intents_to_report(report, cnf_matrix, labels)
 
         report_filename = os.path.join(output_directory, "intent_report.json")
 
@@ -493,16 +495,11 @@ def evaluate_intents(
         collect_nlu_errors(intent_results, errors_filename)
 
     if confmat_filename:
-        from sklearn.metrics import confusion_matrix
-        from sklearn.utils.multiclass import unique_labels
         import matplotlib.pyplot as plt
 
         if output_directory:
             confmat_filename = os.path.join(output_directory, confmat_filename)
             intent_hist_filename = os.path.join(output_directory, intent_hist_filename)
-
-        cnf_matrix = confusion_matrix(target_intents, predicted_intents)
-        labels = unique_labels(target_intents, predicted_intents)
 
         plot_confusion_matrix(
             cnf_matrix,
