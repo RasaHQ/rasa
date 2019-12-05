@@ -350,11 +350,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
             ) - {""}
 
             tag_id_dict = {
-                f"{prefix}{tag_id}": idx_1 * len(bilou_prefix) + idx_2
+                f"{prefix}{tag_id}": idx_1 * len(bilou_prefix) + idx_2 + 1
                 for idx_1, tag_id in enumerate(sorted(distinct_tag_ids))
                 for idx_2, prefix in enumerate(bilou_prefix)
             }
-            tag_id_dict["O"] = len(distinct_tag_ids) * len(bilou_prefix)
+            tag_id_dict["O"] = 0
+
+            print(tag_id_dict)
 
             return tag_id_dict
 
@@ -748,9 +750,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             other_prob < 0.70, a_mask, tf.where(other_prob < 0.80, a_shuffle, a)
         )
 
-        lm_mask_prob = (
-            tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype) * mask
-        )
+        lm_mask_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype) * mask
         lm_mask_bool = tf.greater_equal(lm_mask_prob, 0.85)
         a_pre = tf.where(tf.tile(lm_mask_bool, (1, 1, a.shape[-1])), a_other, a)
 
