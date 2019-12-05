@@ -128,9 +128,9 @@ async def default_agent(_default_agent: Agent) -> Agent:
 
 
 @pytest.fixture(scope="session")
-def default_agent_path(default_agent: Agent, tmpdir_factory: TempdirFactory):
+def default_agent_path(_default_agent: Agent, tmpdir_factory: TempdirFactory):
     path = tmpdir_factory.mktemp("agent").strpath
-    default_agent.persist(path)
+    _default_agent.persist(path)
     return path
 
 
