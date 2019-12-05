@@ -399,7 +399,7 @@ def evaluate_response_selections(
 
 
 def _add_confused_intents_to_report(
-    report: Dict, target_intents: Iterable[Any], predicted_intents: Iterable[Any]
+    report: Dict[Text, Dict[Text, float]], target_intents: Iterable[Any], predicted_intents: Iterable[Any]
 ) -> Dict:
 
     from sklearn.metrics import confusion_matrix
