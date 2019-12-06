@@ -20,6 +20,7 @@ from rasa.core.events import (
     ActionExecutionRejected,
     SessionStarted,
 )
+from rasa.core.trackers import DialogueStateTracker
 
 if typing.TYPE_CHECKING:
     import networkx as nx
@@ -55,7 +56,7 @@ class StoryStringHelper:
         form_rejected=False,
         form_prefix_string="",
         no_form_prefix_string="",
-    ):
+    ) -> None:
         # track active form
         self.active_form = active_form
         # track whether a from should be validated
@@ -76,11 +77,13 @@ class Checkpoint:
         self.name = name
         self.conditions = conditions if conditions else {}
 
-    def as_story_string(self):
+    def as_story_string(self) -> Text:
         dumped_conds = json.dumps(self.conditions) if self.conditions else ""
         return f"{self.name}{dumped_conds}"
 
-    def filter_trackers(self, trackers):
+    def filter_trackers(
+        self, trackers: List[DialogueStateTracker]
+    ) -> List[DialogueStateTracker]:
         """Filters out all trackers that do not satisfy the conditions."""
 
         if not self.conditions:
@@ -90,7 +93,7 @@ class Checkpoint:
             trackers = [t for t in trackers if t.get_slot(slot_name) == slot_value]
         return trackers
 
-    def __repr__(self):
+    def __repr__(self) -> Text:
         return "Checkpoint(name={!r}, conditions={})".format(
             self.name, json.dumps(self.conditions)
         )
@@ -200,7 +203,7 @@ class StoryStep:
                 else:
                     # form is active
                     # it is not known whether the form will be
-                    # successfully executed, so store this
+                    # successfully executed, so store this]
                     # story string for later
                     self._store_user_strings(s, e2e, FORM_PREFIX)
 
@@ -359,7 +362,7 @@ class StoryStep:
 
         return events
 
-    def __repr__(self):
+    def __repr__(self) -> Text:
         return (
             "StoryStep("
             "block_name={!r}, "

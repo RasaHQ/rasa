@@ -1,0 +1,2 @@
+Changed ``url`` ``__init__()`` arguments for custom tracker stores to ``host`` to reflect the ``__init__`` arguments of 
+currently supported tracker stores. Note that in ``endpoints.yml``, these are still declared as ``url``.

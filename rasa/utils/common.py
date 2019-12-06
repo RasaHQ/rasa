@@ -87,7 +87,7 @@ def update_apscheduler_log_level() -> None:
         logging.getLogger(logger_name).propagate = False
 
 
-def update_tensorflow_log_level():
+def update_tensorflow_log_level() -> None:
     """Set the log level of Tensorflow to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
     import tensorflow as tf
@@ -133,7 +133,7 @@ def update_sanic_log_level(log_file: Optional[Text] = None):
         access_logger.addHandler(file_handler)
 
 
-def update_asyncio_log_level():
+def update_asyncio_log_level() -> None:
     """Set the log level of asyncio to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)

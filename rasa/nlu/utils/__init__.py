@@ -49,7 +49,7 @@ def write_json_to_file(filename: Text, obj: Any, **kwargs: Any) -> None:
     write_to_file(filename, json_to_string(obj, **kwargs))
 
 
-def write_to_file(filename: Text, text: Text) -> None:
+def write_to_file(filename: Text, text: Any) -> None:
     """Write a text to a file."""
 
     io_utils.write_text_file(str(text), filename)

@@ -47,7 +47,7 @@ class SpacyTokenizer(Tokenizer, Component):
                         MESSAGE_TOKENS_NAMES[attribute], self.tokenize(attribute_doc)
                     )
 
-    def get_doc(self, message, attribute):
+    def get_doc(self, message, attribute) -> Any:
 
         return message.get(MESSAGE_SPACY_FEATURES_NAMES[attribute])
 

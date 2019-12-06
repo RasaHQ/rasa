@@ -208,7 +208,7 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
     return p
 
 
-def is_rasa_x_installed():
+def is_rasa_x_installed() -> bool:
     """Check if Rasa X is installed."""
 
     # we could also do something like checking if `import rasax` works,

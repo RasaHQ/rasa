@@ -47,6 +47,7 @@ from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.utils.endpoints import EndpointConfig
+from typing import Coroutine
 
 logger = logging.getLogger(__name__)
 
@@ -330,7 +331,7 @@ class MessageProcessor:
             self._save_tracker(tracker)
 
     @staticmethod
-    def _log_slots(tracker):
+    def _log_slots(tracker) -> None:
         # Log currently set slots
         slot_values = "\n".join(
             [f"\t{s.name}: {s.value}" for s in tracker.slots.values()]
@@ -364,7 +365,7 @@ class MessageProcessor:
                     "that is not defined in the domain."
                 )
 
-    def _get_action(self, action_name):
+    def _get_action(self, action_name) -> Optional[Action]:
         return self.domain.action_for_name(action_name, self.action_endpoint)
 
     async def _parse_message(self, message, tracker: DialogueStateTracker = None):
@@ -469,7 +470,7 @@ class MessageProcessor:
 
     # noinspection PyUnusedLocal
     @staticmethod
-    def should_predict_another_action(action_name, events):
+    def should_predict_another_action(action_name, events) -> bool:
         is_listen_action = action_name == ACTION_LISTEN_NAME
         return not is_listen_action
 
@@ -538,7 +539,7 @@ class MessageProcessor:
 
     async def _run_action(
         self, action, tracker, output_channel, nlg, policy=None, confidence=None
-    ):
+    ) -> bool:
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:
@@ -569,7 +570,7 @@ class MessageProcessor:
 
         return self.should_predict_another_action(action.name(), events)
 
-    def _warn_about_new_slots(self, tracker, action_name, events):
+    def _warn_about_new_slots(self, tracker, action_name, events) -> None:
         # these are the events from that action we have seen during training
 
         if action_name not in self.policy_ensemble.action_fingerprints:
@@ -596,7 +597,9 @@ class MessageProcessor:
                             f"after the action."
                         )
 
-    def _log_action_on_tracker(self, tracker, action_name, events, policy, confidence):
+    def _log_action_on_tracker(
+        self, tracker, action_name, events, policy, confidence
+    ) -> None:
         # Ensures that the code still works even if a lazy programmer missed
         # to type `return []` at the end of an action or the run method
         # returns `None` for some other reason.

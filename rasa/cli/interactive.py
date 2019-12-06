@@ -79,7 +79,7 @@ def interactive_core(args: argparse.Namespace):
     perform_interactive_learning(args, zipped_model)
 
 
-def perform_interactive_learning(args, zipped_model):
+def perform_interactive_learning(args, zipped_model) -> None:
     from rasa.core.train import do_interactive_learning
 
     if zipped_model and os.path.exists(zipped_model):
@@ -110,7 +110,7 @@ def get_provided_model(arg_model: Text):
     return model_path
 
 
-def check_training_data(args):
+def check_training_data(args) -> None:
     training_files = [
         get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)
         for f in args.data

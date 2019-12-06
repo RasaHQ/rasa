@@ -1,13 +1,20 @@
-from typing import Optional, Union
+from typing import Optional, Union, Text, Any, Dict
 
 from rasa.core.domain import Domain
 from rasa.utils.endpoints import EndpointConfig
+from rasa.core.trackers import DialogueStateTracker
 
 
 class NaturalLanguageGenerator:
     """Generate bot utterances based on a dialogue state."""
 
-    async def generate(self, template_name, tracker, output_channel, **kwargs):
+    async def generate(
+        self,
+        template_name: Text,
+        tracker: "DialogueStateTracker",
+        output_channel: Text,
+        **kwargs: Any,
+    ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested template.
 
         There are a lot of different methods to implement this, e.g. the

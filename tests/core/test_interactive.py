@@ -1,11 +1,18 @@
+import asyncio
 import json
-from typing import Text
+from collections import deque
+from typing import Text, List
 
 import pytest
 import uuid
+
+from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
+from mock import Mock
 
 import rasa.utils.io
+from rasa.core.channels import UserMessage
+from rasa.core.trackers import DialogueStateTracker
 from rasa.core.events import BotUttered
 from rasa.core.training import interactive
 from rasa.nlu.training_data.loading import RASA, MARKDOWN
@@ -354,3 +361,66 @@ async def test_filter_intents_before_save_nlu_file():
 )
 def test_get_nlu_target_format(path: Text, expected_format: Text):
     assert interactive._get_nlu_target_format(path) == expected_format
+
+
+@pytest.mark.parametrize(
+    "trackers, expected_trackers",
+    [
+        (
+            [DialogueStateTracker.from_events("one", [])],
+            [deque([]), UserMessage.DEFAULT_SENDER_ID],
+        ),
+        (
+            [
+                str(i)
+                for i in range(
+                    interactive.MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION + 1
+                )
+            ],
+            [UserMessage.DEFAULT_SENDER_ID],
+        ),
+    ],
+)
+async def test_initial_plotting_call(
+    mock_endpoint: EndpointConfig,
+    monkeypatch: MonkeyPatch,
+    trackers: List[Text],
+    expected_trackers: List[Text],
+):
+    get_training_trackers = Mock(return_value=trackers)
+    monkeypatch.setattr(
+        interactive, "_get_training_trackers", asyncio.coroutine(get_training_trackers)
+    )
+
+    monkeypatch.setattr(interactive.utils, "is_limit_reached", lambda _, __: True)
+
+    plot_trackers = Mock()
+    monkeypatch.setattr(interactive, "_plot_trackers", asyncio.coroutine(plot_trackers))
+
+    url = f"{mock_endpoint.url}/domain"
+    with aioresponses() as mocked:
+        mocked.get(url, payload={})
+
+        await interactive.record_messages(mock_endpoint)
+
+    get_training_trackers.assert_called_once()
+    plot_trackers.assert_called_once_with(
+        expected_trackers, interactive.DEFAULT_STORY_GRAPH_FILE, mock_endpoint
+    )
+
+
+async def test_not_getting_trackers_when_skipping_visualization(
+    mock_endpoint: EndpointConfig, monkeypatch: MonkeyPatch
+):
+    get_trackers = Mock()
+    monkeypatch.setattr(interactive, "_get_tracker_events_to_plot", get_trackers)
+
+    monkeypatch.setattr(interactive.utils, "is_limit_reached", lambda _, __: True)
+
+    url = f"{mock_endpoint.url}/domain"
+    with aioresponses() as mocked:
+        mocked.get(url, payload={})
+
+        await interactive.record_messages(mock_endpoint, skip_visualization=True)
+
+    get_trackers.assert_not_called()
