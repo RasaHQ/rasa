@@ -392,7 +392,7 @@ the template back to the user.</p>
 </li>
 <li><p class="first">You can use the templates to generate response messages from your
 custom actions using the dispatcher:
-<code class="docutils literal notranslate"><span class="pre">dispatcher.utter_template(&quot;utter_greet&quot;,</span> <span class="pre">tracker)</span></code>.
+<code class="docutils literal notranslate"><span class="pre">dispatcher.utter_message(template=&quot;utter_greet&quot;)</span></code>.
 This allows you to separate the logic of generating
 the messages from the actual copy. In you custom action code, you can
 send a message based on the template like this:</p>
@@ -403,7 +403,7 @@ send a message based on the template like this:</p>
       <span class="k">return</span> <span class="s1">&#39;action_greet&#39;</span>
 
   <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">domain</span><span class="p">):</span>
-      <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_greet&quot;</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span>
+      <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="n">template</span><span class="o">=</span><span class="s2">&quot;utter_greet&quot;</span><span class="p">)</span>
       <span class="k">return</span> <span class="p">[]</span>
 </pre></div>
 </div>
@@ -511,15 +511,15 @@ have a template like this:</p>
 
    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">domain</span><span class="p">):</span>
       <span class="c1"># send utter default template to user</span>
-      <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_default&quot;</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span>
+      <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="n">template</span><span class="o">=</span><span class="s2">&quot;utter_default&quot;</span><span class="p">)</span>
       <span class="c1"># ... other code</span>
       <span class="k">return</span> <span class="p">[]</span>
 </pre></div>
 </div>
 <p>If the template contains variables denoted with <code class="docutils literal notranslate"><span class="pre">{my_variable}</span></code>
 you can supply values for the fields by passing them as keyword
-arguments to <code class="docutils literal notranslate"><span class="pre">utter_template</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_default&quot;</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">my_variable</span><span class="o">=</span><span class="s2">&quot;my text&quot;</span><span class="p">)</span>
+arguments to <code class="docutils literal notranslate"><span class="pre">utter_message</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="n">template</span><span class="o">=</span><span class="s2">&quot;utter_greet&quot;</span><span class="p">,</span> <span class="n">my_variable</span><span class="o">=</span><span class="s2">&quot;my text&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>

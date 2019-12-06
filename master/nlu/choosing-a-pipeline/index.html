@@ -272,31 +272,32 @@ for open source NLU." />
 it on your dataset.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#the-short-answer" id="id6">The Short Answer</a></li>
-<li><a class="reference internal" href="#a-longer-answer" id="id7">A Longer Answer</a><ul>
-<li><a class="reference internal" href="#pretrained-embeddings-spacy" id="id8">pretrained_embeddings_spacy</a></li>
-<li><a class="reference internal" href="#pretrained-embeddings-convert" id="id9">pretrained_embeddings_convert</a></li>
-<li><a class="reference internal" href="#supervised-embeddings" id="id10">supervised_embeddings</a></li>
-<li><a class="reference internal" href="#mitie" id="id11">MITIE</a></li>
-<li><a class="reference internal" href="#comparing-different-pipelines-for-your-data" id="id12">Comparing different pipelines for your data</a></li>
+<li><a class="reference internal" href="#the-short-answer" id="id7">The Short Answer</a></li>
+<li><a class="reference internal" href="#a-longer-answer" id="id8">A Longer Answer</a><ul>
+<li><a class="reference internal" href="#pretrained-embeddings-spacy" id="id9">pretrained_embeddings_spacy</a></li>
+<li><a class="reference internal" href="#pretrained-embeddings-convert" id="id10">pretrained_embeddings_convert</a></li>
+<li><a class="reference internal" href="#supervised-embeddings" id="id11">supervised_embeddings</a></li>
+<li><a class="reference internal" href="#mitie" id="id12">MITIE</a></li>
+<li><a class="reference internal" href="#comparing-different-pipelines-for-your-data" id="id13">Comparing different pipelines for your data</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#class-imbalance" id="id13">Class imbalance</a></li>
-<li><a class="reference internal" href="#multiple-intents" id="id14">Multiple Intents</a></li>
-<li><a class="reference internal" href="#understanding-the-rasa-nlu-pipeline" id="id15">Understanding the Rasa NLU Pipeline</a></li>
-<li><a class="reference internal" href="#component-lifecycle" id="id16">Component Lifecycle</a></li>
-<li><a class="reference internal" href="#the-entity-object-explained" id="id17">The “entity” object explained</a></li>
-<li><a class="reference internal" href="#pre-configured-pipelines" id="id18">Pre-configured Pipelines</a><ul>
-<li><a class="reference internal" href="#section-supervised-embeddings-pipeline" id="id19">supervised_embeddings</a></li>
-<li><a class="reference internal" href="#section-pretrained-embeddings-spacy-pipeline" id="id20">pretrained_embeddings_spacy</a></li>
-<li><a class="reference internal" href="#section-mitie-pipeline" id="id21">MITIE</a></li>
+<li><a class="reference internal" href="#class-imbalance" id="id14">Class imbalance</a></li>
+<li><a class="reference internal" href="#multiple-intents" id="id15">Multiple Intents</a></li>
+<li><a class="reference internal" href="#understanding-the-rasa-nlu-pipeline" id="id16">Understanding the Rasa NLU Pipeline</a></li>
+<li><a class="reference internal" href="#component-lifecycle" id="id17">Component Lifecycle</a></li>
+<li><a class="reference internal" href="#the-entity-object-explained" id="id18">The “entity” object explained</a></li>
+<li><a class="reference internal" href="#pre-configured-pipelines" id="id19">Pre-configured Pipelines</a><ul>
+<li><a class="reference internal" href="#section-supervised-embeddings-pipeline" id="id20">supervised_embeddings</a></li>
+<li><a class="reference internal" href="#section-pretrained-embeddings-convert-pipeline" id="id21">pretrained_embeddings_convert</a></li>
+<li><a class="reference internal" href="#section-pretrained-embeddings-spacy-pipeline" id="id22">pretrained_embeddings_spacy</a></li>
+<li><a class="reference internal" href="#section-mitie-pipeline" id="id23">MITIE</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#custom-pipelines" id="id22">Custom pipelines</a></li>
+<li><a class="reference internal" href="#custom-pipelines" id="id24">Custom pipelines</a></li>
 </ul>
 </div>
 <div class="section" id="the-short-answer">
-<h2><a class="toc-backref" href="#id6">The Short Answer</a><a class="headerlink" href="#the-short-answer" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id7">The Short Answer</a><a class="headerlink" href="#the-short-answer" title="Permalink to this headline">¶</a></h2>
 <p>If your training data is in english, a good starting point is using <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_convert</span></code> pipeline.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
@@ -312,7 +313,7 @@ use the <code class="docutils literal notranslate"><span class="pre">supervised_
 </div>
 </div>
 <div class="section" id="a-longer-answer">
-<h2><a class="toc-backref" href="#id7">A Longer Answer</a><a class="headerlink" href="#a-longer-answer" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id8">A Longer Answer</a><a class="headerlink" href="#a-longer-answer" title="Permalink to this headline">¶</a></h2>
 <p>The three most important pipelines are <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code>, <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_convert</span></code> and <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code>.
 The <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> pipeline uses pre-trained
 word vectors from either GloVe or fastText, whereas <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_convert</span></code> uses a pretrained sentence encoding model <a class="reference external" href="https://github.com/PolyAI-LDN/polyai-models">ConveRT</a> to
@@ -323,14 +324,14 @@ doesn’t use any pre-trained word vectors or sentence vectors, but instead fits
 <p class="last">These recommendations are highly dependent on your dataset and hence approximate. We suggest experimenting with different pipelines to train the best model.</p>
 </div>
 <div class="section" id="pretrained-embeddings-spacy">
-<h3><a class="toc-backref" href="#id8">pretrained_embeddings_spacy</a><a class="headerlink" href="#pretrained-embeddings-spacy" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id9">pretrained_embeddings_spacy</a><a class="headerlink" href="#pretrained-embeddings-spacy" title="Permalink to this headline">¶</a></h3>
 <p>The advantage of <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> pipeline is that if you have a training example like:
 “I want to buy apples”, and Rasa is asked to predict the intent for “get pears”, your model
 already knows that the words “apples” and “pears” are very similar. This is especially useful
 if you don’t have large enough training data.</p>
 </div>
 <div class="section" id="pretrained-embeddings-convert">
-<h3><a class="toc-backref" href="#id9">pretrained_embeddings_convert</a><a class="headerlink" href="#pretrained-embeddings-convert" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id10">pretrained_embeddings_convert</a><a class="headerlink" href="#pretrained-embeddings-convert" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><div class="admonition warning">
 <p class="first admonition-title">Warning</p>
@@ -351,7 +352,7 @@ large enough training data.</p>
 </div></blockquote>
 </div>
 <div class="section" id="supervised-embeddings">
-<h3><a class="toc-backref" href="#id10">supervised_embeddings</a><a class="headerlink" href="#supervised-embeddings" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id11">supervised_embeddings</a><a class="headerlink" href="#supervised-embeddings" title="Permalink to this headline">¶</a></h3>
 <p>The advantage of the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline is that your word vectors will be customised
 for your domain. For example, in general English, the word “balance” is closely related to “symmetry”,
 but very different to the word “cash”. In a banking domain, “balance” and “cash” are closely related
@@ -360,12 +361,12 @@ so it will work with any language that you can tokenize (on whitespace or using 
 <p>You can read more about this topic <a class="reference external" href="https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8">here</a> .</p>
 </div>
 <div class="section" id="mitie">
-<h3><a class="toc-backref" href="#id11">MITIE</a><a class="headerlink" href="#mitie" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id12">MITIE</a><a class="headerlink" href="#mitie" title="Permalink to this headline">¶</a></h3>
 <p>You can also use MITIE as a source of word vectors in your pipeline, see <a class="reference internal" href="#section-mitie-pipeline"><span class="std std-ref">MITIE</span></a>. The MITIE backend performs well for small datasets, but training can take very long if you have more than a couple of hundred examples.</p>
 <p>However, we do not recommend that you use it as mitie support is likely to be deprecated in a future release.</p>
 </div>
 <div class="section" id="comparing-different-pipelines-for-your-data">
-<h3><a class="toc-backref" href="#id12">Comparing different pipelines for your data</a><a class="headerlink" href="#comparing-different-pipelines-for-your-data" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id13">Comparing different pipelines for your data</a><a class="headerlink" href="#comparing-different-pipelines-for-your-data" title="Permalink to this headline">¶</a></h3>
 <p>Rasa gives you the tools to compare the performance of both of these pipelines on your data directly,
 see <a class="reference internal" href="../../user-guide/evaluating-models/#comparing-nlu-pipelines"><span class="std std-ref">Comparing NLU Pipelines</span></a>.</p>
 <div class="admonition note">
@@ -377,7 +378,7 @@ You need to provide enough data for both intents and entities.</p>
 </div>
 </div>
 <div class="section" id="class-imbalance">
-<h2><a class="toc-backref" href="#id13">Class imbalance</a><a class="headerlink" href="#class-imbalance" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id14">Class imbalance</a><a class="headerlink" href="#class-imbalance" title="Permalink to this headline">¶</a></h2>
 <p>Classification algorithms often do not perform well if there is a large <cite>class imbalance</cite>,
 for example if you have a lot of training data for some intents and very little training data for others.
 To mitigate this problem, rasa’s <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline uses a <code class="docutils literal notranslate"><span class="pre">balanced</span></code> batching strategy.
@@ -395,7 +396,7 @@ Balanced batching is used by default. In order to turn it off and use a classic 
 </div>
 </div>
 <div class="section" id="multiple-intents">
-<h2><a class="toc-backref" href="#id14">Multiple Intents</a><a class="headerlink" href="#multiple-intents" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id15">Multiple Intents</a><a class="headerlink" href="#multiple-intents" title="Permalink to this headline">¶</a></h2>
 <p>If you want to split intents into multiple labels,
 e.g. for predicting multiple intents or for modeling hierarchical intent structure,
 you can only do this with the supervised embeddings pipeline.
@@ -418,7 +419,7 @@ To do this, use these flags in <code class="docutils literal notranslate"><span 
 </div>
 </div>
 <div class="section" id="understanding-the-rasa-nlu-pipeline">
-<h2><a class="toc-backref" href="#id15">Understanding the Rasa NLU Pipeline</a><a class="headerlink" href="#understanding-the-rasa-nlu-pipeline" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id16">Understanding the Rasa NLU Pipeline</a><a class="headerlink" href="#understanding-the-rasa-nlu-pipeline" title="Permalink to this headline">¶</a></h2>
 <p>In Rasa NLU, incoming messages are processed by a sequence of components.
 These components are executed one after another
 in a so-called processing pipeline. There are components for entity extraction, for intent classification, response selection,
@@ -445,7 +446,7 @@ the processing has finished. For example, for the sentence <code class="docutils
 For example, the <code class="docutils literal notranslate"><span class="pre">entities</span></code> attribute is created by the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component.</p>
 </div>
 <div class="section" id="component-lifecycle">
-<span id="section-component-lifecycle"></span><h2><a class="toc-backref" href="#id16">Component Lifecycle</a><a class="headerlink" href="#component-lifecycle" title="Permalink to this headline">¶</a></h2>
+<span id="section-component-lifecycle"></span><h2><a class="toc-backref" href="#id17">Component Lifecycle</a><a class="headerlink" href="#component-lifecycle" title="Permalink to this headline">¶</a></h2>
 <p>Every component can implement several methods from the <code class="docutils literal notranslate"><span class="pre">Component</span></code>
 base class; in a pipeline these different methods
 will be called in a specific order. Lets assume, we added the following
@@ -465,7 +466,7 @@ context. After all components are trained and persisted, the
 final context dictionary is used to persist the model’s metadata.</p>
 </div>
 <div class="section" id="the-entity-object-explained">
-<h2><a class="toc-backref" href="#id17">The “entity” object explained</a><a class="headerlink" href="#the-entity-object-explained" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id18">The “entity” object explained</a><a class="headerlink" href="#the-entity-object-explained" title="Permalink to this headline">¶</a></h2>
 <p>After parsing, the entity is returned as a dictionary.  There are two fields that show information
 about how the pipeline impacted the entities returned: the <code class="docutils literal notranslate"><span class="pre">extractor</span></code> field
 of an entity tells you which entity extractor found this particular entity, and
@@ -499,7 +500,7 @@ returns <code class="docutils literal notranslate"><span class="pre">null</span>
 </div>
 </div>
 <div class="section" id="pre-configured-pipelines">
-<h2><a class="toc-backref" href="#id18">Pre-configured Pipelines</a><a class="headerlink" href="#pre-configured-pipelines" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id19">Pre-configured Pipelines</a><a class="headerlink" href="#pre-configured-pipelines" title="Permalink to this headline">¶</a></h2>
 <p>A template is just a shortcut for
 a full list of components. For example, these two configurations are equivalent:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
@@ -521,7 +522,7 @@ a full list of components. For example, these two configurations are equivalent:
 </div>
 <p>Below is a list of all the pre-configured pipeline templates with customization information.</p>
 <div class="section" id="section-supervised-embeddings-pipeline">
-<span id="id3"></span><h3><a class="toc-backref" href="#id19">supervised_embeddings</a><a class="headerlink" href="#section-supervised-embeddings-pipeline" title="Permalink to this headline">¶</a></h3>
+<span id="id3"></span><h3><a class="toc-backref" href="#id20">supervised_embeddings</a><a class="headerlink" href="#section-supervised-embeddings-pipeline" title="Permalink to this headline">¶</a></h3>
 <p>To train a Rasa model in your preferred language, define the
 <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline as your pipeline in your <code class="docutils literal notranslate"><span class="pre">config.yml</span></code> or other configuration file:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
@@ -556,8 +557,26 @@ n-grams, preserving word boundaries. We empirically found the second featurizer
 to be more powerful, but we decided to keep the first featurizer as well to make
 featurization more robust.</p>
 </div>
+<div class="section" id="section-pretrained-embeddings-convert-pipeline">
+<span id="id4"></span><h3><a class="toc-backref" href="#id21">pretrained_embeddings_convert</a><a class="headerlink" href="#section-pretrained-embeddings-convert-pipeline" title="Permalink to this headline">¶</a></h3>
+<p>To use the <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_convert</span></code> template:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+
+<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;pretrained_embeddings_convert&quot;</span>
+</pre></div>
+</div>
+<p>To use the components and configure them separately:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+
+<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ConveRTFeaturizer&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
+</pre></div>
+</div>
+</div>
 <div class="section" id="section-pretrained-embeddings-spacy-pipeline">
-<span id="id4"></span><h3><a class="toc-backref" href="#id20">pretrained_embeddings_spacy</a><a class="headerlink" href="#section-pretrained-embeddings-spacy-pipeline" title="Permalink to this headline">¶</a></h3>
+<span id="id5"></span><h3><a class="toc-backref" href="#id22">pretrained_embeddings_spacy</a><a class="headerlink" href="#section-pretrained-embeddings-spacy-pipeline" title="Permalink to this headline">¶</a></h3>
 <p>To use the <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> template:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
@@ -580,7 +599,7 @@ To use the components and configure them separately:</p>
 </div>
 </div>
 <div class="section" id="section-mitie-pipeline">
-<span id="id5"></span><h3><a class="toc-backref" href="#id21">MITIE</a><a class="headerlink" href="#section-mitie-pipeline" title="Permalink to this headline">¶</a></h3>
+<span id="id6"></span><h3><a class="toc-backref" href="#id23">MITIE</a><a class="headerlink" href="#section-mitie-pipeline" title="Permalink to this headline">¶</a></h3>
 <p>To use the MITIE pipeline, you will have to train word vectors from a corpus. Instructions can be found
 <a class="reference internal" href="../language-support/#mitie"><span class="std std-ref">here</span></a>. This will give you the file path to pass to the <code class="docutils literal notranslate"><span class="pre">model</span></code> parameter.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
@@ -613,7 +632,7 @@ Training can be quite slow, so this is not recommended for large datasets.</p>
 </div>
 </div>
 <div class="section" id="custom-pipelines">
-<h2><a class="toc-backref" href="#id22">Custom pipelines</a><a class="headerlink" href="#custom-pipelines" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id24">Custom pipelines</a><a class="headerlink" href="#custom-pipelines" title="Permalink to this headline">¶</a></h2>
 <p>You don’t have to use a template, you can also run a fully custom pipeline
 by listing the names of the components you want to use:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>

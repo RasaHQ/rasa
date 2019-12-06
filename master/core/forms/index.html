@@ -366,7 +366,7 @@ You need to define three methods:</p>
 <span class="sd">        after all required slots are filled&quot;&quot;&quot;</span>
 
     <span class="c1"># utter submit template</span>
-    <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_submit&quot;</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span>
+    <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="n">template</span><span class="o">=</span><span class="s2">&quot;utter_submit&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">[]</span>
 </pre></div>
 </div>
@@ -485,7 +485,7 @@ belongs to a list of supported cuisines.</p>
             <span class="c1"># validation succeeded, set the value of the &quot;cuisine&quot; slot to value</span>
             <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;cuisine&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">}</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_wrong_cuisine&quot;</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span>
+            <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="n">template</span><span class="o">=</span><span class="s2">&quot;utter_wrong_cuisine&quot;</span><span class="p">)</span>
             <span class="c1"># validation failed, set this slot to None, meaning the</span>
             <span class="c1"># user will be asked for the slot again</span>
             <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;cuisine&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>

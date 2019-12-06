@@ -533,7 +533,7 @@ touch actions/actions.py
   <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">domain</span><span class="p">):</span>
     <span class="n">request</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;http://api.icndb.com/jokes/random&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>  <span class="c1"># make an api call</span>
     <span class="n">joke</span> <span class="o">=</span> <span class="n">request</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">][</span><span class="s1">&#39;joke&#39;</span><span class="p">]</span>  <span class="c1"># extract a joke from returned json response</span>
-    <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="n">joke</span><span class="p">)</span>  <span class="c1"># send the message back to the user</span>
+    <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">joke</span><span class="p">)</span>  <span class="c1"># send the message back to the user</span>
     <span class="k">return</span> <span class="p">[]</span>
 </pre></div>
 </div>
