@@ -7,7 +7,7 @@ import typing
 from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
 
 from rasa.core import utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -232,6 +232,8 @@ class StoryStep:
             elif isinstance(s, ActionExecuted):
                 if self._is_action_listen(s):
                     pass
+                elif self._is_action_session_start(s):
+                    pass
                 elif self.story_string_helper.active_form is None:
                     result += self._bot_string(s)
                 else:
@@ -316,6 +318,15 @@ class StoryStep:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
         return type(event) == ActionExecuted and event.action_name == ACTION_LISTEN_NAME
+
+    @staticmethod
+    def _is_action_session_start(event: ActionExecuted) -> bool:
+        # this is not an `isinstance` because
+        # we don't want to allow subclasses here
+        return (
+            type(event) == ActionExecuted
+            and event.action_name == ACTION_SESSION_START_NAME
+        )
 
     def _add_action_listen(self, events: List[ActionExecuted]) -> None:
         if not events or not self._is_action_listen(events[-1]):
