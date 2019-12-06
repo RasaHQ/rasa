@@ -17,7 +17,7 @@ class EntitySynonymMapper(EntityExtractor):
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Text]] = None,
+        component_config: Optional[Dict[Text, Any]] = None,
         synonyms: Optional[Dict[Text, Any]] = None,
     ) -> None:
 
@@ -80,7 +80,7 @@ class EntitySynonymMapper(EntityExtractor):
             )
         return cls(meta, synonyms)
 
-    def replace_synonyms(self, entities):
+    def replace_synonyms(self, entities) -> None:
         for entity in entities:
             # need to wrap in `str` to handle e.g. entity values of type int
             entity_value = str(entity["value"])
@@ -88,7 +88,7 @@ class EntitySynonymMapper(EntityExtractor):
                 entity["value"] = self.synonyms[entity_value.lower()]
                 self.add_processor_name(entity)
 
-    def add_entities_if_synonyms(self, entity_a, entity_b):
+    def add_entities_if_synonyms(self, entity_a, entity_b) -> None:
         if entity_b is not None:
             original = str(entity_a)
             replacement = str(entity_b)

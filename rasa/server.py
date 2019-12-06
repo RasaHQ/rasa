@@ -54,7 +54,14 @@ USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
 
 
 class ErrorResponse(Exception):
-    def __init__(self, status, reason, message, details=None, help_url=None):
+    def __init__(
+        self,
+        status: int,
+        reason: Text,
+        message: Text,
+        details: Any = None,
+        help_url: Optional[Text] = None,
+    ) -> None:
         self.error_info = {
             "version": rasa.__version__,
             "status": "failure",

@@ -335,7 +335,7 @@ class Component(metaclass=ComponentMetaclass):
             del d["partial_processing_pipeline"]
         return d
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.__dict__ == other.__dict__
 
     def prepare_partial_processing(

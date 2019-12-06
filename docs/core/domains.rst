@@ -113,7 +113,7 @@ two ways to use these templates:
 
 2. You can use the templates to generate response messages from your
    custom actions using the dispatcher:
-   ``dispatcher.utter_template("utter_greet", tracker)``.
+   ``dispatcher.utter_message(template="utter_greet")``.
    This allows you to separate the logic of generating
    the messages from the actual copy. In you custom action code, you can
    send a message based on the template like this:
@@ -127,7 +127,7 @@ two ways to use these templates:
             return 'action_greet'
 
         def run(self, dispatcher, tracker, domain):
-            dispatcher.utter_template("utter_greet", tracker)
+            dispatcher.utter_message(template="utter_greet")
             return []
 
 Images and Buttons
@@ -252,17 +252,17 @@ In custom code, you can retrieve a template by using:
 
       def run(self, dispatcher, tracker, domain):
          # send utter default template to user
-         dispatcher.utter_template("utter_default", tracker)
+         dispatcher.utter_message(template="utter_default")
          # ... other code
          return []
 
 If the template contains variables denoted with ``{my_variable}``
 you can supply values for the fields by passing them as keyword
-arguments to ``utter_template``:
+arguments to ``utter_message``:
 
 .. code-block:: python
 
-  dispatcher.utter_template("utter_default", tracker, my_variable="my text")
+  dispatcher.utter_message(template="utter_greet", my_variable="my text")
 
 Variations
 ----------
@@ -299,7 +299,7 @@ into account you can use this syntax:
 
   intents:
   - greet:
-      use_entities: 
+      use_entities:
         - name
         - first_name
       ignore_entities:

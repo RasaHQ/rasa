@@ -39,7 +39,7 @@ class MitieFeaturizer(Featurizer):
 
         return feature_extractor.num_dimensions
 
-    def get_tokens_by_attribute(self, example, attribute):
+    def get_tokens_by_attribute(self, example, attribute) -> Any:
 
         return example.get(MESSAGE_TOKENS_NAMES[attribute])
 
@@ -79,7 +79,7 @@ class MitieFeaturizer(Featurizer):
             ),
         )
 
-    def _mitie_feature_extractor(self, **kwargs):
+    def _mitie_feature_extractor(self, **kwargs) -> Any:
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
             raise Exception(
