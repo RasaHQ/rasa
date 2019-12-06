@@ -401,7 +401,9 @@ class TrainingData:
         for intent, count in self.examples_per_intent.items():
             ex = [e for e in self.intent_examples if e.data["intent"] == intent]
             test_frac = 1 - train_frac
-            train_ex, test_ex = train_test_split(ex, test_size=test_frac, random_state=random_state)
+            train_ex, test_ex = train_test_split(
+                ex, test_size=test_frac, random_state=random_state
+            )
             train.extend(train_ex)
             test.extend(test_ex)
         return test, train
