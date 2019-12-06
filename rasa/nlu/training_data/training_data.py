@@ -16,6 +16,7 @@ from rasa.nlu.constants import (
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.utils import list_to_str
+from sklearn.model_selection import train_test_split
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
 
@@ -393,9 +394,7 @@ class TrainingData:
                 ]
         return nlg_stories
 
-    def split_nlu_examples(self, train_frac, random_state=None):
-        from sklearn.model_selection import train_test_split
-
+    def split_nlu_examples(self, train_frac, random_state=None) -> Tuple[list, list]:
         train, test = [], []
         for intent, count in self.examples_per_intent.items():
             ex = [e for e in self.intent_examples if e.data["intent"] == intent]
