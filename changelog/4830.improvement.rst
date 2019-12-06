@@ -1,1 +1,0 @@
-``SQLTrackerStore`` only retrieves events from the last session from the database.

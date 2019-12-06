@@ -1,8 +1,8 @@
 import asyncio
 import os
+
 from typing import Text
 
-import matplotlib
 import pytest
 
 import rasa.utils.io
@@ -21,7 +21,6 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
-from rasa.train import train_async
 
 
 DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
