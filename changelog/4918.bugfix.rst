@@ -1,0 +1,2 @@
+Locks for tickets in the ``TicketLockStore`` are immediately issue without a redundant
+check for their availability.
