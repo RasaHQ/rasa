@@ -1,5 +1,11 @@
+from rasa.core.actions.action import ACTION_SESSION_START_NAME
 from rasa.core.domain import Domain
-from rasa.core.events import SessionStarted, SlotSet, UserUttered
+from rasa.core.events import (
+    SessionStarted,
+    SlotSet,
+    UserUttered,
+    ActionExecuted,
+)
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.structures import Story
 
@@ -14,7 +20,8 @@ def test_session_start_is_not_serialised(default_domain: Domain):
     # add SlotSet event
     tracker.update(SlotSet("slot", "value"))
 
-    # add a SessionStarted event and a user event
+    # add the two SessionStarted events and a user event
+    tracker.update(ActionExecuted(ACTION_SESSION_START_NAME))
     tracker.update(SessionStarted())
     tracker.update(UserUttered("say something"))
 
