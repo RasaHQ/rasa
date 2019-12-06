@@ -124,7 +124,7 @@ gdpr compliant intent recognition and entity extraction." />
   
 
   
-      
+    
       <div class="document">
     
   
@@ -494,6 +494,9 @@ from the cloud storage, Rasa will download the gzipped model locally and extract
           profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
           showCloseButton: true,
           fullScreenMode: false,
+          hideWhenNotConnected: false,
+          connectOn: "open",
+          autoClearCache: true,
         params: {
           storage: "local"
         }})

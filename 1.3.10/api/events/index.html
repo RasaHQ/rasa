@@ -126,7 +126,7 @@ like resetting slots, scheduling reminder or pausing a conversation." />
   
 
   
-      
+    
       <div class="document">
     
   
@@ -938,6 +938,9 @@ to the latest <code class="docutils literal notranslate"><span class="pre">Turn<
           profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
           showCloseButton: true,
           fullScreenMode: false,
+          hideWhenNotConnected: false,
+          connectOn: "open",
+          autoClearCache: true,
         params: {
           storage: "local"
         }})
