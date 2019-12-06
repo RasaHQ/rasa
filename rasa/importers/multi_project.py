@@ -160,7 +160,7 @@ class MultiProjectImporter(TrainingDataImporter):
 
         return included
 
-    def _is_in_imported_paths(self, path):
+    def _is_in_imported_paths(self, path) -> bool:
         return any([io_utils.is_subdirectory(path, i) for i in self._imports])
 
     def add_import(self, path: Text) -> None:

@@ -39,7 +39,7 @@ class MappingPolicy(Policy):
     any other policy."""
 
     @staticmethod
-    def _standard_featurizer():
+    def _standard_featurizer() -> None:
         return None
 
     def __init__(self, priority: int = MAPPING_POLICY_PRIORITY) -> None:
