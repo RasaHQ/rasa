@@ -146,7 +146,6 @@ def test_retrieve_tar_archive(model, archive):
 @mock_s3
 def test_retrieve_tar_archive_with_s3_namespace():
     model='/my/s3/project/model.tar.gz'
-    archive='temp.tar.gz'
     destination='dst'
     with patch.object(persistor.AWSPersistor, "_decompress") as decompress:
         with patch.object(persistor.AWSPersistor, "_retrieve_tar") as retrieve:
