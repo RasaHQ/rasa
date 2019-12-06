@@ -501,7 +501,6 @@ You can also leave it out to get the result in the usual Rasa format.</p>
       WebChat.default.init({
           selector: "#webchat",
           initPayload: "/greet",
-          interval: 500,
           socketUrl: "https://website-demo.rasa.com/",
           socketPath: "/socket.io",
           title: "Sara",
@@ -512,6 +511,9 @@ You can also leave it out to get the result in the usual Rasa format.</p>
           hideWhenNotConnected: false,
           connectOn: "open",
           autoClearCache: true,
+          customMessageDelay: (message) => {
+            return 900 + message.length;
+          },
         params: {
           storage: "local"
         }})

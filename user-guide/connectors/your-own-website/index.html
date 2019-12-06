@@ -551,7 +551,6 @@ and the following <code class="docutils literal notranslate"><span class="pre">J
       WebChat.default.init({
           selector: "#webchat",
           initPayload: "/greet",
-          interval: 500,
           socketUrl: "https://website-demo.rasa.com/",
           socketPath: "/socket.io",
           title: "Sara",
@@ -562,6 +561,9 @@ and the following <code class="docutils literal notranslate"><span class="pre">J
           hideWhenNotConnected: false,
           connectOn: "open",
           autoClearCache: true,
+          customMessageDelay: (message) => {
+            return 900 + message.length;
+          },
         params: {
           storage: "local"
         }})

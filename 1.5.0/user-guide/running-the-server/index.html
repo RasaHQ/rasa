@@ -648,7 +648,6 @@ see <a class="reference internal" href="../../api/event-brokers/#event-brokers">
       WebChat.default.init({
           selector: "#webchat",
           initPayload: "/greet",
-          interval: 500,
           socketUrl: "https://website-demo.rasa.com/",
           socketPath: "/socket.io",
           title: "Sara",
@@ -659,6 +658,9 @@ see <a class="reference internal" href="../../api/event-brokers/#event-brokers">
           hideWhenNotConnected: false,
           connectOn: "open",
           autoClearCache: true,
+          customMessageDelay: (message) => {
+            return 900 + message.length;
+          },
         params: {
           storage: "local"
         }})

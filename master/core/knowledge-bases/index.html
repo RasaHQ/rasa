@@ -932,7 +932,6 @@ that explains how you can set up your own knowledge base.</p>
       WebChat.default.init({
           selector: "#webchat",
           initPayload: "/greet",
-          interval: 500,
           socketUrl: "https://website-demo.rasa.com/",
           socketPath: "/socket.io",
           title: "Sara",
@@ -943,6 +942,9 @@ that explains how you can set up your own knowledge base.</p>
           hideWhenNotConnected: false,
           connectOn: "open",
           autoClearCache: true,
+          customMessageDelay: (message) => {
+            return 900 + message.length;
+          },
         params: {
           storage: "local"
         }})

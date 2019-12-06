@@ -477,7 +477,6 @@ This <a href="https://medium.com/rasa-blog/a-new-approach-to-conversational-soft
       WebChat.default.init({
           selector: "#webchat",
           initPayload: "/greet",
-          interval: 500,
           socketUrl: "https://website-demo.rasa.com/",
           socketPath: "/socket.io",
           title: "Sara",
@@ -488,6 +487,9 @@ This <a href="https://medium.com/rasa-blog/a-new-approach-to-conversational-soft
           hideWhenNotConnected: false,
           connectOn: "open",
           autoClearCache: true,
+          customMessageDelay: (message) => {
+            return 900 + message.length;
+          },
         params: {
           storage: "local"
         }})

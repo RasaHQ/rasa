@@ -510,7 +510,6 @@ In Dialogflow, there is a concept called <code class="docutils literal notransla
       WebChat.default.init({
           selector: "#webchat",
           initPayload: "/greet",
-          interval: 500,
           socketUrl: "https://website-demo.rasa.com/",
           socketPath: "/socket.io",
           title: "Sara",
@@ -521,6 +520,9 @@ In Dialogflow, there is a concept called <code class="docutils literal notransla
           hideWhenNotConnected: false,
           connectOn: "open",
           autoClearCache: true,
+          customMessageDelay: (message) => {
+            return 900 + message.length;
+          },
         params: {
           storage: "local"
         }})

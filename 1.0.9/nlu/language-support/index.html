@@ -556,7 +556,6 @@ instructions on how to train a model from a Chinese Wikipedia dump.</p>
       WebChat.default.init({
           selector: "#webchat",
           initPayload: "/greet",
-          interval: 500,
           socketUrl: "https://website-demo.rasa.com/",
           socketPath: "/socket.io",
           title: "Sara",
@@ -567,6 +566,9 @@ instructions on how to train a model from a Chinese Wikipedia dump.</p>
           hideWhenNotConnected: false,
           connectOn: "open",
           autoClearCache: true,
+          customMessageDelay: (message) => {
+            return 900 + message.length;
+          },
         params: {
           storage: "local"
         }})
