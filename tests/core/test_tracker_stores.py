@@ -455,29 +455,6 @@ def test_sql_additional_events(default_domain: Domain):
         )
 
 
-def test_mongo_events_since_last_session_start(default_domain: Domain):
-    tracker_store = MockedMongoTrackerStore(default_domain)
-
-    # create tracker with events
-    events = [
-        ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("123"),
-        BotUttered("yes"),
-        SessionStarted(),
-        UserUttered("hello"),
-        BotUttered("welcome to your new session"),
-    ]
-
-    tracker = DialogueStateTracker.from_events("conversation with session", events)
-    serialised = tracker.current_state(EventVerbosity.ALL)
-
-    # make sure only events post session start are returned
-    # noinspection PyProtectedMember
-    assert tracker_store._events_since_last_session_start(serialised) == [
-        event.as_dict() for event in events[3:]
-    ]
-
-
 @pytest.mark.parametrize(
     "tracker_store_type,tracker_store_kwargs",
     [(MockedMongoTrackerStore, {}), (SQLTrackerStore, {"host": "sqlite:///"})],
