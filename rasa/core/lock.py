@@ -100,10 +100,8 @@ class TicketLock:
         """
 
         ticket_number = self._ticket_number_for(-1)
-        if ticket_number is not None:
-            return ticket_number
 
-        return NO_TICKET_ISSUED
+        return ticket_number if ticket_number is not None else NO_TICKET_ISSUED
 
     @property
     def now_serving(self) -> Optional[int]:
