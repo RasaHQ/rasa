@@ -35,7 +35,6 @@ async def test_list_method_method_in_AWSPersistor(component_builder, tmpdir):
 
     assert len(result) == 1
 
-
 # noinspection PyPep8Naming
 @mock_s3
 def test_list_models_method_raise_exeception_in_AWSPersistor():
@@ -142,3 +141,15 @@ def test_retrieve_tar_archive(model, archive):
         with patch.object(persistor.Persistor, "_retrieve_tar") as f:
             persistor.Persistor().retrieve(model, "dst")
         f.assert_called_once_with(archive)
+
+# noinspection PyPep8Naming
+@mock_s3
+def test_retrieve_tar_archive_with_s3_namespace():
+    model='/my/s3/project/model.tar.gz'
+    archive='temp.tar.gz'
+    destination='dst'
+    with patch.object(persistor.AWSPersistor, "_decompress") as decompress:
+        with patch.object(persistor.AWSPersistor, "_retrieve_tar") as retrieve:
+            persistor.AWSPersistor("rasa-test").retrieve(model, destination)
+        decompress.assert_called_once_with('model.tar.gz', destination)
+        retrieve.assert_called_once_with(model)
