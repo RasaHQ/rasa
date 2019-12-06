@@ -28,18 +28,6 @@ class LockError(Exception):
     pass
 
 
-# noinspection PyUnresolvedReferences
-class TicketExistsError(Exception):
-    """Exception that is raised when an already-existing ticket for a conversation
-    has been issued.
-
-     Attributes:
-          message (str): explanation of which `conversation_id` raised the error
-    """
-
-    pass
-
-
 class LockStore:
     @staticmethod
     def find_lock_store(store: EndpointConfig = None) -> "LockStore":
