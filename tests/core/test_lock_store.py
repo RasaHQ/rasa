@@ -25,7 +25,7 @@ class FakeRedisLockStore(RedisLockStore):
     def __init__(self):
         import fakeredis
 
-        self.red = self.red = fakeredis.FakeStrictRedis()
+        self.red = fakeredis.FakeStrictRedis()
 
         # added in redis==3.3.0, but not yet in fakeredis
         self.red.connection_pool.connection_class.health_check_interval = 0
