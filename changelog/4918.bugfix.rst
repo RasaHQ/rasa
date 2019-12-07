@@ -1,2 +1,2 @@
-Locks for tickets in the ``TicketLockStore`` are immediately issue without a redundant
+Locks for tickets in the ``TicketLockStore`` are immediately issued without a redundant
 check for their availability.
