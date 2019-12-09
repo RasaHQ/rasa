@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.sparse
-from typing import Any, Text, List, Union, Optional
+from typing import Any, Text, List, Union, Optional, Dict
 from rasa.nlu.training_data import Message
 from rasa.nlu.components import Component
 from rasa.nlu.constants import (
@@ -23,6 +23,17 @@ def sequence_to_sentence_features(
 
 
 class Featurizer(Component):
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+        super(Featurizer, self).__init__(component_config)
+
+        try:
+            self.return_sequence = self.component_config["return_sequence"]
+        except KeyError:
+            raise KeyError(
+                "No default value for 'return_sequence' was set. Please, "
+                "add it to the default dict of the featurizer."
+            )
+
     @staticmethod
     def _combine_with_existing_dense_features(
         message: Message,

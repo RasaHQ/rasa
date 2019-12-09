@@ -21,6 +21,13 @@ class ConveRTFeaturizer(Featurizer):
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
 
+    defaults = {
+        # if True return a sequence of features (return vector has size
+        # token-size x feature-dimension)
+        # if False token-size will be equal to 1
+        "return_sequence": False
+    }
+
     def _load_model(self) -> None:
 
         # needed in order to load model
@@ -44,6 +51,16 @@ class ConveRTFeaturizer(Featurizer):
         super(ConveRTFeaturizer, self).__init__(component_config)
 
         self._load_model()
+
+        self.return_sequence = self.component_config["return_sequence"]
+
+        if self.return_sequence:
+            raise NotImplementedError(
+                f"ConveRTFeaturizer always returns a feature vector of size "
+                f"(1 x feature-dimensions). ConveRTFeaturizer cannot return a "
+                f"proper sequence right now. ConveRTFeaturizer can only be used"
+                f"with 'return_sequence' set to False."
+            )
 
         logger.debug(
             f"ConveRTFeaturizer always returns a feature vector of size "
