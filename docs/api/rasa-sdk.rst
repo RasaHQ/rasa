@@ -45,7 +45,7 @@ Otherwise, if you do not have ``rasa`` installed, run this command:
     python -m rasa_sdk --actions actions
 
 ``Actions``
-----------
+-----------
 
 The ``Action`` class is the base class for any custom action. It has two methods
 that both need to be overwritten, ``name()`` and ``run()``.
