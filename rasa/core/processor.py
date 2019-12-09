@@ -8,10 +8,7 @@ import numpy as np
 import time
 
 from rasa.core import jobs
-from rasa.core.actions.action import (
-    Action,
-    ACTION_SESSION_START_NAME,
-)
+from rasa.core.actions.action import Action, ACTION_SESSION_START_NAME
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
@@ -147,10 +144,7 @@ class MessageProcessor:
         }
 
     async def _update_tracker_session(
-        self,
-        tracker: DialogueStateTracker,
-        output_channel: OutputChannel,
-        session_length_in_minutes: float,
+        self, tracker: DialogueStateTracker, output_channel: OutputChannel
     ) -> None:
         """Check the current session in `tracker` and update it if expired.
 
@@ -161,12 +155,9 @@ class MessageProcessor:
             tracker: Tracker to inspect.
             output_channel: Output channel for potential utterances in a custom
                 `ActionSessionStart`.
-            session_length_in_minutes: Session length in minutes.
 
         """
-        if self._is_legacy_tracker(tracker) or self._has_session_expired(
-            tracker, session_length_in_minutes
-        ):
+        if self._is_legacy_tracker(tracker) or self._has_session_expired(tracker):
             logger.debug(
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
@@ -196,9 +187,7 @@ class MessageProcessor:
         tracker = self._get_tracker(message.sender_id)
 
         if tracker:
-            # TODO: get session length from domain
-            await self._update_tracker_session(tracker, message.output_channel, 1)
-
+            await self._update_tracker_session(tracker, message.output_channel)
             await self._handle_message_with_tracker(message, tracker)
 
             if should_save_tracker:
@@ -652,24 +641,28 @@ class MessageProcessor:
         # this also is a legacy tracker (pre-sessions)
         return tracker.events[0].timestamp
 
-    def _has_session_expired(
-        self, tracker: DialogueStateTracker, session_length_in_minutes: float
-    ) -> bool:
+    def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:
         """Determine whether the latest session in `tracker` has expired.
 
         Args:
             tracker: Tracker to inspect.
-            session_length_in_minutes: Session length in minutes.
 
         Returns:
             `True` if the session in `tracker` has expired, `False` otherwise.
 
         """
+
+        if not self.domain.session_config.are_session_enabled():
+            # Tracker is never expired when sessions are disabled
+            return False
+
         session_start_timestamp = self._session_start_timestamp_for(tracker)
 
         time_delta_in_seconds = time.time() - session_start_timestamp
 
-        has_expired = time_delta_in_seconds / 60 > session_length_in_minutes
+        has_expired = (
+            time_delta_in_seconds / 60 > self.domain.session_config.session_length
+        )
 
         if has_expired:
             logger.debug(

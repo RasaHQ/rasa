@@ -5,13 +5,17 @@ import logging
 import os
 import typing
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set, NamedTuple
 
 import rasa.core.constants
 import rasa.utils.common as common_utils
 import rasa.utils.io
 from rasa.cli.utils import bcolors
-from rasa.constants import DOMAIN_SCHEMA_FILE
+from rasa.constants import (
+    DOMAIN_SCHEMA_FILE,
+    DEFAULT_SESSION_LENGTH_IN_MINUTES,
+    DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+)
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
 from rasa.core.actions.action import Action  # pytype: disable=pyi-error
@@ -32,6 +36,9 @@ logger = logging.getLogger(__name__)
 PREV_PREFIX = "prev_"
 ACTIVE_FORM_PREFIX = "active_form_"
 
+CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
+SESSION_LENGTH_KEY = "session_length"
+
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
 
@@ -45,6 +52,20 @@ class InvalidDomain(Exception):
     def __str__(self):
         # return message in error colours
         return bcolors.FAIL + self.message + bcolors.ENDC
+
+
+class SessionConfig(NamedTuple):
+    session_length: float
+    carry_over_slots: bool
+
+    @staticmethod
+    def default() -> "SessionConfig":
+        return SessionConfig(
+            DEFAULT_SESSION_LENGTH_IN_MINUTES, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
+        )
+
+    def are_session_enabled(self) -> bool:
+        return self.session_length > 0
 
 
 class Domain:
@@ -109,6 +130,7 @@ class Domain:
         utter_templates = cls.collect_templates(data.get("templates", {}))
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
+        session_config = cls._get_session_config(additional_arguments)
         intents = data.get("intents", {})
 
         return cls(
@@ -118,8 +140,20 @@ class Domain:
             utter_templates,
             data.get("actions", []),
             data.get("forms", []),
+            session_config=session_config,
             **additional_arguments,
         )
+
+    @staticmethod
+    def _get_session_config(additional_arguments: Dict) -> SessionConfig:
+        session_length = additional_arguments.pop(
+            SESSION_LENGTH_KEY, DEFAULT_SESSION_LENGTH_IN_MINUTES
+        )
+        carry_over_slots = additional_arguments.pop(
+            CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
+        )
+
+        return SessionConfig(session_length, carry_over_slots)
 
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":
@@ -278,6 +312,7 @@ class Domain:
         action_names: List[Text],
         form_names: List[Text],
         store_entities_as_slots: bool = True,
+        session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
 
         self.intent_properties = self.collect_intent_properties(intents)
@@ -285,6 +320,7 @@ class Domain:
         self.form_names = form_names
         self.slots = slots
         self.templates = templates
+        self.session_config = session_config
 
         # only includes custom actions and utterance actions
         self.user_actions = action_names
@@ -651,7 +687,11 @@ class Domain:
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
     def as_dict(self) -> Dict[Text, Any]:
-        additional_config = {"store_entities_as_slots": self.store_entities_as_slots}
+        additional_config = {
+            "store_entities_as_slots": self.store_entities_as_slots,
+            SESSION_LENGTH_KEY: self.session_config.session_length,
+            CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
+        }
 
         return {
             "config": additional_config,
