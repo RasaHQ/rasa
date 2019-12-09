@@ -157,7 +157,7 @@ class MessageProcessor:
                 `ActionSessionStart`.
 
         """
-        if self._is_legacy_tracker(tracker) or self._has_session_expired(tracker):
+        if self._has_session_expired(tracker):
             logger.debug(
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
@@ -652,18 +652,23 @@ class MessageProcessor:
 
         """
 
-        if not self.domain.session_config.are_session_enabled():
-            # Tracker is never expired when sessions are disabled
+        if not self.domain.session_config.are_sessions_enabled():
+            # tracker has never expired if sessions are disabled
             return False
 
-        session_start_timestamp = self._session_start_timestamp_for(tracker)
+        user_uttered_event: Optional[UserUttered] = tracker.get_last_event_for(
+            UserUttered
+        )
 
-        time_delta_in_seconds = time.time() - session_start_timestamp
+        if not user_uttered_event:
+            # there is no user event so far so the session should not be considered
+            # expired
+            return False
 
+        time_delta_in_seconds = time.time() - user_uttered_event.timestamp
         has_expired = (
             time_delta_in_seconds / 60 > self.domain.session_config.session_length
         )
-
         if has_expired:
             logger.debug(
                 f"The latest session for conversation ID {tracker.sender_id} has "
@@ -671,34 +676,6 @@ class MessageProcessor:
             )
 
         return has_expired
-
-    @staticmethod
-    def _is_legacy_tracker(tracker: DialogueStateTracker) -> bool:
-        """Determine whether `tracker` is a legacy tracker.
-
-        A legacy tracker is a tracker that has been created before the introduction
-        of sessions in release 1.6.0.
-
-        Args:
-            tracker: Tracker to inspect.
-
-        Returns:
-            `True` if the tracker contains `SessionStarted` event, `False` otherwise.
-
-        """
-        last_session_started_event = tracker.get_last_session_started_event()
-
-        is_legacy_tracker = last_session_started_event is None
-
-        if is_legacy_tracker:
-            logger.debug(
-                f"Tracker for conversation ID '{tracker.sender_id}' is a legacy "
-                f"tracker. A legacy tracker is a tracker that contains no "
-                f"'SessionStarted' and was last saved before the introduction of "
-                f"tracker sessions in release 1.6.0."
-            )
-
-        return is_legacy_tracker
 
     def _get_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID

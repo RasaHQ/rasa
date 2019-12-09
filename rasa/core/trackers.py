@@ -516,9 +516,14 @@ class DialogueStateTracker:
             otherwise `None`.
 
         """
-        for event in reversed(self.events):
-            if isinstance(event, SessionStarted):
-                return event
+        return next(
+            (
+                event
+                for event in reversed(self.events)
+                if isinstance(event, SessionStarted)
+            ),
+            None,
+        )
 
     ###
     # Internal methods for the modification of the trackers state. Should

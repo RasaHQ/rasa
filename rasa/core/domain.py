@@ -60,11 +60,10 @@ class SessionConfig(NamedTuple):
 
     @staticmethod
     def default() -> "SessionConfig":
-        return SessionConfig(
-            DEFAULT_SESSION_LENGTH_IN_MINUTES, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
-        )
+        # TODO: 2.0, reconsider how to apply sessions to old projects
+        return SessionConfig(0, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION)
 
-    def are_session_enabled(self) -> bool:
+    def are_sessions_enabled(self) -> bool:
         return self.session_length > 0
 
 
@@ -146,9 +145,19 @@ class Domain:
 
     @staticmethod
     def _get_session_config(additional_arguments: Dict) -> SessionConfig:
-        session_length = additional_arguments.pop(
-            SESSION_LENGTH_KEY, DEFAULT_SESSION_LENGTH_IN_MINUTES
-        )
+
+        session_length = additional_arguments.pop(SESSION_LENGTH_KEY, None)
+
+        # TODO: 2.0 reconsider how to apply sessions to old projects and legacy trackers
+        if session_length is None:
+            warnings.warn(
+                "No tracker session configuration was found in the loaded domain. "
+                "Domains without a session config will be deprecated in Rasa "
+                "version 2.0.",
+                DeprecationWarning,
+            )
+            session_length = 0
+
         carry_over_slots = additional_arguments.pop(
             CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
         )

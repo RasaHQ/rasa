@@ -1,20 +1,20 @@
-from typing import Optional, List, Text
-
-import time
-
 import asyncio
+import logging
+
 import datetime
-import uuid
-
 import pytest
+import time
+import uuid
+from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-
+from typing import Optional, Text
 from unittest.mock import patch
 
 from rasa.core import jobs
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
+from rasa.core.domain import SessionConfig
 from rasa.core.events import (
     ActionExecuted,
     BotUttered,
@@ -26,16 +26,12 @@ from rasa.core.events import (
     Event,
     SlotSet,
 )
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.slots import Slot
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.core.processor import MessageProcessor, DEFAULT_INTENTS
+from rasa.core.slots import Slot
+from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request
-
-from rasa.core.domain import Domain, SessionConfig
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -279,41 +275,14 @@ async def test_reminder_restart(
 
 
 @pytest.mark.parametrize(
-    "events_to_apply,is_legacy",
-    [
-        # just an action listen means it's legacy
-        ([ActionExecuted(action_name=ACTION_LISTEN_NAME)], True),
-        # action listen and session at the beginning start means it isn't legacy
-        ([SessionStarted(), ActionExecuted(action_name=ACTION_LISTEN_NAME)], False),
-        # just a single event means it's legacy
-        ([UserUttered("hello")], True),
-    ],
-)
-async def test_is_legacy_tracker(
-    events_to_apply: List[Event], is_legacy: bool, default_processor: MessageProcessor
-):
-    sender_id = uuid.uuid4().hex
-
-    # create a new tracker without events
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
-    tracker.events.clear()
-
-    for event in events_to_apply:
-        tracker.update(event)
-
-    # noinspection PyProtectedMember
-    assert default_processor._is_legacy_tracker(tracker) == is_legacy
-
-
-@pytest.mark.parametrize(
     "event_to_apply,session_length_in_minutes,has_expired",
     [
-        # session start is way in the past
-        (SessionStarted(timestamp=1), 60, True),
-        # session start is very recent
-        (SessionStarted(timestamp=time.time()), 60, False),
-        # there is no session start event (legacy tracker)
-        (UserUttered("hello", timestamp=time.time()), 60, False),
+        # last user event is way in the past
+        (UserUttered(timestamp=1), 60, True),
+        # user event are very recent
+        (UserUttered("hello", timestamp=time.time()), 60, False,),
+        # there is user event
+        (ActionExecuted(ACTION_LISTEN_NAME, timestamp=time.time()), 60, False),
         # Old event, but sessions are disabled
         (UserUttered("hello", timestamp=1), 0, False),
         # there is no event
@@ -345,14 +314,17 @@ async def test_has_session_expired(
 
 # noinspection PyProtectedMember
 async def test_update_tracker_session(
-    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
 ):
     sender_id = uuid.uuid4().hex
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
-    # make sure session expires and run tracker session update
-    await asyncio.sleep(1e-2)  # in seconds
-    default_processor.domain.session_config = SessionConfig(1e-5, True)
+    # patch `_has_session_expired()` so the `_update_tracker_session()` call actually
+    # does something
+    monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
+
     await default_processor._update_tracker_session(tracker, default_channel)
 
     # the save is not called in _update_tracker_session()
@@ -360,6 +332,7 @@ async def test_update_tracker_session(
 
     # inspect tracker and make sure all events are present
     tracker = default_processor.tracker_store.retrieve(sender_id)
+
     assert list(tracker.events) == [
         SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -371,7 +344,9 @@ async def test_update_tracker_session(
 
 # noinspection PyProtectedMember
 async def test_update_tracker_session_with_slots(
-    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
 ):
     sender_id = uuid.uuid4().hex
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
@@ -385,9 +360,10 @@ async def test_update_tracker_session_with_slots(
     for event in slot_set_events:
         tracker.update(event)
 
-    # make sure session expires and run tracker session update
-    await asyncio.sleep(1e-2)  # in seconds
-    default_processor.domain.session_config = SessionConfig(1e-5, True)
+    # patch `_has_session_expired()` so the `_update_tracker_session()` call actually
+    # does something
+    monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
+
     await default_processor._update_tracker_session(tracker, default_channel)
 
     # the save is not called in _update_tracker_session()

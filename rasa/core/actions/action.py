@@ -336,9 +336,9 @@ class ActionRestart(ActionUtterTemplate):
 
 
 class ActionSessionStart(Action):
-    """Applies.
+    """Applies a conversation session start.
 
-    Utters the 'session start' template if available."""
+    """
 
     def name(self) -> Text:
         return ACTION_SESSION_START_NAME

@@ -1,11 +1,16 @@
-Added a new event ``SessionStarted`` that marks the beginning of a new conversation
-session.
+Added conversation sessions to trackers. A conversation session represents the
+dialog between the agent and a user. Conversation sessions can begin in three ways: 1.
+the user begins the conversation with the agent, 2. the user sends their first
+message after a configurable period of inactivity, or 3. a manual session start is
+triggered with the ``/session_start`` intent message. The period of inactivity after
+which a new conversation session is triggered is defined in the domain using the
+``session_length`` key in the ``config`` section. The introduction of
+conversation sessions comprises the following changes:
 
-Added a new default action ``ActionSessionStart``. This action takes all ``SlotSet``
-events from the previous session and applies it to the next session.
-
-Added new default intent ``session_start`` which triggers the start of a new
-conversation session.
-
-``SQLTrackerStore`` and ``MongoTrackerStore`` only retrieve events from the last
-session from the database.
+- Added a new event ``SessionStarted`` that marks the beginning of a new conversation
+  session.
+- Added a new default action ``ActionSessionStart``. This action takes all
+  ``SlotSet`` events from the previous session and applies it to the next session.
+- Added a new default intent ``session_start`` which triggers the start of a new
+  conversation session. ``SQLTrackerStore`` and ``MongoTrackerStore`` only retrieve
+  events from the last session from the database.

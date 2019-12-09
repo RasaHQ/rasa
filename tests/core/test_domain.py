@@ -629,4 +629,4 @@ def test_domain_as_dict_with_session_config():
     ],
 )
 def test_are_sessions_enabled(session_config: SessionConfig, enabled: bool):
-    assert session_config.are_session_enabled() == enabled
+    assert session_config.are_sessions_enabled() == enabled
