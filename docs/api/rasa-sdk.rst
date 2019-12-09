@@ -131,3 +131,5 @@ The available methods from the ``Tracker`` are:
 .. automethod:: rasa_sdk.interfaces.Tracker.get_latest_input_channel
 
 .. automethod:: rasa_sdk.interfaces.Tracker.events_after_latest_restart
+
+.. automethod:: rasa_sdk.interfaces.Tracker.get_slot
