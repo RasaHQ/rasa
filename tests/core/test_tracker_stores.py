@@ -109,24 +109,6 @@ def test_create_tracker_store_from_endpoint_config(default_domain: Domain):
     assert isinstance(tracker_store, type(TrackerStore.create(store, default_domain)))
 
 
-def test_fallback_tracker_store_from_endpoint_config(
-    default_domain: Domain, monkeypatch: MonkeyPatch
-):
-    """Check if tracker store properly handles exceptions.
-
-    If we can not create a tracker store by instantiating the
-    expected type (e.g. due to an exception) we should fallback to
-    the default `InMemoryTrackerStore`."""
-
-    store = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
-    mock = Mock(side_effect=Exception("ignore this"))
-    monkeypatch.setattr(rasa.core.tracker_store, "RedisTrackerStore", mock)
-
-    assert isinstance(
-        InMemoryTrackerStore(domain), type(TrackerStore.create(store, default_domain)),
-    )
-
-
 class URLExampleTrackerStore(RedisTrackerStore):
     def __init__(self, domain, url, port, db, password, record_exp, event_broker=None):
         super().__init__(
