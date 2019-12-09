@@ -48,7 +48,7 @@ Otherwise, if you do not have ``rasa`` installed, run this command:
 ----------
 
 The ``Action`` class is the base class for any custom action. It has two methods
-that both need to be overwritten, `.name()` and `.run()`.
+that both need to be overwritten, ``name()`` and ``run()``.
 
 .. _custom_action_example_verbose:
 
@@ -100,12 +100,12 @@ There is an example of a ``SlotSet`` event
 In general an action's ``run`` method returns a list of events. For more information on
 events see :ref:`Events`. The action itself will automatically be added to the
 tracker as an ``ActionExecuted`` event. If the action should not trigger any
-other events it should return an empty list.
+other events, it should return an empty list.
 
 ``Tracker``
 -----------
 
-The ``rasa_sdk.Tracker`` lets you access the bots memory in your custom
+The ``rasa_sdk.Tracker`` lets you access the bot's memory in your custom
 actions. You can get information about past events and the current state of the
 conversation through ``Tracker`` attributes and methods.
 
@@ -131,6 +131,3 @@ The available methods from the ``Tracker`` are:
 .. automethod:: rasa_sdk.interfaces.Tracker.get_latest_input_channel
 
 .. automethod:: rasa_sdk.interfaces.Tracker.events_after_latest_restart
-
-
-
