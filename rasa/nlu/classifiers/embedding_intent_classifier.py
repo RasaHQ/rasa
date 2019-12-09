@@ -305,7 +305,7 @@ class EmbeddingIntentClassifier(Component):
             if sparse_features.shape[0] != dense_features.shape[0]:
                 raise ValueError(
                     f"Sequence dimensions for sparse and dense features "
-                    f"don't coincide in '{message.text}'"
+                    f"don't coincide in '{message.text}' for attribute '{attribute}'."
                 )
 
         return sparse_features, dense_features

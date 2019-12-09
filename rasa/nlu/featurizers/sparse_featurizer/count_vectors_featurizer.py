@@ -77,6 +77,10 @@ class CountVectorsFeaturizer(Featurizer):
         # will be converted to lowercase if lowercase is True
         "OOV_token": None,  # string or None
         "OOV_words": [],  # string or list of strings
+        # if True return a sequence of features (return vector has size
+        # token-size x feature-dimension)
+        # if False token-size will be equal to 1
+        "return_sequence": False,
     }
 
     @classmethod
@@ -116,6 +120,9 @@ class CountVectorsFeaturizer(Featurizer):
 
         # if convert all characters to lowercase
         self.lowercase = self.component_config["lowercase"]
+
+        # whether to return a sequence or not
+        self.return_sequence = self.component_config["return_sequence"]
 
     # noinspection PyPep8Naming
     def _load_OOV_params(self):
@@ -397,7 +404,15 @@ class CountVectorsFeaturizer(Featurizer):
         X = []
 
         for i, tokens in enumerate(all_tokens):
-            x = self.vectorizers[attribute].transform(tokens)
+            # vectorizer.transform returns a sparse matrix of size
+            # [n_samples, n_features]
+            # set input to list of tokens if sequence should be returned
+            # otherwise join all tokens to a single string and pass that as a list
+            input = tokens
+            if not self.return_sequence:
+                input = [" ".join(tokens)]
+
+            x = self.vectorizers[attribute].transform(input)
             x.sort_indices()
             X.append(x.tocoo())
 

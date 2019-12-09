@@ -21,6 +21,13 @@ class ConveRTFeaturizer(Featurizer):
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
 
+    defaults = {
+        # if True return a sequence of features (return vector has size
+        # token-size x feature-dimension)
+        # if False token-size will be equal to 1
+        "return_sequence": False
+    }
+
     def _load_model(self) -> None:
 
         # needed in order to load model
@@ -44,6 +51,24 @@ class ConveRTFeaturizer(Featurizer):
         super(ConveRTFeaturizer, self).__init__(component_config)
 
         self._load_model()
+
+        self.return_sequence = self.component_config["return_sequence"]
+
+        if self.return_sequence:
+            raise NotImplementedError(
+                f"ConveRTFeaturizer always returns a feature vector of size "
+                f"(1 x feature-dimensions). It cannot return a proper sequence "
+                f"right now. ConveRTFeaturizer can only be used "
+                f"with 'return_sequence' set to False. Also, any other featurizer "
+                f"used next to ConveRTFeaturizer should have the flag "
+                f"'return_sequence' set to False."
+            )
+
+        logger.debug(
+            f"ConveRTFeaturizer always returns a feature vector of size "
+            f"(1 x feature-dimensions). If you use any other featurizer with "
+            f"'return_sequence' equal to True, training will fail."
+        )
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -100,7 +125,7 @@ class ConveRTFeaturizer(Featurizer):
                         MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute],
                         self._combine_with_existing_dense_features(
                             ex,
-                            [batch_features[index]],
+                            np.expand_dims(batch_features[index], axis=0),
                             MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute],
                         ),
                     )
@@ -114,7 +139,7 @@ class ConveRTFeaturizer(Featurizer):
             MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
             self._combine_with_existing_dense_features(
                 message,
-                [feats],
+                np.expand_dims(feats, axis=0),
                 MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
             ),
         )
