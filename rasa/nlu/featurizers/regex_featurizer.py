@@ -29,7 +29,12 @@ class RegexFeaturizer(Featurizer):
 
     requires = [MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
-    def __init__(self, component_config=None, known_patterns=None, lookup_tables=None):
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        known_patterns=None,
+        lookup_tables=None,
+    ) -> None:
 
         super().__init__(component_config)
 
@@ -53,14 +58,14 @@ class RegexFeaturizer(Featurizer):
         updated = self._text_features_with_regex(message)
         message.set(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE], updated)
 
-    def _text_features_with_regex(self, message):
+    def _text_features_with_regex(self, message) -> Any:
         if self.known_patterns:
             extras = self.features_for_patterns(message)
             return self._combine_with_existing_features(message, extras)
         else:
             return message.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
 
-    def _add_lookup_table_regexes(self, lookup_tables):
+    def _add_lookup_table_regexes(self, lookup_tables) -> None:
         # appends the regex features from the lookup tables to
         # self.known_patterns
         for table in lookup_tables:
@@ -68,7 +73,7 @@ class RegexFeaturizer(Featurizer):
             lookup_regex = {"name": table["name"], "pattern": regex_pattern}
             self.known_patterns.append(lookup_regex)
 
-    def features_for_patterns(self, message):
+    def features_for_patterns(self, message) -> np.array:
         """Checks which known patterns match the message.
 
         Given a sentence, returns a vector of {1,0} values indicating which
@@ -96,7 +101,7 @@ class RegexFeaturizer(Featurizer):
 
         return np.array(found_patterns).astype(float)
 
-    def _generate_lookup_regex(self, lookup_table):
+    def _generate_lookup_regex(self, lookup_table) -> Text:
         """creates a regex out of the contents of a lookup table file"""
         lookup_elements = lookup_table["elements"]
         elements_to_regex = []

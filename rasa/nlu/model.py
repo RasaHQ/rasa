@@ -2,21 +2,17 @@ import copy
 import datetime
 import logging
 import os
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Text
+from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
+import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu import components, utils  # pytype: disable=pyi-error
 from rasa.nlu.components import Component, ComponentBuilder  # pytype: disable=pyi-error
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.persistor import Persistor
-from rasa.nlu.training_data import TrainingData, Message
+from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
-import rasa.utils.io
 
 MODEL_NAME_PREFIX = "nlu_"
 
@@ -30,10 +26,10 @@ class InvalidModelError(Exception):
         message -- explanation of why the model is invalid
     """
 
-    def __init__(self, message):
+    def __init__(self, message: Text) -> None:
         self.message = message
 
-    def __str__(self):
+    def __str__(self) -> Text:
         return self.message
 
 
@@ -44,10 +40,10 @@ class UnsupportedModelError(Exception):
         message -- explanation of why the model is invalid
     """
 
-    def __init__(self, message):
+    def __init__(self, message: Text) -> None:
         self.message = message
 
-    def __str__(self):
+    def __str__(self) -> Text:
         return self.message
 
 
@@ -78,7 +74,7 @@ class Metadata:
         self.metadata = metadata
         self.model_dir = model_dir
 
-    def get(self, property_name, default=None):
+    def get(self, property_name: Text, default: Any = None) -> Any:
         return self.metadata.get(property_name, default)
 
     @property
@@ -92,7 +88,7 @@ class Metadata:
     def number_of_components(self):
         return len(self.get("pipeline", []))
 
-    def for_component(self, index, defaults=None):
+    def for_component(self, index: int, defaults: Any = None) -> Dict[Text, Any]:
         return component_config_from_pipeline(index, self.get("pipeline", []), defaults)
 
     @property
@@ -200,7 +196,7 @@ class Trainer:
         return Interpreter(self.pipeline, context)
 
     @staticmethod
-    def _file_name(index, name):
+    def _file_name(index: int, name: Text) -> Text:
         return f"component_{index}_{name}"
 
     def persist(

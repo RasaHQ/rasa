@@ -77,7 +77,7 @@ class MitieIntentClassifier(Component):
         )
 
     @staticmethod
-    def _tokens_of_message(message):
+    def _tokens_of_message(message) -> List[Text]:
         return [token.text for token in message.get("tokens", [])]
 
     @classmethod
