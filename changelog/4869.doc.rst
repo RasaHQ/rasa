@@ -1,1 +1,0 @@
-Document the pipeline for ``pretrained_embeddings_convert`` in the pre-configured pipelines section.

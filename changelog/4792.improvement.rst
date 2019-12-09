@@ -1,3 +1,0 @@
-The log level for SocketIO loggers, including ``websockets.protocol``, ``engineio.server``,
-and ``socketio.server``, is now handled by the ``LOG_LEVEL_LIBRARIES`` environment variable,
-where the default log level is ``ERROR``.

@@ -1,2 +1,0 @@
-Locks for tickets in ``LockStore`` are immediately issued without a redundant
-check for their availability.
