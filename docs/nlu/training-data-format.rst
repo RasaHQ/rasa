@@ -152,7 +152,7 @@ for these extractors. Currently, all intent classifiers make use of available re
 
 Lookup Tables
 -------------
-The externally supplied lookup tables must be in a newline-separated format.
+ The supplied lookup table files must be in a newline-delimited format.
 For example, ``data/test/lookup_tables/plates.txt`` may contain:
 
 .. literalinclude:: ../../data/test/lookup_tables/plates.txt
