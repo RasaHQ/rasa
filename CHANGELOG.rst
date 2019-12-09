@@ -23,7 +23,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 Improvements
 ------------
 - `#3684 <https://github.com/rasahq/rasa/issues/3684>`_: ``rasa interactive`` will skip the story visualization of training stories in case
-  there are more than 200 stories. Stories created duringinteractive learning will be
+  there are more than 200 stories. Stories created during interactive learning will be
   visualized as before.
 - `#4792 <https://github.com/rasahq/rasa/issues/4792>`_: The log level for SocketIO loggers, including ``websockets.protocol``, ``engineio.server``,
   and ``socketio.server``, is now handled by the ``LOG_LEVEL_LIBRARIES`` environment variable,
