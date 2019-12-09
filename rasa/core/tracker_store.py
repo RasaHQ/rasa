@@ -7,7 +7,7 @@ import pickle
 import typing
 from datetime import datetime, timezone
 
-from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable
+from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable, List
 
 import itertools
 from boto3.dynamodb.conditions import Key
@@ -480,11 +480,48 @@ class MongoTrackerStore(TrackerStore):
         if self.event_broker:
             self.stream_events(tracker)
 
-        state = tracker.current_state(EventVerbosity.ALL)
+        additional_events = self._additional_events(tracker)
 
         self.conversations.update_one(
-            {"sender_id": tracker.sender_id}, {"$set": state}, upsert=True
+            {"sender_id": tracker.sender_id},
+            {"$push": {"events": {"$each": [e.as_dict() for e in additional_events]}}},
+            upsert=True,
         )
+
+    def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
+        """Return events from the tracker which aren't currently stored.
+
+        Args:
+            tracker: Tracker to inspect.
+
+        Returns:
+            List of serialised events that aren't current stored.
+
+        """
+        stored = self.conversations.find_one({"sender_id": tracker.sender_id})
+        n_events = len(stored.get("events", [])) if stored else 0
+
+        return itertools.islice(tracker.events, n_events, len(tracker.events))
+
+    @staticmethod
+    def _events_since_last_session_start(serialised_tracker: Dict) -> List[Dict]:
+        """Retrieve events since and including the latest `SessionStart` event.
+
+        Args:
+            serialised_tracker: Serialised tracker to inspect.
+
+        Returns:
+            List of serialised events since and including the latest `SessionStarted`
+            event. Returns all events if no such event is found.
+
+        """
+        events = []
+        for event in reversed(serialised_tracker.get("events", [])):
+            events.append(event)
+            if event["event"] == SessionStarted.type_name:
+                break
+
+        return list(reversed(events))
 
     def retrieve(self, sender_id):
         """
@@ -508,9 +545,8 @@ class MongoTrackerStore(TrackerStore):
             )
 
         if stored is not None:
-            return DialogueStateTracker.from_dict(
-                sender_id, stored.get("events"), self.domain.slots
-            )
+            events = self._events_since_last_session_start(stored)
+            return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
         else:
             return None
 
@@ -713,15 +749,39 @@ class SQLTrackerStore(TrackerStore):
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
 
+        import sqlalchemy as sa
+        from rasa.core.events import SessionStarted
+
         with self.session_scope() as session:
-            query = session.query(self.SQLEvent)
-            result = (
-                query.filter_by(sender_id=sender_id)
+            # Subquery to find the timestamp of the first `SessionStarted` event
+            session_start_sub_query = (
+                session.query(
+                    sa.func.max(self.SQLEvent.timestamp).label("session_start")
+                )
+                .filter(
+                    self.SQLEvent.sender_id == sender_id,
+                    self.SQLEvent.type_name == SessionStarted.type_name,
+                )
+                .subquery()
+            )
+
+            results = (
+                session.query(self.SQLEvent)
+                .filter(
+                    self.SQLEvent.sender_id == sender_id,
+                    # Find events after the latest `SessionStarted` event or return all
+                    # events
+                    sa.or_(
+                        self.SQLEvent.timestamp
+                        >= session_start_sub_query.c.session_start,
+                        session_start_sub_query.c.session_start.is_(None),
+                    ),
+                )
                 .order_by(self.SQLEvent.timestamp)
                 .all()
             )
 
-            events = [json.loads(event.data) for event in result]
+            events = [json.loads(event.data) for event in results]
 
             if self.domain and len(events) > 0:
                 logger.debug(f"Recreating tracker from sender id '{sender_id}'")
@@ -748,7 +808,6 @@ class SQLTrackerStore(TrackerStore):
 
             for event in events:
                 data = event.as_dict()
-
                 intent = data.get("parse_data", {}).get("intent", {}).get("name")
                 action = data.get("name")
                 timestamp = data.get("timestamp")
