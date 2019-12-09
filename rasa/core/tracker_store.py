@@ -482,9 +482,19 @@ class MongoTrackerStore(TrackerStore):
 
         additional_events = self._additional_events(tracker)
 
+        # get current tracker state remove `events` key from state as they're pushed
+        # separately
+        state = tracker.current_state(EventVerbosity.ALL)
+        state.pop("events", None)
+
         self.conversations.update_one(
             {"sender_id": tracker.sender_id},
-            {"$push": {"events": {"$each": [e.as_dict() for e in additional_events]}}},
+            {
+                "$set": state,
+                "$push": {
+                    "events": {"$each": [e.as_dict() for e in additional_events]}
+                },
+            },
             upsert=True,
         )
 
