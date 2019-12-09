@@ -404,6 +404,10 @@ class CountVectorsFeaturizer(Featurizer):
         X = []
 
         for i, tokens in enumerate(all_tokens):
+            # vectorizer.transform returns a sparse matrix of size
+            # [n_samples, n_features]
+            # set input to list of tokens if sequence should be returned
+            # otherwise join all tokens to a single string and pass that as a list
             input = tokens
             if not self.return_sequence:
                 input = [" ".join(tokens)]
