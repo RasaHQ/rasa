@@ -47,10 +47,6 @@ Improved Documentation
 - `#4894 <https://github.com/rasahq/rasa/issues/4894>`_: ``Proactively Reaching Out to the User Using Actions`` now correctly links to the
   endpoint specification.
 
-Miscellaneous internal changes
-------------------------------
-- #4844
-
 
 [1.5.1] - 2019-11-27
 ^^^^^^^^^^^^^^^^^^^^
