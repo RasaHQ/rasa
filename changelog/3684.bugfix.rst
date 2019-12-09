@@ -1,2 +1,0 @@
-``rasa interactive`` will not load training stories in case the visualization is
-skipped.

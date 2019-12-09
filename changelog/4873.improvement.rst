@@ -1,1 +1,0 @@
-Updated all example bots and documentation to use the updated ``dispatcher.utter_message()`` method from `rasa-sdk==1.5.0`.
