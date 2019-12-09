@@ -540,7 +540,7 @@ def test_tracker_store_retrieve_without_session_started_events(
     assert all(event == tracker.events[i] for i, event in enumerate(events))
 
 
-def test_current_state_without_events(default_domain: Domain,):
+def test_current_state_without_events(default_domain: Domain):
     tracker_store = MockedMongoTrackerStore(default_domain)
 
     # insert some events

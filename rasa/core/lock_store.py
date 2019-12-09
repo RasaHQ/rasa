@@ -2,12 +2,13 @@ import asyncio
 import json
 import logging
 import os
-from typing import Text, Optional, AsyncGenerator
+
 
 from async_generator import asynccontextmanager
+from typing import Text, Optional, AsyncGenerator
 
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
-from rasa.core.lock import TicketLock, NO_TICKET_ISSUED
+from rasa.core.lock import TicketLock
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -20,18 +21,6 @@ LOCK_LIFETIME = int(os.environ.get("TICKET_LOCK_LIFETIME", 0)) or DEFAULT_LOCK_L
 # noinspection PyUnresolvedReferences
 class LockError(Exception):
     """Exception that is raised when a lock cannot be acquired.
-
-     Attributes:
-          message (str): explanation of which `conversation_id` raised the error
-    """
-
-    pass
-
-
-# noinspection PyUnresolvedReferences
-class TicketExistsError(Exception):
-    """Exception that is raised when an already-existing ticket for a conversation
-    has been issued.
 
      Attributes:
           message (str): explanation of which `conversation_id` raised the error
@@ -103,18 +92,6 @@ class LockStore:
 
         lock = self.get_or_create_lock(conversation_id)
         ticket = lock.issue_ticket(lock_lifetime)
-
-        while True:
-            try:
-                self.ensure_ticket_available(lock)
-                break
-            except TicketExistsError:
-                # issue a new ticket if current ticket number has been issued twice
-                logger.exception(
-                    "Ticket could not be issued. Issuing new ticket and retrying..."
-                )
-                ticket = lock.issue_ticket(lock_lifetime)
-
         self.save_lock(lock)
 
         return ticket
@@ -123,7 +100,7 @@ class LockStore:
     async def lock(
         self,
         conversation_id: Text,
-        lock_lifetime: int = LOCK_LIFETIME,
+        lock_lifetime: float = LOCK_LIFETIME,
         wait_time_in_seconds: float = 1,
     ) -> AsyncGenerator[TicketLock, None]:
         """Acquire lock with lifetime `lock_lifetime`for `conversation_id`.
@@ -159,8 +136,8 @@ class LockStore:
                 return lock
 
             logger.debug(
-                "Failed to acquire lock for conversation ID '{}'. Retrying..."
-                "".format(conversation_id)
+                f"Failed to acquire lock for conversation ID '{conversation_id}'. "
+                f"Retrying..."
             )
 
             # sleep and update lock
@@ -168,8 +145,7 @@ class LockStore:
             self.update_lock(conversation_id)
 
         raise LockError(
-            "Could not acquire lock for conversation_id '{}'."
-            "".format(conversation_id)
+            f"Could not acquire lock for conversation_id '{conversation_id}'."
         )
 
     def update_lock(self, conversation_id: Text) -> None:
@@ -225,28 +201,6 @@ class LockStore:
             logger.debug(f"Deleted lock for conversation '{conversation_id}'.")
         else:
             logger.debug(f"Could not delete lock for conversation '{conversation_id}'.")
-
-    def ensure_ticket_available(self, lock: TicketLock) -> None:
-        """Check for duplicate tickets issued for `lock`.
-
-        This function should be called before saving `lock`. Raises `TicketExistsError`
-        if the last issued ticket for `lock` does not match the last ticket issued
-        for a lock fetched from storage for `lock.conversation_id`. This indicates
-        that some other process has issued a ticket for `lock` in the meantime.
-        """
-
-        existing_lock = self.get_lock(lock.conversation_id)
-        if not existing_lock or existing_lock.last_issued == NO_TICKET_ISSUED:
-            # lock does not yet exist for conversation or no ticket has been issued
-            return
-
-        # raise if the last issued ticket number of `existing_lock` is not the same as
-        # that of the one being acquired
-        if existing_lock.last_issued != lock.last_issued:
-            raise TicketExistsError(
-                "Ticket '{}' already exists for conversation ID '{}'."
-                "".format(existing_lock.last_issued, lock.conversation_id)
-            )
 
 
 class RedisLockStore(LockStore):

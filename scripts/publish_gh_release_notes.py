@@ -4,7 +4,7 @@ This script is executed by Travis after a new release was successfully built.
 
 Uses the following environment variables:
 * TRAVIS_TAG: the name of the tag of the current commit.
-* GH_RELEASE_NOTES_TOKEN: a personal access token with 'repo' permissions.
+* GITHUB_TOKEN: a personal access token with 'repo' permissions.
 
 The script also requires ``pandoc`` to be previously installed in the system.
 Requires Python3.6+.
@@ -70,9 +70,9 @@ def main():
         print("environment variable TRAVIS_TAG not set", file=sys.stderr)
         return 1
 
-    token = os.environ.get("GH_RELEASE_NOTES_TOKEN")
+    token = os.environ.get("GITHUB_TOKEN")
     if not token:
-        print("GH_RELEASE_NOTES_TOKEN not set", file=sys.stderr)
+        print("GITHUB_TOKEN not set", file=sys.stderr)
         return 1
 
     slug = os.environ.get("TRAVIS_REPO_SLUG")
