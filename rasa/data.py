@@ -103,7 +103,8 @@ def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[
     nlu_data_files = set()
 
     for root, _, files in os.walk(directory):
-        for f in files:
+        # we sort the files here to ensure consistent order for repeatable training results
+        for f in sorted(files):
             full_path = os.path.join(root, f)
 
             if not _is_valid_filetype(full_path):

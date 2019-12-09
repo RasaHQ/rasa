@@ -106,7 +106,7 @@ class SpacyNLP(Component):
 
         return self.nlp(self.preprocess_text(text))
 
-    def preprocess_text(self, text):
+    def preprocess_text(self, text: Optional[Text]) -> Text:
 
         if text is None:
             # converted to empty string so that it can still be passed to spacy.
@@ -118,7 +118,7 @@ class SpacyNLP(Component):
         else:
             return text.lower()
 
-    def get_text(self, example, attribute):
+    def get_text(self, example: Dict[Text, Any], attribute: Text) -> Text:
 
         return self.preprocess_text(example.get(attribute))
 

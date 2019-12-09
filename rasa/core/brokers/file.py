@@ -33,7 +33,7 @@ class FileEventBroker(EventBroker):
         # noinspection PyArgumentList
         return cls(**broker_config.kwargs)
 
-    def _event_logger(self):
+    def _event_logger(self) -> logging.Logger:
         """Instantiate the file logger."""
 
         logger_file = self.path

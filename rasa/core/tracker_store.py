@@ -15,12 +15,13 @@ from boto3.dynamodb.conditions import Key
 # noinspection PyPep8Naming
 from time import sleep
 
+from rasa.core import utils
+from rasa.utils import common
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
-from rasa.core.utils import replace_floats_with_decimals
 from rasa.utils.common import class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
 
@@ -28,7 +29,7 @@ if typing.TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine.base import Engine
     from sqlalchemy.orm import Session
-    import boto3
+    import boto3.resources.factory.dynamodb.Table
 
 logger = logging.getLogger(__name__)
 
@@ -116,10 +117,10 @@ class TrackerStore:
     def stream_events(self, tracker: DialogueStateTracker) -> None:
         """Streams events to a message broker"""
         offset = self.number_of_existing_events(tracker.sender_id)
-        evts = tracker.events
-        for evt in list(itertools.islice(evts, offset, len(evts))):
+        events = tracker.events
+        for event in list(itertools.islice(events, offset, len(events))):
             body = {"sender_id": tracker.sender_id}
-            body.update(evt.as_dict())
+            body.update(event.as_dict())
             self.event_broker.publish(body)
 
     def number_of_existing_events(self, sender_id: Text) -> int:
@@ -222,7 +223,6 @@ class RedisTrackerStore(TrackerStore):
         record_exp: Optional[float] = None,
         use_ssl: bool = False,
     ):
-
         import redis
 
         self.red = redis.StrictRedis(
@@ -326,7 +326,7 @@ class DynamoTrackerStore(TrackerStore):
                 "session_date": int(datetime.now(tz=timezone.utc).timestamp()),
             }
         )
-        return replace_floats_with_decimals(d)
+        return utils.replace_floats_with_decimals(d)
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
@@ -485,7 +485,7 @@ class SQLTrackerStore(TrackerStore):
         engine_url = self.get_db_url(
             dialect, host, port, db, username, password, login_db, query
         )
-        logger.debug(f"Attempting to connect to database via '{repr(engine_url)}'.")
+        logger.debug(f"Attempting to connect to database via '{engine_url}'.")
 
         # Database might take a while to come up
         while True:
@@ -847,8 +847,19 @@ def _load_from_module_string(
 
     try:
         tracker_store_class = class_from_module_path(store.type)
+        init_args = common.arguments_of(tracker_store_class.__init__)
+        if "url" in init_args and "host" not in init_args:
+            warnings.warn(
+                "The `url` initialization argument for custom tracker stores is deprecated. Your "
+                "custom tracker store should take a `host` argument in ``__init__()`` instead.",
+                FutureWarning,
+            )
+            store.kwargs["url"] = store.url
+        else:
+            store.kwargs["host"] = store.url
+
         return tracker_store_class(
-            domain=domain, url=store.url, event_broker=event_broker, **store.kwargs
+            domain=domain, event_broker=event_broker, **store.kwargs
         )
     except (AttributeError, ImportError):
         warnings.warn(
