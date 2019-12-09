@@ -510,6 +510,27 @@ def test_current_state_applied_events(default_agent):
     assert state.get("events") == applied_events
 
 
+def test_session_started_not_part_of_applied_events(default_agent: Agent):
+    # take tracker dump and insert a SessionStarted event sequence
+    tracker_dump = "data/test_trackers/tracker_moodbot.json"
+    tracker_json = json.loads(rasa.utils.io.read_file(tracker_dump))
+    tracker_json["events"].insert(
+        4, {"event": ActionExecuted.type_name, "name": ACTION_SESSION_START_NAME}
+    )
+    tracker_json["events"].insert(5, {"event": SessionStarted.type_name})
+
+    # initialise a tracker from this list of events
+    tracker = DialogueStateTracker.from_dict(
+        tracker_json.get("sender_id"),
+        tracker_json.get("events", []),
+        default_agent.domain.slots,
+    )
+
+    # the SessionStart event was at index 5, the tracker's `applied_events()` should
+    # be the same as the list of events from index 6 onwards
+    assert tracker.applied_events() == list(tracker.events)[6:]
+
+
 async def test_tracker_dump_e2e_story(default_agent):
     sender_id = "test_tracker_dump_e2e_story"
 

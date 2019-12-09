@@ -26,3 +26,7 @@ actions:
   - utter_default
   - utter_greet
   - utter_goodbye
+
+config:
+  session_length: 60
+  carry_over_slots_to_new_session: true

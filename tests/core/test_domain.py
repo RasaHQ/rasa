@@ -578,22 +578,15 @@ def test_add_knowledge_base_slots(default_domain):
             0,
             True,
         ),
-        ("", 60, True),
+        ("", 0, True),
         (
             """config:
     carry_over_slots_to_new_session: false""",
-            60,
+            0,
             False,
         ),
         (
             """config:
-    carry_over_slots_to_new_session: false""",
-            60,
-            False,
-        ),
-        (
-            """
-config:
     session_length: 20.2
     carry_over_slots_to_new_session: False""",
             20.2,

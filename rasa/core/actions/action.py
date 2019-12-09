@@ -338,6 +338,8 @@ class ActionRestart(ActionUtterTemplate):
 class ActionSessionStart(Action):
     """Applies a conversation session start.
 
+    Takes all `SlotSet` events from the previous session and applies them to the new
+    session.
     """
 
     def name(self) -> Text:
@@ -352,6 +354,7 @@ class ActionSessionStart(Action):
         from rasa.core.events import SlotSet
 
         # use generator so the timestamps are greater than that of the returned
+        # SessionStarted event in the run() call
         return (
             SlotSet(key=event.key, value=event.value, metadata=event.metadata)
             for event in tracker.events
