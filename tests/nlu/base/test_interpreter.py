@@ -88,7 +88,6 @@ def test_model_is_compatible(metadata):
         },
         {"obj": "trained_nlu_model", "endpoint": None, "type": RasaNLUInterpreter},
         {"obj": "not-existing", "endpoint": None, "type": RegexInterpreter},
-        {"obj": ["list-object"], "endpoint": None, "type": RegexInterpreter},
     ],
 )
 def test_create_interpreter(parameters, trained_nlu_model):
