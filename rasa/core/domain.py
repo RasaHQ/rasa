@@ -154,7 +154,7 @@ class Domain:
                 "No tracker session configuration was found in the loaded domain. "
                 "Domains without a session config will be deprecated in Rasa "
                 "version 2.0.",
-                DeprecationWarning,
+                FutureWarning,
             )
             session_length = 0
 

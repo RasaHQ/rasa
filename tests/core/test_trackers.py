@@ -612,27 +612,3 @@ def test_tracker_without_slots(key, value, caplog):
         v = tracker.get_slot(key)
         assert v == value
     assert len(caplog.records) == 0
-
-
-@pytest.mark.parametrize(
-    "events,index_of_last_executed_event",
-    [
-        ([ActionExecuted("one")], None),  # no SessionStarted event
-        ([ActionExecuted("a"), SessionStarted()], 1),
-        ([ActionExecuted("first"), UserUttered("b"), SessionStarted()], 2),
-        ([SessionStarted(), UserUttered("b")], 0),
-    ],
-)
-def test_last_session_started_event(
-    events: List[Event], index_of_last_executed_event: int
-):
-    tracker = get_tracker(events)
-
-    # noinspection PyTypeChecker
-    expected_event: Optional[ActionExecuted] = events[
-        index_of_last_executed_event
-    ] if index_of_last_executed_event is not None else None
-
-    fetched_event = tracker.get_last_session_started_event() if expected_event else None
-
-    assert expected_event == fetched_event

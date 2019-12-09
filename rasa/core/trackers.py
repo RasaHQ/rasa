@@ -508,23 +508,6 @@ class DialogueStateTracker:
         )
         return last is not None and last.action_name == name
 
-    def get_last_session_started_event(self) -> Optional[SessionStarted]:
-        """Get the last `SessionStarted` event.
-
-        Returns:
-            The last `SessionStarted` marking a session start if available,
-            otherwise `None`.
-
-        """
-        return next(
-            (
-                event
-                for event in reversed(self.events)
-                if isinstance(event, SessionStarted)
-            ),
-            None,
-        )
-
     ###
     # Internal methods for the modification of the trackers state. Should
     # only be called by events, not directly. Rather update the tracker

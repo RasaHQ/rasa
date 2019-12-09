@@ -615,32 +615,6 @@ class MessageProcessor:
             e.timestamp = time.time()
             tracker.update(e, self.domain)
 
-    @staticmethod
-    def _session_start_timestamp_for(tracker: DialogueStateTracker) -> Optional[float]:
-        """Retrieve timestamp of the beginning of the last session start for
-        `tracker`.
-
-        Args:
-            tracker: Tracker to inspect.
-
-        Returns:
-            Timestamp of last `SessionStarted` event if available, else timestamp of
-            oldest event. Current time if no events are available.
-
-        """
-        if not tracker.events:
-            # this is a legacy tracker (pre-sessions), return current time
-            return time.time()
-
-        last_session_started_event = tracker.get_last_session_started_event()
-
-        if last_session_started_event:
-            return last_session_started_event.timestamp
-
-        # otherwise fetch the timestamp of the first event
-        # this also is a legacy tracker (pre-sessions)
-        return tracker.events[0].timestamp
-
     def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:
         """Determine whether the latest session in `tracker` has expired.
 
