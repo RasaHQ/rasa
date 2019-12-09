@@ -551,7 +551,7 @@ def test_current_state_without_events(default_domain: Domain):
         BotUttered("Hi2"),
     ]
 
-    sender_id = "test_sql_tracker_store_retrieve_without_session_started_events"
+    sender_id = "test_mongo_tracker_store_current_state_without_events"
     tracker = DialogueStateTracker.from_events(sender_id, events)
 
     # get current state without events
