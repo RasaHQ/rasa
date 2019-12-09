@@ -148,8 +148,7 @@ class MessageProcessor:
     ) -> None:
         """Check the current session in `tracker` and update it if expired.
 
-        A 'session_start' is run if the tracker is a legacy tracker, or if the latest
-        tracker session has expired.
+        A 'session_start' the latest tracker session has expired.
 
         Args:
             tracker: Tracker to inspect.

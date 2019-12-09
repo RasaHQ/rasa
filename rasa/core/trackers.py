@@ -278,7 +278,6 @@ class DialogueStateTracker:
             UserMessage.DEFAULT_SENDER_ID, self.slots.values(), self._max_event_history
         )
 
-    # TODO: exclude SessionStart from prior states
     def generate_all_prior_trackers(
         self,
     ) -> Generator["DialogueStateTracker", None, None]:
