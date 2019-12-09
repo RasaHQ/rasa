@@ -538,3 +538,25 @@ def test_tracker_store_retrieve_without_session_started_events(
 
     assert len(tracker.events) == 4
     assert all(event == tracker.events[i] for i, event in enumerate(events))
+
+
+def test_current_state_without_events(default_domain: Domain,):
+    tracker_store = MockedMongoTrackerStore(default_domain)
+
+    # insert some events
+    events = [
+        UserUttered("Hola", {"name": "greet"}),
+        BotUttered("Hi"),
+        UserUttered("Ciao", {"name": "greet"}),
+        BotUttered("Hi2"),
+    ]
+
+    sender_id = "test_sql_tracker_store_retrieve_without_session_started_events"
+    tracker = DialogueStateTracker.from_events(sender_id, events)
+
+    # get current state without events
+    # noinspection PyProtectedMember
+    state = tracker_store._current_tracker_state_without_events(tracker)
+
+    # `events` key should not be in there
+    assert state and "events" not in state

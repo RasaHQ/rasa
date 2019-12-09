@@ -475,6 +475,18 @@ class MongoTrackerStore(TrackerStore):
         """Create an index on the sender_id"""
         self.conversations.create_index("sender_id")
 
+    @staticmethod
+    def _current_tracker_state_without_events(tracker: DialogueStateTracker) -> Dict:
+        # get current tracker state and remove `events` key from state
+        # since events are pushed separately in the `update_one()` operation
+        state = tracker.current_state(EventVerbosity.ALL)
+        try:
+            del state["events"]
+        except KeyError:
+            pass
+
+        return state
+
     def save(self, tracker, timeout=None):
         """Saves the current conversation state"""
         if self.event_broker:
@@ -482,15 +494,10 @@ class MongoTrackerStore(TrackerStore):
 
         additional_events = self._additional_events(tracker)
 
-        # get current tracker state remove `events` key from state as they're pushed
-        # separately
-        state = tracker.current_state(EventVerbosity.ALL)
-        state.pop("events", None)
-
         self.conversations.update_one(
             {"sender_id": tracker.sender_id},
             {
-                "$set": state,
+                "$set": self._current_tracker_state_without_events(tracker),
                 "$push": {
                     "events": {"$each": [e.as_dict() for e in additional_events]}
                 },
