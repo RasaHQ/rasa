@@ -85,7 +85,7 @@ class RestaurantForm(FormAction):
             # validation succeeded, set the value of the "cuisine" slot to value
             return {"cuisine": value}
         else:
-            dispatcher.utter_template("utter_wrong_cuisine", tracker)
+            dispatcher.utter_message(template="utter_wrong_cuisine")
             # validation failed, set this slot to None, meaning the
             # user will be asked for the slot again
             return {"cuisine": None}
@@ -102,7 +102,7 @@ class RestaurantForm(FormAction):
         if self.is_int(value) and int(value) > 0:
             return {"num_people": value}
         else:
-            dispatcher.utter_template("utter_wrong_num_people", tracker)
+            dispatcher.utter_message(template="utter_wrong_num_people")
             # validation failed, set slot to None
             return {"num_people": None}
 
@@ -123,7 +123,7 @@ class RestaurantForm(FormAction):
                 # convert "in..." to False
                 return {"outdoor_seating": False}
             else:
-                dispatcher.utter_template("utter_wrong_outdoor_seating", tracker)
+                dispatcher.utter_message(template="utter_wrong_outdoor_seating")
                 # validation failed, set slot to None
                 return {"outdoor_seating": None}
 
@@ -141,5 +141,5 @@ class RestaurantForm(FormAction):
             after all required slots are filled"""
 
         # utter submit template
-        dispatcher.utter_template("utter_submit", tracker)
+        dispatcher.utter_message(template="utter_submit")
         return []

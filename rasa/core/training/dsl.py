@@ -64,7 +64,7 @@ class EndToEndReader(MarkdownReader):
         intent = match.group(2)
         self.current_title = intent
         message = match.group(4)
-        example = self._parse_training_example(message)
+        example = self.parse_training_example(message)
 
         # If the message starts with the `INTENT_MESSAGE_PREFIX` potential entities
         # are annotated in the json format (e.g. `/greet{"name": "Rasa"})

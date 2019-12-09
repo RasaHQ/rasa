@@ -19,17 +19,17 @@ class SocketBlueprint(Blueprint):
         self.socketio_path = socketio_path
         super().__init__(*args, **kwargs)
 
-    def register(self, app, options):
+    def register(self, app, options) -> None:
         self.sio.attach(app, self.socketio_path)
         super().register(app, options)
 
 
 class SocketIOOutput(OutputChannel):
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "socketio"
 
-    def __init__(self, sio, sid, bot_message_evt):
+    def __init__(self, sio, sid, bot_message_evt) -> None:
         self.sio = sio
         self.sid = sid
         self.bot_message_evt = bot_message_evt

@@ -1,0 +1,2 @@
+``Proactively Reaching Out to the User Using Actions`` now correctly links to the
+endpoint specification.

@@ -13,6 +13,8 @@ If you are asking a usage question (e.g. "How do I do xyz") please post your que
 
 **Rasa version**:
 
+**Rasa SDK version** (if used & relevant):
+
 **Rasa X version** (if used & relevant):
 
 **Python version**:

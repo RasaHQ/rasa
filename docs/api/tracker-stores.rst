@@ -61,7 +61,7 @@ SQLTrackerStore
 :Parameters:
     - ``domain`` (default: ``None``): Domain object associated with this tracker store
     - ``dialect`` (default: ``sqlite``): The dialect used to communicate with your SQL backend.  Consult the `SQLAlchemy docs <https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls>`_ for available dialects.
-    - ``host`` (default: ``None``): URL of your SQL server
+    - ``url`` (default: ``None``): URL of your SQL server
     - ``port`` (default: ``None``): Port of your SQL server
     - ``db`` (default: ``rasa.db``): The path to the database to be used
     - ``username`` (default: ``None``): The username which is used for authentication
@@ -106,6 +106,7 @@ RedisTrackerStore
     - ``password`` (default: ``None``): Password used for authentication
       (``None`` equals no authentication)
     - ``record_exp`` (default: ``None``): Record expiry in seconds
+    - ``use_ssl`` (default: ``False``): whether or not to use SSL for transit encryption
 
 MongoTrackerStore
 ~~~~~~~~~~~~~~~~~
@@ -142,9 +143,9 @@ MongoTrackerStore
     - ``db`` (default: ``rasa``): The database name which should be used
     - ``username`` (default: ``0``): The username which is used for authentication
     - ``password`` (default: ``None``): The password which is used for authentication
+    - ``auth_source`` (default: ``admin``): database name associated with the user’s credentials.
     - ``collection`` (default: ``conversations``): The collection name which is
       used to store the conversations
-    - ``auth_source`` (default: ``admin``): database name associated with the user’s credentials.
 
 Custom Tracker Store
 ~~~~~~~~~~~~~~~~~~~~
