@@ -725,7 +725,7 @@ def do_entities_overlap(entities: List[Dict]) -> bool:
             next_ent["start"] < curr_ent["end"]
             and next_ent["entity"] != curr_ent["entity"]
         ):
-            logger.warn(f"Overlapping entity {curr_ent} with {next_ent}")
+            logger.warning(f"Overlapping entity {curr_ent} with {next_ent}")
             return True
 
     return False

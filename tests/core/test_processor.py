@@ -33,6 +33,7 @@ from rasa.core.processor import MessageProcessor, DEFAULT_INTENTS
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request
 
+from rasa.core.domain import Domain, SessionConfig
 
 import logging
 
@@ -289,7 +290,7 @@ async def test_reminder_restart(
     ],
 )
 async def test_is_legacy_tracker(
-    events_to_apply: List[Event], is_legacy: bool, default_processor: MessageProcessor,
+    events_to_apply: List[Event], is_legacy: bool, default_processor: MessageProcessor
 ):
     sender_id = uuid.uuid4().hex
 
@@ -313,6 +314,8 @@ async def test_is_legacy_tracker(
         (SessionStarted(timestamp=time.time()), 60, False),
         # there is no session start event (legacy tracker)
         (UserUttered("hello", timestamp=time.time()), 60, False),
+        # Old event, but sessions are disabled
+        (UserUttered("hello", timestamp=1), 0, False),
         # there is no event
         (None, 1, False),
     ],
@@ -325,6 +328,9 @@ async def test_has_session_expired(
 ):
     sender_id = uuid.uuid4().hex
 
+    default_processor.domain.session_config = SessionConfig(
+        session_length_in_minutes, True
+    )
     # create new tracker without events
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
     tracker.events.clear()
@@ -334,24 +340,20 @@ async def test_has_session_expired(
         tracker.update(event_to_apply)
 
     # noinspection PyProtectedMember
-    assert (
-        default_processor._has_session_expired(
-            tracker, session_length_in_minutes=session_length_in_minutes
-        )
-        == has_expired
-    )
+    assert default_processor._has_session_expired(tracker) == has_expired
 
 
 # noinspection PyProtectedMember
 async def test_update_tracker_session(
-    default_channel: CollectingOutputChannel, default_processor: MessageProcessor,
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     sender_id = uuid.uuid4().hex
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     # make sure session expires and run tracker session update
     await asyncio.sleep(1e-2)  # in seconds
-    await default_processor._update_tracker_session(tracker, default_channel, 1e-5)
+    default_processor.domain.session_config = SessionConfig(1e-5, True)
+    await default_processor._update_tracker_session(tracker, default_channel)
 
     # the save is not called in _update_tracker_session()
     default_processor._save_tracker(tracker)
@@ -369,7 +371,7 @@ async def test_update_tracker_session(
 
 # noinspection PyProtectedMember
 async def test_update_tracker_session_with_slots(
-    default_channel: CollectingOutputChannel, default_processor: MessageProcessor,
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     sender_id = uuid.uuid4().hex
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
@@ -385,7 +387,8 @@ async def test_update_tracker_session_with_slots(
 
     # make sure session expires and run tracker session update
     await asyncio.sleep(1e-2)  # in seconds
-    await default_processor._update_tracker_session(tracker, default_channel, 1e-5)
+    default_processor.domain.session_config = SessionConfig(1e-5, True)
+    await default_processor._update_tracker_session(tracker, default_channel)
 
     # the save is not called in _update_tracker_session()
     default_processor._save_tracker(tracker)

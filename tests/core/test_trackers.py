@@ -10,6 +10,7 @@ import pytest
 import rasa.utils.io
 from rasa.core import training, restore
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
+from rasa.core.agent import Agent
 from rasa.core.domain import Domain
 from rasa.core.events import (
     SlotSet,
@@ -139,7 +140,7 @@ async def test_tracker_write_to_story(tmpdir, moodbot_domain: Domain):
     assert recovered.events[4].intent == {"confidence": 1.0, "name": "mood_unhappy"}
 
 
-async def test_tracker_state_regression_without_bot_utterance(default_agent):
+async def test_tracker_state_regression_without_bot_utterance(default_agent: Agent):
     sender_id = "test_tracker_state_regression_without_bot_utterance"
     for i in range(0, 2):
         await default_agent.handle_message("/greet", sender_id=sender_id)
@@ -154,7 +155,7 @@ async def test_tracker_state_regression_without_bot_utterance(default_agent):
     )
 
 
-async def test_tracker_state_regression_with_bot_utterance(default_agent):
+async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent):
     sender_id = "test_tracker_state_regression_with_bot_utterance"
     for i in range(0, 2):
         await default_agent.handle_message("/greet", sender_id=sender_id)

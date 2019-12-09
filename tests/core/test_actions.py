@@ -1,3 +1,5 @@
+from typing import List
+
 import pytest
 from aioresponses import aioresponses
 
@@ -26,7 +28,7 @@ from rasa.core.actions.action import (
     ActionSessionStart,
 )
 from rasa.core.channels import CollectingOutputChannel
-from rasa.core.domain import Domain
+from rasa.core.domain import Domain, SessionConfig
 from rasa.core.events import (
     Restarted,
     SlotSet,
@@ -35,6 +37,7 @@ from rasa.core.events import (
     Form,
     SessionStarted,
     ActionExecuted,
+    Event,
 )
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker
@@ -502,17 +505,34 @@ async def test_action_session_start_without_slots(
     events = await ActionSessionStart().run(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
-    assert events == [
-        SessionStarted(),
-        ActionExecuted(ACTION_LISTEN_NAME),
-    ]
+    assert events == [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)]
 
 
+@pytest.mark.parametrize(
+    "session_config, expected_events",
+    [
+        (
+            SessionConfig(123, True),
+            [
+                SessionStarted(),
+                SlotSet("my_slot", "value"),
+                SlotSet("another-slot", "value2"),
+                ActionExecuted(action_name=ACTION_LISTEN_NAME),
+            ],
+        ),
+        (
+            SessionConfig(123, False),
+            [SessionStarted(), ActionExecuted(action_name=ACTION_LISTEN_NAME)],
+        ),
+    ],
+)
 async def test_action_session_start_with_slots(
     default_channel: CollectingOutputChannel,
     template_nlg: TemplatedNaturalLanguageGenerator,
     template_sender_tracker: DialogueStateTracker,
     default_domain: Domain,
+    session_config: SessionConfig,
+    expected_events: List[Event],
 ):
     # set a few slots on tracker
     slot_set_event_1 = SlotSet("my_slot", "value")
@@ -520,16 +540,13 @@ async def test_action_session_start_with_slots(
     for event in [slot_set_event_1, slot_set_event_2]:
         template_sender_tracker.update(event)
 
+    default_domain.session_config = session_config
+
     events = await ActionSessionStart().run(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
 
-    assert events == [
-        SessionStarted(),
-        slot_set_event_1,
-        slot_set_event_2,
-        ActionExecuted(ACTION_LISTEN_NAME),
-    ]
+    assert events == expected_events
 
     # make sure that the list of events has ascending timestamps
     assert sorted(events, key=lambda x: x.timestamp) == events

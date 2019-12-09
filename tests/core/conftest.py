@@ -4,11 +4,12 @@ import os
 from typing import Text
 
 import pytest
+from _pytest.tmpdir import TempdirFactory
 
 import rasa.utils.io
 from rasa.core.agent import Agent
-from rasa.core.channels.channel import CollectingOutputChannel
-from rasa.core.domain import Domain
+from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
+from rasa.core.domain import Domain, SessionConfig
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
@@ -105,7 +106,7 @@ def default_domain():
 
 
 @pytest.fixture(scope="session")
-async def default_agent(default_domain) -> Agent:
+async def _default_agent(default_domain: Domain) -> Agent:
     agent = Agent(
         default_domain,
         policies=[MemoizationPolicy()],
@@ -117,15 +118,23 @@ async def default_agent(default_domain) -> Agent:
     return agent
 
 
+@pytest.fixture()
+async def default_agent(_default_agent: Agent) -> Agent:
+    # Clean tracker store after each test so tests don't affect each other
+    _default_agent.tracker_store = InMemoryTrackerStore(_default_agent.domain)
+    _default_agent.domain.session_config = SessionConfig.default()
+    return _default_agent
+
+
 @pytest.fixture(scope="session")
-def default_agent_path(default_agent, tmpdir_factory):
+def default_agent_path(_default_agent: Agent, tmpdir_factory: TempdirFactory):
     path = tmpdir_factory.mktemp("agent").strpath
-    default_agent.persist(path)
+    _default_agent.persist(path)
     return path
 
 
 @pytest.fixture
-def default_channel():
+def default_channel() -> OutputChannel:
     return CollectingOutputChannel()
 
 

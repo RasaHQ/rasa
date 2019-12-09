@@ -367,8 +367,9 @@ class ActionSessionStart(Action):
     ) -> List[Event]:
         from rasa.core.events import SessionStarted
 
-        # TODO: check in domain whether slots should be carried over
-        slot_set_events = self._slot_set_events_from_tracker(tracker)
+        slot_set_events = []
+        if domain.session_config.carry_over_slots:
+            slot_set_events = self._slot_set_events_from_tracker(tracker)
 
         # noinspection PyTypeChecker
         return (
