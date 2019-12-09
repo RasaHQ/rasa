@@ -145,7 +145,6 @@ class Domain:
 
     @staticmethod
     def _get_session_config(additional_arguments: Dict) -> SessionConfig:
-
         session_length = additional_arguments.pop(SESSION_LENGTH_KEY, None)
 
         # TODO: 2.0 reconsider how to apply sessions to old projects and legacy trackers
