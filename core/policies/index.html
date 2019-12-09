@@ -199,7 +199,7 @@ require generalization." />
 <li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/featurization/">Featurization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa OSS Change Log</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
 <ul>
@@ -218,12 +218,13 @@ require generalization." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.5.1
+          viewing: 1.5.2
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.5.2/core/policies/">1.5.2</a>
               <a href="../.././1.5.1/core/policies/">1.5.1</a>
               <a href="../.././1.5.0/core/policies/">1.5.0</a>
               <a href="../.././1.4.6/core/policies/">1.4.6</a>
@@ -343,7 +344,7 @@ with. So your story might look like this:</p>
 </pre></div>
 </div>
 <p>For Rasa Core to learn this pattern, the <code class="docutils literal notranslate"><span class="pre">max_history</span></code>
-has to be <cite>at least</cite> 3.</p>
+has to be <cite>at least</cite> 4.</p>
 <p>If you increase your <code class="docutils literal notranslate"><span class="pre">max_history</span></code>, your model will become bigger and
 training will take longer. If you have some information that should
 affect the dialogue very far into the future, you should store it as a
@@ -802,7 +803,7 @@ simple example that dispatches a bot utterance and then reverts the interaction:
     <span class="k">return</span> <span class="s2">&quot;action_is_bot&quot;</span>
 
 <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">domain</span><span class="p">):</span>
-    <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="s2">&quot;utter_is_bot&quot;</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span>
+    <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_template</span><span class="p">(</span><span class="n">template</span><span class="o">=</span><span class="s2">&quot;utter_is_bot&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">UserUtteranceReverted</span><span class="p">()]</span>
 </pre></div>
 </div>
