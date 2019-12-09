@@ -505,9 +505,10 @@ class MongoTrackerStore(TrackerStore):
             tracker: Tracker to inspect.
 
         Returns:
-            List of serialised events that aren't current stored.
+            List of serialised events that aren't currently stored.
 
         """
+
         stored = self.conversations.find_one({"sender_id": tracker.sender_id})
         n_events = len(stored.get("events", [])) if stored else 0
 
@@ -525,6 +526,7 @@ class MongoTrackerStore(TrackerStore):
             event. Returns all events if no such event is found.
 
         """
+
         events = []
         for event in reversed(serialised_tracker.get("events", [])):
             events.append(event)
@@ -763,7 +765,7 @@ class SQLTrackerStore(TrackerStore):
         from rasa.core.events import SessionStarted
 
         with self.session_scope() as session:
-            # Subquery to find the timestamp of the first `SessionStarted` event
+            # Subquery to find the timestamp of the latest `SessionStarted` event
             session_start_sub_query = (
                 session.query(
                     sa.func.max(self.SQLEvent.timestamp).label("session_start")

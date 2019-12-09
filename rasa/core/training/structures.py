@@ -203,7 +203,7 @@ class StoryStep:
                 else:
                     # form is active
                     # it is not known whether the form will be
-                    # successfully executed, so store this]
+                    # successfully executed, so store this
                     # story string for later
                     self._store_user_strings(s, e2e, FORM_PREFIX)
 

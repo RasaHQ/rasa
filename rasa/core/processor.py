@@ -671,7 +671,7 @@ class MessageProcessor:
         )
         if has_expired:
             logger.debug(
-                f"The latest session for conversation ID {tracker.sender_id} has "
+                f"The latest session for conversation ID '{tracker.sender_id}' has "
                 f"expired."
             )
 

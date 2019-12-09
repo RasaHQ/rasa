@@ -7,10 +7,8 @@ import time
 import typing
 import uuid
 from dateutil import parser
-
 from datetime import datetime
 from typing import List, Dict, Text, Any, Type, Optional
-
 
 from rasa.core import utils
 from typing import Union
