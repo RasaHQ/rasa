@@ -592,6 +592,7 @@ def test_add_knowledge_base_slots(default_domain):
             20.2,
             False,
         ),
+        ("""config: {}""", 0, True,),
     ],
 )
 def test_session_config(
