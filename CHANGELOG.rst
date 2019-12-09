@@ -17,6 +17,37 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.5.2] - 2019-12-09
+^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#3684 <https://github.com/rasahq/rasa/issues/3684>`_: ``rasa interactive`` will skip the story visualization of training stories in case
+  there are more than 200 stories. Stories created during interactive learning will be
+  visualized as before.
+- `#4792 <https://github.com/rasahq/rasa/issues/4792>`_: The log level for SocketIO loggers, including ``websockets.protocol``, ``engineio.server``,
+  and ``socketio.server``, is now handled by the ``LOG_LEVEL_LIBRARIES`` environment variable,
+  where the default log level is ``ERROR``.
+- `#4873 <https://github.com/rasahq/rasa/issues/4873>`_: Updated all example bots and documentation to use the updated ``dispatcher.utter_message()`` method from `rasa-sdk==1.5.0`.
+
+Bugfixes
+--------
+- `#3684 <https://github.com/rasahq/rasa/issues/3684>`_: ``rasa interactive`` will not load training stories in case the visualization is
+  skipped.
+- `#4789 <https://github.com/rasahq/rasa/issues/4789>`_: Fixed error where spacy models where not found in the docker images.
+- `#4802 <https://github.com/rasahq/rasa/issues/4802>`_: Fixed unnecessary ``kwargs`` unpacking in ``rasa.test.test_core`` call in ``rasa.test.test`` function.
+- `#4898 <https://github.com/rasahq/rasa/issues/4898>`_: Training data files now get loaded in the same order (especially relevant to subdirectories) each time to ensure training consistency when using a random seed.
+- `#4918 <https://github.com/rasahq/rasa/issues/4918>`_: Locks for tickets in ``LockStore`` are immediately issued without a redundant
+  check for their availability.
+
+Improved Documentation
+----------------------
+- `#4844 <https://github.com/rasahq/rasa/issues/4844>`_: Added ``towncrier`` to automatically collect changelog entries.
+- `#4869 <https://github.com/rasahq/rasa/issues/4869>`_: Document the pipeline for ``pretrained_embeddings_convert`` in the pre-configured pipelines section.
+- `#4894 <https://github.com/rasahq/rasa/issues/4894>`_: ``Proactively Reaching Out to the User Using Actions`` now correctly links to the
+  endpoint specification.
+
+
 [1.5.1] - 2019-11-27
 ^^^^^^^^^^^^^^^^^^^^
 
