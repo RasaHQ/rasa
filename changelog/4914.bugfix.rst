@@ -1,0 +1,1 @@
+Added ``rasa/nlu/schemas/config.yml`` to wheel package
