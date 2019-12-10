@@ -88,14 +88,15 @@ Featurizers
 Featurizers are divided into two different categories: sparse featurizers and dense featurizers.
 Sparse featurizers are featurizers that return feature vectors with a lot of missing values, e.g. zeros.
 As those feature vectors would normally take up a lot of memory, we store them as sparse features.
-Sparse features only store the values that are not zero and their positions in the vector.
+Sparse features only store the values that are non zero and their positions in the vector.
 Thus, we save a lot of memroy and are able to train on larger dataset.
 
 By default all featurizers will return a matrix of length (1 x feature-dimension).
 All featurizer (except the ``ConveRTFeaturizer``) have the option to return a sequence instead.
 In case the flag ``"return_sequence"`` is set to ``True`` the returned matrix of a featurizer will have the size
-(token-length x feature-dimenstion).
-So, the returned vector will have an entry for every token.
+(token-length x feature-dimension).
+So, the returned matrix will have an entry for every token.
+Otherwise, the matrix will just have on entry for the complete utterance.
 
 
 MitieFeaturizer
@@ -163,6 +164,12 @@ ConveRTFeaturizer
         To use ``ConveRTFeaturizer`` you should install ``tensorflow_text==1.15.1`` and ``tensorflow_hub==0.6.0``.
         Otherwise, you can also do a pip install of Rasa with ``pip install rasa[convert]``
 
+    .. warning::
+        If you set the option ``"return_sequence"`` to ``True``, Rasa will raise an error informing you that this
+        option is currently not supported. Do not use this featurizer in combination with any other featurizer that
+        has the option ``"return_sequence"`` set to ``True`` as training will fail. However, you can use this
+        featurizer with any other featurizer as long as ``"return_sequence"`` is set to ``False`` for all of them.  
+
 :Configuration:
 
     .. code-block:: yaml
@@ -192,13 +199,13 @@ RegexFeaturizer
 CountVectorsFeaturizer
 ~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: Creates bag-of-words representation of user message and label(intent and response) features
+:Short: Creates bag-of-words representation of user message and label (intent and response) features
 :Outputs:
    nothing, used as an input to intent classifiers that
    need bag-of-words representation of intent features
    (e.g. ``EmbeddingIntentClassifier``)
 :Requires: nothing
-:Type: Dense featurizer
+:Type: Sparse featurizer
 :Description:
     Creates bag-of-words representation of user message and label features using
     `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_.
