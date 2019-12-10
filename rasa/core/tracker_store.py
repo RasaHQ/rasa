@@ -204,11 +204,11 @@ class TrackerStore:
         return tracker
 
     def save(self, tracker):
-        """Save method that will be overriden by specific tracker"""
+        """Save method that will be overridden by specific tracker"""
         raise NotImplementedError()
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        """Retrieve method that will be overriden by specific tracker"""
+        """Retrieve method that will be overridden by specific tracker"""
         raise NotImplementedError()
 
     def stream_events(self, tracker: DialogueStateTracker) -> None:
