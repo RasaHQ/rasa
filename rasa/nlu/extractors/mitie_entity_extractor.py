@@ -12,7 +12,7 @@ from rasa.nlu.constants import (
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
-from rasa.nlu.tokenizers import Token
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
