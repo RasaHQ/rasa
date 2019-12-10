@@ -491,6 +491,11 @@ class DialogueStateTracker:
 
         return next(filtered, None)
 
+    def contains_no_user_message(self) -> bool:
+        """Determine whether tracker does not yet contain any user messages."""
+
+        return self.get_last_event_for(UserUttered) is None
+
     def last_executed_action_has(self, name: Text, skip=0) -> bool:
         """Returns whether last `ActionExecuted` event had a specific name.
 

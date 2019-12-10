@@ -143,12 +143,6 @@ class MessageProcessor:
             "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART),
         }
 
-    @staticmethod
-    def _contains_no_user_message(tracker: DialogueStateTracker) -> bool:
-        """Determine `tracker` does not yet contain any user messages."""
-
-        return tracker.get_last_event_for(UserUttered) is None
-
     async def _update_tracker_session(
         self, tracker: DialogueStateTracker, output_channel: OutputChannel
     ) -> None:
@@ -162,9 +156,7 @@ class MessageProcessor:
             output_channel: Output channel for potential utterances in a custom
                 `ActionSessionStart`.
         """
-        if self._contains_no_user_message(tracker) or self._has_session_expired(
-            tracker
-        ):
+        if tracker.contains_no_user_message() or self._has_session_expired(tracker):
             logger.debug(
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
@@ -174,6 +166,28 @@ class MessageProcessor:
                 output_channel=output_channel,
                 nlg=self.nlg,
             )
+
+    async def get_tracker_with_session_start(
+        self, sender_id: Text, output_channel: Optional[OutputChannel] = None,
+    ) -> Optional[DialogueStateTracker]:
+        """Get tracker for `sender_id` or create a new tracker for `sender_id`.
+
+        If a new tracker is created, `action_session_start` is run.
+
+        Args:
+            output_channel: Output channel associated with the incoming user message.
+            sender_id: Conversation ID for which to fetch the tracker.
+        Returns:
+              Tracker for `sender_id` if available, `None` otherwise.
+        """
+
+        tracker = self._get_tracker(sender_id)
+        if not tracker:
+            return None
+
+        await self._update_tracker_session(tracker, output_channel)
+
+        return tracker
 
     async def log_message(
         self, message: UserMessage, should_save_tracker: bool = True
@@ -190,10 +204,11 @@ class MessageProcessor:
             message.text = self.message_preprocessor(message.text)
         # we have a Tracker instance for each user
         # which maintains conversation state
-        tracker = self._get_tracker(message.sender_id)
+        tracker = await self.get_tracker_with_session_start(
+            message.sender_id, message.output_channel
+        )
 
         if tracker:
-            await self._update_tracker_session(tracker, message.output_channel)
             await self._handle_message_with_tracker(message, tracker)
 
             if should_save_tracker:

@@ -392,6 +392,23 @@ async def test_update_tracker_session_with_slots(
     assert events[14] == events[-1] == ActionExecuted(ACTION_LISTEN_NAME)
 
 
+# noinspection PyProtectedMember
+async def test_get_tracker_with_session_start(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor,
+):
+    sender_id = uuid.uuid4().hex
+    tracker = await default_processor.get_tracker_with_session_start(
+        sender_id, default_channel
+    )
+
+    # ensure session start sequence is present
+    assert list(tracker.events) == [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+
+
 async def test_handle_message_with_session_start(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,

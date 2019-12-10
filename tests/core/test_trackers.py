@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import tempfile
+from typing import List
 
 import fakeredis
 import pytest
@@ -19,6 +20,7 @@ from rasa.core.events import (
     ActionReverted,
     UserUtteranceReverted,
     SessionStarted,
+    Event,
 )
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
@@ -648,3 +650,28 @@ def test_tracker_without_slots(key, value, caplog):
         v = tracker.get_slot(key)
         assert v == value
     assert len(caplog.records) == 0
+
+
+@pytest.mark.parametrize(
+    "events, contains_no_user_message",
+    [
+        (
+            [
+                ActionExecuted("one"),
+                UserUttered("two", 1),
+                ActionExecuted(ACTION_LISTEN_NAME),
+            ],
+            False,
+        ),
+        ([], True),
+        ([ActionExecuted("one")], True),
+        ([UserUttered("two", 1)], False),
+    ],
+)
+def test_tracker_contains_no_user_message(
+    events: List[Event], contains_no_user_message: bool
+):
+    tracker = DialogueStateTracker.from_dict(
+        "any", [event.as_dict() for event in events]
+    )
+    assert tracker.contains_no_user_message() == contains_no_user_message
