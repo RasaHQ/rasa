@@ -500,10 +500,7 @@ class MongoTrackerStore(TrackerStore):
         # get current tracker state and remove `events` key from state
         # since events are pushed separately in the `update_one()` operation
         state = tracker.current_state(EventVerbosity.ALL)
-        try:
-            del state["events"]
-        except KeyError:
-            pass
+        state.pop("events", None)
 
         return state
 
