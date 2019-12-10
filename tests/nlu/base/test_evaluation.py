@@ -331,7 +331,7 @@ def test_intent_evaluation_report_large(tmpdir_factory):
     report_folder = os.path.join(path, "reports")
     report_filename = os.path.join(report_folder, "intent_report.json")
 
-    rasa.utils.io.create_directory(report_folder)
+    rasa.utils.io.create_directory(str(report_folder))
 
     def correct(label: Text) -> IntentEvaluationResult:
         return IntentEvaluationResult(label, label, "", 1.0)
