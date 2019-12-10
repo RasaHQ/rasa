@@ -35,7 +35,7 @@ If you've done this, you can see how well your NLU model predicts the test cases
 
 .. code-block:: bash
 
-   rasa test nlu -u test_set.md --model models/nlu-20180323-145833.tar.gz
+   rasa test nlu -u train_test_split/test_data.md --model models/nlu-20180323-145833.tar.gz
 
 
 If you don't want to create a separate test set, you can
