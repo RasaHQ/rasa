@@ -66,7 +66,7 @@ examples are already very similar, the intent classified for both is highly like
 large enough training data.
 
     .. note::
-        To use ``pretrained_embeddings_convert`` pipeline, you should install ``tensorflow-text==1.15.1`` and ``tensorflow-hub==0.6.0``. Otherwise, you can also pip install Rasa with ``pip install rasa[convert]``. Please also note that tensorflow_text is only currently supported on Linux platforms.
+        To use ``pretrained_embeddings_convert`` pipeline, you should install ``tensorflow-text==1.15.1`` and ``tensorflow-hub==0.6.0``. Otherwise, you can also pip install Rasa with ``pip install rasa[convert]``. Please also note that tensorflow-text is only currently supported on Linux platforms.
 
 supervised_embeddings
 ~~~~~~~~~~~~~~~~~~~~~
