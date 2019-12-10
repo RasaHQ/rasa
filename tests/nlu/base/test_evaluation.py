@@ -1,7 +1,10 @@
+from typing import Text
+
 import asyncio
 import logging
 
 import pytest
+from _pytest.tmpdir import TempdirFactory
 
 import rasa.utils.io
 from rasa.test import compare_nlu_models
