@@ -298,7 +298,7 @@ into train and test sets using:</p>
 </pre></div>
 </div>
 <p>If you’ve done this, you can see how well your NLU model predicts the test cases using this command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa <span class="nb">test</span> nlu -u test_set.md --model models/nlu-20180323-145833.tar.gz
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa <span class="nb">test</span> nlu -u train_test_split/test_data.md --model models/nlu-20180323-145833.tar.gz
 </pre></div>
 </div>
 <p>If you don’t want to create a separate test set, you can
