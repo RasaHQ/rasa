@@ -222,6 +222,16 @@ There are eight default actions:
 |                                   | if the :ref:`mapping-policy` is included in    |
 |                                   | the policy configuration.                      |
 +-----------------------------------+------------------------------------------------+
+| ``action_session_start``          | Start a new conversation session. Take all set |
+|                                   | slots, mark the beginning of a new conversation|
+|                                   | session and re-apply the existing ``SlotSet``  |
+|                                   | events. This action is triggered automatically |
+|                                   | after an inactivity period defined by the      |
+|                                   | ``session_expiration_time`` parameter in the   |
+|                                   | domain's session config. Can be triggered      |
+|                                   | manually during a conversation by entering     |
+|                                   | ``/session_start``.                            |
++-----------------------------------+------------------------------------------------+
 | ``action_default_fallback``       | Undo the last user message (as if the user did |
 |                                   | not send it and the bot did not react) and     |
 |                                   | utter a message that the bot did not           |

@@ -348,18 +348,16 @@ class ActionSessionStart(Action):
     @staticmethod
     def _slot_set_events_from_tracker(
         tracker: "DialogueStateTracker",
-    ) -> Generator["SlotSet", None, None]:
+    ) -> List["SlotSet"]:
         """Fetch SlotSet events from tracker and carry over key, value and metadata."""
 
         from rasa.core.events import SlotSet
 
-        # use generator so the timestamps are greater than that of the returned
-        # SessionStarted event in the run() call
-        return (
+        return [
             SlotSet(key=event.key, value=event.value, metadata=event.metadata)
-            for event in tracker.events
+            for event in tracker.applied_events()
             if isinstance(event, SlotSet)
-        )
+        ]
 
     async def run(
         self,
@@ -370,16 +368,14 @@ class ActionSessionStart(Action):
     ) -> List[Event]:
         from rasa.core.events import SessionStarted
 
-        slot_set_events = []
-        if domain.session_config.carry_over_slots:
-            slot_set_events = self._slot_set_events_from_tracker(tracker)
+        _events = [SessionStarted()]
 
-        # noinspection PyTypeChecker
-        return (
-            [SessionStarted()]
-            + list(slot_set_events)
-            + [ActionExecuted(ACTION_LISTEN_NAME)]
-        )
+        if domain.session_config.carry_over_slots:
+            _events.extend(self._slot_set_events_from_tracker(tracker))
+
+        _events.append(ActionExecuted(ACTION_LISTEN_NAME))
+
+        return _events
 
 
 class ActionDefaultFallback(ActionUtterTemplate):

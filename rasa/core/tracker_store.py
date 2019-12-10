@@ -146,13 +146,24 @@ class TrackerStore:
             return InMemoryTrackerStore(domain)
 
     def get_or_create_tracker(
-        self, sender_id: Text, max_event_history: Optional[int] = None,
+        self,
+        sender_id: Text,
+        max_event_history: Optional[int] = None,
+        append_action_listen: bool = True,
     ) -> "DialogueStateTracker":
-        """Returns tracker or creates one if the retrieval returns None"""
+        """Returns tracker or creates one if the retrieval returns None.
+
+        Args:
+            sender_id: pass
+            max_event_history: pass
+            append_action_listen: Whether or not to append an initial `action_listen`.
+        """
         tracker = self.retrieve(sender_id)
         self.max_event_history = max_event_history
         if tracker is None:
-            tracker = self.create_tracker(sender_id)
+            tracker = self.create_tracker(
+                sender_id, append_action_listen=append_action_listen,
+            )
         return tracker
 
     def init_tracker(self, sender_id: Text) -> "DialogueStateTracker":
@@ -164,10 +175,7 @@ class TrackerStore:
         )
 
     def create_tracker(
-        self,
-        sender_id: Text,
-        append_action_listen: bool = True,
-        should_append_session_started: bool = True,
+        self, sender_id: Text, append_action_listen: bool = True,
     ) -> DialogueStateTracker:
         """Creates a new tracker for `sender_id`.
 
@@ -176,13 +184,6 @@ class TrackerStore:
         Args:
             sender_id: Conversation ID associated with the tracker.
             append_action_listen: Whether or not to append an initial `action_listen`.
-            should_append_session_started: Whether or not to append an initial
-                `session_started` event. If `True` this will be the first event of the
-                tracker. Note: every tracker should begin with a `session_started`
-                event. This kwarg is provided only for completeness and in analogy
-                to the existing `append_action_listen` kwarg. Internal Rasa calls
-                of this method should never set `should_append_session_started` to
-                `False`.
 
         Returns:
             The newly created tracker for `sender_id`.
@@ -191,11 +192,6 @@ class TrackerStore:
         tracker = self.init_tracker(sender_id)
 
         if tracker:
-            if should_append_session_started:
-                # do not set this to `False`, unless required by an external tool
-                # that creates trackers
-                tracker.update(SessionStarted())
-
             if append_action_listen:
                 tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
 

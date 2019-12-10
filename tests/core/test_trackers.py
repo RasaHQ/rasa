@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import tempfile
-from typing import List, Optional
 
 import fakeredis
 import pytest
@@ -20,7 +19,6 @@ from rasa.core.events import (
     ActionReverted,
     UserUtteranceReverted,
     SessionStarted,
-    Event,
 )
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
@@ -29,7 +27,12 @@ from rasa.core.tracker_store import (
 )
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from tests.core.conftest import DEFAULT_STORIES_FILE, EXAMPLE_DOMAINS, TEST_DIALOGUES
+from tests.core.conftest import (
+    DEFAULT_STORIES_FILE,
+    EXAMPLE_DOMAINS,
+    TEST_DIALOGUES,
+    MockedMongoTrackerStore,
+)
 from tests.core.utilities import (
     tracker_from_dialogue_file,
     read_dialogue_file,
@@ -57,11 +60,12 @@ def stores_to_be_tested():
         MockRedisTrackerStore(domain),
         InMemoryTrackerStore(domain),
         SQLTrackerStore(domain, db=os.path.join(temp, "rasa.db")),
+        MockedMongoTrackerStore(domain),
     ]
 
 
 def stores_to_be_tested_ids():
-    return ["redis-tracker", "in-memory-tracker", "SQL-tracker"]
+    return ["redis-tracker", "in-memory-tracker", "SQL-tracker", "mongo-tracker"]
 
 
 def test_tracker_duplicate():
@@ -87,7 +91,6 @@ def test_tracker_store_storage_and_retrieval(store):
 
     # Action listen should be in there
     assert list(tracker.events) == [
-        SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
 
@@ -100,13 +103,13 @@ def test_tracker_store_storage_and_retrieval(store):
     # retrieving the same tracker should result in the same tracker
     retrieved_tracker = store.get_or_create_tracker("some-id")
     assert retrieved_tracker.sender_id == "some-id"
-    assert len(retrieved_tracker.events) == 3
+    assert len(retrieved_tracker.events) == 2
     assert retrieved_tracker.latest_message.intent.get("name") == "greet"
 
     # getting another tracker should result in an empty tracker again
     other_tracker = store.get_or_create_tracker("some-other-id")
     assert other_tracker.sender_id == "some-other-id"
-    assert len(other_tracker.events) == 2
+    assert len(other_tracker.events) == 1
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
@@ -148,7 +151,10 @@ async def test_tracker_state_regression_without_bot_utterance(default_agent: Age
 
     # Ensures that the tracker has changed between the utterances
     # (and wasn't reset in between them)
-    expected = "action_listen;greet;utter_greet;action_listen;greet;action_listen"
+    expected = (
+        "action_session_start;action_listen;greet;utter_greet;action_listen;"
+        "greet;action_listen"
+    )
     assert (
         ";".join([e.as_story_string() for e in tracker.events if e.as_story_string()])
         == expected
@@ -162,6 +168,7 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     expected = [
+        "action_session_start",
         None,
         "action_listen",
         "greet",
@@ -184,7 +191,15 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
 
     # important is, that the 'bot' comes after the second 'action' and not
     # before
-    expected = ["session_started", "action", "user", "action", "bot", "action"]
+    expected = [
+        "action",
+        "session_started",
+        "action",
+        "user",
+        "action",
+        "bot",
+        "action",
+    ]
 
     assert [e.type_name for e in tracker.events] == expected
 

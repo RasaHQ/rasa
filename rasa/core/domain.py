@@ -13,7 +13,7 @@ import rasa.utils.io
 from rasa.cli.utils import bcolors
 from rasa.constants import (
     DOMAIN_SCHEMA_FILE,
-    DEFAULT_SESSION_LENGTH_IN_MINUTES,
+    DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
     DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
 )
 from rasa.core import utils
@@ -37,7 +37,7 @@ PREV_PREFIX = "prev_"
 ACTIVE_FORM_PREFIX = "active_form_"
 
 CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
-SESSION_LENGTH_KEY = "session_length"
+SESSION_EXPIRATION_TIME_KEY = "session_expiration_time"
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -55,7 +55,7 @@ class InvalidDomain(Exception):
 
 
 class SessionConfig(NamedTuple):
-    session_length: float
+    session_expiration_time: float  # in minutes
     carry_over_slots: bool
 
     @staticmethod
@@ -64,7 +64,7 @@ class SessionConfig(NamedTuple):
         return SessionConfig(0, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION)
 
     def are_sessions_enabled(self) -> bool:
-        return self.session_length > 0
+        return self.session_expiration_time > 0
 
 
 class Domain:
@@ -145,23 +145,26 @@ class Domain:
 
     @staticmethod
     def _get_session_config(additional_arguments: Dict) -> SessionConfig:
-        session_length = additional_arguments.pop(SESSION_LENGTH_KEY, None)
+        session_expiration_time = additional_arguments.pop(
+            SESSION_EXPIRATION_TIME_KEY, None
+        )
 
         # TODO: 2.0 reconsider how to apply sessions to old projects and legacy trackers
-        if session_length is None:
+        if session_expiration_time is None:
             warnings.warn(
                 "No tracker session configuration was found in the loaded domain. "
-                "Domains without a session config will be deprecated in Rasa "
-                "version 2.0.",
+                "Domains without a session config will automatically receive a "
+                "session expiration time of 60 minutes in Rasa version 2.0 if not "
+                "configured otherwise.",
                 FutureWarning,
             )
-            session_length = 0
+            session_expiration_time = 0
 
         carry_over_slots = additional_arguments.pop(
             CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
         )
 
-        return SessionConfig(session_length, carry_over_slots)
+        return SessionConfig(session_expiration_time, carry_over_slots)
 
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":
@@ -697,7 +700,7 @@ class Domain:
     def as_dict(self) -> Dict[Text, Any]:
         additional_config = {
             "store_entities_as_slots": self.store_entities_as_slots,
-            SESSION_LENGTH_KEY: self.session_config.session_length,
+            SESSION_EXPIRATION_TIME_KEY: self.session_config.session_expiration_time,
             CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
         }
 

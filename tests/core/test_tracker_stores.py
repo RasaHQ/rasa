@@ -1,15 +1,15 @@
 import logging
 import tempfile
-import uuid
-
-from typing import Tuple, Text, Type, Dict, List
-from unittest.mock import Mock
 
 import pytest
+import uuid
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_dynamodb2
+from typing import Tuple, Text, Type, Dict, List
+from unittest.mock import Mock
 
+import rasa.core.tracker_store
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
@@ -29,27 +29,12 @@ from rasa.core.tracker_store import (
     SQLTrackerStore,
     DynamoTrackerStore,
     FailSafeTrackerStore,
-    MongoTrackerStore,
 )
-import rasa.core.tracker_store
-from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
+from tests.core.conftest import DEFAULT_ENDPOINTS_FILE, MockedMongoTrackerStore
 
 domain = Domain.load("data/test_domains/default.yml")
-
-
-class MockedMongoTrackerStore(MongoTrackerStore):
-    """In-memory mocked version of `MongoTrackerStore`."""
-
-    def __init__(
-        self, _domain: Domain,
-    ):
-        from mongomock import MongoClient
-
-        self.db = MongoClient().rasa
-        self.collection = "conversations"
-        super(MongoTrackerStore, self).__init__(domain, None)
 
 
 def get_or_create_tracker_store(store: TrackerStore):

@@ -203,7 +203,7 @@ async def test_reminder_aborted(
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
-    assert len(t.events) == 4  # nothing should have been executed
+    assert len(t.events) == 3  # nothing should have been executed
 
 
 async def test_reminder_cancelled(
@@ -272,11 +272,11 @@ async def test_reminder_restart(
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
-    assert len(t.events) == 5  # nothing should have been executed
+    assert len(t.events) == 4  # nothing should have been executed
 
 
 @pytest.mark.parametrize(
-    "event_to_apply,session_length_in_minutes,has_expired",
+    "event_to_apply,session_expiration_time_in_minutes,has_expired",
     [
         # last user event is way in the past
         (UserUttered(timestamp=1), 60, True),
@@ -292,14 +292,14 @@ async def test_reminder_restart(
 )
 async def test_has_session_expired(
     event_to_apply: Optional[Event],
-    session_length_in_minutes: float,
+    session_expiration_time_in_minutes: float,
     has_expired: bool,
     default_processor: MessageProcessor,
 ):
     sender_id = uuid.uuid4().hex
 
     default_processor.domain.session_config = SessionConfig(
-        session_length_in_minutes, True
+        session_expiration_time_in_minutes, True
     )
     # create new tracker without events
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
@@ -335,7 +335,6 @@ async def test_update_tracker_session(
     tracker = default_processor.tracker_store.retrieve(sender_id)
 
     assert list(tracker.events) == [
-        SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
@@ -375,23 +374,22 @@ async def test_update_tracker_session_with_slots(
     events = list(tracker.events)
 
     # the first three events should be up to the user utterance
-    assert events[:3] == [
-        SessionStarted(),
+    assert events[:2] == [
         ActionExecuted(ACTION_LISTEN_NAME),
         user_event,
     ]
 
     # next come the five slots
-    assert events[3:8] == slot_set_events
+    assert events[2:7] == slot_set_events
 
     # the next two events are the session start sequence
-    assert events[8:10] == [ActionExecuted(ACTION_SESSION_START_NAME), SessionStarted()]
+    assert events[7:9] == [ActionExecuted(ACTION_SESSION_START_NAME), SessionStarted()]
 
     # the five slots should be reapplied
-    assert events[10:15] == slot_set_events
+    assert events[9:14] == slot_set_events
 
     # finally an action listen, this should also be the last event
-    assert events[15] == events[-1] == ActionExecuted(ACTION_LISTEN_NAME)
+    assert events[14] == events[-1] == ActionExecuted(ACTION_LISTEN_NAME)
 
 
 async def test_handle_message_with_session_start(
@@ -425,6 +423,7 @@ async def test_handle_message_with_session_start(
 
     # make sure the sequence of events is as expected
     assert list(tracker.events) == [
+        ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(

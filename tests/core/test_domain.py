@@ -231,7 +231,7 @@ def test_domain_to_yaml():
 - utter_greet
 config:
   carry_over_slots_to_new_session: true
-  session_length: 60
+  session_expiration_time: 60
   store_entities_as_slots: true
 entities: []
 forms: []
@@ -569,11 +569,11 @@ def test_add_knowledge_base_slots(default_domain):
 
 
 @pytest.mark.parametrize(
-    "input_domain, expected_session_length, expected_carry_over_slots",
+    "input_domain, expected_session_expiration_time, expected_carry_over_slots",
     [
         (
             """config:
-    session_length: 0
+    session_expiration_time: 0
     carry_over_slots_to_new_session: true""",
             0,
             True,
@@ -587,7 +587,7 @@ def test_add_knowledge_base_slots(default_domain):
         ),
         (
             """config:
-    session_length: 20.2
+    session_expiration_time: 20.2
     carry_over_slots_to_new_session: False""",
             20.2,
             False,
@@ -596,10 +596,15 @@ def test_add_knowledge_base_slots(default_domain):
     ],
 )
 def test_session_config(
-    input_domain, expected_session_length: float, expected_carry_over_slots: bool
+    input_domain,
+    expected_session_expiration_time: float,
+    expected_carry_over_slots: bool,
 ):
     domain = Domain.from_yaml(input_domain)
-    assert domain.session_config.session_length == expected_session_length
+    assert (
+        domain.session_config.session_expiration_time
+        == expected_session_expiration_time
+    )
     assert domain.session_config.carry_over_slots == expected_carry_over_slots
 
 

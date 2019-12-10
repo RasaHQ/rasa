@@ -143,20 +143,28 @@ class MessageProcessor:
             "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART),
         }
 
+    @staticmethod
+    def _contains_no_user_message(tracker: DialogueStateTracker) -> bool:
+        """Determine `tracker` does not yet contain any user messages."""
+
+        return tracker.get_last_event_for(UserUttered) is None
+
     async def _update_tracker_session(
         self, tracker: DialogueStateTracker, output_channel: OutputChannel
     ) -> None:
         """Check the current session in `tracker` and update it if expired.
 
-        A 'session_start' the latest tracker session has expired.
+        An 'action_session_start' is run if the latest tracker session has expired, or
+        if the tracker has not yet received any user messages.
 
         Args:
             tracker: Tracker to inspect.
             output_channel: Output channel for potential utterances in a custom
                 `ActionSessionStart`.
-
         """
-        if self._has_session_expired(tracker):
+        if self._contains_no_user_message(tracker) or self._has_session_expired(
+            tracker
+        ):
             logger.debug(
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
@@ -175,7 +183,6 @@ class MessageProcessor:
         Optionally save the tracker if `should_save_tracker` is `True`. Tracker saving
         can be skipped if the tracker returned by this method is used for further
         processing and saved at a later stage.
-
         """
 
         # preprocess message if necessary
@@ -622,7 +629,6 @@ class MessageProcessor:
 
         Returns:
             `True` if the session in `tracker` has expired, `False` otherwise.
-
         """
 
         if not self.domain.session_config.are_sessions_enabled():
@@ -640,7 +646,8 @@ class MessageProcessor:
 
         time_delta_in_seconds = time.time() - user_uttered_event.timestamp
         has_expired = (
-            time_delta_in_seconds / 60 > self.domain.session_config.session_length
+            time_delta_in_seconds / 60
+            > self.domain.session_config.session_expiration_time
         )
         if has_expired:
             logger.debug(
@@ -652,7 +659,9 @@ class MessageProcessor:
 
     def _get_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
-        return self.tracker_store.get_or_create_tracker(sender_id)
+        return self.tracker_store.get_or_create_tracker(
+            sender_id, append_action_listen=False
+        )
 
     def _save_tracker(self, tracker: DialogueStateTracker) -> None:
         self.tracker_store.save(tracker)
