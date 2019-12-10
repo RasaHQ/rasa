@@ -148,15 +148,16 @@ class MessageProcessor:
     ) -> None:
         """Check the current session in `tracker` and update it if expired.
 
-        An 'action_session_start' is run if the latest tracker session has expired, or
-        if the tracker has not yet received any user messages.
+        An 'action_session_start' is run if the latest tracker session has expired,
+        or if the tracker does not yet contain any events (only those after the last
+        restart are considered).
 
         Args:
             tracker: Tracker to inspect.
             output_channel: Output channel for potential utterances in a custom
                 `ActionSessionStart`.
         """
-        if tracker.contains_no_user_message() or self._has_session_expired(tracker):
+        if len(tracker.applied_events()) == 0 or self._has_session_expired(tracker):
             logger.debug(
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
@@ -583,7 +584,10 @@ class MessageProcessor:
     def _warn_about_new_slots(self, tracker, action_name, events) -> None:
         # these are the events from that action we have seen during training
 
-        if action_name not in self.policy_ensemble.action_fingerprints:
+        if (
+            not self.policy_ensemble
+            or action_name not in self.policy_ensemble.action_fingerprints
+        ):
             return
 
         fp = self.policy_ensemble.action_fingerprints[action_name]
