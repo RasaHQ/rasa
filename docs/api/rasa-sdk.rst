@@ -13,7 +13,10 @@ Rasa SDK provides the tools you need to write custom actions in python.
 .. contents::
    :local:
 
-Use ``pip`` to install ``rasa-sdk`` on you action server.
+Installation
+------------
+
+Use ``pip`` to install ``rasa-sdk`` on your action server.
 
 .. code-block:: bash
 
@@ -22,13 +25,12 @@ Use ``pip`` to install ``rasa-sdk`` on you action server.
 .. note::
 
     You do not need to install ``rasa`` for your action server.
-    E.g. it is recommended to run Rasa in a docker container and
+    E.g. if you are running Rasa in a docker container, it is recommended to
     create a separate container for your action server. In this
     separate container, you only need to install ``rasa-sdk``.
 
-The file that contains your custom actions should be called ``actions.py``.
-Alternatively, you can use a package directory called ``actions`` or else
-manually specify an actions module or package with the ``--actions`` flag.
+Running the Action Server
+-------------------------
 
 If you have ``rasa`` installed, run this command to start your action server:
 
@@ -44,8 +46,17 @@ Otherwise, if you do not have ``rasa`` installed, run this command:
 
     python -m rasa_sdk --actions actions
 
-``Actions``
------------
+
+The file that contains your custom actions should be called ``actions.py``.
+Alternatively, you can use a package directory called ``actions`` or else
+manually specify an actions module or package with the ``--actions`` flag.
+
+The full list of options for running the action server with either command is:
+
+.. program-output:: rasa run actions --help
+
+Actions
+-------
 
 The ``Action`` class is the base class for any custom action. It has two methods
 that both need to be overwritten, ``name()`` and ``run()``.
@@ -78,7 +89,7 @@ which might look like this:
 
 
 You should add the the action name ``action_check_restaurants`` to
-the actions in your domain file. The action's ``run`` method receives
+the actions in your domain file. The action's ``run()`` method receives
 three arguments. You can access the values of slots and the latest message
 sent by the user using the ``tracker`` object, and you can send messages
 back to the user with the ``dispatcher`` object, by calling
@@ -92,18 +103,17 @@ Details of the ``dispatcher.utter_message()`` method:
 
 .. automethod:: rasa_sdk.executor.CollectingDispatcher.utter_message
 
-``Events``
-----------
+Events
+------
 
-There is an example of a ``SlotSet`` event
-:ref:`above <custom_action_example>`.
-In general an action's ``run`` method returns a list of events. For more information on
-events see :ref:`Events`. The action itself will automatically be added to the
+An action's ``run()`` method returns a list of events. For more information on
+the different types of events, see :ref:`Events`. There is an example of a ``SlotSet`` event
+:ref:`above <custom_action_example>`. The action itself will automatically be added to the
 tracker as an ``ActionExecuted`` event. If the action should not trigger any
 other events, it should return an empty list.
 
-``Tracker``
------------
+Tracker
+-------
 
 The ``rasa_sdk.Tracker`` lets you access the bot's memory in your custom
 actions. You can get information about past events and the current state of the
