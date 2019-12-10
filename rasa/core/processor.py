@@ -178,6 +178,7 @@ class MessageProcessor:
         Args:
             output_channel: Output channel associated with the incoming user message.
             sender_id: Conversation ID for which to fetch the tracker.
+
         Returns:
               Tracker for `sender_id` if available, `None` otherwise.
         """
@@ -217,7 +218,7 @@ class MessageProcessor:
                 self._save_tracker(tracker)
         else:
             logger.warning(
-                "Failed to retrieve or create tracker for conversation ID "
+                f"Failed to retrieve or create tracker for conversation ID "
                 f"'{message.sender_id}'."
             )
         return tracker
@@ -265,9 +266,8 @@ class MessageProcessor:
             max_confidence_index, self.action_endpoint
         )
         logger.debug(
-            "Predicted next action '{}' with confidence {:.2f}.".format(
-                action.name(), action_confidences[max_confidence_index]
-            )
+            f"Predicted next action '{action.name()}' with confidence "
+            f"{action_confidences[max_confidence_index]:.2f}."
         )
         return action, policy, action_confidences[max_confidence_index]
 
@@ -322,10 +322,8 @@ class MessageProcessor:
             or not self._is_reminder_still_valid(tracker, reminder_event)
         ):
             logger.debug(
-                "Canceled reminder because it is outdated. "
-                "(event: {} id: {})".format(
-                    reminder_event.action_name, reminder_event.name
-                )
+                f"Canceled reminder because it is outdated. "
+                f"(event: {reminder_event.action_name} id: {reminder_event.name})"
             )
         else:
             # necessary for proper featurization, otherwise the previous
@@ -431,8 +429,7 @@ class MessageProcessor:
             self._log_slots(tracker)
 
         logger.debug(
-            "Logged UserUtterance - "
-            "tracker now has {} events".format(len(tracker.events))
+            f"Logged UserUtterance - " f"tracker now has {len(tracker.events)} events."
         )
 
     @staticmethod
@@ -561,10 +558,10 @@ class MessageProcessor:
             return self.should_predict_another_action(action.name(), events)
         except Exception as e:
             logger.error(
-                "Encountered an exception while running action '{}'. "
+                f"Encountered an exception while running action '{action.name()}'. "
                 "Bot will continue, but the actions events are lost. "
                 "Please check the logs of your action server for "
-                "more information.".format(action.name())
+                "more information."
             )
             logger.debug(e, exc_info=True)
             events = []
@@ -621,9 +618,7 @@ class MessageProcessor:
             events = []
 
         logger.debug(
-            "Action '{}' ended with events '{}'".format(
-                action_name, [f"{e}" for e in events]
-            )
+            f"Action '{action_name}' ended with events '{[e for e in events]}'."
         )
 
         self._warn_about_new_slots(tracker, action_name, events)
@@ -709,9 +704,9 @@ class MessageProcessor:
                 return result
             else:
                 logger.error(
-                    "Trying to run unknown follow up action '{}'!"
+                    f"Trying to run unknown follow-up action '{followup_action}'!"
                     "Instead of running that, we will ignore the action "
-                    "and predict the next action.".format(followup_action)
+                    "and predict the next action."
                 )
 
         return self.policy_ensemble.probabilities_using_best_policy(

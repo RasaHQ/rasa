@@ -217,8 +217,8 @@ async def get_tracker(
         raise ErrorResponse(
             409,
             "Conflict",
-            "Could not retrieve tracker with id '{}'. Most likely "
-            "because there is no domain set on the agent.".format(conversation_id),
+            f"Could not retrieve tracker with id '{conversation_id}'. Most likely "
+            f"because there is no domain set on the agent.",
         )
     return tracker
 
