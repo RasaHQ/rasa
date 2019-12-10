@@ -11,7 +11,7 @@
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
 
-Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build chatbots on:
+Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contexual assistants on:
 - Facebook Messenger
 - Slack
 - Microsoft Bot Framework
@@ -25,10 +25,10 @@ or voice assistants as:
 - Alexa Skills
 - Google Home Actions
 
-Rasa's primary purpose is to help you build contextual, layered
-conversations with lots of back-and-forth. To have a real conversation,
-you need to have some memory and build on things that were said earlier.
-Rasa lets you do that in a scalable way.
+Rasa helps you build contextual assistants capable of having layered conversations with 
+lots of back-and-forth. In order for a human to have a meaningful exchange with a contextual 
+assistant, the assistant needs to be able to use context to build on things that were previously 
+discussed – Rasa enables you to build assistants that can do this in a scalable way.
 
 There's a lot more background information in this
 [blog post](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a).

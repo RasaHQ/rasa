@@ -41,7 +41,9 @@ class MitieTokenizer(Tokenizer, Component):
             MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], self.tokenize(message.text)
         )
 
-    def _token_from_offset(self, text, offset, encoded_sentence):
+    def _token_from_offset(
+        self, text: bytes, offset: int, encoded_sentence: bytes
+    ) -> Token:
         return Token(
             text.decode(DEFAULT_ENCODING),
             self._byte_to_char_offset(encoded_sentence, offset),

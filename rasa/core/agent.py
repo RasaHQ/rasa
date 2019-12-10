@@ -410,17 +410,17 @@ class Agent:
             path_to_model_archive=path_to_model_archive,
         )
 
-    def is_core_ready(self):
+    def is_core_ready(self) -> bool:
         """Check if all necessary components and policies are ready to use the agent.
         """
-        return self.is_ready() and self.policy_ensemble
+        return self.is_ready() and self.policy_ensemble is not None
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         """Check if all necessary components are instantiated to use agent.
 
         Policies might not be available, if this is an NLU only agent."""
 
-        return self.tracker_store and self.interpreter
+        return self.tracker_store is not None and self.interpreter is not None
 
     async def parse_message_using_nlu_interpreter(
         self, message_data: Text, tracker: DialogueStateTracker = None
@@ -584,7 +584,7 @@ class Agent:
         self.policy_ensemble.continue_training(trackers, self.domain, **kwargs)
         self._set_fingerprint()
 
-    def _max_history(self):
+    def _max_history(self) -> int:
         """Find maximum max_history."""
 
         max_histories = [
@@ -595,7 +595,7 @@ class Agent:
 
         return max(max_histories or [0])
 
-    def _are_all_featurizers_using_a_max_history(self):
+    def _are_all_featurizers_using_a_max_history(self) -> bool:
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
         def has_max_history_featurizer(policy):
