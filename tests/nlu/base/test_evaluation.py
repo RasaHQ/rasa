@@ -336,7 +336,7 @@ def test_intent_evaluation_report_large(tmpdir_factory):
     def correct(label: Text) -> IntentEvaluationResult:
         return IntentEvaluationResult(label, label, "", 1.0)
 
-    def incorrect(label, _label):
+    def incorrect(label: Text, _label: Text) -> IntentEvaluationResult:
         return IntentEvaluationResult(label, _label, "", 1.0)
 
     a_results = [correct("A")] * 10
