@@ -374,9 +374,15 @@ def test_intent_evaluation_report_large(tmpdir_factory: TempdirFactory):
         "confused_with": {"C": 5, "": 5},
     }
 
+    c_confused_with = {
+        "D": 1,
+        "E": 1,
+    }
+
     assert len(report.keys()) == 8
     assert report["A"] == a_results
     assert report["E"] == e_results
+    assert report["C"]["confused_with"] == c_confused_with
 
 
 def test_response_evaluation_report(tmpdir_factory):
