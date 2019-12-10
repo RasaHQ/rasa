@@ -169,7 +169,7 @@ class TrackerStore:
         append_action_listen: bool = True,
         should_append_session_started: bool = True,
     ) -> DialogueStateTracker:
-        """Creates a new tracker for the sender_id.
+        """Creates a new tracker for `sender_id`.
 
         The tracker begins with a `SessionStarted` event and is initially listening.
 
