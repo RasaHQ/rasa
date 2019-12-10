@@ -25,7 +25,6 @@ try:
 except ImportError:
     matplotlib.use("agg")
 
-
 logger = logging.getLogger(__name__)
 
 StoryEvalution = namedtuple(
