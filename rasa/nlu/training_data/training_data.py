@@ -343,7 +343,7 @@ class TrainingData:
                 )
 
     def train_test_split(
-        self, train_frac: float = 0.8, random_seed: int = None
+        self, train_frac: float = 0.8, random_seed: Optional[int] = None
     ) -> Tuple["TrainingData", "TrainingData"]:
         """Split into a training and test dataset,
         preserving the fraction of examples per intent."""
@@ -395,7 +395,9 @@ class TrainingData:
                 ]
         return nlg_stories
 
-    def split_nlu_examples(self, train_frac, random_seed=None):
+    def split_nlu_examples(
+        self, train_frac: float, random_seed: Optional[int] = None
+    ) -> Tuple[list, list]:
         train, test = [], []
         for intent, count in self.examples_per_intent.items():
             ex = [e for e in self.intent_examples if e.data["intent"] == intent]
