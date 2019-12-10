@@ -154,8 +154,8 @@ class TrackerStore:
         """Returns tracker or creates one if the retrieval returns None.
 
         Args:
-            sender_id: pass
-            max_event_history: pass
+            sender_id: Conversation ID associated with the requested tracker.
+            max_event_history: Value to update the tracker store's max event history to.
             append_action_listen: Whether or not to append an initial `action_listen`.
         """
         tracker = self.retrieve(sender_id)
