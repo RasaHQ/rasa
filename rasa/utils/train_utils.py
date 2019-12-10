@@ -48,14 +48,17 @@ def create_label_ids(label_ids: "np.ndarray") -> "np.ndarray":
 
     if label_ids.ndim == 1:
         return label_ids
-    elif label_ids.ndim == 2 and label_ids.shape[-1] == 1:
+
+    if label_ids.ndim == 2 and label_ids.shape[-1] == 1:
         return label_ids[:, 0]
-    elif label_ids.ndim == 2:
+
+    if label_ids.ndim == 2:
         return np.array([" ".join(row.astype("str")) for row in label_ids])
-    elif label_ids.ndim == 3 and label_ids.shape[-1] == 1:
+
+    if label_ids.ndim == 3 and label_ids.shape[-1] == 1:
         return np.array([" ".join(row.astype("str")) for row in label_ids[:, :, 0]])
-    else:
-        raise ValueError("Unsupported label_ids dimensions")
+
+    raise ValueError("Unsupported label_ids dimensions")
 
 
 # noinspection PyPep8Naming

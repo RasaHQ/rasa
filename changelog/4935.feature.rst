@@ -1,0 +1,15 @@
+Add option ``use_cls_token`` to all tokenizers. If it is set to ``True``, the token ``__CLS__`` will be added to
+the end of the list of tokens.
+
+Add option ``return_sequence`` to all featurizers. By default all featurizers return a matrix of size
+(1 x feature-dimension). If the option ``return_sequence`` is set to ``True``, the corresponding featurizer will return
+a matrix of size (token-length x feature-dimension).
+
+Split featurizers into sparse and dense featurizers.
+
+Deprecate ``NGramFeaturizer``. Please use ``CountVectorsFeaturizer`` instead.
+
+To use custom features in the ``CRFEntityExtractor`` use ``text_dense_features`` instead of ``ner_features``. If
+``text_dense_features`` are present in the feature set, the ``CRFEntityExtractor`` will automatically make use of
+them. Just make sure to add a dense featurizer in front of the ``CRFEntityExtractor`` in your pipeline and set the
+flag ``return_sequence`` to ``True`` for that featurizer.

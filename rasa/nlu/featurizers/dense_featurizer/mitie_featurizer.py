@@ -61,23 +61,25 @@ class MitieFeaturizer(Featurizer):
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         for example in training_data.intent_examples:
-
             for attribute in MESSAGE_ATTRIBUTES:
+                self.process_training_example(
+                    example, attribute, mitie_feature_extractor
+                )
 
-                attribute_tokens = self.get_tokens_by_attribute(example, attribute)
-                if attribute_tokens is not None:
-
-                    features = self.features_for_tokens(
-                        attribute_tokens, mitie_feature_extractor
-                    )
-                    example.set(
-                        MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute],
-                        self._combine_with_existing_dense_features(
-                            example,
-                            features,
-                            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute],
-                        ),
-                    )
+    def process_training_example(
+        self, example: Message, attribute: Text, mitie_feature_extractor: Any
+    ):
+        attribute_tokens = self.get_tokens_by_attribute(example, attribute)
+        if attribute_tokens is not None:
+            features = self.features_for_tokens(
+                attribute_tokens, mitie_feature_extractor
+            )
+            example.set(
+                MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute],
+                self._combine_with_existing_dense_features(
+                    example, features, MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
+                ),
+            )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
