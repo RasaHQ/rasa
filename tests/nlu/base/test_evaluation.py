@@ -356,7 +356,7 @@ def test_intent_evaluation_report_large(tmpdir_factory):
         intent_hist_filename=None,
     )
 
-    report = json.loads(rasa.utils.io.read_file(report_filename))
+    report = json.loads(rasa.utils.io.read_file(str(report_filename)))
 
     a_results = {
         "precision": 1.0,
