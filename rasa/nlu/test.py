@@ -410,7 +410,8 @@ def _add_confused_intents_to_report(
     the dict will be empty. Typically we include the two most
     commonly false positive labels, three in the rare case that
     the diagonal element in the confusion matrix is not one of the
-    three highest values in the row"""
+    three highest values in the row.
+    """
 
     # sort confusion matrix by false positives
     indices = np.argsort(cnf_matrix, axis=1)
