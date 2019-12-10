@@ -169,11 +169,31 @@ class TrackerStore:
         append_action_listen: bool = True,
         should_append_session_started: bool = True,
     ) -> DialogueStateTracker:
-        """Creates a new tracker for the sender_id. The tracker is initially listening.
+        """Creates a new tracker for the sender_id.
+
+        The tracker begins with a `SessionStarted` event and is initially listening.
+
+        Args:
+            sender_id: Conversation ID associated with the tracker.
+            append_action_listen: Whether or not to append an initial `action_listen`.
+            should_append_session_started: Whether or not to append an initial
+                `session_started` event. If `True` this will be the first event of the
+                tracker. Note: every tracker should begin with a `session_started`
+                event. This kwarg is provided only for completeness and in analogy
+                to the existing `append_action_listen` kwarg. Internal Rasa calls
+                of this method should never set `should_append_session_started` to
+                `False`.
+
+        Returns:
+            The newly created tracker for `sender_id`.
+
         """
         tracker = self.init_tracker(sender_id)
+
         if tracker:
             if should_append_session_started:
+                # do not set this to `False`, unless required by an external tool
+                # that creates trackers
                 tracker.update(SessionStarted())
 
             if append_action_listen:

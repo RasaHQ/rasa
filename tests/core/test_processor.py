@@ -5,6 +5,7 @@ import datetime
 import pytest
 import time
 import uuid
+import json
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 from typing import Optional, Text
@@ -391,3 +392,67 @@ async def test_update_tracker_session_with_slots(
 
     # finally an action listen, this should also be the last event
     assert events[15] == events[-1] == ActionExecuted(ACTION_LISTEN_NAME)
+
+
+async def test_handle_message_with_session_start(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
+):
+    sender_id = uuid.uuid4().hex
+
+    entity = "name"
+    slot_1 = {entity: "Core"}
+    await default_processor.handle_message(
+        UserMessage(f"/greet{json.dumps(slot_1)}", default_channel, sender_id)
+    )
+
+    assert {
+        "recipient_id": sender_id,
+        "text": "hey there Core!",
+    } == default_channel.latest_output()
+
+    # patch processor so a session start is triggered
+    monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
+
+    slot_2 = {entity: "post-session start hello"}
+    # handle a new message
+    await default_processor.handle_message(
+        UserMessage(f"/greet{json.dumps(slot_2)}", default_channel, sender_id)
+    )
+
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+    # make sure the sequence of events is as expected
+    assert list(tracker.events) == [
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            f"/greet{json.dumps(slot_1)}",
+            {"name": "greet", "confidence": 1.0},
+            [{"entity": entity, "start": 6, "end": 22, "value": "Core"}],
+        ),
+        SlotSet(entity, slot_1[entity]),
+        ActionExecuted("utter_greet"),
+        BotUttered("hey there Core!"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        # the initial SlotSet is reapplied after the SessionStarted sequence
+        SlotSet(entity, slot_1[entity]),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            f"/greet{json.dumps(slot_2)}",
+            {"name": "greet", "confidence": 1.0},
+            [
+                {
+                    "entity": entity,
+                    "start": 6,
+                    "end": 42,
+                    "value": "post-session start hello",
+                }
+            ],
+        ),
+        SlotSet(entity, slot_2[entity]),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
