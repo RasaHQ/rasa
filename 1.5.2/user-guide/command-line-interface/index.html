@@ -880,7 +880,8 @@ NLU Test Arguments:
 </div>
 <p>You can specify the training data, the fraction, and the output directory using the following arguments:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data split nlu [-h] [-v] [-vv] [--quiet] [-u NLU]
-                           [--training-fraction TRAINING_FRACTION] [--out OUT]
+                           [--training-fraction TRAINING_FRACTION]
+                           [--random-seed RANDOM_SEED] [--out OUT]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -889,6 +890,9 @@ optional arguments:
   --training-fraction TRAINING_FRACTION
                         Percentage of the data which should be in the training
                         data. (default: 0.8)
+  --random-seed RANDOM_SEED
+                        Seed to generate the same train/test split. (default:
+                        None)
   --out OUT             Directory where the split files should be stored.
                         (default: train_test_split)
 
