@@ -1,9 +1,9 @@
 import logging
-import warnings
 import os
 import re
 import scipy.sparse
 from typing import Any, Dict, List, Optional, Text
+
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
@@ -77,13 +77,17 @@ class CountVectorsFeaturizer(Featurizer):
         # will be converted to lowercase if lowercase is True
         "OOV_token": None,  # string or None
         "OOV_words": [],  # string or list of strings
+        # if True return a sequence of features (return vector has size
+        # token-size x feature-dimension)
+        # if False token-size will be equal to 1
+        "return_sequence": False,
     }
 
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["sklearn"]
 
-    def _load_count_vect_params(self):
+    def _load_count_vect_params(self) -> None:
 
         # Use shared vocabulary between text and all other attributes of Message
         self.use_shared_vocab = self.component_config["use_shared_vocab"]
@@ -117,8 +121,11 @@ class CountVectorsFeaturizer(Featurizer):
         # if convert all characters to lowercase
         self.lowercase = self.component_config["lowercase"]
 
+        # whether to return a sequence or not
+        self.return_sequence = self.component_config["return_sequence"]
+
     # noinspection PyPep8Naming
-    def _load_OOV_params(self):
+    def _load_OOV_params(self) -> None:
         self.OOV_token = self.component_config["OOV_token"]
 
         self.OOV_words = self.component_config["OOV_words"]
@@ -160,7 +167,7 @@ class CountVectorsFeaturizer(Featurizer):
         except TypeError:
             return None
 
-    def _check_analyzer(self):
+    def _check_analyzer(self) -> None:
         if self.analyzer != "word":
             if self.OOV_token is not None:
                 logger.warning(
@@ -191,7 +198,7 @@ class CountVectorsFeaturizer(Featurizer):
 
     def __init__(
         self,
-        component_config: Dict[Text, Any] = None,
+        component_config: Optional[Dict[Text, Any]] = None,
         vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None,
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
@@ -397,7 +404,15 @@ class CountVectorsFeaturizer(Featurizer):
         X = []
 
         for i, tokens in enumerate(all_tokens):
-            x = self.vectorizers[attribute].transform(tokens)
+            # vectorizer.transform returns a sparse matrix of size
+            # [n_samples, n_features]
+            # set input to list of tokens if sequence should be returned
+            # otherwise join all tokens to a single string and pass that as a list
+            input = tokens
+            if not self.return_sequence:
+                input = [" ".join(tokens)]
+
+            x = self.vectorizers[attribute].transform(input)
             x.sort_indices()
             X.append(x.tocoo())
 
@@ -497,7 +512,7 @@ class CountVectorsFeaturizer(Featurizer):
             ),
         )
 
-    def _collect_vectorizer_vocabularies(self):
+    def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
         """Get vocabulary for all attributes"""
 
         attribute_vocabularies = {}

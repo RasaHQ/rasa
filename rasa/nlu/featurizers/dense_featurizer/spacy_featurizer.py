@@ -1,6 +1,6 @@
 import numpy as np
 import typing
-from typing import Any, Optional
+from typing import Any, Optional, Dict, Text
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurzier import Featurizer
@@ -31,9 +31,24 @@ class SpacyFeaturizer(Featurizer):
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ] + [MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES]
 
+    defaults = {
+        # if True return a sequence of features (return vector has size
+        # token-size x feature-dimension)
+        # if False token-size will be equal to 1
+        "return_sequence": False
+    }
+
+    def __init__(self, component_config: Dict[Text, Any] = None):
+
+        super().__init__(component_config)
+
+        self.return_sequence = self.component_config["return_sequence"]
+
     def _features_for_doc(self, doc: "Doc") -> np.ndarray:
-        """Feature vector for a single document / sentence."""
-        return np.array([t.vector for t in doc])
+        """Feature vector for a single document / sentence / tokens."""
+        if self.return_sequence:
+            return np.array([t.vector for t in doc])
+        return np.array([doc.vector])
 
     def train(
         self,
@@ -62,14 +77,14 @@ class SpacyFeaturizer(Featurizer):
         cls_token_used = tokens[-1].text == CLS_TOKEN if tokens else False
 
         if message_attribute_doc is not None:
-            fs = self._features_for_doc(message_attribute_doc)
+            features = self._features_for_doc(message_attribute_doc)
 
-            if cls_token_used:
+            if cls_token_used and self.return_sequence:
                 # cls token is used, need to append a vector
-                cls_token_vec = np.zeros([1, fs.shape[-1]])
-                fs = np.concatenate([fs, cls_token_vec])
+                cls_token_vec = np.mean(features, axis=0, keepdims=True)
+                features = np.concatenate([features, cls_token_vec])
 
             features = self._combine_with_existing_dense_features(
-                message, fs, MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
+                message, features, MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
             )
             message.set(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute], features)

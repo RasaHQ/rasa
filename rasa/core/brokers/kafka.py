@@ -21,7 +21,7 @@ class KafkaProducer(EventChannel):
         topic="rasa_core_events",
         security_protocol="SASL_PLAINTEXT",
         loglevel=logging.ERROR,
-    ):
+    ) -> None:
 
         self.producer = None
         self.host = host
@@ -43,12 +43,12 @@ class KafkaProducer(EventChannel):
 
         return cls(broker_config.url, **broker_config.kwargs)
 
-    def publish(self, event):
+    def publish(self, event) -> None:
         self._create_producer()
         self._publish(event)
         self._close()
 
-    def _create_producer(self):
+    def _create_producer(self) -> None:
         import kafka
 
         if self.security_protocol == "SASL_PLAINTEXT":
@@ -71,8 +71,8 @@ class KafkaProducer(EventChannel):
                 security_protocol=self.security_protocol,
             )
 
-    def _publish(self, event):
+    def _publish(self, event) -> None:
         self.producer.send(self.topic, event)
 
-    def _close(self):
+    def _close(self) -> None:
         self.producer.close()

@@ -1,5 +1,5 @@
 import typing
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Text, Optional
 
 from rasa.nlu.constants import MESSAGE_ENTITIES_ATTRIBUTE
 from rasa.nlu.extractors import EntityExtractor
@@ -22,7 +22,7 @@ class SpacyEntityExtractor(EntityExtractor):
         "dimensions": None
     }
 
-    def __init__(self, component_config: Text = None) -> None:
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
         super().__init__(component_config)
 
     def process(self, message: Message, **kwargs: Any) -> None:
