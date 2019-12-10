@@ -327,7 +327,7 @@ def test_intent_evaluation_report(tmpdir_factory):
 
 
 def test_intent_evaluation_report_large(tmpdir_factory: TempdirFactory):
-    path = tmpdir_factory.mktemp("evaluation").strpath
+    path = tmpdir_factory.mktemp("evaluation")
     report_folder = os.path.join(path, "reports")
     report_filename = os.path.join(report_folder, "intent_report.json")
 
