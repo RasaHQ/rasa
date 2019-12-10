@@ -333,7 +333,7 @@ def test_intent_evaluation_report_large(tmpdir_factory):
 
     rasa.utils.io.create_directory(report_folder)
 
-    def correct(label):
+    def correct(label: Text) -> IntentEvaluationResult:
         return IntentEvaluationResult(label, label, "", 1.0)
 
     def incorrect(label, _label):
