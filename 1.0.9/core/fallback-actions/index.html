@@ -269,13 +269,6 @@ the <code class="docutils literal notranslate"><span class="pre">utter_default</
 state of the conversation before the user message that caused the
 fallback, so that it will not influence the prediction of future actions.
 You can take a look at the source of the action below:</p>
-<dl class="class">
-<dt id="rasa.core.actions.action.ActionDefaultFallback">
-<em class="property">class </em><code class="descclassname">rasa.core.actions.action.</code><code class="descname">ActionDefaultFallback</code><a class="headerlink" href="#rasa.core.actions.action.ActionDefaultFallback" title="Permalink to this definition">¶</a></dt>
-<dd><p>Executes the fallback action and goes back to the previous state
-of the dialogue</p>
-</dd></dl>
-
 <p>You can also create your own custom action to use as a fallback (see
 <a class="reference internal" href="../actions/#custom-actions"><span class="std std-ref">custom actions</span></a> for more info on custom actions). If you
 do, make sure to pass the custom fallback action to <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> inside

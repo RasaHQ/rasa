@@ -309,17 +309,7 @@ your events should be formatted like the JSON objects on this page.</p>
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
-<dt id="rasa.core.events.SlotSet">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">SlotSet</code><span class="sig-paren">(</span><em>key</em>, <em>value=None</em>, <em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.SlotSet" title="Permalink to this definition">¶</a></dt>
-<dd><p>The user has specified their preference for the value of a <code class="docutils literal notranslate"><span class="pre">slot</span></code>.</p>
-<p>Every slot has a name and a value. This event can be used to set a
-value for a slot on a conversation.</p>
-<p>As a side effect the <code class="docutils literal notranslate"><span class="pre">Tracker</span></code>’s slots will be updated so
-that <code class="docutils literal notranslate"><span class="pre">tracker.slots[key]=value</span></code>.</p>
-</dd></dl>
-
-</td>
+<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"></td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
 <div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
@@ -345,16 +335,7 @@ that <code class="docutils literal notranslate"><span class="pre">tracker.slots[
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
-<dt id="rasa.core.events.Restarted">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">Restarted</code><span class="sig-paren">(</span><em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.Restarted" title="Permalink to this definition">¶</a></dt>
-<dd><p>Conversation should start over &amp; history wiped.</p>
-<p>Instead of deleting all events, this event can be used to reset the
-trackers state (e.g. ignoring any past user messages &amp; resetting all
-the slots).</p>
-</dd></dl>
-
-</td>
+<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"></td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
 <div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
@@ -385,16 +366,7 @@ the slots).</p>
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
-<dt id="rasa.core.events.AllSlotsReset">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">AllSlotsReset</code><span class="sig-paren">(</span><em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.AllSlotsReset" title="Permalink to this definition">¶</a></dt>
-<dd><p>All Slots are reset to their initial values.</p>
-<p>If you want to keep the dialogue history and only want to reset the
-slots, you can use this event to set all the slots to their initial
-values.</p>
-</dd></dl>
-
-</td>
+<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"></td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
 <div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
@@ -426,15 +398,7 @@ values.</p>
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
-<dt id="rasa.core.events.ReminderScheduled">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ReminderScheduled</code><span class="sig-paren">(</span><em>action_name</em>, <em>trigger_date_time</em>, <em>name=None</em>, <em>kill_on_user_message=True</em>, <em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ReminderScheduled" title="Permalink to this definition">¶</a></dt>
-<dd><p>Allows asynchronous scheduling of action execution.</p>
-<p>As a side effect the message processor will schedule an action to be run
-at the trigger date.</p>
-</dd></dl>
-
-</td>
+<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"></td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first last">When added to a tracker, core will schedule the action to be
 run in the future.</p>
@@ -458,15 +422,7 @@ will be halted until resumed.</p>
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
-<dt id="rasa.core.events.ConversationPaused">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ConversationPaused</code><span class="sig-paren">(</span><em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ConversationPaused" title="Permalink to this definition">¶</a></dt>
-<dd><p>Ignore messages from the user to let a human take over.</p>
-<p>As a side effect the <code class="docutils literal notranslate"><span class="pre">Tracker</span></code>’s <code class="docutils literal notranslate"><span class="pre">paused</span></code> attribute will
-be set to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
-</dd></dl>
-
-</td>
+<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"></td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
 <div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
@@ -493,15 +449,7 @@ predicting actions again.</p>
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
-<dt id="rasa.core.events.ConversationResumed">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ConversationResumed</code><span class="sig-paren">(</span><em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ConversationResumed" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bot takes over conversation.</p>
-<p>Inverse of <code class="docutils literal notranslate"><span class="pre">PauseConversation</span></code>. As a side effect the <code class="docutils literal notranslate"><span class="pre">Tracker</span></code>’s
-<code class="docutils literal notranslate"><span class="pre">paused</span></code> attribute will be set to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
-</dd></dl>
-
-</td>
+<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"></td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
 <div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
@@ -528,13 +476,7 @@ to be a fixed one.</p>
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
-<dt id="rasa.core.events.FollowupAction">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">FollowupAction</code><span class="sig-paren">(</span><em>name</em>, <em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.FollowupAction" title="Permalink to this definition">¶</a></dt>
-<dd><p>Enqueue a followup action.</p>
-</dd></dl>
-
-</td>
+<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"></td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
 <div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;DialogueStateTracker&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -574,14 +516,7 @@ to be a fixed one.</p>
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
-<dt id="rasa.core.events.UserUttered">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">UserUttered</code><span class="sig-paren">(</span><em>text=None</em>, <em>intent=None</em>, <em>entities=None</em>, <em>parse_data=None</em>, <em>timestamp=None</em>, <em>input_channel=None</em>, <em>message_id=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.UserUttered" title="Permalink to this definition">¶</a></dt>
-<dd><p>The user has said something to the bot.</p>
-<p>As a side effect a new <code class="docutils literal notranslate"><span class="pre">Turn</span></code> will be created in the <code class="docutils literal notranslate"><span class="pre">Tracker</span></code>.</p>
-</dd></dl>
-
-</td>
+<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"></td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
 <div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;DialogueStateTracker&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -608,15 +543,7 @@ to be a fixed one.</p>
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
-<dt id="rasa.core.events.BotUttered">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">BotUttered</code><span class="sig-paren">(</span><em>text=None</em>, <em>data=None</em>, <em>metadata=None</em>, <em>timestamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.BotUttered" title="Permalink to this definition">¶</a></dt>
-<dd><p>The bot has said something to the user.</p>
-<p>This class is not used in the story training as it is contained in the</p>
-<p><code class="docutils literal notranslate"><span class="pre">ActionExecuted</span></code> class. An entry is made in the <code class="docutils literal notranslate"><span class="pre">Tracker</span></code>.</p>
-</dd></dl>
-
-</td>
+<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"></td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
 <div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;DialogueStateTracker&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -644,16 +571,7 @@ to be a fixed one.</p>
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
-<dt id="rasa.core.events.UserUtteranceReverted">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">UserUtteranceReverted</code><span class="sig-paren">(</span><em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.UserUtteranceReverted" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bot reverts everything until before the most recent user message.</p>
-<p>The bot will revert all events after the latest <cite>UserUttered</cite>, this
-also means that the last event on the tracker is usually <cite>action_listen</cite>
-and the bot is waiting for a new user message.</p>
-</dd></dl>
-
-</td>
+<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"></td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
 <div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;DialogueStateTracker&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -681,18 +599,7 @@ and the bot is waiting for a new user message.</p>
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
-<dt id="rasa.core.events.ActionReverted">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ActionReverted</code><span class="sig-paren">(</span><em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ActionReverted" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bot undoes its last action.</p>
-<p>The bot reverts everything until before the most recent action.
-This includes the action itself, as well as any events that
-action created, like set slot events - the bot will now
-predict a new action using the state before the most recent
-action.</p>
-</dd></dl>
-
-</td>
+<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"></td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
 <div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;DialogueStateTracker&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -720,15 +627,7 @@ action created are logged separately.</p>
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
-<dt id="rasa.core.events.ActionExecuted">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ActionExecuted</code><span class="sig-paren">(</span><em>action_name</em>, <em>policy=None</em>, <em>confidence=None</em>, <em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ActionExecuted" title="Permalink to this definition">¶</a></dt>
-<dd><p>An operation describes an action taken + its result.</p>
-<p>It comprises an action and a list of events. operations will be appended
-to the latest <code class="docutils literal notranslate"><span class="pre">Turn</span></code> in the <code class="docutils literal notranslate"><span class="pre">Tracker.turns</span></code>.</p>
-</dd></dl>
-
-</td>
+<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"></td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
 <div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;DialogueStateTracker&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>

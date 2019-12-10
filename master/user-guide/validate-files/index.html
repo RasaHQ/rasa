@@ -270,26 +270,44 @@ You can run it with the following command:</p>
 </div>
 <p>The script above runs all the validations on your files. Here is the list of options to
 the script:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data validate [-h] [-v] [-vv] [--quiet] [--fail-on-warnings]
-                          [-d DOMAIN] [--data DATA]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --fail-on-warnings    Fail validation on warnings and errors. If omitted
-                        only errors will result in a non zero exit code.
-                        (default: False)
-  -d DOMAIN, --domain DOMAIN
-                        Domain specification (yml file). (default: domain.yml)
-  --data DATA           Path to the file or directory containing Rasa data.
-                        (default: data)
-
-Python Logging Options:
-  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
-                        None)
-  -vv, --debug          Print lots of debugging statements. Sets logging level
-                        to DEBUG. (default: None)
-  --quiet               Be quiet! Sets logging level to WARNING. (default:
-                        None)
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
+  File &quot;/home/travis/virtualenv/python3.6.7/bin/rasa&quot;, line 11, in &lt;module&gt;
+    load_entry_point(&#39;rasa&#39;, &#39;console_scripts&#39;, &#39;rasa&#39;)()
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 489, in load_entry_point
+    return get_distribution(dist).load_entry_point(group, name)
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2852, in load_entry_point
+    return ep.load()
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2443, in load
+    return self.resolve()
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2449, in resolve
+    module = __import__(self.module_name, fromlist=[&#39;__name__&#39;], level=0)
+  File &quot;/home/travis/build/RasaHQ/rasa/rasa/__init__.py&quot;, line 8, in &lt;module&gt;
+    from rasa.run import run
+  File &quot;/home/travis/build/RasaHQ/rasa/rasa/run.py&quot;, line 7, in &lt;module&gt;
+    from rasa.core.lock_store import LockStore
+  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/__init__.py&quot;, line 5, in &lt;module&gt;
+    from rasa.core.train import train
+  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/train.py&quot;, line 11, in &lt;module&gt;
+    from rasa.core.domain import Domain
+  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/domain.py&quot;, line 11, in &lt;module&gt;
+    import rasa.utils.common as common_utils
+  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/common.py&quot;, line 7, in &lt;module&gt;
+    import rasa.core.utils
+  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/utils.py&quot;, line 34, in &lt;module&gt;
+    from rasa.core.lock_store import LockStore, RedisLockStore
+  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/lock_store.py&quot;, line 12, in &lt;module&gt;
+    from rasa.utils.endpoints import EndpointConfig
+  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/endpoints.py&quot;, line 7, in &lt;module&gt;
+    from sanic.request import Request
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/__init__.py&quot;, line 2, in &lt;module&gt;
+    from sanic.app import Sanic
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/app.py&quot;, line 18, in &lt;module&gt;
+    from sanic.asgi import ASGIApp
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/asgi.py&quot;, line 22, in &lt;module&gt;
+    from sanic.compat import Header
+  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/compat.py&quot;, line 4, in &lt;module&gt;
+    class Header(CIMultiDict):
+TypeError: type &#39;multidict._multidict.CIMultiDict&#39; is not an acceptable base type
 </pre></div>
 </div>
 <p>By default the validator searches only for errors in the data (e.g. the same
