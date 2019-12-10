@@ -1,4 +1,3 @@
-import io
 import logging
 import numpy as np
 import os
@@ -43,7 +42,7 @@ class RegexFeaturizer(Featurizer):
         component_config: Dict[Text, Any] = None,
         known_patterns: List[Dict[Text, Text]] = None,
         lookup_tables: List[Dict[Text, Union[Text, List]]] = None,
-    ):
+    ) -> None:
 
         super().__init__(component_config)
 

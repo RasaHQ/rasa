@@ -12,6 +12,7 @@ from rasa.nlu.constants import (
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
+from rasa.nlu.tokenizers import Token
 from rasa.nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ class MitieEntityExtractor(EntityExtractor):
         "mitie_file",
     ]
 
-    def __init__(self, component_config: Dict[Text, Any] = None, ner=None):
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None, ner=None):
         """Construct a new intent classifier using the sklearn framework."""
 
         super().__init__(component_config)
@@ -40,7 +41,9 @@ class MitieEntityExtractor(EntityExtractor):
     def required_packages(cls) -> List[Text]:
         return ["mitie"]
 
-    def extract_entities(self, text, tokens, feature_extractor):
+    def extract_entities(
+        self, text: Text, tokens: List[Token], feature_extractor
+    ) -> List[Dict[Text, Any]]:
         ents = []
         tokens_strs = [token.text for token in tokens]
         if self.ner:
@@ -94,7 +97,7 @@ class MitieEntityExtractor(EntityExtractor):
         if found_one_entity:
             self.ner = trainer.train()
 
-    def _prepare_mitie_sample(self, training_example):
+    def _prepare_mitie_sample(self, training_example) -> Any:
         import mitie
 
         text = training_example.text

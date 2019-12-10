@@ -153,8 +153,7 @@ the actions in your domain file. The action's ``run`` method receives
 three arguments. You can access the values of slots and the latest message
 sent by the user using the ``tracker`` object, and you can send messages
 back to the user with the ``dispatcher`` object, by calling
-``dispatcher.utter_template``, ``dispatcher.utter_message``, or any other
-``rasa_sdk.executor.CollectingDispatcher`` method.
+``dispatcher.utter_message()``.
 
 Details of the ``run()`` method:
 
@@ -185,7 +184,7 @@ for example to display the output of a long running background operation
 or notify the user of an external event.
 
 To do so, you can ``POST`` to this
-`endpoint <../../api/http-api.html#tag/Tracker/paths/~1conversations~1{conversation_id}~1execute/post>`_ ,
+`endpoint <../../api/http-api.html/#operation/executeConversationAction>`_ ,
 specifying the action which should be run for a specific user in the request body. Use the
 ``output_channel`` query parameter to specify which output
 channel should be used to communicate the assistant's responses back to the user.

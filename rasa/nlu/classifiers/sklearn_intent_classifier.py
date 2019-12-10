@@ -49,7 +49,7 @@ class SklearnIntentClassifier(Component):
 
     def __init__(
         self,
-        component_config: Dict[Text, Any] = None,
+        component_config: Optional[Dict[Text, Any]] = None,
         clf: "sklearn.model_selection.GridSearchCV" = None,
         le: Optional["sklearn.preprocessing.LabelEncoder"] = None,
     ) -> None:
@@ -114,11 +114,13 @@ class SklearnIntentClassifier(Component):
 
             self.clf.fit(X, y)
 
-    def _num_cv_splits(self, y):
+    def _num_cv_splits(self, y) -> int:
         folds = self.component_config["max_cross_validation_folds"]
         return max(2, min(folds, np.min(np.bincount(y)) // 5))
 
-    def _create_classifier(self, num_threads, y):
+    def _create_classifier(
+        self, num_threads: int, y
+    ) -> "sklearn.model_selection.GridSearchCV":
         from sklearn.model_selection import GridSearchCV
         from sklearn.svm import SVC
 

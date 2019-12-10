@@ -21,11 +21,11 @@ class Policy:
     SUPPORTS_ONLINE_TRAINING = False
 
     @staticmethod
-    def _standard_featurizer():
+    def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer())
 
     @classmethod
-    def _create_featurizer(cls, featurizer=None):
+    def _create_featurizer(cls, featurizer=None) -> TrackerFeaturizer:
         if featurizer:
             return copy.deepcopy(featurizer)
         else:
@@ -145,7 +145,7 @@ class Policy:
         raise NotImplementedError("Policy must have the capacity to load itself.")
 
 
-def confidence_scores_for(action_name, value, domain):
+def confidence_scores_for(action_name, value, domain) -> List[float]:
     """Returns confidence scores if a single action is predicted.
 
     Args:

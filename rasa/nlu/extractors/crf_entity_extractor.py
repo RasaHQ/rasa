@@ -113,7 +113,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         self._check_pos_features_and_spacy()
 
-    def _check_pos_features_and_spacy(self):
+    def _check_pos_features_and_spacy(self) -> None:
         import itertools
 
         features = self.component_config.get("features", [])
@@ -123,7 +123,7 @@ class CRFEntityExtractor(EntityExtractor):
             self._check_spacy()
 
     @staticmethod
-    def _check_spacy():
+    def _check_spacy() -> None:
         if spacy is None:
             raise ImportError(
                 "Failed to import `spaCy`. "
@@ -132,14 +132,14 @@ class CRFEntityExtractor(EntityExtractor):
                 "instructions."
             )
 
-    def _validate_configuration(self):
+    def _validate_configuration(self) -> None:
         if len(self.component_config.get("features", [])) % 2 != 1:
             raise ValueError(
                 "Need an odd number of crf feature lists to have a center word."
             )
 
     @classmethod
-    def required_packages(cls):
+    def required_packages(cls) -> List[Text]:
         return ["sklearn_crfsuite", "sklearn"]
 
     def train(
@@ -172,7 +172,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         return dataset
 
-    def _check_spacy_doc(self, message):
+    def _check_spacy_doc(self, message) -> None:
         if (
             self.pos_features
             and message.get(MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE])
@@ -218,7 +218,7 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             return []
 
-    def most_likely_entity(self, idx, entities):
+    def most_likely_entity(self, idx, entities) -> Tuple[Text, Any]:
         if len(entities) > idx:
             entity_probs = entities[idx]
         else:
@@ -272,16 +272,16 @@ class CRFEntityExtractor(EntityExtractor):
         }
 
     @staticmethod
-    def _entity_from_label(label):
+    def _entity_from_label(label) -> Text:
         return label[2:]
 
     @staticmethod
-    def _bilou_from_label(label):
+    def _bilou_from_label(label) -> Optional[Text]:
         if len(label) >= 2 and label[1] == "-":
             return label[0].upper()
         return None
 
-    def _find_bilou_end(self, word_idx, entities):
+    def _find_bilou_end(self, word_idx, entities) -> Any:
         ent_word_idx = word_idx + 1
         finished = False
 
@@ -320,7 +320,7 @@ class CRFEntityExtractor(EntityExtractor):
                 )
         return ent_word_idx, confidence
 
-    def _handle_bilou_label(self, word_idx, entities):
+    def _handle_bilou_label(self, word_idx: int, entities) -> Tuple[Any, Any, Any]:
         label, confidence = self.most_likely_entity(word_idx, entities)
         entity_label = self._entity_from_label(label)
 
@@ -378,7 +378,9 @@ class CRFEntityExtractor(EntityExtractor):
                 word_idx += 1
         return json_ents
 
-    def _convert_simple_tagging_to_entity_result(self, tokens, entities):
+    def _convert_simple_tagging_to_entity_result(
+        self, tokens, entities
+    ) -> List[Dict[Text, Any]]:
         json_ents = []
 
         for word_idx in range(len(tokens)):
@@ -537,7 +539,7 @@ class CRFEntityExtractor(EntityExtractor):
         return self._from_text_to_crf(message, ents)
 
     @staticmethod
-    def _bilou_tags_from_offsets(tokens, entities, missing="O"):
+    def _bilou_tags_from_offsets(tokens, entities, missing: Text = "O") -> List[Text]:
         # From spacy.spacy.GoldParse, under MIT License
         starts = {token.offset: i for i, token in enumerate(tokens)}
         ends = {token.end: i for i, token in enumerate(tokens)}

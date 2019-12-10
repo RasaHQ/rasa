@@ -1,9 +1,9 @@
 import logging
-import warnings
 import os
 import re
 import scipy.sparse
 from typing import Any, Dict, List, Optional, Text
+
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
@@ -87,7 +87,7 @@ class CountVectorsFeaturizer(Featurizer):
     def required_packages(cls) -> List[Text]:
         return ["sklearn"]
 
-    def _load_count_vect_params(self):
+    def _load_count_vect_params(self) -> None:
 
         # Use shared vocabulary between text and all other attributes of Message
         self.use_shared_vocab = self.component_config["use_shared_vocab"]
@@ -125,7 +125,7 @@ class CountVectorsFeaturizer(Featurizer):
         self.return_sequence = self.component_config["return_sequence"]
 
     # noinspection PyPep8Naming
-    def _load_OOV_params(self):
+    def _load_OOV_params(self) -> None:
         self.OOV_token = self.component_config["OOV_token"]
 
         self.OOV_words = self.component_config["OOV_words"]
@@ -167,7 +167,7 @@ class CountVectorsFeaturizer(Featurizer):
         except TypeError:
             return None
 
-    def _check_analyzer(self):
+    def _check_analyzer(self) -> None:
         if self.analyzer != "word":
             if self.OOV_token is not None:
                 logger.warning(
@@ -198,7 +198,7 @@ class CountVectorsFeaturizer(Featurizer):
 
     def __init__(
         self,
-        component_config: Dict[Text, Any] = None,
+        component_config: Optional[Dict[Text, Any]] = None,
         vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None,
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
@@ -512,7 +512,7 @@ class CountVectorsFeaturizer(Featurizer):
             ),
         )
 
-    def _collect_vectorizer_vocabularies(self):
+    def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
         """Get vocabulary for all attributes"""
 
         attribute_vocabularies = {}

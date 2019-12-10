@@ -73,7 +73,7 @@ class KeywordIntentClassifier(Component):
 
         self._validate_keyword_map()
 
-    def _validate_keyword_map(self):
+    def _validate_keyword_map(self) -> None:
         re_flag = 0 if self.case_sensitive else re.IGNORECASE
 
         ambiguous_mappings = []
