@@ -328,7 +328,7 @@ def test_intent_evaluation_report(tmpdir_factory):
 
 def test_intent_evaluation_report_large(tmpdir_factory: TempdirFactory):
     path = tmpdir_factory.mktemp("evaluation")
-    report_folder = os.path.join(path, "reports")
+    report_folder = path / "reports"
     report_filename = report_folder / "intent_report.json"
 
     rasa.utils.io.create_directory(str(report_folder))
