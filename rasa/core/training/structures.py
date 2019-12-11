@@ -317,13 +317,13 @@ class StoryStep:
         return result
 
     @staticmethod
-    def _is_action_listen(event: ActionExecuted) -> bool:
+    def _is_action_listen(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
         return type(event) == ActionExecuted and event.action_name == ACTION_LISTEN_NAME
 
     @staticmethod
-    def _is_action_session_start(event: ActionExecuted) -> bool:
+    def _is_action_session_start(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
         return (
@@ -331,7 +331,7 @@ class StoryStep:
             and event.action_name == ACTION_SESSION_START_NAME
         )
 
-    def _add_action_listen(self, events: List[ActionExecuted]) -> None:
+    def _add_action_listen(self, events: List[Event]) -> None:
         if not events or not self._is_action_listen(events[-1]):
             # do not add second action_listen
             events.append(ActionExecuted(ACTION_LISTEN_NAME))
