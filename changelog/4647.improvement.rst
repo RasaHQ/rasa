@@ -1,0 +1,2 @@
+Add the option ```random_seed``` to the ```rasa data split nlu``` command to generate
+reproducible train/test splits.
