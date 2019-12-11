@@ -4,9 +4,9 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
-    SPACY_FEATURIZABLE_ATTRIBUTES,
+    TEXT_ATTRIBUTE,
+    DENSE_FEATURE_NAMES,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
 )
 import numpy as np
 import tensorflow as tf
@@ -17,8 +17,7 @@ logger = logging.getLogger(__name__)
 class ConveRTFeaturizer(Featurizer):
 
     provides = [
-        MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
+        DENSE_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ]
 
     defaults = {
@@ -75,7 +74,7 @@ class ConveRTFeaturizer(Featurizer):
         return ["tensorflow_text", "tensorflow_hub"]
 
     def _compute_features(
-        self, batch_examples: List[Message], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
+        self, batch_examples: List[Message], attribute: Text = TEXT_ATTRIBUTE
     ) -> np.ndarray:
 
         # Get text for attribute of each example
@@ -100,7 +99,7 @@ class ConveRTFeaturizer(Featurizer):
 
         batch_size = 64
 
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
             non_empty_examples = list(
                 filter(lambda x: x.get(attribute), training_data.training_examples)
@@ -122,11 +121,11 @@ class ConveRTFeaturizer(Featurizer):
                 for index, ex in enumerate(batch_examples):
 
                     ex.set(
-                        MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute],
+                        DENSE_FEATURE_NAMES[attribute],
                         self._combine_with_existing_dense_features(
                             ex,
                             np.expand_dims(batch_features[index], axis=0),
-                            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute],
+                            DENSE_FEATURE_NAMES[attribute],
                         ),
                     )
 
@@ -136,10 +135,10 @@ class ConveRTFeaturizer(Featurizer):
 
         feats = self._compute_features([message])[0]
         message.set(
-            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE],
             self._combine_with_existing_dense_features(
                 message,
                 np.expand_dims(feats, axis=0),
-                MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+                DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE],
             ),
         )

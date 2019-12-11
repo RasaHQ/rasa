@@ -12,11 +12,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import (
-    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
-    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
-    MESSAGE_TEXT_ATTRIBUTE,
-)
+from rasa.nlu.constants import DENSE_FEATURE_NAMES, SPARSE_FEATURE_NAMES, TEXT_ATTRIBUTE
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +25,7 @@ class SklearnIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = [MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = [DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]]
 
     defaults = {
         # C parameter of the svm - cross validation will select the best value
@@ -102,9 +98,7 @@ class SklearnIntentClassifier(Component):
             X = np.stack(
                 [
                     sequence_to_sentence_features(
-                        example.get(
-                            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
-                        )
+                        example.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
                     )
                     for example in training_data.intent_examples
                 ]
@@ -156,7 +150,7 @@ class SklearnIntentClassifier(Component):
             intent_ranking = []
         else:
             X = sequence_to_sentence_features(
-                message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+                message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
             ).reshape(1, -1)
             intent_ids, probabilities = self.predict(X)
             intents = self.transform_labels_num2str(np.ravel(intent_ids))

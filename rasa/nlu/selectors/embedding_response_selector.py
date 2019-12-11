@@ -4,10 +4,10 @@ from typing import Any, Dict, Text
 
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.constants import (
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
-    MESSAGE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_ATTRIBUTE,
+    TEXT_ATTRIBUTE,
+    SPARSE_FEATURE_NAMES,
+    RESPONSE_SELECTOR_PROPERTY_NAME,
     DEFAULT_OPEN_UTTERANCE_TYPE,
 )
 
@@ -43,7 +43,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     provides = ["response", "response_ranking"]
 
-    requires = [MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = [SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -124,10 +124,10 @@ class ResponseSelector(EmbeddingIntentClassifier):
         message: "Message", prediction_dict: Dict[Text, Any], selector_key: Text
     ):
 
-        message_selector_properties = message.get(MESSAGE_SELECTOR_PROPERTY_NAME, {})
+        message_selector_properties = message.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
         message_selector_properties[selector_key] = prediction_dict
         message.set(
-            MESSAGE_SELECTOR_PROPERTY_NAME,
+            RESPONSE_SELECTOR_PROPERTY_NAME,
             message_selector_properties,
             add_to_output=True,
         )
@@ -139,18 +139,18 @@ class ResponseSelector(EmbeddingIntentClassifier):
             training_data = training_data.filter_by_intent(self.retrieval_intent)
 
         label_id_dict = self._create_label_id_dict(
-            training_data, attribute=MESSAGE_RESPONSE_ATTRIBUTE
+            training_data, attribute=RESPONSE_ATTRIBUTE
         )
 
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
         self._label_data = self._create_label_data(
-            training_data, label_id_dict, attribute=MESSAGE_RESPONSE_ATTRIBUTE
+            training_data, label_id_dict, attribute=RESPONSE_ATTRIBUTE
         )
 
         session_data = self._create_session_data(
             training_data.intent_examples,
             label_id_dict,
-            label_attribute=MESSAGE_RESPONSE_ATTRIBUTE,
+            label_attribute=RESPONSE_ATTRIBUTE,
         )
 
         self.check_input_dimension_consistency(session_data)

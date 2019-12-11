@@ -10,11 +10,11 @@ if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
 
 from rasa.nlu.constants import (
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
-    SPACY_FEATURIZABLE_ATTRIBUTES,
-    MESSAGE_TOKENS_NAMES,
+    TEXT_ATTRIBUTE,
+    SPACY_DOCS,
+    DENSE_FEATURE_NAMES,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
+    TOKENS_NAMES,
     CLS_TOKEN,
 )
 
@@ -22,14 +22,12 @@ from rasa.nlu.constants import (
 class SpacyFeaturizer(Featurizer):
 
     provides = [
-        MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
+        DENSE_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ]
 
     requires = [
-        MESSAGE_SPACY_FEATURES_NAMES[attribute]
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
-    ] + [MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES]
+        SPACY_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
+    ] + [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
 
     defaults = {
         # if True return a sequence of features (return vector has size
@@ -58,22 +56,22 @@ class SpacyFeaturizer(Featurizer):
     ) -> None:
 
         for example in training_data.intent_examples:
-            for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
+            for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self._set_spacy_features(example, attribute)
 
     def get_doc(self, message, attribute):
 
-        return message.get(MESSAGE_SPACY_FEATURES_NAMES[attribute])
+        return message.get(SPACY_DOCS[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         self._set_spacy_features(message)
 
-    def _set_spacy_features(self, message, attribute=MESSAGE_TEXT_ATTRIBUTE):
+    def _set_spacy_features(self, message, attribute=TEXT_ATTRIBUTE):
         """Adds the spacy word vectors to the messages features."""
 
         message_attribute_doc = self.get_doc(message, attribute)
-        tokens = message.get(MESSAGE_TOKENS_NAMES[attribute])
+        tokens = message.get(TOKENS_NAMES[attribute])
         cls_token_used = tokens[-1].text == CLS_TOKEN if tokens else False
 
         if message_attribute_doc is not None:
@@ -85,6 +83,6 @@ class SpacyFeaturizer(Featurizer):
                 features = np.concatenate([features, cls_token_vec])
 
             features = self._combine_with_existing_dense_features(
-                message, features, MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
+                message, features, DENSE_FEATURE_NAMES[attribute]
             )
-            message.set(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute], features)
+            message.set(DENSE_FEATURE_NAMES[attribute], features)

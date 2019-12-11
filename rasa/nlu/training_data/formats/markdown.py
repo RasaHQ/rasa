@@ -12,8 +12,8 @@ from rasa.nlu.training_data.formats.readerwriter import (
 )
 from rasa.nlu.utils import build_entity
 from rasa.nlu.constants import (
-    MESSAGE_INTENT_ATTRIBUTE,
-    MESSAGE_RESPONSE_KEY_ATTRIBUTE,
+    INTENT_ATTRIBUTE,
+    RESPONSE_KEY_ATTRIBUTE,
     RESPONSE_IDENTIFIER_DELIMITER,
 )
 
@@ -218,7 +218,7 @@ class MarkdownWriter(TrainingDataWriter):
 
         # Sort by intent while keeping basic intent order
         for example in [e.as_dict_nlu() for e in training_data.training_examples]:
-            intent = example[MESSAGE_INTENT_ATTRIBUTE]
+            intent = example[INTENT_ATTRIBUTE]
             training_examples.setdefault(intent, [])
             training_examples[intent].append(example)
 

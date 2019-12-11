@@ -19,7 +19,7 @@ from rasa.core.constants import (
 from rasa.nlu.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE,
     OPEN_UTTERANCE_PREDICTION_KEY,
-    MESSAGE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_SELECTOR_PROPERTY_NAME,
 )
 
 from rasa.core.events import (
@@ -197,7 +197,7 @@ class ActionRetrieveResponse(Action):
         """Query the appropriate response and create a bot utterance with that."""
 
         response_selector_properties = tracker.latest_message.parse_data[
-            MESSAGE_SELECTOR_PROPERTY_NAME
+            RESPONSE_SELECTOR_PROPERTY_NAME
         ]
 
         if self.intent_name_from_action() in response_selector_properties:
