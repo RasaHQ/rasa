@@ -315,13 +315,13 @@ endpoint configuration, e.g. <code class="docutils literal notranslate"><span cl
 <div class="section" id="adding-a-pika-event-broker-in-python">
 <h3>Adding a Pika Event Broker in Python<a class="headerlink" href="#adding-a-pika-event-broker-in-python" title="Permalink to this headline">¶</a></h3>
 <p>Here is how you add it using Python code:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa.core.event_brokers.pika_producer</span> <span class="kn">import</span> <span class="n">PikaProducer</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa.core.brokers.pika</span> <span class="kn">import</span> <span class="n">PikaEventBroker</span>
 <span class="kn">from</span> <span class="nn">rasa_platform.core.tracker_store</span> <span class="kn">import</span> <span class="n">InMemoryTrackerStore</span>
 
-<span class="n">pika_broker</span> <span class="o">=</span> <span class="n">PikaProducer</span><span class="p">(</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span>
-                            <span class="s1">&#39;username&#39;</span><span class="p">,</span>
-                            <span class="s1">&#39;password&#39;</span><span class="p">,</span>
-                            <span class="n">queue</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">)</span>
+<span class="n">pika_broker</span> <span class="o">=</span> <span class="n">PikaEventBroker</span><span class="p">(</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span>
+                              <span class="s1">&#39;username&#39;</span><span class="p">,</span>
+                              <span class="s1">&#39;password&#39;</span><span class="p">,</span>
+                              <span class="n">queue</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">)</span>
 
 <span class="n">tracker_store</span> <span class="o">=</span> <span class="n">InMemoryTrackerStore</span><span class="p">(</span><span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">,</span> <span class="n">event_broker</span><span class="o">=</span><span class="n">pika_broker</span><span class="p">)</span>
 </pre></div>
@@ -410,11 +410,11 @@ when running Rasa, as following example:</p>
 <div class="section" id="adding-a-kafka-broker-in-python">
 <h3>Adding a Kafka Broker in Python<a class="headerlink" href="#adding-a-kafka-broker-in-python" title="Permalink to this headline">¶</a></h3>
 <p>The code below shows an example on how to instantiate a Kafka producer in you script.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa.core.event_brokers.kafka_producer</span> <span class="kn">import</span> <span class="n">KafkaProducer</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa.core.brokers.kafka</span> <span class="kn">import</span> <span class="n">KafkaEventBroker</span>
 <span class="kn">from</span> <span class="nn">rasa.core.tracker_store</span> <span class="kn">import</span> <span class="n">InMemoryTrackerStore</span>
 
-<span class="n">kafka_broker</span> <span class="o">=</span> <span class="n">KafkaProducer</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;localhost:9092&#39;</span><span class="p">,</span>
-                             <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">)</span>
+<span class="n">kafka_broker</span> <span class="o">=</span> <span class="n">KafkaEventBroker</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;localhost:9092&#39;</span><span class="p">,</span>
+                                <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">)</span>
 
 <span class="n">tracker_store</span> <span class="o">=</span> <span class="n">InMemoryTrackerStore</span><span class="p">(</span><span class="n">event_broker</span><span class="o">=</span><span class="n">kafka_broker</span><span class="p">)</span>
 </pre></div>
@@ -426,10 +426,10 @@ Therefore, the remain brokers in the cluster can be discovered
 automatically through the data served by the first connected broker.</p>
 <p>To pass more than one broker address as argument, they must be passed in a
 list of strings. e.g.:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kafka_broker</span> <span class="o">=</span> <span class="n">KafkaProducer</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;kafka_broker_1:9092&#39;</span><span class="p">,</span>
-                                   <span class="s1">&#39;kafka_broker_2:2030&#39;</span><span class="p">,</span>
-                                   <span class="s1">&#39;kafka_broker_3:9092&#39;</span><span class="p">],</span>
-                             <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kafka_broker</span> <span class="o">=</span> <span class="n">KafkaEventBroker</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;kafka_broker_1:9092&#39;</span><span class="p">,</span>
+                                      <span class="s1">&#39;kafka_broker_2:2030&#39;</span><span class="p">,</span>
+                                      <span class="s1">&#39;kafka_broker_3:9092&#39;</span><span class="p">],</span>
+                                <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -443,11 +443,11 @@ will be sent in plaintext. Thus, this is not the most secure approach, but since
 to configure, it is useful for simple cluster configurations.
 <code class="docutils literal notranslate"><span class="pre">SASL_PLAINTEXT</span></code> protocol requires the setup of the <code class="docutils literal notranslate"><span class="pre">username</span></code> and <code class="docutils literal notranslate"><span class="pre">password</span></code>
 previously configured in the broker server.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kafka_broker</span> <span class="o">=</span> <span class="n">KafkaProducer</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;kafka_broker:9092&#39;</span><span class="p">,</span>
-                             <span class="n">sasl_plain_username</span><span class="o">=</span><span class="s1">&#39;kafka_username&#39;</span><span class="p">,</span>
-                             <span class="n">sasl_plain_password</span><span class="o">=</span><span class="s1">&#39;kafka_password&#39;</span><span class="p">,</span>
-                             <span class="n">security_protocol</span><span class="o">=</span><span class="s1">&#39;SASL_PLAINTEXT&#39;</span><span class="p">,</span>
-                             <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kafka_broker</span> <span class="o">=</span> <span class="n">KafkaEventBroker</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;kafka_broker:9092&#39;</span><span class="p">,</span>
+                                <span class="n">sasl_plain_username</span><span class="o">=</span><span class="s1">&#39;kafka_username&#39;</span><span class="p">,</span>
+                                <span class="n">sasl_plain_password</span><span class="o">=</span><span class="s1">&#39;kafka_password&#39;</span><span class="p">,</span>
+                                <span class="n">security_protocol</span><span class="o">=</span><span class="s1">&#39;SASL_PLAINTEXT&#39;</span><span class="p">,</span>
+                                <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>If the clients or the brokers in the kafka cluster are located in different
@@ -455,13 +455,13 @@ machines, it’s important to use ssl protocal to assure encryption of data and 
 authentication. After generating valid certificates for the brokers and the
 clients, the path to the certificate and key generated for the producer must
 be provided as arguments, as well as the CA’s root certificate.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kafka_broker</span> <span class="o">=</span> <span class="n">KafkaProducer</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;kafka_broker:9092&#39;</span><span class="p">,</span>
-                             <span class="n">ssl_cafile</span><span class="o">=</span><span class="s1">&#39;CARoot.pem&#39;</span><span class="p">,</span>
-                             <span class="n">ssl_certfile</span><span class="o">=</span><span class="s1">&#39;certificate.pem&#39;</span><span class="p">,</span>
-                             <span class="n">ssl_keyfile</span><span class="o">=</span><span class="s1">&#39;key.pem&#39;</span><span class="p">,</span>
-                             <span class="n">ssl_check_hostname</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-                             <span class="n">security_protocol</span><span class="o">=</span><span class="s1">&#39;SSL&#39;</span><span class="p">,</span>
-                             <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kafka_broker</span> <span class="o">=</span> <span class="n">KafkaEventBroker</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;kafka_broker:9092&#39;</span><span class="p">,</span>
+                                <span class="n">ssl_cafile</span><span class="o">=</span><span class="s1">&#39;CARoot.pem&#39;</span><span class="p">,</span>
+                                <span class="n">ssl_certfile</span><span class="o">=</span><span class="s1">&#39;certificate.pem&#39;</span><span class="p">,</span>
+                                <span class="n">ssl_keyfile</span><span class="o">=</span><span class="s1">&#39;key.pem&#39;</span><span class="p">,</span>
+                                <span class="n">ssl_check_hostname</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                <span class="n">security_protocol</span><span class="o">=</span><span class="s1">&#39;SSL&#39;</span><span class="p">,</span>
+                                <span class="n">topic</span><span class="o">=</span><span class="s1">&#39;rasa_core_events&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>If the <code class="docutils literal notranslate"><span class="pre">ssl_check_hostname</span></code> parameter is enabled, the clients will verify
