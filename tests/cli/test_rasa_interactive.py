@@ -1,4 +1,5 @@
 import argparse
+import pytest
 from typing import Callable, Text
 from unittest.mock import Mock
 
@@ -121,3 +122,32 @@ def test_train_core_called_when_no_model_passed_and_core(
 
     interactive.interactive(args)
     mock.train_core.assert_called_once()
+
+
+def test_no_interactive_without_core_data(
+    default_stack_config: Text, monkeypatch: MonkeyPatch,
+) -> None:
+    parser = argparse.ArgumentParser()
+    sub_parser = parser.add_subparsers()
+    interactive.add_subparser(sub_parser, [])
+
+    args = parser.parse_args(
+        [
+            "interactive",
+            "--config",
+            default_stack_config,
+            "--data",
+            "examples/moodbot/data/nlu.md",
+        ]
+    )
+    interactive._set_not_required_args(args)
+
+    mock = Mock()
+    monkeypatch.setattr(
+        interactive, "perform_interactive_learning", mock.perform_interactive_learning
+    )
+
+    with pytest.raises(SystemExit):
+        interactive.interactive(args)
+
+    mock.perform_interactive_learning.assert_not_called()

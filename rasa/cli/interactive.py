@@ -54,6 +54,12 @@ def interactive(args: argparse.Namespace) -> None:
     _set_not_required_args(args)
 
     if args.model is None:
+        core_files, _ = data.get_core_nlu_files(args.data)
+        if not core_files:
+            utils.print_error_and_exit(
+                "Could not run interactive learning without either core data or a model containing core data."
+            )
+
         zipped_model = train.train_core(args) if args.core_only else train.train(args)
         if not zipped_model:
             utils.print_error_and_exit(
