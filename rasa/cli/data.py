@@ -228,6 +228,8 @@ def deduplicate_story_names(args):
     WARNING: Only works for markdown files at the moment
     """
 
+    logger.info("Replacing duplicate story names...")
+
     import shutil
 
     story_file_names, _ = data.get_core_nlu_files(args.data)
@@ -241,7 +243,7 @@ def deduplicate_story_names(args):
         out_file_name = in_file_name + ".new"
         with open(in_file_name, "r") as in_file, open(out_file_name, "w+") as out_file:
             for line in in_file:
-                line = line.rstrip()
+                line = line.strip()
                 if line.startswith("## "):
                     name = line[3:]
                     # Check if we have already encountered a story with this name
@@ -252,7 +254,7 @@ def deduplicate_story_names(args):
                         while name in names:
                             name = old_name + f" ({k})"
                             k += 1
-                        print(f"- replacing {old_name} with {name}")
+                        logger.info(f"- replacing {old_name} with {name}")
                     names.add(name)
                     out_file.write(f"## {name}\n")
                 else:
