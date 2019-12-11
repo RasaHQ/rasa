@@ -1,14 +1,10 @@
 import pytest
-import logging
 from rasa.core.validator import Validator
 from rasa.importers.rasa import RasaFileImporter
 from tests.core.conftest import (
-    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_STORIES_FILE,
     DEFAULT_NLU_DATA,
 )
-from rasa.core.domain import Domain
-from rasa.nlu.training_data import TrainingData
 import rasa.utils.io as io_utils
 
 
