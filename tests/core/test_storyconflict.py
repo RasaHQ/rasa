@@ -79,3 +79,16 @@ async def test_has_no_prior_events():
     sliced_states = [None]
     conflict = StoryConflict(sliced_states)
     assert not conflict.has_prior_events
+
+
+async def test_story_prior_to_conflict():
+
+    story = "* greet\n  - utter_greet\n"
+    sliced_states = [
+        None,
+        {},
+        {'intent_greet': 1.0, 'prev_action_listen': 1.0},
+        {'prev_utter_greet': 1.0, 'intent_greet': 1.0}
+    ]
+    conflict = StoryConflict(sliced_states)
+    assert conflict.story_prior_to_conflict() == story
