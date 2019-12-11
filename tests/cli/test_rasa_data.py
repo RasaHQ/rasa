@@ -75,3 +75,9 @@ def test_validate_files_exit_early():
 
     assert pytest_e.type == SystemExit
     assert pytest_e.value.code == 1
+
+
+def test_clean(run_in_default_project: Callable[..., RunResult]):
+    # Nothing to be cleaned in the init project
+    output = run_in_default_project("data", "clean")
+    assert output.outlines == []
