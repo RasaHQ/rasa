@@ -318,23 +318,22 @@ class StoryStep:
 
     @staticmethod
     def _is_action_listen(event: Event) -> bool:
-        # this is not just `isinstance` because
+        # this is not an `isinstance` because
         # we don't want to allow subclasses here
-        return (
-            isinstance(event, ActionExecuted)
-            and type(event) == ActionExecuted
-            and event.action_name == ACTION_LISTEN_NAME
-        )
+        # pytype: disable=attribute-error
+        return type(event) == ActionExecuted and event.action_name == ACTION_LISTEN_NAME
+        # pytype: enable=attribute-error
 
     @staticmethod
     def _is_action_session_start(event: Event) -> bool:
-        # this is not just `isinstance` because
+        # this is not an `isinstance` because
         # we don't want to allow subclasses here
+        # pytype: disable=attribute-error
         return (
-            isinstance(event, ActionExecuted)
-            and type(event) == ActionExecuted
+            type(event) == ActionExecuted
             and event.action_name == ACTION_SESSION_START_NAME
         )
+        # pytype: enable=attribute-error
 
     def _add_action_listen(self, events: List[Event]) -> None:
         if not events or not self._is_action_listen(events[-1]):
