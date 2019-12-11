@@ -159,7 +159,8 @@ class StoryConflict:
                     incorrect_stories.append(story)
             return incorrect_stories
         else:
-            return []
+            # Return all stories
+            return [v[0] for v in self._conflicting_actions.values()]
 
     @property
     def has_prior_events(self) -> bool:

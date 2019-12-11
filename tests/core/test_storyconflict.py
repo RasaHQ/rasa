@@ -44,3 +44,38 @@ async def test_find_conflicts():
 
     assert len(conflicts) == 1
     assert conflicts[0].conflicting_actions == ["utter_goodbye", "utter_default"]
+
+
+async def test_add_conflicting_action():
+
+    sliced_states = [
+        None,
+        {},
+        {'intent_greet': 1.0, 'prev_action_listen': 1.0},
+        {'prev_utter_greet': 1.0, 'intent_greet': 1.0}
+    ]
+    conflict = StoryConflict(sliced_states)
+
+    conflict.add_conflicting_action("utter_greet", "xyz")
+    conflict.add_conflicting_action("utter_default", "uvw")
+    assert conflict.conflicting_actions == ["utter_greet", "utter_default"]
+    assert conflict.incorrect_stories == ["xyz", "uvw"]
+
+
+async def test_has_prior_events():
+
+    sliced_states = [
+        None,
+        {},
+        {'intent_greet': 1.0, 'prev_action_listen': 1.0},
+        {'prev_utter_greet': 1.0, 'intent_greet': 1.0}
+    ]
+    conflict = StoryConflict(sliced_states)
+    assert conflict.has_prior_events
+
+
+async def test_has_no_prior_events():
+
+    sliced_states = [None]
+    conflict = StoryConflict(sliced_states)
+    assert not conflict.has_prior_events
