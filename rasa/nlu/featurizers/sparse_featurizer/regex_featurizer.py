@@ -12,7 +12,7 @@ from rasa.nlu.featurizers.featurzier import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
 import rasa.utils.io
 from rasa.nlu.constants import (
-    MESSAGE_TOKENS_NAMES,
+    TOKENS_NAMES,
     TEXT_ATTRIBUTE,
     RESPONSE_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
@@ -28,7 +28,7 @@ class RegexFeaturizer(Featurizer):
 
     provides = [SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]]
 
-    requires = [MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE]]
+    requires = [TOKENS_NAMES[TEXT_ATTRIBUTE]]
 
     defaults = {
         # if True return a sequence of features (return vector has size
@@ -92,7 +92,7 @@ class RegexFeaturizer(Featurizer):
         regexes did match. Furthermore, if the
         message is tokenized, the function will mark all tokens with a dict
         relating the name of the regex to whether it was matched."""
-        tokens = message.get(MESSAGE_TOKENS_NAMES[attribute], [])
+        tokens = message.get(TOKENS_NAMES[attribute], [])
 
         if self.return_sequence:
             seq_length = len(tokens)

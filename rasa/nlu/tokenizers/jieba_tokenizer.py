@@ -13,7 +13,7 @@ from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     INTENT_ATTRIBUTE,
     TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
+    TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
 )
 
@@ -26,7 +26,7 @@ if typing.TYPE_CHECKING:
 
 class JiebaTokenizer(Tokenizer):
 
-    provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
+    provides = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     language_list = ["zh"]
 
@@ -89,15 +89,14 @@ class JiebaTokenizer(Tokenizer):
 
                 if example.get(attribute) is not None:
                     example.set(
-                        MESSAGE_TOKENS_NAMES[attribute],
+                        TOKENS_NAMES[attribute],
                         self.tokenize(example.get(attribute), attribute),
                     )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set(
-            MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE],
-            self.tokenize(message.text, TEXT_ATTRIBUTE),
+            TOKENS_NAMES[TEXT_ATTRIBUTE], self.tokenize(message.text, TEXT_ATTRIBUTE)
         )
 
     def preprocess_text(self, text: Text, attribute: Text) -> Text:

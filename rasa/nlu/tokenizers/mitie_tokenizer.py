@@ -4,13 +4,13 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
-from rasa.nlu.constants import TEXT_ATTRIBUTE, MESSAGE_TOKENS_NAMES, MESSAGE_ATTRIBUTES
+from rasa.nlu.constants import TEXT_ATTRIBUTE, TOKENS_NAMES, MESSAGE_ATTRIBUTES
 from rasa.utils.io import DEFAULT_ENCODING
 
 
 class MitieTokenizer(Tokenizer):
 
-    provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
+    provides = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     defaults = {
         # add __CLS__ token to the end of the list of tokens
@@ -31,13 +31,13 @@ class MitieTokenizer(Tokenizer):
 
                 if example.get(attribute) is not None:
                     example.set(
-                        MESSAGE_TOKENS_NAMES[attribute],
+                        TOKENS_NAMES[attribute],
                         self.tokenize(example.get(attribute), attribute),
                     )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
-        message.set(MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE], self.tokenize(message.text))
+        message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], self.tokenize(message.text))
 
     def _token_from_offset(
         self, text: bytes, offset: int, encoded_sentence: bytes

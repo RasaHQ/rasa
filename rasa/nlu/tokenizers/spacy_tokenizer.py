@@ -7,9 +7,9 @@ from rasa.nlu.training_data import Message, TrainingData
 
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
+    TOKENS_NAMES,
     SPACY_DOCS,
-    SPACY_FEATURIZABLE_ATTRIBUTES,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
 )
 
 if typing.TYPE_CHECKING:
@@ -18,11 +18,9 @@ if typing.TYPE_CHECKING:
 
 class SpacyTokenizer(Tokenizer):
 
-    provides = [
-        MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
-    ]
+    provides = [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
 
-    requires = [SPACY_DOCS[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES]
+    requires = [SPACY_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
 
     defaults = {
         # add __CLS__ token to the end of the list of tokens
@@ -35,14 +33,13 @@ class SpacyTokenizer(Tokenizer):
 
         for example in training_data.training_examples:
 
-            for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
+            for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
                 attribute_doc = self.get_doc(example, attribute)
 
                 if attribute_doc is not None:
                     example.set(
-                        MESSAGE_TOKENS_NAMES[attribute],
-                        self.tokenize(attribute_doc, attribute),
+                        TOKENS_NAMES[attribute], self.tokenize(attribute_doc, attribute)
                     )
 
     def get_doc(self, message: Message, attribute: Text) -> "Doc":
@@ -50,7 +47,7 @@ class SpacyTokenizer(Tokenizer):
 
     def process(self, message: Message, **kwargs: Any) -> None:
         message.set(
-            MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE],
+            TOKENS_NAMES[TEXT_ATTRIBUTE],
             self.tokenize(self.get_doc(message, TEXT_ATTRIBUTE), TEXT_ATTRIBUTE),
         )
 

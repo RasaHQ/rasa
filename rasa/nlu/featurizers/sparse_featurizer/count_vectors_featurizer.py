@@ -12,11 +12,11 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
+    TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     SPARSE_FEATURE_NAMES,
     INTENT_ATTRIBUTE,
-    SPACY_FEATURIZABLE_ATTRIBUTES,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
 )
 
 logger = logging.getLogger(__name__)
@@ -35,9 +35,7 @@ class CountVectorsFeaturizer(Featurizer):
 
     provides = [SPARSE_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
-    requires = [
-        MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
-    ]
+    requires = [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
 
     defaults = {
         # whether to use a shared vocab
@@ -190,7 +188,7 @@ class CountVectorsFeaturizer(Featurizer):
 
         # intents should be featurized only by word level count vectorizer
         return (
-            MESSAGE_ATTRIBUTES if analyzer == "word" else SPACY_FEATURIZABLE_ATTRIBUTES
+            MESSAGE_ATTRIBUTES if analyzer == "word" else DENSE_FEATURIZABLE_ATTRIBUTES
         )
 
     def __init__(
@@ -222,8 +220,8 @@ class CountVectorsFeaturizer(Featurizer):
         message: "Message", attribute: Text
     ) -> List[Text]:
         """Get text tokens of an attribute of a message"""
-        if message.get(MESSAGE_TOKENS_NAMES[attribute]):
-            return [t.lemma for t in message.get(MESSAGE_TOKENS_NAMES[attribute])]
+        if message.get(TOKENS_NAMES[attribute]):
+            return [t.lemma for t in message.get(TOKENS_NAMES[attribute])]
 
         return message.get(attribute).split()
 
@@ -314,7 +312,7 @@ class CountVectorsFeaturizer(Featurizer):
                 self._get_processed_message_tokens_by_attribute(example, attribute)
                 for example in training_data.training_examples
             ]
-            if attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
+            if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 # check for oov tokens only in text based attributes
                 self._check_OOV_present(all_tokens)
             processed_attribute_tokens[attribute] = all_tokens

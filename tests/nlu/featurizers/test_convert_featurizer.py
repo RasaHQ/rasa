@@ -1,6 +1,6 @@
 import numpy as np
 
-from rasa.nlu.constants import TEXT_ATTRIBUTE, DENSE_FEATURE_NAMES, MESSAGE_TOKENS_NAMES
+from rasa.nlu.constants import TEXT_ATTRIBUTE, DENSE_FEATURE_NAMES, TOKENS_NAMES
 from rasa.nlu.training_data import Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
@@ -17,7 +17,7 @@ def test_convert_featurizer(mitie_feature_extractor, default_config):
     sentence = "Hey how are you today ?"
     message = Message(sentence)
     tokens = WhitespaceTokenizer().tokenize(sentence)
-    message.set(MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
+    message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
 
     featurizer.process(message)
 

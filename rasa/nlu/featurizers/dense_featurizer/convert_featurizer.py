@@ -6,7 +6,7 @@ from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     DENSE_FEATURE_NAMES,
-    SPACY_FEATURIZABLE_ATTRIBUTES,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
 )
 import numpy as np
 import tensorflow as tf
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class ConveRTFeaturizer(Featurizer):
 
     provides = [
-        DENSE_FEATURE_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
+        DENSE_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ]
 
     defaults = {
@@ -99,7 +99,7 @@ class ConveRTFeaturizer(Featurizer):
 
         batch_size = 64
 
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
             non_empty_examples = list(
                 filter(lambda x: x.get(attribute), training_data.training_examples)

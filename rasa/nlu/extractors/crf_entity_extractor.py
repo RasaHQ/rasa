@@ -11,7 +11,7 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    MESSAGE_TOKENS_NAMES,
+    TOKENS_NAMES,
     TEXT_ATTRIBUTE,
     DENSE_FEATURE_NAMES,
     SPACY_DOCS,
@@ -43,7 +43,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     provides = [ENTITIES_ATTRIBUTE]
 
-    requires = [MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE]]
+    requires = [TOKENS_NAMES[TEXT_ATTRIBUTE]]
 
     defaults = {
         # BILOU_flag determines whether to use BILOU tagging or not.
@@ -336,7 +336,7 @@ class CRFEntityExtractor(EntityExtractor):
         if self.pos_features:
             tokens = message.get(SPACY_DOCS[TEXT_ATTRIBUTE])
         else:
-            tokens = message.get(MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE])
+            tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
 
         if len(tokens) != len(entities):
             raise Exception(
@@ -501,7 +501,7 @@ class CRFEntityExtractor(EntityExtractor):
             gold = GoldParse(doc_or_tokens, entities=entity_offsets)
             ents = [l[5] for l in gold.orig_annot]
         else:
-            doc_or_tokens = message.get(MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE])
+            doc_or_tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
             ents = self._bilou_tags_from_offsets(doc_or_tokens, entity_offsets)
 
         # collect badly annotated examples
@@ -565,10 +565,8 @@ class CRFEntityExtractor(EntityExtractor):
 
     @staticmethod
     def __pattern_of_token(message, i):
-        if message.get(MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE]) is not None:
-            return message.get(MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE])[i].get(
-                "pattern", {}
-            )
+        if message.get(TOKENS_NAMES[TEXT_ATTRIBUTE]) is not None:
+            return message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[i].get("pattern", {})
         else:
             return {}
 
@@ -586,7 +584,7 @@ class CRFEntityExtractor(EntityExtractor):
         if features is None:
             return None
 
-        tokens = message.get(MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE], [])
+        tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE], [])
         if len(tokens) != len(features):
             warnings.warn(
                 f"Number of features ({len(features)}) for attribute "
@@ -617,7 +615,7 @@ class CRFEntityExtractor(EntityExtractor):
         if self.pos_features:
             tokens = message.get(SPACY_DOCS[TEXT_ATTRIBUTE])
         else:
-            tokens = message.get(MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE])
+            tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
 
         text_dense_features = self.__get_dense_features(message)
 

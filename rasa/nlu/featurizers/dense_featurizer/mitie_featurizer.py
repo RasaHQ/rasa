@@ -12,7 +12,7 @@ if typing.TYPE_CHECKING:
 
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
+    TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     DENSE_FEATURE_NAMES,
     CLS_TOKEN,
@@ -23,7 +23,7 @@ class MitieFeaturizer(Featurizer):
 
     provides = [DENSE_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
-    requires = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES] + [
+    requires = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES] + [
         "mitie_feature_extractor"
     ]
 
@@ -50,7 +50,7 @@ class MitieFeaturizer(Featurizer):
 
     def get_tokens_by_attribute(self, example, attribute) -> Any:
 
-        return example.get(MESSAGE_TOKENS_NAMES[attribute])
+        return example.get(TOKENS_NAMES[attribute])
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
@@ -82,7 +82,7 @@ class MitieFeaturizer(Featurizer):
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         features = self.features_for_tokens(
-            message.get(MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE]), mitie_feature_extractor
+            message.get(TOKENS_NAMES[TEXT_ATTRIBUTE]), mitie_feature_extractor
         )
         message.set(
             DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE],

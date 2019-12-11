@@ -14,12 +14,12 @@ if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc  # pytype: disable=import-error
     from rasa.nlu.model import Metadata
 
-from rasa.nlu.constants import TEXT_ATTRIBUTE, SPACY_DOCS, SPACY_FEATURIZABLE_ATTRIBUTES
+from rasa.nlu.constants import TEXT_ATTRIBUTE, SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
 
 
 class SpacyNLP(Component):
     provides = ["spacy_nlp"] + [
-        SPACY_DOCS[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
+        SPACY_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ]
 
     defaults = {
@@ -186,7 +186,7 @@ class SpacyNLP(Component):
         self, training_data: TrainingData
     ) -> Dict[Text, List[Any]]:
         attribute_docs = {}
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
             texts = [self.get_text(e, attribute) for e in training_data.intent_examples]
             # Index and freeze indices of the training samples for preserving the order
             # after processing the data.
@@ -218,7 +218,7 @@ class SpacyNLP(Component):
 
         attribute_docs = self.docs_for_training_data(training_data)
 
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
             for idx, example in enumerate(training_data.training_examples):
                 example_attribute_doc = attribute_docs[attribute][idx]

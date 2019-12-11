@@ -4,7 +4,7 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text
 
-from rasa.nlu.constants import ENTITIES_ATTRIBUTE, MESSAGE_TOKENS_NAMES, TEXT_ATTRIBUTE
+from rasa.nlu.constants import ENTITIES_ATTRIBUTE, TOKENS_NAMES, TEXT_ATTRIBUTE
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
@@ -21,11 +21,7 @@ class MitieEntityExtractor(EntityExtractor):
 
     provides = [ENTITIES_ATTRIBUTE]
 
-    requires = [
-        MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE],
-        "mitie_feature_extractor",
-        "mitie_file",
-    ]
+    requires = [TOKENS_NAMES[TEXT_ATTRIBUTE], "mitie_feature_extractor", "mitie_file"]
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None, ner=None):
         """Construct a new intent classifier using the sklearn framework."""
@@ -97,7 +93,7 @@ class MitieEntityExtractor(EntityExtractor):
         import mitie
 
         text = training_example.text
-        tokens = training_example.get(MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE])
+        tokens = training_example.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
         sample = mitie.ner_training_instance([t.text for t in tokens])
         for ent in training_example.get(ENTITIES_ATTRIBUTE, []):
             try:
@@ -130,7 +126,7 @@ class MitieEntityExtractor(EntityExtractor):
 
         ents = self.extract_entities(
             message.text,
-            message.get(MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE]),
+            message.get(TOKENS_NAMES[TEXT_ATTRIBUTE]),
             mitie_feature_extractor,
         )
         extracted = self.add_extractor_name(ents)
