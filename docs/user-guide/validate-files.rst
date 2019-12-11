@@ -18,7 +18,7 @@ You can run it with the following command:
 
   rasa data validate
 
-The script above runs all the validations on your files. Here is the list of options to
+The script above runs most of the validations on your files. Here is the list of options to
 the script:
 
 .. program-output:: rasa data validate --help
@@ -60,3 +60,51 @@ To use these functions it is necessary to create a `Validator` object and initia
                                    stories='data/stories.md')
 
   validator.verify_all()
+
+
+Test Story Files for Conflicts
+------------------------------
+
+In addition to the default tests described above, you can also do a more in-depth structural test of your stories.
+In particular, you can test if your stories are inconsistent, i.e. if different bot actions follow after the same dialogue history.
+Here is a more detailed explanation.
+
+The purpose of Rasa Core is to predict the correct next bot action, given the dialogue state, that is the history of intents, entities, slots, and actions.
+Crucially, Rasa Core assumes that for any given dialogue state, exactly one next action is the correct one.
+If your stories don’t reflect that, Rasa Core cannot learn the correct behaviour.
+
+Take, for example, the following two stories:
+
+.. code-block:: markdown
+
+  ## Story 1
+  * greet
+    - utter_greet
+  * inform_happy
+    - utter_happy
+    - utter_goodbye
+
+  ## Story 2
+  * greet
+    - utter_greet
+  * inform_happy
+    - utter_goodbye
+
+These two stories are inconsistent, because Rasa Core cannot know if it should predict `utter_happy` or `utter_goodbye` after `inform_happy`, as there is nothing that would distinguish the dialogue states at `inform_happy` in the two stories and the subsequent actions are different in Story 1 and Story 2.
+
+This conflict can now be automatically identified with our new story structure tool.
+Just use `rasa data validate` in the command line, as follows:
+
+.. code-block:: bash
+
+  rasa data validate stories --max-history 3
+  > 2019-12-09 09:32:13 INFO     rasa.core.validator  - Story structure validation...
+  > 2019-12-09 09:32:13 INFO     rasa.core.validator  - Assuming max_history = 3
+  >   Processed Story Blocks: 100% 2/2 [00:00<00:00, 3237.59it/s, # trackers=1]
+  > 2019-12-09 09:32:13 WARNING  rasa.core.validator  - CONFLICT after intent 'inform_happy':
+  >   utter_goodbye predicted in 'Story 2'
+  >   utter_happy predicted in 'Story 1'
+
+Here we specify a `max-history` value of 3.
+This means, that 3 events (user / bot actions) are taken into account for action prediction, but the particular setting does not matter for this example, because regardless of how long of a history you take into account, the conflict always exists.
+
