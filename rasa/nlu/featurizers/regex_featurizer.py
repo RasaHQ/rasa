@@ -1,10 +1,11 @@
-import io
 import logging
+import warnings
+
 import numpy as np
 import os
 import re
 import typing
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Optional, Text, Union, List
 
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
@@ -16,6 +17,7 @@ from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_VECTOR_FEATURE_NAMES,
 )
+from rasa.constants import DOCS_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +103,9 @@ class RegexFeaturizer(Featurizer):
 
         return np.array(found_patterns).astype(float)
 
-    def _generate_lookup_regex(self, lookup_table) -> Text:
+    def _generate_lookup_regex(
+        self, lookup_table: Dict[Text, Union[Text, List[Text]]]
+    ) -> Text:
         """creates a regex out of the contents of a lookup table file"""
         lookup_elements = lookup_table["elements"]
         elements_to_regex = []
@@ -109,6 +113,12 @@ class RegexFeaturizer(Featurizer):
         # if it's a list, it should be the elements directly
         if isinstance(lookup_elements, list):
             elements_to_regex = lookup_elements
+            warnings.warn(
+                f"Directly including lookup tables as a list is deprecated since Rasa "
+                f"1.6. See {DOCS_BASE_URL}/nlu/training-data-format/#lookup-tables "
+                f"how to do so.",
+                FutureWarning,
+            )
 
         # otherwise it's a file path.
         else:
