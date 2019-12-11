@@ -38,8 +38,10 @@ from rasa.core.events import (
     SessionStarted,
     ActionExecuted,
     Event,
+    UserUttered,
 )
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
+from rasa.core.constants import USER_INTENT_SESSION_START
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
@@ -550,6 +552,32 @@ async def test_action_session_start_with_slots(
 
     # make sure that the list of events has ascending timestamps
     assert sorted(events, key=lambda x: x.timestamp) == events
+
+
+async def test_applied_events_after_action_session_start(
+    default_channel: CollectingOutputChannel,
+    template_nlg: TemplatedNaturalLanguageGenerator,
+):
+    slot_set = SlotSet("my_slot", "value")
+    events = [
+        slot_set,
+        ActionExecuted(ACTION_LISTEN_NAME),
+        # User triggers a restart manually by triggering the intent
+        UserUttered(
+            text=f"/{USER_INTENT_SESSION_START}",
+            intent={"name": USER_INTENT_SESSION_START},
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events("🕵️‍♀️", events)
+
+    # Mapping Policy kicks in and runs the session restart action
+    events = await ActionSessionStart().run(
+        default_channel, template_nlg, tracker, Domain.empty()
+    )
+    for event in events:
+        tracker.update(event)
+
+    assert tracker.applied_events() == [slot_set, ActionExecuted(ACTION_LISTEN_NAME)]
 
 
 async def test_action_default_fallback(
