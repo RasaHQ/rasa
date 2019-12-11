@@ -614,7 +614,7 @@ def create_app(
     async def predict(request: Request, conversation_id: Text):
         try:
             # Fetches the appropriate bot response in a json format
-            responses = app.agent.predict_next(conversation_id)
+            responses = await app.agent.predict_next(conversation_id)
             responses["scores"] = sorted(
                 responses["scores"], key=lambda k: (-k["score"], k["action"])
             )

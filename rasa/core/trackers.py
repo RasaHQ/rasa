@@ -32,7 +32,6 @@ from rasa.core.events import (  # pytype: disable=pyi-error
 )
 from rasa.core.domain import Domain  # pytype: disable=pyi-error
 from rasa.core.slots import Slot
-from rasa.core import constants
 
 logger = logging.getLogger(__name__)
 
@@ -359,24 +358,10 @@ class DialogueStateTracker:
                 if isinstance(e, event_type):
                     break
 
-        def is_session_start_intent_message(_event: Event) -> bool:
-            """Determine whether `event` is a `UserUttered` event with the explicit
-            `/session_start` intent."""
-
-            return isinstance(_event, UserUttered) and _event.text == (
-                f"{constants.INTENT_MESSAGE_PREFIX}"
-                f"{constants.USER_INTENT_SESSION_START}"
-            )
-
         applied_events = []
         for event in self.events:
             if isinstance(event, (Restarted, SessionStarted)):
                 applied_events = []
-            elif is_session_start_intent_message(event):
-                # UserUttered('/session_start') messages need to be excluded from
-                # featurisation - similar to `restarted` events but the prior SlotSet
-                # events cannot be ignored
-                undo_till_previous(ActionExecuted, applied_events)
             elif isinstance(event, ActionReverted):
                 undo_till_previous(ActionExecuted, applied_events)
             elif isinstance(event, UserUtteranceReverted):
@@ -388,6 +373,7 @@ class DialogueStateTracker:
                 undo_till_previous(ActionExecuted, applied_events)
             else:
                 applied_events.append(event)
+
         return applied_events
 
     def replay_events(self) -> None:

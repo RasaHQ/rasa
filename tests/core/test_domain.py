@@ -230,12 +230,13 @@ def test_domain_to_yaml():
     test_yaml = """actions:
 - utter_greet
 config:
-  carry_over_slots_to_new_session: true
-  session_expiration_time: 60
   store_entities_as_slots: true
 entities: []
 forms: []
 intents: []
+session_config:
+  carry_over_slots_to_new_session: true
+  session_expiration_time: 60
 slots: {}
 templates:
   utter_greet:
@@ -572,7 +573,7 @@ def test_add_knowledge_base_slots(default_domain):
     "input_domain, expected_session_expiration_time, expected_carry_over_slots",
     [
         (
-            """config:
+            """session_config:
     session_expiration_time: 0
     carry_over_slots_to_new_session: true""",
             0,
@@ -580,19 +581,19 @@ def test_add_knowledge_base_slots(default_domain):
         ),
         ("", 0, True),
         (
-            """config:
+            """session_config:
     carry_over_slots_to_new_session: false""",
             0,
             False,
         ),
         (
-            """config:
+            """session_config:
     session_expiration_time: 20.2
     carry_over_slots_to_new_session: False""",
             20.2,
             False,
         ),
-        ("""config: {}""", 0, True,),
+        ("""session_config: {}""", 0, True,),
     ],
 )
 def test_session_config(

@@ -44,7 +44,6 @@ from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.utils.endpoints import EndpointConfig
-from typing import Coroutine
 
 logger = logging.getLogger(__name__)
 
@@ -111,11 +110,11 @@ class MessageProcessor:
         else:
             return None
 
-    def predict_next(self, sender_id: Text) -> Optional[Dict[Text, Any]]:
+    async def predict_next(self, sender_id: Text) -> Optional[Dict[Text, Any]]:
 
         # we have a Tracker instance for each user
         # which maintains conversation state
-        tracker = self._get_tracker(sender_id)
+        tracker = await self.get_tracker_with_session_start(sender_id)
         if not tracker:
             logger.warning(
                 f"Failed to retrieve or create tracker for sender '{sender_id}'."
@@ -144,10 +143,7 @@ class MessageProcessor:
         }
 
     async def _update_tracker_session(
-        self,
-        tracker: DialogueStateTracker,
-        output_channel: OutputChannel,
-        message_text: Optional[Text] = None,
+        self, tracker: DialogueStateTracker, output_channel: OutputChannel,
     ) -> None:
         """Check the current session in `tracker` and update it if expired.
 
@@ -159,14 +155,8 @@ class MessageProcessor:
             tracker: Tracker to inspect.
             output_channel: Output channel for potential utterances in a custom
                 `ActionSessionStart`.
-            message_text: Text of the incoming user message.
         """
-        if (
-            not tracker.applied_events()  # new tracker
-            or self._has_session_expired(tracker)  # session has expired
-            # a manual session start was requested
-            or (message_text == f"{INTENT_MESSAGE_PREFIX}{USER_INTENT_SESSION_START}")
-        ):
+        if not tracker.applied_events() or self._has_session_expired(tracker):
             logger.debug(
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
@@ -178,10 +168,7 @@ class MessageProcessor:
             )
 
     async def get_tracker_with_session_start(
-        self,
-        sender_id: Text,
-        output_channel: Optional[OutputChannel] = None,
-        message_text: Text = None,
+        self, sender_id: Text, output_channel: Optional[OutputChannel] = None,
     ) -> Optional[DialogueStateTracker]:
         """Get tracker for `sender_id` or create a new tracker for `sender_id`.
 
@@ -190,7 +177,6 @@ class MessageProcessor:
         Args:
             output_channel: Output channel associated with the incoming user message.
             sender_id: Conversation ID for which to fetch the tracker.
-            message_text: Text of the incoming user message.
 
         Returns:
               Tracker for `sender_id` if available, `None` otherwise.
@@ -200,7 +186,7 @@ class MessageProcessor:
         if not tracker:
             return None
 
-        await self._update_tracker_session(tracker, output_channel, message_text)
+        await self._update_tracker_session(tracker, output_channel)
 
         return tracker
 
@@ -220,7 +206,7 @@ class MessageProcessor:
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = await self.get_tracker_with_session_start(
-            message.sender_id, message.output_channel, message.text
+            message.sender_id, message.output_channel
         )
 
         if tracker:
@@ -248,7 +234,7 @@ class MessageProcessor:
 
         # we have a Tracker instance for each user
         # which maintains conversation state
-        tracker = self._get_tracker(sender_id)
+        tracker = await self.get_tracker_with_session_start(sender_id, output_channel)
         if tracker:
             action = self._get_action(action_name)
             await self._run_action(
@@ -321,7 +307,7 @@ class MessageProcessor:
     ) -> None:
         """Handle a reminder that is triggered asynchronously."""
 
-        tracker = self._get_tracker(sender_id)
+        tracker = await self.get_tracker_with_session_start(sender_id, output_channel)
 
         if not tracker:
             logger.warning(

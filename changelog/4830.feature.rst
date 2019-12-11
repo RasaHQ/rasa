@@ -6,8 +6,8 @@ with the assistant, 2. the user sends their first message after a configurable p
 of inactivity, or 3. a manual session start is triggered with the ``/session_start``
 intent message. The period of inactivity after which a new conversation session is
 triggered is defined in the domain using the ``session_expiration_time`` key in the
-``config`` section. The introduction of conversation sessions comprises the following
-changes:
+``session_config`` section. The introduction of conversation sessions comprises the
+following changes:
 
 - Added a new event ``SessionStarted`` that marks the beginning of a new conversation
   session.

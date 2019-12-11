@@ -486,11 +486,13 @@ class Agent:
             return await processor.handle_message(message)
 
     # noinspection PyUnusedLocal
-    def predict_next(self, sender_id: Text, **kwargs: Any) -> Optional[Dict[Text, Any]]:
+    async def predict_next(
+        self, sender_id: Text, **kwargs: Any
+    ) -> Optional[Dict[Text, Any]]:
         """Handle a single message."""
 
         processor = self.create_processor()
-        return processor.predict_next(sender_id)
+        return await processor.predict_next(sender_id)
 
     # noinspection PyUnusedLocal
     async def log_message(

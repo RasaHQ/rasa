@@ -97,7 +97,7 @@ class MappingPolicy(Policy):
         elif intent == USER_INTENT_BACK:
             action = ACTION_BACK_NAME
         elif intent == USER_INTENT_SESSION_START:
-            action = ACTION_LISTEN_NAME
+            action = ACTION_SESSION_START_NAME
         else:
             action = domain.intent_properties.get(intent, {}).get("triggers")
 

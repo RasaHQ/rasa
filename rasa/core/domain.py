@@ -38,6 +38,7 @@ ACTIVE_FORM_PREFIX = "active_form_"
 
 CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
 SESSION_EXPIRATION_TIME_KEY = "session_expiration_time"
+SESSION_CONFIG_KEY = "session_config"
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -129,7 +130,7 @@ class Domain:
         utter_templates = cls.collect_templates(data.get("templates", {}))
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
-        session_config = cls._get_session_config(additional_arguments)
+        session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
         intents = data.get("intents", {})
 
         return cls(
@@ -144,10 +145,8 @@ class Domain:
         )
 
     @staticmethod
-    def _get_session_config(additional_arguments: Dict) -> SessionConfig:
-        session_expiration_time = additional_arguments.pop(
-            SESSION_EXPIRATION_TIME_KEY, None
-        )
+    def _get_session_config(session_config: Dict) -> SessionConfig:
+        session_expiration_time = session_config.get(SESSION_EXPIRATION_TIME_KEY)
 
         # TODO: 2.0 reconsider how to apply sessions to old projects and legacy trackers
         if session_expiration_time is None:
@@ -160,7 +159,7 @@ class Domain:
             )
             session_expiration_time = 0
 
-        carry_over_slots = additional_arguments.pop(
+        carry_over_slots = session_config.get(
             CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
         )
 
@@ -698,14 +697,13 @@ class Domain:
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
     def as_dict(self) -> Dict[Text, Any]:
-        additional_config = {
-            "store_entities_as_slots": self.store_entities_as_slots,
-            SESSION_EXPIRATION_TIME_KEY: self.session_config.session_expiration_time,
-            CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
-        }
 
         return {
-            "config": additional_config,
+            "config": {"store_entities_as_slots": self.store_entities_as_slots},
+            SESSION_CONFIG_KEY: {
+                SESSION_EXPIRATION_TIME_KEY: self.session_config.session_expiration_time,
+                CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
+            },
             "intents": [{k: v} for k, v in self.intent_properties.items()],
             "entities": self.entities,
             "slots": self._slot_definitions(),
