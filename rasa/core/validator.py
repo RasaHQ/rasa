@@ -1,15 +1,12 @@
 import logging
 import warnings
-import asyncio
 from collections import defaultdict
 from typing import Set, Text
-import questionary
 from rasa.core.domain import Domain
 from rasa.core.training.generator import TrainingDataGenerator
 from rasa.importers.importer import TrainingDataImporter
 from rasa.nlu.training_data import TrainingData
 from rasa.core.training.structures import StoryGraph
-from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
 from rasa.core.constants import UTTER_PREFIX
@@ -212,9 +209,9 @@ class Validator:
             logger.error(message)
         return result
 
-    def verify_story_structure(self,
-                               ignore_warnings: bool = True,
-                               max_history: int = 5) -> bool:
+    def verify_story_structure(
+        self, ignore_warnings: bool = True, max_history: int = 5
+    ) -> bool:
         """Verifies that bot behaviour in stories is deterministic."""
 
         logger.info("Story structure validation...")
@@ -223,8 +220,9 @@ class Validator:
         trackers = TrainingDataGenerator(
             self.story_graph,
             domain=self.domain,
-            remove_duplicates=False,   # ToDo: Q&A: Why not remove_duplicates=True?
-            augmentation_factor=0).generate()
+            remove_duplicates=False,  # ToDo: Q&A: Why not remove_duplicates=True?
+            augmentation_factor=0,
+        ).generate()
 
         # Create a list of `StoryConflict` objects
         conflicts = StoryConflict.find_conflicts(trackers, self.domain, max_history)
@@ -254,8 +252,12 @@ class Validator:
 
         logger.info("Validating utterances...")
         stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
-        return (intents_are_valid and stories_are_valid and
-                there_is_no_duplication and all_story_names_unique)
+        return (
+            intents_are_valid
+            and stories_are_valid
+            and there_is_no_duplication
+            and all_story_names_unique
+        )
 
     def verify_domain_validity(self) -> bool:
         """Checks whether the domain returned by the importer is empty, indicating an invalid domain."""

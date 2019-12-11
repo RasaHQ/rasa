@@ -1,4 +1,3 @@
-
 from typing import List, Optional, Dict, Text
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -10,16 +9,15 @@ from rasa.core.training.generator import TrackerWithCachedStates
 
 
 class StoryConflict:
-
     def __init__(
-            self,
-            sliced_states: List[Optional[Dict[Text, float]]],
-            tracker: TrackerWithCachedStates,
-            event
+        self,
+        sliced_states: List[Optional[Dict[Text, float]]],
+        tracker: TrackerWithCachedStates,
+        event,
     ):
         self.sliced_states = sliced_states
         self.hash = hash(str(list(sliced_states)))
-        self.tracker = tracker,
+        self.tracker = (tracker,)
         self.event = event
         self._conflicting_actions = {}  # {"action": ["story_1", ...], ...}
         self.correct_response = None
@@ -27,9 +25,12 @@ class StoryConflict:
     @staticmethod
     def find_conflicts(trackers, domain, max_history: int):
 
-        # Create a 'state -> list of actions' dict, where the state is represented by its hash
+        # Create a 'state -> list of actions' dict, where the state is
+        # represented by its hash
         rules = {}
-        for tracker, event, sliced_states in StoryConflict._sliced_states_stream(trackers, domain, max_history):
+        for tracker, event, sliced_states in StoryConflict._sliced_states_stream(
+            trackers, domain, max_history
+        ):
             h = hash(str(list(sliced_states)))
             if h in rules:
                 if event.as_story_string() not in rules[h]:
@@ -38,18 +39,22 @@ class StoryConflict:
                 rules[h] = [event.as_story_string()]
 
         # Keep only conflicting rules
-        rules = {state: actions for (state, actions) in rules.items() if len(actions) > 1}
+        rules = {
+            state: actions for (state, actions) in rules.items() if len(actions) > 1
+        }
 
-        # Iterate once more over all states and note the (unhashed) state, tracker, and event for which a conflict occurs
+        # Iterate once more over all states and note the (unhashed) state,
+        # tracker, and event for which a conflict occurs
         conflicts = {}
-        for tracker, event, sliced_states in StoryConflict._sliced_states_stream(trackers, domain, max_history):
+        for tracker, event, sliced_states in StoryConflict._sliced_states_stream(
+            trackers, domain, max_history
+        ):
             h = hash(str(list(sliced_states)))
             if h in rules:
                 if h not in conflicts:
                     conflicts[h] = StoryConflict(sliced_states, tracker, event)
                 conflicts[h].add_conflicting_action(
-                    action=event.as_story_string(),
-                    story_name=tracker.sender_id
+                    action=event.as_story_string(), story_name=tracker.sender_id
                 )
 
         # Remove conflicts that arise from unpredictable actions
@@ -59,7 +64,9 @@ class StoryConflict:
     def _sliced_states_stream(trackers, domain, max_history):
         for tracker in trackers:
             states = tracker.past_states(domain)
-            states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
+            states = [
+                dict(state) for state in states
+            ]  # ToDo: Check against rasa/core/featurizers.py:318
 
             idx = 0
             for event in tracker.events:
@@ -80,10 +87,10 @@ class StoryConflict:
         result = (None, None)
         for k in state:
             if k.startswith(PREV_PREFIX):
-                if k[len(PREV_PREFIX):] != ACTION_LISTEN_NAME:
-                    result = ("action", k[len(PREV_PREFIX):])
+                if k[len(PREV_PREFIX) :] != ACTION_LISTEN_NAME:
+                    result = ("action", k[len(PREV_PREFIX) :])
             elif k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_") and not result[0]:
-                result = ("intent", k[len(MESSAGE_INTENT_ATTRIBUTE + '_'):])
+                result = ("intent", k[len(MESSAGE_INTENT_ATTRIBUTE + "_") :])
         return result
 
     def add_conflicting_action(self, action: Text, story_name: Text):
@@ -104,7 +111,11 @@ class StoryConflict:
     def incorrect_stories(self):
         if self.correct_response:
             incorrect_stories = []
-            for stories in [s for (a, s) in self._conflicting_actions.items() if a != self.correct_response]:
+            for stories in [
+                s
+                for (a, s) in self._conflicting_actions.items()
+                if a != self.correct_response
+            ]:
                 for story in stories:
                     incorrect_stories.append(story)
             return incorrect_stories
