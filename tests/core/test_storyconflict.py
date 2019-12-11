@@ -51,8 +51,8 @@ async def test_add_conflicting_action():
     sliced_states = [
         None,
         {},
-        {'intent_greet': 1.0, 'prev_action_listen': 1.0},
-        {'prev_utter_greet': 1.0, 'intent_greet': 1.0}
+        {"intent_greet": 1.0, "prev_action_listen": 1.0},
+        {"prev_utter_greet": 1.0, "intent_greet": 1.0},
     ]
     conflict = StoryConflict(sliced_states)
 
@@ -67,8 +67,8 @@ async def test_has_prior_events():
     sliced_states = [
         None,
         {},
-        {'intent_greet': 1.0, 'prev_action_listen': 1.0},
-        {'prev_utter_greet': 1.0, 'intent_greet': 1.0}
+        {"intent_greet": 1.0, "prev_action_listen": 1.0},
+        {"prev_utter_greet": 1.0, "intent_greet": 1.0},
     ]
     conflict = StoryConflict(sliced_states)
     assert conflict.has_prior_events
@@ -87,8 +87,8 @@ async def test_story_prior_to_conflict():
     sliced_states = [
         None,
         {},
-        {'intent_greet': 1.0, 'prev_action_listen': 1.0},
-        {'prev_utter_greet': 1.0, 'intent_greet': 1.0}
+        {"intent_greet": 1.0, "prev_action_listen": 1.0},
+        {"prev_utter_greet": 1.0, "intent_greet": 1.0},
     ]
     conflict = StoryConflict(sliced_states)
     assert conflict.story_prior_to_conflict() == story
