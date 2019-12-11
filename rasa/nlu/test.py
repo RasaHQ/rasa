@@ -424,7 +424,7 @@ def _add_confused_intents_to_report(
 
     for i, label in enumerate(labels):
         for j in range(n_candidates):
-            label_idx = indices[i, -j]
+            label_idx = indices[i, -(1 + j)]
             false_pos_label = labels[label_idx]
             false_positives = int(cnf_matrix[i, label_idx])
             if false_pos_label != label and false_positives > 0:
