@@ -181,34 +181,6 @@ class Validator:
 
         return everything_is_alright
 
-    def verify_story_names(self, ignore_warnings: bool = True):
-        """Verify that story names are unique."""
-
-        # Tally story names, e.g. {"story_1": 3, "story_2": 1, ...}
-        name_tally = {}
-        for step in self.story_graph.story_steps:
-            if step.block_name in name_tally:
-                name_tally[step.block_name] += 1
-            else:
-                name_tally[step.block_name] = 1
-
-        # Find story names that appear more than once
-        # and construct a warning message
-        result = True
-        message = ""
-        for name, count in name_tally.items():
-            if count > 1:
-                if result:
-                    message = f"Found duplicate story names:\n"
-                    result = False
-                message += f"  '{name}' appears {count}x\n"
-
-        if result:
-            logger.info("All story names are unique")
-        else:
-            logger.error(message)
-        return result
-
     def verify_story_structure(
         self, ignore_warnings: bool = True, max_history: int = 5
     ) -> bool:
@@ -248,7 +220,6 @@ class Validator:
         there_is_no_duplication = self.verify_example_repetition_in_intents(
             ignore_warnings
         )
-        all_story_names_unique = self.verify_story_names(ignore_warnings)
 
         logger.info("Validating utterances...")
         stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
@@ -256,7 +227,6 @@ class Validator:
             intents_are_valid
             and stories_are_valid
             and there_is_no_duplication
-            and all_story_names_unique
         )
 
     def verify_domain_validity(self) -> bool:
