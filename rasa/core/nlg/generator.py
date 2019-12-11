@@ -1,8 +1,10 @@
+import warnings
 from typing import Optional, Union, Text, Any, Dict
 
 from rasa.core.domain import Domain
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.trackers import DialogueStateTracker
+from rasa.utils.common import class_from_module_path
 
 
 class NaturalLanguageGenerator:
@@ -29,9 +31,15 @@ class NaturalLanguageGenerator:
     ) -> "NaturalLanguageGenerator":
         """Factory to create a generator."""
 
+        custom_nlg = None
+        if isinstance(obj, EndpointConfig) and obj.type:
+            custom_nlg = NaturalLanguageGenerator.load_nlg_from_module_string(obj)
+
         if isinstance(obj, NaturalLanguageGenerator):
             return obj
-        elif isinstance(obj, EndpointConfig):
+        elif custom_nlg:
+            return custom_nlg(domain=domain, endpoint_config=obj)
+        elif isinstance(obj, EndpointConfig) and obj.url:
             from rasa.core.nlg import (  # pytype: disable=pyi-error
                 CallbackNaturalLanguageGenerator,
             )
@@ -50,3 +58,16 @@ class NaturalLanguageGenerator:
                 "based on the passed object. Type: `{}`"
                 "".format(type(obj))
             )
+
+    @staticmethod
+    def load_nlg_from_module_string(nlg: EndpointConfig,) -> "NaturalLanguageGenerator":
+        custom_nlg = None
+        try:
+            custom_nlg = class_from_module_path(nlg.type)
+        except (AttributeError, ImportError):
+            warnings.warn(
+                f"NLG type '{nlg.type}' not found. "
+                "Using CallbackNaturalLanguageGenerator "
+                "or TemplatedNaturalLanguageGenerator instead"
+            )
+        return custom_nlg
