@@ -940,7 +940,7 @@ def create_app(
                 elif data["name"]  == "sauthor":
                     entityArray.append(data)
                 elif data["name"] == 'type' or data["name"] == 'timeline' or data[
-                    "name"] == 'mtype' or data["name"] == 'renew' or data["name"] == 'renewAll' or data["name"] == 'cancelhold':
+                    "name"] == 'mtype' or data["name"] == 'renew' or data["name"] == 'renewAll' or data["name"] == "cancelhold":
                     data["name"] = data["name"].lower()
                     entityArray.append(data)
                 elif data["name"] == "pubyear":
@@ -956,6 +956,13 @@ def create_app(
                         conditionMap['pubyear'] = data['value']
                         data["name"] = "pubyear"
                         entityArray.append(data)
+                else:
+                    pass
+        elif intent == "checkedoutintent":
+            print("into CheckedOutIntent")
+            for data in entMap:
+                if data["name"] == "checkedout" or data["name"] == "mtype":
+                    entityArray.append(data)
                 else:
                     pass
         elif intent == "eventsearchintent":
@@ -1041,7 +1048,7 @@ def create_app(
                     data["name"] = 'option'
                     data['value'] = str(data['value'])
                     entityArray.append(data)
-        elif intent == "PickUpIntent":
+        elif intent == "listpickupintent":
             if data["name"] == 'pickup':
                 entityArray.append(data)
         else:
