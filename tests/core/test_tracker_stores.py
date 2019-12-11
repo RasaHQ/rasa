@@ -104,7 +104,7 @@ def test_tracker_store_endpoint_config_loading():
     )
 
 
-def test_find_tracker_store(default_domain: Domain):
+def test_create_tracker_store_from_endpoint_config(default_domain: Domain):
     store = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
     tracker_store = RedisTrackerStore(
         domain=default_domain,
@@ -115,20 +115,26 @@ def test_find_tracker_store(default_domain: Domain):
         record_exp=3000,
     )
 
-    assert isinstance(
-        tracker_store, type(TrackerStore.find_tracker_store(default_domain, store))
-    )
+    assert isinstance(tracker_store, type(TrackerStore.create(store, default_domain)))
 
 
-def test_find_tracker_store(default_domain: Domain, monkeypatch: MonkeyPatch):
+def test_exception_tracker_store_from_endpoint_config(
+    default_domain: Domain, monkeypatch: MonkeyPatch
+):
+    """Check if tracker store properly handles exceptions.
+
+    If we can not create a tracker store by instantiating the
+    expected type (e.g. due to an exception) we should fallback to
+    the default `InMemoryTrackerStore`."""
+
     store = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
-    mock = Mock(side_effect=Exception("ignore this"))
+    mock = Mock(side_effect=Exception("test exception"))
     monkeypatch.setattr(rasa.core.tracker_store, "RedisTrackerStore", mock)
 
-    assert isinstance(
-        InMemoryTrackerStore(domain),
-        type(TrackerStore.find_tracker_store(default_domain, store)),
-    )
+    with pytest.raises(Exception) as e:
+        TrackerStore.create(store, default_domain)
+
+    assert "test exception" in str(e.value)
 
 
 class URLExampleTrackerStore(RedisTrackerStore):
@@ -154,7 +160,7 @@ def test_tracker_store_deprecated_url_argument_from_string(default_domain: Domai
     store_config.type = "tests.core.test_tracker_stores.URLExampleTrackerStore"
 
     with pytest.warns(FutureWarning):
-        tracker_store = TrackerStore.find_tracker_store(default_domain, store_config)
+        tracker_store = TrackerStore.create(store_config, default_domain)
 
     assert isinstance(tracker_store, URLExampleTrackerStore)
 
@@ -165,7 +171,7 @@ def test_tracker_store_with_host_argument_from_string(default_domain: Domain):
     store_config.type = "tests.core.test_tracker_stores.HostExampleTrackerStore"
 
     with pytest.warns(None) as record:
-        tracker_store = TrackerStore.find_tracker_store(default_domain, store_config)
+        tracker_store = TrackerStore.create(store_config, default_domain)
 
     assert len(record) == 0
 
@@ -178,7 +184,7 @@ def test_tracker_store_from_invalid_module(default_domain: Domain):
     store_config.type = "a.module.which.cannot.be.found"
 
     with pytest.warns(UserWarning):
-        tracker_store = TrackerStore.find_tracker_store(default_domain, store_config)
+        tracker_store = TrackerStore.create(store_config, default_domain)
 
     assert isinstance(tracker_store, InMemoryTrackerStore)
 
@@ -189,7 +195,7 @@ def test_tracker_store_from_invalid_string(default_domain: Domain):
     store_config.type = "any string"
 
     with pytest.warns(UserWarning):
-        tracker_store = TrackerStore.find_tracker_store(default_domain, store_config)
+        tracker_store = TrackerStore.create(store_config, default_domain)
 
     assert isinstance(tracker_store, InMemoryTrackerStore)
 

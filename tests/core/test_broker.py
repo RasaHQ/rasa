@@ -3,11 +3,11 @@ from unittest.mock import patch
 
 from _pytest.monkeypatch import MonkeyPatch
 
-import rasa.core.brokers.utils as broker_utils
-from rasa.core.brokers.file_producer import FileProducer
-from rasa.core.brokers.kafka import KafkaProducer
-from rasa.core.brokers.pika import PikaProducer
-from rasa.core.brokers.sql import SQLProducer
+from rasa.core.brokers.broker import EventBroker
+from rasa.core.brokers.file import FileEventBroker
+from rasa.core.brokers.kafka import KafkaEventBroker
+from rasa.core.brokers.pika import PikaEventBroker
+from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
@@ -23,9 +23,9 @@ def test_pika_broker_from_config():
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/pika_endpoint.yml", "event_broker"
     )
-    actual = broker_utils.from_endpoint_config(cfg)
+    actual = EventBroker.create(cfg)
 
-    assert isinstance(actual, PikaProducer)
+    assert isinstance(actual, PikaEventBroker)
     assert actual.host == "localhost"
     assert actual.username == "username"
     assert actual.queue == "queue"
@@ -34,8 +34,8 @@ def test_pika_broker_from_config():
 # noinspection PyProtectedMember
 def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
     # patch PikaProducer so it doesn't try to connect to RabbitMQ on init
-    with patch.object(PikaProducer, "_run_pika", lambda _: None):
-        pika_producer = PikaProducer("", "", "")
+    with patch.object(PikaEventBroker, "_run_pika", lambda _: None):
+        pika_producer = PikaEventBroker("", "", "")
 
     # unset RASA_ENVIRONMENT env var results in empty App ID
     monkeypatch.delenv("RASA_ENVIRONMENT", raising=False)
@@ -50,7 +50,7 @@ def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
 def test_no_broker_in_config():
     cfg = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "event_broker")
 
-    actual = broker_utils.from_endpoint_config(cfg)
+    actual = EventBroker.create(cfg)
 
     assert actual is None
 
@@ -59,9 +59,9 @@ def test_sql_broker_from_config():
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/sql_endpoint.yml", "event_broker"
     )
-    actual = broker_utils.from_endpoint_config(cfg)
+    actual = EventBroker.create(cfg)
 
-    assert isinstance(actual, SQLProducer)
+    assert isinstance(actual, SQLEventBroker)
     assert actual.engine.name == "sqlite"
 
 
@@ -69,7 +69,9 @@ def test_sql_broker_logs_to_sql_db():
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/sql_endpoint.yml", "event_broker"
     )
-    actual = broker_utils.from_endpoint_config(cfg)
+    actual = EventBroker.create(cfg)
+
+    assert isinstance(actual, SQLEventBroker)
 
     for e in TEST_EVENTS:
         actual.publish(e.as_dict())
@@ -87,18 +89,16 @@ def test_file_broker_from_config():
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/file_endpoint.yml", "event_broker"
     )
-    actual = broker_utils.from_endpoint_config(cfg)
+    actual = EventBroker.create(cfg)
 
-    assert isinstance(actual, FileProducer)
+    assert isinstance(actual, FileEventBroker)
     assert actual.path == "rasa_event.log"
 
 
 def test_file_broker_logs_to_file(tmpdir):
     fname = tmpdir.join("events.log").strpath
 
-    actual = broker_utils.from_endpoint_config(
-        EndpointConfig(**{"type": "file", "path": fname})
-    )
+    actual = EventBroker.create(EndpointConfig(**{"type": "file", "path": fname}))
 
     for e in TEST_EVENTS:
         actual.publish(e.as_dict())
@@ -115,9 +115,7 @@ def test_file_broker_logs_to_file(tmpdir):
 def test_file_broker_properly_logs_newlines(tmpdir):
     fname = tmpdir.join("events.log").strpath
 
-    actual = broker_utils.from_endpoint_config(
-        EndpointConfig(**{"type": "file", "path": fname})
-    )
+    actual = EventBroker.create(EndpointConfig(**{"type": "file", "path": fname}))
 
     event_with_newline = UserUttered("hello \n there")
 
@@ -133,22 +131,22 @@ def test_file_broker_properly_logs_newlines(tmpdir):
 
 
 def test_load_custom_broker_name():
-    config = EndpointConfig(**{"type": "rasa.core.brokers.file_producer.FileProducer"})
-    assert broker_utils.from_endpoint_config(config)
+    config = EndpointConfig(**{"type": "rasa.core.brokers.file.FileEventBroker"})
+    assert EventBroker.create(config)
 
 
 def test_load_non_existent_custom_broker_name():
     config = EndpointConfig(**{"type": "rasa.core.brokers.my.MyProducer"})
-    assert broker_utils.from_endpoint_config(config) is None
+    assert EventBroker.create(config) is None
 
 
 def test_kafka_broker_from_config():
     endpoints_path = "data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml"
     cfg = read_endpoint_config(endpoints_path, "event_broker")
 
-    actual = KafkaProducer.from_endpoint_config(cfg)
+    actual = KafkaEventBroker.from_endpoint_config(cfg)
 
-    expected = KafkaProducer(
+    expected = KafkaEventBroker(
         "localhost",
         "username",
         "password",

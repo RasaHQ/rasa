@@ -92,7 +92,7 @@ def test_core(
     _interpreter = RegexInterpreter()
     if use_e2e:
         if nlu_path:
-            _interpreter = NaturalLanguageInterpreter.create(nlu_path, _endpoints.nlu)
+            _interpreter = NaturalLanguageInterpreter.create(_endpoints.nlu or nlu_path)
         else:
             print_warning(
                 "No NLU model found. Using default 'RegexInterpreter' for end-to-end "

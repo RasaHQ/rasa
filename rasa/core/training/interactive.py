@@ -880,7 +880,7 @@ async def _write_domain_to_file(
 
     messages = _collect_messages(events)
     actions = _collect_actions(events)
-    templates = NEW_TEMPLATES
+    templates = NEW_TEMPLATES  # type: Dict[Text, List[Dict[Text, Any]]]
 
     # TODO for now there is no way to distinguish between action and form
     collected_actions = list(
@@ -1544,7 +1544,7 @@ def start_visualization(image_path: Text = None) -> None:
 async def train_agent_on_start(
     args, endpoints, additional_arguments, app, loop
 ) -> None:
-    _interpreter = NaturalLanguageInterpreter.create(args.get("nlu"), endpoints.nlu)
+    _interpreter = NaturalLanguageInterpreter.create(endpoints.nlu or args.get("nlu"))
 
     model_directory = args.get("out", tempfile.mkdtemp(suffix="_core_model"))
 
