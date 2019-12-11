@@ -143,6 +143,7 @@ def test_no_interactive_without_core_data(
     interactive._set_not_required_args(args)
 
     mock = Mock()
+    monkeypatch.setattr(train, "train", mock.train_model)
     monkeypatch.setattr(
         interactive, "perform_interactive_learning", mock.perform_interactive_learning
     )
@@ -150,4 +151,5 @@ def test_no_interactive_without_core_data(
     with pytest.raises(SystemExit):
         interactive.interactive(args)
 
+    mock.train_model.assert_not_called()
     mock.perform_interactive_learning.assert_not_called()
