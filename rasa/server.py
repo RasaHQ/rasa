@@ -15,7 +15,6 @@ from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
 import rasa
-import rasa.core.brokers.utils
 import rasa.core.utils
 import rasa.utils.common
 import rasa.utils.endpoints
@@ -28,6 +27,7 @@ from rasa.constants import (
     DOCS_BASE_URL,
 )
 from rasa.core.agent import load_agent, Agent
+from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
     UserMessage,
     CollectingOutputChannel,
@@ -307,16 +307,14 @@ async def _load_agent(
         action_endpoint = None
 
         if endpoints:
-            _broker = rasa.core.brokers.utils.from_endpoint_config(
-                endpoints.event_broker
-            )
-            tracker_store = TrackerStore.find_tracker_store(
-                None, endpoints.tracker_store, _broker
+            broker = EventBroker.create(endpoints.event_broker)
+            tracker_store = TrackerStore.create(
+                endpoints.tracker_store, event_broker=broker
             )
             generator = endpoints.nlg
             action_endpoint = endpoints.action
             if not lock_store:
-                lock_store = LockStore.find_lock_store(endpoints.lock_store)
+                lock_store = LockStore.create(endpoints.lock_store)
 
         loaded_agent = await load_agent(
             model_path,

@@ -1,15 +1,16 @@
 import json
 import logging
+import warnings
 from typing import Any, Dict, Optional, Text
 
-from rasa.core.brokers.event_channel import EventChannel
+from rasa.core.brokers.broker import EventBroker
 from rasa.utils.endpoints import EndpointConfig
 import contextlib
 
 logger = logging.getLogger(__name__)
 
 
-class SQLProducer(EventChannel):
+class SQLEventBroker(EventBroker):
     """Save events into an SQL database.
 
     All events will be stored in a table called `events`.
@@ -44,14 +45,14 @@ class SQLProducer(EventChannel):
             dialect, host, port, db, username, password
         )
 
-        logger.debug(f"SQLProducer: Connecting to database: '{engine_url}'.")
+        logger.debug(f"SQLEventBroker: Connecting to database: '{engine_url}'.")
 
         self.engine = sqlalchemy.create_engine(engine_url)
         self.Base.metadata.create_all(self.engine)
         self.sessionmaker = sqlalchemy.orm.sessionmaker(bind=self.engine)
 
     @classmethod
-    def from_endpoint_config(cls, broker_config: EndpointConfig) -> "EventChannel":
+    def from_endpoint_config(cls, broker_config: EndpointConfig) -> "SQLEventBroker":
         return cls(host=broker_config.url, **broker_config.kwargs)
 
     @contextlib.contextmanager
@@ -72,3 +73,23 @@ class SQLProducer(EventChannel):
                 )
             )
             session.commit()
+
+
+class SQLProducer(SQLEventBroker):
+    def __init__(
+        self,
+        dialect: Text = "sqlite",
+        host: Optional[Text] = None,
+        port: Optional[int] = None,
+        db: Text = "events.db",
+        username: Optional[Text] = None,
+        password: Optional[Text] = None,
+    ):
+        warnings.warn(
+            "The `SQLProducer` class is deprecated, please inherit "
+            "from `SQLEventBroker` instead. `SQLProducer` will be "
+            "removed in future Rasa versions.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super(SQLProducer, self).__init__(dialect, host, port, db, username, password)
