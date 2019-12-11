@@ -1,8 +1,8 @@
 from typing import List, Optional, Dict, Text
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.domain import PREV_PREFIX
-from rasa.core.events import ActionExecuted
+from rasa.core.domain import PREV_PREFIX, Domain
+from rasa.core.events import ActionExecuted, Event
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.nlu.constants import MESSAGE_INTENT_ATTRIBUTE
 from rasa.core.training.generator import TrackerWithCachedStates
@@ -23,7 +23,9 @@ class StoryConflict:
         self.correct_response = None
 
     @staticmethod
-    def find_conflicts(trackers, domain, max_history: int):
+    def find_conflicts(
+        trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
+    ) -> List:
         """
         Generate a list of StoryConflict objects, describing
         conflicts in the given trackers.
@@ -70,7 +72,9 @@ class StoryConflict:
         return [c for (h, c) in conflicts.items() if c.has_prior_events]
 
     @staticmethod
-    def _sliced_states_iterator(trackers, domain, max_history):
+    def _sliced_states_iterator(
+        trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
+    ) -> (TrackerWithCachedStates, Event, List[Optional[Dict[Text, float]]]):
         """
         Iterate over all given trackers and all sliced states within
         each tracker, where the slicing is based on `max_history`
@@ -128,14 +132,14 @@ class StoryConflict:
             self._conflicting_actions[action] += [story_name]
 
     @property
-    def conflicting_actions(self):
+    def conflicting_actions(self) -> List[Text]:
         """
         Returns the list of conflicting actions
         """
         return list(self._conflicting_actions.keys())
 
     @property
-    def conflicting_actions_with_counts(self):
+    def conflicting_actions_with_counts(self) -> List[Text]:
         """
         Returns a list of strings, describing what action
         occurs how often
@@ -143,9 +147,9 @@ class StoryConflict:
         return [f"{a} [{len(s)}x]" for (a, s) in self._conflicting_actions.items()]
 
     @property
-    def incorrect_stories(self):
+    def incorrect_stories(self) -> List[Text]:
         """
-        Returns a list of stories that have not yet been
+        Returns a list of story names that have not yet been
         corrected.
         """
         if self.correct_response:
@@ -162,14 +166,14 @@ class StoryConflict:
             return []
 
     @property
-    def has_prior_events(self):
+    def has_prior_events(self) -> bool:
         """
         Returns True iff anything has happened before this
         conflict.
         """
         return self._get_prev_event(self.sliced_states[-1])[0] is not None
 
-    def story_prior_to_conflict(self):
+    def story_prior_to_conflict(self) -> Text:
         """
         Generates a story string, describing the events that
         lead up to the conflict.
