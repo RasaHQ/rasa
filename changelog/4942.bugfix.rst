@@ -1,2 +1,2 @@
-Pin ``mulidict`` dependency to 4.6.1 to prevent sanic from breaking,
+Pin ``multidict`` dependency to 4.6.1 to prevent sanic from breaking,
 see https://github.com/huge-success/sanic/issues/1729
