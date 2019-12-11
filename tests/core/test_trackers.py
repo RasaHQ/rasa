@@ -304,9 +304,6 @@ def test_session_start(default_domain: Domain):
     # tracker has one event
     assert len(tracker.events) == 1
 
-    # follow-up action should be 'session_start'
-    assert tracker.followup_action == ACTION_SESSION_START_NAME
-
 
 def test_revert_action_event(default_domain: Domain):
     tracker = DialogueStateTracker("default", default_domain.slots)
