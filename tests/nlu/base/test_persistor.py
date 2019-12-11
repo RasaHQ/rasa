@@ -142,28 +142,3 @@ def test_retrieve_tar_archive(model, archive):
         with patch.object(persistor.Persistor, "_retrieve_tar") as f:
             persistor.Persistor().retrieve(model, "dst")
         f.assert_called_once_with(archive)
-
-
-# noinspection PyPep8Naming
-@mock_s3
-def test_retrieve_tar_archive_with_s3_namespace():
-    model = "/my/s3/project/model.tar.gz"
-    destination = "dst"
-    with patch.object(persistor.AWSPersistor, "_decompress") as decompress:
-        with patch.object(persistor.AWSPersistor, "_retrieve_tar") as retrieve:
-            persistor.AWSPersistor("rasa-test").retrieve(model, destination)
-        decompress.assert_called_once_with("model.tar.gz", destination)
-        retrieve.assert_called_once_with(model)
-
-
-# noinspection PyPep8Naming
-@mock_s3
-def test_s3_private_retrieve_tar():
-    model = "/my/s3/project/model.tar.gz"
-    awsPersistor = persistor.AWSPersistor("rasa-test")
-    with patch.object(awsPersistor.bucket, "download_fileobj") as download_fileobj:
-        # noinspection PyProtectedMember
-        awsPersistor._retrieve_tar(model)
-    retrieveArgs = download_fileobj.call_args[0]
-    assert retrieveArgs[0] == model
-    assert retrieveArgs[1].name == "model.tar.gz"
