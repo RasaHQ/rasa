@@ -30,6 +30,7 @@ from rasa.core.events import (
     BotUttered,
 )
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
+from typing import Coroutine, Union
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -75,7 +76,7 @@ def default_action_names() -> List[Text]:
     return [a.name() for a in default_actions()]
 
 
-def combine_user_with_default_actions(user_actions):
+def combine_user_with_default_actions(user_actions) -> list:
     # remove all user actions that overwrite default actions
     # this logic is a bit reversed, you'd think that we should remove
     # the action name from the default action names if the user overwrites
@@ -183,7 +184,7 @@ class ActionRetrieveResponse(Action):
         self.action_name = name
         self.silent_fail = silent_fail
 
-    def intent_name_from_action(self):
+    def intent_name_from_action(self) -> Text:
         return self.action_name.split(RESPOND_PREFIX)[1]
 
     async def run(
@@ -232,11 +233,17 @@ class ActionUtterTemplate(Action):
     Both, name and utter template, need to be specified using
     the `name` method."""
 
-    def __init__(self, name, silent_fail: Optional[bool] = False):
+    def __init__(self, name: Text, silent_fail: Optional[bool] = False):
         self.template_name = name
         self.silent_fail = silent_fail
 
-    async def run(self, output_channel, nlg, tracker, domain):
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
         """Simple run implementation uttering a (hopefully defined) template."""
 
         message = await nlg.generate(self.template_name, tracker, output_channel.name())
@@ -263,10 +270,16 @@ class ActionBack(ActionUtterTemplate):
     def name(self) -> Text:
         return ACTION_BACK_NAME
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("utter_back", silent_fail=True)
 
-    async def run(self, output_channel, nlg, tracker, domain):
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
         # only utter the template if it is available
         evts = await super().run(output_channel, nlg, tracker, domain)
 
@@ -282,7 +295,13 @@ class ActionListen(Action):
     def name(self) -> Text:
         return ACTION_LISTEN_NAME
 
-    async def run(self, output_channel, nlg, tracker, domain):
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
         return []
 
 
@@ -294,10 +313,16 @@ class ActionRestart(ActionUtterTemplate):
     def name(self) -> Text:
         return ACTION_RESTART_NAME
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("utter_restart", silent_fail=True)
 
-    async def run(self, output_channel, nlg, tracker, domain):
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
         from rasa.core.events import Restarted
 
         # only utter the template if it is available
@@ -313,10 +338,16 @@ class ActionDefaultFallback(ActionUtterTemplate):
     def name(self) -> Text:
         return ACTION_DEFAULT_FALLBACK_NAME
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("utter_default", silent_fail=True)
 
-    async def run(self, output_channel, nlg, tracker, domain):
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
         from rasa.core.events import UserUtteranceReverted
 
         # only utter the template if it is available
@@ -331,7 +362,13 @@ class ActionDeactivateForm(Action):
     def name(self) -> Text:
         return ACTION_DEACTIVATE_FORM_NAME
 
-    async def run(self, output_channel, nlg, tracker, domain):
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
         from rasa.core.events import Form, SlotSet
 
         return [Form(None), SlotSet(REQUESTED_SLOT, None)]
@@ -360,7 +397,7 @@ class RemoteAction(Action):
         }
 
     @staticmethod
-    def action_response_format_spec():
+    def action_response_format_spec() -> Dict[Text, Any]:
         """Expected response schema for an Action endpoint.
 
         Used for validation of the response returned from the
@@ -379,7 +416,7 @@ class RemoteAction(Action):
             },
         }
 
-    def _validate_action_result(self, result):
+    def _validate_action_result(self, result: Dict[Text, Any]) -> bool:
         from jsonschema import validate
         from jsonschema import ValidationError
 
@@ -428,7 +465,13 @@ class RemoteAction(Action):
 
         return bot_messages
 
-    async def run(self, output_channel, nlg, tracker, domain) -> List[Event]:
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
         json_body = self._action_call_format(tracker, domain)
 
         if not self.action_endpoint:
@@ -504,13 +547,13 @@ class ActionExecutionRejection(Exception):
     """Raising this exception will allow other policies
         to predict a different action"""
 
-    def __init__(self, action_name, message=None):
+    def __init__(self, action_name: Text, message: Optional[Text] = None) -> None:
         self.action_name = action_name
         self.message = message or "Custom action '{}' rejected to run".format(
             action_name
         )
 
-    def __str__(self):
+    def __str__(self) -> Text:
         return self.message
 
 
@@ -632,5 +675,5 @@ class ActionDefaultAskRephrase(ActionUtterTemplate):
     def name(self) -> Text:
         return ACTION_DEFAULT_ASK_REPHRASE_NAME
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("utter_ask_rephrase", silent_fail=True)

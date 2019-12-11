@@ -13,6 +13,7 @@ from rasa.cli import utils as cli_utils
 from rasa.constants import DOCS_BASE_URL
 from rasa.core import utils
 from sanic.response import HTTPResponse
+from typing import NoReturn
 
 try:
     from urlparse import urljoin  # pytype: disable=import-error
@@ -371,7 +372,7 @@ class QueueOutputChannel(CollectingOutputChannel):
         super().__init__()
         self.messages = Queue() if not message_queue else message_queue
 
-    def latest_output(self):
+    def latest_output(self) -> NoReturn:
         raise NotImplementedError("A queue doesn't allow to peek at messages.")
 
     async def _persist_message(self, message) -> None:

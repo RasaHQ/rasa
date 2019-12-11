@@ -51,7 +51,7 @@ async def scheduler() -> AsyncIOScheduler:
         return __scheduler
 
 
-def kill_scheduler():
+def kill_scheduler() -> None:
     """Terminate the scheduler if started.
 
     Another call to `scheduler` will create a new scheduler."""

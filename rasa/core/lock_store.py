@@ -236,7 +236,7 @@ class RedisLockStore(LockStore):
 class InMemoryLockStore(LockStore):
     """In-memory store for ticket locks."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.conversation_locks = {}
         super().__init__()
 

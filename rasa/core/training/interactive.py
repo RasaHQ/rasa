@@ -6,7 +6,7 @@ import textwrap
 import uuid
 from functools import partial
 from multiprocessing import Process
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union, Set
 
 import numpy as np
 from aiohttp import ClientError
@@ -857,12 +857,12 @@ def _get_nlu_target_format(export_path: Text) -> Text:
     return guessed_format
 
 
-def _entities_from_messages(messages):
+def _entities_from_messages(messages: List[Message]) -> List[Text]:
     """Return all entities that occur in at least one of the messages."""
     return list({e["entity"] for m in messages for e in m.data.get("entities", [])})
 
 
-def _intents_from_messages(messages):
+def _intents_from_messages(messages: List[Message]) -> Set[Text]:
     """Return all intents that occur in at least one of the messages."""
 
     # set of distinct intents
@@ -996,7 +996,7 @@ async def _correct_wrong_action(
     )
 
 
-def _form_is_rejected(action_name, tracker):
+def _form_is_rejected(action_name: Text, tracker: Dict[Text, Any]) -> bool:
     """Check if the form got rejected with the most recent action name."""
     return (
         tracker.get("active_form", {}).get("name")
@@ -1005,7 +1005,7 @@ def _form_is_rejected(action_name, tracker):
     )
 
 
-def _form_is_restored(action_name, tracker):
+def _form_is_restored(action_name: Text, tracker: Dict[Text, Any]) -> bool:
     """Check whether the form is called again after it was rejected."""
     return (
         tracker.get("active_form", {}).get("rejected")
@@ -1014,7 +1014,7 @@ def _form_is_restored(action_name, tracker):
     )
 
 
-async def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
+async def _confirm_form_validation(action_name, tracker, endpoint, sender_id) -> None:
     """Ask a user whether an input for a form should be validated.
 
     Previous to this call, the active form was chosen after it was rejected."""
@@ -1109,8 +1109,8 @@ def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
 
     if not parse_data.get("entities"):
         parse_data["entities"] = []
-    # noinspection PyProtectedMember
-    return MarkdownWriter()._generate_message_md(parse_data)
+
+    return MarkdownWriter.generate_message_md(parse_data)
 
 
 def _validate_user_regex(latest_message: Dict[Text, Any], intents: List[Text]) -> bool:
@@ -1213,7 +1213,7 @@ async def _correct_entities(
 
     annotation = await _ask_questions(question, sender_id, endpoint)
     # noinspection PyProtectedMember
-    parse_annotated = MarkdownReader()._parse_training_example(annotation)
+    parse_annotated = MarkdownReader().parse_training_example(annotation)
 
     corrected_entities = _merge_annotated_and_original_entities(
         parse_annotated, parse_original
@@ -1222,7 +1222,9 @@ async def _correct_entities(
     return corrected_entities
 
 
-def _merge_annotated_and_original_entities(parse_annotated, parse_original):
+def _merge_annotated_and_original_entities(
+    parse_annotated: Message, parse_original: Dict[Text, Any]
+) -> List[Dict[Text, Any]]:
     # overwrite entities which have already been
     # annotated in the original annotation to preserve
     # additional entity parser information
@@ -1235,7 +1237,7 @@ def _merge_annotated_and_original_entities(parse_annotated, parse_original):
     return entities
 
 
-def _is_same_entity_annotation(entity, other):
+def _is_same_entity_annotation(entity, other) -> Any:
     return entity["value"] == other["value"] and entity["entity"] == other["entity"]
 
 
@@ -1481,7 +1483,7 @@ async def _get_training_trackers(
     )
 
 
-def _serve_application(app, stories, skip_visualization):
+def _serve_application(app: Sanic, stories, skip_visualization) -> Sanic:
     """Start a core server and attach the interactive learning IO."""
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
@@ -1539,7 +1541,9 @@ def start_visualization(image_path: Text = None) -> None:
 
 
 # noinspection PyUnusedLocal
-async def train_agent_on_start(args, endpoints, additional_arguments, app, loop):
+async def train_agent_on_start(
+    args, endpoints, additional_arguments, app, loop
+) -> None:
     _interpreter = NaturalLanguageInterpreter.create(args.get("nlu"), endpoints.nlu)
 
     model_directory = args.get("out", tempfile.mkdtemp(suffix="_core_model"))
@@ -1558,7 +1562,9 @@ async def train_agent_on_start(args, endpoints, additional_arguments, app, loop)
     app.agent = _agent
 
 
-async def wait_til_server_is_running(endpoint, max_retries=30, sleep_between_retries=1):
+async def wait_til_server_is_running(
+    endpoint, max_retries=30, sleep_between_retries=1
+) -> bool:
     """Try to reach the server, retry a couple of times and sleep in between."""
 
     while max_retries:

@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import importlib.util
 import logging
+import warnings
 import os
 import signal
 import traceback
@@ -109,32 +110,65 @@ def _prepare_credentials_for_rasa_x(
 def _overwrite_endpoints_for_local_x(
     endpoints: AvailableEndpoints, rasa_x_token: Text, rasa_x_url: Text
 ):
-    from rasa.utils.endpoints import EndpointConfig
-    import questionary
+    endpoints.model = _get_model_endpoint(endpoints.model, rasa_x_token, rasa_x_url)
+    endpoints.event_broker = _get_event_broker_endpoint(endpoints.event_broker)
 
-    endpoints.model = EndpointConfig(
-        f"{rasa_x_url}/projects/default/models/tags/production",
-        token=rasa_x_token,
-        wait_time_between_pulls=2,
+
+def _get_model_endpoint(
+    model_endpoint: Optional[EndpointConfig], rasa_x_token: Text, rasa_x_url: Text
+) -> EndpointConfig:
+    # If you change that, please run a test with Rasa X and speak to the bot
+    default_rasax_model_server_url = (
+        f"{rasa_x_url}/projects/default/models/tags/production"
     )
 
-    if endpoints.event_broker and not _is_correct_event_broker(endpoints.event_broker):
+    model_endpoint = model_endpoint or EndpointConfig()
+
+    # Checking if endpoint.yml has existing url, if so give
+    # warning we are overwriting the endpoint.yml file.
+    custom_url = model_endpoint.url
+
+    if custom_url and custom_url != default_rasax_model_server_url:
+        logger.info(
+            f"Ignoring url '{custom_url}' from 'endpoints.yml' and using "
+            f"'{default_rasax_model_server_url}' instead."
+        )
+
+    custom_wait_time_pulls = model_endpoint.kwargs.get("wait_time_between_pulls")
+    return EndpointConfig(
+        default_rasax_model_server_url,
+        token=rasa_x_token,
+        wait_time_between_pulls=custom_wait_time_pulls or 2,
+    )
+
+
+def _get_event_broker_endpoint(
+    event_broker_endpoint: Optional[EndpointConfig],
+) -> EndpointConfig:
+    import questionary
+
+    default_event_broker_endpoint = EndpointConfig(
+        type="sql", dialect="sqlite", db=DEFAULT_EVENTS_DB
+    )
+    if not event_broker_endpoint:
+        return default_event_broker_endpoint
+    elif not _is_correct_event_broker(event_broker_endpoint):
         cli_utils.print_error(
             "Rasa X currently only supports a SQLite event broker with path '{}' "
             "when running locally. You can deploy Rasa X with Docker "
             "(https://rasa.com/docs/rasa-x/deploy/) if you want to use "
             "other event broker configurations.".format(DEFAULT_EVENTS_DB)
         )
-        overwrite_existing_event_broker = questionary.confirm(
+        continue_with_default_event_broker = questionary.confirm(
             "Do you want to continue with the default SQLite event broker?"
         ).ask()
 
-        if not overwrite_existing_event_broker:
+        if not continue_with_default_event_broker:
             exit(0)
 
-    endpoints.event_broker = EndpointConfig(
-        type="sql", db=DEFAULT_EVENTS_DB, dialect="sqlite"
-    )
+        return default_event_broker_endpoint
+    else:
+        return event_broker_endpoint
 
 
 def _is_correct_event_broker(event_broker: EndpointConfig) -> bool:
@@ -175,7 +209,7 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
     return p
 
 
-def is_rasa_x_installed():
+def is_rasa_x_installed() -> bool:
     """Check if Rasa X is installed."""
 
     # we could also do something like checking if `import rasax` works,
