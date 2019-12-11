@@ -1,0 +1,3 @@
+Made it explicit that interactive learning does not work with NLU-only models.
+
+Interactive learning no longer trains NLU-only models if no model is provided and no core data is provided.
