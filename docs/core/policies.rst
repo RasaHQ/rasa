@@ -87,7 +87,7 @@ with. So your story might look like this:
       - utter_help_message
 
 For Rasa Core to learn this pattern, the ``max_history``
-has to be `at least` 3.
+has to be `at least` 4.
 
 If you increase your ``max_history``, your model will become bigger and
 training will take longer. If you have some information that should
@@ -393,7 +393,7 @@ simple example that dispatches a bot utterance and then reverts the interaction:
       return "action_is_bot"
 
   def run(self, dispatcher, tracker, domain):
-      dispatcher.utter_template("utter_is_bot", tracker)
+      dispatcher.utter_template(template="utter_is_bot")
       return [UserUtteranceReverted()]
 
 .. note::

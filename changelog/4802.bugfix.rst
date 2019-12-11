@@ -1,1 +1,0 @@
-Fixed unnecessary ``kwargs`` unpacking in ``rasa.test.test_core`` call in ``rasa.test.test`` function.

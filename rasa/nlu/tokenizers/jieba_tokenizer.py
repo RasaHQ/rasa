@@ -101,7 +101,7 @@ class JiebaTokenizer(Tokenizer, Component):
             self.tokenize(message.text, MESSAGE_TEXT_ATTRIBUTE),
         )
 
-    def preprocess_text(self, text, attribute):
+    def preprocess_text(self, text: Text, attribute: Text) -> Text:
 
         if attribute == MESSAGE_INTENT_ATTRIBUTE and self.intent_tokenization_flag:
             return " ".join(text.split(self.intent_split_symbol))
@@ -137,7 +137,7 @@ class JiebaTokenizer(Tokenizer, Component):
         return cls(meta)
 
     @staticmethod
-    def copy_files_dir_to_dir(input_dir, output_dir):
+    def copy_files_dir_to_dir(input_dir: Text, output_dir: Text) -> None:
         # make sure target path exists
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
