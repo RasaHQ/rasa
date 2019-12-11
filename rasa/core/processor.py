@@ -144,7 +144,10 @@ class MessageProcessor:
         }
 
     async def _update_tracker_session(
-        self, tracker: DialogueStateTracker, output_channel: OutputChannel
+        self,
+        tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
+        message_text: Optional[Text] = None,
     ) -> None:
         """Check the current session in `tracker` and update it if expired.
 
@@ -156,8 +159,14 @@ class MessageProcessor:
             tracker: Tracker to inspect.
             output_channel: Output channel for potential utterances in a custom
                 `ActionSessionStart`.
+            message_text: Text of the incoming user message.
         """
-        if len(tracker.applied_events()) == 0 or self._has_session_expired(tracker):
+        if (
+            not tracker.applied_events()  # new tracker
+            or self._has_session_expired(tracker)  # session has expired
+            # a manual session start was requested
+            or (message_text == f"{INTENT_MESSAGE_PREFIX}{USER_INTENT_SESSION_START}")
+        ):
             logger.debug(
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
@@ -169,7 +178,10 @@ class MessageProcessor:
             )
 
     async def get_tracker_with_session_start(
-        self, sender_id: Text, output_channel: Optional[OutputChannel] = None,
+        self,
+        sender_id: Text,
+        output_channel: Optional[OutputChannel] = None,
+        message_text: Text = None,
     ) -> Optional[DialogueStateTracker]:
         """Get tracker for `sender_id` or create a new tracker for `sender_id`.
 
@@ -178,6 +190,7 @@ class MessageProcessor:
         Args:
             output_channel: Output channel associated with the incoming user message.
             sender_id: Conversation ID for which to fetch the tracker.
+            message_text: Text of the incoming user message.
 
         Returns:
               Tracker for `sender_id` if available, `None` otherwise.
@@ -187,7 +200,7 @@ class MessageProcessor:
         if not tracker:
             return None
 
-        await self._update_tracker_session(tracker, output_channel)
+        await self._update_tracker_session(tracker, output_channel, message_text)
 
         return tracker
 
@@ -207,7 +220,7 @@ class MessageProcessor:
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = await self.get_tracker_with_session_start(
-            message.sender_id, message.output_channel
+            message.sender_id, message.output_channel, message.text
         )
 
         if tracker:

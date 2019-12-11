@@ -16,6 +16,7 @@ from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NA
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.domain import SessionConfig
+from rasa.core import constants
 from rasa.core.events import (
     ActionExecuted,
     BotUttered,
@@ -470,5 +471,69 @@ async def test_handle_message_with_session_start(
             ],
         ),
         SlotSet(entity, slot_2[entity]),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+
+
+async def test_handle_message_with_session_start_intent(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor,
+):
+    sender_id = uuid.uuid4().hex
+
+    # first send a normal message
+    entity = "name"
+    slot_1 = {entity: "Core"}
+    await default_processor.handle_message(
+        UserMessage(f"/greet{json.dumps(slot_1)}", default_channel, sender_id)
+    )
+
+    # send session start intent message
+    await default_processor.handle_message(
+        UserMessage(
+            f"/{constants.USER_INTENT_SESSION_START}", default_channel, sender_id
+        )
+    )
+
+    # and another normal message
+    await default_processor.handle_message(
+        UserMessage(f"/greet", default_channel, sender_id)
+    )
+
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+    # make sure the sequence of events is as expected
+    assert list(tracker.events) == [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            f"/greet{json.dumps(slot_1)}",
+            {"name": "greet", "confidence": 1.0},
+            [{"entity": entity, "start": 6, "end": 22, "value": "Core"}],
+        ),
+        SlotSet(entity, slot_1[entity]),
+        ActionExecuted("utter_greet"),
+        BotUttered("hey there Core!"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        # the initial SlotSet is reapplied after the SessionStarted sequence
+        SlotSet(entity, slot_1[entity]),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            f"/{constants.USER_INTENT_SESSION_START}",
+            {"name": constants.USER_INTENT_SESSION_START, "confidence": 1.0},
+        ),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(f"/greet", {"name": "greet", "confidence": 1.0},),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+
+    # the applied events should not include the UserUttered event, but they must
+    # include the SlotSet event
+    assert tracker.applied_events() == [
+        SlotSet(entity, slot_1[entity]),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(f"/greet", {"name": "greet", "confidence": 1.0},),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
