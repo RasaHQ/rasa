@@ -50,7 +50,7 @@ class TrackerStore:
         domain: Optional[Domain] = None,
         event_broker: Optional[EventBroker] = None,
     ) -> "TrackerStore":
-        """Factory to create a generator."""
+        """Factory to create a tracker store."""
 
         if isinstance(obj, TrackerStore):
             return obj
@@ -66,8 +66,9 @@ class TrackerStore:
         """Returns the tracker_store type"""
 
         warnings.warn(
-            "Deprecated, use `TrackerStore.create` instead. "
-            "The `create_tracker_store` function will be removed.",
+            "The `create_tracker_store` function is deprecated, please use "
+            "`TrackerStore.create` instead. `create_tracker_store` will be "
+            "removed in future Rasa versions.",
             DeprecationWarning,
             stacklevel=2,
         )

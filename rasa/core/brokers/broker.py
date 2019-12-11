@@ -61,7 +61,8 @@ def _create_from_endpoint_config(
     else:
         broker = _load_from_module_string(endpoint_config)
 
-    logger.debug(f"Instantiated event broker to '{broker.__class__.__name__}'.")
+    if broker:
+        logger.debug(f"Instantiated event broker to '{broker.__class__.__name__}'.")
     return broker
 
 

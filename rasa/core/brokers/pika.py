@@ -408,9 +408,22 @@ def create_rabbitmq_ssl_options(
 
 
 class PikaProducer(PikaEventBroker):
-    warnings.warn(
-        "Deprecated, the class `PikaProducer` has been renamed to "
-        "`PikaEventBroker`. The `PikaProducer` class will be removed.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
+    def __init__(
+        self,
+        host: Text,
+        username: Text,
+        password: Text,
+        port: Union[int, Text] = 5672,
+        queue: Text = "rasa_core_events",
+        loglevel: Union[Text, int] = os.environ.get(
+            ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
+        ),
+    ):
+        warnings.warn(
+            "The `PikaProducer` class is deprecated, please inherit "
+            "from `PikaEventBroker` instead. `PikaProducer` will be "
+            "removed in future Rasa versions.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super(PikaProducer, self).__init__(host, username, password, port, queue, loglevel)

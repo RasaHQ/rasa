@@ -45,7 +45,7 @@ class SQLEventBroker(EventBroker):
             dialect, host, port, db, username, password
         )
 
-        logger.debug(f"SQLProducer: Connecting to database: '{engine_url}'.")
+        logger.debug(f"SQLEventBroker: Connecting to database: '{engine_url}'.")
 
         self.engine = sqlalchemy.create_engine(engine_url)
         self.Base.metadata.create_all(self.engine)
@@ -75,10 +75,21 @@ class SQLEventBroker(EventBroker):
             session.commit()
 
 
-class SQLProducer(SQLEventBroker):
-    warnings.warn(
-        "Deprecated, the class `SQLProducer` has been renamed to "
-        "`SQLEventBroker`. The `SQLProducer` class will be removed.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
+class SQLProducer(SQLEventBroker):    
+    def __init__(
+        self,
+        dialect: Text = "sqlite",
+        host: Optional[Text] = None,
+        port: Optional[int] = None,
+        db: Text = "events.db",
+        username: Optional[Text] = None,
+        password: Optional[Text] = None,
+    ):
+        warnings.warn(
+            "The `SQLProducer` class is deprecated, please inherit "
+            "from `SQLEventBroker` instead. `SQLProducer` will be "
+            "removed in future Rasa versions.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super(SQLProducer, self).__init__(dialect, host, port, db, username, password)

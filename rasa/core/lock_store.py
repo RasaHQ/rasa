@@ -30,7 +30,7 @@ class LockError(Exception):
 class LockStore:
     @staticmethod
     def create(obj: Union["LockStore", EndpointConfig, None]) -> "LockStore":
-        """Factory to create a generator."""
+        """Factory to create a lock store."""
 
         if isinstance(obj, LockStore):
             return obj

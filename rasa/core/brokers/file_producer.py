@@ -5,8 +5,9 @@ from rasa.core.brokers.file import FileEventBroker
 
 class FileProducer(FileEventBroker):
     warnings.warn(
-        "Deprecated, the class `FileProducer` has been renamed to `FileEventBroker`. "
-        "The `FileProducer` class will be removed.",
+        "The `FileProducer` class is deprecated, please inherit from "
+        "`FileEventBroker` instead. `FileProducer` will be removed in "
+        "future Rasa versions.",
         DeprecationWarning,
         stacklevel=2,
     )
