@@ -16,7 +16,6 @@ from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NA
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.domain import SessionConfig
-from rasa.core import constants
 from rasa.core.events import (
     ActionExecuted,
     BotUttered,
