@@ -226,75 +226,18 @@ class Validator:
             domain=self.domain,
             remove_duplicates=False,   # ToDo: Q&A: Why not remove_duplicates=True?
             augmentation_factor=0).generate()
-        rules = {}
-        for tracker in trackers:
-            states = tracker.past_states(self.domain)
-            states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
 
-            idx = 0
-            for event in tracker.events:
-                if isinstance(event, ActionExecuted):
-                    sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
-                        states[: idx + 1], max_history
-                    )
-                    h = hash(str(list(sliced_states)))
-                    if h in rules:
-                        if event.as_story_string() not in rules[h]:
-                            rules[h] += [event.as_story_string()]
-                    else:
-                        rules[h] = [event.as_story_string()]
-                    idx += 1
-
-        # Keep only conflicting rules
-        rules = {state: actions for (state, actions) in rules.items() if len(actions) > 1}
-
-        conflicts = {}
-
-        for tracker in trackers:
-            states = tracker.past_states(self.domain)
-            states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
-
-            idx = 0
-            for event in tracker.events:
-                if isinstance(event, ActionExecuted):
-                    sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
-                        states[: idx + 1], max_history
-                    )
-                    h = hash(str(list(sliced_states)))
-                    if h in rules:
-                        if h not in conflicts:
-                            conflicts[h] = StoryConflict(sliced_states, tracker, event)
-                        conflicts[h].add_conflicting_action(
-                            action=event.as_story_string(),
-                            story_name=tracker.sender_id
-                        )
-                    idx += 1
-
-        # Remove conflicts that arise from unpredictable actions
-        conflicts = {h: c for (h, c) in conflicts.items() if c.has_prior_events}
+        # Create a list of `StoryConflict` objects
+        conflicts = StoryConflict.find_conflicts(trackers, self.domain, max_history)
 
         if len(conflicts) == 0:
             logger.info("No story structure conflicts found.")
         else:
-            for conflict in list(conflicts.values()):
+            for conflict in conflicts:
                 logger.warning(conflict)
 
-                # Fix the conflict if required
-                if prompt:
-                    print("A conflict occurs after the following sequence of events:")
-                    print(conflict.story_prior_to_conflict())
-                    keep = "KEEP AS IS"
-                    correct_response = questionary.select(
-                        message="How should your bot respond at this point?",
-                        choices=[keep] + conflict.conflicting_actions_with_counts
-                    ).ask()
-                    if correct_response != keep:
-                        # Remove the story count ending, e.g. " [42x]"
-                        conflict.correct_response = correct_response.rsplit(" ", 1)[0]
-
-        for conflict in list(conflicts.values()):
-            if conflict.correct_response:
-                print(f"Fixing {conflict.incorrect_stories} with {conflict.correct_response}...")
+                # For code stub to fix the conflict in the command line,
+                # see commit 3fdc08a030dbd85c15b4f5d7e8b5ad6a254eefb4
 
         return len(conflicts) == 0
 

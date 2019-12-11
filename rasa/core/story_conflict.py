@@ -3,7 +3,8 @@ from typing import List, Optional, Dict, Text
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX
-from rasa.core.events import Event
+from rasa.core.events import Event, ActionExecuted
+from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.nlu.constants import MESSAGE_INTENT_ATTRIBUTE
 from rasa.core.training.generator import TrackerWithCachedStates
 
@@ -22,6 +23,52 @@ class StoryConflict:
         self.event = event
         self._conflicting_actions = {}  # {"action": ["story_1", ...], ...}
         self.correct_response = None
+
+    @staticmethod
+    def find_conflicts(trackers, domain, max_history: int):
+
+        # Create a 'state -> list of actions' dict, where the state is represented by its hash
+        rules = {}
+        for tracker, event, sliced_states in StoryConflict._sliced_states_stream(trackers, domain, max_history):
+            h = hash(str(list(sliced_states)))
+            if h in rules:
+                if event.as_story_string() not in rules[h]:
+                    rules[h] += [event.as_story_string()]
+            else:
+                rules[h] = [event.as_story_string()]
+
+        # Keep only conflicting rules
+        rules = {state: actions for (state, actions) in rules.items() if len(actions) > 1}
+
+        # Iterate once more over all states and note the (unhashed) state, tracker, and event for which a conflict occurs
+        conflicts = {}
+        for tracker, event, sliced_states in StoryConflict._sliced_states_stream(trackers, domain, max_history):
+            h = hash(str(list(sliced_states)))
+            if h in rules:
+                if h not in conflicts:
+                    conflicts[h] = StoryConflict(sliced_states, tracker, event)
+                conflicts[h].add_conflicting_action(
+                    action=event.as_story_string(),
+                    story_name=tracker.sender_id
+                )
+
+        # Remove conflicts that arise from unpredictable actions
+        return [c for (h, c) in conflicts.items() if c.has_prior_events]
+
+    @staticmethod
+    def _sliced_states_stream(trackers, domain, max_history):
+        for tracker in trackers:
+            states = tracker.past_states(domain)
+            states = [dict(state) for state in states]  # ToDo: Check against rasa/core/featurizers.py:318
+
+            idx = 0
+            for event in tracker.events:
+                if isinstance(event, ActionExecuted):
+                    sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
+                        states[: idx + 1], max_history
+                    )
+                    yield tracker, event, sliced_states
+                    idx += 1
 
     def events_prior_to_conflict(self):
         raise NotImplementedError
