@@ -367,6 +367,90 @@ configuration file:</p>
 </div>
 <div class="section" id="trainingdataimporter">
 <span id="training-data-importers-trainingfileimporter"></span><h2>TrainingDataImporter<a class="headerlink" href="#trainingdataimporter" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="rasa.importers.importer.TrainingDataImporter">
+<em class="property">class </em><code class="descclassname">rasa.importers.importer.</code><code class="descname">TrainingDataImporter</code><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Common interface for different mechanisms to load training data.</p>
+<dl class="method">
+<dt id="rasa.importers.importer.TrainingDataImporter.get_domain">
+<code class="descname">get_domain</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter.get_domain" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the domain of the bot.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Loaded <code class="docutils literal notranslate"><span class="pre">Domain</span></code>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Domain</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rasa.importers.importer.TrainingDataImporter.get_config">
+<code class="descname">get_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter.get_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the configuration that should be used for the training.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The configuration as dictionary.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[~KT, ~VT]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rasa.importers.importer.TrainingDataImporter.get_nlu_data">
+<code class="descname">get_nlu_data</code><span class="sig-paren">(</span><em>language='en'</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter.get_nlu_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the NLU training data that should be used for training.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>language</strong> – Can be used to only load training data for a certain language.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Loaded NLU <code class="docutils literal notranslate"><span class="pre">TrainingData</span></code>.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrainingData</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rasa.importers.importer.TrainingDataImporter.get_stories">
+<code class="descname">get_stories</code><span class="sig-paren">(</span><em>interpreter=&lt;rasa.core.interpreter.RegexInterpreter object&gt;</em>, <em>template_variables=None</em>, <em>use_e2e=False</em>, <em>exclusion_percentage=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.importers.importer.TrainingDataImporter.get_stories" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the stories that should be used for training.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>interpreter</strong> – Interpreter that should be used to parse end to
+end learning annotations.</li>
+<li><strong>template_variables</strong> – Values of templates that should be replaced while
+reading the story files.</li>
+<li><strong>use_e2e</strong> – Specifies whether to parse end to end learning annotations.</li>
+<li><strong>exclusion_percentage</strong> – Amount of training data that should be excluded.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">StoryGraph</span></code> containing all loaded stories.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">StoryGraph</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 </div>
 

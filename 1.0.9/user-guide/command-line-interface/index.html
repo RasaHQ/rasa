@@ -349,44 +349,54 @@ However, Rasa will automatically skip training Core or NLU if the training data 
 is per default <code class="docutils literal notranslate"><span class="pre">&lt;timestamp&gt;.tar.gz</span></code>. If you want to name your model differently, you can specify the name
 using <code class="docutils literal notranslate"><span class="pre">--fixed-model-name</span></code>.</p>
 <p>The following arguments can be used to configure the training process:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
-  File &quot;/home/travis/virtualenv/python3.6.7/bin/rasa&quot;, line 11, in &lt;module&gt;
-    load_entry_point(&#39;rasa&#39;, &#39;console_scripts&#39;, &#39;rasa&#39;)()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 489, in load_entry_point
-    return get_distribution(dist).load_entry_point(group, name)
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2852, in load_entry_point
-    return ep.load()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2443, in load
-    return self.resolve()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2449, in resolve
-    module = __import__(self.module_name, fromlist=[&#39;__name__&#39;], level=0)
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/__init__.py&quot;, line 8, in &lt;module&gt;
-    from rasa.run import run
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/run.py&quot;, line 7, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/__init__.py&quot;, line 5, in &lt;module&gt;
-    from rasa.core.train import train
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/train.py&quot;, line 11, in &lt;module&gt;
-    from rasa.core.domain import Domain
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/domain.py&quot;, line 11, in &lt;module&gt;
-    import rasa.utils.common as common_utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/common.py&quot;, line 7, in &lt;module&gt;
-    import rasa.core.utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/utils.py&quot;, line 34, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore, RedisLockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/lock_store.py&quot;, line 12, in &lt;module&gt;
-    from rasa.utils.endpoints import EndpointConfig
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/endpoints.py&quot;, line 7, in &lt;module&gt;
-    from sanic.request import Request
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/__init__.py&quot;, line 2, in &lt;module&gt;
-    from sanic.app import Sanic
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/app.py&quot;, line 18, in &lt;module&gt;
-    from sanic.asgi import ASGIApp
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/asgi.py&quot;, line 22, in &lt;module&gt;
-    from sanic.compat import Header
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/compat.py&quot;, line 4, in &lt;module&gt;
-    class Header(CIMultiDict):
-TypeError: type &#39;multidict._multidict.CIMultiDict&#39; is not an acceptable base type
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
+                  [-c CONFIG] [-d DOMAIN] [--out OUT]
+                  [--augmentation AUGMENTATION] [--debug-plots]
+                  [--dump-stories] [--fixed-model-name FIXED_MODEL_NAME]
+                  [--persist-nlu-data] [--force]
+                  {core,nlu} ...
+
+positional arguments:
+  {core,nlu}
+    core                Trains a Rasa Core model using your stories.
+    nlu                 Trains a Rasa NLU model using your NLU data.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --data DATA [DATA ...]
+                        Paths to the Core and NLU data files. (default:
+                        [&#39;data&#39;])
+  -c CONFIG, --config CONFIG
+                        The policy and NLU pipeline configuration of your bot.
+                        (default: config.yml)
+  -d DOMAIN, --domain DOMAIN
+                        Domain specification (yml file). (default: domain.yml)
+  --out OUT             Directory where your models should be stored.
+                        (default: models)
+  --augmentation AUGMENTATION
+                        How much data augmentation to use during training.
+                        (default: 50)
+  --debug-plots         If enabled, will create plots showing checkpoints and
+                        their connections between story blocks in a file
+                        called `story_blocks_connections.html`. (default:
+                        False)
+  --dump-stories        If enabled, save flattened stories to a file.
+                        (default: False)
+  --fixed-model-name FIXED_MODEL_NAME
+                        If set, the name of the model file/directory will be
+                        set to the given name. (default: None)
+  --persist-nlu-data    Persist the nlu training data in the saved model.
+                        (default: False)
+  --force               Force a model training even if the data has not
+                        changed. (default: False)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
 </pre></div>
 </div>
 <div class="admonition note">
@@ -408,44 +418,72 @@ train a new Rasa model with the data located in <code class="docutils literal no
 <code class="docutils literal notranslate"><span class="pre">--data</span></code> flag. After training the initial model, the interactive learning session starts.
 Training will be skipped if the training data and config haven’t changed.</p>
 <p>The full list of arguments that can be set for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> is:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
-  File &quot;/home/travis/virtualenv/python3.6.7/bin/rasa&quot;, line 11, in &lt;module&gt;
-    load_entry_point(&#39;rasa&#39;, &#39;console_scripts&#39;, &#39;rasa&#39;)()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 489, in load_entry_point
-    return get_distribution(dist).load_entry_point(group, name)
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2852, in load_entry_point
-    return ep.load()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2443, in load
-    return self.resolve()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2449, in resolve
-    module = __import__(self.module_name, fromlist=[&#39;__name__&#39;], level=0)
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/__init__.py&quot;, line 8, in &lt;module&gt;
-    from rasa.run import run
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/run.py&quot;, line 7, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/__init__.py&quot;, line 5, in &lt;module&gt;
-    from rasa.core.train import train
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/train.py&quot;, line 11, in &lt;module&gt;
-    from rasa.core.domain import Domain
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/domain.py&quot;, line 11, in &lt;module&gt;
-    import rasa.utils.common as common_utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/common.py&quot;, line 7, in &lt;module&gt;
-    import rasa.core.utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/utils.py&quot;, line 34, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore, RedisLockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/lock_store.py&quot;, line 12, in &lt;module&gt;
-    from rasa.utils.endpoints import EndpointConfig
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/endpoints.py&quot;, line 7, in &lt;module&gt;
-    from sanic.request import Request
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/__init__.py&quot;, line 2, in &lt;module&gt;
-    from sanic.app import Sanic
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/app.py&quot;, line 18, in &lt;module&gt;
-    from sanic.asgi import ASGIApp
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/asgi.py&quot;, line 22, in &lt;module&gt;
-    from sanic.compat import Header
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/compat.py&quot;, line 4, in &lt;module&gt;
-    class Header(CIMultiDict):
-TypeError: type &#39;multidict._multidict.CIMultiDict&#39; is not an acceptable base type
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-m MODEL]
+                        [--data DATA [DATA ...]] [--skip-visualization]
+                        [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
+                        [--out OUT] [--augmentation AUGMENTATION]
+                        [--debug-plots] [--dump-stories] [--force]
+                        [--persist-nlu-data]
+                        {core} ... [model-as-positional-argument]
+
+positional arguments:
+  {core}
+    core                Starts an interactive learning session model to create
+                        new training data for a Rasa Core model by chatting.
+                        Uses the &#39;RegexInterpreter&#39;, i.e. `/&lt;intent&gt;` input
+                        format.
+  model-as-positional-argument
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: None)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --e2e                 Save story files in e2e format. In this format user
+                        messages will be included in the stories. (default:
+                        False)
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: None)
+  --data DATA [DATA ...]
+                        Paths to the Core and NLU data files. (default:
+                        [&#39;data&#39;])
+  --skip-visualization  Disable plotting the visualization during interactive
+                        learning. (default: False)
+  --endpoints ENDPOINTS
+                        Configuration file for the model server and the
+                        connectors as a yml file. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+
+Train Arguments:
+  -c CONFIG, --config CONFIG
+                        The policy and NLU pipeline configuration of your bot.
+                        (default: config.yml)
+  -d DOMAIN, --domain DOMAIN
+                        Domain specification (yml file). (default: domain.yml)
+  --out OUT             Directory where your models should be stored.
+                        (default: models)
+  --augmentation AUGMENTATION
+                        How much data augmentation to use during training.
+                        (default: 50)
+  --debug-plots         If enabled, will create plots showing checkpoints and
+                        their connections between story blocks in a file
+                        called `story_blocks_connections.html`. (default:
+                        False)
+  --dump-stories        If enabled, save flattened stories to a file.
+                        (default: False)
+  --force               Force a model training even if the data has not
+                        changed. (default: False)
+  --persist-nlu-data    Persist the nlu training data in the saved model.
+                        (default: False)
 </pre></div>
 </div>
 </div>
@@ -467,44 +505,89 @@ extracts as intents and entities from text, you can use the command <code class=
 </pre></div>
 </div>
 <p>The full list of options for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">shell</span></code> is</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
-  File &quot;/home/travis/virtualenv/python3.6.7/bin/rasa&quot;, line 11, in &lt;module&gt;
-    load_entry_point(&#39;rasa&#39;, &#39;console_scripts&#39;, &#39;rasa&#39;)()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 489, in load_entry_point
-    return get_distribution(dist).load_entry_point(group, name)
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2852, in load_entry_point
-    return ep.load()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2443, in load
-    return self.resolve()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2449, in resolve
-    module = __import__(self.module_name, fromlist=[&#39;__name__&#39;], level=0)
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/__init__.py&quot;, line 8, in &lt;module&gt;
-    from rasa.run import run
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/run.py&quot;, line 7, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/__init__.py&quot;, line 5, in &lt;module&gt;
-    from rasa.core.train import train
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/train.py&quot;, line 11, in &lt;module&gt;
-    from rasa.core.domain import Domain
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/domain.py&quot;, line 11, in &lt;module&gt;
-    import rasa.utils.common as common_utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/common.py&quot;, line 7, in &lt;module&gt;
-    import rasa.core.utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/utils.py&quot;, line 34, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore, RedisLockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/lock_store.py&quot;, line 12, in &lt;module&gt;
-    from rasa.utils.endpoints import EndpointConfig
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/endpoints.py&quot;, line 7, in &lt;module&gt;
-    from sanic.request import Request
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/__init__.py&quot;, line 2, in &lt;module&gt;
-    from sanic.app import Sanic
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/app.py&quot;, line 18, in &lt;module&gt;
-    from sanic.asgi import ASGIApp
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/asgi.py&quot;, line 22, in &lt;module&gt;
-    from sanic.compat import Header
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/compat.py&quot;, line 4, in &lt;module&gt;
-    class Header(CIMultiDict):
-TypeError: type &#39;multidict._multidict.CIMultiDict&#39; is not an acceptable base type
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa shell [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
+                  [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
+                  [--cors [CORS [CORS ...]]] [--enable-api]
+                  [--remote-storage REMOTE_STORAGE]
+                  [--ssl-certificate SSL_CERTIFICATE]
+                  [--ssl-keyfile SSL_KEYFILE] [--ssl-ca-file SSL_CA_FILE]
+                  [--ssl-password SSL_PASSWORD] [--credentials CREDENTIALS]
+                  [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
+                  [--jwt-method JWT_METHOD]
+                  {nlu} ... [model-as-positional-argument]
+
+positional arguments:
+  {nlu}
+    nlu                 Interprets messages on the command line using your NLU
+                        model.
+  model-as-positional-argument
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: None)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: models)
+  --log-file LOG_FILE   Store logs in specified file. (default: None)
+  --endpoints ENDPOINTS
+                        Configuration file for the model server and the
+                        connectors as a yml file. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+
+Server Settings:
+  -p PORT, --port PORT  Port to run the server at. (default: 5005)
+  -t AUTH_TOKEN, --auth-token AUTH_TOKEN
+                        Enable token based authentication. Requests need to
+                        provide the token to be accepted. (default: None)
+  --cors [CORS [CORS ...]]
+                        Enable CORS for the passed origin. Use * to whitelist
+                        all origins. (default: None)
+  --enable-api          Start the web server API in addition to the input
+                        channel. (default: False)
+  --remote-storage REMOTE_STORAGE
+                        Set the remote location where your Rasa model is
+                        stored, e.g. on AWS. (default: None)
+  --ssl-certificate SSL_CERTIFICATE
+                        Set the SSL Certificate to create a TLS secured
+                        server. (default: None)
+  --ssl-keyfile SSL_KEYFILE
+                        Set the SSL Keyfile to create a TLS secured server.
+                        (default: None)
+  --ssl-ca-file SSL_CA_FILE
+                        If your SSL certificate needs to be verified, you can
+                        specify the CA file using this parameter. (default:
+                        None)
+  --ssl-password SSL_PASSWORD
+                        If your ssl-keyfile is protected by a password, you
+                        can specify it using this paramer. (default: None)
+
+Channels:
+  --credentials CREDENTIALS
+                        Authentication credentials for the connector as a yml
+                        file. (default: None)
+  --connector CONNECTOR
+                        Service to connect to. (default: None)
+
+JWT Authentication:
+  --jwt-secret JWT_SECRET
+                        Public key for asymmetric JWT methods or shared
+                        secretfor symmetric methods. Please also make sure to
+                        use --jwt-method to select the method of the
+                        signature, otherwise this argument will be ignored.
+                        (default: None)
+  --jwt-method JWT_METHOD
+                        Method used for the signature of the JWT
+                        authentication payload. (default: HS256)
 </pre></div>
 </div>
 </div>
@@ -515,44 +598,88 @@ TypeError: type &#39;multidict._multidict.CIMultiDict&#39; is not an acceptable 
 </pre></div>
 </div>
 <p>The following arguments can be used to configure your Rasa server:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
-  File &quot;/home/travis/virtualenv/python3.6.7/bin/rasa&quot;, line 11, in &lt;module&gt;
-    load_entry_point(&#39;rasa&#39;, &#39;console_scripts&#39;, &#39;rasa&#39;)()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 489, in load_entry_point
-    return get_distribution(dist).load_entry_point(group, name)
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2852, in load_entry_point
-    return ep.load()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2443, in load
-    return self.resolve()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2449, in resolve
-    module = __import__(self.module_name, fromlist=[&#39;__name__&#39;], level=0)
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/__init__.py&quot;, line 8, in &lt;module&gt;
-    from rasa.run import run
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/run.py&quot;, line 7, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/__init__.py&quot;, line 5, in &lt;module&gt;
-    from rasa.core.train import train
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/train.py&quot;, line 11, in &lt;module&gt;
-    from rasa.core.domain import Domain
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/domain.py&quot;, line 11, in &lt;module&gt;
-    import rasa.utils.common as common_utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/common.py&quot;, line 7, in &lt;module&gt;
-    import rasa.core.utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/utils.py&quot;, line 34, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore, RedisLockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/lock_store.py&quot;, line 12, in &lt;module&gt;
-    from rasa.utils.endpoints import EndpointConfig
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/endpoints.py&quot;, line 7, in &lt;module&gt;
-    from sanic.request import Request
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/__init__.py&quot;, line 2, in &lt;module&gt;
-    from sanic.app import Sanic
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/app.py&quot;, line 18, in &lt;module&gt;
-    from sanic.asgi import ASGIApp
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/asgi.py&quot;, line 22, in &lt;module&gt;
-    from sanic.compat import Header
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/compat.py&quot;, line 4, in &lt;module&gt;
-    class Header(CIMultiDict):
-TypeError: type &#39;multidict._multidict.CIMultiDict&#39; is not an acceptable base type
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
+                [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
+                [--cors [CORS [CORS ...]]] [--enable-api]
+                [--remote-storage REMOTE_STORAGE]
+                [--ssl-certificate SSL_CERTIFICATE]
+                [--ssl-keyfile SSL_KEYFILE] [--ssl-ca-file SSL_CA_FILE]
+                [--ssl-password SSL_PASSWORD] [--credentials CREDENTIALS]
+                [--connector CONNECTOR] [--jwt-secret JWT_SECRET]
+                [--jwt-method JWT_METHOD]
+                {actions} ... [model-as-positional-argument]
+
+positional arguments:
+  {actions}
+    actions             Runs the action server.
+  model-as-positional-argument
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: None)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: models)
+  --log-file LOG_FILE   Store logs in specified file. (default: None)
+  --endpoints ENDPOINTS
+                        Configuration file for the model server and the
+                        connectors as a yml file. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+
+Server Settings:
+  -p PORT, --port PORT  Port to run the server at. (default: 5005)
+  -t AUTH_TOKEN, --auth-token AUTH_TOKEN
+                        Enable token based authentication. Requests need to
+                        provide the token to be accepted. (default: None)
+  --cors [CORS [CORS ...]]
+                        Enable CORS for the passed origin. Use * to whitelist
+                        all origins. (default: None)
+  --enable-api          Start the web server API in addition to the input
+                        channel. (default: False)
+  --remote-storage REMOTE_STORAGE
+                        Set the remote location where your Rasa model is
+                        stored, e.g. on AWS. (default: None)
+  --ssl-certificate SSL_CERTIFICATE
+                        Set the SSL Certificate to create a TLS secured
+                        server. (default: None)
+  --ssl-keyfile SSL_KEYFILE
+                        Set the SSL Keyfile to create a TLS secured server.
+                        (default: None)
+  --ssl-ca-file SSL_CA_FILE
+                        If your SSL certificate needs to be verified, you can
+                        specify the CA file using this parameter. (default:
+                        None)
+  --ssl-password SSL_PASSWORD
+                        If your ssl-keyfile is protected by a password, you
+                        can specify it using this paramer. (default: None)
+
+Channels:
+  --credentials CREDENTIALS
+                        Authentication credentials for the connector as a yml
+                        file. (default: None)
+  --connector CONNECTOR
+                        Service to connect to. (default: None)
+
+JWT Authentication:
+  --jwt-secret JWT_SECRET
+                        Public key for asymmetric JWT methods or shared
+                        secretfor symmetric methods. Please also make sure to
+                        use --jwt-method to select the method of the
+                        signature, otherwise this argument will be ignored.
+                        (default: None)
+  --jwt-method JWT_METHOD
+                        Method used for the signature of the JWT
+                        authentication payload. (default: HS256)
 </pre></div>
 </div>
 <p>For more information on the additional parameters, see <a class="reference internal" href="../running-the-server/#running-the-server"><span class="std std-ref">Running the Server</span></a>.
@@ -565,44 +692,36 @@ See the Rasa <a class="reference internal" href="../../api/http-api/#http-api"><
 </pre></div>
 </div>
 <p>The following arguments can be used to adapt the server settings:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
-  File &quot;/home/travis/virtualenv/python3.6.7/bin/rasa&quot;, line 11, in &lt;module&gt;
-    load_entry_point(&#39;rasa&#39;, &#39;console_scripts&#39;, &#39;rasa&#39;)()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 489, in load_entry_point
-    return get_distribution(dist).load_entry_point(group, name)
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2852, in load_entry_point
-    return ep.load()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2443, in load
-    return self.resolve()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2449, in resolve
-    module = __import__(self.module_name, fromlist=[&#39;__name__&#39;], level=0)
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/__init__.py&quot;, line 8, in &lt;module&gt;
-    from rasa.run import run
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/run.py&quot;, line 7, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/__init__.py&quot;, line 5, in &lt;module&gt;
-    from rasa.core.train import train
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/train.py&quot;, line 11, in &lt;module&gt;
-    from rasa.core.domain import Domain
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/domain.py&quot;, line 11, in &lt;module&gt;
-    import rasa.utils.common as common_utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/common.py&quot;, line 7, in &lt;module&gt;
-    import rasa.core.utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/utils.py&quot;, line 34, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore, RedisLockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/lock_store.py&quot;, line 12, in &lt;module&gt;
-    from rasa.utils.endpoints import EndpointConfig
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/endpoints.py&quot;, line 7, in &lt;module&gt;
-    from sanic.request import Request
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/__init__.py&quot;, line 2, in &lt;module&gt;
-    from sanic.app import Sanic
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/app.py&quot;, line 18, in &lt;module&gt;
-    from sanic.asgi import ASGIApp
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/asgi.py&quot;, line 22, in &lt;module&gt;
-    from sanic.compat import Header
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/compat.py&quot;, line 4, in &lt;module&gt;
-    class Header(CIMultiDict):
-TypeError: type &#39;multidict._multidict.CIMultiDict&#39; is not an acceptable base type
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa run actions [-h] [-v] [-vv] [--quiet] [-p PORT]
+                        [--cors [CORS [CORS ...]]] [--actions ACTIONS]
+                        [--ssl-keyfile SSL_KEYFILE]
+                        [--ssl-certificate SSL_CERTIFICATE]
+                        [--ssl-password SSL_PASSWORD]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PORT, --port PORT  port to run the server at (default: 5055)
+  --cors [CORS [CORS ...]]
+                        enable CORS for the passed origin. Use * to whitelist
+                        all origins (default: None)
+  --actions ACTIONS     name of action package to be loaded (default: None)
+  --ssl-keyfile SSL_KEYFILE
+                        Set the SSL certificate to create a TLS secured
+                        server. (default: None)
+  --ssl-certificate SSL_CERTIFICATE
+                        Set the SSL certificate to create a TLS secured
+                        server. (default: None)
+  --ssl-password SSL_PASSWORD
+                        If your ssl-keyfile is protected by a password, you
+                        can specify it using this paramer. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
 </pre></div>
 </div>
 </div>
@@ -615,44 +734,36 @@ TypeError: type &#39;multidict._multidict.CIMultiDict&#39; is not an acceptable 
 <p>Normally, training stories in the directory <code class="docutils literal notranslate"><span class="pre">data</span></code> are visualized. If your stories are located
 somewhere else, you can specify their location with <code class="docutils literal notranslate"><span class="pre">--stories</span></code>.</p>
 <p>Additional arguments are:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
-  File &quot;/home/travis/virtualenv/python3.6.7/bin/rasa&quot;, line 11, in &lt;module&gt;
-    load_entry_point(&#39;rasa&#39;, &#39;console_scripts&#39;, &#39;rasa&#39;)()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 489, in load_entry_point
-    return get_distribution(dist).load_entry_point(group, name)
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2852, in load_entry_point
-    return ep.load()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2443, in load
-    return self.resolve()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2449, in resolve
-    module = __import__(self.module_name, fromlist=[&#39;__name__&#39;], level=0)
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/__init__.py&quot;, line 8, in &lt;module&gt;
-    from rasa.run import run
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/run.py&quot;, line 7, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/__init__.py&quot;, line 5, in &lt;module&gt;
-    from rasa.core.train import train
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/train.py&quot;, line 11, in &lt;module&gt;
-    from rasa.core.domain import Domain
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/domain.py&quot;, line 11, in &lt;module&gt;
-    import rasa.utils.common as common_utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/common.py&quot;, line 7, in &lt;module&gt;
-    import rasa.core.utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/utils.py&quot;, line 34, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore, RedisLockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/lock_store.py&quot;, line 12, in &lt;module&gt;
-    from rasa.utils.endpoints import EndpointConfig
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/endpoints.py&quot;, line 7, in &lt;module&gt;
-    from sanic.request import Request
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/__init__.py&quot;, line 2, in &lt;module&gt;
-    from sanic.app import Sanic
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/app.py&quot;, line 18, in &lt;module&gt;
-    from sanic.asgi import ASGIApp
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/asgi.py&quot;, line 22, in &lt;module&gt;
-    from sanic.compat import Header
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/compat.py&quot;, line 4, in &lt;module&gt;
-    class Header(CIMultiDict):
-TypeError: type &#39;multidict._multidict.CIMultiDict&#39; is not an acceptable base type
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa visualize [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [-s STORIES]
+                      [-c CONFIG] [--out OUT] [--max-history MAX_HISTORY]
+                      [-u NLU]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d DOMAIN, --domain DOMAIN
+                        Domain specification (yml file). (default: domain.yml)
+  -s STORIES, --stories STORIES
+                        File or folder containing your training stories.
+                        (default: data)
+  -c CONFIG, --config CONFIG
+                        The policy and NLU pipeline configuration of your bot.
+                        (default: config.yml)
+  --out OUT             Filename of the output path, e.g. &#39;graph.html&#39;.
+                        (default: graph.html)
+  --max-history MAX_HISTORY
+                        Max history to consider when merging paths in the
+                        output graph. (default: 2)
+  -u NLU, --nlu NLU     File or folder containing your NLU data, used to
+                        insert example messages into the graph. (default:
+                        None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
 </pre></div>
 </div>
 </div>
@@ -665,44 +776,81 @@ TypeError: type &#39;multidict._multidict.CIMultiDict&#39; is not an acceptable 
 <p>Specify the model to test using <code class="docutils literal notranslate"><span class="pre">--model</span></code>.
 Check out more details in <a class="reference internal" href="../evaluating-models/#nlu-evaluation"><span class="std std-ref">Evaluating an NLU Model</span></a> and <a class="reference internal" href="../evaluating-models/#core-evaluation"><span class="std std-ref">Evaluating a Core Model</span></a>.</p>
 <p>The following arguments are available for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span></code>:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
-  File &quot;/home/travis/virtualenv/python3.6.7/bin/rasa&quot;, line 11, in &lt;module&gt;
-    load_entry_point(&#39;rasa&#39;, &#39;console_scripts&#39;, &#39;rasa&#39;)()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 489, in load_entry_point
-    return get_distribution(dist).load_entry_point(group, name)
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2852, in load_entry_point
-    return ep.load()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2443, in load
-    return self.resolve()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2449, in resolve
-    module = __import__(self.module_name, fromlist=[&#39;__name__&#39;], level=0)
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/__init__.py&quot;, line 8, in &lt;module&gt;
-    from rasa.run import run
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/run.py&quot;, line 7, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/__init__.py&quot;, line 5, in &lt;module&gt;
-    from rasa.core.train import train
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/train.py&quot;, line 11, in &lt;module&gt;
-    from rasa.core.domain import Domain
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/domain.py&quot;, line 11, in &lt;module&gt;
-    import rasa.utils.common as common_utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/common.py&quot;, line 7, in &lt;module&gt;
-    import rasa.core.utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/utils.py&quot;, line 34, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore, RedisLockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/lock_store.py&quot;, line 12, in &lt;module&gt;
-    from rasa.utils.endpoints import EndpointConfig
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/endpoints.py&quot;, line 7, in &lt;module&gt;
-    from sanic.request import Request
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/__init__.py&quot;, line 2, in &lt;module&gt;
-    from sanic.app import Sanic
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/app.py&quot;, line 18, in &lt;module&gt;
-    from sanic.asgi import ASGIApp
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/asgi.py&quot;, line 22, in &lt;module&gt;
-    from sanic.compat import Header
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/compat.py&quot;, line 4, in &lt;module&gt;
-    class Header(CIMultiDict):
-TypeError: type &#39;multidict._multidict.CIMultiDict&#39; is not an acceptable base type
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
+                 [--max-stories MAX_STORIES] [--e2e] [--endpoints ENDPOINTS]
+                 [--fail-on-prediction-errors] [--url URL]
+                 [--evaluate-model-directory] [-u NLU] [--out OUT]
+                 [--successes] [--no-errors] [--histogram HISTOGRAM]
+                 [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
+                 [--cross-validation] [-f FOLDS] [-r RUNS]
+                 [-p PERCENTAGES [PERCENTAGES ...]]
+                 {core,nlu} ...
+
+positional arguments:
+  {core,nlu}
+    core                Tests Rasa Core models using your test stories.
+    nlu                 Tests Rasa NLU models using your test NLU data.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: models)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+
+Core Test Arguments:
+  -s STORIES, --stories STORIES
+                        File or folder containing your test stories. (default:
+                        data)
+  --max-stories MAX_STORIES
+                        Maximum number of stories to test on. (default: None)
+  --e2e, --end-to-end   Run an end-to-end evaluation for combined action and
+                        intent prediction. Requires a story file in end-to-end
+                        format. (default: False)
+  --endpoints ENDPOINTS
+                        Configuration file for the connectors as a yml file.
+                        (default: None)
+  --fail-on-prediction-errors
+                        If a prediction error is encountered, an exception is
+                        thrown. This can be used to validate stories during
+                        tests, e.g. on travis. (default: False)
+  --url URL             If supplied, downloads a story file from a URL and
+                        trains on it. Fetches the data by sending a GET
+                        request to the supplied URL. (default: None)
+  --evaluate-model-directory
+                        Should be set to evaluate models trained via &#39;rasa
+                        train core --config &lt;config-1&gt; &lt;config-2&gt;&#39;. All models
+                        in the provided directory are evaluated and compared
+                        against each other. (default: False)
+
+NLU Test Arguments:
+  -u NLU, --nlu NLU     File or folder containing your NLU data. (default:
+                        data)
+  --out OUT             Output path for any files created during the
+                        evaluation. (default: results)
+  --successes           If set successful predictions (intent and entities)
+                        will be written to a file. (default: False)
+  --no-errors           If set incorrect predictions (intent and entities)
+                        will NOT be written to a file. (default: False)
+  --histogram HISTOGRAM
+                        Output path for the confidence histogram. (default:
+                        hist.png)
+  --confmat CONFMAT     Output path for the confusion matrix plot. (default:
+                        confmat.png)
+  -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
+                        Model configuration file. If a single file is passed
+                        and cross validation mode is chosen, cross-validation
+                        is performed, if multiple configs or a folder of
+                        configs are passed, models will be trained and
+                        compared directly. (default: None)
 </pre></div>
 </div>
 </div>
@@ -713,44 +861,30 @@ TypeError: type &#39;multidict._multidict.CIMultiDict&#39; is not an acceptable 
 </pre></div>
 </div>
 <p>You can specify the training data, the fraction, and the output directory using the following arguments:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
-  File &quot;/home/travis/virtualenv/python3.6.7/bin/rasa&quot;, line 11, in &lt;module&gt;
-    load_entry_point(&#39;rasa&#39;, &#39;console_scripts&#39;, &#39;rasa&#39;)()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 489, in load_entry_point
-    return get_distribution(dist).load_entry_point(group, name)
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2852, in load_entry_point
-    return ep.load()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2443, in load
-    return self.resolve()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2449, in resolve
-    module = __import__(self.module_name, fromlist=[&#39;__name__&#39;], level=0)
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/__init__.py&quot;, line 8, in &lt;module&gt;
-    from rasa.run import run
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/run.py&quot;, line 7, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/__init__.py&quot;, line 5, in &lt;module&gt;
-    from rasa.core.train import train
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/train.py&quot;, line 11, in &lt;module&gt;
-    from rasa.core.domain import Domain
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/domain.py&quot;, line 11, in &lt;module&gt;
-    import rasa.utils.common as common_utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/common.py&quot;, line 7, in &lt;module&gt;
-    import rasa.core.utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/utils.py&quot;, line 34, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore, RedisLockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/lock_store.py&quot;, line 12, in &lt;module&gt;
-    from rasa.utils.endpoints import EndpointConfig
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/endpoints.py&quot;, line 7, in &lt;module&gt;
-    from sanic.request import Request
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/__init__.py&quot;, line 2, in &lt;module&gt;
-    from sanic.app import Sanic
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/app.py&quot;, line 18, in &lt;module&gt;
-    from sanic.asgi import ASGIApp
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/asgi.py&quot;, line 22, in &lt;module&gt;
-    from sanic.compat import Header
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/compat.py&quot;, line 4, in &lt;module&gt;
-    class Header(CIMultiDict):
-TypeError: type &#39;multidict._multidict.CIMultiDict&#39; is not an acceptable base type
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data split nlu [-h] [-v] [-vv] [--quiet] [-u NLU]
+                           [--training-fraction TRAINING_FRACTION]
+                           [--random-seed RANDOM_SEED] [--out OUT]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -u NLU, --nlu NLU     File or folder containing your NLU data. (default:
+                        data)
+  --training-fraction TRAINING_FRACTION
+                        Percentage of the data which should be in the training
+                        data. (default: 0.8)
+  --random-seed RANDOM_SEED
+                        Seed to generate the same train/test split. (default:
+                        None)
+  --out OUT             Directory where the split files should be stored.
+                        (default: train_test_split)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
 </pre></div>
 </div>
 <p>This command will attempt to keep the proportions of intents the same in train and test.</p>
@@ -763,44 +897,28 @@ to json or Markdown, run:</p>
 </pre></div>
 </div>
 <p>You can specify the input file, output file, and the output format with the following arguments:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
-  File &quot;/home/travis/virtualenv/python3.6.7/bin/rasa&quot;, line 11, in &lt;module&gt;
-    load_entry_point(&#39;rasa&#39;, &#39;console_scripts&#39;, &#39;rasa&#39;)()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 489, in load_entry_point
-    return get_distribution(dist).load_entry_point(group, name)
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2852, in load_entry_point
-    return ep.load()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2443, in load
-    return self.resolve()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2449, in resolve
-    module = __import__(self.module_name, fromlist=[&#39;__name__&#39;], level=0)
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/__init__.py&quot;, line 8, in &lt;module&gt;
-    from rasa.run import run
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/run.py&quot;, line 7, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/__init__.py&quot;, line 5, in &lt;module&gt;
-    from rasa.core.train import train
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/train.py&quot;, line 11, in &lt;module&gt;
-    from rasa.core.domain import Domain
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/domain.py&quot;, line 11, in &lt;module&gt;
-    import rasa.utils.common as common_utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/common.py&quot;, line 7, in &lt;module&gt;
-    import rasa.core.utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/utils.py&quot;, line 34, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore, RedisLockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/lock_store.py&quot;, line 12, in &lt;module&gt;
-    from rasa.utils.endpoints import EndpointConfig
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/endpoints.py&quot;, line 7, in &lt;module&gt;
-    from sanic.request import Request
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/__init__.py&quot;, line 2, in &lt;module&gt;
-    from sanic.app import Sanic
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/app.py&quot;, line 18, in &lt;module&gt;
-    from sanic.asgi import ASGIApp
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/asgi.py&quot;, line 22, in &lt;module&gt;
-    from sanic.compat import Header
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/compat.py&quot;, line 4, in &lt;module&gt;
-    class Header(CIMultiDict):
-TypeError: type &#39;multidict._multidict.CIMultiDict&#39; is not an acceptable base type
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] --data DATA --out OUT
+                             [-l LANGUAGE] -f {json,md}
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --data DATA           Path to the file or directory containing Rasa NLU
+                        data. (default: None)
+  --out OUT             File where to save training data in Rasa format.
+                        (default: None)
+  -l LANGUAGE, --language LANGUAGE
+                        Language of data. (default: en)
+  -f {json,md}, --format {json,md}
+                        Output format the training data should be converted
+                        into. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
 </pre></div>
 </div>
 </div>
@@ -819,44 +937,97 @@ and you need to be in a Rasa project.<div class="admonition note">
 any other port.</p>
 </div>
 <p>The following arguments are available for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">x</span></code>:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
-  File &quot;/home/travis/virtualenv/python3.6.7/bin/rasa&quot;, line 11, in &lt;module&gt;
-    load_entry_point(&#39;rasa&#39;, &#39;console_scripts&#39;, &#39;rasa&#39;)()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 489, in load_entry_point
-    return get_distribution(dist).load_entry_point(group, name)
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2852, in load_entry_point
-    return ep.load()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2443, in load
-    return self.resolve()
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/pkg_resources/__init__.py&quot;, line 2449, in resolve
-    module = __import__(self.module_name, fromlist=[&#39;__name__&#39;], level=0)
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/__init__.py&quot;, line 8, in &lt;module&gt;
-    from rasa.run import run
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/run.py&quot;, line 7, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/__init__.py&quot;, line 5, in &lt;module&gt;
-    from rasa.core.train import train
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/train.py&quot;, line 11, in &lt;module&gt;
-    from rasa.core.domain import Domain
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/domain.py&quot;, line 11, in &lt;module&gt;
-    import rasa.utils.common as common_utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/common.py&quot;, line 7, in &lt;module&gt;
-    import rasa.core.utils
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/utils.py&quot;, line 34, in &lt;module&gt;
-    from rasa.core.lock_store import LockStore, RedisLockStore
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/core/lock_store.py&quot;, line 12, in &lt;module&gt;
-    from rasa.utils.endpoints import EndpointConfig
-  File &quot;/home/travis/build/RasaHQ/rasa/rasa/utils/endpoints.py&quot;, line 7, in &lt;module&gt;
-    from sanic.request import Request
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/__init__.py&quot;, line 2, in &lt;module&gt;
-    from sanic.app import Sanic
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/app.py&quot;, line 18, in &lt;module&gt;
-    from sanic.asgi import ASGIApp
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/asgi.py&quot;, line 22, in &lt;module&gt;
-    from sanic.compat import Header
-  File &quot;/home/travis/virtualenv/python3.6.7/lib/python3.6/site-packages/sanic/compat.py&quot;, line 4, in &lt;module&gt;
-    class Header(CIMultiDict):
-TypeError: type &#39;multidict._multidict.CIMultiDict&#39; is not an acceptable base type
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [-c CONFIG]
+              [--no-prompt] [--production] [--rasa-x-port RASA_X_PORT]
+              [--config-endpoint CONFIG_ENDPOINT] [--log-file LOG_FILE]
+              [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
+              [--cors [CORS [CORS ...]]] [--enable-api]
+              [--remote-storage REMOTE_STORAGE]
+              [--ssl-certificate SSL_CERTIFICATE] [--ssl-keyfile SSL_KEYFILE]
+              [--ssl-ca-file SSL_CA_FILE] [--ssl-password SSL_PASSWORD]
+              [--credentials CREDENTIALS] [--connector CONNECTOR]
+              [--jwt-secret JWT_SECRET] [--jwt-method JWT_METHOD]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MODEL, --model MODEL
+                        Path to a trained Rasa model. If a directory is
+                        specified, it will use the latest model in this
+                        directory. (default: models)
+  --data DATA           Path to the file or directory containing stories and
+                        Rasa NLU data. (default: data)
+  -c CONFIG, --config CONFIG
+                        The policy and NLU pipeline configuration of your bot.
+                        (default: config.yml)
+  --no-prompt           Automatic yes or default options to prompts and
+                        oppressed warnings. (default: False)
+  --production          Run Rasa X in a production environment. (default:
+                        False)
+  --rasa-x-port RASA_X_PORT
+                        Port to run the Rasa X server at. (default: 5002)
+  --config-endpoint CONFIG_ENDPOINT
+                        Rasa X endpoint URL from which to pull the runtime
+                        config. This URL typically contains the Rasa X token
+                        for authentication. Example:
+                        https://example.com/api/config?token=my_rasa_x_token
+                        (default: None)
+  --log-file LOG_FILE   Store logs in specified file. (default: None)
+  --endpoints ENDPOINTS
+                        Configuration file for the model server and the
+                        connectors as a yml file. (default: None)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)
+
+Server Settings:
+  -p PORT, --port PORT  Port to run the server at. (default: 5005)
+  -t AUTH_TOKEN, --auth-token AUTH_TOKEN
+                        Enable token based authentication. Requests need to
+                        provide the token to be accepted. (default: None)
+  --cors [CORS [CORS ...]]
+                        Enable CORS for the passed origin. Use * to whitelist
+                        all origins. (default: None)
+  --enable-api          Start the web server API in addition to the input
+                        channel. (default: False)
+  --remote-storage REMOTE_STORAGE
+                        Set the remote location where your Rasa model is
+                        stored, e.g. on AWS. (default: None)
+  --ssl-certificate SSL_CERTIFICATE
+                        Set the SSL Certificate to create a TLS secured
+                        server. (default: None)
+  --ssl-keyfile SSL_KEYFILE
+                        Set the SSL Keyfile to create a TLS secured server.
+                        (default: None)
+  --ssl-ca-file SSL_CA_FILE
+                        If your SSL certificate needs to be verified, you can
+                        specify the CA file using this parameter. (default:
+                        None)
+  --ssl-password SSL_PASSWORD
+                        If your ssl-keyfile is protected by a password, you
+                        can specify it using this paramer. (default: None)
+
+Channels:
+  --credentials CREDENTIALS
+                        Authentication credentials for the connector as a yml
+                        file. (default: None)
+  --connector CONNECTOR
+                        Service to connect to. (default: None)
+
+JWT Authentication:
+  --jwt-secret JWT_SECRET
+                        Public key for asymmetric JWT methods or shared
+                        secretfor symmetric methods. Please also make sure to
+                        use --jwt-method to select the method of the
+                        signature, otherwise this argument will be ignored.
+                        (default: None)
+  --jwt-method JWT_METHOD
+                        Method used for the signature of the JWT
+                        authentication payload. (default: HS256)
 </pre></div>
 </div>
 </div>
