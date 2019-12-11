@@ -3,11 +3,7 @@ import scipy.sparse
 from typing import Any, Text, List, Union, Optional, Dict
 from rasa.nlu.training_data import Message
 from rasa.nlu.components import Component
-from rasa.nlu.constants import (
-    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
-    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
-    MESSAGE_TEXT_ATTRIBUTE,
-)
+from rasa.nlu.constants import SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, TEXT_ATTRIBUTE
 
 
 def sequence_to_sentence_features(
@@ -38,7 +34,7 @@ class Featurizer(Component):
     def _combine_with_existing_dense_features(
         message: Message,
         additional_features: Any,
-        feature_name: Text = MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+        feature_name: Text = DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE],
     ) -> Any:
         if message.get(feature_name) is not None:
 
@@ -61,9 +57,7 @@ class Featurizer(Component):
     def _combine_with_existing_sparse_features(
         message: Message,
         additional_features: Any,
-        feature_name: Text = MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[
-            MESSAGE_TEXT_ATTRIBUTE
-        ],
+        feature_name: Text = SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE],
     ) -> Any:
         if message.get(feature_name) is not None:
             from scipy.sparse import hstack

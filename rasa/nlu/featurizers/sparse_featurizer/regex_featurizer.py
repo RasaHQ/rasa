@@ -13,9 +13,9 @@ from rasa.nlu.training_data import Message, TrainingData
 import rasa.utils.io
 from rasa.nlu.constants import (
     MESSAGE_TOKENS_NAMES,
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
+    TEXT_ATTRIBUTE,
+    RESPONSE_ATTRIBUTE,
+    SPARSE_FEATURE_NAMES,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,9 +26,9 @@ if typing.TYPE_CHECKING:
 
 class RegexFeaturizer(Featurizer):
 
-    provides = [MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    provides = [SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]]
 
-    requires = [MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = [MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE]]
 
     defaults = {
         # if True return a sequence of features (return vector has size
@@ -60,21 +60,19 @@ class RegexFeaturizer(Featurizer):
         self._add_lookup_table_regexes(training_data.lookup_tables)
 
         for example in training_data.training_examples:
-            for attribute in [MESSAGE_TEXT_ATTRIBUTE, MESSAGE_RESPONSE_ATTRIBUTE]:
+            for attribute in [TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE]:
                 self._text_features_with_regex(example, attribute)
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        self._text_features_with_regex(message, MESSAGE_TEXT_ATTRIBUTE)
+        self._text_features_with_regex(message, TEXT_ATTRIBUTE)
 
     def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
         if self.known_patterns:
             extras = self._features_for_patterns(message, attribute)
             features = self._combine_with_existing_sparse_features(
-                message,
-                extras,
-                feature_name=MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
+                message, extras, feature_name=SPARSE_FEATURE_NAMES[attribute]
             )
-            message.set(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute], features)
+            message.set(SPARSE_FEATURE_NAMES[attribute], features)
 
     def _add_lookup_table_regexes(
         self, lookup_tables: List[Dict[Text, Union[Text, List]]]

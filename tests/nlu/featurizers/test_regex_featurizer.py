@@ -1,11 +1,7 @@
 import numpy as np
 import pytest
 
-from rasa.nlu.constants import (
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_SPACY_FEATURES_NAMES,
-)
+from rasa.nlu.constants import TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE, SPACY_DOCS
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.training_data import Message
 
@@ -59,13 +55,11 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
 
     # adds tokens to the message
     tokenizer = SpacyTokenizer({"use_cls_token": False})
-    message = Message(sentence, data={MESSAGE_RESPONSE_ATTRIBUTE: sentence})
-    message.set(
-        MESSAGE_SPACY_FEATURES_NAMES[MESSAGE_TEXT_ATTRIBUTE], spacy_nlp(sentence)
-    )
+    message = Message(sentence, data={RESPONSE_ATTRIBUTE: sentence})
+    message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(sentence))
     tokenizer.process(message)
 
-    result = ftr._features_for_patterns(message, MESSAGE_TEXT_ATTRIBUTE)
+    result = ftr._features_for_patterns(message, TEXT_ATTRIBUTE)
     assert np.allclose(result.toarray(), expected, atol=1e-10)
 
     # the tokenizer should have added tokens
@@ -113,7 +107,7 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     message.set("spacy_doc", spacy_nlp(sentence))
     tokenizer.process(message)
 
-    result = ftr._features_for_patterns(message, MESSAGE_TEXT_ATTRIBUTE)
+    result = ftr._features_for_patterns(message, TEXT_ATTRIBUTE)
     assert np.allclose(result.toarray(), expected, atol=1e-10)
 
     # the tokenizer should have added tokens
@@ -150,5 +144,5 @@ def test_regex_featurizer_no_sequence(sentence, expected, spacy_nlp):
     message.set("spacy_doc", spacy_nlp(sentence))
     tokenizer.process(message)
 
-    result = ftr._features_for_patterns(message, MESSAGE_TEXT_ATTRIBUTE)
+    result = ftr._features_for_patterns(message, TEXT_ATTRIBUTE)
     assert np.allclose(result.toarray()[0], expected, atol=1e-10)

@@ -13,10 +13,10 @@ from rasa.nlu.components import Component
 from rasa.utils import train_utils
 from rasa.utils.train_utils import SessionDataType
 from rasa.nlu.constants import (
-    MESSAGE_INTENT_ATTRIBUTE,
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
-    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
+    INTENT_ATTRIBUTE,
+    TEXT_ATTRIBUTE,
+    SPARSE_FEATURE_NAMES,
+    DENSE_FEATURE_NAMES,
 )
 
 import tensorflow as tf
@@ -278,10 +278,8 @@ class EmbeddingIntentClassifier(Component):
 
         for label_example in labels_example:
             if (
-                label_example.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute])
-                is None
-                and label_example.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute])
-                is None
+                label_example.get(SPARSE_FEATURE_NAMES[attribute]) is None
+                and label_example.get(DENSE_FEATURE_NAMES[attribute]) is None
             ):
                 return False
         return True
@@ -293,13 +291,11 @@ class EmbeddingIntentClassifier(Component):
         sparse_features = None
         dense_features = None
 
-        if message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]) is not None:
-            sparse_features = message.get(
-                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]
-            )
+        if message.get(SPARSE_FEATURE_NAMES[attribute]) is not None:
+            sparse_features = message.get(SPARSE_FEATURE_NAMES[attribute])
 
-        if message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]) is not None:
-            dense_features = message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute])
+        if message.get(DENSE_FEATURE_NAMES[attribute]) is not None:
+            dense_features = message.get(DENSE_FEATURE_NAMES[attribute])
 
         if sparse_features is not None and dense_features is not None:
             if sparse_features.shape[0] != dense_features.shape[0]:
@@ -319,9 +315,7 @@ class EmbeddingIntentClassifier(Component):
         dense_features = []
 
         for e in label_examples:
-            _sparse, _dense = self._extract_and_add_features(
-                e, MESSAGE_INTENT_ATTRIBUTE
-            )
+            _sparse, _dense = self._extract_and_add_features(e, INTENT_ATTRIBUTE)
             if _sparse is not None:
                 sparse_features.append(_sparse)
             if _dense is not None:
@@ -413,15 +407,13 @@ class EmbeddingIntentClassifier(Component):
         label_ids = []
 
         for e in training_data:
-            _sparse, _dense = self._extract_and_add_features(e, MESSAGE_TEXT_ATTRIBUTE)
+            _sparse, _dense = self._extract_and_add_features(e, TEXT_ATTRIBUTE)
             if _sparse is not None:
                 X_sparse.append(_sparse)
             if _dense is not None:
                 X_dense.append(_dense)
 
-            _sparse, _dense = self._extract_and_add_features(
-                e, MESSAGE_INTENT_ATTRIBUTE
-            )
+            _sparse, _dense = self._extract_and_add_features(e, INTENT_ATTRIBUTE)
             if _sparse is not None:
                 Y_sparse.append(_sparse)
             if _dense is not None:
@@ -675,19 +667,19 @@ class EmbeddingIntentClassifier(Component):
         """
 
         label_id_dict = self._create_label_id_dict(
-            training_data, attribute=MESSAGE_INTENT_ATTRIBUTE
+            training_data, attribute=INTENT_ATTRIBUTE
         )
 
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
 
         self._label_data = self._create_label_data(
-            training_data, label_id_dict, attribute=MESSAGE_INTENT_ATTRIBUTE
+            training_data, label_id_dict, attribute=INTENT_ATTRIBUTE
         )
 
         session_data = self._create_session_data(
             training_data.intent_examples,
             label_id_dict,
-            label_attribute=MESSAGE_INTENT_ATTRIBUTE,
+            label_attribute=INTENT_ATTRIBUTE,
         )
 
         self.check_input_dimension_consistency(session_data)

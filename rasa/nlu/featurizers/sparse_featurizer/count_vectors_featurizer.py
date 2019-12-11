@@ -11,11 +11,11 @@ from rasa.nlu.featurizers.featurzier import Featurizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    MESSAGE_TEXT_ATTRIBUTE,
+    TEXT_ATTRIBUTE,
     MESSAGE_TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
-    MESSAGE_INTENT_ATTRIBUTE,
+    SPARSE_FEATURE_NAMES,
+    INTENT_ATTRIBUTE,
     SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 
@@ -33,10 +33,7 @@ class CountVectorsFeaturizer(Featurizer):
     from https://arxiv.org/abs/1810.07150.
     """
 
-    provides = [
-        MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]
-        for attribute in MESSAGE_ATTRIBUTES
-    ]
+    provides = [SPARSE_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     requires = [
         MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
@@ -231,11 +228,11 @@ class CountVectorsFeaturizer(Featurizer):
         return message.get(attribute).split()
 
     def _process_tokens(
-        self, tokens: List[Text], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
+        self, tokens: List[Text], attribute: Text = TEXT_ATTRIBUTE
     ) -> List[Text]:
         """Apply processing and cleaning steps to text"""
 
-        if attribute == MESSAGE_INTENT_ATTRIBUTE:
+        if attribute == INTENT_ATTRIBUTE:
             # Don't do any processing for intent attribute. Treat them as whole labels
             return tokens
 
@@ -272,7 +269,7 @@ class CountVectorsFeaturizer(Featurizer):
         return tokens
 
     def _get_processed_message_tokens_by_attribute(
-        self, message: "Message", attribute: Text = MESSAGE_TEXT_ATTRIBUTE
+        self, message: "Message", attribute: Text = TEXT_ATTRIBUTE
     ) -> List[Text]:
         """Get processed text of attribute of a message"""
 
@@ -357,7 +354,7 @@ class CountVectorsFeaturizer(Featurizer):
             combined_cleaned_texts += attribute_texts[attribute]
 
         try:
-            self.vectorizers[MESSAGE_TEXT_ATTRIBUTE].fit(combined_cleaned_texts)
+            self.vectorizers[TEXT_ATTRIBUTE].fit(combined_cleaned_texts)
         except ValueError:
             logger.warning(
                 "Unable to train a shared CountVectorizer. Leaving an untrained CountVectorizer"
@@ -436,11 +433,9 @@ class CountVectorsFeaturizer(Featurizer):
         for i, example in enumerate(training_data.training_examples):
             # create bag for each example
             example.set(
-                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
+                SPARSE_FEATURE_NAMES[attribute],
                 self._combine_with_existing_sparse_features(
-                    example,
-                    attribute_features[i],
-                    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
+                    example, attribute_features[i], SPARSE_FEATURE_NAMES[attribute]
                 ),
             )
 
@@ -495,7 +490,7 @@ class CountVectorsFeaturizer(Featurizer):
             )
             return
 
-        attribute = MESSAGE_TEXT_ATTRIBUTE
+        attribute = TEXT_ATTRIBUTE
         message_tokens = self._get_processed_message_tokens_by_attribute(
             message, attribute
         )
@@ -504,11 +499,11 @@ class CountVectorsFeaturizer(Featurizer):
         features = self._create_sequence(attribute, [message_tokens])
 
         message.set(
-            MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
+            SPARSE_FEATURE_NAMES[attribute],
             self._combine_with_existing_sparse_features(
                 message,
                 features[0],  # 0 -> batch dimension
-                feature_name=MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
+                feature_name=SPARSE_FEATURE_NAMES[attribute],
             ),
         )
 
@@ -545,7 +540,7 @@ class CountVectorsFeaturizer(Featurizer):
 
                 if self.use_shared_vocab:
                     # Only persist vocabulary from one attribute. Can be loaded and distributed to all attributes.
-                    vocab = attribute_vocabularies[MESSAGE_TEXT_ATTRIBUTE]
+                    vocab = attribute_vocabularies[TEXT_ATTRIBUTE]
                 else:
                     vocab = attribute_vocabularies
 

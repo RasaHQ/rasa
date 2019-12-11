@@ -11,8 +11,8 @@ from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 from rasa.nlu.constants import (
-    MESSAGE_INTENT_ATTRIBUTE,
-    MESSAGE_TEXT_ATTRIBUTE,
+    INTENT_ATTRIBUTE,
+    TEXT_ATTRIBUTE,
     MESSAGE_TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
 )
@@ -96,20 +96,18 @@ class JiebaTokenizer(Tokenizer):
     def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set(
-            MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE],
-            self.tokenize(message.text, MESSAGE_TEXT_ATTRIBUTE),
+            MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE],
+            self.tokenize(message.text, TEXT_ATTRIBUTE),
         )
 
     def preprocess_text(self, text: Text, attribute: Text) -> Text:
 
-        if attribute == MESSAGE_INTENT_ATTRIBUTE and self.intent_tokenization_flag:
+        if attribute == INTENT_ATTRIBUTE and self.intent_tokenization_flag:
             return " ".join(text.split(self.intent_split_symbol))
         else:
             return text
 
-    def tokenize(
-        self, text: Text, attribute: Text = MESSAGE_TEXT_ATTRIBUTE
-    ) -> List[Token]:
+    def tokenize(self, text: Text, attribute: Text = TEXT_ATTRIBUTE) -> List[Token]:
         import jieba
 
         text = self.preprocess_text(text, attribute)

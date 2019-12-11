@@ -4,11 +4,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
-from rasa.nlu.constants import (
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-)
+from rasa.nlu.constants import TEXT_ATTRIBUTE, MESSAGE_TOKENS_NAMES, MESSAGE_ATTRIBUTES
 from rasa.utils.io import DEFAULT_ENCODING
 
 
@@ -41,9 +37,7 @@ class MitieTokenizer(Tokenizer):
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
-        message.set(
-            MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], self.tokenize(message.text)
-        )
+        message.set(MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE], self.tokenize(message.text))
 
     def _token_from_offset(
         self, text: bytes, offset: int, encoded_sentence: bytes
@@ -53,9 +47,7 @@ class MitieTokenizer(Tokenizer):
             self._byte_to_char_offset(encoded_sentence, offset),
         )
 
-    def tokenize(
-        self, text: Text, attribute: Text = MESSAGE_TEXT_ATTRIBUTE
-    ) -> List[Token]:
+    def tokenize(self, text: Text, attribute: Text = TEXT_ATTRIBUTE) -> List[Token]:
         import mitie
 
         encoded_sentence = text.encode(DEFAULT_ENCODING)

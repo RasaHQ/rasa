@@ -10,9 +10,9 @@ if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
 
 from rasa.nlu.constants import (
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
+    TEXT_ATTRIBUTE,
+    SPACY_DOCS,
+    DENSE_FEATURE_NAMES,
     SPACY_FEATURIZABLE_ATTRIBUTES,
     MESSAGE_TOKENS_NAMES,
     CLS_TOKEN,
@@ -22,13 +22,11 @@ from rasa.nlu.constants import (
 class SpacyFeaturizer(Featurizer):
 
     provides = [
-        MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
+        DENSE_FEATURE_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ]
 
     requires = [
-        MESSAGE_SPACY_FEATURES_NAMES[attribute]
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
+        SPACY_DOCS[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
     ] + [MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES]
 
     defaults = {
@@ -63,13 +61,13 @@ class SpacyFeaturizer(Featurizer):
 
     def get_doc(self, message, attribute):
 
-        return message.get(MESSAGE_SPACY_FEATURES_NAMES[attribute])
+        return message.get(SPACY_DOCS[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         self._set_spacy_features(message)
 
-    def _set_spacy_features(self, message, attribute=MESSAGE_TEXT_ATTRIBUTE):
+    def _set_spacy_features(self, message, attribute=TEXT_ATTRIBUTE):
         """Adds the spacy word vectors to the messages features."""
 
         message_attribute_doc = self.get_doc(message, attribute)
@@ -85,6 +83,6 @@ class SpacyFeaturizer(Featurizer):
                 features = np.concatenate([features, cls_token_vec])
 
             features = self._combine_with_existing_dense_features(
-                message, features, MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
+                message, features, DENSE_FEATURE_NAMES[attribute]
             )
-            message.set(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute], features)
+            message.set(DENSE_FEATURE_NAMES[attribute], features)

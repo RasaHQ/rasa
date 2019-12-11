@@ -3,11 +3,7 @@ import logging
 from typing import Text, List, Optional, Dict, Any
 
 from rasa.nlu.components import Component
-from rasa.nlu.constants import (
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_TEXT_ATTRIBUTE,
-    CLS_TOKEN,
-)
+from rasa.nlu.constants import RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE, CLS_TOKEN
 
 logger = logging.getLogger(__name__)
 
@@ -66,10 +62,10 @@ class Tokenizer(Component):
             )
 
     def add_cls_token(
-        self, tokens: List[Token], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
+        self, tokens: List[Token], attribute: Text = TEXT_ATTRIBUTE
     ) -> List[Token]:
         if (
-            attribute in [MESSAGE_RESPONSE_ATTRIBUTE, MESSAGE_TEXT_ATTRIBUTE]
+            attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE]
             and self.use_cls_token
             and tokens
         ):

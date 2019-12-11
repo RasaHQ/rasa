@@ -11,20 +11,17 @@ if typing.TYPE_CHECKING:
     import mitie
 
 from rasa.nlu.constants import (
-    MESSAGE_TEXT_ATTRIBUTE,
+    TEXT_ATTRIBUTE,
     MESSAGE_TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
+    DENSE_FEATURE_NAMES,
     CLS_TOKEN,
 )
 
 
 class MitieFeaturizer(Featurizer):
 
-    provides = [
-        MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
-        for attribute in MESSAGE_ATTRIBUTES
-    ]
+    provides = [DENSE_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     requires = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES] + [
         "mitie_feature_extractor"
@@ -75,9 +72,9 @@ class MitieFeaturizer(Featurizer):
                 attribute_tokens, mitie_feature_extractor
             )
             example.set(
-                MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute],
+                DENSE_FEATURE_NAMES[attribute],
                 self._combine_with_existing_dense_features(
-                    example, features, MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]
+                    example, features, DENSE_FEATURE_NAMES[attribute]
                 ),
             )
 
@@ -85,15 +82,12 @@ class MitieFeaturizer(Featurizer):
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         features = self.features_for_tokens(
-            message.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]),
-            mitie_feature_extractor,
+            message.get(MESSAGE_TOKENS_NAMES[TEXT_ATTRIBUTE]), mitie_feature_extractor
         )
         message.set(
-            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE],
             self._combine_with_existing_dense_features(
-                message,
-                features,
-                MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
+                message, features, DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
             ),
         )
 
