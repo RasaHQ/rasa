@@ -125,7 +125,7 @@ def test_exception_tracker_store_from_endpoint_config(
     with pytest.raises(Exception) as e:
         TrackerStore.create(store, default_domain)
 
-    assert "test exception" in e.value.message
+    assert "test exception" in str(e.value)
 
 
 class URLExampleTrackerStore(RedisTrackerStore):
