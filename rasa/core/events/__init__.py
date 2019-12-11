@@ -1198,7 +1198,7 @@ class SessionStarted(Event):
         return "SessionStarted()"
 
     def as_story_string(self) -> None:
-        warnings.warn(
+        logger.warning(
             f"'{self.type_name}' events cannot be serialised as story strings."
         )
         return None
