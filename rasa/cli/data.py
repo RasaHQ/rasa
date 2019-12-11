@@ -224,6 +224,8 @@ def validate_stories(args):
 def deduplicate_story_names(args):
     """
     Changes story names so as to make them unique.
+
+    WARNING: Only works for markdown files at the moment
     """
 
     import shutil
@@ -231,6 +233,11 @@ def deduplicate_story_names(args):
     story_file_names, _ = data.get_core_nlu_files(args.data)
     names = set()  # Set of names we have already encountered
     for in_file_name in story_file_names:
+        if not in_file_name.endswith(".md"):
+            logger.warning(
+                f"Support for cleaning non-markdown file '{in_file_name}' is not yet implemented"
+            )
+            continue
         out_file_name = in_file_name + ".new"
         with open(in_file_name, "r") as in_file, open(out_file_name, "w+") as out_file:
             for line in in_file:

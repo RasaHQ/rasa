@@ -23,3 +23,23 @@ async def test_find_no_conflicts():
     conflicts = StoryConflict.find_conflicts(trackers, validator.domain, 5)
 
     assert conflicts == []
+
+
+async def test_find_conflicts():
+    importer = RasaFileImporter(
+        domain_path=DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+        training_data_paths=[DEFAULT_STORIES_FILE],
+    )
+    validator = await Validator.from_importer(importer)
+
+    trackers = TrainingDataGenerator(
+        validator.story_graph,
+        domain=validator.domain,
+        remove_duplicates=False,
+        augmentation_factor=0,
+    ).generate()
+
+    # Create a list of `StoryConflict` objects
+    conflicts = StoryConflict.find_conflicts(trackers, validator.domain, 1)
+
+    assert conflicts == []
