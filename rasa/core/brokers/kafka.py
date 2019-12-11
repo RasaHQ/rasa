@@ -81,17 +81,17 @@ class KafkaEventBroker(EventBroker):
 
 class KafkaProducer(KafkaEventBroker):
     def __init__(
-            self,
-            host,
-            sasl_username=None,
-            sasl_password=None,
-            ssl_cafile=None,
-            ssl_certfile=None,
-            ssl_keyfile=None,
-            ssl_check_hostname=False,
-            topic="rasa_core_events",
-            security_protocol="SASL_PLAINTEXT",
-            loglevel=logging.ERROR,
+        self,
+        host,
+        sasl_username=None,
+        sasl_password=None,
+        ssl_cafile=None,
+        ssl_certfile=None,
+        ssl_keyfile=None,
+        ssl_check_hostname=False,
+        topic="rasa_core_events",
+        security_protocol="SASL_PLAINTEXT",
+        loglevel=logging.ERROR,
     ) -> None:
         warnings.warn(
             "The `KafkaProducer` class is deprecated, please inherit "
@@ -111,4 +111,5 @@ class KafkaProducer(KafkaEventBroker):
             ssl_check_hostname,
             topic,
             security_protocol,
-            loglevel)
+            loglevel,
+        )

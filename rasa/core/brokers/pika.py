@@ -426,4 +426,6 @@ class PikaProducer(PikaEventBroker):
             DeprecationWarning,
             stacklevel=2,
         )
-        super(PikaProducer, self).__init__(host, username, password, port, queue, loglevel)
+        super(PikaProducer, self).__init__(
+            host, username, password, port, queue, loglevel
+        )

@@ -75,7 +75,7 @@ class SQLEventBroker(EventBroker):
             session.commit()
 
 
-class SQLProducer(SQLEventBroker):    
+class SQLProducer(SQLEventBroker):
     def __init__(
         self,
         dialect: Text = "sqlite",
