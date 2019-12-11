@@ -82,8 +82,8 @@ SpacyNLP
           # between these two words, therefore setting this to `true`.
           case_sensitive: false
 
-Featurizers
------------
+Text Featurizers
+----------------
 
 Featurizers are divided into two different categories: sparse featurizers and dense featurizers.
 Sparse featurizers are featurizers that return feature vectors with a lot of missing values, e.g. zeros.
