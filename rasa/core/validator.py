@@ -214,8 +214,7 @@ class Validator:
 
     def verify_story_structure(self,
                                ignore_warnings: bool = True,
-                               max_history: int = 5,
-                               prompt: bool = False) -> bool:
+                               max_history: int = 5) -> bool:
         """Verifies that bot behaviour in stories is deterministic."""
 
         logger.info("Story structure validation...")
@@ -239,7 +238,7 @@ class Validator:
                 # For code stub to fix the conflict in the command line,
                 # see commit 3fdc08a030dbd85c15b4f5d7e8b5ad6a254eefb4
 
-        return len(conflicts) == 0
+        return ignore_warnings or len(conflicts) == 0
 
     def verify_all(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""

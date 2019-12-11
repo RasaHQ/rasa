@@ -201,8 +201,7 @@ def validate_stories(args):
     # If names are unique, look for inconsistencies
     everything_is_alright = validator.verify_story_structure(
         not args.fail_on_warnings,
-        max_history=args.max_history,
-        prompt=args.prompt
+        max_history=args.max_history
     ) if story_names_unique else False
 
     sys.exit(0) if everything_is_alright else sys.exit(1)
