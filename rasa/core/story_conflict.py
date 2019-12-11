@@ -12,13 +12,9 @@ class StoryConflict:
     def __init__(
         self,
         sliced_states: List[Optional[Dict[Text, float]]],
-        tracker: TrackerWithCachedStates,
-        event,
     ):
         self.sliced_states = sliced_states
         self.hash = hash(str(list(sliced_states)))
-        self.tracker = (tracker,)
-        self.event = event
         self._conflicting_actions = {}  # {"action": ["story_1", ...], ...}
         self.correct_response = None
 
@@ -55,7 +51,7 @@ class StoryConflict:
         }
 
         # Iterate once more over all states and note the (unhashed) state,
-        # tracker, and event for which a conflict occurs
+        # for which a conflict occurs
         conflicts = {}
         for tracker, event, sliced_states in StoryConflict._sliced_states_iterator(
             trackers, domain, max_history
@@ -63,7 +59,7 @@ class StoryConflict:
             h = hash(str(list(sliced_states)))
             if h in rules:
                 if h not in conflicts:
-                    conflicts[h] = StoryConflict(sliced_states, tracker, event)
+                    conflicts[h] = StoryConflict(sliced_states)
                 conflicts[h].add_conflicting_action(
                     action=event.as_story_string(), story_name=tracker.sender_id
                 )
