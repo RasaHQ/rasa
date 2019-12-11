@@ -87,26 +87,30 @@ def test_clean_init(run_in_default_project: Callable[..., RunResult]):
 def test_clean(run: Callable[..., RunResult]):
     os.mkdir("data")
     with open("data/stories.md", "w+") as file:
-        file.write("## story\n"
-                   "* greet\n"
-                   "  - utter_greet\n"
-                   "\n"
-                   "## story\n"
-                   "* bye\n"
-                   "  - utter_bye\n")
+        file.write(
+            "## story\n"
+            "* greet\n"
+            "  - utter_greet\n"
+            "\n"
+            "## story\n"
+            "* bye\n"
+            "  - utter_bye\n"
+        )
 
     with open("domain.yml", "w+") as file:
-        file.write("actions:\n"
-                   "- utter_greet\n"
-                   "- utter_bye\n"
-                   "intents:\n"
-                   "- greet\n"
-                   "- bye\n"
-                   "templates:\n"
-                   "  utter_greet:\n"
-                   "  - text: \"hi\"\n"
-                   "  utter_bye:\n"
-                   "  - text: \"bye\"\n")
+        file.write(
+            "actions:\n"
+            "- utter_greet\n"
+            "- utter_bye\n"
+            "intents:\n"
+            "- greet\n"
+            "- bye\n"
+            "templates:\n"
+            "  utter_greet:\n"
+            '  - text: "hi"\n'
+            "  utter_bye:\n"
+            '  - text: "bye"\n'
+        )
 
     output = run("data", "clean")
     # One replacement + headline
