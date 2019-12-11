@@ -228,7 +228,7 @@ class Validator:
         conflicts = StoryConflict.find_conflicts(trackers, self.domain, max_history)
 
         if len(conflicts) == 0:
-            logger.info("No story structure conflicts found.")
+            logger.info("No story structure conflicts found")
         else:
             for conflict in conflicts:
                 logger.warning(conflict)
