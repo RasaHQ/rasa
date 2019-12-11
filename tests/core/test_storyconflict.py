@@ -27,8 +27,8 @@ async def test_find_no_conflicts():
 
 async def test_find_conflicts():
     importer = RasaFileImporter(
-        domain_path=DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-        training_data_paths=[DEFAULT_STORIES_FILE],
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=["data/test_stories/stories_conflicting_1.md"],
     )
     validator = await Validator.from_importer(importer)
 
@@ -40,6 +40,7 @@ async def test_find_conflicts():
     ).generate()
 
     # Create a list of `StoryConflict` objects
-    conflicts = StoryConflict.find_conflicts(trackers, validator.domain, 1)
+    conflicts = StoryConflict.find_conflicts(trackers, validator.domain, 5)
 
-    assert conflicts == []
+    assert len(conflicts) == 1
+    assert conflicts[0].conflicting_actions == ["utter_goodbye", "utter_default"]
