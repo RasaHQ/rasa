@@ -38,7 +38,7 @@ FORM_PREFIX = "form: "
 # will get increased with each new instance
 STEP_COUNT = 1
 
-# Tally over story names
+# Tally over story names, filled when reading stories
 STORY_NAME_TALLY = {}
 
 
