@@ -220,31 +220,33 @@ def validate_stories(args):
 
 
 def deduplicate_story_names(args):
-    """Changes story names so as to make them unique.
-       --EXPERIMENTAL-- """
+    """
+    Changes story names so as to make them unique.
+    """
 
     import shutil
 
     story_file_names, _ = data.get_core_nlu_files(args.data)
-    names = set()
-    for file_name in story_file_names:
-        with open(file_name, "r") as in_file, open(
-            file_name + ".new", "w+"
-        ) as out_file:
+    names = set()  # Set of names we have already encountered
+    for in_file_name in story_file_names:
+        out_file_name = in_file_name + ".new"
+        with open(in_file_name, "r") as in_file, open(out_file_name, "w+") as out_file:
             for line in in_file:
                 line = line.rstrip()
                 if line.startswith("## "):
-                    new_name = line[3:]
-                    if new_name in names:
-                        first = new_name
+                    name = line[3:]
+                    # Check if we have already encountered a story with this name
+                    if name in names:
+                        # Find a unique name
+                        old_name = name
                         k = 1
-                        while new_name in names:
-                            new_name = first + f" ({k})"
+                        while name in names:
+                            name = old_name + f" ({k})"
                             k += 1
-                        print(f"- replacing {first} with {new_name}")
-                    names.add(new_name)
-                    out_file.write(f"## {new_name}\n")
+                        print(f"- replacing {old_name} with {name}")
+                    names.add(name)
+                    out_file.write(f"## {name}\n")
                 else:
                     out_file.write(line + "\n")
 
-        shutil.move(file_name + ".new", file_name)
+        shutil.move(in_file_name + ".new", in_file_name)
