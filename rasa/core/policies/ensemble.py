@@ -318,7 +318,10 @@ class PolicyEnsemble:
 
             try:
                 constr_func = registry.policy_from_module_path(policy_name)
-                policy_object = constr_func(**policy)
+                try:
+                    policy_object = constr_func(**policy)
+                except TypeError as e:
+                    raise Exception(f"Could not initialize {policy_name}. {e}")
                 parsed_policies.append(policy_object)
             except (ImportError, AttributeError):
                 raise InvalidPolicyConfig(
