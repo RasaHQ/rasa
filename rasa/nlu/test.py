@@ -6,6 +6,7 @@ from collections import defaultdict, namedtuple
 from tqdm import tqdm
 from typing import (
     Iterable,
+    Collection,
     Iterator,
     Tuple,
     List,
@@ -398,6 +399,41 @@ def evaluate_response_selections(
     }
 
 
+def _add_confused_intents_to_report(
+    report: Dict[Text, Dict[Text, float]],
+    cnf_matrix: np.ndarray,
+    labels: Collection[Text],
+) -> Dict[Text, Dict[Text, Union[Dict, float]]]:
+    """Adds a field "confused_with" to the intents in the
+    intent evaluation report. The value is a dict of
+    {"false_positive_label": false_positive_count} pairs.
+    If there are no false positives in the confusion matrix,
+    the dict will be empty. Typically we include the two most
+    commonly false positive labels, three in the rare case that
+    the diagonal element in the confusion matrix is not one of the
+    three highest values in the row.
+    """
+
+    # sort confusion matrix by false positives
+    indices = np.argsort(cnf_matrix, axis=1)
+    n_candidates = min(3, len(labels))
+
+    for label in labels:
+        # it is possible to predict intent 'None'
+        if report.get(label):
+            report[label]["confused_with"] = {}
+
+    for i, label in enumerate(labels):
+        for j in range(n_candidates):
+            label_idx = indices[i, -(1 + j)]
+            false_pos_label = labels[label_idx]
+            false_positives = int(cnf_matrix[i, label_idx])
+            if false_pos_label != label and false_positives > 0:
+                report[label]["confused_with"][false_pos_label] = false_positives
+
+    return report
+
+
 def evaluate_intents(
     intent_results: List[IntentEvaluationResult],
     output_directory: Optional[Text],
@@ -416,6 +452,8 @@ def evaluate_intents(
     Others are filtered out. Returns a dictionary of containing the
     evaluation result.
     """
+    import sklearn.metrics
+    import sklearn.utils.multiclass
 
     # remove empty intent targets
     num_examples = len(intent_results)
@@ -431,10 +469,14 @@ def evaluate_intents(
         intent_results, "intent_target", "intent_prediction"
     )
 
+    cnf_matrix = sklearn.metrics.confusion_matrix(target_intents, predicted_intents)
+    labels = sklearn.utils.multiclass.unique_labels(target_intents, predicted_intents)
+
     if output_directory:
         report, precision, f1, accuracy = get_evaluation_metrics(
             target_intents, predicted_intents, output_dict=True
         )
+        report = _add_confused_intents_to_report(report, cnf_matrix, labels)
 
         report_filename = os.path.join(output_directory, "intent_report.json")
 
@@ -463,16 +505,12 @@ def evaluate_intents(
         collect_nlu_errors(intent_results, errors_filename)
 
     if confmat_filename:
-        from sklearn.metrics import confusion_matrix
-        from sklearn.utils.multiclass import unique_labels
         import matplotlib.pyplot as plt
 
         if output_directory:
             confmat_filename = os.path.join(output_directory, confmat_filename)
             intent_hist_filename = os.path.join(output_directory, intent_hist_filename)
 
-        cnf_matrix = confusion_matrix(target_intents, predicted_intents)
-        labels = unique_labels(target_intents, predicted_intents)
         plot_confusion_matrix(
             cnf_matrix,
             classes=labels,
