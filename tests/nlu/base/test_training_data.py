@@ -188,6 +188,27 @@ def test_train_test_split(filepaths):
 
 
 @pytest.mark.parametrize(
+    "filepaths",
+    [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
+)
+def test_train_test_split_with_random_seed(filepaths):
+    from rasa.importers.utils import training_data_from_paths
+
+    td = training_data_from_paths(filepaths, language="en")
+
+    td_train_1, td_test_1 = td.train_test_split(train_frac=0.8, random_seed=1)
+    td_train_2, td_test_2 = td.train_test_split(train_frac=0.8, random_seed=1)
+    train_1_intent_examples = [e.text for e in td_train_1.intent_examples]
+    train_2_intent_examples = [e.text for e in td_train_2.intent_examples]
+
+    test_1_intent_examples = [e.text for e in td_test_1.intent_examples]
+    test_2_intent_examples = [e.text for e in td_test_2.intent_examples]
+
+    assert train_1_intent_examples == train_2_intent_examples
+    assert test_1_intent_examples == test_2_intent_examples
+
+
+@pytest.mark.parametrize(
     "files",
     [
         ("data/examples/rasa/demo-rasa.json", "data/test/multiple_files_json"),

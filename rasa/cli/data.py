@@ -85,7 +85,7 @@ def split_nlu_data(args) -> None:
     nlu_data = load_data(data_path)
     fformat = get_file_format(data_path)
 
-    train, test = nlu_data.train_test_split(args.training_fraction)
+    train, test = nlu_data.train_test_split(args.training_fraction, args.random_seed)
 
     train.persist(args.out, filename=f"training_data.{fformat}")
     test.persist(args.out, filename=f"test_data.{fformat}")

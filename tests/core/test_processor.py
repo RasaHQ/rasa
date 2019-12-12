@@ -98,7 +98,7 @@ async def test_http_parsing():
     with aioresponses() as mocked:
         mocked.post("https://interpreter.com/model/parse", repeat=True, status=200)
 
-        inter = RasaNLUHttpInterpreter(endpoint=endpoint)
+        inter = RasaNLUHttpInterpreter(endpoint_config=endpoint)
         try:
             await MessageProcessor(inter, None, None, None, None)._parse_message(
                 message
@@ -135,7 +135,7 @@ async def test_parsing_with_tracker():
 
         # mock the parse function with the one defined for this test
         with patch.object(RasaNLUHttpInterpreter, "parse", mocked_parse):
-            interpreter = RasaNLUHttpInterpreter(endpoint=endpoint)
+            interpreter = RasaNLUHttpInterpreter(endpoint_config=endpoint)
             agent = Agent(None, None, interpreter)
             result = await agent.parse_message_using_nlu_interpreter("lunch?", tracker)
 

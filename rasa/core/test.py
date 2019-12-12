@@ -12,18 +12,25 @@ from rasa.core.events import ActionExecuted, UserUttered
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.io import DEFAULT_ENCODING
-import matplotlib
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
 
-try:
-    # If the `tkinter` package is available, we can use the `TkAgg` backend
-    import tkinter
+import matplotlib
 
-    matplotlib.use("TkAgg")
-except ImportError:
-    matplotlib.use("agg")
+# At first, matplotlib will be initialized with default OS-specific available backend
+# if that didn't happen, we'll try to set it up manually
+if matplotlib.get_backend() is not None:
+    pass
+else:  # pragma: no cover
+    try:
+        # If the `tkinter` package is available, we can use the `TkAgg` backend
+        import tkinter
+
+        matplotlib.use("TkAgg")
+    except ImportError:
+        matplotlib.use("agg")
+
 
 logger = logging.getLogger(__name__)
 

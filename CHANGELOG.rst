@@ -17,6 +17,20 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.5.3] - 2019-12-11
+^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#4933 <https://github.com/rasahq/rasa/issues/4933>`_: Improved error message that appears when an incorrect parameter is passed to a policy.
+
+Bugfixes
+--------
+- `#4914 <https://github.com/rasahq/rasa/issues/4914>`_: Added ``rasa/nlu/schemas/config.yml`` to wheel package
+- `#4942 <https://github.com/rasahq/rasa/issues/4942>`_: Pin ``multidict`` dependency to 4.6.1 to prevent sanic from breaking,
+  see https://github.com/huge-success/sanic/issues/1729
+
+
 [1.5.2] - 2019-12-09
 ^^^^^^^^^^^^^^^^^^^^
 
