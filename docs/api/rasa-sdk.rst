@@ -36,8 +36,6 @@ If you have ``rasa`` installed, run this command to start your action server:
 
     rasa run actions
 
-.. _custom_action_example:
-
 Otherwise, if you do not have ``rasa`` installed, run this command:
 
 .. code-block:: bash
@@ -50,7 +48,7 @@ Otherwise, if you do not have ``rasa`` installed, run this command:
 The ``Action`` class is the base class for any custom action. It has two methods
 that both need to be overwritten, ``name()`` and ``run()``.
 
-.. _custom_action_example_verbose:
+.. _custom_action_example:
 
 In a restaurant bot, if the user says "show me a Mexican restaurant",
 your bot could execute the action ``ActionCheckRestaurants``,
