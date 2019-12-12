@@ -401,7 +401,7 @@ def evaluate_response_selections(
 def _add_confused_intents_to_report(
     report: Dict[Text, Dict[Text, float]],
     cnf_matrix: np.ndarray,
-    labels: Iterable[Text],
+    labels: Collection[Text],
 ) -> Dict[Text, Dict[Text, Union[Dict, float]]]:
     """Adds a field "confused_with" to the intents in the
     intent evaluation report. The value is a dict of
