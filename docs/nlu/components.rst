@@ -161,8 +161,8 @@ ConveRTFeaturizer
         be used if your training data is in english language.
 
     .. note::
-        To use ``ConveRTFeaturizer`` you should install ``tensorflow_text==1.15.1`` and ``tensorflow_hub==0.6.0``.
-        Otherwise, you can also do a pip install of Rasa with ``pip install rasa[convert]``
+        To use ``ConveRTFeaturizer`` you need to install additional tensorflow libraries (``tensorflow_text`` and
+        ``tensorflow_hub``). You should do a pip install of Rasa with ``pip install rasa[convert]`` to install those.
 
     .. warning::
         If you set the option ``"return_sequence"`` to ``True``, Rasa will raise an error informing you that this
