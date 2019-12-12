@@ -266,29 +266,18 @@ class MessageProcessor:
             logger.debug(
                 "Canceled reminder because it is outdated. "
                 "(event: {} id: {})".format(
-                    reminder_event.future_event, reminder_event.name
+                    reminder_event.intent, reminder_event.name
                 )
             )
         else:
-            if reminder_event.event_is_action:
-                # necessary for proper featurization, otherwise the previous
-                # unrelated message would influence featurization
-                tracker.update(UserUttered.empty())
-                action = self._get_action(reminder_event.future_event)
-                should_continue = await self._run_action(
-                    action, tracker, output_channel, nlg
+            intent_name = reminder_event.intent
+            tracker.update(
+                UserUttered(
+                    text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
+                    intent={"name": intent_name, IS_EXTERNAL: True},
                 )
-                if should_continue:
-                    await self._predict_and_execute_next_action(output_channel, tracker)
-            else:
-                intent = reminder_event.future_event
-                tracker.update(
-                    UserUttered(
-                        text=f"{EXTERNAL_MESSAGE_PREFIX}{intent}",
-                        intent={"name": intent, IS_EXTERNAL: True},
-                    )
-                )
-                await self._predict_and_execute_next_action(output_channel, tracker)
+            )
+            await self._predict_and_execute_next_action(output_channel, tracker)
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
 
@@ -479,7 +468,7 @@ class MessageProcessor:
                 id=e.name,
                 replace_existing=True,
                 name=(
-                    str(e.future_event)
+                    str(e.intent)
                     + ACTION_NAME_SENDER_ID_CONNECTOR_STR
                     + tracker.sender_id
                 ),
@@ -495,7 +484,7 @@ class MessageProcessor:
         for e in events:
             if isinstance(e, ReminderCancelled):
                 name_to_check = (
-                    str(e.future_event)
+                    str(e.intent)
                     + ACTION_NAME_SENDER_ID_CONNECTOR_STR
                     + tracker.sender_id
                 )

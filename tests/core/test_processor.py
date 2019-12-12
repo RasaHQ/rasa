@@ -28,6 +28,8 @@ from rasa.core.processor import MessageProcessor
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
 
+from rasa.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL
+
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 from rasa.core.domain import Domain
 
@@ -147,13 +149,11 @@ async def test_reminder_scheduled(
 ):
     sender_id = uuid.uuid4().hex
 
-    reminder = ReminderScheduled("utter_greet",
-                                 datetime.datetime.now(),
-                                 event_is_action=True)
+    reminder = ReminderScheduled("remind", datetime.datetime.now())
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     tracker.update(UserUttered("test"))
-    tracker.update(ActionExecuted("action_reminder_reminder"))
+    tracker.update(ActionExecuted("action_schedule_reminder"))
     tracker.update(reminder)
 
     default_processor.tracker_store.save(tracker)
@@ -163,18 +163,13 @@ async def test_reminder_scheduled(
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
-    assert t.events[-4] == UserUttered(None)
-    assert t.events[-3] == ActionExecuted("utter_greet")
-    assert t.events[-2] == BotUttered(
-        "hey there None!",
-        {
-            "elements": None,
-            "buttons": None,
-            "quick_replies": None,
-            "attachment": None,
-            "image": None,
-            "custom": None,
-        },
+    assert t.events[-5] == UserUttered("test")
+    assert t.events[-4] == ActionExecuted("action_schedule_reminder")
+    assert isinstance(
+        t.events[-3], ReminderScheduled
+    )  # ToDo: Should this really be here?
+    assert t.events[-2] == UserUttered(
+        f"{EXTERNAL_MESSAGE_PREFIX}remind", intent={"name": "remind", IS_EXTERNAL: True}
     )
     assert t.events[-1] == ActionExecuted("action_listen")
 
@@ -214,16 +209,13 @@ async def test_reminder_cancelled(
         tracker.update(ActionExecuted("action_reminder_reminder"))
         tracker.update(
             ReminderScheduled(
-                "utter_greet",
-                datetime.datetime.now(),
-                kill_on_user_message=True,
-                event_is_action=True
+                "greet", datetime.datetime.now(), kill_on_user_message=True
             )
         )
         trackers.append(tracker)
 
     # cancel reminder for the first user
-    trackers[0].update(ReminderCancelled("utter_greet", event_is_action=True))
+    trackers[0].update(ReminderCancelled("greet"))
 
     for tracker in trackers:
         default_processor.tracker_store.save(tracker)
@@ -243,11 +235,23 @@ async def test_reminder_cancelled(
 
     tracker_0 = default_processor.tracker_store.retrieve(sender_ids[0])
     # there should be no utter_greet action
-    assert ActionExecuted("utter_greet") not in tracker_0.events
+    assert (
+        UserUttered(
+            f"{EXTERNAL_MESSAGE_PREFIX}greet",
+            intent={"name": "greet", IS_EXTERNAL: True},
+        )
+        not in tracker_0.events
+    )
 
     tracker_1 = default_processor.tracker_store.retrieve(sender_ids[1])
     # there should be utter_greet action
-    assert ActionExecuted("utter_greet") in tracker_1.events
+    assert (
+        UserUttered(
+            f"{EXTERNAL_MESSAGE_PREFIX}greet",
+            intent={"name": "greet", IS_EXTERNAL: True},
+        )
+        in tracker_1.events
+    )
 
 
 async def test_reminder_restart(
