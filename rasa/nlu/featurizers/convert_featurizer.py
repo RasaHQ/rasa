@@ -34,7 +34,12 @@ class ConveRTFeaturizer(Featurizer):
             self.module = tfhub.Module(model_url)
 
             self.text_placeholder = tf.placeholder(dtype=tf.string, shape=[None])
-            self.encoding_tensor = self.module(self.text_placeholder)
+            self.context_encoding_tensor = self.module(
+                self.text_placeholder, signature="encode_context"
+            )
+            self.response_encoding_tensor = self.module(
+                self.text_placeholder, signature="encode_response"
+            )
             self.session.run(tf.tables_initializer())
             self.session.run(tf.global_variables_initializer())
 
@@ -55,15 +60,31 @@ class ConveRTFeaturizer(Featurizer):
         # Get text for attribute of each example
         batch_attribute_text = [ex.get(attribute) for ex in batch_examples]
 
-        batch_features = self._run_model_on_text(batch_attribute_text)
+        batch_features = self._run_model_on_text(batch_attribute_text, attribute)
+
+        # L2 normalize them
+        batch_features = batch_features / np.reshape(
+            np.linalg.norm(batch_features, ord=2, axis=-1), (-1, 1)
+        )
 
         return batch_features
 
-    def _run_model_on_text(self, batch: List[Text]) -> np.ndarray:
+    def _run_model_on_text(
+        self, batch: List[Text], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
+    ) -> np.ndarray:
 
-        return self.session.run(
-            self.encoding_tensor, feed_dict={self.text_placeholder: batch}
-        )
+        if attribute == MESSAGE_TEXT_ATTRIBUTE:
+            return self.session.run(
+                self.context_encoding_tensor, feed_dict={self.text_placeholder: batch}
+            )
+        else:
+            return self.session.run(
+                self.response_encoding_tensor, feed_dict={self.text_placeholder: batch}
+            )
+
+        # return self.session.run(
+        #     self.context_encoding_tensor, feed_dict={self.text_placeholder: batch}
+        # )
 
     def train(
         self,
