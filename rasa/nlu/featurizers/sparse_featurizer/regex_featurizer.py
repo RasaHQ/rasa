@@ -1,10 +1,12 @@
 import logging
+import warnings
+
 import numpy as np
 import os
 import re
 import typing
 import scipy.sparse
-from typing import Any, Dict, Optional, Text, List, Union
+from typing import Any, Dict, Optional, Text, Union, List
 
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
@@ -17,6 +19,7 @@ from rasa.nlu.constants import (
     RESPONSE_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
 )
+from rasa.constants import DOCS_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +127,7 @@ class RegexFeaturizer(Featurizer):
         return scipy.sparse.coo_matrix(vec)
 
     def _generate_lookup_regex(
-        self, lookup_table: Dict[Text, Union[Text, List]]
+        self, lookup_table: Dict[Text, Union[Text, List[Text]]]
     ) -> Text:
         """creates a regex out of the contents of a lookup table file"""
         lookup_elements = lookup_table["elements"]
@@ -133,6 +136,12 @@ class RegexFeaturizer(Featurizer):
         # if it's a list, it should be the elements directly
         if isinstance(lookup_elements, list):
             elements_to_regex = lookup_elements
+            warnings.warn(
+                f"Directly including lookup tables as a list is deprecated since Rasa "
+                f"1.6. See {DOCS_BASE_URL}/nlu/training-data-format/#lookup-tables "
+                f"how to do so.",
+                FutureWarning,
+            )
 
         # otherwise it's a file path.
         else:
