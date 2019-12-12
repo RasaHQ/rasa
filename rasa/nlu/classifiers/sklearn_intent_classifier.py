@@ -6,7 +6,7 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu import utils
-from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
+from rasa.nlu.classifiers import DEFAULT_LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
@@ -155,7 +155,7 @@ class SklearnIntentClassifier(Component):
 
             if intents.size > 0 and probabilities.size > 0:
                 ranking = list(zip(list(intents), list(probabilities)))[
-                    :LABEL_RANKING_LENGTH
+                    :DEFAULT_LABEL_RANKING_LENGTH
                 ]
 
                 intent = {"name": intents[0], "confidence": probabilities[0]}
