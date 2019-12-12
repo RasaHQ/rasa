@@ -88,7 +88,7 @@ Reset all Slots
 Schedule a reminder
 ~~~~~~~~~~~~~~~~~~~
 
-:Short: Schedule an action to be executed in the future.
+:Short: Schedule an intent to be injected in the future.
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
       :lines: 1-
@@ -99,8 +99,8 @@ Schedule a reminder
     .. autoclass:: rasa.core.events.ReminderScheduled
 
 :Effect:
-    When added to a tracker, core will schedule the action to be
-    run in the future.
+    When added to a tracker, core will schedule the intent to be
+    injected in the future.
 
 Pause a conversation
 ~~~~~~~~~~~~~~~~~~~~
