@@ -1,15 +1,17 @@
+Preparation for an upcoming change in the ``EmbeddingIntentClassifier``:
+
 Add option ``use_cls_token`` to all tokenizers. If it is set to ``True``, the token ``__CLS__`` will be added to
-the end of the list of tokens.
+the end of the list of tokens. Default is set to ``False``. No need to change the default value for now.
 
 Add option ``return_sequence`` to all featurizers. By default all featurizers return a matrix of size
 (1 x feature-dimension). If the option ``return_sequence`` is set to ``True``, the corresponding featurizer will return
-a matrix of size (token-length x feature-dimension).
-
-Split featurizers into sparse and dense featurizers.
-
-Deprecate ``NGramFeaturizer``. Please use ``CountVectorsFeaturizer`` instead.
+a matrix of size (token-length x feature-dimension). See https://rasa.com/docs/rasa/nlu/components/#featurizers.
+Default value is set to ``False``. However, you might want to set it to ``True`` if you want to use custom features
+in the ``CRFEntityExtractor``.
+See https://rasa.com/docs/rasa/nlu/entity-extraction/#passing-custom-features-to-crfentityextractor.
 
 To use custom features in the ``CRFEntityExtractor`` use ``text_dense_features`` instead of ``ner_features``. If
 ``text_dense_features`` are present in the feature set, the ``CRFEntityExtractor`` will automatically make use of
 them. Just make sure to add a dense featurizer in front of the ``CRFEntityExtractor`` in your pipeline and set the
 flag ``return_sequence`` to ``True`` for that featurizer.
+See https://rasa.com/docs/rasa/nlu/entity-extraction/#passing-custom-features-to-crfentityextractor.
