@@ -571,7 +571,7 @@ def create_app(
         warnings.warn(
             "Triggering actions via the execute endpoint is deprecated. "
             "Trigger an intent via the inject-intent endpoint instead.",
-            FutureWarning
+            FutureWarning,
         )
 
         policy = request_params.get("policy", None)
@@ -631,7 +631,9 @@ def create_app(
                 output_channel = _get_output_channel(request, tracker)
                 if intent_to_inject not in app.agent.domain.intents:
                     raise ErrorResponse(
-                        500, "ValueError", f"The intent {inject_intent} does not exist in the domain."
+                        500,
+                        "ValueError",
+                        f"The intent {inject_intent} does not exist in the domain.",
                     )
                 await app.agent.inject_intent(
                     intent_name=intent_to_inject,

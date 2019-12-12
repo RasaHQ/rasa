@@ -266,20 +266,20 @@ class MessageProcessor:
         ):
             logger.debug(
                 "Canceled reminder because it is outdated. "
-                "(event: {} id: {})".format(
-                    reminder_event.intent, reminder_event.name
-                )
+                "(event: {} id: {})".format(reminder_event.intent, reminder_event.name)
             )
         else:
             intent_name = reminder_event.intent
-            await self.inject_external_user_uttered(intent_name, None, tracker, output_channel)
+            await self.inject_external_user_uttered(
+                intent_name, None, tracker, output_channel
+            )
 
     async def inject_external_user_uttered(
-            self,
-            intent_name: Text,
-            entities,
-            tracker: DialogueStateTracker,
-            output_channel: OutputChannel
+        self,
+        intent_name: Text,
+        entities,
+        tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
     ):
         tracker.update(
             UserUttered(
