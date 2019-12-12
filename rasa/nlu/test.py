@@ -6,6 +6,7 @@ from collections import defaultdict, namedtuple
 from tqdm import tqdm
 from typing import (
     Iterable,
+    Collection,
     Iterator,
     Tuple,
     List,
