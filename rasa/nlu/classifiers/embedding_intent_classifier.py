@@ -79,7 +79,7 @@ class EmbeddingIntentClassifier(Component):
         "random_seed": None,
         # embedding parameters
         # default dense dimension used if no dense features are present
-        "dense_dim": 512,
+        "dense_dim": {"text": 512, "intent": 20},
         # dimension size of embedding vectors
         "embed_dim": 20,
         # the type of the similarity
@@ -510,7 +510,7 @@ class EmbeddingIntentClassifier(Component):
     ) -> tf.Tensor:
         dense_features = []
 
-        dense_dim = self.dense_dim
+        dense_dim = self.dense_dim[name]
         # if dense features are present use the feature dimension of the dense features
         for f in features:
             if not isinstance(f, tf.SparseTensor):
