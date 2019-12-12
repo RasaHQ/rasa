@@ -352,6 +352,7 @@ nitpick_ignore = [
     ("py:class", "bool"),
     ("py:class", "int"),
     ("py:class", "Any"),
+    ("py:class", "dict"),
     ("py:class", "Dict"),
     ("py:class", "List"),
     ("py:class", "Text"),
