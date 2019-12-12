@@ -53,8 +53,8 @@ from rasa.core.events import (
             AgentUttered("my_other_test", "my_other_data"),
         ),
         (
-            ReminderScheduled("my_action", datetime.now()),
-            ReminderScheduled("my_other_action", datetime.now()),
+            ReminderScheduled("my_intent", datetime.now()),
+            ReminderScheduled("my_other_intent", datetime.now()),
         ),
     ],
 )
@@ -98,8 +98,8 @@ def test_event_has_proper_implementation(one_event, another_event):
         FollowupAction("my_action"),
         BotUttered("my_text", {"my_data": 1}),
         AgentUttered("my_text", "my_data"),
-        ReminderScheduled("my_action", datetime.now()),
-        ReminderScheduled("my_action", datetime.now(pytz.timezone("US/Central"))),
+        ReminderScheduled("my_intent", datetime.now()),
+        ReminderScheduled("my_intent", datetime.now(pytz.timezone("US/Central"))),
     ],
 )
 def test_dict_serialisation(one_event):
@@ -172,9 +172,9 @@ def test_json_parse_rewind():
 def test_json_parse_reminder():
     # fmt: off
     # DOCS MARKER ReminderScheduled
-    evt={
+    evt = {
           "event": "reminder",
-          "action": "my_action",
+          "intent": "my_intent",
           "date_time": "2018-09-03T11:41:10.128172",
           "name": "my_reminder",
           "kill_on_user_msg": True,
@@ -182,7 +182,7 @@ def test_json_parse_reminder():
     # DOCS END
     # fmt: on
     assert Event.from_parameters(evt) == ReminderScheduled(
-        "my_action",
+        "my_intent",
         parser.parse("2018-09-03T11:41:10.128172"),
         name="my_reminder",
         kill_on_user_message=True,
