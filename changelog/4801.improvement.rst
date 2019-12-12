@@ -1,0 +1,2 @@
+Allow creation of natural language interpreter and generator by classname reference
+in ``endpoints.yml``.
