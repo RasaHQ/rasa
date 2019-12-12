@@ -1351,7 +1351,7 @@ def _print_help(skip_visualization: bool) -> None:
         visualization_url = DEFAULT_SERVER_FORMAT.format(
             "http", DEFAULT_SERVER_PORT + 1
         )
-        visualization_help = "Visualisation at {}/visualization.html.".format(
+        visualization_help = "Visualisation at {}/visualization.html .".format(
             visualization_url
         )
     else:
