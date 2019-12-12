@@ -22,6 +22,8 @@ from rasa.core.constants import (
     UTTER_PREFIX,
     USER_INTENT_BACK,
     USER_INTENT_OUT_OF_SCOPE,
+    IS_EXTERNAL,
+    EXTERNAL_MESSAGE_PREFIX,
 )
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -93,7 +95,7 @@ class MessageProcessor:
             )
             return None
 
-        await self._predict_and_execute_next_action(message, tracker)
+        await self._predict_and_execute_next_action(message.output_channel, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
 
@@ -277,14 +279,16 @@ class MessageProcessor:
                     action, tracker, output_channel, nlg
                 )
                 if should_continue:
-                    user_msg = UserMessage(None, output_channel, sender_id)
-                    await self._predict_and_execute_next_action(user_msg, tracker)
+                    await self._predict_and_execute_next_action(output_channel, tracker)
             else:
-                # ToDo: We should introduce a new Event, ExternalEvent
                 intent = reminder_event.future_event
-                tracker.update(UserUttered(text="", intent={"name": intent}))
-                user_msg = UserMessage("", None, sender_id)
-                await self._predict_and_execute_next_action(user_msg, tracker)
+                tracker.update(
+                    UserUttered(
+                        text=f"{EXTERNAL_MESSAGE_PREFIX}{intent}",
+                        intent={"name": intent, IS_EXTERNAL: True},
+                    )
+                )
+                await self._predict_and_execute_next_action(output_channel, tracker)
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
 
@@ -395,7 +399,7 @@ class MessageProcessor:
         )
 
     async def _predict_and_execute_next_action(
-        self, message: UserMessage, tracker: DialogueStateTracker
+        self, output_channel: Optional[OutputChannel], tracker: DialogueStateTracker
     ):
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
@@ -417,7 +421,7 @@ class MessageProcessor:
             action, policy, confidence = self.predict_next_action(tracker)
 
             should_predict_another_action = await self._run_action(
-                action, tracker, message.output_channel, self.nlg, policy, confidence
+                action, tracker, output_channel, self.nlg, policy, confidence
             )
             num_predicted_actions += 1
 
@@ -429,7 +433,7 @@ class MessageProcessor:
             )
             if self.on_circuit_break:
                 # call a registered callback
-                self.on_circuit_break(tracker, message.output_channel, self.nlg)
+                self.on_circuit_break(tracker, output_channel, self.nlg)
 
     # noinspection PyUnusedLocal
     @staticmethod
