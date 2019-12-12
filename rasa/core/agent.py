@@ -48,6 +48,7 @@ from rasa.model import (
 from rasa.nlu.utils import is_url
 from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
+from rasa.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL
 
 logger = logging.getLogger(__name__)
 
@@ -518,6 +519,24 @@ class Agent:
         return await processor.execute_action(
             sender_id, action, output_channel, self.nlg, policy, confidence
         )
+
+    async def inject_intent(
+        self,
+        intent_name: Text,
+        entities,
+        output_channel: OutputChannel,
+        tracker: DialogueStateTracker
+    ) -> DialogueStateTracker:
+        """Inject a user intent, e.g. triggered by an external event."""
+
+        processor = self.create_processor()
+        await processor.inject_external_user_uttered(
+            intent_name,
+            entities,
+            tracker,
+            output_channel,
+        )
+        return tracker
 
     async def handle_text(
         self,

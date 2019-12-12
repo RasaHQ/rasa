@@ -271,15 +271,26 @@ class MessageProcessor:
             )
         else:
             intent_name = reminder_event.intent
-            tracker.update(
-                UserUttered(
-                    text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
-                    intent={"name": intent_name, IS_EXTERNAL: True},
-                )
+            await self.inject_external_user_uttered(intent_name, None, tracker, output_channel)
+
+    async def inject_external_user_uttered(
+            self,
+            intent_name: Text,
+            entities,
+            tracker: DialogueStateTracker,
+            output_channel: OutputChannel
+    ):
+        tracker.update(
+            UserUttered(
+                text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
+                intent={"name": intent_name},
+                metadata={IS_EXTERNAL: True},
+                entities=entities,
             )
-            await self._predict_and_execute_next_action(output_channel, tracker)
-            # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
+        )
+        await self._predict_and_execute_next_action(output_channel, tracker)
+        # save tracker state to continue conversation from this state
+        self._save_tracker(tracker)
 
     @staticmethod
     def _log_slots(tracker):

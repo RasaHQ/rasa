@@ -562,6 +562,13 @@ def create_app(
                 {"parameter": "name", "in": "body"},
             )
 
+        # Deprecation warning
+        warnings.warn(
+            "Triggering actions via the execute endpoint is deprecated. "
+            "Trigger an intent via the inject-intent endpoint instead.",
+            FutureWarning
+        )
+
         policy = request_params.get("policy", None)
         confidence = request_params.get("confidence", None)
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
@@ -576,6 +583,52 @@ def create_app(
                     output_channel,
                     policy,
                     confidence,
+                )
+
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
+            )
+
+        tracker = get_tracker(app.agent, conversation_id)
+        state = tracker.current_state(verbosity)
+
+        response_body = {"tracker": state}
+
+        if isinstance(output_channel, CollectingOutputChannel):
+            response_body["messages"] = output_channel.messages
+
+        return response.json(response_body)
+
+    @app.post("/conversations/<conversation_id>/inject-intent")
+    @requires_auth(app, auth_token)
+    @ensure_loaded_agent(app)
+    async def inject_intent(request: Request, conversation_id: Text):
+        request_params = request.json
+
+        intent_to_inject = request_params.get("name", None)
+        entities = request_params.get("entities", [])
+
+        if not intent_to_inject:
+            raise ErrorResponse(
+                400,
+                "BadRequest",
+                "Name of the intent not provided in request body.",
+                {"parameter": "name", "in": "body"},
+            )
+
+        verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
+
+        try:
+            async with app.agent.lock_store.lock(conversation_id):
+                tracker = get_tracker(app.agent, conversation_id)
+                output_channel = _get_output_channel(request, tracker)
+                await app.agent.inject_intent(
+                    intent_name=intent_to_inject,
+                    entities=entities,
+                    output_channel=output_channel,
+                    tracker=tracker,
                 )
 
         except Exception as e:

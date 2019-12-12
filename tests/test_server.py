@@ -815,6 +815,36 @@ def test_execute(rasa_app: SanicTestClient):
     assert parsed_content["messages"]
 
 
+def test_inject_intent(rasa_app: SanicTestClient):
+    data = {"name": "greet"}
+    _, response = rasa_app.post("/conversations/test_inject/inject-intent", json=data)
+
+    assert response.status == 200
+
+    parsed_content = response.json
+    assert parsed_content["tracker"]
+    assert parsed_content["messages"]
+
+
+def test_inject_intent_with_missing_action_name(rasa_app: SanicTestClient):
+    test_sender = "test_inject_intent_with_missing_action_name"
+
+    data = {"wrong-key": "greet"}
+    _, response = rasa_app.post(f"/conversations/{test_sender}/execute", json=data)
+
+    assert response.status == 400
+
+
+def test_inject_intent_with_not_existing_action(rasa_app: SanicTestClient):
+    test_sender = "test_execute_with_not_existing_action"
+    _create_tracker_for_sender(rasa_app, test_sender)
+
+    data = {"name": "ka[pa[opi[opj[oj[oija"}
+    _, response = rasa_app.post(f"/conversations/{test_sender}/execute", json=data)
+
+    assert response.status == 500
+
+
 def test_execute_with_missing_action_name(rasa_app: SanicTestClient):
     test_sender = "test_execute_with_missing_action_name"
     _create_tracker_for_sender(rasa_app, test_sender)
