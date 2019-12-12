@@ -85,7 +85,7 @@ SpacyNLP
 Text Featurizers
 ----------------
 
-Featurizers are divided into two different categories: sparse featurizers and dense featurizers.
+Text featurizers are divided into two different categories: sparse featurizers and dense featurizers.
 Sparse featurizers are featurizers that return feature vectors with a lot of missing values, e.g. zeros.
 As those feature vectors would normally take up a lot of memory, we store them as sparse features.
 Sparse features only store the values that are non zero and their positions in the vector.
@@ -186,6 +186,7 @@ RegexFeaturizer
 :Requires: nothing
 :Type: Sparse featurizer
 :Description:
+    Creates features for entity extraction and intent classification.
     During training, the regex intent featurizer creates a list of `regular expressions` defined in the training
     data format.
     For each regex, a feature will be set marking whether this expression was found in the input, which will later
@@ -207,6 +208,7 @@ CountVectorsFeaturizer
 :Requires: nothing
 :Type: Sparse featurizer
 :Description:
+    Creates features for intent classification and response selection.
     Creates bag-of-words representation of user message and label features using
     `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_.
     All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
