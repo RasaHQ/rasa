@@ -89,14 +89,14 @@ Text featurizers are divided into two different categories: sparse featurizers a
 Sparse featurizers are featurizers that return feature vectors with a lot of missing values, e.g. zeros.
 As those feature vectors would normally take up a lot of memory, we store them as sparse features.
 Sparse features only store the values that are non zero and their positions in the vector.
-Thus, we save a lot of memroy and are able to train on larger dataset.
+Thus, we save a lot of memroy and are able to train on larger datasets.
 
 By default all featurizers will return a matrix of length (1 x feature-dimension).
 All featurizer (except the ``ConveRTFeaturizer``) have the option to return a sequence instead.
 In case the flag ``"return_sequence"`` is set to ``True`` the returned matrix of a featurizer will have the size
 (token-length x feature-dimension).
 So, the returned matrix will have an entry for every token.
-Otherwise, the matrix will just have on entry for the complete utterance.
+Otherwise, the matrix will just have one entry for the complete utterance.
 
 
 MitieFeaturizer
