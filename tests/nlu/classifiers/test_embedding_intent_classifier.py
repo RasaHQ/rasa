@@ -24,11 +24,9 @@ def test_compute_default_label_features():
 
     output = output[0]
 
-    assert output.size == len(label_features)
     for i, o in enumerate(output):
-        assert isinstance(o, scipy.sparse.coo_matrix)
-        assert o.data[0] == 1
-        assert o.col[0] == i
+        assert isinstance(o, np.ndarray)
+        assert o[0][i] == 1
         assert o.shape == (1, len(label_features))
 
 

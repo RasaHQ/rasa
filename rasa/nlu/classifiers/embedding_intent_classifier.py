@@ -335,10 +335,8 @@ class EmbeddingIntentClassifier(Component):
         return [
             np.array(
                 [
-                    scipy.sparse.coo_matrix(
-                        ([1], ([0], [idx])), shape=(1, len(labels_example))
-                    )
-                    for idx in range(len(labels_example))
+                    np.expand_dims(a, 0)
+                    for a in np.eye(len(labels_example), dtype=np.float32)
                 ]
             )
         ]
