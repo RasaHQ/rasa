@@ -314,7 +314,7 @@ To do this, add the flag <code class="docutils literal notranslate"><span class=
                      [--successes] [--no-errors] [--histogram HISTOGRAM]
                      [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
                      [--cross-validation] [-f FOLDS] [-r RUNS]
-                     [-p PERCENTAGES [PERCENTAGES ...]]
+                     [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -341,6 +341,7 @@ optional arguments:
                         is performed, if multiple configs or a folder of
                         configs are passed, models will be trained and
                         compared directly. (default: None)
+  --no-plot             Don&#39;t render evaluation plots (default: False)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:
@@ -496,7 +497,7 @@ incorrect action was predicted instead.</p>
                       [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
                       [--e2e] [--endpoints ENDPOINTS]
                       [--fail-on-prediction-errors] [--url URL]
-                      [--evaluate-model-directory]
+                      [--evaluate-model-directory] [--no-plot]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -532,6 +533,7 @@ optional arguments:
                         train core --config &lt;config-1&gt; &lt;config-2&gt;&#39;. All models
                         in the provided directory are evaluated and compared
                         against each other. (default: False)
+  --no-plot             Don&#39;t render evaluation plots (default: False)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:
