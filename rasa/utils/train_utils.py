@@ -81,19 +81,9 @@ def train_val_split(
 
     counts = np.array([label_counts[label] for label in label_ids])
 
-    multi_values = []
-    [
-        multi_values.append(v[counts > 1])
-        for values in session_data.values()
-        for v in values
-    ]
+    multi_values = [v[counts > 1] for values in session_data.values() for v in values]
 
-    solo_values = []
-    [
-        solo_values.append(v[counts == 1])
-        for values in session_data.values()
-        for v in values
-    ]
+    solo_values = [v[counts == 1] for values in session_data.values() for v in values]
 
     output_values = train_test_split(
         *multi_values,
@@ -114,6 +104,8 @@ def check_train_test_sizes(
     label_counts: Dict[Any, int],
     session_data: SessionDataType,
 ):
+    """Check whether the evaluation data set is too large or too small."""
+
     num_examples = get_number_of_examples(session_data)
 
     if evaluate_on_num_examples >= num_examples - len(label_counts):
@@ -131,7 +123,10 @@ def check_train_test_sizes(
 
 def convert_train_test_split(
     output_values: List[Any], session_data: SessionDataType, solo_values: List[Any]
-):
+) -> Tuple[SessionDataType, SessionDataType]:
+    """Convert the output of sklearn.model_selection.train_test_split into train and
+    eval session data."""
+
     session_data_train = defaultdict(list)
     session_data_val = defaultdict(list)
 
