@@ -270,7 +270,9 @@ def test_run_cv_evaluation():
     nlu_config = config.load("sample_configs/config_pretrained_embeddings_spacy.yml")
 
     n_folds = 2
-    intent_results, entity_results = cross_validate(td, n_folds, nlu_config)
+    intent_results, entity_results, response_selection_results = cross_validate(
+        td, n_folds, nlu_config
+    )
 
     assert len(intent_results.train["Accuracy"]) == n_folds
     assert len(intent_results.train["Precision"]) == n_folds
@@ -377,10 +379,7 @@ def test_intent_evaluation_report_large(tmpdir_factory: TempdirFactory):
         "confused_with": {"C": 5, "": 5},
     }
 
-    c_confused_with = {
-        "D": 1,
-        "E": 1,
-    }
+    c_confused_with = {"D": 1, "E": 1}
 
     assert len(report.keys()) == 8
     assert report["A"] == a_results

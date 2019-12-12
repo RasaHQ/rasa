@@ -61,6 +61,7 @@ EntityEvaluationResult = namedtuple(
 
 IntentMetrics = Dict[Text, List[float]]
 EntityMetrics = Dict[Text, Dict[Text, List[float]]]
+ResponseSelectionMetrics = Dict[Text, List[float]]
 
 
 def plot_confusion_matrix(
@@ -1103,7 +1104,7 @@ def generate_folds(
 
     skf = StratifiedKFold(n_splits=n, shuffle=True)
     x = td.intent_examples
-    y = [example.get("intent") for example in x]
+    y = [example.get_combined_intent_response_key() for example in x]
     for i_fold, (train_index, test_index) in enumerate(skf.split(x, y)):
         logger.debug(f"Fold: {i_fold}")
         train = [x[i] for i in train_index]
@@ -1125,11 +1126,15 @@ def generate_folds(
 def combine_result(
     intent_metrics: IntentMetrics,
     entity_metrics: EntityMetrics,
+    response_selection_metrics: ResponseSelectionMetrics,
     interpreter: Interpreter,
     data: TrainingData,
     intent_results: Optional[List[IntentEvaluationResult]] = None,
     entity_results: Optional[List[EntityEvaluationResult]] = None,
-) -> Tuple[IntentMetrics, EntityMetrics]:
+    response_selection_results: Optional[
+        List[ResponseSelectionEvaluationResult]
+    ] = None,
+) -> Tuple[IntentMetrics, EntityMetrics, ResponseSelectionMetrics]:
     """Collects intent and entity metrics for crossvalidation folds.
     If `intent_results` or `entity_results` is provided as a list, prediction results
     are also collected.
@@ -1138,8 +1143,10 @@ def combine_result(
     (
         intent_current_metrics,
         entity_current_metrics,
+        response_selection_current_metrics,
         current_intent_results,
         current_entity_results,
+        current_response_selection_results,
     ) = compute_metrics(interpreter, data)
 
     if intent_results is not None:
@@ -1148,15 +1155,21 @@ def combine_result(
     if entity_results is not None:
         entity_results += current_entity_results
 
+    if response_selection_results is not None:
+        response_selection_results += current_response_selection_results
+
     for k, v in intent_current_metrics.items():
         intent_metrics[k] = v + intent_metrics[k]
+
+    for k, v in response_selection_current_metrics.items():
+        response_selection_metrics[k] = v + response_selection_metrics[k]
 
     for extractor, extractor_metric in entity_current_metrics.items():
         entity_metrics[extractor] = {
             k: v + entity_metrics[extractor][k] for k, v in extractor_metric.items()
         }
 
-    return intent_metrics, entity_metrics
+    return intent_metrics, entity_metrics, response_selection_metrics
 
 
 def cross_validate(
@@ -1168,7 +1181,7 @@ def cross_validate(
     errors: bool = False,
     confmat: Optional[Text] = None,
     histogram: Optional[Text] = None,
-) -> Tuple[CVEvaluationResult, CVEvaluationResult]:
+) -> Tuple[CVEvaluationResult, CVEvaluationResult, CVEvaluationResult]:
     """Stratified cross validation on data.
 
     Args:
@@ -1200,25 +1213,43 @@ def cross_validate(
     intent_test_metrics = defaultdict(list)  # type: IntentMetrics
     entity_train_metrics = defaultdict(lambda: defaultdict(list))  # type: EntityMetrics
     entity_test_metrics = defaultdict(lambda: defaultdict(list))  # type: EntityMetrics
+    response_selection_train_metrics = defaultdict(
+        list
+    )  # type: ResponseSelectionMetrics
+    response_selection_test_metrics = defaultdict(
+        list
+    )  # type: ResponseSelectionMetrics
 
     intent_test_results = []  # type: List[IntentEvaluationResult]
     entity_test_results = []  # type: List[EntityEvaluationResult]
+    response_selection_test_results = (
+        []
+    )  # type: List[ResponseSelectionEvaluationResult]
     intent_classifier_present = False
+    response_selector_present = False
     extractors = set()  # type: Set[Text]
 
     for train, test in generate_folds(n_folds, data):
         interpreter = trainer.train(train)
 
         # calculate train accuracy
-        combine_result(intent_train_metrics, entity_train_metrics, interpreter, train)
+        combine_result(
+            intent_train_metrics,
+            entity_train_metrics,
+            response_selection_train_metrics,
+            interpreter,
+            train,
+        )
         # calculate test accuracy
         combine_result(
             intent_test_metrics,
             entity_test_metrics,
+            response_selection_test_metrics,
             interpreter,
             test,
             intent_test_results,
             entity_test_results,
+            response_selection_test_results,
         )
 
         if not extractors:
@@ -1226,6 +1257,9 @@ def cross_validate(
 
         if is_intent_classifier_present(interpreter):
             intent_classifier_present = True
+
+        if is_response_selector_present(interpreter):
+            response_selector_present = True
 
     if intent_classifier_present:
         logger.info("Accumulated test folds intent evaluation results:")
@@ -1237,9 +1271,17 @@ def cross_validate(
         logger.info("Accumulated test folds entity evaluation results:")
         evaluate_entities(entity_test_results, extractors, output, successes, errors)
 
+    if response_selector_present:
+        logger.info("Accumulated test folds intent evaluation results:")
+        evaluate_response_selections(response_selection_test_results, output)
+
     return (
         CVEvaluationResult(dict(intent_train_metrics), dict(intent_test_metrics)),
         CVEvaluationResult(dict(entity_train_metrics), dict(entity_test_metrics)),
+        CVEvaluationResult(
+            dict(response_selection_train_metrics),
+            dict(response_selection_test_metrics),
+        ),
     )
 
 
@@ -1258,8 +1300,10 @@ def compute_metrics(
 ) -> Tuple[
     IntentMetrics,
     EntityMetrics,
+    ResponseSelectionMetrics,
     List[IntentEvaluationResult],
     List[EntityEvaluationResult],
+    List[ResponseSelectionEvaluationResult],
 ]:
     """Computes metrics for intent classification and entity extraction.
     Returns intent and entity metrics, and prediction results.
@@ -1271,12 +1315,27 @@ def compute_metrics(
 
     intent_results = remove_empty_intent_examples(intent_results)
 
+    response_selection_results = remove_empty_response_examples(
+        response_selection_results
+    )
+
     intent_metrics = _compute_metrics(
         intent_results, "intent_target", "intent_prediction"
     )
     entity_metrics = _compute_entity_metrics(entity_results, interpreter)
 
-    return (intent_metrics, entity_metrics, intent_results, entity_results)
+    response_selection_metrics = _compute_metrics(
+        response_selection_results, "response_target", "response_prediction"
+    )
+
+    return (
+        intent_metrics,
+        entity_metrics,
+        response_selection_metrics,
+        intent_results,
+        entity_results,
+        response_selection_results,
+    )
 
 
 def compare_nlu(
