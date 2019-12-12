@@ -624,6 +624,10 @@ def create_app(
             async with app.agent.lock_store.lock(conversation_id):
                 tracker = get_tracker(app.agent, conversation_id)
                 output_channel = _get_output_channel(request, tracker)
+                if intent_to_inject not in app.agent.domain.intents:
+                    raise ErrorResponse(
+                        500, "ValueError", f"The intent {inject_intent} does not exist in the domain."
+                    )
                 await app.agent.inject_intent(
                     intent_name=intent_to_inject,
                     entities=entities,
