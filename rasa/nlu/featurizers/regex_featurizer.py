@@ -1,10 +1,11 @@
-import io
 import logging
+import warnings
+
 import numpy as np
 import os
 import re
 import typing
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Optional, Text, Union, List
 
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
@@ -16,6 +17,7 @@ from rasa.nlu.constants import (
     MESSAGE_TEXT_ATTRIBUTE,
     MESSAGE_VECTOR_FEATURE_NAMES,
 )
+from rasa.constants import DOCS_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,12 @@ class RegexFeaturizer(Featurizer):
 
     requires = [MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
 
-    def __init__(self, component_config=None, known_patterns=None, lookup_tables=None):
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        known_patterns=None,
+        lookup_tables=None,
+    ) -> None:
 
         super().__init__(component_config)
 
@@ -53,14 +60,14 @@ class RegexFeaturizer(Featurizer):
         updated = self._text_features_with_regex(message)
         message.set(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE], updated)
 
-    def _text_features_with_regex(self, message):
+    def _text_features_with_regex(self, message) -> Any:
         if self.known_patterns:
             extras = self.features_for_patterns(message)
             return self._combine_with_existing_features(message, extras)
         else:
             return message.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
 
-    def _add_lookup_table_regexes(self, lookup_tables):
+    def _add_lookup_table_regexes(self, lookup_tables) -> None:
         # appends the regex features from the lookup tables to
         # self.known_patterns
         for table in lookup_tables:
@@ -68,7 +75,7 @@ class RegexFeaturizer(Featurizer):
             lookup_regex = {"name": table["name"], "pattern": regex_pattern}
             self.known_patterns.append(lookup_regex)
 
-    def features_for_patterns(self, message):
+    def features_for_patterns(self, message) -> np.array:
         """Checks which known patterns match the message.
 
         Given a sentence, returns a vector of {1,0} values indicating which
@@ -96,7 +103,9 @@ class RegexFeaturizer(Featurizer):
 
         return np.array(found_patterns).astype(float)
 
-    def _generate_lookup_regex(self, lookup_table):
+    def _generate_lookup_regex(
+        self, lookup_table: Dict[Text, Union[Text, List[Text]]]
+    ) -> Text:
         """creates a regex out of the contents of a lookup table file"""
         lookup_elements = lookup_table["elements"]
         elements_to_regex = []
@@ -104,6 +113,12 @@ class RegexFeaturizer(Featurizer):
         # if it's a list, it should be the elements directly
         if isinstance(lookup_elements, list):
             elements_to_regex = lookup_elements
+            warnings.warn(
+                f"Directly including lookup tables as a list is deprecated since Rasa "
+                f"1.6. See {DOCS_BASE_URL}/nlu/training-data-format/#lookup-tables "
+                f"how to do so.",
+                FutureWarning,
+            )
 
         # otherwise it's a file path.
         else:

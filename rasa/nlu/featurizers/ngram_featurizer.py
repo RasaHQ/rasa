@@ -82,7 +82,7 @@ class NGramFeaturizer(Featurizer):
         updated = self._text_features_with_ngrams(message, self.best_num_ngrams)
         message.set(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE], updated)
 
-    def _text_features_with_ngrams(self, message, max_ngrams):
+    def _text_features_with_ngrams(self, message, max_ngrams) -> np.array:
 
         ngrams_to_use = self._ngrams_to_use(max_ngrams)
 
@@ -122,12 +122,12 @@ class NGramFeaturizer(Featurizer):
 
         return {"file": file_name}
 
-    def train_on_sentences(self, examples):
+    def train_on_sentences(self, examples) -> None:
         labels = [e.get("intent") for e in examples]
         self.all_ngrams = self._get_best_ngrams(examples, labels)
         self.best_num_ngrams = self._cross_validation(examples, labels)
 
-    def _ngrams_to_use(self, num_ngrams):
+    def _ngrams_to_use(self, num_ngrams: Optional[int]) -> List[Text]:
         if num_ngrams == 0 or self.all_ngrams is None:
             return []
         elif num_ngrams is not None:
@@ -135,7 +135,7 @@ class NGramFeaturizer(Featurizer):
         else:
             return self.all_ngrams
 
-    def _get_best_ngrams(self, examples, labels):
+    def _get_best_ngrams(self, examples, labels) -> list:
         """Return an ordered list of the best character ngrams."""
 
         oov_strings = self._remove_in_vocab_words(examples)
@@ -144,7 +144,7 @@ class NGramFeaturizer(Featurizer):
         )
         return self._sort_applicable_ngrams(ngrams, examples, labels)
 
-    def _remove_in_vocab_words(self, examples):
+    def _remove_in_vocab_words(self, examples) -> List[Text]:
         """Automatically removes words with digits in them, that may be a
         hyperlink or that _are_ in vocabulary for the nlp."""
 
@@ -154,7 +154,7 @@ class NGramFeaturizer(Featurizer):
         return new_sents
 
     @staticmethod
-    def _is_ngram_worthy(token):
+    def _is_ngram_worthy(token) -> bool:
         """Decide if we should use this token for ngram counting.
 
         Excludes every word with digits in them, hyperlinks or
@@ -167,7 +167,7 @@ class NGramFeaturizer(Featurizer):
             and not token.is_punct
         )
 
-    def _remove_in_vocab_words_from_sentence(self, example):
+    def _remove_in_vocab_words_from_sentence(self, example) -> Text:
         """Filter for words that do not have a word vector."""
 
         cleaned_tokens = [
@@ -188,7 +188,7 @@ class NGramFeaturizer(Featurizer):
         # add cleaned sentence to list of these sentences
         return non_words
 
-    def _intents_with_enough_examples(self, labels, examples):
+    def _intents_with_enough_examples(self, labels, examples) -> list:
         """Filter examples where we do not have a min number of examples."""
 
         min_intent_examples = self.component_config["min_intent_examples"]
@@ -202,7 +202,7 @@ class NGramFeaturizer(Featurizer):
 
         return usable_labels
 
-    def _rank_ngrams_using_cv(self, examples, labels, list_of_ngrams):
+    def _rank_ngrams_using_cv(self, examples, labels, list_of_ngrams) -> list:
         from sklearn import linear_model
 
         X = np.array(self._ngrams_in_sentences(examples, list_of_ngrams))
@@ -218,7 +218,7 @@ class NGramFeaturizer(Featurizer):
 
         return sorted_ngrams
 
-    def _sort_applicable_ngrams(self, ngrams_list, examples, labels):
+    def _sort_applicable_ngrams(self, ngrams_list, examples, labels) -> list:
         """Given an intent classification problem and a list of ngrams,
 
         creates ordered list of most useful ngrams."""
@@ -248,7 +248,7 @@ class NGramFeaturizer(Featurizer):
             # there is no example we can use for the cross validation
             return []
 
-    def _ngrams_in_sentences(self, examples, ngrams):
+    def _ngrams_in_sentences(self, examples, ngrams) -> list:
         """Given a set of sentences, returns a feature vector for each sentence.
 
         The first $k$ elements are from the `intent_features`,
@@ -260,7 +260,7 @@ class NGramFeaturizer(Featurizer):
             all_vectors.append(presence_vector)
         return all_vectors
 
-    def _ngrams_in_sentence(self, example, ngrams):
+    def _ngrams_in_sentence(self, example, ngrams) -> np.ndarray:
         """Given a set of sentences, return a vector indicating ngram presence.
 
         The vector will return 1 entries if the corresponding ngram is
@@ -274,7 +274,7 @@ class NGramFeaturizer(Featurizer):
         presence_vector[idx_array] = 1
         return presence_vector
 
-    def _generate_all_ngrams(self, list_of_strings, ngram_min_length):
+    def _generate_all_ngrams(self, list_of_strings, ngram_min_length) -> list:
         """Takes a list of strings and generates all character ngrams.
 
         Generated ngrams are at least 3 characters (and at most 17),
@@ -322,7 +322,7 @@ class NGramFeaturizer(Featurizer):
         return [item for sublist in list(features.values()) for item in sublist]
 
     @staticmethod
-    def _collect_features(examples):
+    def _collect_features(examples) -> Optional[np.ndarray]:
         if examples:
             collected_features = [
                 e.get(MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
@@ -338,7 +338,9 @@ class NGramFeaturizer(Featurizer):
         else:
             return None
 
-    def _append_ngram_features(self, examples, existing_features, max_ngrams):
+    def _append_ngram_features(
+        self, examples, existing_features, max_ngrams
+    ) -> np.array:
         ngrams_to_use = self._ngrams_to_use(max_ngrams)
         extras = np.array(self._ngrams_in_sentences(examples, ngrams_to_use))
         if existing_features is not None:
@@ -347,11 +349,11 @@ class NGramFeaturizer(Featurizer):
             return extras
 
     @staticmethod
-    def _num_cv_splits(y):
+    def _num_cv_splits(y: np.array) -> int:
         return min(10, np.min(np.bincount(y))) if y.size > 0 else 0
 
     @staticmethod
-    def encode_labels(labels):
+    def encode_labels(labels: np.array) -> np.array:
         from sklearn import preprocessing
 
         intent_encoder = preprocessing.LabelEncoder()
@@ -360,7 +362,7 @@ class NGramFeaturizer(Featurizer):
 
     def _score_ngram_selection(
         self, examples, y, existing_text_features, cv_splits, max_ngrams
-    ):
+    ) -> np.array:
         from sklearn.model_selection import cross_val_score
         from sklearn.linear_model import LogisticRegression
 
@@ -375,7 +377,7 @@ class NGramFeaturizer(Featurizer):
         return np.mean(cross_val_score(clf, no_ngrams_X, y, cv=cv_splits))
 
     @staticmethod
-    def _generate_test_points(max_ngrams):
+    def _generate_test_points(max_ngrams) -> np.array:
         """Generate a list of increasing numbers.
 
         They are used to take the best n ngrams and evaluate them. This n

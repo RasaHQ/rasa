@@ -48,7 +48,7 @@ def test_validation_is_throwing_exceptions(invalid_data):
 
 
 def test_luis_data():
-    td = training_data.load_data("data/examples/luis/demo-restaurants.json")
+    td = training_data.load_data("data/examples/luis/demo-restaurants_v5.json")
 
     assert not td.is_empty()
     assert len(td.entity_examples) == 8
@@ -188,6 +188,27 @@ def test_train_test_split(filepaths):
 
 
 @pytest.mark.parametrize(
+    "filepaths",
+    [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
+)
+def test_train_test_split_with_random_seed(filepaths):
+    from rasa.importers.utils import training_data_from_paths
+
+    td = training_data_from_paths(filepaths, language="en")
+
+    td_train_1, td_test_1 = td.train_test_split(train_frac=0.8, random_seed=1)
+    td_train_2, td_test_2 = td.train_test_split(train_frac=0.8, random_seed=1)
+    train_1_intent_examples = [e.text for e in td_train_1.intent_examples]
+    train_2_intent_examples = [e.text for e in td_train_2.intent_examples]
+
+    test_1_intent_examples = [e.text for e in td_test_1.intent_examples]
+    test_2_intent_examples = [e.text for e in td_test_2.intent_examples]
+
+    assert train_1_intent_examples == train_2_intent_examples
+    assert test_1_intent_examples == test_2_intent_examples
+
+
+@pytest.mark.parametrize(
     "files",
     [
         ("data/examples/rasa/demo-rasa.json", "data/test/multiple_files_json"),
@@ -290,7 +311,7 @@ def test_multiword_entities():
 def test_nonascii_entities():
     data = """
 {
-  "luis_schema_version": "2.0",
+  "luis_schema_version": "5.0",
   "utterances" : [
     {
       "text": "I am looking for a ßäæ ?€ö) item",
@@ -394,7 +415,7 @@ def cmp_dict_list(firsts, seconds):
             None,
         ),
         (
-            "data/examples/luis/demo-restaurants.json",
+            "data/examples/luis/demo-restaurants_v5.json",
             "data/test/luis_converted_to_rasa.json",
             "json",
             None,
@@ -539,7 +560,7 @@ def test_markdown_entity_regex():
 
 
 def test_get_file_format():
-    fformat = get_file_format("data/examples/luis/demo-restaurants.json")
+    fformat = get_file_format("data/examples/luis/demo-restaurants_v5.json")
 
     assert fformat == "json"
 

@@ -51,8 +51,9 @@ COPY setup.cfg .
 COPY MANIFEST.in .
 COPY alt_requirements/ ./alt_requirements
 COPY requirements.txt .
+COPY LICENSE.txt .
 
-# Install Rasa and its dependencies
+# Install dependencies
 RUN pip install --no-cache-dir -r alt_requirements/requirements_pretrained_embeddings_mitie.txt
 
 # Install Rasa as package

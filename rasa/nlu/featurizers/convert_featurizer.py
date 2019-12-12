@@ -38,7 +38,7 @@ class ConveRTFeaturizer(Featurizer):
             self.session.run(tf.tables_initializer())
             self.session.run(tf.global_variables_initializer())
 
-    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
         super(ConveRTFeaturizer, self).__init__(component_config)
 

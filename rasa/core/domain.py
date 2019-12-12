@@ -39,7 +39,7 @@ if typing.TYPE_CHECKING:
 class InvalidDomain(Exception):
     """Exception that can be raised when domain is not valid."""
 
-    def __init__(self, message):
+    def __init__(self, message) -> None:
         self.message = message
 
     def __str__(self):
@@ -189,7 +189,7 @@ class Domain:
         return self.__class__.from_dict(combined)
 
     @staticmethod
-    def collect_slots(slot_dict):
+    def collect_slots(slot_dict: Dict[Text, Any]) -> List[Slot]:
         # it is super important to sort the slots here!!!
         # otherwise state ordering is not consistent
         slots = []
@@ -274,7 +274,7 @@ class Domain:
         intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
         entities: List[Text],
         slots: List[Slot],
-        templates: Dict[Text, Any],
+        templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
         form_names: List[Text],
         store_entities_as_slots: bool = True,
@@ -336,7 +336,7 @@ class Domain:
         if self.form_names and REQUESTED_SLOT not in [s.name for s in self.slots]:
             self.slots.append(UnfeaturizedSlot(REQUESTED_SLOT))
 
-    def add_knowledge_base_slots(self):
+    def add_knowledge_base_slots(self) -> None:
         """
         Add slots for the knowledge base action to the list of slots, if the
         default knowledge base action name is present.
@@ -389,7 +389,7 @@ class Domain:
 
         return self.action_for_name(self.action_names[index], action_endpoint)
 
-    def actions(self, action_endpoint):
+    def actions(self, action_endpoint) -> List[Optional[Action]]:
         return [
             self.action_for_name(name, action_endpoint) for name in self.action_names
         ]
@@ -402,7 +402,7 @@ class Domain:
         except ValueError:
             self._raise_action_not_found_exception(action_name)
 
-    def _raise_action_not_found_exception(self, action_name):
+    def _raise_action_not_found_exception(self, action_name) -> typing.NoReturn:
         action_names = "\n".join([f"\t - {a}" for a in self.action_names])
         raise NameError(
             f"Cannot access action '{action_name}', "
@@ -411,7 +411,7 @@ class Domain:
             f"Available actions are: \n{action_names}"
         )
 
-    def random_template_for(self, utter_action):
+    def random_template_for(self, utter_action: Text) -> Optional[Dict[Text, Any]]:
         import numpy as np
 
         if utter_action in self.templates:
@@ -590,7 +590,7 @@ class Domain:
             self.get_active_states(tr) for tr in tracker.generate_all_prior_trackers()
         ]
 
-    def slots_for_entities(self, entities):
+    def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
         if self.store_entities_as_slots:
             slot_events = []
             for s in self.slots:
@@ -647,7 +647,7 @@ class Domain:
         else:
             return True
 
-    def _slot_definitions(self):
+    def _slot_definitions(self) -> Dict[Any, Dict[str, Any]]:
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
     def as_dict(self) -> Dict[Text, Any]:
@@ -706,7 +706,7 @@ class Domain:
         cleaned_domain_data = self.cleaned_domain()
         utils.dump_obj_as_yaml_to_file(filename, cleaned_domain_data)
 
-    def as_yaml(self, clean_before_dump=False):
+    def as_yaml(self, clean_before_dump: bool = False) -> Text:
         if clean_before_dump:
             domain_data = self.cleaned_domain()
         else:
@@ -798,7 +798,7 @@ class Domain:
             "slot_warnings": slot_warnings,
         }
 
-    def _check_domain_sanity(self):
+    def _check_domain_sanity(self) -> None:
         """Make sure the domain is properly configured.
         If the domain contains any duplicate slots, intents, actions
         or entities, an InvalidDomain error is raised.  This error
