@@ -1,6 +1,6 @@
 import numpy as np
 import typing
-from typing import Any
+from typing import Any, Dict, Text, Optional
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers import Featurizer
@@ -48,7 +48,12 @@ class SpacyFeaturizer(Featurizer):
 
     defaults = {"ner_feature_vectors": False}
 
-    def __init__(self, component_config=None, known_patterns=None, lookup_tables=None):
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        known_patterns=None,
+        lookup_tables=None,
+    ) -> None:
 
         super().__init__(component_config)
 
@@ -63,7 +68,7 @@ class SpacyFeaturizer(Featurizer):
                 self._set_spacy_features(example, attribute)
             self._set_spacy_ner_features(example)
 
-    def get_doc(self, message, attribute):
+    def get_doc(self, message, attribute) -> Any:
 
         return message.get(MESSAGE_SPACY_FEATURES_NAMES[attribute])
 
@@ -88,7 +93,7 @@ class SpacyFeaturizer(Featurizer):
             MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_ENTITIES_ATTRIBUTE], combined_features
         )
 
-    def _set_spacy_features(self, message, attribute=MESSAGE_TEXT_ATTRIBUTE):
+    def _set_spacy_features(self, message, attribute=MESSAGE_TEXT_ATTRIBUTE) -> None:
         """Adds the spacy word vectors to the messages features."""
 
         message_attribute_doc = self.get_doc(message, attribute)

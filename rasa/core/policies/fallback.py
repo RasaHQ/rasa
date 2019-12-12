@@ -24,7 +24,7 @@ class FallbackPolicy(Policy):
     prediction. """
 
     @staticmethod
-    def _standard_featurizer():
+    def _standard_featurizer() -> None:
         return None
 
     def __init__(
@@ -123,7 +123,9 @@ class FallbackPolicy(Policy):
 
         return False
 
-    def fallback_scores(self, domain, fallback_score=1.0):
+    def fallback_scores(
+        self, domain: Domain, fallback_score: float = 1.0
+    ) -> List[float]:
         """Prediction scores used if a fallback is necessary."""
 
         result = [0.0] * domain.num_actions

@@ -48,7 +48,9 @@ class MemoizationPolicy(Policy):
     USE_NLU_CONFIDENCE_AS_SCORE = False
 
     @staticmethod
-    def _standard_featurizer(max_history=None):
+    def _standard_featurizer(
+        max_history: Optional[int] = None,
+    ) -> MaxHistoryTrackerFeaturizer:
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
         return MaxHistoryTrackerFeaturizer(
@@ -79,7 +81,7 @@ class MemoizationPolicy(Policy):
 
     def _add_states_to_lookup(
         self, trackers_as_states, trackers_as_actions, domain, online=False
-    ):
+    ) -> None:
         """Add states to lookup dict"""
         if not trackers_as_states:
             return
@@ -272,7 +274,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
     """
 
     @staticmethod
-    def _back_to_the_future_again(tracker):
+    def _back_to_the_future_again(tracker) -> Optional[DialogueStateTracker]:
         """Send Marty to the past to get
             the new featurization for the future"""
 
@@ -302,7 +304,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         return mcfly_tracker
 
-    def _recall_using_delorean(self, old_states, tracker, domain):
+    def _recall_using_delorean(self, old_states, tracker, domain) -> Optional[int]:
         """Recursively go to the past to correctly forget slots,
             and then back to the future to recall."""
 

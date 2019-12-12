@@ -10,9 +10,9 @@ class Featurizer(Component):
     @staticmethod
     def _combine_with_existing_features(
         message: Message,
-        additional_features: Any,
+        additional_features: np.array,
         feature_name: Text = MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
-    ) -> Any:
+    ) -> np.array:
         if message.get(feature_name) is not None:
             return np.concatenate(
                 (message.get(feature_name), additional_features), axis=-1

@@ -1,0 +1,4 @@
+The ``intent_report.json`` created by ``rasa test`` now creates an extra field 
+``confused_with`` for each intent. This is a dictionary containing the names of
+the most common false positives when this intent should be predicted, and the 
+number of such false positives.
