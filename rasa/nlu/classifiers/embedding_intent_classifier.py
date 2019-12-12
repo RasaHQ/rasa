@@ -104,8 +104,8 @@ class EmbeddingIntentClassifier(Component):
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
         "evaluate_on_num_examples": 0,  # large values may hurt performance
-        # whether to normalize scores or not, softmax loss_type only
-        "normalize": False,
+        # whether to normalize scores for softmax loss_type
+        "normalize_softmax": False,
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -155,7 +155,8 @@ class EmbeddingIntentClassifier(Component):
         self._is_training = None
 
     # config migration warning
-    def _check_old_config_variables(self, config: Dict[Text, Any]) -> None:
+    @staticmethod
+    def _check_old_config_variables(config: Dict[Text, Any]) -> None:
 
         removed_tokenization_params = [
             "intent_tokenization_flag",
@@ -208,7 +209,7 @@ class EmbeddingIntentClassifier(Component):
             elif self.loss_type == "margin":
                 self.similarity_type = "cosine"
 
-        self.normalize = config["normalize"]
+        self.normalize_softmax = config["normalize_softmax"]
         self.mu_pos = config["mu_pos"]
         self.mu_neg = config["mu_neg"]
         self.use_max_sim_neg = config["use_max_sim_neg"]
@@ -620,20 +621,20 @@ class EmbeddingIntentClassifier(Component):
 
             # if X contains all zeros do not predict some label
             if X.any() and label_ids.size > 0:
-                label = {
-                    "name": self.inverted_label_dict[label_ids[0]],
-                    "confidence": message_sim[0],
-                }
                 label_ids = label_ids[:LABEL_RANKING_LENGTH]
                 message_sim = message_sim[:LABEL_RANKING_LENGTH]
                 # normalise scores if turned on
-                if self.loss_type == "softmax" and self.normalize == True:
-                    message_sim = message_sim/np.sum(message_sim)
+                if self.loss_type == "softmax" and self.normalize_softmax:
+                    message_sim = message_sim / np.sum(message_sim)
                 ranking = list(zip(list(label_ids), message_sim))
                 label_ranking = [
                     {"name": self.inverted_label_dict[label_idx], "confidence": score}
                     for label_idx, score in ranking
                 ]
+                label = {
+                    "name": self.inverted_label_dict[label_ids[0]],
+                    "confidence": message_sim[0],
+                }
         return label, label_ranking
 
     def process(self, message: "Message", **kwargs: Any) -> None:
