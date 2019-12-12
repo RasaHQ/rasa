@@ -215,7 +215,7 @@ class EmbeddingIntentClassifier(Component):
         all_labels_embed: Optional["tf.Tensor"] = None,
         batch_tuple_sizes: Optional[Dict] = None,
     ) -> None:
-        """Declare instant variables with default values"""
+        """Declare instance variables with default values"""
 
         super().__init__(component_config)
 
@@ -381,7 +381,7 @@ class EmbeddingIntentClassifier(Component):
 
         return label_data
 
-    def use_default_label_features(self, label_ids: np.ndarray) -> List[np.ndarray]:
+    def _use_default_label_features(self, label_ids: np.ndarray) -> List[np.ndarray]:
         return [
             np.array(
                 [
@@ -441,7 +441,9 @@ class EmbeddingIntentClassifier(Component):
             "intent_features" not in session_data or not session_data["intent_features"]
         ):
             # no label features are present, get default features from _label_data
-            session_data["intent_features"] = self.use_default_label_features(label_ids)
+            session_data["intent_features"] = self._use_default_label_features(
+                label_ids
+            )
 
         self._add_mask_to_session_data(session_data, "text_mask", "text_features")
         self._add_mask_to_session_data(session_data, "intent_mask", "intent_features")
@@ -502,13 +504,12 @@ class EmbeddingIntentClassifier(Component):
             layer_name_suffix=embed_name,
         )
 
-    def combine_sparse_dense_features(
+    def _combine_sparse_dense_features(
         self,
         features: List[Union[tf.Tensor, tf.SparseTensor]],
         mask: tf.Tensor,
         name: Text,
     ) -> tf.Tensor:
-
         dense_features = []
 
         dense_dim = self.dense_dim
@@ -544,13 +545,13 @@ class EmbeddingIntentClassifier(Component):
         batch_data, _ = train_utils.batch_to_session_data(self.batch_in, session_data)
         label_data, _ = train_utils.batch_to_session_data(label_batch, self._label_data)
 
-        a = self.combine_sparse_dense_features(
+        a = self._combine_sparse_dense_features(
             batch_data["text_features"], batch_data["text_mask"][0], "text"
         )
-        b = self.combine_sparse_dense_features(
+        b = self._combine_sparse_dense_features(
             batch_data["intent_features"], batch_data["intent_mask"][0], "intent"
         )
-        all_bs = self.combine_sparse_dense_features(
+        all_bs = self._combine_sparse_dense_features(
             label_data["intent_features"], label_data["intent_mask"][0], "intent"
         )
 
@@ -603,10 +604,10 @@ class EmbeddingIntentClassifier(Component):
             self.batch_in, session_data
         )
 
-        a = self.combine_sparse_dense_features(
+        a = self._combine_sparse_dense_features(
             batch_data["text_features"], batch_data["text_mask"][0], "text"
         )
-        b = self.combine_sparse_dense_features(
+        b = self._combine_sparse_dense_features(
             batch_data["intent_features"], batch_data["intent_mask"][0], "intent"
         )
 
@@ -647,6 +648,8 @@ class EmbeddingIntentClassifier(Component):
         return num_features
 
     def check_input_dimension_consistency(self, session_data: "SessionDataType"):
+        """Check if text features and intent features have the same dimension."""
+
         if self.share_hidden_layers:
             num_text_features = self._get_num_of_features(session_data, "text_features")
             num_intent_features = self._get_num_of_features(
@@ -696,7 +699,7 @@ class EmbeddingIntentClassifier(Component):
         cfg: Optional["RasaNLUModelConfig"] = None,
         **kwargs: Any,
     ) -> None:
-        """Train the embedding label classifier on a data set."""
+        """Train the embedding intent classifier on a data set."""
 
         logger.debug("Started training embedding classifier.")
 
@@ -797,6 +800,7 @@ class EmbeddingIntentClassifier(Component):
     def predict_label(
         self, message: "Message"
     ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
+        """Predicts the intent of the provided message."""
 
         label = {"name": None, "confidence": 0.0}
         label_ranking = []
@@ -903,6 +907,7 @@ class EmbeddingIntentClassifier(Component):
         cached_component: Optional["EmbeddingIntentClassifier"] = None,
         **kwargs: Any,
     ) -> "EmbeddingIntentClassifier":
+        """Loads the trained model from the provided directory."""
 
         if model_dir and meta.get("file"):
             file_name = meta.get("file")
