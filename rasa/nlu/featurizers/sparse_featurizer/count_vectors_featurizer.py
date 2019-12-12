@@ -336,15 +336,18 @@ class CountVectorsFeaturizer(Featurizer):
         """Construct the vectorizers and train them with a shared vocab"""
 
         self.vectorizers = self._create_shared_vocab_vectorizers(
-            self.token_pattern,
-            self.strip_accents,
-            self.lowercase,
-            self.stop_words,
-            (self.min_ngram, self.max_ngram),
-            self.max_df,
-            self.min_df,
-            self.max_features,
-            self.analyzer,
+            {
+                "token_pattern": self.token_pattern,
+                "strip_accents": self.strip_accents,
+                "lowercase": self.lowercase,
+                "stop_words": self.stop_words,
+                "min_ngram": self.min_ngram,
+                "max_ngram": self.max_ngram,
+                "max_df": self.max_df,
+                "min_df": self.min_df,
+                "max_features": self.max_features,
+                "analyzer": self.analyzer,
+            }
         )
 
         combined_cleaned_texts = []
@@ -355,7 +358,8 @@ class CountVectorsFeaturizer(Featurizer):
             self.vectorizers[TEXT_ATTRIBUTE].fit(combined_cleaned_texts)
         except ValueError:
             logger.warning(
-                "Unable to train a shared CountVectorizer. Leaving an untrained CountVectorizer"
+                "Unable to train a shared CountVectorizer. "
+                "Leaving an untrained CountVectorizer"
             )
 
     @staticmethod
@@ -366,15 +370,18 @@ class CountVectorsFeaturizer(Featurizer):
         """Construct the vectorizers and train them with an independent vocab"""
 
         self.vectorizers = self._create_independent_vocab_vectorizers(
-            self.token_pattern,
-            self.strip_accents,
-            self.lowercase,
-            self.stop_words,
-            (self.min_ngram, self.max_ngram),
-            self.max_df,
-            self.min_df,
-            self.max_features,
-            self.analyzer,
+            {
+                "token_pattern": self.token_pattern,
+                "strip_accents": self.strip_accents,
+                "lowercase": self.lowercase,
+                "stop_words": self.stop_words,
+                "min_ngram": self.min_ngram,
+                "max_ngram": self.max_ngram,
+                "max_df": self.max_df,
+                "min_df": self.min_df,
+                "max_features": self.max_features,
+                "analyzer": self.analyzer,
+            }
         )
 
         for attribute in self._attributes:
@@ -537,7 +544,8 @@ class CountVectorsFeaturizer(Featurizer):
                 featurizer_file = os.path.join(model_dir, file_name)
 
                 if self.use_shared_vocab:
-                    # Only persist vocabulary from one attribute. Can be loaded and distributed to all attributes.
+                    # Only persist vocabulary from one attribute. Can be loaded and
+                    # distributed to all attributes.
                     vocab = attribute_vocabularies[TEXT_ATTRIBUTE]
                 else:
                     vocab = attribute_vocabularies
@@ -548,72 +556,52 @@ class CountVectorsFeaturizer(Featurizer):
 
     @classmethod
     def _create_shared_vocab_vectorizers(
-        cls,
-        token_pattern,
-        strip_accents,
-        lowercase,
-        stop_words,
-        ngram_range,
-        max_df,
-        min_df,
-        max_features,
-        analyzer,
-        vocabulary=None,
+        cls, parameters: Dict[Text, Any], vocabulary: Optional[Any] = None
     ) -> Dict[Text, "CountVectorizer"]:
         """Create vectorizers for all attributes with shared vocabulary"""
 
         shared_vectorizer = CountVectorizer(
-            token_pattern=token_pattern,
-            strip_accents=strip_accents,
-            lowercase=lowercase,
-            stop_words=stop_words,
-            ngram_range=ngram_range,
-            max_df=max_df,
-            min_df=min_df,
-            max_features=max_features,
-            analyzer=analyzer,
+            token_pattern=parameters["token_pattern"],
+            strip_accents=parameters["strip_accents"],
+            lowercase=parameters["lowercase"],
+            stop_words=parameters["stop_words"],
+            ngram_range=(parameters["min_ngram"], parameters["max_ngram"]),
+            max_df=parameters["max_df"],
+            min_df=parameters["min_df"],
+            max_features=parameters["max_features"],
+            analyzer=parameters["analyzer"],
             vocabulary=vocabulary,
         )
 
         attribute_vectorizers = {}
 
-        for attribute in cls._attributes_for(analyzer):
+        for attribute in cls._attributes_for(parameters["analyzer"]):
             attribute_vectorizers[attribute] = shared_vectorizer
 
         return attribute_vectorizers
 
     @classmethod
     def _create_independent_vocab_vectorizers(
-        cls,
-        token_pattern,
-        strip_accents,
-        lowercase,
-        stop_words,
-        ngram_range,
-        max_df,
-        min_df,
-        max_features,
-        analyzer,
-        vocabulary=None,
+        cls, parameters: Dict[Text, Any], vocabulary: Optional[Any] = None
     ) -> Dict[Text, "CountVectorizer"]:
         """Create vectorizers for all attributes with independent vocabulary"""
 
         attribute_vectorizers = {}
 
-        for attribute in cls._attributes_for(analyzer):
+        for attribute in cls._attributes_for(parameters["analyzer"]):
 
             attribute_vocabulary = vocabulary[attribute] if vocabulary else None
 
             attribute_vectorizer = CountVectorizer(
-                token_pattern=token_pattern,
-                strip_accents=strip_accents,
-                lowercase=lowercase,
-                stop_words=stop_words,
-                ngram_range=ngram_range,
-                max_df=max_df,
-                min_df=min_df,
-                max_features=max_features,
-                analyzer=analyzer,
+                token_pattern=parameters["token_pattern"],
+                strip_accents=parameters["strip_accents"],
+                lowercase=parameters["lowercase"],
+                stop_words=parameters["stop_words"],
+                ngram_range=(parameters["min_ngram"], parameters["max_ngram"]),
+                max_df=parameters["max_df"],
+                min_df=parameters["min_df"],
+                max_features=parameters["max_features"],
+                analyzer=parameters["analyzer"],
                 vocabulary=attribute_vocabulary,
             )
             attribute_vectorizers[attribute] = attribute_vectorizer
@@ -633,38 +621,20 @@ class CountVectorsFeaturizer(Featurizer):
         file_name = meta.get("file")
         featurizer_file = os.path.join(model_dir, file_name)
 
-        if os.path.exists(featurizer_file):
-            vocabulary = utils.json_unpickle(featurizer_file)
-
-            share_vocabulary = meta["use_shared_vocab"]
-
-            if share_vocabulary:
-                vectorizers = cls._create_shared_vocab_vectorizers(
-                    token_pattern=meta["token_pattern"],
-                    strip_accents=meta["strip_accents"],
-                    lowercase=meta["lowercase"],
-                    stop_words=meta["stop_words"],
-                    ngram_range=(meta["min_ngram"], meta["max_ngram"]),
-                    max_df=meta["max_df"],
-                    min_df=meta["min_df"],
-                    max_features=meta["max_features"],
-                    analyzer=meta["analyzer"],
-                    vocabulary=vocabulary,
-                )
-            else:
-                vectorizers = cls._create_independent_vocab_vectorizers(
-                    token_pattern=meta["token_pattern"],
-                    strip_accents=meta["strip_accents"],
-                    lowercase=meta["lowercase"],
-                    stop_words=meta["stop_words"],
-                    ngram_range=(meta["min_ngram"], meta["max_ngram"]),
-                    max_df=meta["max_df"],
-                    min_df=meta["min_df"],
-                    max_features=meta["max_features"],
-                    analyzer=meta["analyzer"],
-                    vocabulary=vocabulary,
-                )
-
-            return cls(meta, vectorizers)
-        else:
+        if not os.path.exists(featurizer_file):
             return cls(meta)
+
+        vocabulary = utils.json_unpickle(featurizer_file)
+
+        share_vocabulary = meta["use_shared_vocab"]
+
+        if share_vocabulary:
+            vectorizers = cls._create_shared_vocab_vectorizers(
+                meta, vocabulary=vocabulary
+            )
+        else:
+            vectorizers = cls._create_independent_vocab_vectorizers(
+                meta, vocabulary=vocabulary
+            )
+
+        return cls(meta, vectorizers)
