@@ -316,3 +316,29 @@ featurized as normal.
 
     If you really want these entities not to influence action prediction we
     suggest you make the slots with the same name of type ``unfeaturized``.
+
+.. _session_config:
+
+Session configuration
+---------------------
+
+A conversation session represents the dialogue between the assistant and the user.
+Conversation sessions can begin in three ways:
+
+  1. the user begins the conversation with the assistant,
+  2. the user sends their first message after a configurable period of inactivity, or
+  3. a manual session start is triggered with the ``/session_start`` intent message.
+
+You can define the period of inactivity after which a new conversation
+session is triggered in the domain under the ``session_config`` key.
+``session_expiration_time`` defines the time of inactivity in minutes after which a
+new session will begin. ``carry_over_slots_to_new_session`` determines whether
+existing set slots should be carried over to new sessions.
+
+.. note::
+
+  A session start triggers the default action ``action_session_start`` (check out our
+  docs on :ref:`actions`). Its default implementation moves all existing slots into
+  the new session. Note that all conversation begin with an ``action_session_start``.
+  Overriding this action could for instance be used to initialise the tracker with
+  slots from an external API call, or to start the conversation with a bot message.
