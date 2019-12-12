@@ -7,10 +7,8 @@ import time
 import typing
 import uuid
 from dateutil import parser
-
 from datetime import datetime
 from typing import List, Dict, Text, Any, Type, Optional
-
 
 from rasa.core import utils
 from typing import Union
@@ -1200,16 +1198,11 @@ class SessionStarted(Event):
         return "SessionStarted()"
 
     def as_story_string(self) -> None:
-        warnings.warn(
+        logger.warning(
             f"'{self.type_name}' events cannot be serialised as story strings."
         )
         return None
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        from rasa.core.actions.action import (  # pytype: disable=pyi-error
-            ACTION_SESSION_START_NAME,
-        )
-
         # noinspection PyProtectedMember
         tracker._reset()
-        tracker.trigger_followup_action(ACTION_SESSION_START_NAME)

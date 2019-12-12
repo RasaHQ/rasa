@@ -1,1 +1,0 @@
-Added ``towncrier`` to automatically collect changelog entries.

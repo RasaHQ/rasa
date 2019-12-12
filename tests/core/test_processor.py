@@ -1,20 +1,21 @@
-from typing import Optional, List, Text
-
-import time
-
 import asyncio
+import logging
+
 import datetime
-import uuid
-
 import pytest
+import time
+import uuid
+import json
+from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-
+from typing import Optional, Text
 from unittest.mock import patch
 
 from rasa.core import jobs
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
+from rasa.core.domain import SessionConfig
 from rasa.core.events import (
     ActionExecuted,
     BotUttered,
@@ -26,16 +27,12 @@ from rasa.core.events import (
     Event,
     SlotSet,
 )
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.slots import Slot
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.core.processor import MessageProcessor, DEFAULT_INTENTS
+from rasa.core.slots import Slot
+from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request
-
-from rasa.core.domain import Domain, SessionConfig
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +102,7 @@ async def test_http_parsing():
     with aioresponses() as mocked:
         mocked.post("https://interpreter.com/model/parse", repeat=True, status=200)
 
-        inter = RasaNLUHttpInterpreter(endpoint=endpoint)
+        inter = RasaNLUHttpInterpreter(endpoint_config=endpoint)
         try:
             await MessageProcessor(inter, None, None, None, None)._parse_message(
                 message
@@ -142,7 +139,7 @@ async def test_parsing_with_tracker():
 
         # mock the parse function with the one defined for this test
         with patch.object(RasaNLUHttpInterpreter, "parse", mocked_parse):
-            interpreter = RasaNLUHttpInterpreter(endpoint=endpoint)
+            interpreter = RasaNLUHttpInterpreter(endpoint_config=endpoint)
             agent = Agent(None, None, interpreter)
             result = await agent.parse_message_using_nlu_interpreter("lunch?", tracker)
 
@@ -206,7 +203,7 @@ async def test_reminder_aborted(
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
-    assert len(t.events) == 4  # nothing should have been executed
+    assert len(t.events) == 3  # nothing should have been executed
 
 
 async def test_reminder_cancelled(
@@ -275,45 +272,18 @@ async def test_reminder_restart(
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
-    assert len(t.events) == 5  # nothing should have been executed
+    assert len(t.events) == 4  # nothing should have been executed
 
 
 @pytest.mark.parametrize(
-    "events_to_apply,is_legacy",
+    "event_to_apply,session_expiration_time_in_minutes,has_expired",
     [
-        # just an action listen means it's legacy
-        ([ActionExecuted(action_name=ACTION_LISTEN_NAME)], True),
-        # action listen and session at the beginning start means it isn't legacy
-        ([SessionStarted(), ActionExecuted(action_name=ACTION_LISTEN_NAME)], False),
-        # just a single event means it's legacy
-        ([UserUttered("hello")], True),
-    ],
-)
-async def test_is_legacy_tracker(
-    events_to_apply: List[Event], is_legacy: bool, default_processor: MessageProcessor
-):
-    sender_id = uuid.uuid4().hex
-
-    # create a new tracker without events
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
-    tracker.events.clear()
-
-    for event in events_to_apply:
-        tracker.update(event)
-
-    # noinspection PyProtectedMember
-    assert default_processor._is_legacy_tracker(tracker) == is_legacy
-
-
-@pytest.mark.parametrize(
-    "event_to_apply,session_length_in_minutes,has_expired",
-    [
-        # session start is way in the past
-        (SessionStarted(timestamp=1), 60, True),
-        # session start is very recent
-        (SessionStarted(timestamp=time.time()), 60, False),
-        # there is no session start event (legacy tracker)
-        (UserUttered("hello", timestamp=time.time()), 60, False),
+        # last user event is way in the past
+        (UserUttered(timestamp=1), 60, True),
+        # user event are very recent
+        (UserUttered("hello", timestamp=time.time()), 60, False,),
+        # there is user event
+        (ActionExecuted(ACTION_LISTEN_NAME, timestamp=time.time()), 60, False),
         # Old event, but sessions are disabled
         (UserUttered("hello", timestamp=1), 0, False),
         # there is no event
@@ -322,14 +292,14 @@ async def test_is_legacy_tracker(
 )
 async def test_has_session_expired(
     event_to_apply: Optional[Event],
-    session_length_in_minutes: float,
+    session_expiration_time_in_minutes: float,
     has_expired: bool,
     default_processor: MessageProcessor,
 ):
     sender_id = uuid.uuid4().hex
 
     default_processor.domain.session_config = SessionConfig(
-        session_length_in_minutes, True
+        session_expiration_time_in_minutes, True
     )
     # create new tracker without events
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
@@ -345,14 +315,17 @@ async def test_has_session_expired(
 
 # noinspection PyProtectedMember
 async def test_update_tracker_session(
-    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
 ):
     sender_id = uuid.uuid4().hex
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
-    # make sure session expires and run tracker session update
-    await asyncio.sleep(1e-2)  # in seconds
-    default_processor.domain.session_config = SessionConfig(1e-5, True)
+    # patch `_has_session_expired()` so the `_update_tracker_session()` call actually
+    # does something
+    monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
+
     await default_processor._update_tracker_session(tracker, default_channel)
 
     # the save is not called in _update_tracker_session()
@@ -360,8 +333,8 @@ async def test_update_tracker_session(
 
     # inspect tracker and make sure all events are present
     tracker = default_processor.tracker_store.retrieve(sender_id)
+
     assert list(tracker.events) == [
-        SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
@@ -371,7 +344,9 @@ async def test_update_tracker_session(
 
 # noinspection PyProtectedMember
 async def test_update_tracker_session_with_slots(
-    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
 ):
     sender_id = uuid.uuid4().hex
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
@@ -385,9 +360,10 @@ async def test_update_tracker_session_with_slots(
     for event in slot_set_events:
         tracker.update(event)
 
-    # make sure session expires and run tracker session update
-    await asyncio.sleep(1e-2)  # in seconds
-    default_processor.domain.session_config = SessionConfig(1e-5, True)
+    # patch `_has_session_expired()` so the `_update_tracker_session()` call actually
+    # does something
+    monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
+
     await default_processor._update_tracker_session(tracker, default_channel)
 
     # the save is not called in _update_tracker_session()
@@ -398,20 +374,101 @@ async def test_update_tracker_session_with_slots(
     events = list(tracker.events)
 
     # the first three events should be up to the user utterance
-    assert events[:3] == [
-        SessionStarted(),
+    assert events[:2] == [
         ActionExecuted(ACTION_LISTEN_NAME),
         user_event,
     ]
 
     # next come the five slots
-    assert events[3:8] == slot_set_events
+    assert events[2:7] == slot_set_events
 
     # the next two events are the session start sequence
-    assert events[8:10] == [ActionExecuted(ACTION_SESSION_START_NAME), SessionStarted()]
+    assert events[7:9] == [ActionExecuted(ACTION_SESSION_START_NAME), SessionStarted()]
 
     # the five slots should be reapplied
-    assert events[10:15] == slot_set_events
+    assert events[9:14] == slot_set_events
 
     # finally an action listen, this should also be the last event
-    assert events[15] == events[-1] == ActionExecuted(ACTION_LISTEN_NAME)
+    assert events[14] == events[-1] == ActionExecuted(ACTION_LISTEN_NAME)
+
+
+# noinspection PyProtectedMember
+async def test_get_tracker_with_session_start(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor,
+):
+    sender_id = uuid.uuid4().hex
+    tracker = await default_processor.get_tracker_with_session_start(
+        sender_id, default_channel
+    )
+
+    # ensure session start sequence is present
+    assert list(tracker.events) == [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
+
+
+async def test_handle_message_with_session_start(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
+):
+    sender_id = uuid.uuid4().hex
+
+    entity = "name"
+    slot_1 = {entity: "Core"}
+    await default_processor.handle_message(
+        UserMessage(f"/greet{json.dumps(slot_1)}", default_channel, sender_id)
+    )
+
+    assert {
+        "recipient_id": sender_id,
+        "text": "hey there Core!",
+    } == default_channel.latest_output()
+
+    # patch processor so a session start is triggered
+    monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
+
+    slot_2 = {entity: "post-session start hello"}
+    # handle a new message
+    await default_processor.handle_message(
+        UserMessage(f"/greet{json.dumps(slot_2)}", default_channel, sender_id)
+    )
+
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+    # make sure the sequence of events is as expected
+    assert list(tracker.events) == [
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            f"/greet{json.dumps(slot_1)}",
+            {"name": "greet", "confidence": 1.0},
+            [{"entity": entity, "start": 6, "end": 22, "value": "Core"}],
+        ),
+        SlotSet(entity, slot_1[entity]),
+        ActionExecuted("utter_greet"),
+        BotUttered("hey there Core!"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        ActionExecuted(ACTION_SESSION_START_NAME),
+        SessionStarted(),
+        # the initial SlotSet is reapplied after the SessionStarted sequence
+        SlotSet(entity, slot_1[entity]),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            f"/greet{json.dumps(slot_2)}",
+            {"name": "greet", "confidence": 1.0},
+            [
+                {
+                    "entity": entity,
+                    "start": 6,
+                    "end": 42,
+                    "value": "post-session start hello",
+                }
+            ],
+        ),
+        SlotSet(entity, slot_2[entity]),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]

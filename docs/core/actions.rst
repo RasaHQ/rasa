@@ -184,7 +184,7 @@ for example to display the output of a long running background operation
 or notify the user of an external event.
 
 To do so, you can ``POST`` to this
-`endpoint <../../api/http-api.html/#operation/executeConversationAction>`_ ,
+`endpoint <../../api/http-api/#operation/executeConversationAction>`_ ,
 specifying the action which should be run for a specific user in the request body. Use the
 ``output_channel`` query parameter to specify which output
 channel should be used to communicate the assistant's responses back to the user.
@@ -227,9 +227,9 @@ There are eight default actions:
 |                                   | session and re-apply the existing ``SlotSet``  |
 |                                   | events. This action is triggered automatically |
 |                                   | after an inactivity period defined by the      |
-|                                   | ``session_length`` parameter in the domain's   |
-|                                   | session config. Can be triggered manually      |
-|                                   | during a conversation by entering              |
+|                                   | ``session_expiration_time`` parameter in the   |
+|                                   | domain's session config. Can be triggered      |
+|                                   | manually during a conversation by entering     |
 |                                   | ``/session_start``.                            |
 +-----------------------------------+------------------------------------------------+
 | ``action_default_fallback``       | Undo the last user message (as if the user did |

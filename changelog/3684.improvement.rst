@@ -1,3 +1,0 @@
-``rasa interactive`` will skip the story visualization of training stories in case
-there are more than 200 stories. Stories created duringinteractive learning will be
-visualized as before.

@@ -1,15 +1,15 @@
 import logging
 import tempfile
-import uuid
-
-from typing import Tuple, Text, Type, Dict, List
-from unittest.mock import Mock
 
 import pytest
+import uuid
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_dynamodb2
+from typing import Tuple, Text, Type, Dict, List
+from unittest.mock import Mock
 
+import rasa.core.tracker_store
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
@@ -29,27 +29,12 @@ from rasa.core.tracker_store import (
     SQLTrackerStore,
     DynamoTrackerStore,
     FailSafeTrackerStore,
-    MongoTrackerStore,
 )
-import rasa.core.tracker_store
-from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
+from tests.core.conftest import DEFAULT_ENDPOINTS_FILE, MockedMongoTrackerStore
 
 domain = Domain.load("data/test_domains/default.yml")
-
-
-class MockedMongoTrackerStore(MongoTrackerStore):
-    """In-memory mocked version of `MongoTrackerStore`."""
-
-    def __init__(
-        self, _domain: Domain,
-    ):
-        from mongomock import MongoClient
-
-        self.db = MongoClient().rasa
-        self.collection = "conversations"
-        super(MongoTrackerStore, self).__init__(domain, None)
 
 
 def get_or_create_tracker_store(store: TrackerStore):
@@ -119,7 +104,7 @@ def test_tracker_store_endpoint_config_loading():
     )
 
 
-def test_find_tracker_store(default_domain: Domain):
+def test_create_tracker_store_from_endpoint_config(default_domain: Domain):
     store = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
     tracker_store = RedisTrackerStore(
         domain=default_domain,
@@ -130,20 +115,26 @@ def test_find_tracker_store(default_domain: Domain):
         record_exp=3000,
     )
 
-    assert isinstance(
-        tracker_store, type(TrackerStore.find_tracker_store(default_domain, store))
-    )
+    assert isinstance(tracker_store, type(TrackerStore.create(store, default_domain)))
 
 
-def test_find_tracker_store(default_domain: Domain, monkeypatch: MonkeyPatch):
+def test_exception_tracker_store_from_endpoint_config(
+    default_domain: Domain, monkeypatch: MonkeyPatch
+):
+    """Check if tracker store properly handles exceptions.
+
+    If we can not create a tracker store by instantiating the
+    expected type (e.g. due to an exception) we should fallback to
+    the default `InMemoryTrackerStore`."""
+
     store = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
-    mock = Mock(side_effect=Exception("ignore this"))
+    mock = Mock(side_effect=Exception("test exception"))
     monkeypatch.setattr(rasa.core.tracker_store, "RedisTrackerStore", mock)
 
-    assert isinstance(
-        InMemoryTrackerStore(domain),
-        type(TrackerStore.find_tracker_store(default_domain, store)),
-    )
+    with pytest.raises(Exception) as e:
+        TrackerStore.create(store, default_domain)
+
+    assert "test exception" in str(e.value)
 
 
 class URLExampleTrackerStore(RedisTrackerStore):
@@ -169,7 +160,7 @@ def test_tracker_store_deprecated_url_argument_from_string(default_domain: Domai
     store_config.type = "tests.core.test_tracker_stores.URLExampleTrackerStore"
 
     with pytest.warns(FutureWarning):
-        tracker_store = TrackerStore.find_tracker_store(default_domain, store_config)
+        tracker_store = TrackerStore.create(store_config, default_domain)
 
     assert isinstance(tracker_store, URLExampleTrackerStore)
 
@@ -180,7 +171,7 @@ def test_tracker_store_with_host_argument_from_string(default_domain: Domain):
     store_config.type = "tests.core.test_tracker_stores.HostExampleTrackerStore"
 
     with pytest.warns(None) as record:
-        tracker_store = TrackerStore.find_tracker_store(default_domain, store_config)
+        tracker_store = TrackerStore.create(store_config, default_domain)
 
     assert len(record) == 0
 
@@ -193,7 +184,7 @@ def test_tracker_store_from_invalid_module(default_domain: Domain):
     store_config.type = "a.module.which.cannot.be.found"
 
     with pytest.warns(UserWarning):
-        tracker_store = TrackerStore.find_tracker_store(default_domain, store_config)
+        tracker_store = TrackerStore.create(store_config, default_domain)
 
     assert isinstance(tracker_store, InMemoryTrackerStore)
 
@@ -204,7 +195,7 @@ def test_tracker_store_from_invalid_string(default_domain: Domain):
     store_config.type = "any string"
 
     with pytest.warns(UserWarning):
-        tracker_store = TrackerStore.find_tracker_store(default_domain, store_config)
+        tracker_store = TrackerStore.create(store_config, default_domain)
 
     assert isinstance(tracker_store, InMemoryTrackerStore)
 
@@ -538,3 +529,25 @@ def test_tracker_store_retrieve_without_session_started_events(
 
     assert len(tracker.events) == 4
     assert all(event == tracker.events[i] for i, event in enumerate(events))
+
+
+def test_current_state_without_events(default_domain: Domain):
+    tracker_store = MockedMongoTrackerStore(default_domain)
+
+    # insert some events
+    events = [
+        UserUttered("Hola", {"name": "greet"}),
+        BotUttered("Hi"),
+        UserUttered("Ciao", {"name": "greet"}),
+        BotUttered("Hi2"),
+    ]
+
+    sender_id = "test_mongo_tracker_store_current_state_without_events"
+    tracker = DialogueStateTracker.from_events(sender_id, events)
+
+    # get current state without events
+    # noinspection PyProtectedMember
+    state = tracker_store._current_tracker_state_without_events(tracker)
+
+    # `events` key should not be in there
+    assert state and "events" not in state

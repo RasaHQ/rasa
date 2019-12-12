@@ -1,5 +1,4 @@
 import asyncio
-import copy
 import os
 
 import numpy as np
@@ -12,8 +11,27 @@ from unittest.mock import patch
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.constants import INTENT_MESSAGE_PREFIX, DEFAULT_LOCK_LIFETIME
-from rasa.core.lock import TicketLock, Ticket
-from rasa.core.lock_store import InMemoryLockStore, LockError, TicketExistsError
+from rasa.core.lock import TicketLock
+from rasa.core.lock_store import (
+    InMemoryLockStore,
+    LockError,
+    LockStore,
+    RedisLockStore,
+)
+
+
+class FakeRedisLockStore(RedisLockStore):
+    """Fake `RedisLockStore` using `fakeredis` library."""
+
+    def __init__(self):
+        import fakeredis
+
+        self.red = fakeredis.FakeStrictRedis()
+
+        # added in redis==3.3.0, but not yet in fakeredis
+        self.red.connection_pool.connection_class.health_check_interval = 0
+
+        super(RedisLockStore, self).__init__()
 
 
 def test_issue_ticket():
@@ -51,8 +69,8 @@ def test_remove_expired_tickets():
     assert len(lock.tickets) == 1
 
 
-def test_create_lock_store():
-    lock_store = InMemoryLockStore()
+@pytest.mark.parametrize("lock_store", [InMemoryLockStore(), FakeRedisLockStore()])
+def test_create_lock_store(lock_store: LockStore):
     conversation_id = "my id 0"
 
     # create and lock
@@ -63,8 +81,8 @@ def test_create_lock_store():
     assert lock.conversation_id == conversation_id
 
 
-def test_serve_ticket():
-    lock_store = InMemoryLockStore()
+@pytest.mark.parametrize("lock_store", [InMemoryLockStore(), FakeRedisLockStore()])
+def test_serve_ticket(lock_store: LockStore):
     conversation_id = "my id 1"
 
     lock = lock_store.create_lock(conversation_id)
@@ -98,8 +116,9 @@ def test_serve_ticket():
     assert not lock.is_someone_waiting()
 
 
-def test_lock_expiration():
-    lock_store = InMemoryLockStore()
+# noinspection PyProtectedMember
+@pytest.mark.parametrize("lock_store", [InMemoryLockStore(), FakeRedisLockStore()])
+def test_lock_expiration(lock_store: LockStore):
     conversation_id = "my id 2"
     lock = lock_store.create_lock(conversation_id)
     lock_store.save_lock(lock)
@@ -117,31 +136,6 @@ def test_lock_expiration():
 
     # newly assigned ticket should get number 1 again
     assert lock.issue_ticket(10) == 1
-
-
-def test_ticket_exists_error():
-    def mocked_issue_ticket(
-        self, conversation_id: Text, lock_lifetime: float = DEFAULT_LOCK_LIFETIME,
-    ) -> None:
-        # mock LockStore.issue_ticket() so it issues two tickets for the same
-        # conversation ID simultaneously
-
-        lock = self.get_or_create_lock(conversation_id)
-        lock.issue_ticket(lock_lifetime)
-        self.save_lock(lock)
-
-        # issue another ticket for this lock
-        lock_2 = copy.deepcopy(lock)
-        lock_2.tickets.append(Ticket(1, time.time() + DEFAULT_LOCK_LIFETIME))
-
-        self.ensure_ticket_available(lock_2)
-
-    lock_store = InMemoryLockStore()
-    conversation_id = "my id 3"
-
-    with patch.object(InMemoryLockStore, "issue_ticket", mocked_issue_ticket):
-        with pytest.raises(TicketExistsError):
-            lock_store.issue_ticket(conversation_id)
 
 
 async def test_multiple_conversation_ids(default_agent: Agent):

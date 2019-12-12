@@ -17,10 +17,10 @@ You can install both Rasa Open Source and Rasa X using pip (requires Python 3.6 
 
 .. code-block:: bash
 
-    $ pip3 install rasa-x --extra-index-url https://pypi.rasa.com/simple
+    $ pip3 install rasa
 
 - Having trouble installing? Read our :ref:`step-by-step installation guide <installation_guide>`.
-- You can also :ref:`build Rasa from source <build_from_source>`.
+- You can also :ref:`build Rasa Open Source from source <build_from_source>`.
 - For advanced installation options such as building from source and installation instructions for
   custom pipelines, head over :ref:`here <pipeline_dependencies>`.
 
@@ -136,26 +136,12 @@ Tools like `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ and `virtualenv
             C:\> .\venv\Scripts\activate
 
 
-3. Install Rasa and Rasa X
---------------------------
+3. Install Rasa Open Source
+---------------------------
 
 .. tabs::
 
-    .. tab:: Rasa Open Source and Rasa X
-
-        First make sure your ``pip`` version is up to date:
-
-        .. code-block:: bash
-
-            $ pip install -U pip
-
-        To install both Rasa Open Source and Rasa X in one go:
-
-        .. code-block:: bash
-
-            $ pip install rasa-x --extra-index-url https://pypi.rasa.com/simple
-
-    .. tab:: Rasa Open Source only
+    .. tab:: Ubuntu / macOS / Windows
 
         First make sure your ``pip`` version is up to date:
 

@@ -203,7 +203,7 @@ class StoryStep:
                 else:
                     # form is active
                     # it is not known whether the form will be
-                    # successfully executed, so store this]
+                    # successfully executed, so store this
                     # story string for later
                     self._store_user_strings(s, e2e, FORM_PREFIX)
 
@@ -317,21 +317,25 @@ class StoryStep:
         return result
 
     @staticmethod
-    def _is_action_listen(event: ActionExecuted) -> bool:
+    def _is_action_listen(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
+        # pytype: disable=attribute-error
         return type(event) == ActionExecuted and event.action_name == ACTION_LISTEN_NAME
+        # pytype: enable=attribute-error
 
     @staticmethod
-    def _is_action_session_start(event: ActionExecuted) -> bool:
+    def _is_action_session_start(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
+        # pytype: disable=attribute-error
         return (
             type(event) == ActionExecuted
             and event.action_name == ACTION_SESSION_START_NAME
         )
+        # pytype: enable=attribute-error
 
-    def _add_action_listen(self, events: List[ActionExecuted]) -> None:
+    def _add_action_listen(self, events: List[Event]) -> None:
         if not events or not self._is_action_listen(events[-1]):
             # do not add second action_listen
             events.append(ActionExecuted(ACTION_LISTEN_NAME))
@@ -339,13 +343,13 @@ class StoryStep:
     def explicit_events(
         self, domain: Domain, should_append_final_listen: bool = True
     ) -> List[Event]:
-        """Returns events contained in the story step
-            including implicit events.
+        """Returns events contained in the story step including implicit events.
 
         Not all events are always listed in the story dsl. This
         includes listen actions as well as implicitly
         set slots. This functions makes these events explicit and
-        returns them with the rest of the steps events."""
+        returns them with the rest of the steps events.
+        """
 
         events = []
 

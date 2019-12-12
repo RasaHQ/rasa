@@ -20,7 +20,7 @@ from rasa.core.policies.memoization import (
 )
 from rasa.core.processor import MessageProcessor
 from rasa.core.slots import Slot
-from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 
 
@@ -69,6 +69,19 @@ class CustomSlot(Slot):
 class ExamplePolicy(Policy):
     def __init__(self, example_arg):
         pass
+
+
+class MockedMongoTrackerStore(MongoTrackerStore):
+    """In-memory mocked version of `MongoTrackerStore`."""
+
+    def __init__(
+        self, _domain: Domain,
+    ):
+        from mongomock import MongoClient
+
+        self.db = MongoClient().rasa
+        self.collection = "conversations"
+        super(MongoTrackerStore, self).__init__(_domain, None)
 
 
 @pytest.fixture(scope="session")

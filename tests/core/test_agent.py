@@ -263,7 +263,7 @@ async def test_agent_update_model_none_domain(trained_model: Text):
     tracker = agent.tracker_store.get_or_create_tracker(sender_id)
 
     # UserUttered event was added to tracker, with correct intent data
-    assert tracker.events[2].intent["name"] == "greet"
+    assert tracker.events[3].intent["name"] == "greet"
 
 
 async def test_load_agent_on_not_existing_path():

@@ -275,6 +275,20 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
         assert num_matches == labeled_tokens.count(i)
 
 
+def test_lookup_table_deprecation():
+    from rasa.nlu.featurizers.regex_featurizer import RegexFeaturizer
+
+    lookups = [
+        {
+            "name": "drinks",
+            "elements": ["mojito", "lemonade", "sweet berry wine", "tea", "club?mate"],
+        }
+    ]
+
+    with pytest.warns(FutureWarning):
+        RegexFeaturizer(lookup_tables=lookups)
+
+
 def test_spacy_featurizer_casing(spacy_nlp):
     from rasa.nlu.featurizers import spacy_featurizer
 

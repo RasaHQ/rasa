@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import tempfile
-from typing import List, Optional
+from typing import List
 
 import fakeredis
 import pytest
@@ -29,7 +29,12 @@ from rasa.core.tracker_store import (
 )
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from tests.core.conftest import DEFAULT_STORIES_FILE, EXAMPLE_DOMAINS, TEST_DIALOGUES
+from tests.core.conftest import (
+    DEFAULT_STORIES_FILE,
+    EXAMPLE_DOMAINS,
+    TEST_DIALOGUES,
+    MockedMongoTrackerStore,
+)
 from tests.core.utilities import (
     tracker_from_dialogue_file,
     read_dialogue_file,
@@ -57,11 +62,12 @@ def stores_to_be_tested():
         MockRedisTrackerStore(domain),
         InMemoryTrackerStore(domain),
         SQLTrackerStore(domain, db=os.path.join(temp, "rasa.db")),
+        MockedMongoTrackerStore(domain),
     ]
 
 
 def stores_to_be_tested_ids():
-    return ["redis-tracker", "in-memory-tracker", "SQL-tracker"]
+    return ["redis-tracker", "in-memory-tracker", "SQL-tracker", "mongo-tracker"]
 
 
 def test_tracker_duplicate():
@@ -87,7 +93,6 @@ def test_tracker_store_storage_and_retrieval(store):
 
     # Action listen should be in there
     assert list(tracker.events) == [
-        SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
 
@@ -100,13 +105,13 @@ def test_tracker_store_storage_and_retrieval(store):
     # retrieving the same tracker should result in the same tracker
     retrieved_tracker = store.get_or_create_tracker("some-id")
     assert retrieved_tracker.sender_id == "some-id"
-    assert len(retrieved_tracker.events) == 3
+    assert len(retrieved_tracker.events) == 2
     assert retrieved_tracker.latest_message.intent.get("name") == "greet"
 
     # getting another tracker should result in an empty tracker again
     other_tracker = store.get_or_create_tracker("some-other-id")
     assert other_tracker.sender_id == "some-other-id"
-    assert len(other_tracker.events) == 2
+    assert len(other_tracker.events) == 1
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
@@ -148,7 +153,10 @@ async def test_tracker_state_regression_without_bot_utterance(default_agent: Age
 
     # Ensures that the tracker has changed between the utterances
     # (and wasn't reset in between them)
-    expected = "action_listen;greet;utter_greet;action_listen;greet;action_listen"
+    expected = (
+        "action_session_start;action_listen;greet;utter_greet;action_listen;"
+        "greet;action_listen"
+    )
     assert (
         ";".join([e.as_story_string() for e in tracker.events if e.as_story_string()])
         == expected
@@ -162,6 +170,7 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     expected = [
+        "action_session_start",
         None,
         "action_listen",
         "greet",
@@ -184,7 +193,15 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
 
     # important is, that the 'bot' comes after the second 'action' and not
     # before
-    expected = ["session_started", "action", "user", "action", "bot", "action"]
+    expected = [
+        "action",
+        "session_started",
+        "action",
+        "user",
+        "action",
+        "bot",
+        "action",
+    ]
 
     assert [e.type_name for e in tracker.events] == expected
 
@@ -286,9 +303,6 @@ def test_session_start(default_domain: Domain):
 
     # tracker has one event
     assert len(tracker.events) == 1
-
-    # follow-up action should be 'session_start'
-    assert tracker.followup_action == ACTION_SESSION_START_NAME
 
 
 def test_revert_action_event(default_domain: Domain):
@@ -510,6 +524,27 @@ def test_current_state_applied_events(default_agent):
     assert state.get("events") == applied_events
 
 
+def test_session_started_not_part_of_applied_events(default_agent: Agent):
+    # take tracker dump and insert a SessionStarted event sequence
+    tracker_dump = "data/test_trackers/tracker_moodbot.json"
+    tracker_json = json.loads(rasa.utils.io.read_file(tracker_dump))
+    tracker_json["events"].insert(
+        4, {"event": ActionExecuted.type_name, "name": ACTION_SESSION_START_NAME}
+    )
+    tracker_json["events"].insert(5, {"event": SessionStarted.type_name})
+
+    # initialise a tracker from this list of events
+    tracker = DialogueStateTracker.from_dict(
+        tracker_json.get("sender_id"),
+        tracker_json.get("events", []),
+        default_agent.domain.slots,
+    )
+
+    # the SessionStart event was at index 5, the tracker's `applied_events()` should
+    # be the same as the list of events from index 6 onwards
+    assert tracker.applied_events() == list(tracker.events)[6:]
+
+
 async def test_tracker_dump_e2e_story(default_agent):
     sender_id = "test_tracker_dump_e2e_story"
 
@@ -612,27 +647,3 @@ def test_tracker_without_slots(key, value, caplog):
         v = tracker.get_slot(key)
         assert v == value
     assert len(caplog.records) == 0
-
-
-@pytest.mark.parametrize(
-    "events,index_of_last_executed_event",
-    [
-        ([ActionExecuted("one")], None),  # no SessionStarted event
-        ([ActionExecuted("a"), SessionStarted()], 1),
-        ([ActionExecuted("first"), UserUttered("b"), SessionStarted()], 2),
-        ([SessionStarted(), UserUttered("b")], 0),
-    ],
-)
-def test_last_session_started_event(
-    events: List[Event], index_of_last_executed_event: int
-):
-    tracker = get_tracker(events)
-
-    # noinspection PyTypeChecker
-    expected_event: Optional[ActionExecuted] = events[
-        index_of_last_executed_event
-    ] if index_of_last_executed_event is not None else None
-
-    fetched_event = tracker.get_last_session_started_event() if expected_event else None
-
-    assert expected_event == fetched_event

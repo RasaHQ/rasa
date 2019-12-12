@@ -278,7 +278,6 @@ class DialogueStateTracker:
             UserMessage.DEFAULT_SENDER_ID, self.slots.values(), self._max_event_history
         )
 
-    # TODO: exclude SessionStart from prior states
     def generate_all_prior_trackers(
         self,
     ) -> Generator["DialogueStateTracker", None, None]:
@@ -374,6 +373,7 @@ class DialogueStateTracker:
                 undo_till_previous(ActionExecuted, applied_events)
             else:
                 applied_events.append(event)
+
         return applied_events
 
     def replay_events(self) -> None:
@@ -507,18 +507,6 @@ class DialogueStateTracker:
             ActionExecuted, action_names_to_exclude=[ACTION_LISTEN_NAME], skip=skip
         )
         return last is not None and last.action_name == name
-
-    def get_last_session_started_event(self) -> Optional[SessionStarted]:
-        """Get the last `SessionStarted` event.
-
-        Returns:
-            The last `SessionStarted` marking a session start if available,
-            otherwise `None`.
-
-        """
-        for event in reversed(self.events):
-            if isinstance(event, SessionStarted):
-                return event
 
     ###
     # Internal methods for the modification of the trackers state. Should

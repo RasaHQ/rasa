@@ -37,7 +37,11 @@ mapping:
     mapping:
       store_entities_as_slots:
         type: "bool"
-      session_length:
+  session_config:
+    type: "map"
+    allowempty: True
+    mapping:
+      session_expiration_time:
         type: "number"
         range:
           min: 0
