@@ -256,7 +256,7 @@ paths:
       - Tracker
       summary: Run an action in a conversation
       description: >-
-        Runs the action, calling the action server if necessary.
+        DEPRECATED. Runs the action, calling the action server if necessary.
         Any responses sent by the executed action will be forwarded
         to the channel specified in the output_channel parameter.
         If no output channel is specified, any messages that should be
@@ -271,6 +271,57 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ActionRequest'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tracker:
+                    $ref: '#/components/schemas/Tracker'
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BotMessage'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+  /conversations/{conversation_id}/inject-intent:
+    post:
+      security:
+        - TokenAuth: []
+        - JWT: []
+      operationId: injectConversationIntent
+      tags:
+        - Tracker
+      summary: Inject an intent into a conversation
+      description: >-
+        Sends a message with the specified intent and entities in place
+        of the user, then predicts and executes a response action.
+        Any responses sent by the executed action will be forwarded
+        to the channel specified in the output_channel parameter.
+        If no output channel is specified, any messages that should be
+        sent to the user will be included in the response of this endpoint.
+      parameters:
+        - $ref: '#/components/parameters/conversation_id'
+        - $ref: '#/components/parameters/include_events'
+        - $ref: '#/components/parameters/output_channel'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntentInjectionRequest'
       responses:
         200:
           description: Success
@@ -913,6 +964,26 @@ components:
           description: >-
             Name of the policy that predicted the action (optional).
           type: string
+        confidence:
+          description: >-
+            Confidence of the prediction (optional).
+          type: number
+          example: 0.987232
+      required: ["name"]
+
+    IntentInjectionRequest:
+      type: object
+      properties:
+        name:
+          description: >-
+            Name of the intent to be executed.
+          type: string
+          example: greet
+        entities:
+          description: >-
+            Entities to be passed on (optional).
+          type: object
+          example: {"reason": "joke"}
         confidence:
           description: >-
             Confidence of the prediction (optional).
