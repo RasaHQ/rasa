@@ -293,6 +293,7 @@ templates:
     assert isinstance(domain.slots[0], TextSlot)
     assert domain.slots[0].name == "cuisine"
     assert sorted(domain.user_actions) == sorted(["utter_greet", "utter_goodbye"])
+    assert domain.session_config == SessionConfig(20, True)
 
     domain = domain_1.merge(domain_2, override=True)
     # single attribute should be taken from domain_2
@@ -300,6 +301,28 @@ templates:
     # conflicts should take value from domain_2
     assert domain.templates == {"utter_greet": [{"text": "hey you!"}]}
     assert domain.session_config == SessionConfig(20, True)
+
+
+def test_merge_session_config_if_first_is_not_default():
+    yaml1 = """
+session_config:
+    session_expiration_time: 20
+    carry_over_slots: true"""
+
+    yaml2 = """
+ session_config:
+    session_expiration_time: 40
+    carry_over_slots: true
+    """
+
+    domain1 = Domain.from_yaml(yaml1)
+    domain2 = Domain.from_yaml(yaml2)
+
+    merged = domain1.merge(domain2)
+    assert merged.session_config == SessionConfig(20, True)
+
+    merged = domain1.merge(domain2, override=True)
+    assert merged.session_config == SessionConfig(40, True)
 
 
 @pytest.mark.parametrize(
