@@ -128,16 +128,22 @@ class StoryConflict:
         :param state: Element of sliced states
         :return: (type, name) strings of the prior event
         """
-        if not state:
-            return None, None
-        result = (None, None)
+        prev_event_type = None
+        prev_event_name = None
+
         for k in state:
-            if k.startswith(PREV_PREFIX):
-                if k[len(PREV_PREFIX) :] != ACTION_LISTEN_NAME:
-                    result = ("action", k[len(PREV_PREFIX) :])
-            elif k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_") and not result[0]:
-                result = ("intent", k[len(MESSAGE_INTENT_ATTRIBUTE + "_") :])
-        return result
+            if (
+                k.startswith(PREV_PREFIX)
+                and k[len(PREV_PREFIX) :] != ACTION_LISTEN_NAME
+            ):
+                prev_event_type = "action"
+                prev_event_name = k[len(PREV_PREFIX) :]
+
+            if not prev_event_type and k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_"):
+                prev_event_type = "intent"
+                prev_event_name = k[len(MESSAGE_INTENT_ATTRIBUTE + "_") :]
+
+        return prev_event_type, prev_event_name
 
     def add_conflicting_action(self, action: Text, story_name: Text):
         """
