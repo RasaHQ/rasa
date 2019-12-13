@@ -210,12 +210,15 @@ class StoryConflict:
         """
         result = ""
         for state in self.sliced_states:
-            if state:
-                event_type, event_name = self._get_prev_event(state)
-                if event_type == "intent":
-                    result += f"* {event_name}\n"
-                else:
-                    result += f"  - {event_name}\n"
+            if not state:
+                continue
+
+            event_type, event_name = self._get_prev_event(state)
+            if event_type == "intent":
+                result += f"* {event_name}\n"
+            else:
+                result += f"  - {event_name}\n"
+
         return result
 
     def __str__(self):
