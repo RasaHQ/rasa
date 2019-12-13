@@ -31,7 +31,6 @@ def add_subparser(
     _add_data_convert_parsers(data_subparsers, parents)
     _add_data_split_parsers(data_subparsers, parents)
     _add_data_validate_parsers(data_subparsers, parents)
-    _add_data_clean_parsers(data_subparsers, parents)
 
 
 def _add_data_convert_parsers(data_subparsers, parents: List[argparse.ArgumentParser]):
@@ -117,18 +116,6 @@ def _add_data_validate_parsers(data_subparsers, parents: List[argparse.ArgumentP
     arguments.set_validator_arguments(story_structure_parser)
 
 
-def _add_data_clean_parsers(data_subparsers, parents: List[argparse.ArgumentParser]):
-
-    clean_parser = data_subparsers.add_parser(
-        "clean",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        parents=parents,
-        help="[Experimental] Ensures that story names are unique.",
-    )
-    clean_parser.set_defaults(func=deduplicate_story_names)
-    arguments.set_validator_arguments(clean_parser)
-
-
 def split_nlu_data(args) -> None:
     from rasa.nlu.training_data.loading import load_data
     from rasa.nlu.training_data.util import get_file_format
@@ -195,70 +182,12 @@ def validate_stories(args):
         domain_path=args.domain, training_data_paths=args.data
     )
 
-    # This loads the stories and thus fills `STORY_NAME_TALLY` (see next code block)
+    # Loads the stories
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
 
-    # Check for duplicate story names
-    from rasa.core.training.structures import STORY_NAME_TALLY
-
-    duplicate_story_names = {
-        name: count for (name, count) in STORY_NAME_TALLY.items() if count > 1
-    }
-    story_names_unique = len(duplicate_story_names) == 0
-    if not story_names_unique:
-        msg = "Found duplicate story names:\n"
-        for (name, count) in duplicate_story_names.items():
-            msg += f"  '{name}' appears {count}x\n"
-        logger.error(msg)
-
     # If names are unique, look for story conflicts
-    if story_names_unique:
-        everything_is_alright = validator.verify_story_structure(
-            not args.fail_on_warnings, max_history=args.max_history
-        )
-    else:
-        everything_is_alright = False
+    everything_is_alright = validator.verify_story_structure(
+        not args.fail_on_warnings, max_history=args.max_history
+    )
 
     sys.exit(0) if everything_is_alright else sys.exit(1)
-
-
-def deduplicate_story_names(args):
-    """
-    Changes story names so as to make them unique.
-
-    WARNING: Only works for markdown files at the moment
-    """
-
-    logger.info("Replacing duplicate story names...")
-
-    import shutil
-
-    story_file_names, _ = data.get_core_nlu_files(args.data)
-    names = set()  # Set of names we have already encountered
-    for in_file_name in story_file_names:
-        if not in_file_name.endswith(".md"):
-            logger.warning(
-                f"Support for cleaning non-markdown file '{in_file_name}' is not yet implemented"
-            )
-            continue
-        out_file_name = in_file_name + ".new"
-        with open(in_file_name, "r") as in_file, open(out_file_name, "w+") as out_file:
-            for line in in_file:
-                line = line.strip()
-                if line.startswith("## "):
-                    name = line[3:]
-                    # Check if we have already encountered a story with this name
-                    if name in names:
-                        # Find a unique name
-                        old_name = name
-                        k = 1
-                        while name in names:
-                            name = old_name + f" ({k})"
-                            k += 1
-                        logger.info(f"- replacing {old_name} with {name}")
-                    names.add(name)
-                    out_file.write(f"## {name}\n")
-                else:
-                    out_file.write(line + "\n")
-
-        shutil.move(in_file_name + ".new", in_file_name)
