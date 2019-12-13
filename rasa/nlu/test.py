@@ -1129,7 +1129,9 @@ def generate_folds(
 
     skf = StratifiedKFold(n_splits=n, shuffle=True)
     x = td.intent_examples
-    ## Get labels with response key appended to intent name because we want a stratified split on all intents(including retrieval intents if they exist)
+
+    # Get labels with response key appended to intent name because we want a stratified split on all
+    # intents(including retrieval intents if they exist)
     y = [example.get_combined_intent_response_key() for example in x]
     for i_fold, (train_index, test_index) in enumerate(skf.split(x, y)):
         logger.debug(f"Fold: {i_fold}")
@@ -1209,14 +1211,14 @@ def cross_validate(
     histogram: Optional[Text] = None,
     disable_plotting: bool = False,
 ) -> Tuple[CVEvaluationResult, CVEvaluationResult, CVEvaluationResult]:
-    
+
     """Stratified cross validation on data.
 
     Args:
         data: Training Data
         n_folds: integer, number of cv folds
         nlu_config: nlu config file
-        report: path to folder where reports are stored
+        output: path to folder where reports are stored
         successes: if true successful predictions are written to a file
         errors: if true incorrect predictions are written to a file
         confmat: path to file that will show the confusion matrix
