@@ -108,7 +108,7 @@ class StoryConflict:
             states = tracker.past_states(domain)
             states = [
                 dict(state) for state in states
-            ]  # ToDo: Check against rasa/core/featurizers.py:318
+            ]  # From rasa/core/featurizers.py:318
 
             idx = 0
             for event in tracker.events:
