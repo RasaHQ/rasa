@@ -164,6 +164,60 @@ There is an example of a ``SlotSet`` event
 :ref:`above <custom_action_example>`, and a full list of possible
 events in :ref:`Events <events>`.
 
+.. _custom_session_start:
+
+Customising the session start action
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The default behaviour of the session start action is to take all existing slots and to
+carry them over into the next session. Let's say you do not want to carry over all
+slots, but only a user's name and their phone number. To do that, you'd override the
+``action_session_start`` with a custom action that might look like this:
+
+.. testcode::
+
+  from typing import Text, List, Dict, Any
+
+  from rasa_sdk import Action, Tracker
+  from rasa_sdk.events import SlotSet, SessionStarted, ActionExecuted, EventType
+  from rasa_sdk.executor import CollectingDispatcher
+
+
+  class ActionSessionStart(Action):
+      def name(self) -> Text:
+          return "action_session_start"
+
+      @staticmethod
+      def fetch_slots(tracker: Tracker) -> List[EventType]:
+          """Carry over slots that contain the user's name and phone number."""
+
+          slots = []
+
+          for key in ("name", "phone_number"):
+              value = tracker.get_slot(key)
+              if value is not None:
+                  slots.append(SlotSet(key=key, value=value))
+
+          return slots
+
+      async def run(
+          self,
+          dispatcher: CollectingDispatcher,
+          tracker: Tracker,
+          domain: Dict[Text, Any],
+      ) -> List[EventType]:
+
+          _events = [SessionStarted()]
+          _events.extend(self.fetch_slots(tracker))
+          _events.append(ActionExecuted("action_listen"))
+
+          return _events
+
+.. note::
+
+  You need to explicitly add ``action_session_start`` to your domain to override this
+  custom action.
+
 Execute Actions in Other Code
 -----------------------------
 
