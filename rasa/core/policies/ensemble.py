@@ -387,6 +387,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         for i, p in enumerate(self.policies):
             probabilities = p.predict_action_probabilities(tracker, domain)
+            if type(p).__name__ == "EmbeddingPolicy":
+                logger.warning(probabilities)
 
             if len(tracker.events) > 0 and isinstance(
                 tracker.events[-1], ActionExecutionRejected
