@@ -690,6 +690,7 @@ def test_list_routes(default_agent):
         "replace_events",
         "retrieve_story",
         "execute_action",
+        "inject_intent",
         "predict",
         "add_message",
         "train",
