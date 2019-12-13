@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class RasaReader(JsonTrainingDataReader):
-    def read_from_json(self, js, **kwargs):
+    def read_from_json(self, js, **kwargs) -> "TrainingData":
         """Loads training data stored in the rasa NLU data format."""
         from rasa.nlu.training_data import Message, TrainingData
 
@@ -50,7 +50,7 @@ class RasaReader(JsonTrainingDataReader):
                 "removed in the future. Consider "
                 "putting all your examples "
                 "into the 'common_examples' section.",
-                DeprecationWarning,
+                FutureWarning,
             )
 
         all_examples = common_examples + intent_examples + entity_examples
@@ -106,14 +106,14 @@ def validate_rasa_nlu_data(data: Dict[Text, Any]) -> None:
         validate(data, _rasa_nlu_data_schema())
     except ValidationError as e:
         e.message += (
-            ". Failed to validate training data, make sure your data "
-            "is valid. For more information about the format visit "
-            "{}/nlu/training-data-format/".format(DOCS_BASE_URL)
+            f". Failed to validate training data, make sure your data "
+            f"is valid. For more information about the format visit "
+            f"{DOCS_BASE_URL}/nlu/training-data-format/"
         )
         raise e
 
 
-def _rasa_nlu_data_schema():
+def _rasa_nlu_data_schema() -> Dict[Text, Any]:
     training_example_schema = {
         "type": "object",
         "properties": {

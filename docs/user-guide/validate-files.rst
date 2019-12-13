@@ -23,6 +23,11 @@ the script:
 
 .. program-output:: rasa data validate --help
 
+By default the validator searches only for errors in the data (e.g. the same
+example being listed as an example for two intents), but does not report other
+minor issues (such as unused intents, utterances that are not listed as
+actions). To also report the later use the ``-debug`` flag.
+
 You can also run these validations through the Python API by importing the `Validator` class,
 which has the following methods:
 

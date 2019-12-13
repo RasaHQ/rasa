@@ -8,6 +8,7 @@ from rasa import data
 from rasa.cli.arguments import data as arguments
 from rasa.cli.utils import get_validated_path
 from rasa.constants import DEFAULT_DATA_PATH
+from typing import NoReturn
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +129,7 @@ def _add_data_clean_parsers(data_subparsers, parents: List[argparse.ArgumentPars
     arguments.set_validator_arguments(clean_parser)
 
 
-def split_nlu_data(args):
+def split_nlu_data(args) -> None:
     from rasa.nlu.training_data.loading import load_data
     from rasa.nlu.training_data.util import get_file_format
 
@@ -138,13 +139,13 @@ def split_nlu_data(args):
     nlu_data = load_data(data_path)
     fformat = get_file_format(data_path)
 
-    train, test = nlu_data.train_test_split(args.training_fraction)
+    train, test = nlu_data.train_test_split(args.training_fraction, args.random_seed)
 
     train.persist(args.out, filename=f"training_data.{fformat}")
     test.persist(args.out, filename=f"test_data.{fformat}")
 
 
-def validate_files(args):
+def validate_files(args) -> NoReturn:
     """Validate all files needed for training a model.
 
     Fails with a non-zero exit code if there are any errors in the data."""

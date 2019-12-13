@@ -84,7 +84,7 @@ class EndpointConfig:
         self.type = kwargs.pop("store_type", kwargs.pop("type", None))
         self.kwargs = kwargs
 
-    def session(self):
+    def session(self) -> aiohttp.ClientSession:
         # create authentication parameters
         if self.basic_auth:
             auth = aiohttp.BasicAuth(
@@ -99,7 +99,9 @@ class EndpointConfig:
             timeout=aiohttp.ClientTimeout(total=DEFAULT_REQUEST_TIMEOUT),
         )
 
-    def combine_parameters(self, kwargs=None):
+    def combine_parameters(
+        self, kwargs: Optional[Dict[Text, Any]] = None
+    ) -> Dict[Text, Any]:
         # construct GET parameters
         params = self.params.copy()
 
@@ -150,10 +152,10 @@ class EndpointConfig:
                 return await getattr(resp, return_method)()
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data) -> "EndpointConfig":
         return EndpointConfig(**data)
 
-    def copy(self):
+    def copy(self) -> "EndpointConfig":
         return EndpointConfig(
             self.url,
             self.params,
@@ -164,7 +166,7 @@ class EndpointConfig:
             **self.kwargs,
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(self, type(other)):
             return (
                 other.url == self.url
@@ -177,12 +179,12 @@ class EndpointConfig:
         else:
             return False
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
 
 class ClientResponseError(aiohttp.ClientError):
-    def __init__(self, status, message, text):
+    def __init__(self, status: int, message: Text, text: Text) -> None:
         self.status = status
         self.message = message
         self.text = text

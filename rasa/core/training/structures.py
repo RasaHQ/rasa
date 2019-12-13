@@ -18,6 +18,7 @@ from rasa.core.events import (
     Event,
     ActionExecutionRejected,
 )
+from rasa.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class StoryStringHelper:
         form_rejected=False,
         form_prefix_string="",
         no_form_prefix_string="",
-    ):
+    ) -> None:
         # track active form
         self.active_form = active_form
         # track whether a from should be validated
@@ -74,11 +75,13 @@ class Checkpoint:
         self.name = name
         self.conditions = conditions if conditions else {}
 
-    def as_story_string(self):
+    def as_story_string(self) -> Text:
         dumped_conds = json.dumps(self.conditions) if self.conditions else ""
         return f"{self.name}{dumped_conds}"
 
-    def filter_trackers(self, trackers):
+    def filter_trackers(
+        self, trackers: List[DialogueStateTracker]
+    ) -> List[DialogueStateTracker]:
         """Filters out all trackers that do not satisfy the conditions."""
 
         if not self.conditions:
@@ -88,7 +91,7 @@ class Checkpoint:
             trackers = [t for t in trackers if t.get_slot(slot_name) == slot_value]
         return trackers
 
-    def __repr__(self):
+    def __repr__(self) -> Text:
         return "Checkpoint(name={!r}, conditions={})".format(
             self.name, json.dumps(self.conditions)
         )
@@ -121,7 +124,7 @@ class StoryStep:
 
         self.story_string_helper = StoryStringHelper()
 
-    def create_copy(self, use_new_id):
+    def create_copy(self, use_new_id: bool) -> "StoryStep":
         copied = StoryStep(
             self.block_name,
             self.start_checkpoints,
@@ -132,21 +135,25 @@ class StoryStep:
             copied.id = self.id
         return copied
 
-    def add_user_message(self, user_message):
+    def add_user_message(self, user_message) -> None:
         self.add_event(user_message)
 
-    def add_event(self, event):
+    def add_event(self, event: Event) -> None:
         self.events.append(event)
 
     @staticmethod
-    def _checkpoint_string(story_step_element):
+    def _checkpoint_string(story_step_element: UserUttered) -> Text:
         return "> {}\n".format(story_step_element.as_story_string())
 
     @staticmethod
-    def _user_string(story_step_element, e2e, prefix=""):
+    def _user_string(
+        story_step_element: UserUttered, e2e: bool, prefix: Text = ""
+    ) -> Text:
         return "* {}{}\n".format(prefix, story_step_element.as_story_string(e2e))
 
-    def _store_user_strings(self, story_step_element, e2e, prefix=""):
+    def _store_user_strings(
+        self, story_step_element: UserUttered, e2e: bool, prefix: Text = ""
+    ) -> None:
         self.story_string_helper.no_form_prefix_string += self._user_string(
             story_step_element, e2e
         )
@@ -155,10 +162,10 @@ class StoryStep:
         )
 
     @staticmethod
-    def _bot_string(story_step_element, prefix=""):
+    def _bot_string(story_step_element, prefix: Text = "") -> Text:
         return "    - {}{}\n".format(prefix, story_step_element.as_story_string())
 
-    def _store_bot_strings(self, story_step_element, prefix=""):
+    def _store_bot_strings(self, story_step_element, prefix: Text = "") -> None:
         self.story_string_helper.no_form_prefix_string += self._bot_string(
             story_step_element
         )
@@ -166,11 +173,11 @@ class StoryStep:
             story_step_element, prefix
         )
 
-    def _reset_stored_strings(self):
+    def _reset_stored_strings(self) -> None:
         self.story_string_helper.form_prefix_string = ""
         self.story_string_helper.no_form_prefix_string = ""
 
-    def as_story_string(self, flat=False, e2e=False):
+    def as_story_string(self, flat: bool = False, e2e: bool = False) -> Text:
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
 
@@ -302,12 +309,12 @@ class StoryStep:
         return result
 
     @staticmethod
-    def _is_action_listen(event):
+    def _is_action_listen(event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
         return type(event) == ActionExecuted and event.action_name == ACTION_LISTEN_NAME
 
-    def _add_action_listen(self, events):
+    def _add_action_listen(self, events) -> None:
         if not events or not self._is_action_listen(events[-1]):
             # do not add second action_listen
             events.append(ActionExecuted(ACTION_LISTEN_NAME))
@@ -338,7 +345,7 @@ class StoryStep:
 
         return events
 
-    def __repr__(self):
+    def __repr__(self) -> Text:
         return (
             "StoryStep("
             "block_name={!r}, "
@@ -361,7 +368,7 @@ class Story:
         self.story_name = story_name
 
     @staticmethod
-    def from_events(events, story_name=None):
+    def from_events(events: List[Event], story_name: Optional[Text] = None) -> "Story":
         """Create a story from a list of events."""
 
         story_step = StoryStep()
@@ -369,7 +376,7 @@ class Story:
             story_step.add_event(event)
         return Story([story_step], story_name)
 
-    def as_dialogue(self, sender_id, domain):
+    def as_dialogue(self, sender_id: Text, domain: Domain) -> Dialogue:
         events = []
         for step in self.story_steps:
             events.extend(
@@ -379,7 +386,7 @@ class Story:
         events.append(ActionExecuted(ACTION_LISTEN_NAME))
         return Dialogue(sender_id, events)
 
-    def as_story_string(self, flat=False, e2e=False):
+    def as_story_string(self, flat: bool = False, e2e: bool = False) -> Text:
         story_content = ""
 
         # initialize helper for first story step
@@ -731,7 +738,7 @@ class StoryGraph:
 
         return ordered, sorted(removed_edges)
 
-    def visualize(self, output_file=None):
+    def visualize(self, output_file: Optional[Text] = None) -> Any:
         import networkx as nx
         from rasa.core.training import visualization  # pytype: disable=pyi-error
         from colorhash import ColorHash

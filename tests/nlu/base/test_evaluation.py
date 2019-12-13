@@ -1,7 +1,10 @@
+from typing import Text
+
 import asyncio
 import logging
 
 import pytest
+from _pytest.tmpdir import TempdirFactory
 
 import rasa.utils.io
 from rasa.test import compare_nlu_models
@@ -302,11 +305,18 @@ def test_intent_evaluation_report(tmpdir_factory):
         errors=False,
         confmat_filename=None,
         intent_hist_filename=None,
+        disable_plotting=False,
     )
 
     report = json.loads(rasa.utils.io.read_file(report_filename))
 
-    greet_results = {"precision": 1.0, "recall": 1.0, "f1-score": 1.0, "support": 1}
+    greet_results = {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 1,
+        "confused_with": {},
+    }
 
     prediction = {
         "text": "hello",
@@ -318,6 +328,66 @@ def test_intent_evaluation_report(tmpdir_factory):
     assert len(report.keys()) == 4
     assert report["greet"] == greet_results
     assert result["predictions"][0] == prediction
+
+
+def test_intent_evaluation_report_large(tmpdir_factory: TempdirFactory):
+    path = tmpdir_factory.mktemp("evaluation")
+    report_folder = path / "reports"
+    report_filename = report_folder / "intent_report.json"
+
+    rasa.utils.io.create_directory(str(report_folder))
+
+    def correct(label: Text) -> IntentEvaluationResult:
+        return IntentEvaluationResult(label, label, "", 1.0)
+
+    def incorrect(label: Text, _label: Text) -> IntentEvaluationResult:
+        return IntentEvaluationResult(label, _label, "", 1.0)
+
+    a_results = [correct("A")] * 10
+    b_results = [correct("B")] * 7 + [incorrect("B", "C")] * 3
+    c_results = [correct("C")] * 3 + [incorrect("C", "D")] + [incorrect("C", "E")]
+    d_results = [correct("D")] * 29 + [incorrect("D", "B")] * 3
+    e_results = [incorrect("E", "C")] * 5 + [incorrect("E", "")] * 5
+
+    intent_results = a_results + b_results + c_results + d_results + e_results
+
+    evaluate_intents(
+        intent_results,
+        report_folder,
+        successes=False,
+        errors=False,
+        confmat_filename=None,
+        intent_hist_filename=None,
+        disable_plotting=False,
+    )
+
+    report = json.loads(rasa.utils.io.read_file(str(report_filename)))
+
+    a_results = {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 10,
+        "confused_with": {},
+    }
+
+    e_results = {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 10,
+        "confused_with": {"C": 5, "": 5},
+    }
+
+    c_confused_with = {
+        "D": 1,
+        "E": 1,
+    }
+
+    assert len(report.keys()) == 8
+    assert report["A"] == a_results
+    assert report["E"] == e_results
+    assert report["C"]["confused_with"] == c_confused_with
 
 
 def test_response_evaluation_report(tmpdir_factory):

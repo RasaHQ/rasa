@@ -292,7 +292,7 @@ Then build a custom action using the Rasa SDK, e.g.:
     def run(self, dispatcher, tracker, domain):
       request = requests.get('http://api.icndb.com/jokes/random').json()  # make an api call
       joke = request['value']['joke']  # extract a joke from returned json response
-      dispatcher.utter_message(joke)  # send the message back to the user
+      dispatcher.utter_message(text=joke)  # send the message back to the user
       return []
 
 Next, add the custom action in your stories and your domain file.

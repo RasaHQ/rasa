@@ -6,7 +6,7 @@ import textwrap
 import uuid
 from functools import partial
 from multiprocessing import Process
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union, Set
 
 import numpy as np
 from aiohttp import ClientError
@@ -83,6 +83,10 @@ OTHER_ACTION = uuid.uuid4().hex
 NEW_ACTION = uuid.uuid4().hex
 
 NEW_TEMPLATES = {}
+
+MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION = 200
+
+DEFAULT_STORY_GRAPH_FILE = "story_graph.dot"
 
 
 class RestartConversation(Exception):
@@ -853,12 +857,12 @@ def _get_nlu_target_format(export_path: Text) -> Text:
     return guessed_format
 
 
-def _entities_from_messages(messages):
+def _entities_from_messages(messages: List[Message]) -> List[Text]:
     """Return all entities that occur in at least one of the messages."""
     return list({e["entity"] for m in messages for e in m.data.get("entities", [])})
 
 
-def _intents_from_messages(messages):
+def _intents_from_messages(messages: List[Message]) -> Set[Text]:
     """Return all intents that occur in at least one of the messages."""
 
     # set of distinct intents
@@ -876,7 +880,7 @@ async def _write_domain_to_file(
 
     messages = _collect_messages(events)
     actions = _collect_actions(events)
-    templates = NEW_TEMPLATES
+    templates = NEW_TEMPLATES  # type: Dict[Text, List[Dict[Text, Any]]]
 
     # TODO for now there is no way to distinguish between action and form
     collected_actions = list(
@@ -992,7 +996,7 @@ async def _correct_wrong_action(
     )
 
 
-def _form_is_rejected(action_name, tracker):
+def _form_is_rejected(action_name: Text, tracker: Dict[Text, Any]) -> bool:
     """Check if the form got rejected with the most recent action name."""
     return (
         tracker.get("active_form", {}).get("name")
@@ -1001,7 +1005,7 @@ def _form_is_rejected(action_name, tracker):
     )
 
 
-def _form_is_restored(action_name, tracker):
+def _form_is_restored(action_name: Text, tracker: Dict[Text, Any]) -> bool:
     """Check whether the form is called again after it was rejected."""
     return (
         tracker.get("active_form", {}).get("rejected")
@@ -1010,7 +1014,7 @@ def _form_is_restored(action_name, tracker):
     )
 
 
-async def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
+async def _confirm_form_validation(action_name, tracker, endpoint, sender_id) -> None:
     """Ask a user whether an input for a form should be validated.
 
     Previous to this call, the active form was chosen after it was rejected."""
@@ -1105,8 +1109,8 @@ def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
 
     if not parse_data.get("entities"):
         parse_data["entities"] = []
-    # noinspection PyProtectedMember
-    return MarkdownWriter()._generate_message_md(parse_data)
+
+    return MarkdownWriter.generate_message_md(parse_data)
 
 
 def _validate_user_regex(latest_message: Dict[Text, Any], intents: List[Text]) -> bool:
@@ -1209,7 +1213,7 @@ async def _correct_entities(
 
     annotation = await _ask_questions(question, sender_id, endpoint)
     # noinspection PyProtectedMember
-    parse_annotated = MarkdownReader()._parse_training_example(annotation)
+    parse_annotated = MarkdownReader().parse_training_example(annotation)
 
     corrected_entities = _merge_annotated_and_original_entities(
         parse_annotated, parse_original
@@ -1218,7 +1222,9 @@ async def _correct_entities(
     return corrected_entities
 
 
-def _merge_annotated_and_original_entities(parse_annotated, parse_original):
+def _merge_annotated_and_original_entities(
+    parse_annotated: Message, parse_original: Dict[Text, Any]
+) -> List[Dict[Text, Any]]:
     # overwrite entities which have already been
     # annotated in the original annotation to preserve
     # additional entity parser information
@@ -1231,7 +1237,7 @@ def _merge_annotated_and_original_entities(parse_annotated, parse_original):
     return entities
 
 
-def _is_same_entity_annotation(entity, other):
+def _is_same_entity_annotation(entity, other) -> Any:
     return entity["value"] == other["value"] and entity["entity"] == other["entity"]
 
 
@@ -1368,11 +1374,7 @@ async def record_messages(
 ):
     """Read messages from the command line and print bot responses."""
 
-    from rasa.core import training
-
     try:
-        _print_help(skip_visualization)
-
         try:
             domain = await retrieve_domain(endpoint)
         except ClientError:
@@ -1382,23 +1384,24 @@ async def record_messages(
             )
             return
 
-        trackers = await training.load_data(
-            stories,
-            Domain.from_dict(domain),
-            augmentation_factor=0,
-            use_story_concatenation=False,
-        )
-
         intents = [next(iter(i)) for i in (domain.get("intents") or [])]
 
         num_messages = 0
-        sender_ids = [t.events for t in trackers] + [sender_id]
 
         if not skip_visualization:
-            plot_file = "story_graph.dot"
-            await _plot_trackers(sender_ids, plot_file, endpoint)
+            events_including_current_user_id = await _get_tracker_events_to_plot(
+                domain, stories, sender_id
+            )
+
+            plot_file = DEFAULT_STORY_GRAPH_FILE
+            await _plot_trackers(events_including_current_user_id, plot_file, endpoint)
         else:
+            # `None` means that future `_plot_trackers` calls will also skip the
+            # visualization.
             plot_file = None
+            events_including_current_user_id = []
+
+        _print_help(skip_visualization)
 
         while not utils.is_limit_reached(num_messages, max_message_limit):
             try:
@@ -1407,7 +1410,7 @@ async def record_messages(
                     await _validate_nlu(intents, endpoint, sender_id)
 
                 await _predict_till_next_listen(
-                    endpoint, sender_id, sender_ids, plot_file
+                    endpoint, sender_id, events_including_current_user_id, plot_file
                 )
 
                 num_messages += 1
@@ -1435,7 +1438,9 @@ async def record_messages(
                 logger.info("Restarted conversation at fork.")
 
                 await _print_history(sender_id, endpoint)
-                await _plot_trackers(sender_ids, plot_file, endpoint)
+                await _plot_trackers(
+                    events_including_current_user_id, plot_file, endpoint
+                )
 
     except Abort:
         return
@@ -1444,7 +1449,41 @@ async def record_messages(
         raise
 
 
-def _serve_application(app, stories, skip_visualization):
+async def _get_tracker_events_to_plot(
+    domain: Dict[Text, Any], stories: Optional[Text], sender_id: Text
+) -> List[Union[Text, List[Event]]]:
+    training_trackers = await _get_training_trackers(stories, domain)
+    number_of_trackers = len(training_trackers)
+    if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
+        rasa.cli.utils.print_warning(
+            f"You have {number_of_trackers} different story paths in "
+            f"your training data. Visualizing them is very resource "
+            f"consuming. Hence, the visualization will only show the stories "
+            f"which you created during interactive learning, but not your "
+            f"training stories."
+        )
+        training_trackers = []
+
+    training_data_events = [t.events for t in training_trackers]
+    events_including_current_user_id = training_data_events + [sender_id]
+
+    return events_including_current_user_id
+
+
+async def _get_training_trackers(
+    stories: Optional[Text], domain: Dict[str, Any]
+) -> List[DialogueStateTracker]:
+    from rasa.core import training
+
+    return await training.load_data(
+        stories,
+        Domain.from_dict(domain),
+        augmentation_factor=0,
+        use_story_concatenation=False,
+    )
+
+
+def _serve_application(app: Sanic, stories, skip_visualization) -> Sanic:
     """Start a core server and attach the interactive learning IO."""
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
@@ -1502,8 +1541,10 @@ def start_visualization(image_path: Text = None) -> None:
 
 
 # noinspection PyUnusedLocal
-async def train_agent_on_start(args, endpoints, additional_arguments, app, loop):
-    _interpreter = NaturalLanguageInterpreter.create(args.get("nlu"), endpoints.nlu)
+async def train_agent_on_start(
+    args, endpoints, additional_arguments, app, loop
+) -> None:
+    _interpreter = NaturalLanguageInterpreter.create(endpoints.nlu or args.get("nlu"))
 
     model_directory = args.get("out", tempfile.mkdtemp(suffix="_core_model"))
 
@@ -1521,7 +1562,9 @@ async def train_agent_on_start(args, endpoints, additional_arguments, app, loop)
     app.agent = _agent
 
 
-async def wait_til_server_is_running(endpoint, max_retries=30, sleep_between_retries=1):
+async def wait_til_server_is_running(
+    endpoint, max_retries=30, sleep_between_retries=1
+) -> bool:
     """Try to reach the server, retry a couple of times and sleep in between."""
 
     while max_retries:
@@ -1567,7 +1610,7 @@ def run_interactive_learning(
     SAVE_IN_E2E = server_args["e2e"]
 
     if not skip_visualization:
-        p = Process(target=start_visualization, args=("story_graph.dot",))
+        p = Process(target=start_visualization, args=(DEFAULT_STORY_GRAPH_FILE,))
         p.daemon = True
         p.start()
     else:

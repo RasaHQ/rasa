@@ -36,7 +36,8 @@ def test_data_split_help(run: Callable[..., RunResult]):
     output = run("data", "split", "nlu", "--help")
 
     help_text = """usage: rasa data split nlu [-h] [-v] [-vv] [--quiet] [-u NLU]
-                           [--training-fraction TRAINING_FRACTION] [--out OUT]"""
+                           [--training-fraction TRAINING_FRACTION]
+                           [--random-seed RANDOM_SEED] [--out OUT]"""
 
     lines = help_text.split("\n")
 
