@@ -180,19 +180,20 @@ class StoryConflict:
         Returns a list of story names that have not yet been
         corrected.
         """
-        if self.correct_response:
-            incorrect_stories = []
-            for stories in [
-                s
-                for (a, s) in self._conflicting_actions.items()
-                if a != self.correct_response
-            ]:
-                for story in stories:
-                    incorrect_stories.append(story)
-            return incorrect_stories
-        else:
+        if not self.correct_response:
             # Return all stories
             return [v[0] for v in self._conflicting_actions.values()]
+
+        incorrect_stories = []
+        story_lists_with_uncorrected_responses = [
+            s
+            for (a, s) in self._conflicting_actions.items()
+            if a != self.correct_response
+        ]
+        for stories in story_lists_with_uncorrected_responses:
+            for story in stories:
+                incorrect_stories.append(story)
+        return incorrect_stories
 
     @property
     def has_prior_events(self) -> bool:
