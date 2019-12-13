@@ -155,7 +155,7 @@ def validate_files(args) -> NoReturn:
             "Will not test for inconsistencies in stories since "
             "you did not provide --max-history."
         )
-    if everything_is_alright and args.max_history:
+    if args.max_history:
         # Only run story structure validation if everything else is fine
         # since this might take a while
         everything_is_alright = validator.verify_story_structure(
