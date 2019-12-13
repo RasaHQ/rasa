@@ -211,7 +211,7 @@ using the :ref:`callbackInput` channel to send messages to a webhook.
 Default Actions
 ---------------
 
-There are eight default actions:
+The available default actions are:
 
 +-----------------------------------+------------------------------------------------+
 | ``action_listen``                 | Stop predicting more actions and wait for user |
