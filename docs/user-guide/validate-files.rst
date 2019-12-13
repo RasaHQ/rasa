@@ -80,7 +80,7 @@ If your stories don’t reflect that, Rasa Core cannot learn the correct behavio
 
 Take, for example, the following two stories:
 
-.. code-block:: markdown
+.. code-block:: md
 
   ## Story 1
   * greet
