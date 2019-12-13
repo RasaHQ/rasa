@@ -56,11 +56,10 @@ class StoryConflict:
             trackers, domain, max_history
         ):
             h = hash(str(list(sliced_states)))
-            if h in rules:
-                if event.as_story_string() not in rules[h]:
-                    rules[h] += [event.as_story_string()]
-            else:
+            if h not in rules:
                 rules[h] = [event.as_story_string()]
+            elif h in rules and event.as_story_string() not in rules[h]:
+                rules[h] += [event.as_story_string()]
 
         # Keep only conflicting rules
         return {
