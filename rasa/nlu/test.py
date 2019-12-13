@@ -442,6 +442,7 @@ def evaluate_intents(
     errors: bool,
     confmat_filename: Optional[Text],
     intent_hist_filename: Optional[Text],
+    disable_plotting: bool,
 ) -> Dict:  # pragma: no cover
     """Creates a confusion matrix and summary statistics for intent predictions.
 
@@ -505,26 +506,13 @@ def evaluate_intents(
         # log and save misclassified samples to file for debugging
         collect_nlu_errors(intent_results, errors_filename)
 
-    if confmat_filename:
-        import matplotlib.pyplot as plt
-
-        if output_directory:
-            confmat_filename = os.path.join(output_directory, confmat_filename)
-            intent_hist_filename = os.path.join(output_directory, intent_hist_filename)
-
-        plot_confusion_matrix(
-            cnf_matrix,
-            classes=labels,
-            title="Intent Confusion matrix",
-            out=confmat_filename,
-        )
-        plt.show(block=False)
-
-        plot_attribute_confidences(
-            intent_results, intent_hist_filename, "intent_target", "intent_prediction"
-        )
-
-        plt.show(block=False)
+    if not disable_plotting:
+        if confmat_filename:
+            _plot_confusion_matrix(
+                output_directory, confmat_filename, cnf_matrix, labels
+            )
+        if intent_hist_filename:
+            _plot_histogram(output_directory, intent_hist_filename, intent_results)
 
     predictions = [
         {
@@ -543,6 +531,35 @@ def evaluate_intents(
         "f1_score": f1,
         "accuracy": accuracy,
     }
+
+
+def _plot_confusion_matrix(
+    output_directory: Optional[Text],
+    confmat_filename: Optional[Text],
+    cnf_matrix: np.array,
+    labels: Collection[Text],
+) -> None:
+    if output_directory:
+        confmat_filename = os.path.join(output_directory, confmat_filename)
+
+    plot_confusion_matrix(
+        cnf_matrix,
+        classes=labels,
+        title="Intent Confusion matrix",
+        out=confmat_filename,
+    )
+
+
+def _plot_histogram(
+    output_directory: Optional[Text],
+    intent_hist_filename: Optional[Text],
+    intent_results: List[IntentEvaluationResult],
+) -> None:
+    if output_directory:
+        intent_hist_filename = os.path.join(output_directory, intent_hist_filename)
+        plot_attribute_confidences(
+            intent_results, intent_hist_filename, "intent_target", "intent_prediction"
+        )
 
 
 def merge_labels(
@@ -1038,6 +1055,7 @@ def run_evaluation(
     confmat: Optional[Text] = None,
     histogram: Optional[Text] = None,
     component_builder: Optional[ComponentBuilder] = None,
+    disable_plotting: bool = False,
 ) -> Dict:  # pragma: no cover
     """
     Evaluate intent classification, response selection and entity extraction.
@@ -1050,6 +1068,7 @@ def run_evaluation(
     :param confmat: path to file that will show the confusion matrix
     :param histogram: path fo file that will show a histogram
     :param component_builder: component builder
+    :param disable_plotting: if true confusion matrix and histogram will not be rendered
 
     :return: dictionary containing evaluation results
     """
@@ -1076,7 +1095,13 @@ def run_evaluation(
     if intent_results:
         logger.info("Intent evaluation results:")
         result["intent_evaluation"] = evaluate_intents(
-            intent_results, output_directory, successes, errors, confmat, histogram
+            intent_results,
+            output_directory,
+            successes,
+            errors,
+            confmat,
+            histogram,
+            disable_plotting,
         )
 
     if response_selection_results:
@@ -1181,7 +1206,9 @@ def cross_validate(
     errors: bool = False,
     confmat: Optional[Text] = None,
     histogram: Optional[Text] = None,
+    disable_plotting: bool = False,
 ) -> Tuple[CVEvaluationResult, CVEvaluationResult, CVEvaluationResult]:
+    
     """Stratified cross validation on data.
 
     Args:
@@ -1264,7 +1291,13 @@ def cross_validate(
     if intent_classifier_present:
         logger.info("Accumulated test folds intent evaluation results:")
         evaluate_intents(
-            intent_test_results, output, successes, errors, confmat, histogram
+            intent_test_results,
+            output,
+            successes,
+            errors,
+            confmat,
+            histogram,
+            disable_plotting,
         )
 
     if extractors:

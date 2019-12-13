@@ -307,6 +307,7 @@ def test_intent_evaluation_report(tmpdir_factory):
         errors=False,
         confmat_filename=None,
         intent_hist_filename=None,
+        disable_plotting=False,
     )
 
     report = json.loads(rasa.utils.io.read_file(report_filename))
@@ -359,6 +360,7 @@ def test_intent_evaluation_report_large(tmpdir_factory: TempdirFactory):
         errors=False,
         confmat_filename=None,
         intent_hist_filename=None,
+        disable_plotting=False,
     )
 
     report = json.loads(rasa.utils.io.read_file(str(report_filename)))
