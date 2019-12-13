@@ -232,14 +232,17 @@ class StoryConflict:
         # List which stories are in conflict with one another
         for action, stories in self._conflicting_actions.items():
             # Summarize if necessary
-            if len(stories) == 1:
-                stories = f"'{stories[0]}'"
-            elif len(stories) == 2:
-                stories = f"'{stories[0]}' and '{stories[1]}'"
-            elif len(stories) == 3:
-                stories = f"'{stories[0]}', '{stories[1]}', and '{stories[2]}'"
-            elif len(stories) >= 4:
-                stories = f"'{stories[0]}' and {len(stories) - 1} other trackers"
-            conflict_string += f"  {action} predicted in {stories}\n"
+            story_desc = {
+                1: "'{}'",
+                2: "'{}' and '{}'",
+                3: "'{}', '{}', and '{}'",
+            }.get(len(stories))
+            if story_desc:
+                story_desc = story_desc.format(*stories)
+            else:
+                # Four or more stories are present
+                story_desc = f"'{stories[0]}' and {len(stories) - 1} other trackers"
+
+            conflict_string += f"  {action} predicted in {story_desc}\n"
 
         return conflict_string
