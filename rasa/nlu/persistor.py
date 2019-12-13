@@ -152,8 +152,8 @@ class AWSPersistor(Persistor):
             self.s3.Object(self.bucket_name, file_key).put(Body=f)
 
     def _retrieve_tar(self, model_full_path: Text) -> None:
-        tar_name = os.path.basename(model_full_path)
         """Downloads a model that has previously been persisted to s3."""
+        tar_name = os.path.basename(model_full_path)
         with open(tar_name, "wb") as f:
             self.bucket.download_fileobj(model_full_path, f)
 
