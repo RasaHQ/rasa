@@ -700,9 +700,7 @@ class ReminderCancelled(Event):
         return f"ReminderCancelled(intent: {self.intent})"
 
     def as_story_string(self) -> Text:
-        props = json.dumps(
-            {"intent": self.intent}
-        )
+        props = json.dumps({"intent": self.intent})
         return f"{self.type_name}{props}"
 
     @classmethod
