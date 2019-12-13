@@ -160,12 +160,15 @@ class MessageProcessor:
             logger.debug(
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
+
             await self._run_action(
                 action=self._get_action(ACTION_SESSION_START_NAME),
                 tracker=tracker,
                 output_channel=output_channel,
                 nlg=self.nlg,
             )
+
+            self.tracker_store.save(tracker)
 
     async def get_tracker_with_session_start(
         self, sender_id: Text, output_channel: Optional[OutputChannel] = None,
