@@ -81,9 +81,11 @@ class StoryConflict:
             trackers, domain, max_history
         ):
             h = hash(str(list(sliced_states)))
+
+            if h in rules and h not in conflicts:
+                conflicts[h] = StoryConflict(sliced_states)
+
             if h in rules:
-                if h not in conflicts:
-                    conflicts[h] = StoryConflict(sliced_states)
                 conflicts[h].add_conflicting_action(
                     action=event.as_story_string(), story_name=tracker.sender_id
                 )
