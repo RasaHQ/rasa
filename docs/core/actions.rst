@@ -189,7 +189,7 @@ slots, but only a user's name and their phone number. To do that, you'd override
 
       @staticmethod
       def fetch_slots(tracker: Tracker) -> List[EventType]:
-          """Carry over slots that contain the user's name and phone number."""
+          """Collect slots that contain the user's name and phone number."""
 
           slots = []
 
@@ -207,11 +207,17 @@ slots, but only a user's name and their phone number. To do that, you'd override
           domain: Dict[Text, Any],
       ) -> List[EventType]:
 
-          _events = [SessionStarted()]
-          _events.extend(self.fetch_slots(tracker))
-          _events.append(ActionExecuted("action_listen"))
+          # the session should begin with a `session_started` event
+          events = [SessionStarted()]
 
-          return _events
+          # any slots that should be carried over should come after the
+          # `session_started` event
+          events.extend(self.fetch_slots(tracker))
+
+          # an `action_listen` should be added at the end as a user message follows
+          events.append(ActionExecuted("action_listen"))
+
+          return events
 
 .. note::
 
