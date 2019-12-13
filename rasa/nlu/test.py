@@ -1360,9 +1360,11 @@ def compute_metrics(
     )
     entity_metrics = _compute_entity_metrics(entity_results, interpreter)
 
-    response_selection_metrics = _compute_metrics(
-        response_selection_results, "response_target", "response_prediction"
-    )
+    response_selection_metrics = {}
+    if response_selection_results:
+        response_selection_metrics = _compute_metrics(
+            response_selection_results, "response_target", "response_prediction"
+        )
 
     return (
         intent_metrics,
@@ -1470,7 +1472,7 @@ def _compute_metrics(
     ],
     target_key: Text,
     target_prediction: Text,
-) -> IntentMetrics:
+) -> Union[IntentMetrics, ResponseSelectionMetrics]:
     """Computes evaluation metrics for a given corpus and
     returns the results
     """
