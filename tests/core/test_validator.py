@@ -48,7 +48,7 @@ async def test_verify_story_structure():
 async def test_verify_bad_story_structure():
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",
-        training_data_paths=["data/test_stories/stories_conflicting_1.md"],
+        training_data_paths=["data/test_stories/stories_conflicting_2.md"],
     )
     validator = await Validator.from_importer(importer)
     assert not validator.verify_story_structure(ignore_warnings=False)
