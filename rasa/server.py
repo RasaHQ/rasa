@@ -43,6 +43,7 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
 from rasa.utils.endpoints import EndpointConfig
+from rasa import train
 
 if typing.TYPE_CHECKING:
     from ssl import SSLContext
@@ -656,6 +657,7 @@ def create_app(
         """Train a Rasa Model."""
         from rasa.train import train_async
 
+        logger.warning("validating request body")
         validate_request_body(
             request,
             "You must provide training data in the request body in order to "
@@ -664,9 +666,11 @@ def create_app(
 
         rjs = request.json
         validate_request(rjs)
+        logger.warning("done validating")
 
         # create a temporary directory to store config, domain and
         # training data
+        print("read/writing files")
         temp_dir = tempfile.mkdtemp()
 
         config_path = os.path.join(temp_dir, "config.yml")
@@ -695,12 +699,21 @@ def create_app(
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value += 1
 
-            model_path = await train_async(
+            info = dict(
                 domain=domain_path,
                 config=config_path,
                 training_files=temp_dir,
                 output_path=model_output_directory,
                 force_training=rjs.get("force", False),
+            )
+
+            import asyncio
+            import functools
+
+            loop = asyncio.get_event_loop()
+            # pass None to run in default executor
+            model_path = await loop.run_in_executor(
+                None, functools.partial(train.train, **info)
             )
 
             filename = os.path.basename(model_path) if model_path else None
