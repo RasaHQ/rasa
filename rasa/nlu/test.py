@@ -1308,7 +1308,7 @@ def cross_validate(
         evaluate_entities(entity_test_results, extractors, output, successes, errors)
 
     if response_selector_present:
-        logger.info("Accumulated test folds intent evaluation results:")
+        logger.info("Accumulated test folds response selection evaluation results:")
         evaluate_response_selections(response_selection_test_results, output)
 
     return (
