@@ -162,6 +162,7 @@ def test_s3_private_retrieve_tar():
     model = "/my/s3/project/model.tar.gz"
     awsPersistor = persistor.AWSPersistor("rasa-test")
     with patch.object(awsPersistor.bucket, "download_fileobj") as download_fileobj:
+        # noinspection PyProtectedMember
         awsPersistor._retrieve_tar(model)
     retrieveArgs = download_fileobj.call_args[0]
     assert retrieveArgs[0] == model
