@@ -10,8 +10,7 @@ from rasa.core.training.generator import TrackerWithCachedStates
 
 class StoryConflict:
     def __init__(
-        self,
-        sliced_states: List[Optional[Dict[Text, float]]],
+        self, sliced_states: List[Optional[Dict[Text, float]]],
     ):
         self.sliced_states = sliced_states
         self.hash = hash(str(list(sliced_states)))
