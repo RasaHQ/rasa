@@ -31,6 +31,24 @@ class StoryConflict:
         :return: List of conflicts
         """
 
+        # We do this in two steps, to reduce memory consumption:
+
+        # Create a 'state -> list of actions' dict, where the state is
+        # represented by its hash
+        rules = StoryConflict._find_conflicting_states(trackers, domain, max_history)
+
+        # Iterate once more over all states and note the (unhashed) state,
+        # for which a conflict occurs
+        conflicts = StoryConflict._build_conflicts_from_states(
+            trackers, domain, max_history, rules
+        )
+
+        return conflicts
+
+    @staticmethod
+    def _find_conflicting_states(
+        trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
+    ) -> Dict[Text, Optional[List[Text]]]:
         # Create a 'state -> list of actions' dict, where the state is
         # represented by its hash
         rules = {}
@@ -45,10 +63,17 @@ class StoryConflict:
                 rules[h] = [event.as_story_string()]
 
         # Keep only conflicting rules
-        rules = {
+        return {
             state: actions for (state, actions) in rules.items() if len(actions) > 1
         }
 
+    @staticmethod
+    def _build_conflicts_from_states(
+        trackers: List["TrackerWithCachedStates"],
+        domain: Domain,
+        max_history: int,
+        rules: Dict[Text, Optional[List[Text]]],
+    ):
         # Iterate once more over all states and note the (unhashed) state,
         # for which a conflict occurs
         conflicts = {}
@@ -69,7 +94,7 @@ class StoryConflict:
     @staticmethod
     def _sliced_states_iterator(
         trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
-    ) -> (TrackerWithCachedStates, Event, List[Optional[Dict[Text, float]]]):
+    ) -> (TrackerWithCachedStates, Event, List[Dict[Text, float]]):
         """
         Iterate over all given trackers and all sliced states within
         each tracker, where the slicing is based on `max_history`
