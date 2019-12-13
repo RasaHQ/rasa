@@ -27,16 +27,16 @@ before_script:
   - export TMPDIR=$HOME/tmp
 jobs:
   include:
-  - stage: test
-    name: "Code Formatting"
-    python: 3.6
-    script:
-    - make lint
-  - stage: test
-    name: "Type Check"
-    python: 3.6
-    script:
-    - make types
+#  - stage: test
+#    name: "Code Formatting"
+#    python: 3.6
+#    script:
+#    - make lint
+#  - stage: test
+#    name: "Type Check"
+#    python: 3.6
+#    script:
+#    - make types
   - &run-tests
     stage: test
     name: "Test 3.6"
@@ -48,69 +48,69 @@ jobs:
     python: '3.7'
     after_success:
       - coveralls   # only this version will submit results to coveralls
-  - stage: integration
-    name: "Test API specification"
-    language: python
-    install:
-    - npm install -g swagger-cli
-    script:
-    - swagger-cli validate docs/_static/spec/action-server.yml
-    - swagger-cli validate docs/_static/spec/rasa.yml
-  - stage: test
-    name: "Test Docs"
-    install:
-    - pip install -r requirements.txt
-    - pip install -r requirements-docs.txt
-    - pip install -e .[sql]
-    - pip list
-    script:
-      # be strict about warnings --> they will be treated as errors
-    - cd docs
-    - make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
-  - stage: docs
-    if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
-    install:
-    - RASABASTER=rasabaster-0.7.23.tar.gz
-    - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
-    - pip install $RASABASTER
-    - pip install -r requirements.txt
-    - pip install --no-cache-dir -r requirements-docs.txt
-    - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
-    - pip install -e .
-    - pip list
-    script:
-    - eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
-    - openssl aes-256-cbc
-      -K $encrypted_1708c37fe733_key
-      -iv $encrypted_1708c37fe733_iv
-      -in secrets.tar.enc
-      -out secrets.tar
-      -d
-    - tar -xvf secrets.tar
-    - ssh-add docs_key
-    - git config --global user.email "builds@travis-ci.com"
-    - git config --global user.name "Travis CI"
-    - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
-    - export ${!TRAVIS*}
-    - sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster
-  - stage: docs-netlify
-    if: branch = master AND type != pull_request OR tag IS present
-    install: skip
-    script:
-    - curl -X POST -d "docs" https://api.netlify.com/build_hooks/${NETLIFY_HOOK_ID}
-  - stage: deploy
-    name: "Deploy to PyPI"
-    python: 3.6
-    if: tag IS present
-    install: skip
-    script: skip
-    deploy:
-      provider: pypi
-      user: amn41
-      # server: https://test.pypi.org/legacy/
-      on:
-        tags: true
-      distributions: "sdist bdist_wheel"
-      password:
-        secure: "MeL1Ve97eBY+VbNWuQNuLzkPs0TPc+Zh8OfZkhw69ez5imsiWpvp0LrUOLVW3CcC0vNTANEBOVX/n1kHxfcqkf/cChNqAkZ6zTMmvR9zHDwQxXVGZ3jEQSQM+fHdQpjwtH7BwojyxaCIC/5iza7DFMcca/Q6Xr+atdTd0V8Q7Nc5jFHEQf3/4oIIm6YeCUiHcEu981LRdS04+jvuFUN0Ejy+KLukGVyIWyYDjjGjs880Mj4J1mgmCihvVkJ1ujB65rYBdTjls3JpP3eTk63+xH8aHilIuvqB8TDYih8ovE/Vv6YwLI+u2HoEHAtBD4Ez3r71Ju6JKJM7DhWb5aurN4M7K6DC8AvpUl+PsJbNP4ZeW2jXMH6lT6qXKVaSw7lhZ0XY3wunyVcAbArX4RS0B9pb1nHBYUBWZjxXtr8lhkpGFu7H43hw63Y19qb8z4+1cGnijgz1mqXSAssuc+3r0W0cSr+OsCjmOs7cwT6HMQvPEKxLohwBOS/I3EbuKQOYMjFN5BWP5JXbsG45awV9tquxEW8zxjMetR+AOcYoyrDeiR8sAnj1/F99DE0bL1KyW/G5VNu2Xi/c+0M3KvP3+F8XTCuUY/5zTvqh1Qz1jcdiwsiAhO4eBQzQnjeFlxdiVeue2kmD5qsh+VLKKuKLfyVoaV7b1kBlAtBDu7+hDpA="
-    after_deploy: ./scripts/ping_slack_about_package_release.sh
+#  - stage: integration
+#    name: "Test API specification"
+#    language: python
+#    install:
+#    - npm install -g swagger-cli
+#    script:
+#    - swagger-cli validate docs/_static/spec/action-server.yml
+#    - swagger-cli validate docs/_static/spec/rasa.yml
+#  - stage: test
+#    name: "Test Docs"
+#    install:
+#    - pip install -r requirements.txt
+#    - pip install -r requirements-docs.txt
+#    - pip install -e .[sql]
+#    - pip list
+#    script:
+#      # be strict about warnings --> they will be treated as errors
+#    - cd docs
+#    - make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
+#  - stage: docs
+#    if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
+#    install:
+#    - RASABASTER=rasabaster-0.7.23.tar.gz
+#    - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
+#    - pip install $RASABASTER
+#    - pip install -r requirements.txt
+#    - pip install --no-cache-dir -r requirements-docs.txt
+#    - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
+#    - pip install -e .
+#    - pip list
+#    script:
+#    - eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
+#    - openssl aes-256-cbc
+#      -K $encrypted_1708c37fe733_key
+#      -iv $encrypted_1708c37fe733_iv
+#      -in secrets.tar.enc
+#      -out secrets.tar
+#      -d
+#    - tar -xvf secrets.tar
+#    - ssh-add docs_key
+#    - git config --global user.email "builds@travis-ci.com"
+#    - git config --global user.name "Travis CI"
+#    - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
+#    - export ${!TRAVIS*}
+#    - sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster
+#  - stage: docs-netlify
+#    if: branch = master AND type != pull_request OR tag IS present
+#    install: skip
+#    script:
+#    - curl -X POST -d "docs" https://api.netlify.com/build_hooks/${NETLIFY_HOOK_ID}
+#  - stage: deploy
+#    name: "Deploy to PyPI"
+#    python: 3.6
+#    if: tag IS present
+#    install: skip
+#    script: skip
+#    deploy:
+#      provider: pypi
+#      user: amn41
+#      # server: https://test.pypi.org/legacy/
+#      on:
+#        tags: true
+#      distributions: "sdist bdist_wheel"
+#      password:
+#        secure: "MeL1Ve97eBY+VbNWuQNuLzkPs0TPc+Zh8OfZkhw69ez5imsiWpvp0LrUOLVW3CcC0vNTANEBOVX/n1kHxfcqkf/cChNqAkZ6zTMmvR9zHDwQxXVGZ3jEQSQM+fHdQpjwtH7BwojyxaCIC/5iza7DFMcca/Q6Xr+atdTd0V8Q7Nc5jFHEQf3/4oIIm6YeCUiHcEu981LRdS04+jvuFUN0Ejy+KLukGVyIWyYDjjGjs880Mj4J1mgmCihvVkJ1ujB65rYBdTjls3JpP3eTk63+xH8aHilIuvqB8TDYih8ovE/Vv6YwLI+u2HoEHAtBD4Ez3r71Ju6JKJM7DhWb5aurN4M7K6DC8AvpUl+PsJbNP4ZeW2jXMH6lT6qXKVaSw7lhZ0XY3wunyVcAbArX4RS0B9pb1nHBYUBWZjxXtr8lhkpGFu7H43hw63Y19qb8z4+1cGnijgz1mqXSAssuc+3r0W0cSr+OsCjmOs7cwT6HMQvPEKxLohwBOS/I3EbuKQOYMjFN5BWP5JXbsG45awV9tquxEW8zxjMetR+AOcYoyrDeiR8sAnj1/F99DE0bL1KyW/G5VNu2Xi/c+0M3KvP3+F8XTCuUY/5zTvqh1Qz1jcdiwsiAhO4eBQzQnjeFlxdiVeue2kmD5qsh+VLKKuKLfyVoaV7b1kBlAtBDu7+hDpA="
+#    after_deploy: ./scripts/ping_slack_about_package_release.sh

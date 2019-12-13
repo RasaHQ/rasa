@@ -60,7 +60,7 @@ prepare-tests-files:
 
 test: clean get-num-jobs
 	# OMP_NUM_THREADS can improve overral performance using one thread by process (on tensorflow), avoiding overload
-	OMP_NUM_THREADS=1 pytest tests -n $(JOBS) --cov rasa
+	OMP_NUM_THREADS=1 pytest tests/test_server.py::test_train_status -n $(JOBS) --cov rasa
 
 get-num-jobs:
 	$(eval JOBS := $(if $(findstring -j, $(MAKEFLAGS)), $(shell echo $(MAKEFLAGS) | sed -E "s@.*-j([0-9]+).*@\1@"), $(JOBS)))
