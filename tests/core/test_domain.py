@@ -266,6 +266,9 @@ templates:
 - utter_goodbye
 config:
   store_entities_as_slots: false
+session_config:
+    session_expiration_time: 20
+    carry_over_slots: true
 entities:
 - cuisine
 intents:
@@ -296,6 +299,7 @@ templates:
     assert not domain.store_entities_as_slots
     # conflicts should take value from domain_2
     assert domain.templates == {"utter_greet": [{"text": "hey you!"}]}
+    assert domain.session_config == SessionConfig(20, True)
 
 
 @pytest.mark.parametrize(
@@ -593,7 +597,7 @@ def test_add_knowledge_base_slots(default_domain):
             20.2,
             False,
         ),
-        ("""session_config: {}""", 0, True,),
+        ("""session_config: {}""", 0, True),
     ],
 )
 def test_session_config(

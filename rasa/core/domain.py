@@ -11,11 +11,7 @@ import rasa.core.constants
 import rasa.utils.common as common_utils
 import rasa.utils.io
 from rasa.cli.utils import bcolors
-from rasa.constants import (
-    DOMAIN_SCHEMA_FILE,
-    DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
-    DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
-)
+from rasa.constants import DOMAIN_SCHEMA_FILE, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
 from rasa.core.actions.action import Action  # pytype: disable=pyi-error
@@ -212,6 +208,9 @@ class Domain:
             config = domain_dict["config"]
             for key, val in config.items():  # pytype: disable=attribute-error
                 combined["config"][key] = val
+
+        if override or self.session_config == SessionConfig.default():
+            combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
 
         # intents is list of dicts
         intents_1 = {list(i.keys())[0]: i for i in combined["intents"]}
