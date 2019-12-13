@@ -103,7 +103,7 @@ def perform_interactive_learning(args: argparse.Namespace, zipped_model: Text) -
         do_interactive_learning(args, stories_directory)
 
 
-def get_provided_model(arg_model: Text) -> Text:
+def get_provided_model(arg_model: Text) -> Optional[Text]:
     model_path = utils.get_validated_path(arg_model, "model", DEFAULT_MODELS_PATH)
 
     if os.path.isdir(model_path):
