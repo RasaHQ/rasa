@@ -1129,6 +1129,7 @@ def generate_folds(
 
     skf = StratifiedKFold(n_splits=n, shuffle=True)
     x = td.intent_examples
+    ## Get labels with response key appended to intent name because we want a stratified split on all intents(including retrieval intents if they exist)
     y = [example.get_combined_intent_response_key() for example in x]
     for i_fold, (train_index, test_index) in enumerate(skf.split(x, y)):
         logger.debug(f"Fold: {i_fold}")
