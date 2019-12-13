@@ -25,10 +25,33 @@ async def test_find_no_conflicts():
     assert conflicts == []
 
 
-async def test_find_conflicts():
+async def test_find_conflicts_in_short_history():
     importer = RasaFileImporter(
         domain_path="data/test_domains/default.yml",
         training_data_paths=["data/test_stories/stories_conflicting_1.md"],
+    )
+    validator = await Validator.from_importer(importer)
+
+    trackers = TrainingDataGenerator(
+        validator.story_graph,
+        domain=validator.domain,
+        remove_duplicates=False,
+        augmentation_factor=0,
+    ).generate()
+
+    # `max_history = 3` is too small, so a conflict must arise
+    conflicts = StoryConflict.find_conflicts(trackers, validator.domain, 3)
+    assert len(conflicts) == 1
+
+    # With `max_history = 4` the conflict should disappear
+    conflicts = StoryConflict.find_conflicts(trackers, validator.domain, 4)
+    assert len(conflicts) == 0
+
+
+async def test_find_conflicts_checkpoints():
+    importer = RasaFileImporter(
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=["data/test_stories/stories_conflicting_2.md"],
     )
     validator = await Validator.from_importer(importer)
 

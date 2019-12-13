@@ -1,14 +1,15 @@
-## greetings
+## story 1
 * greet
   - utter_greet
-> check_greet
+* greet
+  - utter_greet
+* greet
+  - utter_greet
 
-## happy path
-> check_greet
+## story 2
 * default
+  - utter_greet
+* greet
+  - utter_greet
+* greet
   - utter_default
-
-## problem
-> check_greet
-* default
-  - utter_goodbye
