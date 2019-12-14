@@ -11,7 +11,7 @@ Tracker
 
 Trackers maintain the state of a dialogue between the assistant and the user in the form
 of conversation sessions. To learn more about how to configure the session behaviour,
- check out the docs on :ref:`session_config`.
+check out the docs on :ref:`session_config`.
 
 .. edit-link::
    :url: https://github.com/RasaHQ/rasa/edit/master/rasa/core/trackers.py
