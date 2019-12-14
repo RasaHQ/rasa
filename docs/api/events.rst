@@ -281,7 +281,7 @@ Start a new conversation session
 
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
-      :start-after: # DOCS MARKER ActionExecuted
+      :start-after: # DOCS MARKER SessionStarted
       :dedent: 4
       :end-before: # DOCS END
 :Class:
