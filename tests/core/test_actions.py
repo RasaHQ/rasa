@@ -549,7 +549,6 @@ async def test_action_session_start_with_slots(
 
     # make sure that the list of events has ascending timestamps
     assert sorted(events, key=lambda x: x.timestamp) == events
-
     assert template_sender_tracker.followup_action == ACTION_LISTEN_NAME
 
 
