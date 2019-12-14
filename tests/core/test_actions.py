@@ -507,7 +507,8 @@ async def test_action_session_start_without_slots(
     events = await ActionSessionStart().run(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
-    assert events == [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)]
+    assert events == [SessionStarted()]
+    assert template_sender_tracker.followup_action == ACTION_LISTEN_NAME
 
 
 @pytest.mark.parametrize(
@@ -519,13 +520,9 @@ async def test_action_session_start_without_slots(
                 SessionStarted(),
                 SlotSet("my_slot", "value"),
                 SlotSet("another-slot", "value2"),
-                ActionExecuted(action_name=ACTION_LISTEN_NAME),
             ],
         ),
-        (
-            SessionConfig(123, False),
-            [SessionStarted(), ActionExecuted(action_name=ACTION_LISTEN_NAME)],
-        ),
+        (SessionConfig(123, False), [SessionStarted()],),
     ],
 )
 async def test_action_session_start_with_slots(
@@ -553,6 +550,8 @@ async def test_action_session_start_with_slots(
     # make sure that the list of events has ascending timestamps
     assert sorted(events, key=lambda x: x.timestamp) == events
 
+    assert template_sender_tracker.followup_action == ACTION_LISTEN_NAME
+
 
 async def test_applied_events_after_action_session_start(
     default_channel: CollectingOutputChannel,
@@ -577,7 +576,8 @@ async def test_applied_events_after_action_session_start(
     for event in events:
         tracker.update(event)
 
-    assert tracker.applied_events() == [slot_set, ActionExecuted(ACTION_LISTEN_NAME)]
+    assert tracker.applied_events() == [slot_set]
+    assert tracker.followup_action == ACTION_LISTEN_NAME
 
 
 async def test_action_default_fallback(

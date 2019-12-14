@@ -373,8 +373,6 @@ class ActionSessionStart(Action):
         if domain.session_config.carry_over_slots:
             _events.extend(self._slot_set_events_from_tracker(tracker))
 
-        _events.append(ActionExecuted(ACTION_LISTEN_NAME))
-
         return _events
 
 

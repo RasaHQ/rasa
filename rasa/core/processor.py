@@ -142,6 +142,33 @@ class MessageProcessor:
             "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART),
         }
 
+    async def _run_session_start_sequence(
+        self, tracker: DialogueStateTracker, output_channel: OutputChannel
+    ) -> None:
+        """Run `ACTION_SESSION_START_NAME` and any follow-up actions triggered by it.
+
+        Args:
+            tracker: Tracker to run the actions on.
+            output_channel: Output channel for potential utterances in a custom
+                `ActionSessionStart`.
+        """
+
+        action = self._get_action(ACTION_SESSION_START_NAME)
+
+        while action:
+            await self._run_action(
+                action=action,
+                tracker=tracker,
+                output_channel=output_channel,
+                nlg=self.nlg,
+            )
+            followup_action = tracker.followup_action
+            if followup_action:
+                tracker.clear_followup_action()
+                action = self._get_action(followup_action)
+            else:
+                action = None
+
     async def _update_tracker_session(
         self, tracker: DialogueStateTracker, output_channel: OutputChannel,
     ) -> None:
@@ -161,12 +188,7 @@ class MessageProcessor:
                 f"Starting a new session for conversation ID '{tracker.sender_id}'."
             )
 
-            await self._run_action(
-                action=self._get_action(ACTION_SESSION_START_NAME),
-                tracker=tracker,
-                output_channel=output_channel,
-                nlg=self.nlg,
-            )
+            await self._run_session_start_sequence(tracker, output_channel)
 
             self.tracker_store.save(tracker)
 
