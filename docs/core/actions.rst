@@ -164,6 +164,66 @@ There is an example of a ``SlotSet`` event
 :ref:`above <custom_action_example>`, and a full list of possible
 events in :ref:`Events <events>`.
 
+.. _custom_session_start:
+
+Customising the session start action
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The default behaviour of the session start action is to take all existing slots and to
+carry them over into the next session. Let's say you do not want to carry over all
+slots, but only a user's name and their phone number. To do that, you'd override the
+``action_session_start`` with a custom action that might look like this:
+
+.. testcode::
+
+  from typing import Text, List, Dict, Any
+
+  from rasa_sdk import Action, Tracker
+  from rasa_sdk.events import SlotSet, SessionStarted, ActionExecuted, EventType
+  from rasa_sdk.executor import CollectingDispatcher
+
+
+  class ActionSessionStart(Action):
+      def name(self) -> Text:
+          return "action_session_start"
+
+      @staticmethod
+      def fetch_slots(tracker: Tracker) -> List[EventType]:
+          """Collect slots that contain the user's name and phone number."""
+
+          slots = []
+
+          for key in ("name", "phone_number"):
+              value = tracker.get_slot(key)
+              if value is not None:
+                  slots.append(SlotSet(key=key, value=value))
+
+          return slots
+
+      async def run(
+          self,
+          dispatcher: CollectingDispatcher,
+          tracker: Tracker,
+          domain: Dict[Text, Any],
+      ) -> List[EventType]:
+
+          # the session should begin with a `session_started` event
+          events = [SessionStarted()]
+
+          # any slots that should be carried over should come after the
+          # `session_started` event
+          events.extend(self.fetch_slots(tracker))
+
+          # an `action_listen` should be added at the end as a user message follows
+          events.append(ActionExecuted("action_listen"))
+
+          return events
+
+.. note::
+
+  You need to explicitly add ``action_session_start`` to your domain to override this
+  custom action.
+
 Execute Actions in Other Code
 -----------------------------
 
@@ -211,7 +271,7 @@ using the :ref:`callbackInput` channel to send messages to a webhook.
 Default Actions
 ---------------
 
-There are eight default actions:
+The available default actions are:
 
 +-----------------------------------+------------------------------------------------+
 | ``action_listen``                 | Stop predicting more actions and wait for user |
@@ -228,9 +288,10 @@ There are eight default actions:
 |                                   | events. This action is triggered automatically |
 |                                   | after an inactivity period defined by the      |
 |                                   | ``session_expiration_time`` parameter in the   |
-|                                   | domain's session config. Can be triggered      |
-|                                   | manually during a conversation by entering     |
-|                                   | ``/session_start``.                            |
+|                                   | domain's :ref:`session_config`. Can be         |
+|                                   | triggered manually during a conversation by    |
+|                                   | entering ``/session_start``. All conversations |
+|                                   | begin with an ``action_session_start``.        |
 +-----------------------------------+------------------------------------------------+
 | ``action_default_fallback``       | Undo the last user message (as if the user did |
 |                                   | not send it and the bot did not react) and     |
@@ -259,7 +320,7 @@ There are eight default actions:
 |                                   | included in the policy configuration.          |
 +-----------------------------------+------------------------------------------------+
 
-All the default actions can be overwritten. To do so, add the action name
+All the default actions can be overridden. To do so, add the action name
 to the list of actions in your domain:
 
 .. code-block:: yaml

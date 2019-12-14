@@ -125,6 +125,13 @@ def test_json_parse_restarted():
     assert Event.from_parameters(evt) == Restarted()
 
 
+def test_json_parse_session_started():
+    # DOCS MARKER SessionStarted
+    evt = {"event": "session_started"}
+    # DOCS END
+    assert Event.from_parameters(evt) == SessionStarted()
+
+
 def test_json_parse_reset():
     # DOCS MARKER AllSlotsReset
     evt = {"event": "reset_slots"}
