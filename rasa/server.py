@@ -41,7 +41,6 @@ from rasa.core.tracker_store import TrackerStore
 
 logger = logging.getLogger(__name__)
 
-
 OUTPUT_CHANNEL_QUERY_KEY = "output_channel"
 USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
 
@@ -131,7 +130,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                     result = await result
                 return result
             elif app.config.get("USE_JWT") and request.app.auth.is_authenticated(
-                request
+                    request
             ):
                 if sufficient_scope(request, *args, **kwargs):
                     result = f(request, *args, **kwargs)
@@ -167,7 +166,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
 
 
 def event_verbosity_parameter(
-    request: Request, default_verbosity: EventVerbosity
+        request: Request, default_verbosity: EventVerbosity
 ) -> EventVerbosity:
     event_verbosity_str = request.args.get(
         "include_events", default_verbosity.name
@@ -239,10 +238,10 @@ def _create_emulator(mode: Optional[Text]) -> NoEmulator:
 
 
 async def _load_agent(
-    model_path: Optional[Text] = None,
-    model_server: Optional[EndpointConfig] = None,
-    remote_storage: Optional[Text] = None,
-    endpoints: Optional[AvailableEndpoints] = None,
+        model_path: Optional[Text] = None,
+        model_server: Optional[EndpointConfig] = None,
+        remote_storage: Optional[Text] = None,
+        endpoints: Optional[AvailableEndpoints] = None,
 ) -> Agent:
     try:
         tracker_store = None
@@ -290,12 +289,12 @@ def add_root_route(app: Sanic):
 
 
 def create_app(
-    agent: Optional["Agent"] = None,
-    cors_origins: Union[Text, List[Text]] = "*",
-    auth_token: Optional[Text] = None,
-    jwt_secret: Optional[Text] = None,
-    jwt_method: Text = "HS256",
-    endpoints: Optional[AvailableEndpoints] = None,
+        agent: Optional["Agent"] = None,
+        cors_origins: Union[Text, List[Text]] = "*",
+        auth_token: Optional[Text] = None,
+        jwt_secret: Optional[Text] = None,
+        jwt_method: Text = "HS256",
+        endpoints: Optional[AvailableEndpoints] = None,
 ):
     """Class representing a Rasa HTTP server."""
 
@@ -823,7 +822,7 @@ def create_app(
         try:
             data = emulator.normalise_request_json(request.json)
             try:
-                data['text'] = data['text'].lower().replace("\'","")
+                data['text'] = data['text'].lower().replace("\'", "")
                 parsed_data = await app.agent.parse_message_using_nlu_interpreter(
                     data.get("text")
                 )
@@ -838,14 +837,14 @@ def create_app(
             print(response_data)
             if response_data['intent']['confidence'] >= 0.75:
                 narrowedEntity = entitySerializer(response_data['entities'])
-                entMap = entityMapper(narrowedEntity, response_data['intent']['name'],response_data['text'])
+                entMap = entityMapper(narrowedEntity, response_data['intent']['name'], response_data['text'])
                 response_data['slotvalues'] = entMap
             else:
                 response_data['intent'] = {}
                 response_data['intent']['name'] = 'AMAZON.FallbackIntent'
-            del[response_data['intent_ranking']]
-            del[response_data['entities']]
-            response_data['intent'] = response_data['intent']['name']
+            del [response_data['intent_ranking']]
+            del [response_data['entities']]
+            response_data['intent'] = response_data['intent']['name'] if response_data['intent']['name'] != "SeriesIntent" else "SearchIntent"
             response_data['reqtype'] = respFinder(response_data['intent'])
             return response.json(response_data)
 
@@ -854,7 +853,7 @@ def create_app(
             raise ErrorResponse(
                 500, "ParsingError", "An unexpected error occurred. Error: {}".format(e)
             )
-        
+
     def respFinder(intent):
         if intent == "AMAZON.StopIntent":
             return 'SessionEndedRequest'
@@ -882,7 +881,7 @@ def create_app(
                 entMap.append(resMap)
                 resMap = {}
         if intent == "searchintent" or intent == "cancelholdintent" or intent == "renewintent" or intent == "listcheckOutintent":
-            print("entity map value is ",entMap)
+            print("entity map value is ", entMap)
             for data in entMap:
                 if data["name"] == "WORK_OF_ART":
                     data["name"] = "stitle"
@@ -909,7 +908,7 @@ def create_app(
                         conditionMap["stitle"] = data["value"]
                 elif data["name"] == "sbook":
                     if "stitle" not in conditionMap:
-                        if len(data["value"])<=50:
+                        if len(data["value"]) <= 50:
                             data["name"] = "stitle"
                             entityArray.append(data)
                             conditionMap["stitle"] = data["value"]
@@ -920,7 +919,7 @@ def create_app(
                                 entityArray.append(data)
                                 conditionMap["subject"] = data["value"]
                 elif data["name"] == "subject":
-                    print("Entity array before subject is ",entityArray)
+                    print("Entity array before subject is ", entityArray)
                     if "subject" not in conditionMap:
                         data["name"] = data["name"].lower()
                         entityArray.append(data)
@@ -937,15 +936,70 @@ def create_app(
                     else:
                         data["name"] = data["name"].lower()
                         entityArray.append(data)
-                elif data["name"]  == "sauthor":
+                elif data["name"] == "sauthor":
                     entityArray.append(data)
                 elif data["name"] == 'type' or data["name"] == 'timeline' or data[
-                    "name"] == 'mtype' or data["name"] == 'renew' or data["name"] == 'renewAll' or data["name"] == "cancelhold":
+                    "name"] == 'mtype' or data["name"] == 'renew' or data["name"] == 'renewAll' or data[
+                    "name"] == "cancelhold":
                     data["name"] = data["name"].lower()
                     entityArray.append(data)
                 elif data["name"] == "pubyear":
                     if conditionMap.__contains__("pubyear"):
                         pass
+                    else:
+                        conditionMap['pubyear'] = data['value']
+                        entityArray.append(data)
+                elif data["name"] == "number":
+                    if conditionMap.__contains__("pubyear"):
+                        pass
+                    else:
+                        conditionMap['pubyear'] = data['value']
+                        data["name"] = "pubyear"
+                        entityArray.append(data)
+                else:
+                    pass
+        elif intent == "seriesintent":
+            for data in entMap:
+                if data["name"] == "WORK_OF_ART":
+                    data["name"] = "sseries"
+                    data["value"] = data["value"].lower().replace("search for a book", "").replace("search for the book", "").replace("serach for title", "").replace("search for a title","").replace("serach for the title", "")
+                    if data["value"] != "":
+                        entityArray.append(data)
+                        conditionMap["sseries"] = data["value"]
+                        print("Entity array after work of art is ", entityArray)
+                elif data["name"] == "person":
+                    if "sseries" in conditionMap:
+                        if data["value"] != conditionMap["sseries"]:
+                            data["name"] = "sauthor"
+                            entityArray.append(data)
+                        else:
+                            data["name"] = "sauthor"
+                            entityArray.append(data)
+                elif data["name"] == "series":
+                    if "sseries" not in conditionMap:
+                        data["name"] = "sseries"
+                        entityArray.append(data)
+                        conditionMap["sseries"] = data["value"]
+                elif data["name"] == "filterphrase":
+                    if data["value"] in conditionMap.values():
+                        pass
+                    elif conditionMap.__contains__("sseries"):
+                        if data["value"] == conditionMap["sseries"]:
+                            pass
+                        else:
+                            data["name"] = data["name"].lower()
+                            entityArray.append(data)
+                    else:
+                        data["name"] = data["name"].lower()
+                        entityArray.append(data)
+                elif data["name"] == "sauthor":
+                    entityArray.append(data)
+                elif data["name"] == 'type' or data["name"] == 'timeline' or data["name"] == 'mtype' or data["name"] == 'renew' or data["name"] == 'renewAll' or data["name"] == "cancelhold":
+                    data["name"] = data["name"].lower()
+                    entityArray.append(data)
+                elif data["name"] == "pubyear":
+                    if conditionMap.__contains__("pubyear"):
+                       pass
                     else:
                         conditionMap['pubyear'] = data['value']
                         entityArray.append(data)
@@ -1056,7 +1110,6 @@ def create_app(
                 entityArray.append(data)
         return entityArray
 
-
     def entitySerializer(enityData):
         filterMap = []
         entityArray = []
@@ -1084,10 +1137,7 @@ def create_app(
                 entityArray.append(entityMap)
                 entityMap = {}
 
-
         return entityArray
-
-
 
     @app.put("/model")
     @requires_auth(app, auth_token)
@@ -1156,7 +1206,7 @@ def create_app(
 
 
 def _get_output_channel(
-    request: Request, tracker: Optional[DialogueStateTracker]
+        request: Request, tracker: Optional[DialogueStateTracker]
 ) -> OutputChannel:
     """Returns the `OutputChannel` which should be used for the bot's responses.
 
@@ -1171,8 +1221,8 @@ def _get_output_channel(
     requested_output_channel = request.args.get(OUTPUT_CHANNEL_QUERY_KEY)
 
     if (
-        requested_output_channel == USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL
-        and tracker
+            requested_output_channel == USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL
+            and tracker
     ):
         requested_output_channel = tracker.get_latest_input_channel()
 
@@ -1188,7 +1238,7 @@ def _get_output_channel(
     # otherwise use `CollectingOutputChannel`
     return reduce(
         lambda output_channel_created_so_far, input_channel: (
-            input_channel.get_output_channel() or output_channel_created_so_far
+                input_channel.get_output_channel() or output_channel_created_so_far
         ),
         matching_channels,
         CollectingOutputChannel(),
