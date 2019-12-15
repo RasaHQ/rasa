@@ -1,14 +1,15 @@
 import json
 import logging
+import warnings
 from typing import Optional
 
-from rasa.core.brokers.event_channel import EventChannel
+from rasa.core.brokers.broker import EventBroker
 from rasa.utils.io import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
 
 
-class KafkaProducer(EventChannel):
+class KafkaEventBroker(EventBroker):
     def __init__(
         self,
         host,
@@ -37,7 +38,7 @@ class KafkaProducer(EventChannel):
         logging.getLogger("kafka").setLevel(loglevel)
 
     @classmethod
-    def from_endpoint_config(cls, broker_config) -> Optional["KafkaProducer"]:
+    def from_endpoint_config(cls, broker_config) -> Optional["KafkaEventBroker"]:
         if broker_config is None:
             return None
 
@@ -76,3 +77,39 @@ class KafkaProducer(EventChannel):
 
     def _close(self) -> None:
         self.producer.close()
+
+
+class KafkaProducer(KafkaEventBroker):
+    def __init__(
+        self,
+        host,
+        sasl_username=None,
+        sasl_password=None,
+        ssl_cafile=None,
+        ssl_certfile=None,
+        ssl_keyfile=None,
+        ssl_check_hostname=False,
+        topic="rasa_core_events",
+        security_protocol="SASL_PLAINTEXT",
+        loglevel=logging.ERROR,
+    ) -> None:
+        warnings.warn(
+            "The `KafkaProducer` class is deprecated, please inherit "
+            "from `KafkaEventBroker` instead. `KafkaProducer` will be "
+            "removed in future Rasa versions.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        super(KafkaProducer, self).__init__(
+            host,
+            sasl_username,
+            sasl_password,
+            ssl_cafile,
+            ssl_certfile,
+            ssl_keyfile,
+            ssl_check_hostname,
+            topic,
+            security_protocol,
+            loglevel,
+        )

@@ -9,9 +9,6 @@ from rasa.core.events import UserUttered, ActionExecuted, Event
 from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa.core.training.generator import TrainingDataGenerator
 from rasa.core.training.structures import StoryGraph, StoryStep
-from typing import TypeVar
-
-_T1 = TypeVar("_T1")
 
 if TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData, Message

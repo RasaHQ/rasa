@@ -36,9 +36,11 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
 
     print_success("Finished creating project structure.")
 
-    should_train = questionary.confirm(
-        "Do you want to train an initial model? 💪🏽"
-    ).skip_if(args.no_prompt, default=True)
+    should_train = (
+        questionary.confirm("Do you want to train an initial model? 💪🏽")
+        .skip_if(args.no_prompt, default=True)
+        .ask()
+    )
 
     if should_train:
         print_success("Training an initial model...")

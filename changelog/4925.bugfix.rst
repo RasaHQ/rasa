@@ -1,0 +1,1 @@
+"rasa init" will ask if user wants to train a model

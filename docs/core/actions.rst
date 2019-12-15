@@ -87,83 +87,8 @@ a small python SDK to make development there even easier.
 Custom Actions Written in Python
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For actions written in python, we have a convenient SDK which starts
+For actions written in python, we have a convenient :ref:`rasa-sdk` which starts
 this action server for you.
-
-The only thing your action server needs to install is ``rasa-sdk``:
-
-.. code-block:: bash
-
-    pip install rasa-sdk
-
-.. note::
-
-    You do not need to install ``rasa`` for your action server.
-    E.g. it is recommended to run Rasa in a docker container and
-    create a separate container for your action server. In this
-    separate container, you only need to install ``rasa-sdk``.
-
-The file that contains your custom actions should be called ``actions.py``.
-Alternatively, you can use a package directory called ``actions`` or else
-manually specify an actions module or package with the ``--actions`` flag.
-
-If you have ``rasa`` installed, run this command to start your action server:
-
-.. code-block:: bash
-
-    rasa run actions
-
-.. _custom_action_example:
-
-Otherwise, if you do not have ``rasa`` installed, run this command:
-
-.. code-block:: bash
-
-    python -m rasa_sdk --actions actions
-
-.. _custom_action_example_verbose:
-
-In a restaurant bot, if the user says "show me a Mexican restaurant",
-your bot could execute the action ``ActionCheckRestaurants``,
-which might look like this:
-
-.. testcode::
-
-   from rasa_sdk import Action
-   from rasa_sdk.events import SlotSet
-
-   class ActionCheckRestaurants(Action):
-      def name(self) -> Text:
-         return "action_check_restaurants"
-
-      def run(self,
-              dispatcher: CollectingDispatcher,
-              tracker: Tracker,
-              domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-
-         cuisine = tracker.get_slot('cuisine')
-         q = "select * from restaurants where cuisine='{0}' limit 1".format(cuisine)
-         result = db.query(q)
-
-         return [SlotSet("matches", result if result is not None else [])]
-
-
-You should add the the action name ``action_check_restaurants`` to
-the actions in your domain file. The action's ``run`` method receives
-three arguments. You can access the values of slots and the latest message
-sent by the user using the ``tracker`` object, and you can send messages
-back to the user with the ``dispatcher`` object, by calling
-``dispatcher.utter_template``, ``dispatcher.utter_message``, or any other
-``rasa_sdk.executor.CollectingDispatcher`` method.
-
-Details of the ``run()`` method:
-
-.. automethod:: rasa_sdk.Action.run
-
-
-There is an example of a ``SlotSet`` event
-:ref:`above <custom_action_example>`, and a full list of possible
-events in :ref:`Events <events>`.
 
 Execute Actions in Other Code
 -----------------------------
@@ -185,7 +110,7 @@ for example to display the output of a long running background operation
 or notify the user of an external event.
 
 To do so, you can ``POST`` to this
-`endpoint <../../api/http-api.html#tag/Tracker/paths/~1conversations~1{conversation_id}~1execute/post>`_ ,
+`endpoint <../../api/http-api/#operation/executeConversationAction>`_ ,
 specifying the action which should be run for a specific user in the request body. Use the
 ``output_channel`` query parameter to specify which output
 channel should be used to communicate the assistant's responses back to the user.
