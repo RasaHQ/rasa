@@ -214,6 +214,9 @@ slots, but only a user's name and their phone number. To do that, you'd override
           # `session_started` event
           events.extend(self.fetch_slots(tracker))
 
+          # an `action_listen` should be added at the end as a user message follows
+          events.append(ActionExecuted("action_listen"))
+
           return events
 
 .. note::

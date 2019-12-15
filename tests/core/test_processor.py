@@ -12,7 +12,10 @@ from typing import Optional, Text
 from unittest.mock import patch
 
 from rasa.core import jobs
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
+from rasa.core.actions.action import (
+    ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
+)
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.domain import SessionConfig
@@ -472,3 +475,23 @@ async def test_handle_message_with_session_start(
         SlotSet(entity, slot_2[entity]),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
+
+
+# noinspection PyProtectedMember
+@pytest.mark.parametrize(
+    "action_name, should_predict_another_action",
+    [
+        (ACTION_LISTEN_NAME, False),
+        (ACTION_SESSION_START_NAME, False),
+        ("utter_greet", True),
+    ],
+)
+async def test_should_predict_another_action(
+    default_processor: MessageProcessor,
+    action_name: Text,
+    should_predict_another_action: bool,
+):
+    assert (
+        default_processor.should_predict_another_action(action_name)
+        == should_predict_another_action
+    )

@@ -1204,10 +1204,5 @@ class SessionStarted(Event):
         return None
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
-        from rasa.core.actions.action import (  # pytype: disable=pyi-error
-            ACTION_LISTEN_NAME,
-        )
-
         # noinspection PyProtectedMember
         tracker._reset()
-        tracker.trigger_followup_action(ACTION_LISTEN_NAME)
