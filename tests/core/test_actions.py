@@ -508,7 +508,6 @@ async def test_action_session_start_without_slots(
         default_channel, template_nlg, template_sender_tracker, default_domain
     )
     assert events == [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)]
-    assert template_sender_tracker.followup_action == ACTION_LISTEN_NAME
 
 
 @pytest.mark.parametrize(
@@ -553,7 +552,6 @@ async def test_action_session_start_with_slots(
 
     # make sure that the list of events has ascending timestamps
     assert sorted(events, key=lambda x: x.timestamp) == events
-    assert template_sender_tracker.followup_action == ACTION_LISTEN_NAME
 
 
 async def test_applied_events_after_action_session_start(

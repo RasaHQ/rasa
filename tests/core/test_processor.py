@@ -12,10 +12,8 @@ from typing import Optional, Text
 from unittest.mock import patch
 
 from rasa.core import jobs
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ACTION_SESSION_START_NAME,
-)
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
+
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.domain import SessionConfig
