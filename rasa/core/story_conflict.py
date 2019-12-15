@@ -132,6 +132,9 @@ class StoryConflict:
         prev_event_type = None
         prev_event_name = None
 
+        if not state:
+            return prev_event_type, prev_event_name
+
         for k in state:
             if (
                 k.startswith(PREV_PREFIX)
