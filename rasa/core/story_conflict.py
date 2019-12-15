@@ -48,7 +48,7 @@ class StoryConflict:
     @staticmethod
     def _find_conflicting_states(
         trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
-    ) -> Dict[Text, Optional[List[Text]]]:
+    ) -> Dict[int, Optional[List[Text]]]:
         # Create a 'state -> list of actions' dict, where the state is
         # represented by its hash
         rules = {}
@@ -63,7 +63,9 @@ class StoryConflict:
 
         # Keep only conflicting rules
         return {
-            state: actions for (state, actions) in rules.items() if len(actions) > 1
+            state_hash: actions
+            for (state_hash, actions) in rules.items()
+            if len(actions) > 1
         }
 
     @staticmethod
