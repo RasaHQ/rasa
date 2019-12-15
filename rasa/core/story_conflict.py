@@ -73,7 +73,7 @@ class StoryConflict:
         trackers: List["TrackerWithCachedStates"],
         domain: Domain,
         max_history: int,
-        rules: Dict[Text, Optional[List[Text]]],
+        rules: Dict[int, Optional[List[Text]]],
     ):
         # Iterate once more over all states and note the (unhashed) state,
         # for which a conflict occurs
