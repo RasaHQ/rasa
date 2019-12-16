@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import List, Text
+from typing import List, Optional, Text
 
 from rasa.cli import utils
 import rasa.cli.train as train
@@ -90,7 +90,7 @@ def perform_interactive_learning(args: argparse.Namespace, zipped_model: Text) -
 
     with model.unpack_model(zipped_model) as model_path:
         args.core, args.nlu = model.get_model_subdirectories(model_path)
-        if args.nlu is not None and args.core is None:
+        if args.core is None:
             utils.print_error_and_exit(
                 "Can not run interactive learning on an NLU-only model."
             )

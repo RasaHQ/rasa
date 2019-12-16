@@ -88,7 +88,9 @@ def test_train_called_when_no_model_passed(
     # Mock actual training and interactive learning methods
     mock = Mock()
     monkeypatch.setattr(train, "train", mock.train_model)
-    monkeypatch.setattr(interactive, "perform_interactive_learning", mock.method)
+    monkeypatch.setattr(
+        interactive, "perform_interactive_learning", mock.perform_interactive_learning
+    )
 
     interactive.interactive(args)
     mock.train_model.assert_called_once()
@@ -118,7 +120,9 @@ def test_train_core_called_when_no_model_passed_and_core(
     # Mock actual training and interactive learning methods
     mock = Mock()
     monkeypatch.setattr(train, "train_core", mock.train_core)
-    monkeypatch.setattr(interactive, "perform_interactive_learning", mock.method)
+    monkeypatch.setattr(
+        interactive, "perform_interactive_learning", mock.perform_interactive_learning
+    )
 
     interactive.interactive(args)
     mock.train_core.assert_called_once()
