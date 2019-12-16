@@ -72,7 +72,7 @@ class Tokenizer(Component):
             and tokens
         ):
             # +1 to have a space between the last token and the __cls__ token
-            idx = tokens[-1].start + len(tokens[-1].text) + 1
+            idx = tokens[-1].end + 1
             tokens.append(Token(CLS_TOKEN, idx))
 
         return tokens

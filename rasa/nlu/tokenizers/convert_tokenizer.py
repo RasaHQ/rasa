@@ -18,8 +18,14 @@ class ConveRTTokenizer(WhitespaceTokenizer):
     provides = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     defaults = {
-        # text will be tokenized with case sensitive as default
-        "use_cls_token": True
+        # Flag to check whether to split intents
+        "intent_tokenization_flag": False,
+        # Symbol on which intent should be split
+        "intent_split_symbol": "_",
+        # Text will be tokenized with case sensitive as default
+        "case_sensitive": True,
+        # add __CLS__ token to the end of the list of tokens
+        "use_cls_token": False,
     }
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
@@ -56,7 +62,7 @@ class ConveRTTokenizer(WhitespaceTokenizer):
                 if example.get(attribute) is not None:
                     example.set(
                         TOKENS_NAMES[attribute],
-                        self.tokenize_using_convert(example, attribute),
+                        self.tokenize_using_convert(example.get(attribute), attribute),
                     )
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -70,13 +76,13 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         )
 
     def tokenize_using_convert(
-        self, example: Message, attribute: Text = TEXT_ATTRIBUTE
+        self, text: Text, attribute: Text = TEXT_ATTRIBUTE
     ) -> List[Token]:
         # perform whitespace tokenization
-        tokens_in = self.tokenize(example.get(attribute), attribute)
+        tokens_in = self.tokenize(text, attribute)
 
         # remove CLS token if present
-        if tokens_in[-1] == CLS_TOKEN:
+        if tokens_in[-1].text == CLS_TOKEN:
             tokens_in = tokens_in[:-1]
 
         tokens_out = []
