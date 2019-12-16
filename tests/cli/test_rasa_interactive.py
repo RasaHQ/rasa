@@ -8,7 +8,6 @@ from _pytest.pytester import RunResult
 
 import rasa
 from rasa.cli import interactive, train
-from rasa import train as rasa_train
 
 
 def test_interactive_help(run: Callable[..., RunResult]):

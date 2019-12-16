@@ -1,3 +1,7 @@
 Made it explicit that interactive learning does not work with NLU-only models.
 
-Interactive learning no longer trains NLU-only models if no model is provided and no core data is provided.
+Interactive learning no longer trains NLU-only models if no model is provided
+and no core data is provided.
+
+Made the ``_story_files`` and ``_nlu_files`` of the ``RasaFileImporter`` class
+public. They are now ``story_files`` and ``nlu_files``.
