@@ -46,6 +46,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 if typing.TYPE_CHECKING:
     from ssl import SSLContext
+    from rasa.core.processor import MessageProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -208,14 +209,16 @@ def event_verbosity_parameter(
         )
 
 
-def get_tracker(agent: "Agent", conversation_id: Text) -> DialogueStateTracker:
-    tracker = agent.tracker_store.get_or_create_tracker(conversation_id)
+async def get_tracker(
+    processor: "MessageProcessor", conversation_id: Text
+) -> Optional[DialogueStateTracker]:
+    tracker = await processor.get_tracker_with_session_start(conversation_id)
     if not tracker:
         raise ErrorResponse(
             409,
             "Conflict",
-            "Could not retrieve tracker with id '{}'. Most likely "
-            "because there is no domain set on the agent.".format(conversation_id),
+            f"Could not retrieve tracker with id '{conversation_id}'. Most likely "
+            f"because there is no domain set on the agent.",
         )
     return tracker
 
@@ -438,7 +441,7 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
-        tracker = get_tracker(app.agent, conversation_id)
+        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
 
         try:
             if until_time is not None:
@@ -486,7 +489,9 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = get_tracker(app.agent, conversation_id)
+                tracker = await get_tracker(
+                    app.agent.create_processor(), conversation_id
+                )
                 for event in events:
                     tracker.update(event, app.agent.domain)
                 app.agent.tracker_store.save(tracker)
@@ -534,7 +539,7 @@ def create_app(
         """Get an end-to-end story corresponding to this conversation."""
 
         # retrieve tracker and set to requested state
-        tracker = get_tracker(app.agent, conversation_id)
+        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
 
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
@@ -573,7 +578,9 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = get_tracker(app.agent, conversation_id)
+                tracker = await get_tracker(
+                    app.agent.create_processor(), conversation_id
+                )
                 output_channel = _get_output_channel(request, tracker)
                 await app.agent.execute_action(
                     conversation_id,
@@ -589,7 +596,7 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-        tracker = get_tracker(app.agent, conversation_id)
+        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
         state = tracker.current_state(verbosity)
 
         response_body = {"tracker": state}
@@ -605,7 +612,7 @@ def create_app(
     async def predict(request: Request, conversation_id: Text):
         try:
             # Fetches the appropriate bot response in a json format
-            responses = app.agent.predict_next(conversation_id)
+            responses = await app.agent.predict_next(conversation_id)
             responses["scores"] = sorted(
                 responses["scores"], key=lambda k: (-k["score"], k["action"])
             )
