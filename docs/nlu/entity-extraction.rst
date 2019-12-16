@@ -151,6 +151,8 @@ If you just want to match regular expressions exactly, you can do this in your c
 as a postprocessing step after receiving the response from Rasa NLU.
 
 
+.. _entity-extraction-custom-features:
+
 Passing Custom Features to ``CRFEntityExtractor``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
