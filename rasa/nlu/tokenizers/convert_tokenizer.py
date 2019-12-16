@@ -78,6 +78,14 @@ class ConveRTTokenizer(WhitespaceTokenizer):
     def tokenize_using_convert(
         self, text: Text, attribute: Text = TEXT_ATTRIBUTE
     ) -> List[Token]:
+        """Tokenize the text using the ConveRT model.
+
+        ConveRT adds a special char in front of (some) words and splits words into
+        sub-words. To ensure the entity start and end values matches the token values,
+        tokenize the text first using the whitespace tokenizer. If individual tokens
+        are split up into multiple tokens, we make sure that the start end end value
+        of the first and last respective tokens stay the same.
+        """
 
         # perform whitespace tokenization
         tokens_in = self.tokenize(text, attribute)

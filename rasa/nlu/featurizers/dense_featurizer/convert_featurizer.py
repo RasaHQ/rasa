@@ -1,7 +1,7 @@
 import logging
 import warnings
 from rasa.nlu.featurizers.featurzier import Featurizer
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
@@ -95,28 +95,31 @@ class ConveRTFeaturizer(Featurizer):
     ) -> np.ndarray:
         cls_token_used = batch_examples[0].get(TOKENS_NAMES[attribute])[-1] == CLS_TOKEN
 
-        final_embeddings = []
-
         number_of_tokens_in_sentence = [
             len(sentence.get(TOKENS_NAMES[attribute])) for sentence in batch_examples
         ]
 
+        # join the tokens to get a clean text to ensure the sequence length of
+        # the returned embeddings from ConveRT matches the length of the tokens
         tokenized_text = self._tokens_to_text(batch_examples, attribute)
         sequence_encodings = self._sequence_encoding_of_text(tokenized_text)
 
+        if not cls_token_used:
+            return sequence_encodings
+
+        final_embeddings = []
         for index in range(len(batch_examples)):
             sequence_length = number_of_tokens_in_sentence[index]
             sequence_encoding = sequence_encodings[index][:sequence_length]
             sentence_encoding = sentence_encodings[index]
 
-            if cls_token_used:
-                # tile sequence encoding to duplicate as sentence encodings have size
-                # 1024 and sequence encodings only have a dimensionality of 512
-                sequence_encoding = np.tile(sequence_encoding, (1, 2))
-                # add sentence encoding to the end (position of cls token)
-                sequence_encoding = np.concatenate(
-                    [sequence_encoding, sentence_encoding], axis=0
-                )
+            # tile sequence encoding to duplicate as sentence encodings have size
+            # 1024 and sequence encodings only have a dimensionality of 512
+            sequence_encoding = np.tile(sequence_encoding, (1, 2))
+            # add sentence encoding to the end (position of cls token)
+            sequence_encoding = np.concatenate(
+                [sequence_encoding, sentence_encoding], axis=0
+            )
 
             final_embeddings.append(sequence_encoding)
 

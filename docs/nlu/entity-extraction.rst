@@ -155,7 +155,7 @@ Passing Custom Features to ``CRFEntityExtractor``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you want to pass custom features, such as pre-trained word embeddings, to ``CRFEntityExtractor``, you can
-add any dense featurizer (except ``ConveRTFeaturizer``) to the pipeline before the ``CRFEntityExtractor``.
+add any dense featurizer to the pipeline before the ``CRFEntityExtractor``.
 Make sure to set ``"return_sequence"`` to ``True`` for the corresponding dense featurizer.
 ``CRFEntityExtractor`` automatically finds the additional dense features and checks if the dense features are an
 iterable of ``len(tokens)``, where each entry is a vector.

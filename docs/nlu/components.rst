@@ -92,7 +92,7 @@ Sparse features only store the values that are non zero and their positions in t
 Thus, we save a lot of memroy and are able to train on larger datasets.
 
 By default all featurizers will return a matrix of length (1 x feature-dimension).
-All featurizer (except the ``ConveRTFeaturizer``) have the option to return a sequence instead.
+All featurizer have the option to return a sequence instead.
 In case the flag ``"return_sequence"`` is set to ``True`` the returned matrix of a featurizer will have the size
 (token-length x feature-dimension).
 So, the returned matrix will have an entry for every token.
@@ -149,7 +149,7 @@ ConveRTFeaturizer
 :Outputs:
     nothing, used as an input to intent classifiers and response selectors that need intent features and response
     features respectively (e.g. ``EmbeddingIntentClassifier`` and ``ResponseSelector``)
-:Requires: nothing
+:Requires: :ref:`ConveRTTokenizer`
 :Type: Dense featurizer
 :Description:
     Creates features for intent classification and response selection.
@@ -163,12 +163,6 @@ ConveRTFeaturizer
     .. note::
         To use ``ConveRTFeaturizer`` you need to install additional tensorflow libraries (``tensorflow_text`` and
         ``tensorflow_hub``). You should do a pip install of Rasa with ``pip install rasa[convert]`` to install those.
-
-    .. warning::
-        If you set the option ``"return_sequence"`` to ``True``, Rasa will raise an error informing you that this
-        option is currently not supported. Do not use this featurizer in combination with any other featurizer that
-        has the option ``"return_sequence"`` set to ``True`` as training will fail. However, you can use this
-        featurizer with any other featurizer as long as ``"return_sequence"`` is set to ``False`` for all of them.  
 
 :Configuration:
 
@@ -692,6 +686,18 @@ SpacyTokenizer
 :Description:
     Creates tokens using the spacy tokenizer. Can be used to define
     tokens for the MITIE entity extractor.
+
+.. _ConveRTTokenizer:
+
+ConveRTTokenizer
+~~~~~~~~~~~~~~
+
+:Short: Tokenizer using ConveRT
+:Outputs: nothing
+:Requires: nothing
+:Description:
+    Creates tokens using the ConveRT tokenizer. Must be used whenever the ``ConveRTFeaturizer`` is used.
+
 
 
 Entity Extractors
