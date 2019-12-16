@@ -294,6 +294,7 @@ your events should be formatted like the JSON objects on this page.</p>
 <li><a class="reference internal" href="#undo-a-user-message" id="id13">Undo a user message</a></li>
 <li><a class="reference internal" href="#undo-an-action" id="id14">Undo an action</a></li>
 <li><a class="reference internal" href="#log-an-executed-action" id="id15">Log an executed action</a></li>
+<li><a class="reference internal" href="#start-a-new-conversation-session" id="id16">Start a new conversation session</a></li>
 </ul>
 </li>
 </ul>
@@ -327,7 +328,7 @@ that <code class="docutils literal notranslate"><span class="pre">tracker.slots[
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
-<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;DialogueStateTracker&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">tracker</span><span class="o">.</span><span class="n">_set_slot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -362,7 +363,7 @@ the slots).</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
-<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;DialogueStateTracker&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">rasa.core.actions.action</span> <span class="k">import</span> <span class="p">(</span>  <span class="c1"># pytype: disable=pyi-error</span>
         <span class="n">ACTION_LISTEN_NAME</span><span class="p">,</span>
     <span class="p">)</span>
@@ -420,13 +421,13 @@ values.</p>
 <tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Schedule an action to be executed in the future.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">evt</span><span class="o">=</span><span class="p">{</span>
-      <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;reminder&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;my_action&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;date_time&quot;</span><span class="p">:</span> <span class="s2">&quot;2018-09-03T11:41:10.128172&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_reminder&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;kill_on_user_msg&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="p">}</span>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">evt</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;reminder&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;my_action&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;date_time&quot;</span><span class="p">:</span> <span class="s2">&quot;2018-09-03T11:41:10.128172&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_reminder&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;kill_on_user_msg&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </td>
@@ -563,18 +564,18 @@ to be a fixed one.</p>
 <tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Message a user sent to the bot.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">evt</span><span class="o">=</span><span class="p">{</span>
-      <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Hey&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;parse_data&quot;</span><span class="p">:</span> <span class="p">{</span>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">evt</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Hey&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;parse_data&quot;</span><span class="p">:</span> <span class="p">{</span>
         <span class="s2">&quot;intent&quot;</span><span class="p">:</span> <span class="p">{</span>
-          <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span>
-          <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.9</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.9</span>
         <span class="p">},</span>
         <span class="s2">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[]</span>
-      <span class="p">},</span>
-      <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{},</span>
-    <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{},</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </td>
@@ -740,6 +741,41 @@ to the latest <code class="docutils literal notranslate"><span class="pre">Turn<
 
     <span class="n">tracker</span><span class="o">.</span><span class="n">set_latest_action_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">action_name</span><span class="p">)</span>
     <span class="n">tracker</span><span class="o">.</span><span class="n">clear_followup_action</span><span class="p">()</span>
+</pre></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="start-a-new-conversation-session">
+<h3><a class="toc-backref" href="#id16">Start a new conversation session</a><a class="headerlink" href="#start-a-new-conversation-session" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Marks the beginning of a new conversation session. Resets the tracker and
+triggers an <code class="docutils literal notranslate"><span class="pre">ActionSessionStart</span></code> which by default applies the existing
+<code class="docutils literal notranslate"><span class="pre">SlotSet</span></code> events to the new session.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">evt</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;session_started&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
+<dt id="rasa.core.events.SessionStarted">
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">SessionStarted</code><span class="sig-paren">(</span><em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.SessionStarted" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mark the beginning of a new conversation session.</p>
+</dd></dl>
+
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, this is the code used to update the tracker:</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">:</span> <span class="s2">&quot;DialogueStateTracker&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="c1"># noinspection PyProtectedMember</span>
+    <span class="n">tracker</span><span class="o">.</span><span class="n">_reset</span><span class="p">()</span>
 </pre></div>
 </div>
 </td>

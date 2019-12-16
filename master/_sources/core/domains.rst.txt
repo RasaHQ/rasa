@@ -316,3 +316,44 @@ featurized as normal.
 
     If you really want these entities not to influence action prediction we
     suggest you make the slots with the same name of type ``unfeaturized``.
+
+.. _session_config:
+
+Session configuration
+---------------------
+
+A conversation session represents the dialogue between the assistant and the user.
+Conversation sessions can begin in three ways:
+
+  1. the user begins the conversation with the assistant,
+  2. the user sends their first message after a configurable period of inactivity, or
+  3. a manual session start is triggered with the ``/session_start`` intent message.
+
+You can define the period of inactivity after which a new conversation
+session is triggered in the domain under the ``session_config`` key.
+``session_expiration_time`` defines the time of inactivity in minutes after which a
+new session will begin. ``carry_over_slots_to_new_session`` determines whether
+existing set slots should be carried over to new sessions.
+
+The default session configuration looks as follows:
+
+.. code-block:: yaml
+
+  session_config:
+    session_expiration_time: 60  # value in minutes, 0 means infinitely long
+    carry_over_slots_to_new_session: true  # set to false to forget slots between sessions
+
+This means that if a user sends their first message after 60 minutes of inactivity, a
+new conversation session is triggered, and that any existing slots are carried over
+into the new session. Setting the value of ``session_expiration_time`` to 0 means
+that sessions will not end (note that the ``action_session_start`` action will still
+be triggered at the very beginning of conversations).
+
+.. note::
+
+  A session start triggers the default action ``action_session_start``. Its default
+  implementation moves all existing slots into the new session. Note that all
+  conversations begin with an ``action_session_start``. Overriding this action could
+  for instance be used to initialise the tracker with slots from an external API
+  call, or to start the conversation with a bot message. The docs on
+  :ref:`custom_session_start` shows you how to do that.
