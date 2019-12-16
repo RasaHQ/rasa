@@ -285,21 +285,23 @@ class CountVectorsFeaturizer(Featurizer):
     # noinspection PyPep8Naming
     def _check_OOV_present(self, all_tokens: List[List[Text]]):
         """Check if an OOV word is present"""
-        if self.OOV_token and not self.OOV_words and all_tokens:
-            for tokens in all_tokens:
-                for text in tokens:
-                    if self.OOV_token in text or (
-                        self.lowercase and self.OOV_token in text.lower()
-                    ):
-                        return
+        if not self.OOV_token or self.OOV_words or not all_tokens:
+            return
 
-            if any(text for tokens in all_tokens for text in tokens):
-                # if there is some text in tokens, warn if there is no oov token
-                logger.warning(
-                    f"OOV_token='{self.OOV_token}' was given, but it is not present "
-                    "in the training data. All unseen words "
-                    "will be ignored during prediction."
-                )
+        for tokens in all_tokens:
+            for text in tokens:
+                if self.OOV_token in text or (
+                    self.lowercase and self.OOV_token in text.lower()
+                ):
+                    return
+
+        if any(text for tokens in all_tokens for text in tokens):
+            # if there is some text in tokens, warn if there is no oov token
+            logger.warning(
+                f"OOV_token='{self.OOV_token}' was given, but it is not present "
+                "in the training data. All unseen words "
+                "will be ignored during prediction."
+            )
 
     def _get_all_attributes_processed_tokens(
         self, training_data: "TrainingData"

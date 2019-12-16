@@ -276,7 +276,7 @@ def balance_session_data(
     return final_session_data
 
 
-def get_number_of_examples(session_data: SessionDataType):
+def get_number_of_examples(session_data: SessionDataType) -> int:
     """Obtain number of examples in session data.
 
     Raise a ValueError if number of examples differ for different data in session data.
@@ -325,7 +325,7 @@ def prepare_batch(
     session_data: SessionDataType,
     start: Optional[int] = None,
     end: Optional[int] = None,
-    tuple_sizes: Dict[Text, int] = None,
+    tuple_sizes: Optional[Dict[Text, int]] = None,
 ) -> Tuple[Optional[np.ndarray]]:
     """Slices session data into batch using given start and end value."""
 
