@@ -21,7 +21,7 @@ def test_spacy(spacy_nlp):
         "lunch",
     ]
 
-    assert [t.offset for t in tk.tokenize(spacy_nlp(text))] == [0, 9, 13]
+    assert [t.start for t in tk.tokenize(spacy_nlp(text))] == [0, 9, 13]
 
     text = "hey ńöñàśçií how're you?"
     assert [t.text for t in tk.tokenize(spacy_nlp(text))] == [
@@ -32,7 +32,7 @@ def test_spacy(spacy_nlp):
         "you",
         "?",
     ]
-    assert [t.offset for t in tk.tokenize(spacy_nlp(text))] == [0, 4, 13, 16, 20, 23]
+    assert [t.start for t in tk.tokenize(spacy_nlp(text))] == [0, 4, 13, 16, 20, 23]
 
 
 def test_spacy_add_cls_token(spacy_nlp):
@@ -49,7 +49,7 @@ def test_spacy_add_cls_token(spacy_nlp):
         "lunch",
         CLS_TOKEN,
     ]
-    assert [t.offset for t in tk.tokenize(spacy_nlp(text))] == [0, 9, 13, 19]
+    assert [t.start for t in tk.tokenize(spacy_nlp(text))] == [0, 9, 13, 19]
 
 
 def test_spacy_intent_tokenizer(spacy_nlp_component):

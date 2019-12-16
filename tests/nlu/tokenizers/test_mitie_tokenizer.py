@@ -10,7 +10,7 @@ def test_mitie():
 
     text = "Forecast for lunch"
     assert [t.text for t in tk.tokenize(text)] == ["Forecast", "for", "lunch"]
-    assert [t.offset for t in tk.tokenize(text)] == [0, 9, 13]
+    assert [t.start for t in tk.tokenize(text)] == [0, 9, 13]
 
     text = "hey ńöñàśçií how're you?"
     assert [t.text for t in tk.tokenize(text)] == [
@@ -21,7 +21,7 @@ def test_mitie():
         "you",
         "?",
     ]
-    assert [t.offset for t in tk.tokenize(text)] == [0, 4, 13, 16, 20, 23]
+    assert [t.start for t in tk.tokenize(text)] == [0, 4, 13, 16, 20, 23]
 
 
 def test_mitie_add_cls_token():
@@ -38,4 +38,4 @@ def test_mitie_add_cls_token():
         "lunch",
         CLS_TOKEN,
     ]
-    assert [t.offset for t in tk.tokenize(text)] == [0, 9, 13, 19]
+    assert [t.start for t in tk.tokenize(text)] == [0, 9, 13, 19]

@@ -21,7 +21,7 @@ def test_whitespace():
         "lunch",
     ]
 
-    assert [t.offset for t in tk.tokenize("Forecast for lunch")] == [0, 9, 13]
+    assert [t.start for t in tk.tokenize("Forecast for lunch")] == [0, 9, 13]
 
     # we ignore .,!?
     assert [t.text for t in tk.tokenize("hey ńöñàśçií how're you?")] == [
@@ -32,7 +32,7 @@ def test_whitespace():
         "you",
     ]
 
-    assert [t.offset for t in tk.tokenize("hey ńöñàśçií how're you?")] == [
+    assert [t.start for t in tk.tokenize("hey ńöñàśçií how're you?")] == [
         0,
         4,
         13,
@@ -50,7 +50,7 @@ def test_whitespace():
     ]
 
     assert [
-        t.offset for t in tk.tokenize("привет! 10.000, ńöñàśçií. (how're you?)")
+        t.start for t in tk.tokenize("привет! 10.000, ńöñàśçií. (how're you?)")
     ] == [0, 8, 16, 27, 31, 34]
 
     # urls are single token
@@ -70,7 +70,7 @@ def test_whitespace():
     ]
 
     assert [
-        t.offset
+        t.start
         for t in tk.tokenize(
             "https://www.google.com/search?client="
             "safari&rls=en&q="
@@ -94,7 +94,7 @@ def test_whitespace_cls_token():
         "lunch",
         CLS_TOKEN,
     ]
-    assert [t.offset for t in tk.tokenize("Forecast for lunch")] == [0, 9, 13, 19]
+    assert [t.start for t in tk.tokenize("Forecast for lunch")] == [0, 9, 13, 19]
 
 
 def test_whitespace_custom_intent_symbol():

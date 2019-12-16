@@ -12,11 +12,11 @@ def test_jieba():
 
     assert [t.text for t in tk.tokenize("我想去吃兰州拉面")] == ["我", "想", "去", "吃", "兰州", "拉面"]
 
-    assert [t.offset for t in tk.tokenize("我想去吃兰州拉面")] == [0, 1, 2, 3, 4, 6]
+    assert [t.start for t in tk.tokenize("我想去吃兰州拉面")] == [0, 1, 2, 3, 4, 6]
 
     assert [t.text for t in tk.tokenize("Micheal你好吗？")] == ["Micheal", "你好", "吗", "？"]
 
-    assert [t.offset for t in tk.tokenize("Micheal你好吗？")] == [0, 7, 9, 10]
+    assert [t.start for t in tk.tokenize("Micheal你好吗？")] == [0, 7, 9, 10]
 
 
 def test_jieba_load_dictionary(tmpdir_factory):
@@ -50,4 +50,4 @@ def test_jieba_add_cls_token():
         CLS_TOKEN,
     ]
 
-    assert [t.offset for t in tk.tokenize("Micheal你好吗？")] == [0, 7, 9, 10, 12]
+    assert [t.start for t in tk.tokenize("Micheal你好吗？")] == [0, 7, 9, 10, 12]

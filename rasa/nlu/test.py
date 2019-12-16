@@ -760,7 +760,7 @@ def does_token_cross_borders(token: Token, entity: Dict) -> bool:
 def determine_intersection(token: Token, entity: Dict) -> int:
     """Calculates how many characters a given token and entity share."""
 
-    pos_token = set(range(token.offset, token.end))
+    pos_token = set(range(token.start, token.end))
     pos_entity = set(range(entity["start"], entity["end"]))
     return len(pos_token.intersection(pos_entity))
 
@@ -802,7 +802,7 @@ def find_intersecting_entites(token: Token, entities: List[Dict]) -> List[Dict]:
             logger.debug(
                 "Token boundary error for token {}({}, {}) "
                 "and entity {}"
-                "".format(token.text, token.offset, token.end, e)
+                "".format(token.text, token.start, token.end, e)
             )
     return candidates
 
