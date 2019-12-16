@@ -48,6 +48,9 @@ import os
 from rasa.nlu import training_data, config
 from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH, NLU_DEFAULT_CONFIG_PATH
+from rasa.nlu.model import Interpreter
+from rasa.nlu.selectors.embedding_response_selector import ResponseSelector
+from rasa.nlu.test import is_response_selector_present
 
 
 @pytest.fixture(scope="session")
@@ -286,6 +289,51 @@ def test_run_cv_evaluation():
     assert len(entity_results.test["CRFEntityExtractor"]["Accuracy"]) == n_folds
     assert len(entity_results.test["CRFEntityExtractor"]["Precision"]) == n_folds
     assert len(entity_results.test["CRFEntityExtractor"]["F1-score"]) == n_folds
+
+
+def test_run_cv_evaluation_with_response_selector():
+    td = training_data.load_data("data/examples/rasa/demo-rasa.md")
+    td_responses = training_data.load_data("data/examples/rasa/demo-rasa-responses.md")
+    td = td.merge(td_responses)
+    td.fill_response_phrases()
+
+    nlu_config = config.load(
+        "sample_configs/config_embedding_intent_response_selector.yml"
+    )
+
+    n_folds = 2
+    intent_results, entity_results, response_selection_results = cross_validate(
+        td, n_folds, nlu_config
+    )
+
+    assert len(intent_results.train["Accuracy"]) == n_folds
+    assert len(intent_results.train["Precision"]) == n_folds
+    assert len(intent_results.train["F1-score"]) == n_folds
+    assert len(intent_results.test["Accuracy"]) == n_folds
+    assert len(intent_results.test["Precision"]) == n_folds
+    assert len(intent_results.test["F1-score"]) == n_folds
+    assert len(response_selection_results.train["Accuracy"]) == n_folds
+    assert len(response_selection_results.train["Precision"]) == n_folds
+    assert len(response_selection_results.train["F1-score"]) == n_folds
+    assert len(response_selection_results.test["Accuracy"]) == n_folds
+    assert len(response_selection_results.test["Precision"]) == n_folds
+    assert len(response_selection_results.test["F1-score"]) == n_folds
+    # No entity extractor in pipeline
+    assert len(entity_results.train) == 0
+    assert len(entity_results.test) == 0
+
+
+def test_response_selector_present():
+
+    response_selector_component = ResponseSelector()
+
+    interpreter_with_response_selector = Interpreter(
+        [response_selector_component], context=None
+    )
+    interpreter_without_response_selector = Interpreter([], context=None)
+
+    assert is_response_selector_present(interpreter_with_response_selector)
+    assert not is_response_selector_present(interpreter_without_response_selector)
 
 
 def test_intent_evaluation_report(tmpdir_factory):

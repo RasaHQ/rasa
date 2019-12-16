@@ -869,14 +869,12 @@ def align_entity_predictions(
     """
 
     true_token_labels = []
-    entities_by_extractors = {
+    entities_by_extractors: Dict[Text, List] = {
         extractor: [] for extractor in extractors
-    }  # type: Dict[Text, List]
+    }
     for p in result.entity_predictions:
         entities_by_extractors[p["extractor"]].append(p)
-    extractor_labels = {
-        extractor: [] for extractor in extractors
-    }  # type: Dict[Text, List]
+    extractor_labels: Dict[Text, List] = {extractor: [] for extractor in extractors}
     for t in result.tokens:
         true_token_labels.append(determine_token_labels(t, result.entity_targets, None))
         for extractor, entities in entities_by_extractors.items():
@@ -1079,11 +1077,11 @@ def run_evaluation(
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
     test_data = training_data.load_data(data_path, interpreter.model_metadata.language)
 
-    result = {
+    result: Dict[Text, Optional[Dict]] = {
         "intent_evaluation": None,
         "entity_evaluation": None,
         "response_selection_evaluation": None,
-    }  # type: Dict[Text, Optional[Dict]]
+    }
 
     if output_directory:
         io_utils.create_directory(output_directory)
@@ -1239,25 +1237,19 @@ def cross_validate(
     trainer = Trainer(nlu_config)
     trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
 
-    intent_train_metrics = defaultdict(list)  # type: IntentMetrics
-    intent_test_metrics = defaultdict(list)  # type: IntentMetrics
-    entity_train_metrics = defaultdict(lambda: defaultdict(list))  # type: EntityMetrics
-    entity_test_metrics = defaultdict(lambda: defaultdict(list))  # type: EntityMetrics
-    response_selection_train_metrics = defaultdict(
-        list
-    )  # type: ResponseSelectionMetrics
-    response_selection_test_metrics = defaultdict(
-        list
-    )  # type: ResponseSelectionMetrics
+    intent_train_metrics: IntentMetrics = defaultdict(list)
+    intent_test_metrics: IntentMetrics = defaultdict(list)
+    entity_train_metrics: EntityMetrics = defaultdict(lambda: defaultdict(list))
+    entity_test_metrics: EntityMetrics = defaultdict(lambda: defaultdict(list))
+    response_selection_train_metrics: ResponseSelectionMetrics = defaultdict(list)
+    response_selection_test_metrics: ResponseSelectionMetrics = defaultdict(list)
 
-    intent_test_results = []  # type: List[IntentEvaluationResult]
-    entity_test_results = []  # type: List[EntityEvaluationResult]
-    response_selection_test_results = (
-        []
-    )  # type: List[ResponseSelectionEvaluationResult]
+    intent_test_results: List[IntentEvaluationResult] = []
+    entity_test_results: List[EntityEvaluationResult] = []
+    response_selection_test_results: List[ResponseSelectionEvaluationResult] = ([])
     intent_classifier_present = False
     response_selector_present = False
-    extractors = set()  # type: Set[Text]
+    extractors: Set[Text] = set()
 
     for train, test in generate_folds(n_folds, data):
         interpreter = trainer.train(train)
@@ -1490,9 +1482,7 @@ def _compute_entity_metrics(
 ) -> EntityMetrics:
     """Computes entity evaluation metrics and returns the results"""
 
-    entity_metric_results = defaultdict(
-        lambda: defaultdict(list)
-    )  # type: EntityMetrics
+    entity_metric_results: EntityMetrics = defaultdict(lambda: defaultdict(list))
     extractors = get_entity_extractors(interpreter)
 
     if not extractors:
