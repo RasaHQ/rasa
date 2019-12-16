@@ -344,13 +344,14 @@ class TrainingData:
                 )
 
     def train_test_split(
-        self, train_frac: float = 0.8, random_state=None
+        self, train_frac: float = 0.8, random_seed: Optional[int] = None
     ) -> Tuple["TrainingData", "TrainingData"]:
         """Split into a training and test dataset,
         preserving the fraction of examples per intent."""
 
         # collect all nlu data
-        test, train = self.split_nlu_examples(train_frac, random_state)
+
+        test, train = self.split_nlu_examples(train_frac, random_seed)
 
         # collect all nlg stories
         test_nlg_stories, train_nlg_stories = self.split_nlg_responses(test, train)
@@ -396,16 +397,21 @@ class TrainingData:
                 ]
         return nlg_stories
 
-    def split_nlu_examples(self, train_frac, random_state=None) -> Tuple[list, list]:
+
+    def split_nlu_examples(
+        self, train_frac: float, random_seed: Optional[int] = None
+    ) -> Tuple[list, list]:
         train, test = [], []
         for intent, count in self.examples_per_intent.items():
             ex = [e for e in self.intent_examples if e.data["intent"] == intent]
-            test_frac = 1 - train_frac
-            train_ex, test_ex = train_test_split(
-                ex, test_size=test_frac, random_state=random_state
-            )
-            train.extend(train_ex)
-            test.extend(test_ex)
+            if random_seed is not None:
+                random.Random(random_seed).shuffle(ex)
+            else:
+                random.shuffle(ex)
+
+            n_train = int(count * train_frac)
+            train.extend(ex[:n_train])
+            test.extend(ex[n_train:])
         return test, train
 
     def print_stats(self) -> None:

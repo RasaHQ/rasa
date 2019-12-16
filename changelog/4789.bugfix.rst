@@ -1,1 +1,0 @@
-Fixed error where spacy models where not found in the docker images.
