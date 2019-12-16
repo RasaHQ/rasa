@@ -490,6 +490,6 @@ async def test_should_predict_another_action(
     should_predict_another_action: bool,
 ):
     assert (
-        default_processor.should_predict_another_action(action_name, [])
+        default_processor.should_predict_another_action(action_name)
         == should_predict_another_action
     )

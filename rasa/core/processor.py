@@ -478,14 +478,12 @@ class MessageProcessor:
                 # call a registered callback
                 self.on_circuit_break(tracker, message.output_channel, self.nlg)
 
-    # noinspection PyUnusedLocal
     @staticmethod
-    def should_predict_another_action(action_name: Text, events: List[Event]) -> bool:
+    def should_predict_another_action(action_name: Text) -> bool:
         """Determine whether the processor should predict another action.
 
         Args:
             action_name: Name of the latest executed action.
-            events: List of events returned by the latest executed action.
 
         Returns:
             `False` if `action_name` is `ACTION_LISTEN_NAME` or
@@ -567,7 +565,7 @@ class MessageProcessor:
         except ActionExecutionRejection:
             events = [ActionExecutionRejected(action.name(), policy, confidence)]
             tracker.update(events[0])
-            return self.should_predict_another_action(action.name(), events)
+            return self.should_predict_another_action(action.name())
         except Exception as e:
             logger.error(
                 f"Encountered an exception while running action '{action.name()}'. "
@@ -588,7 +586,7 @@ class MessageProcessor:
         await self._schedule_reminders(events, tracker, output_channel, nlg)
         await self._cancel_reminders(events, tracker)
 
-        return self.should_predict_another_action(action.name(), events)
+        return self.should_predict_another_action(action.name())
 
     def _warn_about_new_slots(self, tracker, action_name, events) -> None:
         # these are the events from that action we have seen during training
