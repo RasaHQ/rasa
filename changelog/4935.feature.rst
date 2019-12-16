@@ -10,4 +10,6 @@ Default value is set to ``False``. However, you might want to set it to ``True``
 in the ``CRFEntityExtractor``.
 See https://rasa.com/docs/rasa/nlu/entity-extraction/#passing-custom-features-to-crfentityextractor.
 
-These changes are model breaking!
+.. warning::
+
+    These changes break model compatibility. You will need to retrain your old models!

@@ -1,8 +1,12 @@
-Remove ``NGramFeaturizer``. Please use ``CountVectorsFeaturizer`` instead.
+Removed ``ner_features`` as a feature name from ``CRFEntityExtractor``, use ``text_dense_features`` instead. If
+
 The following settings match the previous ``NGramFeaturizer``:
-- name: 'CountVectorsFeaturizer'
-  analyzer: 'char_wb'
-  min_ngram: 3
-  max_ngram: 17
-  max_features: 10
-  min_df: 5
+
+.. code-block:: yaml
+
+    - name: 'CountVectorsFeaturizer'
+        analyzer: 'char_wb'
+        min_ngram: 3
+        max_ngram: 17
+        max_features: 10
+        min_df: 5
