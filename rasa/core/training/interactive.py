@@ -84,6 +84,10 @@ NEW_ACTION = uuid.uuid4().hex
 
 NEW_TEMPLATES = {}
 
+MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION = 200
+
+DEFAULT_STORY_GRAPH_FILE = "story_graph.dot"
+
 
 class RestartConversation(Exception):
     """Exception used to break out the flow and restart the conversation."""
@@ -876,7 +880,7 @@ async def _write_domain_to_file(
 
     messages = _collect_messages(events)
     actions = _collect_actions(events)
-    templates = NEW_TEMPLATES
+    templates = NEW_TEMPLATES  # type: Dict[Text, List[Dict[Text, Any]]]
 
     # TODO for now there is no way to distinguish between action and form
     collected_actions = list(
@@ -1370,11 +1374,7 @@ async def record_messages(
 ):
     """Read messages from the command line and print bot responses."""
 
-    from rasa.core import training
-
     try:
-        _print_help(skip_visualization)
-
         try:
             domain = await retrieve_domain(endpoint)
         except ClientError:
@@ -1384,23 +1384,24 @@ async def record_messages(
             )
             return
 
-        trackers = await training.load_data(
-            stories,
-            Domain.from_dict(domain),
-            augmentation_factor=0,
-            use_story_concatenation=False,
-        )
-
         intents = [next(iter(i)) for i in (domain.get("intents") or [])]
 
         num_messages = 0
-        sender_ids = [t.events for t in trackers] + [sender_id]
 
         if not skip_visualization:
-            plot_file = "story_graph.dot"
-            await _plot_trackers(sender_ids, plot_file, endpoint)
+            events_including_current_user_id = await _get_tracker_events_to_plot(
+                domain, stories, sender_id
+            )
+
+            plot_file = DEFAULT_STORY_GRAPH_FILE
+            await _plot_trackers(events_including_current_user_id, plot_file, endpoint)
         else:
+            # `None` means that future `_plot_trackers` calls will also skip the
+            # visualization.
             plot_file = None
+            events_including_current_user_id = []
+
+        _print_help(skip_visualization)
 
         while not utils.is_limit_reached(num_messages, max_message_limit):
             try:
@@ -1409,7 +1410,7 @@ async def record_messages(
                     await _validate_nlu(intents, endpoint, sender_id)
 
                 await _predict_till_next_listen(
-                    endpoint, sender_id, sender_ids, plot_file
+                    endpoint, sender_id, events_including_current_user_id, plot_file
                 )
 
                 num_messages += 1
@@ -1437,13 +1438,49 @@ async def record_messages(
                 logger.info("Restarted conversation at fork.")
 
                 await _print_history(sender_id, endpoint)
-                await _plot_trackers(sender_ids, plot_file, endpoint)
+                await _plot_trackers(
+                    events_including_current_user_id, plot_file, endpoint
+                )
 
     except Abort:
         return
     except Exception:
         logger.exception("An exception occurred while recording messages.")
         raise
+
+
+async def _get_tracker_events_to_plot(
+    domain: Dict[Text, Any], stories: Optional[Text], sender_id: Text
+) -> List[Union[Text, List[Event]]]:
+    training_trackers = await _get_training_trackers(stories, domain)
+    number_of_trackers = len(training_trackers)
+    if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
+        rasa.cli.utils.print_warning(
+            f"You have {number_of_trackers} different story paths in "
+            f"your training data. Visualizing them is very resource "
+            f"consuming. Hence, the visualization will only show the stories "
+            f"which you created during interactive learning, but not your "
+            f"training stories."
+        )
+        training_trackers = []
+
+    training_data_events = [t.events for t in training_trackers]
+    events_including_current_user_id = training_data_events + [sender_id]
+
+    return events_including_current_user_id
+
+
+async def _get_training_trackers(
+    stories: Optional[Text], domain: Dict[str, Any]
+) -> List[DialogueStateTracker]:
+    from rasa.core import training
+
+    return await training.load_data(
+        stories,
+        Domain.from_dict(domain),
+        augmentation_factor=0,
+        use_story_concatenation=False,
+    )
 
 
 def _serve_application(app: Sanic, stories, skip_visualization) -> Sanic:
@@ -1507,7 +1544,7 @@ def start_visualization(image_path: Text = None) -> None:
 async def train_agent_on_start(
     args, endpoints, additional_arguments, app, loop
 ) -> None:
-    _interpreter = NaturalLanguageInterpreter.create(args.get("nlu"), endpoints.nlu)
+    _interpreter = NaturalLanguageInterpreter.create(endpoints.nlu or args.get("nlu"))
 
     model_directory = args.get("out", tempfile.mkdtemp(suffix="_core_model"))
 
@@ -1573,7 +1610,7 @@ def run_interactive_learning(
     SAVE_IN_E2E = server_args["e2e"]
 
     if not skip_visualization:
-        p = Process(target=start_visualization, args=("story_graph.dot",))
+        p = Process(target=start_visualization, args=(DEFAULT_STORY_GRAPH_FILE,))
         p.daemon = True
         p.start()
     else:

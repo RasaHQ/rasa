@@ -1,19 +1,14 @@
-import logging
-from typing import Any, Dict, Text, Optional
+import warnings
 
-from rasa.utils.endpoints import EndpointConfig
-
-logger = logging.getLogger(__name__)
+from rasa.core.brokers.broker import EventBroker
 
 
-class EventChannel:
-    @classmethod
-    def from_endpoint_config(cls, broker_config: EndpointConfig) -> "EventChannel":
-        raise NotImplementedError(
-            "Event broker must implement the `from_endpoint_config` method."
-        )
-
-    def publish(self, event: Dict[Text, Any]) -> None:
-        """Publishes a json-formatted Rasa Core event into an event queue."""
-
-        raise NotImplementedError("Event broker must implement the `publish` method.")
+# noinspection PyAbstractClass
+class EventChannel(EventBroker):
+    warnings.warn(
+        "The `EventChannel` class is deprecated, please inherit from "
+        "`EventBroker` instead. `EventChannel` will be removed "
+        "in future Rasa versions.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
