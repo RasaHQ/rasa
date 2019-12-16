@@ -7,13 +7,9 @@ import rasa.cli.train as train
 from rasa.cli.arguments import interactive as arguments
 from rasa import data, model
 
-
 # noinspection PyProtectedMember
-from rasa.constants import (
-    DEFAULT_MODELS_PATH,
-    DEFAULT_ENDPOINTS_PATH,
-)
-from rasa.model import get_latest_model
+from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_ENDPOINTS_PATH
+from rasa.importers.rasa import RasaFileImporter
 
 
 def add_subparser(
@@ -52,10 +48,11 @@ def add_subparser(
 
 def interactive(args: argparse.Namespace) -> None:
     _set_not_required_args(args)
+    file_importer = RasaFileImporter(args.config, args.domain, args.data)
 
     if args.model is None:
-        core_files, _ = data.get_core_nlu_files(args.data)
-        if not core_files:
+        story_files = file_importer.story_files
+        if not story_files:
             utils.print_error_and_exit(
                 "Could not run interactive learning without either core data or a model containing core data."
             )
@@ -107,6 +104,6 @@ def get_provided_model(arg_model: Text) -> Optional[Text]:
     model_path = utils.get_validated_path(arg_model, "model", DEFAULT_MODELS_PATH)
 
     if os.path.isdir(model_path):
-        model_path = get_latest_model(model_path)
+        model_path = model.get_latest_model(model_path)
 
     return model_path
