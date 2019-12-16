@@ -283,7 +283,7 @@ class CountVectorsFeaturizer(Featurizer):
         return tokens
 
     # noinspection PyPep8Naming
-    def _check_OOV_present(self, all_tokens: List[List[Text]]):
+    def _check_OOV_present(self, all_tokens: List[List[Text]]) -> None:
         """Check if an OOV word is present"""
         if not self.OOV_token or self.OOV_words or not all_tokens:
             return
