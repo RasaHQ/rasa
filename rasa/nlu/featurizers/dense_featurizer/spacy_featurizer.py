@@ -36,7 +36,7 @@ class SpacyFeaturizer(Featurizer):
         "return_sequence": False
     }
 
-    def __init__(self, component_config: Dict[Text, Any] = None):
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
         super().__init__(component_config)
 
@@ -59,7 +59,7 @@ class SpacyFeaturizer(Featurizer):
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self._set_spacy_features(example, attribute)
 
-    def get_doc(self, message, attribute):
+    def get_doc(self, message: Message, attribute: Text) -> Any:
 
         return message.get(SPACY_DOCS[attribute])
 
@@ -67,7 +67,7 @@ class SpacyFeaturizer(Featurizer):
 
         self._set_spacy_features(message)
 
-    def _set_spacy_features(self, message, attribute=TEXT_ATTRIBUTE):
+    def _set_spacy_features(self, message: Message, attribute: Text = TEXT_ATTRIBUTE):
         """Adds the spacy word vectors to the messages features."""
 
         message_attribute_doc = self.get_doc(message, attribute)

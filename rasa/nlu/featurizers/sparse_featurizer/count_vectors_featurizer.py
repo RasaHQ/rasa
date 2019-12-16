@@ -183,7 +183,7 @@ class CountVectorsFeaturizer(Featurizer):
                 )
 
     @staticmethod
-    def _attributes_for(analyzer):
+    def _attributes_for(analyzer: Text) -> List[Text]:
         """Create a list of attributes that should be featurized."""
 
         # intents should be featurized only by word level count vectorizer
@@ -447,7 +447,10 @@ class CountVectorsFeaturizer(Featurizer):
             )
 
     def train(
-        self, training_data: TrainingData, cfg: RasaNLUModelConfig = None, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        cfg: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
         """Train the featurizer.
 
@@ -614,8 +617,8 @@ class CountVectorsFeaturizer(Featurizer):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
-        model_metadata: Metadata = None,
+        model_dir: Optional[Text] = None,
+        model_metadata: Optional[Metadata] = None,
         cached_component: Optional["CountVectorsFeaturizer"] = None,
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":

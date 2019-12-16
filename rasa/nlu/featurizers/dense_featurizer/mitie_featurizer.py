@@ -1,6 +1,6 @@
 import numpy as np
 import typing
-from typing import Any, List, Text, Dict
+from typing import Any, List, Text, Dict, Optional
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurzier import Featurizer
@@ -34,7 +34,7 @@ class MitieFeaturizer(Featurizer):
         "return_sequence": False
     }
 
-    def __init__(self, component_config: Dict[Text, Any] = None):
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
         super().__init__(component_config)
 
@@ -44,12 +44,11 @@ class MitieFeaturizer(Featurizer):
     def required_packages(cls) -> List[Text]:
         return ["mitie", "numpy"]
 
-    def ndim(self, feature_extractor: "mitie.total_word_feature_extractor"):
+    def ndim(self, feature_extractor: "mitie.total_word_feature_extractor") -> int:
 
         return feature_extractor.num_dimensions
 
-    def get_tokens_by_attribute(self, example, attribute) -> Any:
-
+    def get_tokens_by_attribute(self, example: Message, attribute: Text) -> Any:
         return example.get(TOKENS_NAMES[attribute])
 
     def train(
