@@ -28,9 +28,9 @@ class Token(object):
     def get(self, prop: Text, default: Optional[Any] = None) -> Any:
         return self.data.get(prop, default)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other):
         if not isinstance(other, Token):
-            return NotImplemented
+            return NotImplementedError
         return (self.offset, self.end, self.text, self.lemma) == (
             other.offset,
             other.end,
@@ -38,9 +38,9 @@ class Token(object):
             other.lemma,
         )
 
-    def __lt__(self, other) -> bool:
+    def __lt__(self, other):
         if not isinstance(other, Token):
-            return NotImplemented
+            return NotImplementedError
         return (self.offset, self.end, self.text, self.lemma) < (
             other.offset,
             other.end,
