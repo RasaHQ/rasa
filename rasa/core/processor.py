@@ -480,9 +480,19 @@ class MessageProcessor:
 
     # noinspection PyUnusedLocal
     @staticmethod
-    def should_predict_another_action(action_name, events) -> bool:
-        is_listen_action = action_name == ACTION_LISTEN_NAME
-        return not is_listen_action
+    def should_predict_another_action(action_name: Text, events: List[Event]) -> bool:
+        """Determine whether the processor should predict another action.
+
+        Args:
+            action_name: Name of the latest executed action.
+            events: List of events returned by the latest executed action.
+
+        Returns:
+            `False` if `action_name` is `ACTION_LISTEN_NAME` or
+            `ACTION_SESSION_START_NAME`, otherwise `True`.
+        """
+
+        return action_name not in (ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME)
 
     @staticmethod
     async def _send_bot_messages(
