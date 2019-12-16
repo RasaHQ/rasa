@@ -30,7 +30,7 @@ class Token(object):
 
     def __eq__(self, other):
         if not isinstance(other, Token):
-            return NotImplementedError
+            return NotImplemented
         return (self.offset, self.end, self.text, self.lemma) == (
             other.offset,
             other.end,
@@ -40,7 +40,7 @@ class Token(object):
 
     def __lt__(self, other):
         if not isinstance(other, Token):
-            return NotImplementedError
+            return NotImplemented
         return (self.offset, self.end, self.text, self.lemma) < (
             other.offset,
             other.end,
