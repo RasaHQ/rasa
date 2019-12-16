@@ -6,6 +6,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
+    TOKENS_NAMES,
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
 )
@@ -42,7 +43,11 @@ class ConveRTFeaturizer(Featurizer):
             self.module = tfhub.Module(model_url)
 
             self.text_placeholder = tf.placeholder(dtype=tf.string, shape=[None])
-            self.encoding_tensor = self.module(self.text_placeholder)
+            self.sentence_encoding_tensor = self.module(self.text_placeholder)
+            if self.return_sequence:
+                self.sequence_encoding_tensor = self.module(
+                    self.text_placeholder, signature="encode_sequence", as_dict=True
+                )
             self.session.run(tf.tables_initializer())
             self.session.run(tf.global_variables_initializer())
 
@@ -81,15 +86,56 @@ class ConveRTFeaturizer(Featurizer):
         # Get text for attribute of each example
         batch_attribute_text = [ex.get(attribute) for ex in batch_examples]
 
-        batch_features = self._run_model_on_text(batch_attribute_text)
+        sentence_encodings = self._sentence_encoding_of_text(batch_attribute_text)
 
-        return batch_features
-
-    def _run_model_on_text(self, batch: List[Text]) -> np.ndarray:
-
-        return self.session.run(
-            self.encoding_tensor, feed_dict={self.text_placeholder: batch}
+        # convert them to a sequence of 1
+        sentence_encodings = np.reshape(
+            sentence_encodings, (len(batch_examples), 1, -1)
         )
+
+        if not self.return_sequence:
+            return sentence_encodings
+
+        final_embeddings = []
+
+        number_of_tokens_in_sentence = [
+            len(sentence.get(TOKENS_NAMES[attribute])) for sentence in batch_examples
+        ]
+
+        tokenized_text = self._tokens_to_text(batch_examples, attribute)
+        sequence_encodings = self._sequence_encoding_of_text(tokenized_text)
+
+        for index in range(len(batch_examples)):
+            sequence_length = number_of_tokens_in_sentence[index]
+            sequence_encoding = sequence_encodings[index][:sequence_length]
+            sentence_encoding = sentence_encodings[index]
+
+            # tile sequence encoding to duplicate
+            sequence_encoding = np.tile(sequence_encoding, (1, 2))
+
+            # add sentence encoding to the end
+            sequence_encoding = np.concatenate(
+                [sequence_encoding, sentence_encoding], axis=0
+            )
+
+            final_embeddings.append(sequence_encoding)
+
+        return final_embeddings
+
+    def _tokens_to_text(
+        self, batch_examples: List[Message], attribute: Text = TEXT_ATTRIBUTE
+    ) -> List[Text]:
+        return ""
+
+    def _sentence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
+        return self.session.run(
+            self.sentence_encoding_tensor, feed_dict={self.text_placeholder: batch}
+        )
+
+    def _sequence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
+        return self.session.run(
+            self.sequence_encoding_tensor, feed_dict={self.text_placeholder: batch}
+        )["sequence_encoding"]
 
     def train(
         self,
@@ -132,9 +178,7 @@ class ConveRTFeaturizer(Featurizer):
                     ex.set(
                         DENSE_FEATURE_NAMES[attribute],
                         self._combine_with_existing_dense_features(
-                            ex,
-                            np.expand_dims(batch_features[index], axis=0),
-                            DENSE_FEATURE_NAMES[attribute],
+                            ex, batch_features[index], DENSE_FEATURE_NAMES[attribute]
                         ),
                     )
 
@@ -142,12 +186,10 @@ class ConveRTFeaturizer(Featurizer):
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
-        feats = self._compute_features([message])[0]
+        features = self._compute_features([message])[0]
         message.set(
             DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE],
             self._combine_with_existing_dense_features(
-                message,
-                np.expand_dims(feats, axis=0),
-                DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE],
+                message, features, DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
             ),
         )
