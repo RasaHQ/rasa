@@ -435,7 +435,7 @@ class CountVectorsFeaturizer(Featurizer):
 
     def _set_attribute_features(
         self, attribute: Text, attribute_features: List, training_data: "TrainingData"
-    ):
+    ) -> None:
         """Set computed features of the attribute to corresponding message objects"""
         for i, example in enumerate(training_data.training_examples):
             # create bag for each example
