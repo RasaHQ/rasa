@@ -9,6 +9,7 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
+    CLS_TOKEN,
 )
 import numpy as np
 import tensorflow as tf
@@ -59,22 +60,6 @@ class ConveRTFeaturizer(Featurizer):
 
         self.return_sequence = self.component_config["return_sequence"]
 
-        if self.return_sequence:
-            raise NotImplementedError(
-                f"ConveRTFeaturizer always returns a feature vector of size "
-                f"(1 x feature-dimensions). It cannot return a proper sequence "
-                f"right now. ConveRTFeaturizer can only be used "
-                f"with 'return_sequence' set to False. Also, any other featurizer "
-                f"used next to ConveRTFeaturizer should have the flag "
-                f"'return_sequence' set to False."
-            )
-
-        logger.debug(
-            f"ConveRTFeaturizer always returns a feature vector of size "
-            f"(1 x feature-dimensions). If you use any other featurizer with "
-            f"'return_sequence' equal to True, training will fail."
-        )
-
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["tensorflow_text", "tensorflow_hub"]
@@ -83,18 +68,32 @@ class ConveRTFeaturizer(Featurizer):
         self, batch_examples: List[Message], attribute: Text = TEXT_ATTRIBUTE
     ) -> np.ndarray:
 
-        # Get text for attribute of each example
-        batch_attribute_text = [ex.get(attribute) for ex in batch_examples]
-
-        sentence_encodings = self._sentence_encoding_of_text(batch_attribute_text)
-
-        # convert them to a sequence of 1
-        sentence_encodings = np.reshape(
-            sentence_encodings, (len(batch_examples), 1, -1)
-        )
+        sentence_encodings = self._compute_sentence_encodings(batch_examples, attribute)
 
         if not self.return_sequence:
             return sentence_encodings
+
+        return self._compute_sequence_encodings(
+            batch_examples, sentence_encodings, attribute
+        )
+
+    def _compute_sentence_encodings(
+        self, batch_examples: List[Message], attribute: Text = TEXT_ATTRIBUTE
+    ) -> np.ndarray:
+        # Get text for attribute of each example
+        batch_attribute_text = [ex.get(attribute) for ex in batch_examples]
+        sentence_encodings = self._sentence_encoding_of_text(batch_attribute_text)
+
+        # convert them to a sequence of 1
+        return np.reshape(sentence_encodings, (len(batch_examples), 1, -1))
+
+    def _compute_sequence_encodings(
+        self,
+        batch_examples: List[Message],
+        sentence_encodings: np.ndarray,
+        attribute: Text = TEXT_ATTRIBUTE,
+    ) -> np.ndarray:
+        cls_token_used = batch_examples[0].get(TOKENS_NAMES[attribute])[-1] == CLS_TOKEN
 
         final_embeddings = []
 
@@ -110,22 +109,40 @@ class ConveRTFeaturizer(Featurizer):
             sequence_encoding = sequence_encodings[index][:sequence_length]
             sentence_encoding = sentence_encodings[index]
 
-            # tile sequence encoding to duplicate
-            sequence_encoding = np.tile(sequence_encoding, (1, 2))
-
-            # add sentence encoding to the end
-            sequence_encoding = np.concatenate(
-                [sequence_encoding, sentence_encoding], axis=0
-            )
+            if cls_token_used:
+                # tile sequence encoding to duplicate as sentence encodings have size
+                # 1024 and sequence encodings only have a dimensionality of 512
+                sequence_encoding = np.tile(sequence_encoding, (1, 2))
+                # add sentence encoding to the end (position of cls token)
+                sequence_encoding = np.concatenate(
+                    [sequence_encoding, sentence_encoding], axis=0
+                )
 
             final_embeddings.append(sequence_encoding)
 
-        return final_embeddings
+        return np.array(final_embeddings)
 
+    @staticmethod
     def _tokens_to_text(
-        self, batch_examples: List[Message], attribute: Text = TEXT_ATTRIBUTE
+        batch_examples: List[Message], attribute: Text = TEXT_ATTRIBUTE
     ) -> List[Text]:
-        return ""
+        list_of_tokens = [
+            example.get(TOKENS_NAMES[attribute]) for example in batch_examples
+        ]
+
+        texts = []
+        for sent_tokens in list_of_tokens:
+            text = ""
+            offset = 0
+            for token in sent_tokens:
+                if offset != token.start:
+                    text += " "
+                text += token.text.replace("﹏", "")
+
+                offset += token.end - token.start
+            texts.append(text)
+
+        return texts
 
     def _sentence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
         return self.session.run(

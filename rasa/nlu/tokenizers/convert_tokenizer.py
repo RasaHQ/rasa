@@ -78,6 +78,7 @@ class ConveRTTokenizer(WhitespaceTokenizer):
     def tokenize_using_convert(
         self, text: Text, attribute: Text = TEXT_ATTRIBUTE
     ) -> List[Token]:
+
         # perform whitespace tokenization
         tokens_in = self.tokenize(text, attribute)
 
