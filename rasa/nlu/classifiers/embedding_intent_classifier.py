@@ -625,12 +625,16 @@ class EmbeddingIntentClassifier(Component):
 
                 # normalise scores if turned on
                 if self.loss_type == "softmax" and self.ranking_length > 0:
-                    label_ids = label_ids[: self.ranking_length]
-                    message_sim = message_sim[: self.ranking_length]
-                    message_sim = message_sim / np.sum(message_sim)
+                    ranking_length = self.ranking_length
+                    message_sim = message_sim[:ranking_length] / (
+                        np.sum(message_sim[:ranking_length])
+                    )
                 else:
-                    label_ids = label_ids[:DEFAULT_LABEL_RANKING_LENGTH]
-                    message_sim = message_sim[:DEFAULT_LABEL_RANKING_LENGTH]
+                    ranking_length = DEFAULT_LABEL_RANKING_LENGTH
+
+                label_ids = label_ids[:ranking_length]
+                message_sim = message_sim[:ranking_length]
+
                 ranking = list(zip(list(label_ids), message_sim))
                 label_ranking = [
                     {"name": self.inverted_label_dict[label_idx], "confidence": score}
