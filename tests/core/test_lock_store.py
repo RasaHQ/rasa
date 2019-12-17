@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 import time
 from _pytest.tmpdir import TempdirFactory
+from typing import Text
 from unittest.mock import patch
 
 from rasa.core.agent import Agent

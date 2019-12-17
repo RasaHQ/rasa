@@ -137,7 +137,7 @@ using the :ref:`callbackInput` channel to send messages to a webhook.
 Default Actions
 ---------------
 
-There are eight default actions:
+The available default actions are:
 
 +-----------------------------------+------------------------------------------------+
 | ``action_listen``                 | Stop predicting more actions and wait for user |
@@ -147,6 +147,17 @@ There are eight default actions:
 |                                   | during a conversation by entering ``/restart`` |
 |                                   | if the :ref:`mapping-policy` is included in    |
 |                                   | the policy configuration.                      |
++-----------------------------------+------------------------------------------------+
+| ``action_session_start``          | Start a new conversation session. Take all set |
+|                                   | slots, mark the beginning of a new conversation|
+|                                   | session and re-apply the existing ``SlotSet``  |
+|                                   | events. This action is triggered automatically |
+|                                   | after an inactivity period defined by the      |
+|                                   | ``session_expiration_time`` parameter in the   |
+|                                   | domain's :ref:`session_config`. Can be         |
+|                                   | triggered manually during a conversation by    |
+|                                   | entering ``/session_start``. All conversations |
+|                                   | begin with an ``action_session_start``.        |
 +-----------------------------------+------------------------------------------------+
 | ``action_default_fallback``       | Undo the last user message (as if the user did |
 |                                   | not send it and the bot did not react) and     |
@@ -175,7 +186,7 @@ There are eight default actions:
 |                                   | included in the policy configuration.          |
 +-----------------------------------+------------------------------------------------+
 
-All the default actions can be overwritten. To do so, add the action name
+All the default actions can be overridden. To do so, add the action name
 to the list of actions in your domain:
 
 .. code-block:: yaml

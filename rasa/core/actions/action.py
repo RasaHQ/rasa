@@ -2,7 +2,7 @@ import copy
 import json
 import logging
 import typing
-from typing import List, Text, Optional, Dict, Any
+from typing import List, Text, Optional, Dict, Any, Generator
 
 import aiohttp
 
@@ -37,12 +37,15 @@ if typing.TYPE_CHECKING:
     from rasa.core.domain import Domain
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
+    from rasa.core.events import SlotSet
 
 logger = logging.getLogger(__name__)
 
 ACTION_LISTEN_NAME = "action_listen"
 
 ACTION_RESTART_NAME = "action_restart"
+
+ACTION_SESSION_START_NAME = "action_session_start"
 
 ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 
@@ -62,6 +65,7 @@ def default_actions() -> List["Action"]:
     return [
         ActionListen(),
         ActionRestart(),
+        ActionSessionStart(),
         ActionDefaultFallback(),
         ActionDeactivateForm(),
         ActionRevertFallbackEvents(),
@@ -329,6 +333,49 @@ class ActionRestart(ActionUtterTemplate):
         evts = await super().run(output_channel, nlg, tracker, domain)
 
         return evts + [Restarted()]
+
+
+class ActionSessionStart(Action):
+    """Applies a conversation session start.
+
+    Takes all `SlotSet` events from the previous session and applies them to the new
+    session.
+    """
+
+    def name(self) -> Text:
+        return ACTION_SESSION_START_NAME
+
+    @staticmethod
+    def _slot_set_events_from_tracker(
+        tracker: "DialogueStateTracker",
+    ) -> List["SlotSet"]:
+        """Fetch SlotSet events from tracker and carry over key, value and metadata."""
+
+        from rasa.core.events import SlotSet
+
+        return [
+            SlotSet(key=event.key, value=event.value, metadata=event.metadata)
+            for event in tracker.applied_events()
+            if isinstance(event, SlotSet)
+        ]
+
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        from rasa.core.events import SessionStarted
+
+        _events = [SessionStarted()]
+
+        if domain.session_config.carry_over_slots:
+            _events.extend(self._slot_set_events_from_tracker(tracker))
+
+        _events.append(ActionExecuted(ACTION_LISTEN_NAME))
+
+        return _events
 
 
 class ActionDefaultFallback(ActionUtterTemplate):
