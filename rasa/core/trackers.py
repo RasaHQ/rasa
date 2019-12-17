@@ -2,7 +2,18 @@ import copy
 import logging
 from collections import deque
 from enum import Enum
-from typing import Dict, Text, Any, Optional, Iterator, Generator, Type, List, Iterable
+from typing import (
+    Dict,
+    Text,
+    Any,
+    Optional,
+    Iterator,
+    Generator,
+    Type,
+    List,
+    Deque,
+    Iterable,
+)
 
 from rasa.core import events  # pytype: disable=pyi-error
 from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
@@ -17,6 +28,7 @@ from rasa.core.events import (  # pytype: disable=pyi-error
     UserUtteranceReverted,
     BotUttered,
     Form,
+    SessionStarted,
 )
 from rasa.core.domain import Domain  # pytype: disable=pyi-error
 from rasa.core.slots import Slot
@@ -271,8 +283,7 @@ class DialogueStateTracker:
     ) -> Generator["DialogueStateTracker", None, None]:
         """Returns a generator of the previous trackers of this tracker.
 
-        The resulting array is representing
-        the trackers before each action."""
+        The resulting array is representing the trackers before each action."""
 
         tracker = self.init_copy()
 
@@ -349,7 +360,7 @@ class DialogueStateTracker:
 
         applied_events = []
         for event in self.events:
-            if isinstance(event, Restarted):
+            if isinstance(event, (Restarted, SessionStarted)):
                 applied_events = []
             elif isinstance(event, ActionReverted):
                 undo_till_previous(ActionExecuted, applied_events)
@@ -362,6 +373,7 @@ class DialogueStateTracker:
                 undo_till_previous(ActionExecuted, applied_events)
             else:
                 applied_events.append(event)
+
         return applied_events
 
     def replay_events(self) -> None:
@@ -471,10 +483,10 @@ class DialogueStateTracker:
         def filter_function(e: Event):
             has_instance = isinstance(e, event_type)
             excluded = isinstance(e, ActionExecuted) and e.action_name in to_exclude
-
             return has_instance and not excluded
 
         filtered = filter(filter_function, reversed(self.applied_events()))
+
         for i in range(skip):
             next(filtered, None)
 
@@ -491,7 +503,7 @@ class DialogueStateTracker:
             `True` if last executed action had name `name`, otherwise `False`.
         """
 
-        last = self.get_last_event_for(
+        last: Optional[ActionExecuted] = self.get_last_event_for(
             ActionExecuted, action_names_to_exclude=[ACTION_LISTEN_NAME], skip=skip
         )
         return last is not None and last.action_name == name
@@ -530,7 +542,7 @@ class DialogueStateTracker:
                 "".format(key)
             )
 
-    def _create_events(self, evts: List[Event]) -> deque:
+    def _create_events(self, evts: List[Event]) -> Deque[Event]:
 
         if evts and not isinstance(evts[0], Event):  # pragma: no cover
             raise ValueError("events, if given, must be a list of events")
