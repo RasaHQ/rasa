@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Dict
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -9,7 +10,13 @@ from sanic import Sanic
 
 import rasa.core.run
 from rasa.core import utils
+from rasa.core.channels import RasaChatInput
 from rasa.core.channels.channel import UserMessage
+from rasa.core.channels.rasa_chat import (
+    JWT_USERNAME_KEY,
+    CONVERSATION_ID_KEY,
+    INTERACTIVE_LEARNING_PERMISSION,
+)
 from rasa.core.channels.telegram import TelegramOutput
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
@@ -410,6 +417,50 @@ async def test_callback_calls_endpoint():
         assert text["text"] == "Hi there!"
 
 
+def test_botframework_attachments():
+    from rasa.core.channels.botframework import BotFrameworkInput, BotFramework
+    from copy import deepcopy
+
+    ch = BotFrameworkInput("app_id", "app_pass")
+
+    payload = {
+        "type": "message",
+        "id": "123",
+        "channelId": "msteams",
+        "serviceUrl": "https://smba.trafficmanager.net/emea/",
+        "from": {"id": "12:123", "name": "Rasa", "aadObjectId": "123"},
+        "conversation": {
+            "conversationType": "personal",
+            "tenantId": "123",
+            "id": "a:123",
+        },
+        "recipient": {"id": "12:123", "name": "Rasa chat"},
+    }
+    assert ch.add_attachments_to_metadata(payload, None) is None
+
+    attachments = [
+        {
+            "contentType": "application/vnd.microsoft.teams.file.download.info",
+            "content": {
+                "downloadUrl": "https://test.sharepoint.com/personal/rasa/123",
+                "uniqueId": "123",
+                "fileType": "csv",
+            },
+            "contentUrl": "https://test.sharepoint.com/personal/rasa/123",
+            "name": "rasa-test.csv",
+        }
+    ]
+    payload["attachments"] = attachments
+
+    assert ch.add_attachments_to_metadata(payload, None) == {"attachments": attachments}
+
+    metadata = {"test": 1, "bigger_test": {"key": "value"}}
+    updated_metadata = deepcopy(metadata)
+    updated_metadata.update({"attachments": attachments})
+
+    assert ch.add_attachments_to_metadata(payload, metadata) == updated_metadata
+
+
 def test_slack_message_sanitization():
     from rasa.core.channels.slack import SlackInput
 
@@ -418,7 +469,7 @@ def test_slack_message_sanitization():
     target_message_2 = "Hey, you can sit here if you want !"
     target_message_3 = "Hey, you can sit here if you want!"
 
-    uid_token = "<@{}>".format(test_uid)
+    uid_token = f"<@{test_uid}>"
     raw_messages = [
         test.format(uid=uid_token)
         for test in [
@@ -823,3 +874,40 @@ async def test_rasa_chat_input():
         await rasa_chat_input._fetch_public_key()
         assert rasa_chat_input.jwt_key == public_key
         assert rasa_chat_input.jwt_algorithm == jwt_algorithm
+
+
+@pytest.mark.parametrize(
+    "jwt, message",
+    [
+        ({JWT_USERNAME_KEY: "abc"}, {CONVERSATION_ID_KEY: "abc"}),
+        (
+            {
+                JWT_USERNAME_KEY: "abc",
+                "scopes": ["a", "b", INTERACTIVE_LEARNING_PERMISSION],
+            },
+            {CONVERSATION_ID_KEY: "test"},
+        ),
+    ],
+)
+def test_has_user_permission_to_send_messages_to_conversation(jwt: Dict, message: Dict):
+    assert RasaChatInput._has_user_permission_to_send_messages_to_conversation(
+        jwt, message
+    )
+
+
+@pytest.mark.parametrize(
+    "jwt, message",
+    [
+        ({JWT_USERNAME_KEY: "abc"}, {CONVERSATION_ID_KEY: "xyz"}),
+        (
+            {JWT_USERNAME_KEY: "abc", "scopes": ["a", "b"]},
+            {CONVERSATION_ID_KEY: "test"},
+        ),
+    ],
+)
+def test_has_user_permission_to_send_messages_to_conversation_without_permission(
+    jwt: Dict, message: Dict
+):
+    assert not RasaChatInput._has_user_permission_to_send_messages_to_conversation(
+        jwt, message
+    )

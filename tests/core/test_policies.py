@@ -78,15 +78,6 @@ async def train_trackers(domain, augmentation_factor=20):
     )
 
 
-@pytest.fixture(scope="module")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
-
-
 # We are going to use class style testing here since unfortunately pytest
 # doesn't support using fixtures as arguments to its own parameterize yet
 # (hence, we can't train a policy, declare it as a fixture and use the
@@ -94,7 +85,7 @@ def loop():
 # Therefore, we are going to reverse this and train the policy within a class
 # and collect the tests in a base class.
 # noinspection PyMethodMayBeStatic
-class PolicyTestCollection(object):
+class PolicyTestCollection:
     """Tests every policy needs to fulfill.
 
     Each policy can declare further tests on its own."""
@@ -396,7 +387,7 @@ class TestEmbeddingPolicyWithEval(TestEmbeddingPolicy):
         p = EmbeddingPolicy(
             featurizer=featurizer,
             priority=priority,
-            **{"scale_loss": False, "evaluate_on_num_examples": 4}
+            **{"scale_loss": False, "evaluate_on_num_examples": 4},
         )
         return p
 

@@ -72,13 +72,19 @@ def set_log_level(log_level: Optional[int] = None):
     os.environ[ENV_LOG_LEVEL] = logging.getLevelName(log_level)
 
 
-def update_apscheduler_log_level():
+def update_apscheduler_log_level() -> None:
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
 
-    logging.getLogger("apscheduler.scheduler").setLevel(log_level)
-    logging.getLogger("apscheduler.scheduler").propagate = False
-    logging.getLogger("apscheduler.executors.default").setLevel(log_level)
-    logging.getLogger("apscheduler.executors.default").propagate = False
+    apscheduler_loggers = [
+        "apscheduler",
+        "apscheduler.scheduler",
+        "apscheduler.executors",
+        "apscheduler.executors.default",
+    ]
+
+    for logger_name in apscheduler_loggers:
+        logging.getLogger(logger_name).setLevel(log_level)
+        logging.getLogger(logger_name).propagate = False
 
 
 def update_tensorflow_log_level():
@@ -184,7 +190,7 @@ def class_from_module_path(
             m = importlib.import_module(lookup_path)
             return getattr(m, module_path)
         else:
-            raise ImportError("Cannot retrieve class from path {}.".format(module_path))
+            raise ImportError(f"Cannot retrieve class from path {module_path}.")
 
 
 def minimal_kwargs(
@@ -224,9 +230,7 @@ def write_global_config_value(name: Text, value: Any) -> None:
         c[name] = value
         rasa.core.utils.dump_obj_as_yaml_to_file(GLOBAL_USER_CONFIG_PATH, c)
     except Exception as e:
-        logger.warning(
-            "Failed to write global config. Error: {}. Skipping." "".format(e)
-        )
+        logger.warning(f"Failed to write global config. Error: {e}. Skipping.")
 
 
 def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
@@ -236,7 +240,7 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         if unavailable_ok:
             return None
         else:
-            raise ValueError("Configuration '{}' key not found.".format(name))
+            raise ValueError(f"Configuration '{name}' key not found.")
 
     if not os.path.exists(GLOBAL_USER_CONFIG_PATH):
         return not_found()
@@ -253,10 +257,10 @@ def mark_as_experimental_feature(feature_name: Text) -> None:
     """Warns users that they are using an experimental feature."""
 
     logger.warning(
-        "The {} is currently experimental and might change or be "
+        f"The {feature_name} is currently experimental and might change or be "
         "removed in the future 🔬 Please share your feedback on it in the "
         "forum (https://forum.rasa.com) to help us make this feature "
-        "ready for production.".format(feature_name)
+        "ready for production."
     )
 
 

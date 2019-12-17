@@ -1,5 +1,7 @@
 .PHONY: clean test lint init check-readme
 
+JOBS ?= 1
+
 help:
 	@echo "    clean"
 	@echo "        Remove Python/build artifacts."
@@ -44,7 +46,7 @@ types:
 	pytype --keep-going rasa
 
 prepare-tests-macos: prepare-tests-files
-	brew install graphviz
+	brew install graphviz wget
 
 prepare-tests-ubuntu: prepare-tests-files
 	sudo apt-get -y install graphviz graphviz-dev python3-tk
@@ -56,8 +58,13 @@ prepare-tests-files:
 	python -m spacy link de_core_news_sm de --force
 	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 
-test: clean
-	py.test tests --cov rasa
+test: clean get-num-jobs
+	# OMP_NUM_THREADS can improve overral performance using one thread by process (on tensorflow), avoiding overload
+	OMP_NUM_THREADS=1 pytest tests -n $(JOBS) --cov rasa
+
+get-num-jobs:
+	$(eval JOBS := $(if $(findstring -j, $(MAKEFLAGS)), $(shell echo $(MAKEFLAGS) | sed -E "s@.*-j([0-9]+).*@\1@"), $(JOBS)))
+	$(eval JOBS := $(if $(findstring -j, $(JOBS)), auto, $(JOBS)))
 
 doctest: clean
 	cd docs && make doctest

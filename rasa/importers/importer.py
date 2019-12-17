@@ -160,7 +160,7 @@ class TrainingDataImporter:
             try:
                 importer_class = common_utils.class_from_module_path(module_path)
             except (AttributeError, ImportError):
-                logging.warning("Importer '{}' not found.".format(module_path))
+                logging.warning(f"Importer '{module_path}' not found.")
                 return None
 
         constructor_arguments = common_utils.minimal_kwargs(

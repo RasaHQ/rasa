@@ -1,8 +1,9 @@
-import io
 import json
 import os
 import re
 from typing import Any, Dict, List, Optional, Text
+
+import rasa.utils.io as io_utils
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
@@ -51,8 +52,7 @@ def write_json_to_file(filename: Text, obj: Any, **kwargs: Any) -> None:
 def write_to_file(filename: Text, text: Text) -> None:
     """Write a text to a file."""
 
-    with io.open(filename, "w", encoding="utf-8") as f:
-        f.write(str(text))
+    io_utils.write_text_file(str(text), filename)
 
 
 def build_entity(
@@ -113,8 +113,8 @@ def json_unpickle(file_name: Text) -> Any:
 
     jsonpickle_numpy.register_handlers()
 
-    with open(file_name, "r", encoding="utf-8") as f:
-        return jsonpickle.loads(f.read())
+    file_content = io_utils.read_file(file_name)
+    return jsonpickle.loads(file_content)
 
 
 def json_pickle(file_name: Text, obj: Any) -> None:
@@ -124,5 +124,4 @@ def json_pickle(file_name: Text, obj: Any) -> None:
 
     jsonpickle_numpy.register_handlers()
 
-    with open(file_name, "w", encoding="utf-8") as f:
-        f.write(jsonpickle.dumps(obj))
+    io_utils.write_text_file(jsonpickle.dumps(obj), file_name)

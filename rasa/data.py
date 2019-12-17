@@ -6,6 +6,7 @@ import uuid
 import re
 from typing import Tuple, List, Text, Set, Union, Optional
 from rasa.nlu.training_data import loading
+from rasa.utils.io import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +148,7 @@ def is_story_file(file_path: Text) -> bool:
     _is_story_file = False
 
     if file_path.endswith(".md"):
-        with open(file_path, encoding="utf-8") as f:
+        with open(file_path, encoding=DEFAULT_ENCODING) as f:
             _is_story_file = any(_contains_story_pattern(l) for l in f)
 
     return _is_story_file

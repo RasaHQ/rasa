@@ -21,7 +21,7 @@ class EntitySynonymMapper(EntityExtractor):
         synonyms: Optional[Dict[Text, Any]] = None,
     ) -> None:
 
-        super(EntitySynonymMapper, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.synonyms = synonyms if synonyms else {}
 
@@ -62,7 +62,7 @@ class EntitySynonymMapper(EntityExtractor):
         model_dir: Optional[Text] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["EntitySynonymMapper"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "EntitySynonymMapper":
 
         file_name = meta.get("file")
@@ -76,7 +76,7 @@ class EntitySynonymMapper(EntityExtractor):
         else:
             synonyms = None
             warnings.warn(
-                "Failed to load synonyms file from '{}'".format(entity_synonyms_file)
+                f"Failed to load synonyms file from '{entity_synonyms_file}'."
             )
         return cls(meta, synonyms)
 
@@ -98,15 +98,12 @@ class EntitySynonymMapper(EntityExtractor):
                 if original in self.synonyms and self.synonyms[original] != replacement:
                     warnings.warn(
                         "Found conflicting synonym definitions "
-                        "for {}. Overwriting target {} with {}. "
+                        f"for {repr(original)}. Overwriting target "
+                        f"{repr(self.synonyms[original])} with "
+                        f"{repr(replacement)}. "
                         "Check your training data and remove "
                         "conflicting synonym definitions to "
                         "prevent this from happening."
-                        "".format(
-                            repr(original),
-                            repr(self.synonyms[original]),
-                            repr(replacement),
-                        )
                     )
 
                 self.synonyms[original] = replacement

@@ -1,5 +1,7 @@
 import logging
+import warnings
 import asyncio
+from collections import defaultdict
 from typing import List, Set, Text
 from rasa.core.domain import Domain
 from rasa.importers.importer import TrainingDataImporter
@@ -12,7 +14,7 @@ from rasa.core.constants import UTTER_PREFIX
 logger = logging.getLogger(__name__)
 
 
-class Validator(object):
+class Validator:
     """A class used to verify usage of intents and utterances."""
 
     def __init__(self, domain: Domain, intents: TrainingData, stories: List[StoryStep]):
@@ -41,20 +43,42 @@ class Validator(object):
 
         for intent in self.domain.intents:
             if intent not in nlu_data_intents:
-                logger.warning(
-                    "The intent '{}' is listed in the domain file, but "
-                    "is not found in the NLU training data.".format(intent)
+                warnings.warn(
+                    f"The intent '{intent}' is listed in the domain file, but "
+                    "is not found in the NLU training data."
                 )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         for intent in nlu_data_intents:
             if intent not in self.domain.intents:
-                logger.error(
-                    "The intent '{}' is in the NLU training data, but "
-                    "is not listed in the domain.".format(intent)
+                warnings.warn(
+                    f"The intent '{intent}' is in the NLU training data, but "
+                    f"is not listed in the domain."
                 )
                 everything_is_alright = False
 
+        return everything_is_alright
+
+    def verify_example_repetition_in_intents(
+        self, ignore_warnings: bool = True
+    ) -> bool:
+        """Checks if there is no duplicated example in different intents."""
+
+        everything_is_alright = True
+
+        duplication_hash = defaultdict(set)
+        for example in self.intents.intent_examples:
+            text = example.text
+            duplication_hash[text].add(example.get("intent"))
+
+        for text, intents in duplication_hash.items():
+
+            if len(duplication_hash[text]) > 1:
+                everything_is_alright = ignore_warnings and everything_is_alright
+                intents_string = ", ".join(sorted(intents))
+                warnings.warn(
+                    f"The example '{text}' was found in these multiples intents: {intents_string }"
+                )
         return everything_is_alright
 
     def verify_intents_in_stories(self, ignore_warnings: bool = True) -> bool:
@@ -63,7 +87,7 @@ class Validator(object):
         Verifies if the intents used in the stories are valid, and whether
         all valid intents are used in the stories."""
 
-        everything_is_alright = self.verify_intents()
+        everything_is_alright = self.verify_intents(ignore_warnings)
 
         stories_intents = {
             event.intent["name"]
@@ -74,17 +98,15 @@ class Validator(object):
 
         for story_intent in stories_intents:
             if story_intent not in self.domain.intents:
-                logger.error(
-                    "The intent '{}' is used in stories, but is not "
-                    "listed in the domain file.".format(story_intent)
+                warnings.warn(
+                    f"The intent '{story_intent}' is used in stories, but is not "
+                    f"listed in the domain file."
                 )
                 everything_is_alright = False
 
         for intent in self.domain.intents:
             if intent not in stories_intents:
-                logger.warning(
-                    "The intent '{}' is not used in any story.".format(intent)
-                )
+                warnings.warn(f"The intent '{intent}' is not used in any story.")
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
@@ -106,18 +128,16 @@ class Validator(object):
 
         for utterance in utterance_templates:
             if utterance not in actions:
-                logger.warning(
-                    "The utterance '{}' is not listed under 'actions' in the "
-                    "domain file. It can only be used as a template.".format(utterance)
+                warnings.warn(
+                    f"The utterance '{utterance}' is not listed under 'actions' in the "
+                    "domain file. It can only be used as a template."
                 )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         for action in actions:
             if action.startswith(UTTER_PREFIX):
                 if action not in utterance_templates:
-                    logger.error(
-                        "There is no template for utterance '{}'.".format(action)
-                    )
+                    warnings.warn(f"There is no template for utterance '{action}'.")
                     everything_is_alright = False
 
         return everything_is_alright
@@ -146,18 +166,16 @@ class Validator(object):
                     continue
 
                 if event.action_name not in utterance_actions:
-                    logger.error(
-                        "The utterance '{}' is used in stories, but is not a "
-                        "valid utterance.".format(event.action_name)
+                    warnings.warn(
+                        f"The utterance '{event.action_name}' is used in stories, but is not a "
+                        f"valid utterance."
                     )
                     everything_is_alright = False
                 stories_utterances.add(event.action_name)
 
         for utterance in utterance_actions:
             if utterance not in stories_utterances:
-                logger.warning(
-                    "The utterance '{}' is not used in any story.".format(utterance)
-                )
+                warnings.warn(f"The utterance '{utterance}' is not used in any story.")
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
@@ -168,6 +186,16 @@ class Validator(object):
         logger.info("Validating intents...")
         intents_are_valid = self.verify_intents_in_stories(ignore_warnings)
 
+        logger.info("Validating there is no duplications...")
+        there_is_no_duplication = self.verify_example_repetition_in_intents(
+            ignore_warnings
+        )
+
         logger.info("Validating utterances...")
         stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
-        return intents_are_valid and stories_are_valid
+        return intents_are_valid and stories_are_valid and there_is_no_duplication
+
+    def verify_domain_validity(self) -> bool:
+        """Checks whether the domain returned by the importer is empty, indicating an invalid domain."""
+
+        return not self.domain.is_empty()

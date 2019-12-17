@@ -1,4 +1,5 @@
 import logging
+import warnings
 import numpy as np
 import os
 import typing
@@ -50,7 +51,7 @@ class SklearnIntentClassifier(Component):
         """Construct a new intent classifier using the sklearn framework."""
         from sklearn.preprocessing import LabelEncoder
 
-        super(SklearnIntentClassifier, self).__init__(component_config)
+        super().__init__(component_config)
 
         if le is not None:
             self.le = le
@@ -86,7 +87,7 @@ class SklearnIntentClassifier(Component):
         labels = [e.get("intent") for e in training_data.intent_examples]
 
         if len(set(labels)) < 2:
-            logger.warning(
+            warnings.warn(
                 "Can not train an intent classifier. "
                 "Need at least 2 different classes. "
                 "Skipping training of intent classifier."
@@ -214,7 +215,7 @@ class SklearnIntentClassifier(Component):
         model_dir: Optional[Text] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["SklearnIntentClassifier"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "SklearnIntentClassifier":
         from sklearn.preprocessing import LabelEncoder
 

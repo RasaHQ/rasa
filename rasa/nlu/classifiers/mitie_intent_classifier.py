@@ -22,7 +22,7 @@ class MitieIntentClassifier(Component):
     ) -> None:
         """Construct a new intent classifier using the MITIE framework."""
 
-        super(MitieIntentClassifier, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.clf = clf
 
@@ -87,7 +87,7 @@ class MitieIntentClassifier(Component):
         model_dir: Optional[Text] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["MitieIntentClassifier"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "MitieIntentClassifier":
         import mitie
 

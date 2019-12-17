@@ -5,7 +5,6 @@ import typing
 from typing import List, Text, Optional
 
 import rasa.utils.io
-from rasa.core import utils
 from rasa.core.actions.action import (
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
@@ -78,7 +77,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             deny_suggestion_intent_name: The name of the intent which is used
                  to detect that the user denies the suggested intents.
         """
-        super(TwoStageFallbackPolicy, self).__init__(
+        super().__init__(
             priority,
             nlu_threshold,
             ambiguity_threshold,
@@ -124,9 +123,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         if self._is_user_input_expected(tracker):
             result = confidence_scores_for(ACTION_LISTEN_NAME, 1.0, domain)
         elif self._has_user_denied(last_intent_name, tracker):
-            logger.debug(
-                "User '{}' denied suggested intents.".format(tracker.sender_id)
-            )
+            logger.debug(f"User '{tracker.sender_id}' denied suggested intents.")
             result = self._results_for_user_denied(tracker, domain)
         elif user_rephrased and should_nlu_fallback:
             logger.debug(
@@ -137,7 +134,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 ACTION_DEFAULT_ASK_AFFIRMATION_NAME, 1.0, domain
             )
         elif user_rephrased:
-            logger.debug("User '{}' rephrased intent".format(tracker.sender_id))
+            logger.debug(f"User '{tracker.sender_id}' rephrased intent")
             result = confidence_scores_for(
                 ACTION_REVERT_FALLBACK_EVENTS_NAME, 1.0, domain
             )
@@ -214,7 +211,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             "deny_suggestion_intent_name": self.deny_suggestion_intent_name,
         }
         rasa.utils.io.create_directory_for_file(config_file)
-        utils.dump_obj_as_json_to_file(config_file, meta)
+        rasa.utils.io.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
     def load(cls, path: Text) -> "FallbackPolicy":

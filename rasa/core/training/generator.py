@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
 from collections import defaultdict, namedtuple, deque
 
 import copy
+import warnings
 import logging
 import random
 from tqdm import tqdm
@@ -46,9 +46,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
     def __init__(
         self, sender_id, slots, max_event_history=None, domain=None, is_augmented=False
     ):
-        super(TrackerWithCachedStates, self).__init__(
-            sender_id, slots, max_event_history
-        )
+        super().__init__(sender_id, slots, max_event_history)
         self._states = None
         self.domain = domain
         # T/F property to filter augmented stories
@@ -65,7 +63,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         # if don't have it cached, we use the domain to calculate the states
         # from the events
         if self._states is None:
-            self._states = super(TrackerWithCachedStates, self).past_states(domain)
+            self._states = super().past_states(domain)
 
         return self._states
 
@@ -120,7 +118,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
             # cached. let's make sure it is there.
             self._states = self.past_states(self.domain)
 
-        super(TrackerWithCachedStates, self).update(event)
+        super().update(event)
 
         if not skip_states:
             if isinstance(event, ActionExecuted):
@@ -144,7 +142,7 @@ TrackerLookupDict = Dict[Optional[Text], List[TrackerWithCachedStates]]
 TrackersTuple = Tuple[List[TrackerWithCachedStates], List[TrackerWithCachedStates]]
 
 
-class TrainingDataGenerator(object):
+class TrainingDataGenerator:
     def __init__(
         self,
         story_graph: StoryGraph,
@@ -187,9 +185,9 @@ class TrainingDataGenerator(object):
     @staticmethod
     def _phase_name(everything_reachable_is_reached, phase):
         if everything_reachable_is_reached:
-            return "augmentation round {}".format(phase)
+            return f"augmentation round {phase}"
         else:
-            return "data generation round {}".format(phase)
+            return f"data generation round {phase}"
 
     def generate(self) -> List[TrackerWithCachedStates]:
         if self.config.remove_duplicates and self.config.unique_last_num_states:
@@ -218,7 +216,7 @@ class TrainingDataGenerator(object):
 
         phase = 0  # one phase is one traversal of all story steps.
         min_num_aug_phases = 3 if self.config.augmentation_factor > 0 else 0
-        logger.debug("Number of augmentation rounds is {}".format(min_num_aug_phases))
+        logger.debug(f"Number of augmentation rounds is {min_num_aug_phases}")
 
         # placeholder to track gluing process of checkpoints
         used_checkpoints = set()
@@ -240,7 +238,7 @@ class TrainingDataGenerator(object):
                     "".format(phase_name, num_active_trackers)
                 )
             else:
-                logger.debug("There are no trackers for {}".format(phase_name))
+                logger.debug(f"There are no trackers for {phase_name}")
                 break
 
             # track unused checkpoints for this phase
@@ -314,9 +312,7 @@ class TrainingDataGenerator(object):
                     story_end_trackers.extend(unique_ends)
 
             num_finished = len(finished_trackers) + len(story_end_trackers)
-            logger.debug(
-                "Finished phase ({} training samples found).".format(num_finished)
-            )
+            logger.debug(f"Finished phase ({num_finished} training samples found).")
 
             # prepare next round
             phase += 1
@@ -439,11 +435,11 @@ class TrainingDataGenerator(object):
         """
 
         return unused_checkpoints.union(
-            set(
+            {
                 start_name
                 for start_name in start_checkpoints
                 if start_name not in used_checkpoints
-            )
+            }
         )
 
     @staticmethod
@@ -657,7 +653,7 @@ class TrainingDataGenerator(object):
         that no one provided."""
 
         if STORY_START in unused_checkpoints:
-            logger.warning(
+            warnings.warn(
                 "There is no starting story block "
                 "in the training data. "
                 "All your story blocks start with some checkpoint. "
@@ -684,20 +680,20 @@ class TrainingDataGenerator(object):
 
         for cp, block_name in collected_start:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
-                logger.warning(
-                    "Unsatisfied start checkpoint '{}' "
-                    "in block '{}'. "
+                warnings.warn(
+                    f"Unsatisfied start checkpoint '{cp}' "
+                    f"in block '{block_name}'. "
                     "Remove this checkpoint or add "
                     "story blocks that end "
-                    "with this checkpoint.".format(cp, block_name)
+                    "with this checkpoint."
                 )
 
         for cp, block_name in collected_end:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
-                logger.warning(
-                    "Unsatisfied end checkpoint '{}' "
-                    "in block '{}'. "
+                warnings.warn(
+                    f"Unsatisfied end checkpoint '{cp}' "
+                    f"in block '{block_name}'. "
                     "Remove this checkpoint or add "
                     "story blocks that start "
-                    "with this checkpoint.".format(cp, block_name)
+                    "with this checkpoint."
                 )

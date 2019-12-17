@@ -1,7 +1,6 @@
 from collections import defaultdict, deque
 
 import random
-import re
 from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -24,14 +23,14 @@ TMP_NODE_ID = -2
 VISUALIZATION_TEMPLATE_PATH = "/visualization.html"
 
 
-class UserMessageGenerator(object):
+class UserMessageGenerator:
     def __init__(self, nlu_training_data):
         self.nlu_training_data = nlu_training_data
         self.mapping = self._create_reverse_mapping(self.nlu_training_data)
 
     @staticmethod
     def _create_reverse_mapping(
-        data: "TrainingData"
+        data: "TrainingData",
     ) -> Dict[Dict[Text, Any], List["Message"]]:
         """Create a mapping from intent to messages
 
@@ -223,7 +222,7 @@ def _merge_equivalent_nodes(graph, max_history):
                                 succ_node,
                                 k,
                                 d.get("label"),
-                                **{"class": d.get("class", "")}
+                                **{"class": d.get("class", "")},
                             )
                             graph.remove_edge(j, succ_node)
                         # moves all incoming edges to the other node
@@ -235,7 +234,7 @@ def _merge_equivalent_nodes(graph, max_history):
                                 i,
                                 k,
                                 d.get("label"),
-                                **{"class": d.get("class", "")}
+                                **{"class": d.get("class", "")},
                             )
                             graph.remove_edge(prev_node, j)
                         graph.remove_node(j)
@@ -269,39 +268,39 @@ async def _replace_edge_labels_with_nodes(
             graph.remove_edge(s, e, k)
             graph.add_node(
                 next_id,
-                label=sanitize(label),
+                label=label,
                 shape="rect",
                 style="filled",
                 fillcolor="lightblue",
-                **_transfer_style(d, {"class": "intent"})
+                **_transfer_style(d, {"class": "intent"}),
             )
             graph.add_edge(s, next_id, **{"class": d.get("class", "")})
             graph.add_edge(next_id, e, **{"class": d.get("class", "")})
 
 
-def visualization_html_path():
+def visualization_html_path() -> Text:
     import pkg_resources
 
     return pkg_resources.resource_filename(__name__, VISUALIZATION_TEMPLATE_PATH)
 
 
-def persist_graph(graph, output_file):
+def persist_graph(graph: "networkx.Graph", output_file: Text) -> None:
     """Plots the graph and persists it into a html file."""
     import networkx as nx
+    import rasa.utils.io as io_utils
 
     expg = nx.nx_pydot.to_pydot(graph)
 
-    with open(visualization_html_path(), "r") as file:
-        template = file.read()
+    template = io_utils.read_file(visualization_html_path())
 
-    # customize content of template by replacing tags
+    # Insert graph into template
     template = template.replace("// { is-client }", "isClient = true", 1)
-    template = template.replace(
-        "// { graph-content }", "graph = `{}`".format(expg.to_string()), 1
-    )
+    graph_as_text = expg.to_string()
+    # escape backslashes
+    graph_as_text = graph_as_text.replace("\\", "\\\\")
+    template = template.replace("// { graph-content }", f"graph = `{graph_as_text}`", 1)
 
-    with open(output_file, "w", encoding="utf-8") as file:
-        file.write(template)
+    io_utils.write_text_file(template, output_file)
 
 
 def _length_of_common_action_prefix(this: List[Event], other: List[Event]) -> int:
@@ -336,7 +335,7 @@ def _add_default_nodes(graph: "networkx.MultiDiGraph", fontsize: int = 12) -> No
         fillcolor="green",
         style="filled",
         fontsize=fontsize,
-        **{"class": "start active"}
+        **{"class": "start active"},
     )
     graph.add_node(
         END_NODE_ID,
@@ -344,7 +343,7 @@ def _add_default_nodes(graph: "networkx.MultiDiGraph", fontsize: int = 12) -> No
         fillcolor="red",
         style="filled",
         fontsize=fontsize,
-        **{"class": "end"}
+        **{"class": "end"},
     )
     graph.add_node(TMP_NODE_ID, label="TMP", style="invis", **{"class": "invisible"})
 
@@ -357,13 +356,6 @@ def _create_graph(fontsize: int = 12) -> "networkx.MultiDiGraph":
     graph = nx.MultiDiGraph()
     _add_default_nodes(graph, fontsize)
     return graph
-
-
-def sanitize(s):
-    if s:
-        return re.escape(s)
-    else:
-        return s
 
 
 def _add_message_edge(
@@ -388,7 +380,7 @@ def _add_message_edge(
         next_node_idx,
         message_key,
         message_label,
-        **{"class": "active" if is_current else ""}
+        **{"class": "active" if is_current else ""},
     )
 
 
@@ -440,7 +432,7 @@ async def visualize_neighborhood(
                     next_node_idx,
                     label=el.action_name,
                     fontsize=fontsize,
-                    **{"class": "active" if is_current else ""}
+                    **{"class": "active" if is_current else ""},
                 )
 
                 _add_message_edge(
@@ -464,9 +456,9 @@ async def visualize_neighborhood(
                     next_node_idx,
                     label="  ?  "
                     if not message
-                    else sanitize(message.get("intent", {}).get("name", "  ?  ")),
+                    else message.get("intent", {}).get("name", "  ?  "),
                     shape="rect",
-                    **{"class": "intent dashed active"}
+                    **{"class": "intent dashed active"},
                 )
                 target = next_node_idx
             elif current_node:

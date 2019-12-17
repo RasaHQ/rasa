@@ -1,6 +1,6 @@
 import logging
 import typing
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
@@ -15,13 +15,8 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
 
 from rasa.nlu.constants import (
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
     MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_FEATURE_NAMES,
     SPACY_FEATURIZABLE_ATTRIBUTES,
 )
 
@@ -50,7 +45,7 @@ class SpacyNLP(Component):
     ) -> None:
 
         self.nlp = nlp
-        super(SpacyNLP, self).__init__(component_config)
+        super().__init__(component_config)
 
     @staticmethod
     def load_model(spacy_model_name: Text) -> "Language":
@@ -86,9 +81,7 @@ class SpacyNLP(Component):
             spacy_model_name = config.language
             component_config["model"] = config.language
 
-        logger.info(
-            "Trying to load spacy model with name '{}'".format(spacy_model_name)
-        )
+        logger.info(f"Trying to load spacy model with name '{spacy_model_name}'")
 
         nlp = cls.load_model(spacy_model_name)
 
@@ -129,18 +122,99 @@ class SpacyNLP(Component):
 
         return self.preprocess_text(example.get(attribute))
 
+    @staticmethod
+    def merge_content_lists(
+        indexed_training_samples: List[Tuple[int, Text]],
+        doc_lists: List[Tuple[int, "Doc"]],
+    ) -> List[Tuple[int, "Doc"]]:
+        """Merge lists with processed Docs back into their original order."""
+
+        dct = dict(indexed_training_samples)
+        dct.update(dict(doc_lists))
+        return sorted(dct.items())
+
+    @staticmethod
+    def filter_training_samples_by_content(
+        indexed_training_samples: List[Tuple[int, Text]]
+    ) -> Tuple[List[Tuple[int, Text]], List[Tuple[int, Text]]]:
+        """Separates empty training samples from content bearing ones."""
+
+        docs_to_pipe = list(
+            filter(
+                lambda training_sample: training_sample[1] != "",
+                indexed_training_samples,
+            )
+        )
+        empty_docs = list(
+            filter(
+                lambda training_sample: training_sample[1] == "",
+                indexed_training_samples,
+            )
+        )
+        return docs_to_pipe, empty_docs
+
+    def process_content_bearing_samples(
+        self, samples_to_pipe: List[Tuple[int, Text]]
+    ) -> List[Tuple[int, "Doc"]]:
+        """Sends content bearing training samples to spaCy's pipe."""
+
+        docs = [
+            (to_pipe_sample[0], doc)
+            for to_pipe_sample, doc in zip(
+                samples_to_pipe,
+                [
+                    doc
+                    for doc in self.nlp.pipe(
+                        [txt for _, txt in samples_to_pipe], batch_size=50
+                    )
+                ],
+            )
+        ]
+        return docs
+
+    def process_non_content_bearing_samples(
+        self, empty_samples: List[Tuple[int, Text]]
+    ) -> List[Tuple[int, "Doc"]]:
+        """Creates empty Doc-objects from zero-lengthed training samples strings."""
+
+        from spacy.tokens import Doc
+
+        n_docs = [
+            (empty_sample[0], doc)
+            for empty_sample, doc in zip(
+                empty_samples, [Doc(self.nlp.vocab) for doc in empty_samples]
+            )
+        ]
+        return n_docs
+
     def docs_for_training_data(
         self, training_data: TrainingData
     ) -> Dict[Text, List[Any]]:
-
         attribute_docs = {}
         for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
-
             texts = [self.get_text(e, attribute) for e in training_data.intent_examples]
+            # Index and freeze indices of the training samples for preserving the order
+            # after processing the data.
+            indexed_training_samples = [(idx, text) for idx, text in enumerate(texts)]
 
-            docs = [doc for doc in self.nlp.pipe(texts, batch_size=50)]
+            samples_to_pipe, empty_samples = self.filter_training_samples_by_content(
+                indexed_training_samples
+            )
 
-            attribute_docs[attribute] = docs
+            content_bearing_docs = self.process_content_bearing_samples(samples_to_pipe)
+
+            non_content_bearing_docs = self.process_non_content_bearing_samples(
+                empty_samples
+            )
+
+            attribute_document_list = self.merge_content_lists(
+                indexed_training_samples,
+                content_bearing_docs + non_content_bearing_docs,
+            )
+
+            # Since we only need the training samples strings, we create a list to get them out
+            # of the tuple.
+            attribute_docs[attribute] = [doc for _, doc in attribute_document_list]
         return attribute_docs
 
     def train(
@@ -174,7 +248,7 @@ class SpacyNLP(Component):
         model_dir: Text = None,
         model_metadata: "Metadata" = None,
         cached_component: Optional["SpacyNLP"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "SpacyNLP":
 
         if cached_component:

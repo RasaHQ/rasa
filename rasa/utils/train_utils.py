@@ -1,5 +1,7 @@
 from collections import namedtuple
 import logging
+import typing
+from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable, Any
 import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
@@ -11,8 +13,7 @@ from tensor2tensor.models.transformer import (
 )
 from tensor2tensor.layers.common_attention import large_compatible_negative
 from rasa.utils.common import is_logging_disabled
-import typing
-from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Callable, Any
+
 
 if typing.TYPE_CHECKING:
     from tensor2tensor.utils.hparam import HParams
@@ -25,10 +26,10 @@ logger = logging.getLogger(__name__)
 SessionData = namedtuple("SessionData", ("X", "Y", "label_ids"))
 
 
-def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.ConfigProto]:
-    """Prepare tf.ConfigProto for training"""
+def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto]:
+    """Prepare `tf.compat.v1.ConfigProto` for training"""
     if config.get("tf_config") is not None:
-        return tf.ConfigProto(**config.pop("tf_config"))
+        return tf.compat.v1.ConfigProto(**config.pop("tf_config"))
     else:
         return None
 
@@ -295,7 +296,7 @@ def create_tf_fnn(
             use_bias=use_bias,
             kernel_initializer=kernel_initializer,
             kernel_regularizer=reg,
-            name="hidden_layer_{}_{}".format(layer_name_suffix, i),
+            name=f"hidden_layer_{layer_name_suffix}_{i}",
             reuse=tf.AUTO_REUSE,
         )
         x = tf.layers.dropout(x, rate=droprate, training=is_training)
@@ -333,7 +334,7 @@ def create_tf_embed(
         units=embed_dim,
         activation=None,
         kernel_regularizer=reg,
-        name="embed_layer_{}".format(layer_name_suffix),
+        name=f"embed_layer_{layer_name_suffix}",
         reuse=tf.AUTO_REUSE,
     )
     # normalize embedding vectors for cosine similarity
@@ -899,10 +900,7 @@ def train_tf_dataset(
         train_loss = ep_train_loss / batches_per_epoch
         train_acc = ep_train_acc / batches_per_epoch
 
-        postfix_dict = {
-            "loss": "{:.3f}".format(train_loss),
-            "acc": "{:.3f}".format(train_acc),
-        }
+        postfix_dict = {"loss": f"{train_loss:.3f}", "acc": f"{train_acc:.3f}"}
 
         if eval_init_op is not None:
             if (ep + 1) % evaluate_every_num_epochs == 0 or (ep + 1) == epochs:
@@ -917,10 +915,7 @@ def train_tf_dataset(
                 )
 
             postfix_dict.update(
-                {
-                    "val_loss": "{:.3f}".format(val_loss),
-                    "val_acc": "{:.3f}".format(val_acc),
-                }
+                {"val_loss": f"{val_loss:.3f}", "val_acc": f"{val_acc:.3f}"}
             )
 
         pbar.set_postfix(postfix_dict)

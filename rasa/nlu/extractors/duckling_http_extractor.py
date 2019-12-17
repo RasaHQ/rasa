@@ -1,6 +1,7 @@
 import time
-
+import json
 import logging
+import warnings
 import os
 import requests
 from typing import Any, List, Optional, Text, Dict
@@ -62,6 +63,9 @@ class DucklingHTTPExtractor(EntityExtractor):
         # timezone like Europe/Berlin
         # if not set the default timezone of Duckling is going to be used
         "timezone": None,
+        # Timeout for receiving response from http url of the running duckling server
+        # if not set the default timeout of duckling http url is set to 3 seconds.
+        "timeout": 3,
     }
 
     def __init__(
@@ -70,7 +74,7 @@ class DucklingHTTPExtractor(EntityExtractor):
         language: Optional[Text] = None,
     ) -> None:
 
-        super(DucklingHTTPExtractor, self).__init__(component_config)
+        super().__init__(component_config)
         self.language = language
 
     @classmethod
@@ -97,10 +101,12 @@ class DucklingHTTPExtractor(EntityExtractor):
         return self.component_config.get("url")
 
     def _payload(self, text, reference_time):
+        dimensions = self.component_config["dimensions"]
         return {
             "text": text,
             "locale": self._locale(),
             "tz": self.component_config.get("timezone"),
+            "dims": json.dumps(dimensions),
             "reftime": reference_time,
         }
 
@@ -113,7 +119,10 @@ class DucklingHTTPExtractor(EntityExtractor):
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
             }
             response = requests.post(
-                self._url() + "/parse", data=payload, headers=headers
+                self._url() + "/parse",
+                data=payload,
+                headers=headers,
+                timeout=self.component_config.get("timeout"),
             )
             if response.status_code == 200:
                 return response.json()
@@ -124,10 +133,13 @@ class DucklingHTTPExtractor(EntityExtractor):
                     "".format(response.status_code, response.text)
                 )
                 return []
-        except requests.exceptions.ConnectionError as e:
+        except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.ReadTimeout,
+        ) as e:
             logger.error(
                 "Failed to connect to duckling http server. Make sure "
-                "the duckling server is running and the proper host "
+                "the duckling server is running/healthy/not stale and the proper host "
                 "and port are set in the configuration. More "
                 "information on how to run the server can be found on "
                 "github: "
@@ -163,7 +175,7 @@ class DucklingHTTPExtractor(EntityExtractor):
             )
         else:
             extracted = []
-            logger.warning(
+            warnings.warn(
                 "Duckling HTTP component in pipeline, but no "
                 "`url` configuration in the config "
                 "file nor is `RASA_DUCKLING_HTTP_URL` "
@@ -182,7 +194,7 @@ class DucklingHTTPExtractor(EntityExtractor):
         model_dir: Text = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["DucklingHTTPExtractor"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "DucklingHTTPExtractor":
 
         language = model_metadata.get("language") if model_metadata else None

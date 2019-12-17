@@ -1,14 +1,13 @@
-# -*- coding: utf-8 -*-
-
 import datetime
 import json
 import logging
 import requests
 from sanic import Blueprint, response
 from sanic.request import Request
-from typing import Text, Dict, Any, List, Iterable
+from typing import Text, Dict, Any, List, Iterable, Callable, Awaitable, Optional
 
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
+from sanic.response import HTTPResponse
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ class BotFramework(OutputChannel):
     headers = None
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "botframework"
 
     def __init__(
@@ -40,12 +39,12 @@ class BotFramework(OutputChannel):
         self.app_id = app_id
         self.app_password = app_password
         self.conversation = conversation
-        self.global_uri = "{}v3/".format(service_url)
+        self.global_uri = f"{service_url}v3/"
         self.bot = bot
 
     async def _get_headers(self):
         if BotFramework.token_expiration_date < datetime.datetime.now():
-            uri = "{}/{}".format(MICROSOFT_OAUTH2_URL, MICROSOFT_OAUTH2_PATH)
+            uri = f"{MICROSOFT_OAUTH2_URL}/{MICROSOFT_OAUTH2_PATH}"
             grant_type = "client_credentials"
             scope = "https://api.botframework.com/.default"
             payload = {
@@ -128,7 +127,7 @@ class BotFramework(OutputChannel):
         recipient_id: Text,
         text: Text,
         buttons: List[Dict[Text, Any]],
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         hero_content = {
             "contentType": "application/vnd.microsoft.card.hero",
@@ -165,15 +164,17 @@ class BotFrameworkInput(InputChannel):
     """Bot Framework input channel implementation."""
 
     @classmethod
-    def name(cls):
+    def name(cls) -> Text:
         return "botframework"
 
     @classmethod
-    def from_credentials(cls, credentials):
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
+        # pytype: disable=attribute-error
         return cls(credentials.get("app_id"), credentials.get("app_password"))
+        # pytype: enable=attribute-error
 
     def __init__(self, app_id: Text, app_password: Text) -> None:
         """Create a Bot Framework input channel.
@@ -186,18 +187,40 @@ class BotFrameworkInput(InputChannel):
         self.app_id = app_id
         self.app_password = app_password
 
-    def blueprint(self, on_new_message):
+    @staticmethod
+    def add_attachments_to_metadata(
+        postdata: Dict[Text, Any], metadata: Optional[Dict[Text, Any]]
+    ) -> Optional[Dict[Text, Any]]:
+        """Merge the values of `postdata['attachments']` with `metadata`."""
+
+        if postdata.get("attachments"):
+            attachments = {"attachments": postdata["attachments"]}
+            if metadata:
+                metadata.update(attachments)
+            else:
+                metadata = attachments
+
+        return metadata
+
+    def blueprint(
+        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
+    ) -> Blueprint:
 
         botframework_webhook = Blueprint("botframework_webhook", __name__)
 
         # noinspection PyUnusedLocal
         @botframework_webhook.route("/", methods=["GET"])
-        async def health(request: Request):
+        async def health(request: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
         @botframework_webhook.route("/webhook", methods=["POST"])
-        async def webhook(request: Request):
+        async def webhook(request: Request) -> HTTPResponse:
             postdata = request.json
+            metadata = self.get_metadata(request)
+
+            metadata_with_attachments = self.add_attachments_to_metadata(
+                postdata, metadata
+            )
 
             try:
                 if postdata["type"] == "message":
@@ -210,16 +233,18 @@ class BotFrameworkInput(InputChannel):
                     )
 
                     user_msg = UserMessage(
-                        postdata["text"],
-                        out_channel,
-                        postdata["from"]["id"],
+                        text=postdata.get("text", ""),
+                        output_channel=out_channel,
+                        sender_id=postdata["from"]["id"],
                         input_channel=self.name(),
+                        metadata=metadata_with_attachments,
                     )
+
                     await on_new_message(user_msg)
                 else:
                     logger.info("Not received message type")
             except Exception as e:
-                logger.error("Exception when trying to handle message.{0}".format(e))
+                logger.error(f"Exception when trying to handle message.{e}")
                 logger.debug(e, exc_info=True)
                 pass
 

@@ -1,49 +1,75 @@
-FROM python:3.6-slim as builder
-# if this installation process changes, the enterprise container needs to be
-# updated as well
+# Create common base stage
+FROM python:3.6-slim as base
+
 WORKDIR /build
-COPY . .
-RUN python setup.py sdist bdist_wheel
-RUN find dist -maxdepth 1 -mindepth 1 -name '*.tar.gz' -print0 | xargs -0 -I {} mv {} rasa.tar.gz
 
-FROM python:3.6-slim
+# Create virtualenv to isolate builds
+RUN python -m venv /build
 
-SHELL ["/bin/bash", "-c"]
+# Install common libraries
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+    # required by psycopg2 at build and runtime
+    libpq-dev \
+     # required for health check
+    curl \
+ && apt-get autoremove -y
 
-RUN apt-get update -qq && \
-  apt-get install -y --no-install-recommends \
-  build-essential \
-  wget \
-  openssh-client \
-  graphviz-dev \
-  pkg-config \
-  git-core \
-  openssl \
-  libssl-dev \
-  libffi6 \
-  libffi-dev \
-  libpng-dev \
-  libpq-dev \
-  curl && \
-  apt-get clean && \
-  rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-  mkdir /install
+# Make sure we use the virtualenv
+ENV PATH="/build/bin:$PATH"
 
-WORKDIR /install
+# Stage to build and install everything
+FROM base as builder
 
-# Copy as early as possible so we can cache ...
+WORKDIR /src
+
+# Install all required build libraries
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+    build-essential \
+    wget \
+    openssh-client \
+    graphviz-dev \
+    pkg-config \
+    git-core \
+    openssl \
+    libssl-dev \
+    libffi6 \
+    libffi-dev \
+    libpng-dev
+
+# Copy only what we really need
+COPY README.md .
+COPY setup.py .
+COPY setup.cfg .
+COPY MANIFEST.in .
 COPY requirements.txt .
 
-RUN pip install -r requirements.txt --no-cache-dir
+# Install Rasa and its dependencies
+RUN pip install -U pip && pip install --no-cache-dir -r requirements.txt
 
-COPY --from=builder /build/rasa.tar.gz .
-RUN pip install ./rasa.tar.gz[sql]
+# Install Rasa as package
+COPY rasa ./rasa
+RUN pip install .[sql]
 
-VOLUME ["/app"]
+# Runtime stage which uses the virtualenv which we built in the previous stage
+FROM base AS runner
+
+# Copy virtualenv from previous stage
+COPY --from=builder /build /build
+
 WORKDIR /app
+
+# Create a volume for temporary data
+VOLUME /tmp
+
+# Make sure the default group has the same permissions as the owner
+RUN chgrp -R 0 . && chmod -R g=u .
+
+# Don't run as root
+USER 1001
 
 EXPOSE 5005
 
 ENTRYPOINT ["rasa"]
-
 CMD ["--help"]

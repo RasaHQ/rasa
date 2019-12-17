@@ -1,4 +1,5 @@
 import importlib
+import warnings
 import json
 import logging
 import os
@@ -6,8 +7,6 @@ import sys
 from collections import defaultdict
 from datetime import datetime
 from typing import Text, Optional, Any, List, Dict, Tuple
-
-import numpy as np
 
 import rasa.core
 import rasa.utils.io
@@ -34,7 +33,7 @@ from rasa.utils.common import class_from_module_path
 logger = logging.getLogger(__name__)
 
 
-class PolicyEnsemble(object):
+class PolicyEnsemble:
     versioned_packages = ["rasa", "tensorflow", "sklearn"]
 
     def __init__(
@@ -108,21 +107,19 @@ class PolicyEnsemble(object):
 
         for k, v in priority_dict.items():
             if len(v) > 1:
-                logger.warning(
-                    (
-                        "Found policies {} with same priority {} "
-                        "in PolicyEnsemble. When personalizing "
-                        "priorities, be sure to give all policies "
-                        "different priorities. More information: "
-                        "{}/core/policies/"
-                    ).format(v, k, DOCS_BASE_URL)
+                warnings.warn(
+                    f"Found policies {v} with same priority {k} "
+                    "in PolicyEnsemble. When personalizing "
+                    "priorities, be sure to give all policies "
+                    "different priorities. More information: "
+                    f"{DOCS_BASE_URL}/core/policies/"
                 )
 
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         if training_trackers:
             for policy in self.policies:
@@ -201,7 +198,7 @@ class PolicyEnsemble(object):
 
         self._add_package_version_info(metadata)
 
-        utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
+        rasa.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
         # if there are lots of stories, saving flattened stories takes a long
         # time, so this is turned off by default
@@ -247,9 +244,7 @@ class PolicyEnsemble(object):
     @classmethod
     def _ensure_loaded_policy(cls, policy, policy_cls, policy_name: Text):
         if policy is None:
-            raise Exception(
-                "Failed to load policy {}: load returned None".format(policy_name)
-            )
+            raise Exception(f"Failed to load policy {policy_name}: load returned None")
         elif not isinstance(policy, policy_cls):
             raise Exception(
                 "Failed to load policy {}: "
@@ -266,7 +261,7 @@ class PolicyEnsemble(object):
         policies = []
         for i, policy_name in enumerate(metadata["policy_names"]):
             policy_cls = registry.policy_from_module_path(policy_name)
-            dir_name = "policy_{}_{}".format(i, policy_cls.__name__)
+            dir_name = f"policy_{i}_{policy_cls.__name__}"
             policy_path = os.path.join(path, dir_name)
             policy = policy_cls.load(policy_path)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
@@ -277,8 +272,12 @@ class PolicyEnsemble(object):
         return ensemble
 
     @classmethod
-    def from_dict(cls, dictionary: Dict[Text, Any]) -> List[Policy]:
-        policies = dictionary.get("policies") or dictionary.get("policy")
+    def from_dict(cls, policy_configuration: Dict[Text, Any]) -> List[Policy]:
+        import copy
+
+        policies = policy_configuration.get("policies") or policy_configuration.get(
+            "policy"
+        )
         if policies is None:
             raise InvalidPolicyConfig(
                 "You didn't define any policies. "
@@ -290,10 +289,10 @@ class PolicyEnsemble(object):
                 "The policy configuration file has to include at least one policy."
             )
 
+        policies = copy.deepcopy(policies)  # don't manipulate passed `Dict`
         parsed_policies = []
 
         for policy in policies:
-
             policy_name = policy.pop("name")
             if policy.get("featurizer"):
                 featurizer_func, featurizer_config = cls.get_featurizer_from_dict(
@@ -301,9 +300,10 @@ class PolicyEnsemble(object):
                 )
 
                 if featurizer_config.get("state_featurizer"):
-                    state_featurizer_func, state_featurizer_config = cls.get_state_featurizer_from_dict(
-                        featurizer_config
-                    )
+                    (
+                        state_featurizer_func,
+                        state_featurizer_config,
+                    ) = cls.get_state_featurizer_from_dict(featurizer_config)
 
                     # override featurizer's state_featurizer
                     # with real state_featurizer class
@@ -373,6 +373,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
     def probabilities_using_best_policy(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
+        import numpy as np
+
         result = None
         max_confidence = -1
         best_policy_name = None
@@ -430,7 +432,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                     fallback_idx, type(fallback_policy).__name__
                 )
 
-        logger.debug("Predicted next action using {}".format(best_policy_name))
+        logger.debug(f"Predicted next action using {best_policy_name}")
         return result, best_policy_name
 
 

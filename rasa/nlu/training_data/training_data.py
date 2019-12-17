@@ -1,32 +1,28 @@
-# -*- coding: utf-8 -*-
-
 import logging
 import os
 import random
 import warnings
-from collections import Counter
+from collections import Counter, OrderedDict
 from copy import deepcopy
 from os.path import relpath
-from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
-from rasa.nlu.utils import list_to_str
 import rasa.nlu.utils
 import rasa.utils.common as rasa_utils
-from rasa.nlu.training_data.message import Message
-from rasa.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.constants import (
-    MESSAGE_INTENT_ATTRIBUTE,
     MESSAGE_RESPONSE_ATTRIBUTE,
     MESSAGE_RESPONSE_KEY_ATTRIBUTE,
-    RESPONSE_IDENTIFIER_DELIMITER,
 )
+from rasa.nlu.training_data.message import Message
+from rasa.nlu.training_data.util import check_duplicate_synonym
+from rasa.nlu.utils import list_to_str
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
 
 logger = logging.getLogger(__name__)
 
 
-class TrainingData(object):
+class TrainingData:
     """Holds loaded intent and entity training data."""
 
     # Validation will ensure and warn if these lower limits are not met
@@ -101,8 +97,7 @@ class TrainingData(object):
     def __hash__(self) -> int:
         from rasa.core import utils as core_utils
 
-        # Sort keys to ensure dictionary order in Python 3.5
-        stringified = self.nlu_as_json(sort_keys=True) + self.nlg_as_markdown()
+        stringified = self.nlu_as_json() + self.nlg_as_markdown()
         text_hash = core_utils.get_text_hash(stringified)
 
         return int(text_hash, 16)
@@ -111,14 +106,16 @@ class TrainingData(object):
     def sanitize_examples(examples: List[Message]) -> List[Message]:
         """Makes sure the training data is clean.
 
-        removes trailing whitespaces from intent annotations."""
+        Remove trailing whitespaces from intent and response annotations and drop duplicate examples."""
 
         for ex in examples:
             if ex.get("intent"):
                 ex.set("intent", ex.get("intent").strip())
+
             if ex.get("response"):
                 ex.set("response", ex.get("response").strip())
-        return examples
+
+        return list(OrderedDict.fromkeys(examples))
 
     @rasa_utils.lazy_property
     def intent_examples(self) -> List[Message]:
@@ -135,23 +132,21 @@ class TrainingData(object):
     @rasa_utils.lazy_property
     def intents(self) -> Set[Text]:
         """Returns the set of intents in the training data."""
-        return set([ex.get("intent") for ex in self.training_examples]) - {None}
+        return {ex.get("intent") for ex in self.training_examples} - {None}
 
     @rasa_utils.lazy_property
     def responses(self) -> Set[Text]:
         """Returns the set of responses in the training data."""
-        return set([ex.get("response") for ex in self.training_examples]) - {None}
+        return {ex.get("response") for ex in self.training_examples} - {None}
 
     @rasa_utils.lazy_property
     def retrieval_intents(self) -> Set[Text]:
         """Returns the total number of response types in the training data"""
-        return set(
-            [
-                ex.get("intent")
-                for ex in self.training_examples
-                if ex.get("response") is not None
-            ]
-        )
+        return {
+            ex.get("intent")
+            for ex in self.training_examples
+            if ex.get("response") is not None
+        }
 
     @rasa_utils.lazy_property
     def examples_per_intent(self) -> Dict[Text, int]:
@@ -214,15 +209,18 @@ class TrainingData(object):
 
     def as_json(self) -> Text:
 
-        logger.warning(
-            "DEPRECATION warning: function as_json() is deprecated and will be removed "
-            "in future versions. Use nlu_as_json() instead."
+        warnings.warn(
+            "Function 'as_json()' is deprecated and will be removed "
+            "in future versions. Use 'nlu_as_json()' instead.",
+            DeprecationWarning,
         )
 
         return self.nlu_as_json()
 
     def nlg_as_markdown(self) -> Text:
-        """Generates the markdown representation of the response phrases(NLG) of TrainingData."""
+        """Generates the markdown representation of the response phrases(NLG) of
+        TrainingData."""
+
         from rasa.nlu.training_data.formats import (  # pytype: disable=pyi-error
             NLGMarkdownWriter,
         )
@@ -239,9 +237,11 @@ class TrainingData(object):
 
     def as_markdown(self) -> Text:
 
-        logger.warning(
-            "DEPRECATION warning: function as_markdown() is deprecated and will be removed "
-            "in future versions. Use nlu_as_markdown() and nlg_as_markdown() instead"
+        warnings.warn(
+            "Function 'as_markdown()' is deprecated and will be removed "
+            "in future versions. Use 'nlu_as_markdown()' and 'nlg_as_markdown()' "
+            "instead.",
+            DeprecationWarning,
         )
 
         return self.nlu_as_markdown()
@@ -330,19 +330,16 @@ class TrainingData(object):
         for intent, count in self.examples_per_intent.items():
             if count < self.MIN_EXAMPLES_PER_INTENT:
                 warnings.warn(
-                    "Intent '{}' has only {} training examples! "
-                    "Minimum is {}, training may fail.".format(
-                        intent, count, self.MIN_EXAMPLES_PER_INTENT
-                    )
+                    f"Intent '{intent}' has only {count} training examples! "
+                    f"Minimum is {self.MIN_EXAMPLES_PER_INTENT}, training may fail."
                 )
 
         # emit warnings for entities with only a few training samples
         for entity_type, count in self.examples_per_entity.items():
             if count < self.MIN_EXAMPLES_PER_ENTITY:
                 warnings.warn(
-                    "Entity '{}' has only {} training examples! "
-                    "minimum is {}, training may fail."
-                    "".format(entity_type, count, self.MIN_EXAMPLES_PER_ENTITY)
+                    f"Entity '{entity_type}' has only {count} training examples! "
+                    f"minimum is {self.MIN_EXAMPLES_PER_ENTITY}, training may fail."
                 )
 
     def train_test_split(

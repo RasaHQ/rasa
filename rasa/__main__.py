@@ -51,7 +51,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
 
 
 def print_version() -> None:
-    print ("Rasa", version.__version__)
+    print("Rasa", version.__version__)
 
 
 def main() -> None:

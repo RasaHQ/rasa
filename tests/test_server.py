@@ -1,8 +1,10 @@
-# -*- coding: utf-8 -*-
 import os
+import time
 import tempfile
 import uuid
+from multiprocessing import Process, Manager
 from typing import List, Text, Type
+from contextlib import ExitStack
 
 from aioresponses import aioresponses
 
@@ -20,8 +22,9 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.model import unpack_model
 from rasa.utils.endpoints import EndpointConfig
 from sanic import Sanic
-from sanic.testing import SanicTestClient
+from sanic.testing import SanicTestClient, PORT
 from tests.nlu.utilities import ResponseTest
+from tests.conftest import get_test_client
 
 
 # a couple of event instances that we can use for testing
@@ -46,27 +49,27 @@ test_events = [
 
 @pytest.fixture
 def rasa_app_without_api(rasa_server_without_api: Sanic) -> SanicTestClient:
-    return rasa_server_without_api.test_client
+    return get_test_client(rasa_server_without_api)
 
 
 @pytest.fixture
 def rasa_app(rasa_server: Sanic) -> SanicTestClient:
-    return rasa_server.test_client
+    return get_test_client(rasa_server)
 
 
 @pytest.fixture
 def rasa_app_nlu(rasa_nlu_server: Sanic) -> SanicTestClient:
-    return rasa_nlu_server.test_client
+    return get_test_client(rasa_nlu_server)
 
 
 @pytest.fixture
 def rasa_app_core(rasa_core_server: Sanic) -> SanicTestClient:
-    return rasa_core_server.test_client
+    return get_test_client(rasa_core_server)
 
 
 @pytest.fixture
 def rasa_secured_app(rasa_server_secured: Sanic) -> SanicTestClient:
-    return rasa_server_secured.test_client
+    return get_test_client(rasa_server_secured)
 
 
 def test_root(rasa_app: SanicTestClient):
@@ -76,6 +79,7 @@ def test_root(rasa_app: SanicTestClient):
 
 
 def test_root_without_enable_api(rasa_app_without_api: SanicTestClient):
+
     _, response = rasa_app_without_api.get("/")
     assert response.status == 200
     assert response.text.startswith("Hello from Rasa:")
@@ -121,6 +125,52 @@ def test_status_not_ready_agent(rasa_app: SanicTestClient):
     rasa_app.app.agent = None
     _, response = rasa_app.get("/status")
     assert response.status == 409
+
+
+@pytest.fixture
+def formbot_data():
+    return dict(
+        domain="examples/formbot/domain.yml",
+        config="examples/formbot/config.yml",
+        stories="examples/formbot/data/stories.md",
+        nlu="examples/formbot/data/nlu.md",
+    )
+
+
+def test_train_status(rasa_server, rasa_app, formbot_data):
+    with ExitStack() as stack:
+        payload = {
+            key: stack.enter_context(open(path)).read()
+            for key, path in formbot_data.items()
+        }
+
+    def train(results):
+        client1 = SanicTestClient(rasa_server, port=PORT + 1)
+        _, train_resp = client1.post("/model/train", json=payload)
+        results["train_response_code"] = train_resp.status
+
+    # Run training process in the background
+    manager = Manager()
+    results = manager.dict()
+    p1 = Process(target=train, args=(results,))
+    p1.start()
+
+    # Query the status endpoint a few times to ensure the test does
+    # not fail prematurely due to mismatched timing of a single query.
+    for i in range(10):
+        time.sleep(1)
+        _, status_resp = rasa_app.get("/status")
+        assert status_resp.status == 200
+        if status_resp.json["num_active_training_jobs"] == 1:
+            break
+    assert status_resp.json["num_active_training_jobs"] == 1
+
+    p1.join()
+    assert results["train_response_code"] == 200
+
+    _, status_resp = rasa_app.get("/status")
+    assert status_resp.status == 200
+    assert status_resp.json["num_active_training_jobs"] == 0
 
 
 @pytest.mark.parametrize(
@@ -224,22 +274,18 @@ def test_train_stack_success(
     default_stack_config,
     default_nlu_data,
 ):
-    domain_file = open(default_domain_path)
-    config_file = open(default_stack_config)
-    stories_file = open(default_stories_file)
-    nlu_file = open(default_nlu_data)
+    with ExitStack() as stack:
+        domain_file = stack.enter_context(open(default_domain_path))
+        config_file = stack.enter_context(open(default_stack_config))
+        stories_file = stack.enter_context(open(default_stories_file))
+        nlu_file = stack.enter_context(open(default_nlu_data))
 
-    payload = dict(
-        domain=domain_file.read(),
-        config=config_file.read(),
-        stories=stories_file.read(),
-        nlu=nlu_file.read(),
-    )
-
-    domain_file.close()
-    config_file.close()
-    stories_file.close()
-    nlu_file.close()
+        payload = dict(
+            domain=domain_file.read(),
+            config=config_file.read(),
+            stories=stories_file.read(),
+            nlu=nlu_file.read(),
+        )
 
     _, response = rasa_app.post("/model/train", json=payload)
     assert response.status == 200
@@ -260,16 +306,14 @@ def test_train_stack_success(
 def test_train_nlu_success(
     rasa_app, default_stack_config, default_nlu_data, default_domain_path
 ):
-    domain_file = open(default_domain_path)
-    config_file = open(default_stack_config)
-    nlu_file = open(default_nlu_data)
+    with ExitStack() as stack:
+        domain_file = stack.enter_context(open(default_domain_path))
+        config_file = stack.enter_context(open(default_stack_config))
+        nlu_file = stack.enter_context(open(default_nlu_data))
 
-    payload = dict(
-        domain=domain_file.read(), config=config_file.read(), nlu=nlu_file.read()
-    )
-
-    config_file.close()
-    nlu_file.close()
+        payload = dict(
+            domain=domain_file.read(), config=config_file.read(), nlu=nlu_file.read()
+        )
 
     _, response = rasa_app.post("/model/train", json=payload)
     assert response.status == 200
@@ -288,16 +332,16 @@ def test_train_nlu_success(
 def test_train_core_success(
     rasa_app, default_stack_config, default_stories_file, default_domain_path
 ):
-    domain_file = open(default_domain_path)
-    config_file = open(default_stack_config)
-    core_file = open(default_stories_file)
+    with ExitStack() as stack:
+        domain_file = stack.enter_context(open(default_domain_path))
+        config_file = stack.enter_context(open(default_stack_config))
+        core_file = stack.enter_context(open(default_stories_file))
 
-    payload = dict(
-        domain=domain_file.read(), config=config_file.read(), nlu=core_file.read()
-    )
-
-    config_file.close()
-    core_file.close()
+        payload = dict(
+            domain=domain_file.read(),
+            config=config_file.read(),
+            stories=core_file.read(),
+        )
 
     _, response = rasa_app.post("/model/train", json=payload)
     assert response.status == 200
@@ -438,7 +482,7 @@ def test_evaluate_intent_with_query_param(
         nlu_data = f.read()
 
     _, response = rasa_app.post(
-        "/model/test/intents?model={}".format(trained_nlu_model), data=nlu_data
+        f"/model/test/intents?model={trained_nlu_model}", data=nlu_data
     )
 
     assert response.status == 200
@@ -508,17 +552,17 @@ def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
 @pytest.mark.parametrize("event", test_events)
 def test_pushing_event(rasa_app, event):
     cid = str(uuid.uuid1())
-    conversation = "/conversations/{}".format(cid)
+    conversation = f"/conversations/{cid}"
 
     _, response = rasa_app.post(
-        "{}/tracker/events".format(conversation),
+        f"{conversation}/tracker/events",
         json=event.as_dict(),
         headers={"Content-Type": "application/json"},
     )
     assert response.json is not None
     assert response.status == 200
 
-    _, tracker_response = rasa_app.get("/conversations/{}/tracker".format(cid))
+    _, tracker_response = rasa_app.get(f"/conversations/{cid}/tracker")
     tracker = tracker_response.json
     assert tracker is not None
     assert len(tracker.get("events")) == 2
@@ -529,18 +573,18 @@ def test_pushing_event(rasa_app, event):
 
 def test_push_multiple_events(rasa_app: SanicTestClient):
     cid = str(uuid.uuid1())
-    conversation = "/conversations/{}".format(cid)
+    conversation = f"/conversations/{cid}"
 
     events = [e.as_dict() for e in test_events]
     _, response = rasa_app.post(
-        "{}/tracker/events".format(conversation),
+        f"{conversation}/tracker/events",
         json=events,
         headers={"Content-Type": "application/json"},
     )
     assert response.json is not None
     assert response.status == 200
 
-    _, tracker_response = rasa_app.get("/conversations/{}/tracker".format(cid))
+    _, tracker_response = rasa_app.get(f"/conversations/{cid}/tracker")
     tracker = tracker_response.json
     assert tracker is not None
 
@@ -580,7 +624,7 @@ def test_sorted_predict(rasa_app: SanicTestClient):
 def _create_tracker_for_sender(app: SanicTestClient, sender_id: Text) -> None:
     data = [event.as_dict() for event in test_events[:3]]
     _, response = app.put(
-        "/conversations/{}/tracker/events".format(sender_id),
+        f"/conversations/{sender_id}/tracker/events",
         json=data,
         headers={"Content-Type": "application/json"},
     )
@@ -772,9 +816,7 @@ def test_execute_with_missing_action_name(rasa_app: SanicTestClient):
     _create_tracker_for_sender(rasa_app, test_sender)
 
     data = {"wrong-key": "utter_greet"}
-    _, response = rasa_app.post(
-        "/conversations/{}/execute".format(test_sender), json=data
-    )
+    _, response = rasa_app.post(f"/conversations/{test_sender}/execute", json=data)
 
     assert response.status == 400
 
@@ -784,9 +826,7 @@ def test_execute_with_not_existing_action(rasa_app: SanicTestClient):
     _create_tracker_for_sender(rasa_app, test_sender)
 
     data = {"name": "ka[pa[opi[opj[oj[oija"}
-    _, response = rasa_app.post(
-        "/conversations/{}/execute".format(test_sender), json=data
-    )
+    _, response = rasa_app.post(f"/conversations/{test_sender}/execute", json=data)
 
     assert response.status == 500
 

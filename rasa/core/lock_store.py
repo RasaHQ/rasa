@@ -2,9 +2,9 @@ import asyncio
 import json
 import logging
 import os
-from typing import Text, Optional, Union
+from typing import Text, Optional, Union, AsyncGenerator
 
-from async_generator import asynccontextmanager, async_generator, yield_
+from async_generator import asynccontextmanager
 
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock, NO_TICKET_ISSUED
@@ -56,9 +56,7 @@ class LockStore:
             )
             lock_store = LockStore.load_lock_store_from_module_path(store.type)
 
-        logger.debug(
-            "Connected to lock store '{}'.".format(lock_store.__class__.__name__)
-        )
+        logger.debug(f"Connected to lock store '{lock_store.__class__.__name__}'.")
 
         return lock_store
 
@@ -71,9 +69,7 @@ class LockStore:
         try:
             return class_from_module_path(module_path)
         except ImportError:
-            raise ImportError(
-                "Cannot retrieve `LockStore` from path '{}'.".format(module_path)
-            )
+            raise ImportError(f"Cannot retrieve `LockStore` from path '{module_path}'.")
 
     @staticmethod
     def create_lock(conversation_id: Text) -> TicketLock:
@@ -124,13 +120,12 @@ class LockStore:
         return ticket
 
     @asynccontextmanager
-    @async_generator
     async def lock(
         self,
         conversation_id: Text,
         lock_lifetime: int = LOCK_LIFETIME,
         wait_time_in_seconds: Union[int, float] = 1,
-    ) -> None:
+    ) -> AsyncGenerator[TicketLock, None]:
         """Acquire lock with lifetime `lock_lifetime`for `conversation_id`.
 
         Try acquiring lock with a wait time of `wait_time_in_seconds` seconds
@@ -140,10 +135,10 @@ class LockStore:
         ticket = self.issue_ticket(conversation_id, lock_lifetime)
 
         try:
-            # have to use async_generator.yield_() for py 3.5 compatibility
-            await yield_(
-                await self._acquire_lock(conversation_id, ticket, wait_time_in_seconds)
+            yield await self._acquire_lock(
+                conversation_id, ticket, wait_time_in_seconds
             )
+
         finally:
             self.cleanup(conversation_id, ticket)
 
@@ -230,11 +225,9 @@ class LockStore:
     @staticmethod
     def _log_deletion(conversation_id: Text, deletion_successful: bool) -> None:
         if deletion_successful:
-            logger.debug("Deleted lock for conversation '{}'.".format(conversation_id))
+            logger.debug(f"Deleted lock for conversation '{conversation_id}'.")
         else:
-            logger.debug(
-                "Could not delete lock for conversation '{}'.".format(conversation_id)
-            )
+            logger.debug(f"Could not delete lock for conversation '{conversation_id}'.")
 
     def ensure_ticket_available(self, lock: TicketLock) -> None:
         """Check for duplicate tickets issued for `lock`.
@@ -268,11 +261,12 @@ class RedisLockStore(LockStore):
         port: int = 6379,
         db: int = 1,
         password: Optional[Text] = None,
+        use_ssl: bool = False,
     ):
         import redis
 
         self.red = redis.StrictRedis(
-            host=host, port=int(port), db=int(db), password=password
+            host=host, port=int(port), db=int(db), password=password, ssl=use_ssl
         )
         super().__init__()
 

@@ -1,4 +1,5 @@
 import logging
+import warnings
 import os
 import typing
 from typing import Any, Dict, List, Optional, Text
@@ -23,7 +24,7 @@ class MitieEntityExtractor(EntityExtractor):
     def __init__(self, component_config: Dict[Text, Any] = None, ner=None):
         """Construct a new intent classifier using the sklearn framework."""
 
-        super(MitieEntityExtractor, self).__init__(component_config)
+        super().__init__(component_config)
         self.ner = ner
 
     @classmethod
@@ -95,17 +96,17 @@ class MitieEntityExtractor(EntityExtractor):
                 # if the token is not aligned an exception will be raised
                 start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
             except ValueError as e:
-                logger.warning("Example skipped: {}".format(str(e)))
+                warnings.warn(f"Example skipped: {e}")
                 continue
             try:
                 # mitie will raise an exception on malicious
                 # input - e.g. on overlapping entities
                 sample.add_entity(list(range(start, end)), ent["entity"])
             except Exception as e:
-                logger.warning(
+                warnings.warn(
                     "Failed to add entity example "
-                    "'{}' of sentence '{}'. Reason: "
-                    "{}".format(str(e), str(text), e)
+                    f"'{str(e)}' of sentence '{str(text)}'. Reason: "
+                    f"{e}"
                 )
                 continue
         return sample
@@ -134,7 +135,7 @@ class MitieEntityExtractor(EntityExtractor):
         model_dir: Text = None,
         model_metadata: Metadata = None,
         cached_component: Optional["MitieEntityExtractor"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "MitieEntityExtractor":
         import mitie
 

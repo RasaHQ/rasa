@@ -18,7 +18,7 @@ from rasa.utils.common import is_logging_disabled
 logger = logging.getLogger(__name__)
 
 
-class SingleStateFeaturizer(object):
+class SingleStateFeaturizer:
     """Base class for mechanisms to transform the conversations state into ML formats.
 
     Subclasses of SingleStateFeaturizer decide how the bot will transform
@@ -66,7 +66,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
     def __init__(self):
         """Declares instant variables."""
 
-        super(BinarySingleStateFeaturizer, self).__init__()
+        super().__init__()
 
         self.num_features = None
         self.input_state_map = None
@@ -151,7 +151,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         self, use_shared_vocab: bool = False, split_symbol: Text = "_"
     ) -> None:
         """inits vocabulary for label bag of words representation"""
-        super(LabelTokenizerSingleStateFeaturizer, self).__init__()
+        super().__init__()
 
         self.use_shared_vocab = use_shared_vocab
         self.split_symbol = split_symbol
@@ -172,9 +172,9 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         Values in this dict are used for featurization.
         """
 
-        distinct_tokens = set(
-            [token for label in labels for token in label.split(split_symbol)]
-        )
+        distinct_tokens = {
+            token for label in labels for token in label.split(split_symbol)
+        }
         return {token: idx for idx, token in enumerate(sorted(distinct_tokens))}
 
     def prepare_from_domain(self, domain: Domain) -> None:
@@ -238,8 +238,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
 
             else:
                 logger.warning(
-                    "Feature '{}' could not be found in "
-                    "feature map.".format(state_name)
+                    f"Feature '{state_name}' could not be found in feature map."
                 )
 
         if using_only_ints:
@@ -260,7 +259,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         return encoded_all_actions
 
 
-class TrackerFeaturizer(object):
+class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
 
     def __init__(
@@ -431,9 +430,9 @@ class TrackerFeaturizer(object):
     def persist(self, path):
         featurizer_file = os.path.join(path, "featurizer.json")
         rasa.utils.io.create_directory_for_file(featurizer_file)
-        with open(featurizer_file, "w", encoding="utf-8") as f:
-            # noinspection PyTypeChecker
-            f.write(str(jsonpickle.encode(self)))
+
+        # noinspection PyTypeChecker
+        rasa.utils.io.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
 
     @staticmethod
     def load(path):
@@ -463,9 +462,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         use_intent_probabilities: bool = False,
     ) -> None:
 
-        super(FullDialogueTrackerFeaturizer, self).__init__(
-            state_featurizer, use_intent_probabilities
-        )
+        super().__init__(state_featurizer, use_intent_probabilities)
         self.max_len = None
 
     @staticmethod
@@ -532,7 +529,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             trackers_as_actions.append(actions)
 
         self.max_len = self._calculate_max_len(trackers_as_actions)
-        logger.debug("The longest dialogue has {} actions.".format(self.max_len))
+        logger.debug(f"The longest dialogue has {self.max_len} actions.")
 
         return trackers_as_states, trackers_as_actions
 
@@ -565,9 +562,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         use_intent_probabilities: bool = False,
     ) -> None:
 
-        super(MaxHistoryTrackerFeaturizer, self).__init__(
-            state_featurizer, use_intent_probabilities
-        )
+        super().__init__(state_featurizer, use_intent_probabilities)
         self.max_history = max_history or self.MAX_HISTORY_DEFAULT
         self.remove_duplicates = remove_duplicates
 
@@ -592,9 +587,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     def _hash_example(states, action):
         """Hash states for efficient deduplication."""
 
-        frozen_states = tuple(
-            (s if s is None else frozenset(s.items()) for s in states)
-        )
+        frozen_states = tuple(s if s is None else frozenset(s.items()) for s in states)
         frozen_actions = (action,)
         return hash((frozen_states, frozen_actions))
 
