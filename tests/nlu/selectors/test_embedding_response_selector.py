@@ -14,7 +14,7 @@ def test_train_response_selector(component_builder, tmpdir):
     )
 
     trainer = Trainer(nlu_config)
-    interpreter = trainer.train(td)
+    trainer.train(td)
 
     persisted_path = trainer.persist(tmpdir)
 
