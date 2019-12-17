@@ -1,1 +1,1 @@
-Set correct default value for ``dense_dim`` in ``ResponseSelector``.
+Fix errors during training and testing of ``ResponseSelector``.
