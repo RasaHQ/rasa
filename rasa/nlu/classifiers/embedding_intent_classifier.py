@@ -411,7 +411,7 @@ class EmbeddingIntentClassifier(Component):
             if _dense is not None:
                 X_dense.append(_dense)
 
-            _sparse, _dense = self._extract_and_add_features(e, INTENT_ATTRIBUTE)
+            _sparse, _dense = self._extract_and_add_features(e, label_attribute)
             if _sparse is not None:
                 Y_sparse.append(_sparse)
             if _dense is not None:
