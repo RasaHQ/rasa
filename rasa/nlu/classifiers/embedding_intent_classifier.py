@@ -307,7 +307,7 @@ class EmbeddingIntentClassifier(Component):
         return sparse_features, dense_features
 
     def _extract_labels_precomputed_features(
-        self, label_examples: List["Message"]
+        self, label_examples: List["Message"], attribute: Text = INTENT_ATTRIBUTE
     ) -> List[np.ndarray]:
         """Collect precomputed encodings"""
 
@@ -315,7 +315,7 @@ class EmbeddingIntentClassifier(Component):
         dense_features = []
 
         for e in label_examples:
-            _sparse, _dense = self._extract_and_add_features(e, INTENT_ATTRIBUTE)
+            _sparse, _dense = self._extract_and_add_features(e, attribute)
             if _sparse is not None:
                 sparse_features.append(_sparse)
             if _dense is not None:
@@ -369,7 +369,9 @@ class EmbeddingIntentClassifier(Component):
 
         # Collect features, precomputed if they exist, else compute on the fly
         if self._check_labels_features_exist(labels_example, attribute):
-            features = self._extract_labels_precomputed_features(labels_example)
+            features = self._extract_labels_precomputed_features(
+                labels_example, attribute
+            )
         else:
             features = self._compute_default_label_features(labels_example)
 
