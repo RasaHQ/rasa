@@ -68,7 +68,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
         "random_seed": None,
         # embedding parameters
         # default dense dimension used if no dense features are present
-        "dense_dim": 512,
+        "dense_dim": {"text": 512, "intent": 20},
         # dimension size of embedding vectors
         "embed_dim": 20,
         # the type of the similarity
