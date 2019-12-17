@@ -1360,9 +1360,9 @@ def _print_help(skip_visualization: bool) -> None:
 
 async def record_messages(
     endpoint: EndpointConfig,
+    file_importer: TrainingDataImporter,
     sender_id: Text = UserMessage.DEFAULT_SENDER_ID,
     max_message_limit: Optional[int] = None,
-    file_importer: Optional[TrainingDataImporter] = None,
     skip_visualization: bool = False,
 ):
     """Read messages from the command line and print bot responses."""
@@ -1443,9 +1443,7 @@ async def record_messages(
 
 
 async def _get_tracker_events_to_plot(
-    domain: Dict[Text, Any],
-    file_importer: Optional[TrainingDataImporter],
-    sender_id: Text,
+    domain: Dict[Text, Any], file_importer: TrainingDataImporter, sender_id: Text,
 ) -> List[Union[Text, List[Event]]]:
     training_trackers = await _get_training_trackers(file_importer, domain)
     number_of_trackers = len(training_trackers)
@@ -1466,7 +1464,7 @@ async def _get_tracker_events_to_plot(
 
 
 async def _get_training_trackers(
-    file_importer: Optional[TrainingDataImporter], domain: Dict[str, Any]
+    file_importer: TrainingDataImporter, domain: Dict[str, Any]
 ) -> List[DialogueStateTracker]:
     from rasa.core import training
 
@@ -1479,7 +1477,7 @@ async def _get_training_trackers(
 
 
 def _serve_application(
-    app: Sanic, file_importer: Optional[TrainingDataImporter], skip_visualization: bool
+    app: Sanic, file_importer: TrainingDataImporter, skip_visualization: bool
 ) -> Sanic:
     """Start a core server and attach the interactive learning IO."""
 
@@ -1586,7 +1584,7 @@ async def wait_til_server_is_running(
 
 
 def run_interactive_learning(
-    file_importer: TrainingDataImporter = None,
+    file_importer: TrainingDataImporter,
     skip_visualization: bool = False,
     server_args: Dict[Text, Any] = None,
 ):
