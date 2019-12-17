@@ -79,7 +79,7 @@ class EmbeddingIntentClassifier(Component):
         "random_seed": None,
         # embedding parameters
         # default dense dimension used if no dense features are present
-        "dense_dim": {"text": 512, "intent": 20},
+        "dense_dim": {"text": 512, "label": 20},
         # dimension size of embedding vectors
         "embed_dim": 20,
         # the type of the similarity
@@ -137,7 +137,7 @@ class EmbeddingIntentClassifier(Component):
     def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
         self.hidden_layer_sizes = {
             "text": config["hidden_layers_sizes_a"],
-            "intent": config["hidden_layers_sizes_b"],
+            "label": config["hidden_layers_sizes_b"],
         }
         self.share_hidden_layers = config["share_hidden_layers"]
         if (
@@ -376,8 +376,8 @@ class EmbeddingIntentClassifier(Component):
             features = self._compute_default_label_features(labels_example)
 
         label_data = {}
-        self._add_to_session_data(label_data, "intent_features", features)
-        self._add_mask_to_session_data(label_data, "intent_mask", "intent_features")
+        self._add_to_session_data(label_data, "label_features", features)
+        self._add_mask_to_session_data(label_data, "label_mask", "label_features")
 
         return label_data
 
@@ -385,7 +385,7 @@ class EmbeddingIntentClassifier(Component):
         return [
             np.array(
                 [
-                    self._label_data["intent_features"][0][label_id]
+                    self._label_data["label_features"][0][label_id]
                     for label_id in label_ids
                 ]
             )
@@ -407,7 +407,7 @@ class EmbeddingIntentClassifier(Component):
         label_ids = []
 
         for e in training_data:
-            if label_attribute and e.get(label_attribute):
+            if e.get(label_attribute):
                 _sparse, _dense = self._extract_and_add_features(e, TEXT_ATTRIBUTE)
                 if _sparse is not None:
                     X_sparse.append(_sparse)
@@ -431,28 +431,21 @@ class EmbeddingIntentClassifier(Component):
 
         session_data = {}
         self._add_to_session_data(session_data, "text_features", [X_sparse, X_dense])
-        self._add_to_session_data(session_data, "intent_features", [Y_sparse, Y_dense])
+        self._add_to_session_data(session_data, "label_features", [Y_sparse, Y_dense])
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         self._add_to_session_data(
-            session_data, "intent_ids", [np.expand_dims(label_ids, -1)]
+            session_data, "label_ids", [np.expand_dims(label_ids, -1)]
         )
 
-        if (
-            label_attribute
-            and label_id_dict
-            and (
-                "intent_features" not in session_data
-                or not session_data["intent_features"]
-            )
+        if label_id_dict and (
+            "label_features" not in session_data or not session_data["label_features"]
         ):
             # no label features are present, get default features from _label_data
-            session_data["intent_features"] = self._use_default_label_features(
-                label_ids
-            )
+            session_data["label_features"] = self._use_default_label_features(label_ids)
 
         self._add_mask_to_session_data(session_data, "text_mask", "text_features")
-        self._add_mask_to_session_data(session_data, "intent_mask", "intent_features")
+        self._add_mask_to_session_data(session_data, "label_mask", "label_features")
 
         return session_data
 
@@ -555,29 +548,29 @@ class EmbeddingIntentClassifier(Component):
             batch_data["text_features"], batch_data["text_mask"][0], "text"
         )
         b = self._combine_sparse_dense_features(
-            batch_data["intent_features"], batch_data["intent_mask"][0], "intent"
+            batch_data["label_features"], batch_data["label_mask"][0], "label"
         )
         all_bs = self._combine_sparse_dense_features(
-            label_data["intent_features"], label_data["intent_mask"][0], "intent"
+            label_data["label_features"], label_data["label_mask"][0], "label"
         )
 
         self.message_embed = self._create_tf_embed_fnn(
             a,
             self.hidden_layer_sizes["text"],
-            fnn_name="text_intent" if self.share_hidden_layers else "text",
+            fnn_name="text_label" if self.share_hidden_layers else "text",
             embed_name="text",
         )
         self.label_embed = self._create_tf_embed_fnn(
             b,
-            self.hidden_layer_sizes["intent"],
-            fnn_name="text_intent" if self.share_hidden_layers else "intent",
-            embed_name="intent",
+            self.hidden_layer_sizes["label"],
+            fnn_name="text_label" if self.share_hidden_layers else "label",
+            embed_name="label",
         )
         self.all_labels_embed = self._create_tf_embed_fnn(
             all_bs,
-            self.hidden_layer_sizes["intent"],
-            fnn_name="text_intent" if self.share_hidden_layers else "intent",
-            embed_name="intent",
+            self.hidden_layer_sizes["label"],
+            fnn_name="text_label" if self.share_hidden_layers else "label",
+            embed_name="label",
         )
 
         return train_utils.calculate_loss_acc(
@@ -614,7 +607,7 @@ class EmbeddingIntentClassifier(Component):
             batch_data["text_features"], batch_data["text_mask"][0], "text"
         )
         b = self._combine_sparse_dense_features(
-            batch_data["intent_features"], batch_data["intent_mask"][0], "intent"
+            batch_data["label_features"], batch_data["label_mask"][0], "label"
         )
 
         self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
@@ -622,7 +615,7 @@ class EmbeddingIntentClassifier(Component):
         self.message_embed = self._create_tf_embed_fnn(
             a,
             self.hidden_layer_sizes["text"],
-            fnn_name="text_intent" if self.share_hidden_layers else "text",
+            fnn_name="text_label" if self.share_hidden_layers else "text",
             embed_name="text",
         )
 
@@ -634,9 +627,9 @@ class EmbeddingIntentClassifier(Component):
 
         self.label_embed = self._create_tf_embed_fnn(
             b,
-            self.hidden_layer_sizes["intent"],
-            fnn_name="text_intent" if self.share_hidden_layers else "intent",
-            embed_name="intent",
+            self.hidden_layer_sizes["label"],
+            fnn_name="text_label" if self.share_hidden_layers else "label",
+            embed_name="label",
         )
 
         self.sim = train_utils.tf_raw_sim(
@@ -659,7 +652,7 @@ class EmbeddingIntentClassifier(Component):
         if self.share_hidden_layers:
             num_text_features = self._get_num_of_features(session_data, "text_features")
             num_intent_features = self._get_num_of_features(
-                session_data, "intent_features"
+                session_data, "label_features"
             )
 
             if num_text_features != num_intent_features:
@@ -697,7 +690,7 @@ class EmbeddingIntentClassifier(Component):
 
     @staticmethod
     def _check_enough_labels(session_data: "SessionDataType") -> bool:
-        return len(np.unique(session_data["intent_ids"])) >= 2
+        return len(np.unique(session_data["label_ids"])) >= 2
 
     def train(
         self,
@@ -729,7 +722,7 @@ class EmbeddingIntentClassifier(Component):
                 session_data,
                 self.evaluate_on_num_examples,
                 self.random_seed,
-                label_key="intent_ids",
+                label_key="label_ids",
             )
         else:
             eval_session_data = None
@@ -751,7 +744,7 @@ class EmbeddingIntentClassifier(Component):
                 eval_session_data,
                 batch_size_in,
                 self.batch_in_strategy,
-                label_key="intent_ids",
+                label_key="label_ids",
             )
 
             self._is_training = tf.placeholder_with_default(False, shape=())
