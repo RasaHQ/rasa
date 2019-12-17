@@ -560,7 +560,7 @@ class EmbeddingPolicy(Policy):
         tf_feed_dict = self.tf_feed_dict_for_prediction(tracker, domain)
 
         confidence = self.session.run(self.pred_confidence, feed_dict=tf_feed_dict)
-        confidence = confidence[0, -1, :].tolist()
+        confidence = confidence[0, -1, :]
 
         # normalise scores if turned on
         if self.loss_type == "softmax" and self.ranking_length > 0:
@@ -570,7 +570,7 @@ class EmbeddingPolicy(Policy):
                     confidence[i] = 0.0
             confidence = confidence / np.sum(confidence)
 
-        return confidence
+        return confidence.tolist()
 
     def persist(self, path: Text) -> None:
         """Persists the policy to a storage."""
