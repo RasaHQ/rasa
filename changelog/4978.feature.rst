@@ -1,0 +1,4 @@
+Add ``ConveRTTokenizer``.
+
+The tokenizer should be used whenever the ``ConveRTFeaturizer`` is used.
+The flag ``return_sequence`` for the ``ConveRTFeaturizer`` can now be set to ``True``.
