@@ -1283,7 +1283,7 @@ def cross_validate(
         if is_response_selector_present(interpreter):
             response_selector_present = True
 
-    if intent_classifier_present:
+    if intent_classifier_present and intent_test_results:
         logger.info("Accumulated test folds intent evaluation results:")
         evaluate_intents(
             intent_test_results,
@@ -1295,11 +1295,11 @@ def cross_validate(
             disable_plotting,
         )
 
-    if extractors:
+    if extractors and entity_test_results:
         logger.info("Accumulated test folds entity evaluation results:")
         evaluate_entities(entity_test_results, extractors, output, successes, errors)
 
-    if response_selector_present:
+    if response_selector_present and response_selection_test_results:
         logger.info("Accumulated test folds response selection evaluation results:")
         evaluate_response_selections(response_selection_test_results, output)
 
