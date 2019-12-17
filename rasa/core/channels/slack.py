@@ -171,14 +171,14 @@ class SlackInput(InputChannel):
         self.retry_num_header = slack_retry_number_header
 
     @staticmethod
-    def is_app_mention(slack_event: Dict) -> bool:
+    def _is_app_mention(slack_event: Dict) -> bool:
         try:
             return slack_event["event"]["type"] == "app_mention"
         except KeyError:
             return False
 
     @staticmethod
-    def is_direct_message(slack_event: Dict) -> bool:
+    def _is_direct_message(slack_event: Dict) -> bool:
         try:
             return slack_event["event"]["channel_type"] == "im"
         except KeyError:
@@ -364,8 +364,8 @@ class SlackInput(InputChannel):
                     metadata = self.get_metadata(request)
                     channel = output["event"]["channel"]
                     if (
-                        is_direct_message(output)
-                        or is_app_mention(output)
+                        self._is_direct_message(output)
+                        or self._is_app_mention(output)
                         or channel == self.slack_channel
                     ):
                         metadata["out_channel"] = channel
