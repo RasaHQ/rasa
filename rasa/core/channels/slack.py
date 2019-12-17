@@ -196,7 +196,6 @@ class SlackInput(InputChannel):
             and not slack_event.get("event", {}).get("bot_id")
         )
 
-
     @staticmethod
     def _sanitize_user_message(text, uids_to_remove) -> Text:
         """Remove superfluous/wrong/problematic tokens from a message.
@@ -312,7 +311,7 @@ class SlackInput(InputChannel):
         try:
             user_msg = UserMessage(
                 text,
-                metadata["out_channel"],
+                self.get_output_channel(metadata.get("out_channel")),
                 sender_id,
                 input_channel=self.name(),
                 metadata=metadata,
@@ -324,6 +323,18 @@ class SlackInput(InputChannel):
             logger.error(str(e), exc_info=True)
 
         return response.text("")
+
+    def get_metadata(self, request: Request):
+        slack_event = request.json
+        event = slack_event.get("event")
+
+        metadata = {}
+        metadata["out_channel"] = event.get("channel")
+        metadata["text"] = event.get("text")
+        metadata["sender"] = event.get("user")
+        metadata["users"] = slack_event.get("authed_users")
+
+        return metadata
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
@@ -362,20 +373,18 @@ class SlackInput(InputChannel):
 
                 elif self._is_user_message(output):
                     metadata = self.get_metadata(request)
-                    channel = output["event"]["channel"]
                     if (
                         self._is_direct_message(output)
                         or self._is_app_mention(output)
-                        or channel == self.slack_channel
+                        or metadata["out_channel"] == self.slack_channel
                     ):
-                        metadata["out_channel"] = channel
                         return await self.process_message(
                             request,
                             on_new_message,
                             text=self._sanitize_user_message(
-                                output["event"]["text"], output["authed_users"]
+                                metadata["text"], metadata["users"]
                             ),
-                            sender_id=output.get("event").get("user"),
+                            sender_id=metadata["sender"],
                             metadata=metadata,
                         )
                     else:
@@ -385,8 +394,11 @@ class SlackInput(InputChannel):
 
         return slack_webhook
 
-    def get_output_channel(self) -> OutputChannel:
-        return SlackBot(self.slack_token, self.slack_channel)
+    def get_output_channel(self, channel: Optional[Text] = None) -> OutputChannel:
+        if channel is not None:
+            return SlackBot(self.slack_token, channel)
+        else:
+            return SlackBot(self.slack_token, self.slack_channel)
 
     def set_output_channel(self, channel) -> None:
         self.slack_channel = channel
