@@ -587,6 +587,7 @@ class EmbeddingPolicy(Policy):
 
         meta = {
             "priority": self.priority,
+            "loss_type": self.loss_type,
             "normalize_top_num_actions": self.normalize_top_num_actions,
         }
 
