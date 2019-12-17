@@ -111,21 +111,6 @@ class SlackBot(SlackClient, OutputChannel):
         return super().api_call("chat.postMessage", **json_message)
 
 
-def is_app_mention(user_message: Dict) -> bool:
-    print(type(user_message))
-    try:
-        return user_message["event"]["type"] == "app_mention"
-    except KeyError:
-        return False
-
-
-def is_direct_message(user_message: Dict) -> bool:
-    try:
-        return user_message["event"]["channel_type"] == "im"
-    except KeyError:
-        return False
-
-
 class SlackInput(InputChannel):
     """Slack input channel implementation. Based on the HTTPInputChannel."""
 
@@ -186,6 +171,20 @@ class SlackInput(InputChannel):
         self.retry_num_header = slack_retry_number_header
 
     @staticmethod
+    def is_app_mention(slack_event: Dict) -> bool:
+        try:
+            return slack_event["event"]["type"] == "app_mention"
+        except KeyError:
+            return False
+
+    @staticmethod
+    def is_direct_message(slack_event: Dict) -> bool:
+        try:
+            return slack_event["event"]["channel_type"] == "im"
+        except KeyError:
+            return False
+
+    @staticmethod
     def _is_user_message(slack_event: Dict) -> bool:
         return (
             slack_event.get("event")
@@ -196,6 +195,7 @@ class SlackInput(InputChannel):
             and slack_event.get("event", {}).get("text")
             and not slack_event.get("event", {}).get("bot_id")
         )
+
 
     @staticmethod
     def _sanitize_user_message(text, uids_to_remove) -> Text:
@@ -310,10 +310,9 @@ class SlackInput(InputChannel):
             return response.text(None, status=201, headers={"X-Slack-No-Retry": 1})
 
         try:
-            out_channel = self.get_output_channel()
             user_msg = UserMessage(
                 text,
-                out_channel,
+                metadata["out_channel"],
                 sender_id,
                 input_channel=self.name(),
                 metadata=metadata,
@@ -369,7 +368,7 @@ class SlackInput(InputChannel):
                         or is_app_mention(output)
                         or channel == self.slack_channel
                     ):
-                        self.set_output_channel(channel)
+                        metadata["out_channel"] = channel
                         return await self.process_message(
                             request,
                             on_new_message,
@@ -377,12 +376,13 @@ class SlackInput(InputChannel):
                                 output["event"]["text"], output["authed_users"]
                             ),
                             sender_id=output.get("event").get("user"),
-                            metadata=metadata
+                            metadata=metadata,
                         )
                     else:
                         return response.text("")
 
             return response.text("Bot message delivered")
+
         return slack_webhook
 
     def get_output_channel(self) -> OutputChannel:
