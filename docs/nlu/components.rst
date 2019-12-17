@@ -93,10 +93,12 @@ Thus, we save a lot of memroy and are able to train on larger datasets.
 
 By default all featurizers will return a matrix of length (1 x feature-dimension).
 All featurizer have the option to return a sequence instead.
-In case the flag ``"return_sequence"`` is set to ``True`` the returned matrix of a featurizer will have the size
+In case the flag ``"return_sequence"`` is set to ``True``, the returned matrix of the featurizer will have the size
 (token-length x feature-dimension).
 So, the returned matrix will have an entry for every token.
 Otherwise, the matrix will just have one entry for the complete utterance.
+If you want to use custom features for your ``CRFEntityExtractor``, you should set ``"return_sequence"`` to ``True``.
+For more details, take a look :ref:`entity-extraction-custom-features`.
 
 
 MitieFeaturizer

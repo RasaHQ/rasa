@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class NGramFeaturizer(Featurizer):
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None):
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
         super(NGramFeaturizer, self).__init__(component_config)
 
         raise NotImplementedError(

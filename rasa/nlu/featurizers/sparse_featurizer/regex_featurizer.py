@@ -42,9 +42,9 @@ class RegexFeaturizer(Featurizer):
 
     def __init__(
         self,
-        component_config: Dict[Text, Any] = None,
-        known_patterns: List[Dict[Text, Text]] = None,
-        lookup_tables: List[Dict[Text, Union[Text, List]]] = None,
+        component_config: Optional[Dict[Text, Any]] = None,
+        known_patterns: Optional[List[Dict[Text, Text]]] = None,
+        lookup_tables: Optional[List[Dict[Text, Union[Text, List]]]] = None,
     ) -> None:
 
         super().__init__(component_config)

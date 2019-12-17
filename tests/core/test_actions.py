@@ -1,3 +1,5 @@
+from typing import List
+
 import pytest
 from aioresponses import aioresponses
 
@@ -12,6 +14,7 @@ from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
+    ACTION_SESSION_START_NAME,
     ActionBack,
     ActionDefaultAskAffirmation,
     ActionDefaultAskRephrase,
@@ -22,14 +25,26 @@ from rasa.core.actions.action import (
     ActionUtterTemplate,
     ActionRetrieveResponse,
     RemoteAction,
+    ActionSessionStart,
 )
-from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.events import Restarted, SlotSet, UserUtteranceReverted, BotUttered, Form
+from rasa.core.channels import CollectingOutputChannel
+from rasa.core.domain import Domain, SessionConfig
+from rasa.core.events import (
+    Restarted,
+    SlotSet,
+    UserUtteranceReverted,
+    BotUttered,
+    Form,
+    SessionStarted,
+    ActionExecuted,
+    Event,
+    UserUttered,
+)
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
+from rasa.core.constants import USER_INTENT_SESSION_START
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
-from rasa.core.constants import UTTER_PREFIX, RESPOND_PREFIX
 
 
 @pytest.fixture(scope="module")
@@ -98,18 +113,19 @@ def test_domain_action_instantiation():
 
     instantiated_actions = domain.actions(None)
 
-    assert len(instantiated_actions) == 11
+    assert len(instantiated_actions) == 12
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
-    assert instantiated_actions[2].name() == ACTION_DEFAULT_FALLBACK_NAME
-    assert instantiated_actions[3].name() == ACTION_DEACTIVATE_FORM_NAME
-    assert instantiated_actions[4].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
-    assert instantiated_actions[5].name() == (ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
-    assert instantiated_actions[6].name() == (ACTION_DEFAULT_ASK_REPHRASE_NAME)
-    assert instantiated_actions[7].name() == ACTION_BACK_NAME
-    assert instantiated_actions[8].name() == "my_module.ActionTest"
-    assert instantiated_actions[9].name() == "utter_test"
-    assert instantiated_actions[10].name() == "respond_test"
+    assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
+    assert instantiated_actions[3].name() == ACTION_DEFAULT_FALLBACK_NAME
+    assert instantiated_actions[4].name() == ACTION_DEACTIVATE_FORM_NAME
+    assert instantiated_actions[5].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
+    assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
+    assert instantiated_actions[7].name() == ACTION_DEFAULT_ASK_REPHRASE_NAME
+    assert instantiated_actions[8].name() == ACTION_BACK_NAME
+    assert instantiated_actions[9].name() == "my_module.ActionTest"
+    assert instantiated_actions[10].name() == "utter_test"
+    assert instantiated_actions[11].name() == "respond_test"
 
 
 async def test_remote_action_runs(
@@ -480,6 +496,88 @@ async def test_action_restart(
     )
 
     assert events == [BotUttered("congrats, you've restarted me!"), Restarted()]
+
+
+async def test_action_session_start_without_slots(
+    default_channel: CollectingOutputChannel,
+    template_nlg: TemplatedNaturalLanguageGenerator,
+    template_sender_tracker: DialogueStateTracker,
+    default_domain: Domain,
+):
+    events = await ActionSessionStart().run(
+        default_channel, template_nlg, template_sender_tracker, default_domain
+    )
+    assert events == [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)]
+
+
+@pytest.mark.parametrize(
+    "session_config, expected_events",
+    [
+        (
+            SessionConfig(123, True),
+            [
+                SessionStarted(),
+                SlotSet("my_slot", "value"),
+                SlotSet("another-slot", "value2"),
+                ActionExecuted(action_name=ACTION_LISTEN_NAME),
+            ],
+        ),
+        (
+            SessionConfig(123, False),
+            [SessionStarted(), ActionExecuted(action_name=ACTION_LISTEN_NAME)],
+        ),
+    ],
+)
+async def test_action_session_start_with_slots(
+    default_channel: CollectingOutputChannel,
+    template_nlg: TemplatedNaturalLanguageGenerator,
+    template_sender_tracker: DialogueStateTracker,
+    default_domain: Domain,
+    session_config: SessionConfig,
+    expected_events: List[Event],
+):
+    # set a few slots on tracker
+    slot_set_event_1 = SlotSet("my_slot", "value")
+    slot_set_event_2 = SlotSet("another-slot", "value2")
+    for event in [slot_set_event_1, slot_set_event_2]:
+        template_sender_tracker.update(event)
+
+    default_domain.session_config = session_config
+
+    events = await ActionSessionStart().run(
+        default_channel, template_nlg, template_sender_tracker, default_domain
+    )
+
+    assert events == expected_events
+
+    # make sure that the list of events has ascending timestamps
+    assert sorted(events, key=lambda x: x.timestamp) == events
+
+
+async def test_applied_events_after_action_session_start(
+    default_channel: CollectingOutputChannel,
+    template_nlg: TemplatedNaturalLanguageGenerator,
+):
+    slot_set = SlotSet("my_slot", "value")
+    events = [
+        slot_set,
+        ActionExecuted(ACTION_LISTEN_NAME),
+        # User triggers a restart manually by triggering the intent
+        UserUttered(
+            text=f"/{USER_INTENT_SESSION_START}",
+            intent={"name": USER_INTENT_SESSION_START},
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events("🕵️‍♀️", events)
+
+    # Mapping Policy kicks in and runs the session restart action
+    events = await ActionSessionStart().run(
+        default_channel, template_nlg, tracker, Domain.empty()
+    )
+    for event in events:
+        tracker.update(event)
+
+    assert tracker.applied_events() == [slot_set, ActionExecuted(ACTION_LISTEN_NAME)]
 
 
 async def test_action_default_fallback(

@@ -16,7 +16,7 @@ class Token(object):
         data: Optional[Dict[Text, Any]] = None,
         lemma: Optional[Text] = None,
         end: Optional[int] = None,
-    ):
+    ) -> None:
         self.start = start
         self.text = text
         self.end = start + len(text)
@@ -24,10 +24,10 @@ class Token(object):
         self.lemma = lemma or text
         self.end = end if end else start + len(text)
 
-    def set(self, prop: Text, info: Any):
+    def set(self, prop: Text, info: Any) -> None:
         self.data[prop] = info
 
-    def get(self, prop: Text, default: Optional[Any] = None):
+    def get(self, prop: Text, default: Optional[Any] = None) -> Any:
         return self.data.get(prop, default)
 
     def __eq__(self, other):

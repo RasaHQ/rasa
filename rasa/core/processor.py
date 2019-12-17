@@ -1,4 +1,3 @@
-import json
 import warnings
 import logging
 import os
@@ -9,7 +8,7 @@ import numpy as np
 import time
 
 from rasa.core import jobs
-from rasa.core.actions.action import Action
+from rasa.core.actions.action import Action, ACTION_SESSION_START_NAME
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
@@ -22,6 +21,7 @@ from rasa.core.constants import (
     UTTER_PREFIX,
     USER_INTENT_BACK,
     USER_INTENT_OUT_OF_SCOPE,
+    USER_INTENT_SESSION_START,
 )
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -44,12 +44,18 @@ from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.utils.endpoints import EndpointConfig
-from typing import Coroutine
 
 logger = logging.getLogger(__name__)
 
 
 MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
+
+DEFAULT_INTENTS = [
+    USER_INTENT_RESTART,
+    USER_INTENT_BACK,
+    USER_INTENT_OUT_OF_SCOPE,
+    USER_INTENT_SESSION_START,
+]
 
 
 class MessageProcessor:
@@ -95,6 +101,7 @@ class MessageProcessor:
             return None
 
         await self._predict_and_execute_next_action(message, tracker)
+
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
 
@@ -103,11 +110,11 @@ class MessageProcessor:
         else:
             return None
 
-    def predict_next(self, sender_id: Text) -> Optional[Dict[Text, Any]]:
+    async def predict_next(self, sender_id: Text) -> Optional[Dict[Text, Any]]:
 
         # we have a Tracker instance for each user
         # which maintains conversation state
-        tracker = self._get_tracker(sender_id)
+        tracker = await self.get_tracker_with_session_start(sender_id)
         if not tracker:
             logger.warning(
                 f"Failed to retrieve or create tracker for sender '{sender_id}'."
@@ -135,6 +142,57 @@ class MessageProcessor:
             "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART),
         }
 
+    async def _update_tracker_session(
+        self, tracker: DialogueStateTracker, output_channel: OutputChannel,
+    ) -> None:
+        """Check the current session in `tracker` and update it if expired.
+
+        An 'action_session_start' is run if the latest tracker session has expired,
+        or if the tracker does not yet contain any events (only those after the last
+        restart are considered).
+
+        Args:
+            tracker: Tracker to inspect.
+            output_channel: Output channel for potential utterances in a custom
+                `ActionSessionStart`.
+        """
+        if not tracker.applied_events() or self._has_session_expired(tracker):
+            logger.debug(
+                f"Starting a new session for conversation ID '{tracker.sender_id}'."
+            )
+
+            await self._run_action(
+                action=self._get_action(ACTION_SESSION_START_NAME),
+                tracker=tracker,
+                output_channel=output_channel,
+                nlg=self.nlg,
+            )
+
+            self.tracker_store.save(tracker)
+
+    async def get_tracker_with_session_start(
+        self, sender_id: Text, output_channel: Optional[OutputChannel] = None,
+    ) -> Optional[DialogueStateTracker]:
+        """Get tracker for `sender_id` or create a new tracker for `sender_id`.
+
+        If a new tracker is created, `action_session_start` is run.
+
+        Args:
+            output_channel: Output channel associated with the incoming user message.
+            sender_id: Conversation ID for which to fetch the tracker.
+
+        Returns:
+              Tracker for `sender_id` if available, `None` otherwise.
+        """
+
+        tracker = self._get_tracker(sender_id)
+        if not tracker:
+            return None
+
+        await self._update_tracker_session(tracker, output_channel)
+
+        return tracker
+
     async def log_message(
         self, message: UserMessage, should_save_tracker: bool = True
     ) -> Optional[DialogueStateTracker]:
@@ -150,7 +208,10 @@ class MessageProcessor:
             message.text = self.message_preprocessor(message.text)
         # we have a Tracker instance for each user
         # which maintains conversation state
-        tracker = self._get_tracker(message.sender_id)
+        tracker = await self.get_tracker_with_session_start(
+            message.sender_id, message.output_channel
+        )
+
         if tracker:
             await self._handle_message_with_tracker(message, tracker)
 
@@ -159,7 +220,7 @@ class MessageProcessor:
                 self._save_tracker(tracker)
         else:
             logger.warning(
-                "Failed to retrieve or create tracker for sender "
+                f"Failed to retrieve or create tracker for conversation ID "
                 f"'{message.sender_id}'."
             )
         return tracker
@@ -176,7 +237,7 @@ class MessageProcessor:
 
         # we have a Tracker instance for each user
         # which maintains conversation state
-        tracker = self._get_tracker(sender_id)
+        tracker = await self.get_tracker_with_session_start(sender_id, output_channel)
         if tracker:
             action = self._get_action(action_name)
             await self._run_action(
@@ -187,7 +248,8 @@ class MessageProcessor:
             self._save_tracker(tracker)
         else:
             logger.warning(
-                f"Failed to retrieve or create tracker for sender '{sender_id}'."
+                f"Failed to retrieve or create tracker for conversation ID "
+                f"'{sender_id}'."
             )
         return tracker
 
@@ -206,9 +268,8 @@ class MessageProcessor:
             max_confidence_index, self.action_endpoint
         )
         logger.debug(
-            "Predicted next action '{}' with confidence {:.2f}.".format(
-                action.name(), action_confidences[max_confidence_index]
-            )
+            f"Predicted next action '{action.name()}' with confidence "
+            f"{action_confidences[max_confidence_index]:.2f}."
         )
         return action, policy, action_confidences[max_confidence_index]
 
@@ -249,11 +310,11 @@ class MessageProcessor:
     ) -> None:
         """Handle a reminder that is triggered asynchronously."""
 
-        tracker = self._get_tracker(sender_id)
+        tracker = await self.get_tracker_with_session_start(sender_id, output_channel)
 
         if not tracker:
             logger.warning(
-                f"Failed to retrieve or create tracker for sender '{sender_id}'."
+                f"Failed to retrieve tracker for conversation ID '{sender_id}'."
             )
             return None
 
@@ -263,10 +324,8 @@ class MessageProcessor:
             or not self._is_reminder_still_valid(tracker, reminder_event)
         ):
             logger.debug(
-                "Canceled reminder because it is outdated. "
-                "(event: {} id: {})".format(
-                    reminder_event.action_name, reminder_event.name
-                )
+                f"Canceled reminder because it is outdated. "
+                f"(event: {reminder_event.action_name} id: {reminder_event.name})"
             )
         else:
             # necessary for proper featurization, otherwise the previous
@@ -292,21 +351,16 @@ class MessageProcessor:
             logger.debug(f"Current slot values: \n{slot_values}")
 
     def _log_unseen_features(self, parse_data: Dict[Text, Any]) -> None:
-        """Check if the NLU interpreter picks up intents or entities that aren't recognized."""
+        """Check if the NLU interpreter picks up intents or entities that aren't
+        recognized."""
 
         domain_is_not_empty = self.domain and not self.domain.is_empty()
-
-        default_intents = [
-            USER_INTENT_RESTART,
-            USER_INTENT_BACK,
-            USER_INTENT_OUT_OF_SCOPE,
-        ]
 
         intent = parse_data["intent"]["name"]
         if intent:
             intent_is_recognized = (
                 domain_is_not_empty and intent in self.domain.intents
-            ) or intent in default_intents
+            ) or intent in DEFAULT_INTENTS
             if not intent_is_recognized:
                 warnings.warn(
                     f"Interpreter parsed an intent '{intent}' "
@@ -377,8 +431,7 @@ class MessageProcessor:
             self._log_slots(tracker)
 
         logger.debug(
-            "Logged UserUtterance - "
-            "tracker now has {} events".format(len(tracker.events))
+            f"Logged UserUtterance - " f"tracker now has {len(tracker.events)} events."
         )
 
     @staticmethod
@@ -425,11 +478,19 @@ class MessageProcessor:
                 # call a registered callback
                 self.on_circuit_break(tracker, message.output_channel, self.nlg)
 
-    # noinspection PyUnusedLocal
     @staticmethod
-    def should_predict_another_action(action_name, events) -> bool:
-        is_listen_action = action_name == ACTION_LISTEN_NAME
-        return not is_listen_action
+    def should_predict_another_action(action_name: Text) -> bool:
+        """Determine whether the processor should predict another action.
+
+        Args:
+            action_name: Name of the latest executed action.
+
+        Returns:
+            `False` if `action_name` is `ACTION_LISTEN_NAME` or
+            `ACTION_SESSION_START_NAME`, otherwise `True`.
+        """
+
+        return action_name not in (ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME)
 
     @staticmethod
     async def _send_bot_messages(
@@ -504,13 +565,13 @@ class MessageProcessor:
         except ActionExecutionRejection:
             events = [ActionExecutionRejected(action.name(), policy, confidence)]
             tracker.update(events[0])
-            return self.should_predict_another_action(action.name(), events)
+            return self.should_predict_another_action(action.name())
         except Exception as e:
             logger.error(
-                "Encountered an exception while running action '{}'. "
+                f"Encountered an exception while running action '{action.name()}'. "
                 "Bot will continue, but the actions events are lost. "
                 "Please check the logs of your action server for "
-                "more information.".format(action.name())
+                "more information."
             )
             logger.debug(e, exc_info=True)
             events = []
@@ -525,12 +586,15 @@ class MessageProcessor:
         await self._schedule_reminders(events, tracker, output_channel, nlg)
         await self._cancel_reminders(events, tracker)
 
-        return self.should_predict_another_action(action.name(), events)
+        return self.should_predict_another_action(action.name())
 
     def _warn_about_new_slots(self, tracker, action_name, events) -> None:
         # these are the events from that action we have seen during training
 
-        if action_name not in self.policy_ensemble.action_fingerprints:
+        if (
+            not self.policy_ensemble
+            or action_name not in self.policy_ensemble.action_fingerprints
+        ):
             return
 
         fp = self.policy_ensemble.action_fingerprints[action_name]
@@ -564,9 +628,7 @@ class MessageProcessor:
             events = []
 
         logger.debug(
-            "Action '{}' ended with events '{}'".format(
-                action_name, [f"{e}" for e in events]
-            )
+            f"Action '{action_name}' ended with events '{[e for e in events]}'."
         )
 
         self._warn_about_new_slots(tracker, action_name, events)
@@ -583,9 +645,47 @@ class MessageProcessor:
             e.timestamp = time.time()
             tracker.update(e, self.domain)
 
+    def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:
+        """Determine whether the latest session in `tracker` has expired.
+
+        Args:
+            tracker: Tracker to inspect.
+
+        Returns:
+            `True` if the session in `tracker` has expired, `False` otherwise.
+        """
+
+        if not self.domain.session_config.are_sessions_enabled():
+            # tracker has never expired if sessions are disabled
+            return False
+
+        user_uttered_event: Optional[UserUttered] = tracker.get_last_event_for(
+            UserUttered
+        )
+
+        if not user_uttered_event:
+            # there is no user event so far so the session should not be considered
+            # expired
+            return False
+
+        time_delta_in_seconds = time.time() - user_uttered_event.timestamp
+        has_expired = (
+            time_delta_in_seconds / 60
+            > self.domain.session_config.session_expiration_time
+        )
+        if has_expired:
+            logger.debug(
+                f"The latest session for conversation ID '{tracker.sender_id}' has "
+                f"expired."
+            )
+
+        return has_expired
+
     def _get_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
-        return self.tracker_store.get_or_create_tracker(sender_id)
+        return self.tracker_store.get_or_create_tracker(
+            sender_id, append_action_listen=False
+        )
 
     def _save_tracker(self, tracker: DialogueStateTracker) -> None:
         self.tracker_store.save(tracker)
@@ -604,8 +704,7 @@ class MessageProcessor:
     def _get_next_action_probabilities(
         self, tracker: DialogueStateTracker
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
-        """Collect predictions from ensemble and return action and predictions.
-        """
+        """Collect predictions from ensemble and return action and predictions."""
 
         followup_action = tracker.followup_action
         if followup_action:
@@ -615,9 +714,9 @@ class MessageProcessor:
                 return result
             else:
                 logger.error(
-                    "Trying to run unknown follow up action '{}'!"
+                    f"Trying to run unknown follow-up action '{followup_action}'!"
                     "Instead of running that, we will ignore the action "
-                    "and predict the next action.".format(followup_action)
+                    "and predict the next action."
                 )
 
         return self.policy_ensemble.probabilities_using_best_policy(

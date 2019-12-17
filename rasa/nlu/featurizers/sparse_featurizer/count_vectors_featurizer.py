@@ -183,7 +183,7 @@ class CountVectorsFeaturizer(Featurizer):
                 )
 
     @staticmethod
-    def _attributes_for(analyzer):
+    def _attributes_for(analyzer: Text) -> List[Text]:
         """Create a list of attributes that should be featurized."""
 
         # intents should be featurized only by word level count vectorizer
@@ -283,23 +283,25 @@ class CountVectorsFeaturizer(Featurizer):
         return tokens
 
     # noinspection PyPep8Naming
-    def _check_OOV_present(self, all_tokens: List[List[Text]]):
+    def _check_OOV_present(self, all_tokens: List[List[Text]]) -> None:
         """Check if an OOV word is present"""
-        if self.OOV_token and not self.OOV_words and all_tokens:
-            for tokens in all_tokens:
-                for text in tokens:
-                    if self.OOV_token in text or (
-                        self.lowercase and self.OOV_token in text.lower()
-                    ):
-                        return
+        if not self.OOV_token or self.OOV_words or not all_tokens:
+            return
 
-            if any(text for tokens in all_tokens for text in tokens):
-                # if there is some text in tokens, warn if there is no oov token
-                logger.warning(
-                    f"OOV_token='{self.OOV_token}' was given, but it is not present "
-                    "in the training data. All unseen words "
-                    "will be ignored during prediction."
-                )
+        for tokens in all_tokens:
+            for text in tokens:
+                if self.OOV_token in text or (
+                    self.lowercase and self.OOV_token in text.lower()
+                ):
+                    return
+
+        if any(text for tokens in all_tokens for text in tokens):
+            # if there is some text in tokens, warn if there is no oov token
+            logger.warning(
+                f"OOV_token='{self.OOV_token}' was given, but it is not present "
+                "in the training data. All unseen words "
+                "will be ignored during prediction."
+            )
 
     def _get_all_attributes_processed_tokens(
         self, training_data: "TrainingData"
@@ -433,7 +435,7 @@ class CountVectorsFeaturizer(Featurizer):
 
     def _set_attribute_features(
         self, attribute: Text, attribute_features: List, training_data: "TrainingData"
-    ):
+    ) -> None:
         """Set computed features of the attribute to corresponding message objects"""
         for i, example in enumerate(training_data.training_examples):
             # create bag for each example
@@ -445,7 +447,10 @@ class CountVectorsFeaturizer(Featurizer):
             )
 
     def train(
-        self, training_data: TrainingData, cfg: RasaNLUModelConfig = None, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        cfg: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
         """Train the featurizer.
 
@@ -612,8 +617,8 @@ class CountVectorsFeaturizer(Featurizer):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
-        model_metadata: Metadata = None,
+        model_dir: Optional[Text] = None,
+        model_metadata: Optional[Metadata] = None,
         cached_component: Optional["CountVectorsFeaturizer"] = None,
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
