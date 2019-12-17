@@ -1,0 +1,5 @@
+To use custom features in the ``CRFEntityExtractor`` use ``text_dense_features`` instead of ``ner_features``. If
+``text_dense_features`` are present in the feature set, the ``CRFEntityExtractor`` will automatically make use of
+them. Just make sure to add a dense featurizer in front of the ``CRFEntityExtractor`` in your pipeline and set the
+flag ``return_sequence`` to ``True`` for that featurizer.
+See https://rasa.com/docs/rasa/nlu/entity-extraction/#passing-custom-features-to-crfentityextractor.
