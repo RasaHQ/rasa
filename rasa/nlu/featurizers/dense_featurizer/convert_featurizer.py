@@ -1,6 +1,6 @@
 import logging
 import warnings
-from rasa.nlu.featurizers.featurzier import Featurizer
+from rasa.nlu.featurizers.featurizer import Featurizer
 from typing import Any, Dict, List, Optional, Text, Tuple
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData

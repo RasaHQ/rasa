@@ -3,7 +3,7 @@ import typing
 from typing import Any, Optional, Dict, Text
 
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers.featurzier import Featurizer
+from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
 
 if typing.TYPE_CHECKING:

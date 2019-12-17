@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import scipy.sparse
 
-from rasa.nlu.featurizers.featurzier import Featurizer, sequence_to_sentence_features
+from rasa.nlu.featurizers.featurizer import Featurizer, sequence_to_sentence_features
 from rasa.nlu.constants import DENSE_FEATURE_NAMES, SPARSE_FEATURE_NAMES, TEXT_ATTRIBUTE
 from rasa.nlu.training_data import Message
 
