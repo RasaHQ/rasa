@@ -142,7 +142,7 @@ class EmbeddingIntentClassifier(Component):
         self.share_hidden_layers = config["share_hidden_layers"]
         if (
             self.share_hidden_layers
-            and self.hidden_layer_sizes["text"] != self.hidden_layer_sizes["intent"]
+            and self.hidden_layer_sizes["text"] != self.hidden_layer_sizes["label"]
         ):
             raise ValueError(
                 "If hidden layer weights are shared,"
