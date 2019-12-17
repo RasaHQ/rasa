@@ -271,6 +271,9 @@ It is recommended to use
               ``inner`` for ``softmax``, ``cosine`` for ``margin``;
             - ``loss_type`` sets the type of the loss function,
               it should be either ``softmax`` or ``margin``;
+            - ``ranking_length`` defines the number of top confidences over
+              which to normalize ranking results if ``loss_type: "softmax"``;
+              to turn off normalization set to 0
             - ``mu_pos`` controls how similar the algorithm should try
               to make embedding vectors for correct intent labels,
               used only if ``loss_type`` is set to ``margin``;
