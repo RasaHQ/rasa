@@ -1,10 +1,10 @@
 :desc: Find out how to apply machine learning algorithms to conversational AI
        using vector representations of conversations with Rasa.
 
-.. _featurization:
+.. _featurization_conversations:
 
-Featurization
-==============
+Featurization of Conversations
+==============================
 
 .. edit-link::
 

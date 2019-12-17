@@ -198,7 +198,7 @@ require generalization." />
 <li class="toctree-l1"><a class="reference internal" href="../../api/event-brokers/">Event Brokers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../api/featurization/">Featurization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa OSS Change Log</a></li>
 </ul>
@@ -334,7 +334,7 @@ in the policy configuration yaml file.</p>
 <p class="first admonition-title">Note</p>
 <p class="last">Only the <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code> uses a max history,
 whereas the <code class="docutils literal notranslate"><span class="pre">FullDialogueTrackerFeaturizer</span></code> always looks at
-the full conversation history. See <a class="reference internal" href="../../api/featurization/#featurization"><span class="std std-ref">Featurization</span></a> for details.</p>
+the full conversation history. See <a class="reference internal" href="../../api/core-featurization/#featurization-conversations"><span class="std std-ref">Featurization of Conversations</span></a> for details.</p>
 </div>
 <p>As an example, let’s say you have an <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent which
 describes off-topic user messages. If your bot sees this intent multiple
@@ -566,7 +566,7 @@ This step is based on the
 </div></blockquote>
 <p>It is recommended to use
 <code class="docutils literal notranslate"><span class="pre">state_featurizer=LabelTokenizerSingleStateFeaturizer(...)</span></code>
-(see <a class="reference internal" href="../../api/featurization/#featurization"><span class="std std-ref">Featurization</span></a> for details).</p>
+(see <a class="reference internal" href="../../api/core-featurization/#featurization-conversations"><span class="std std-ref">Featurization of Conversations</span></a> for details).</p>
 <p><strong>Configuration:</strong></p>
 <blockquote>
 <div><p>Configuration parameters can be passed as parameters to the
@@ -672,7 +672,7 @@ large values may hurt performance.</li>
 <p class="last">Default <code class="docutils literal notranslate"><span class="pre">max_history</span></code> for this policy is <code class="docutils literal notranslate"><span class="pre">None</span></code> which means it’ll use
 the <code class="docutils literal notranslate"><span class="pre">FullDialogueTrackerFeaturizer</span></code>. We recommend to set <code class="docutils literal notranslate"><span class="pre">max_history</span></code> to
 some finite value in order to use <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code>
-for <strong>faster training</strong>. See <a class="reference internal" href="../../api/featurization/#featurization"><span class="std std-ref">Featurization</span></a> for details.
+for <strong>faster training</strong>. See <a class="reference internal" href="../../api/core-featurization/#featurization-conversations"><span class="std std-ref">Featurization of Conversations</span></a> for details.
 We recommend to increase <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> for <code class="docutils literal notranslate"><span class="pre">MaxHistoryTrackerFeaturizer</span></code>
 (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[32,</span> <span class="pre">64]</span></code>)</p>
 </div>

@@ -194,7 +194,7 @@ Natural Language Understanding pipeline" />
 <li class="toctree-l1"><a class="reference internal" href="../../api/event-brokers/">Event Brokers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../api/featurization/">Featurization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa OSS Change Log</a></li>
 </ul>
@@ -285,39 +285,38 @@ out <a class="reference internal" href="../../api/custom-nlu-components/#custom-
 <li><a class="reference internal" href="#spacynlp" id="id9">SpacyNLP</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#featurizers" id="id10">Featurizers</a><ul>
+<li><a class="reference internal" href="#text-featurizers" id="id10">Text Featurizers</a><ul>
 <li><a class="reference internal" href="#mitiefeaturizer" id="id11">MitieFeaturizer</a></li>
 <li><a class="reference internal" href="#spacyfeaturizer" id="id12">SpacyFeaturizer</a></li>
-<li><a class="reference internal" href="#ngramfeaturizer" id="id13">NGramFeaturizer</a></li>
+<li><a class="reference internal" href="#convertfeaturizer" id="id13">ConveRTFeaturizer</a></li>
 <li><a class="reference internal" href="#regexfeaturizer" id="id14">RegexFeaturizer</a></li>
 <li><a class="reference internal" href="#countvectorsfeaturizer" id="id15">CountVectorsFeaturizer</a></li>
-<li><a class="reference internal" href="#convertfeaturizer" id="id16">ConveRTFeaturizer</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#intent-classifiers" id="id17">Intent Classifiers</a><ul>
-<li><a class="reference internal" href="#mitieintentclassifier" id="id18">MitieIntentClassifier</a></li>
-<li><a class="reference internal" href="#sklearnintentclassifier" id="id19">SklearnIntentClassifier</a></li>
-<li><a class="reference internal" href="#embeddingintentclassifier" id="id20">EmbeddingIntentClassifier</a></li>
-<li><a class="reference internal" href="#keywordintentclassifier" id="id21">KeywordIntentClassifier</a></li>
+<li><a class="reference internal" href="#intent-classifiers" id="id16">Intent Classifiers</a><ul>
+<li><a class="reference internal" href="#mitieintentclassifier" id="id17">MitieIntentClassifier</a></li>
+<li><a class="reference internal" href="#sklearnintentclassifier" id="id18">SklearnIntentClassifier</a></li>
+<li><a class="reference internal" href="#embeddingintentclassifier" id="id19">EmbeddingIntentClassifier</a></li>
+<li><a class="reference internal" href="#keywordintentclassifier" id="id20">KeywordIntentClassifier</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#selectors" id="id22">Selectors</a><ul>
-<li><a class="reference internal" href="#response-selector" id="id23">Response Selector</a></li>
+<li><a class="reference internal" href="#selectors" id="id21">Selectors</a><ul>
+<li><a class="reference internal" href="#response-selector" id="id22">Response Selector</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#tokenizers" id="id24">Tokenizers</a><ul>
-<li><a class="reference internal" href="#whitespacetokenizer" id="id25">WhitespaceTokenizer</a></li>
-<li><a class="reference internal" href="#jiebatokenizer" id="id26">JiebaTokenizer</a></li>
-<li><a class="reference internal" href="#mitietokenizer" id="id27">MitieTokenizer</a></li>
-<li><a class="reference internal" href="#spacytokenizer" id="id28">SpacyTokenizer</a></li>
+<li><a class="reference internal" href="#tokenizers" id="id23">Tokenizers</a><ul>
+<li><a class="reference internal" href="#whitespacetokenizer" id="id24">WhitespaceTokenizer</a></li>
+<li><a class="reference internal" href="#jiebatokenizer" id="id25">JiebaTokenizer</a></li>
+<li><a class="reference internal" href="#mitietokenizer" id="id26">MitieTokenizer</a></li>
+<li><a class="reference internal" href="#spacytokenizer" id="id27">SpacyTokenizer</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#entity-extractors" id="id29">Entity Extractors</a><ul>
-<li><a class="reference internal" href="#mitieentityextractor" id="id30">MitieEntityExtractor</a></li>
-<li><a class="reference internal" href="#spacyentityextractor" id="id31">SpacyEntityExtractor</a></li>
-<li><a class="reference internal" href="#entitysynonymmapper" id="id32">EntitySynonymMapper</a></li>
-<li><a class="reference internal" href="#crfentityextractor" id="id33">CRFEntityExtractor</a></li>
-<li><a class="reference internal" href="#ducklinghttpextractor" id="id34">DucklingHTTPExtractor</a></li>
+<li><a class="reference internal" href="#entity-extractors" id="id28">Entity Extractors</a><ul>
+<li><a class="reference internal" href="#mitieentityextractor" id="id29">MitieEntityExtractor</a></li>
+<li><a class="reference internal" href="#spacyentityextractor" id="id30">SpacyEntityExtractor</a></li>
+<li><a class="reference internal" href="#entitysynonymmapper" id="id31">EntitySynonymMapper</a></li>
+<li><a class="reference internal" href="#crfentityextractor" id="id32">CRFEntityExtractor</a></li>
+<li><a class="reference internal" href="#ducklinghttpextractor" id="id33">DucklingHTTPExtractor</a></li>
 </ul>
 </li>
 </ul>
@@ -400,8 +399,21 @@ the model name can be specified using this configuration variable. The name will
 </table>
 </div>
 </div>
-<div class="section" id="featurizers">
-<h2><a class="toc-backref" href="#id10">Featurizers</a><a class="headerlink" href="#featurizers" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="text-featurizers">
+<h2><a class="toc-backref" href="#id10">Text Featurizers</a><a class="headerlink" href="#text-featurizers" title="Permalink to this headline">¶</a></h2>
+<p>Text featurizers are divided into two different categories: sparse featurizers and dense featurizers.
+Sparse featurizers are featurizers that return feature vectors with a lot of missing values, e.g. zeros.
+As those feature vectors would normally take up a lot of memory, we store them as sparse features.
+Sparse features only store the values that are non zero and their positions in the vector.
+Thus, we save a lot of memroy and are able to train on larger datasets.</p>
+<p>By default all featurizers will return a matrix of length (1 x feature-dimension).
+All featurizer (except the <code class="docutils literal notranslate"><span class="pre">ConveRTFeaturizer</span></code>) have the option to return a sequence instead.
+In case the flag <code class="docutils literal notranslate"><span class="pre">&quot;return_sequence&quot;</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, the returned matrix of the featurizer will have the size
+(token-length x feature-dimension).
+So, the returned matrix will have an entry for every token.
+Otherwise, the matrix will just have one entry for the complete utterance.
+If you want to use custom features for your <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code>, you should set <code class="docutils literal notranslate"><span class="pre">&quot;return_sequence&quot;</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code>.
+For more details, take a look <a class="reference internal" href="../entity-extraction/#entity-extraction-custom-features"><span class="std std-ref">Passing Custom Features to CRFEntityExtractor</span></a>.</p>
 <div class="section" id="mitiefeaturizer">
 <h3><a class="toc-backref" href="#id11">MitieFeaturizer</a><a class="headerlink" href="#mitiefeaturizer" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
@@ -417,7 +429,10 @@ the model name can be specified using this configuration variable. The name will
 <tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><a class="reference internal" href="#mitienlp"><span class="std std-ref">MitieNLP</span></a></p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates feature for intent classification using the MITIE featurizer.</p>
+<tr class="field-even field"><th class="field-name">Type:</th><td class="field-body"><p class="first">Dense featurizer</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates feature for intent classification using the MITIE featurizer.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">NOT used by the <code class="docutils literal notranslate"><span class="pre">MitieIntentClassifier</span></code> component. Currently, only <code class="docutils literal notranslate"><span class="pre">SklearnIntentClassifier</span></code> is able
@@ -425,7 +440,7 @@ to use precomputed features.</p>
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieFeaturizer&quot;</span>
 </pre></div>
 </div>
@@ -449,14 +464,14 @@ to use precomputed features.</p>
 <tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><a class="reference internal" href="#spacynlp"><span class="std std-ref">SpacyNLP</span></a></p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates feature for intent classification using the spacy featurizer.
-Optionally adds word vectors for each <code class="docutils literal notranslate"><span class="pre">token</span></code> to <code class="docutils literal notranslate"><span class="pre">ner_features</span></code>, which can be referenced in <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></p>
+<tr class="field-even field"><th class="field-name">Type:</th><td class="field-body"><p class="first">Dense featurizer</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates feature for intent classification using the spacy featurizer.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyFeaturizer&quot;</span>
-  <span class="c1"># Whether to add word vectors to ``ner_features`` (default: False)</span>
-  <span class="l l-Scalar l-Scalar-Plain">ner_feature_vectors</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
 </pre></div>
 </div>
 </td>
@@ -464,35 +479,50 @@ Optionally adds word vectors for each <code class="docutils literal notranslate"
 </tbody>
 </table>
 </div>
-<div class="section" id="ngramfeaturizer">
-<h3><a class="toc-backref" href="#id13">NGramFeaturizer</a><a class="headerlink" href="#ngramfeaturizer" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="convertfeaturizer">
+<h3><a class="toc-backref" href="#id13">ConveRTFeaturizer</a><a class="headerlink" href="#convertfeaturizer" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Appends char-ngram features to feature vector</p>
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Creates a vector representation of user message and response (if specified) using
+<a class="reference external" href="https://github.com/PolyAI-LDN/polyai-models">ConveRT</a> model.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">nothing, appends its features to an existing feature vector generated by another intent featurizer</p>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">nothing, used as an input to intent classifiers and response selectors that need intent features and response
+features respectively (e.g. <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> and <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code>)</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first"><a class="reference internal" href="#spacynlp"><span class="std std-ref">SpacyNLP</span></a></p>
+<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">nothing</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">This featurizer appends character ngram features to a feature vector. During training the component looks for the
-most common character sequences (e.g. <code class="docutils literal notranslate"><span class="pre">app</span></code> or <code class="docutils literal notranslate"><span class="pre">ing</span></code>). The added features represent a boolean flag if the
-character sequence is present in the word sequence or not.</p>
+<tr class="field-even field"><th class="field-name">Type:</th><td class="field-body"><p class="first">Dense featurizer</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates features for intent classification and response selection.
+Uses the <a class="reference external" href="https://github.com/PolyAI-LDN/polyai-models#tfhub-signatures">default signature</a> to compute vector
+representations of input text.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Since <code class="docutils literal notranslate"><span class="pre">ConveRT</span></code> model is trained only on an english corpus of conversations, this featurizer should only
+be used if your training data is in english language.</p>
+</div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">There needs to be another intent featurizer previous to this one in the pipeline!</p>
+<p class="last">To use <code class="docutils literal notranslate"><span class="pre">ConveRTFeaturizer</span></code> you need to install additional tensorflow libraries (<code class="docutils literal notranslate"><span class="pre">tensorflow_text</span></code> and
+<code class="docutils literal notranslate"><span class="pre">tensorflow_hub</span></code>). You should do a pip install of Rasa with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rasa[convert]</span></code> to install those.</p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">If you set the option <code class="docutils literal notranslate"><span class="pre">&quot;return_sequence&quot;</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code>, Rasa will raise an error informing you that this
+option is currently not supported. Do not use this featurizer in combination with any other featurizer that
+has the option <code class="docutils literal notranslate"><span class="pre">&quot;return_sequence&quot;</span></code> set to <code class="docutils literal notranslate"><span class="pre">True</span></code> as training will fail. However, you can use this
+featurizer with any other featurizer as long as <code class="docutils literal notranslate"><span class="pre">&quot;return_sequence&quot;</span></code> is set to <code class="docutils literal notranslate"><span class="pre">False</span></code> for all of them.</p>
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;NGramFeaturizer&quot;</span>
-  <span class="c1"># Maximum number of ngrams to use when augmenting</span>
-  <span class="c1"># feature vectors with character ngrams</span>
-  <span class="l l-Scalar l-Scalar-Plain">max_number_of_ngrams</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ConveRTFeaturizer&quot;</span>
 </pre></div>
 </div>
 </td>
@@ -515,11 +545,16 @@ character sequence is present in the word sequence or not.</p>
 <tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">nothing</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">During training, the regex intent featurizer creates a list of <cite>regular expressions</cite> defined in the training data format.
-For each regex, a feature will be set marking whether this expression was found in the input, which will later be fed into intent classifier / entity
-extractor to simplify classification (assuming the classifier has learned during the training phase, that this set
-feature indicates a certain intent). Regex features for entity extraction are currently only supported by the
-<code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component!</p>
+<tr class="field-even field"><th class="field-name">Type:</th><td class="field-body"><p class="first">Sparse featurizer</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates features for entity extraction and intent classification.
+During training, the regex intent featurizer creates a list of <cite>regular expressions</cite> defined in the training
+data format.
+For each regex, a feature will be set marking whether this expression was found in the input, which will later
+be fed into intent classifier / entity extractor to simplify classification (assuming the classifier has learned
+during the training phase, that this set feature indicates a certain intent).
+Regex features for entity extraction are currently only supported by the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component!</p>
 <div class="last admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">There needs to be a tokenizer previous to this featurizer in the pipeline!</p>
@@ -535,7 +570,7 @@ feature indicates a certain intent). Regex features for entity extraction are cu
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Creates bag-of-words representation of user message and label(intent and response) features</p>
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Creates bag-of-words representation of user message and label (intent and response) features</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">nothing, used as an input to intent classifiers that
@@ -546,7 +581,11 @@ need bag-of-words representation of intent features
 <tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">nothing</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates bag-of-words representation of user message and label features using
+<tr class="field-even field"><th class="field-name">Type:</th><td class="field-body"><p class="first">Sparse featurizer</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates features for intent classification and response selection.
+Creates bag-of-words representation of user message and label features using
 <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html">sklearn’s CountVectorizer</a>.
 All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.</p>
 <div class="admonition note">
@@ -557,7 +596,7 @@ a language-specific tokenizer is required in the pipeline before this component
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">See <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html">sklearn’s CountVectorizer docs</a>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">See <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html">sklearn’s CountVectorizer docs</a>
 for detailed description of the configuration parameters.</p>
 <p>This featurizer can be configured to use word or character n-grams, using <code class="docutils literal notranslate"><span class="pre">analyzer</span></code> config parameter.
 By default <code class="docutils literal notranslate"><span class="pre">analyzer</span></code> is set to <code class="docutils literal notranslate"><span class="pre">word</span></code> so word token counts are used as features.
@@ -581,26 +620,32 @@ Otherwise the vocabulary will contain only single letters</p>
 </div>
 <p>Since the training is performed on limited vocabulary data, it cannot be guaranteed that during prediction
 an algorithm will not encounter an unknown word (a word that were not seen during training).
-In order to teach an algorithm how to treat unknown words, some words in training data can be substituted by generic word <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code>.
+In order to teach an algorithm how to treat unknown words, some words in training data can be substituted
+by generic word <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code>.
 In this case during prediction all unknown words will be treated as this generic word <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code>.</p>
-<p>For example, one might create separate intent <code class="docutils literal notranslate"><span class="pre">outofscope</span></code> in the training data containing messages of different number of <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> s and
-maybe some additional general words. Then an algorithm will likely classify a message with unknown words as this intent <code class="docutils literal notranslate"><span class="pre">outofscope</span></code>.</p>
+<p>For example, one might create separate intent <code class="docutils literal notranslate"><span class="pre">outofscope</span></code> in the training data containing messages of
+different number of <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> s and maybe some additional general words.
+Then an algorithm will likely classify a message with unknown words as this intent <code class="docutils literal notranslate"><span class="pre">outofscope</span></code>.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p>This featurizer creates a bag-of-words representation by <strong>counting</strong> words,
 so the number of <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> in the sentence might be important.</p>
 <ul class="last simple">
-<li><code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> set a keyword for unseen words; if training data contains <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> as words in some messages,
-during prediction the words that were not seen during training will be substituted with provided <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code>;
-if <code class="docutils literal notranslate"><span class="pre">OOV_token=None</span></code> (default behaviour) words that were not seen during training will be ignored during prediction time;</li>
-<li><code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> set a list of words to be treated as <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> during training; if a list of words that should be treated
-as Out-Of-Vacabulary is known, it can be set to <code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> instead of manually changing it in trainig data or using custom preprocessor.</li>
+<li><code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> set a keyword for unseen words; if training data contains <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> as words in some
+messages, during prediction the words that were not seen during training will be substituted with
+provided <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code>; if <code class="docutils literal notranslate"><span class="pre">OOV_token=None</span></code> (default behaviour) words that were not seen during
+training will be ignored during prediction time;</li>
+<li><code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> set a list of words to be treated as <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> during training; if a list of words
+that should be treated as Out-Of-Vacabulary is known, it can be set to <code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> instead of manually
+changing it in trainig data or using custom preprocessor.</li>
 </ul>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Providing <code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> is optional, training data can contain <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> input manually or by custom additional preprocessor.
-Unseen words will be substituted with <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> <strong>only</strong> if this token is present in the training data or <code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> list is provided.</p>
+<p class="last">Providing <code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> is optional, training data can contain <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> input manually or by custom
+additional preprocessor.
+Unseen words will be substituted with <code class="docutils literal notranslate"><span class="pre">OOV_token</span></code> <strong>only</strong> if this token is present in the training
+data or <code class="docutils literal notranslate"><span class="pre">OOV_words</span></code> list is provided.</p>
 </div>
 </div></blockquote>
 <p>Sharing Vocabulary between user message and labels:</p>
@@ -653,52 +698,17 @@ Unseen words will be substituted with <code class="docutils literal notranslate"
 </tbody>
 </table>
 </div>
-<div class="section" id="convertfeaturizer">
-<h3><a class="toc-backref" href="#id16">ConveRTFeaturizer</a><a class="headerlink" href="#convertfeaturizer" title="Permalink to this headline">¶</a></h3>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Creates a vector representation of user message and response (if specified) using <a class="reference external" href="https://github.com/PolyAI-LDN/polyai-models">ConveRT</a> model.</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">nothing, used as an input to intent classifiers and response selectors that need intent features and response features respectively(e.g. <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> and <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code>)</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Requires:</th><td class="field-body"><p class="first">nothing</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates features for intent classification and response selection.
-Uses the <a class="reference external" href="https://github.com/PolyAI-LDN/polyai-models#tfhub-signatures">default signature</a> to compute vector representations of input text.</p>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">Since <code class="docutils literal notranslate"><span class="pre">ConveRT</span></code> model is trained only on an english corpus of conversations, this featurizer should only be used if your training data is in english language.</p>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">To use <code class="docutils literal notranslate"><span class="pre">ConveRTFeaturizer</span></code> you should install <code class="docutils literal notranslate"><span class="pre">tensorflow_text==1.15.1</span></code> and <code class="docutils literal notranslate"><span class="pre">tensorflow_hub==0.6.0</span></code>. Otherwise, you can also do a pip install of Rasa with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rasa[convert]</span></code></p>
-</div>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ConveRTFeaturizer&quot;</span>
-</pre></div>
-</div>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
 </div>
 <div class="section" id="intent-classifiers">
-<h2><a class="toc-backref" href="#id17">Intent Classifiers</a><a class="headerlink" href="#intent-classifiers" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id16">Intent Classifiers</a><a class="headerlink" href="#intent-classifiers" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="mitieintentclassifier">
-<h3><a class="toc-backref" href="#id18">MitieIntentClassifier</a><a class="headerlink" href="#mitieintentclassifier" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id17">MitieIntentClassifier</a><a class="headerlink" href="#mitieintentclassifier" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">MITIE intent classifier (using a <a class="reference external" href="https://github.com/mit-nlp/MITIE/blob/master/examples/python/text_categorizer_pure_model.py">text categorizer</a>)</p>
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">MITIE intent classifier (using a
+<a class="reference external" href="https://github.com/mit-nlp/MITIE/blob/master/examples/python/text_categorizer_pure_model.py">text categorizer</a>)</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">intent</span></code></p>
@@ -715,7 +725,8 @@ Uses the <a class="reference external" href="https://github.com/PolyAI-LDN/polya
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">This classifier uses MITIE to perform intent classification. The underlying classifier
-is using a multi-class linear SVM with a sparse linear kernel (see <a class="reference external" href="https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222">MITIE trainer code</a>).</p>
+is using a multi-class linear SVM with a sparse linear kernel (see
+<a class="reference external" href="https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222">MITIE trainer code</a>).</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
@@ -728,7 +739,7 @@ is using a multi-class linear SVM with a sparse linear kernel (see <a class="ref
 </table>
 </div>
 <div class="section" id="sklearnintentclassifier">
-<h3><a class="toc-backref" href="#id19">SklearnIntentClassifier</a><a class="headerlink" href="#sklearnintentclassifier" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id18">SklearnIntentClassifier</a><a class="headerlink" href="#sklearnintentclassifier" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -761,7 +772,8 @@ is using a multi-class linear SVM with a sparse linear kernel (see <a class="ref
 </tr>
 <tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">The sklearn intent classifier trains a linear SVM which gets optimized using a grid search. In addition
 to other classifiers it also provides rankings of the labels that did not “win”. The spacy intent classifier
-needs to be preceded by a featurizer in the pipeline. This featurizer creates the features used for the classification.</p>
+needs to be preceded by a featurizer in the pipeline. This featurizer creates the features used for the
+classification.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">During the training of the SVM a hyperparameter search is run to
@@ -784,7 +796,7 @@ that will get tried</p>
 </table>
 </div>
 <div class="section" id="embeddingintentclassifier">
-<h3><a class="toc-backref" href="#id20">EmbeddingIntentClassifier</a><a class="headerlink" href="#embeddingintentclassifier" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id19">EmbeddingIntentClassifier</a><a class="headerlink" href="#embeddingintentclassifier" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -913,7 +925,8 @@ would drop out <code class="docutils literal notranslate"><span class="pre">10%<
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">There is an option to use linearly increasing batch size. The idea comes from <a class="reference external" href="https://arxiv.org/abs/1711.00489">https://arxiv.org/abs/1711.00489</a>.
+<p class="last">There is an option to use linearly increasing batch size. The idea comes from
+<a class="reference external" href="https://arxiv.org/abs/1711.00489">https://arxiv.org/abs/1711.00489</a>.
 In order to do it pass a list to <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[64,</span> <span class="pre">256]</span></code> (default behaviour).
 If constant <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> is required, pass an <code class="docutils literal notranslate"><span class="pre">int</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">64</span></code>.</p>
 </div>
@@ -940,6 +953,8 @@ The default values are defined in <code class="docutils literal notranslate"><sp
     <span class="c1"># set random seed to any int to get reproducible results</span>
     <span class="s2">&quot;random_seed&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
     <span class="c1"># embedding parameters</span>
+    <span class="c1"># default dense dimension used if no dense features are present</span>
+    <span class="s2">&quot;dense_dim&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="mi">512</span><span class="p">,</span> <span class="s2">&quot;intent&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">},</span>
     <span class="c1"># dimension size of embedding vectors</span>
     <span class="s2">&quot;embed_dim&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
     <span class="c1"># the type of the similarity</span>
@@ -985,7 +1000,7 @@ See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starsp
 </table>
 </div>
 <div class="section" id="keywordintentclassifier">
-<span id="keyword-intent-classifier"></span><h3><a class="toc-backref" href="#id21">KeywordIntentClassifier</a><a class="headerlink" href="#keywordintentclassifier" title="Permalink to this headline">¶</a></h3>
+<span id="keyword-intent-classifier"></span><h3><a class="toc-backref" href="#id20">KeywordIntentClassifier</a><a class="headerlink" href="#keywordintentclassifier" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1007,7 +1022,8 @@ See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starsp
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">This classifier works by searching a message for keywords.
-The matching is case sensitive by default and searches only for exact matches of the keyword-string in the user message.
+The matching is case sensitive by default and searches only for exact matches of the keyword-string in the user
+message.
 The keywords for an intent are the examples of that intent in the NLU training data.
 This means the entire example is the keyword, not the individual words in the example.</p>
 <div class="admonition note">
@@ -1030,9 +1046,9 @@ you have few NLU training data you can use one of our pipelines
 </div>
 </div>
 <div class="section" id="selectors">
-<h2><a class="toc-backref" href="#id22">Selectors</a><a class="headerlink" href="#selectors" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id21">Selectors</a><a class="headerlink" href="#selectors" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="response-selector">
-<span id="id4"></span><h3><a class="toc-backref" href="#id23">Response Selector</a><a class="headerlink" href="#response-selector" title="Permalink to this headline">¶</a></h3>
+<span id="id4"></span><h3><a class="toc-backref" href="#id22">Response Selector</a><a class="headerlink" href="#response-selector" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1114,6 +1130,8 @@ The default values are defined in <code class="docutils literal notranslate"><sp
     <span class="c1"># set random seed to any int to get reproducible results</span>
     <span class="s2">&quot;random_seed&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
     <span class="c1"># embedding parameters</span>
+    <span class="c1"># default dense dimension used if no dense features are present</span>
+    <span class="s2">&quot;dense_dim&quot;</span><span class="p">:</span> <span class="mi">512</span><span class="p">,</span>
     <span class="c1"># dimension size of embedding vectors</span>
     <span class="s2">&quot;embed_dim&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
     <span class="c1"># the type of the similarity</span>
@@ -1158,9 +1176,9 @@ The default values are defined in <code class="docutils literal notranslate"><sp
 </div>
 </div>
 <div class="section" id="tokenizers">
-<span id="id5"></span><h2><a class="toc-backref" href="#id24">Tokenizers</a><a class="headerlink" href="#tokenizers" title="Permalink to this headline">¶</a></h2>
+<span id="id5"></span><h2><a class="toc-backref" href="#id23">Tokenizers</a><a class="headerlink" href="#tokenizers" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="whitespacetokenizer">
-<h3><a class="toc-backref" href="#id25">WhitespaceTokenizer</a><a class="headerlink" href="#whitespacetokenizer" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id24">WhitespaceTokenizer</a><a class="headerlink" href="#whitespacetokenizer" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1202,7 +1220,7 @@ modeling hierarchical intent structure, use these flags:</p>
 </table>
 </div>
 <div class="section" id="jiebatokenizer">
-<h3><a class="toc-backref" href="#id26">JiebaTokenizer</a><a class="headerlink" href="#jiebatokenizer" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id25">JiebaTokenizer</a><a class="headerlink" href="#jiebatokenizer" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1235,7 +1253,7 @@ MITIE entity extractor. Make sure to install Jieba, <code class="docutils litera
 <p>If the <code class="docutils literal notranslate"><span class="pre">dictionary_path</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code> (the default), then no custom dictionary will be used.</p>
 </div>
 <div class="section" id="mitietokenizer">
-<h3><a class="toc-backref" href="#id27">MitieTokenizer</a><a class="headerlink" href="#mitietokenizer" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id26">MitieTokenizer</a><a class="headerlink" href="#mitietokenizer" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1263,7 +1281,7 @@ tokens for the MITIE entity extractor.</p>
 </table>
 </div>
 <div class="section" id="spacytokenizer">
-<h3><a class="toc-backref" href="#id28">SpacyTokenizer</a><a class="headerlink" href="#spacytokenizer" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id27">SpacyTokenizer</a><a class="headerlink" href="#spacytokenizer" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1282,9 +1300,9 @@ tokens for the MITIE entity extractor.</td>
 </div>
 </div>
 <div class="section" id="entity-extractors">
-<h2><a class="toc-backref" href="#id29">Entity Extractors</a><a class="headerlink" href="#entity-extractors" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id28">Entity Extractors</a><a class="headerlink" href="#entity-extractors" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="mitieentityextractor">
-<h3><a class="toc-backref" href="#id30">MitieEntityExtractor</a><a class="headerlink" href="#mitieentityextractor" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id29">MitieEntityExtractor</a><a class="headerlink" href="#mitieentityextractor" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1325,7 +1343,7 @@ The MITIE component does not provide entity confidence values.</p>
 </table>
 </div>
 <div class="section" id="spacyentityextractor">
-<h3><a class="toc-backref" href="#id31">SpacyEntityExtractor</a><a class="headerlink" href="#spacyentityextractor" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id30">SpacyEntityExtractor</a><a class="headerlink" href="#spacyentityextractor" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1372,7 +1390,7 @@ Leaving the dimensions option unspecified will extract all available dimensions.
 </table>
 </div>
 <div class="section" id="entitysynonymmapper">
-<h3><a class="toc-backref" href="#id32">EntitySynonymMapper</a><a class="headerlink" href="#entitysynonymmapper" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id31">EntitySynonymMapper</a><a class="headerlink" href="#entitysynonymmapper" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1418,7 +1436,7 @@ exisiting entity, it appends itself to the processor list of this entity.</p>
 </table>
 </div>
 <div class="section" id="crfentityextractor">
-<h3><a class="toc-backref" href="#id33">CRFEntityExtractor</a><a class="headerlink" href="#crfentityextractor" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id32">CRFEntityExtractor</a><a class="headerlink" href="#crfentityextractor" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1449,8 +1467,10 @@ CRFs can be thought of as an undirected Markov chain where the time steps are wo
 and the states are entity classes. Features of the words (capitalisation, POS tagging,
 etc.) give probabilities to certain entity classes, as are transitions between
 neighbouring entity tags: the most likely set of tags is then calculated and returned.
-If POS features are used (pos or pos2), spaCy has to be installed. To use custom features
-made available by Featurizers, use <code class="docutils literal notranslate"><span class="pre">&quot;ner_features&quot;</span></code>.</p>
+If POS features are used (pos or pos2), spaCy has to be installed. If you want to use
+additional features, such as pre-trained word embeddings, from any provided dense
+featurizer, use <code class="docutils literal notranslate"><span class="pre">&quot;text_dense_features&quot;</span></code>. Make sure to set <code class="docutils literal notranslate"><span class="pre">&quot;return_sequence&quot;</span></code> to
+<code class="docutils literal notranslate"><span class="pre">True</span></code> in the corresponding featurizer.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
@@ -1463,7 +1483,7 @@ made available by Featurizers, use <code class="docutils literal notranslate"><s
   <span class="c1"># Available features are:</span>
   <span class="c1"># ``low``, ``title``, ``suffix5``, ``suffix3``, ``suffix2``,</span>
   <span class="c1"># ``suffix1``, ``pos``, ``pos2``, ``prefix5``, ``prefix2``,</span>
-  <span class="c1"># ``bias``, ``upper``, ``digit``, ``pattern``, and ``ner_features``</span>
+  <span class="c1"># ``bias``, ``upper``, ``digit``, ``pattern``, and ``text_dense_features``</span>
   <span class="l l-Scalar l-Scalar-Plain">features</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[[</span><span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">],</span> <span class="p p-Indicator">[</span><span class="s">&quot;bias&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;suffix3&quot;</span><span class="p p-Indicator">],</span> <span class="p p-Indicator">[</span><span class="s">&quot;upper&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos2&quot;</span><span class="p p-Indicator">]]</span>
 
   <span class="c1"># The flag determines whether to use BILOU tagging or not. BILOU</span>
@@ -1490,7 +1510,7 @@ made available by Featurizers, use <code class="docutils literal notranslate"><s
 </table>
 </div>
 <div class="section" id="ducklinghttpextractor">
-<span id="id6"></span><h3><a class="toc-backref" href="#id34">DucklingHTTPExtractor</a><a class="headerlink" href="#ducklinghttpextractor" title="Permalink to this headline">¶</a></h3>
+<span id="id6"></span><h3><a class="toc-backref" href="#id33">DucklingHTTPExtractor</a><a class="headerlink" href="#ducklinghttpextractor" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
