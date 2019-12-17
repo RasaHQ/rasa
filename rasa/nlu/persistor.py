@@ -53,7 +53,7 @@ class Persistor:
             tar_name = self._tar_name(model_name)
 
         self._retrieve_tar(tar_name)
-        self._decompress(tar_name, target_path)
+        self._decompress(os.path.basename(tar_name), target_path)
 
     def list_models(self) -> List[Text]:
         """Lists all the trained models."""
@@ -151,11 +151,11 @@ class AWSPersistor(Persistor):
         with open(tar_path, "rb") as f:
             self.s3.Object(self.bucket_name, file_key).put(Body=f)
 
-    def _retrieve_tar(self, target_filename: Text) -> None:
+    def _retrieve_tar(self, model_path: Text) -> None:
         """Downloads a model that has previously been persisted to s3."""
-
-        with open(target_filename, "wb") as f:
-            self.bucket.download_fileobj(target_filename, f)
+        tar_name = os.path.basename(model_path)
+        with open(tar_name, "wb") as f:
+            self.bucket.download_fileobj(model_path, f)
 
 
 class GCSPersistor(Persistor):
