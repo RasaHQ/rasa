@@ -1,10 +1,8 @@
-import asyncio
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 
-import rasa.utils.io
 from rasa.utils import train_utils
 from rasa.core import training
 from rasa.core.actions.action import (
@@ -348,26 +346,29 @@ class TestEmbeddingPolicy(PolicyTestCollection):
             training_data.X, training_data.y
         )
         batch_size = 2
-        batch_x, batch_y = next(
-            train_utils.gen_batch(session_data=session_data, batch_size=batch_size)
+        batch_x, batch_y, _ = next(
+            train_utils.gen_batch(
+                session_data=session_data, batch_size=batch_size, label_key="action_ids"
+            )
         )
         assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
         assert (
-            batch_x[0].shape == session_data.X[0].shape
-            and batch_y[0].shape == session_data.Y[0].shape
+            batch_x[0].shape == session_data["dialogue_features"][0][0].shape
+            and batch_y[0].shape == session_data["bot_features"][0][0].shape
         )
-        batch_x, batch_y = next(
+        batch_x, batch_y, _ = next(
             train_utils.gen_batch(
                 session_data=session_data,
                 batch_size=batch_size,
+                label_key="action_ids",
                 batch_strategy="balanced",
                 shuffle=True,
             )
         )
         assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
         assert (
-            batch_x[0].shape == session_data.X[0].shape
-            and batch_y[0].shape == session_data.Y[0].shape
+            batch_x[0].shape == session_data["dialogue_features"][0][0].shape
+            and batch_y[0].shape == session_data["bot_features"][0][0].shape
         )
 
 

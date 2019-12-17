@@ -70,7 +70,7 @@ in the policy configuration yaml file.
 
     Only the ``MaxHistoryTrackerFeaturizer`` uses a max history,
     whereas the ``FullDialogueTrackerFeaturizer`` always looks at
-    the full conversation history. See :ref:`featurization` for details.
+    the full conversation history. See :ref:`featurization_conversations` for details.
 
 As an example, let's say you have an ``out_of_scope`` intent which
 describes off-topic user messages. If your bot sees this intent multiple
@@ -218,7 +218,7 @@ following steps:
 
 It is recommended to use
 ``state_featurizer=LabelTokenizerSingleStateFeaturizer(...)``
-(see :ref:`featurization` for details).
+(see :ref:`featurization_conversations` for details).
 
 **Configuration:**
 
@@ -311,7 +311,7 @@ It is recommended to use
         Default ``max_history`` for this policy is ``None`` which means it'll use
         the ``FullDialogueTrackerFeaturizer``. We recommend to set ``max_history`` to
         some finite value in order to use ``MaxHistoryTrackerFeaturizer``
-        for **faster training**. See :ref:`featurization` for details.
+        for **faster training**. See :ref:`featurization_conversations` for details.
         We recommend to increase ``batch_size`` for ``MaxHistoryTrackerFeaturizer``
         (e.g. ``"batch_size": [32, 64]``)
 
