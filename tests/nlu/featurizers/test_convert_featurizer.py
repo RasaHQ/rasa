@@ -56,10 +56,8 @@ def test_convert_featurizer_return_sequence():
     ],
 )
 def test_convert_featurizer_tokens_to_text(sentence, expected_text):
-    message = Message(sentence)
     tokens = ConveRTTokenizer({"use_cls_token": False}).tokenize_using_convert(sentence)
-    message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
 
-    actual_text = ConveRTFeaturizer._tokens_to_text([message])[0]
+    actual_text = ConveRTFeaturizer._tokens_to_text([tokens])[0]
 
     assert expected_text == actual_text
