@@ -407,7 +407,7 @@ class EmbeddingIntentClassifier(Component):
         label_ids = []
 
         for e in training_data:
-            if e.get(label_attribute):
+            if label_attribute and e.get(label_attribute):
                 _sparse, _dense = self._extract_and_add_features(e, TEXT_ATTRIBUTE)
                 if _sparse is not None:
                     X_sparse.append(_sparse)
@@ -420,7 +420,7 @@ class EmbeddingIntentClassifier(Component):
                 if _dense is not None:
                     Y_dense.append(_dense)
 
-                if label_attribute and e.get(label_attribute):
+                if label_id_dict:
                     label_ids.append(label_id_dict[e.get(label_attribute)])
 
         X_sparse = np.array(X_sparse)
@@ -438,8 +438,13 @@ class EmbeddingIntentClassifier(Component):
             session_data, "intent_ids", [np.expand_dims(label_ids, -1)]
         )
 
-        if label_attribute and (
-            "intent_features" not in session_data or not session_data["intent_features"]
+        if (
+            label_attribute
+            and label_id_dict
+            and (
+                "intent_features" not in session_data
+                or not session_data["intent_features"]
+            )
         ):
             # no label features are present, get default features from _label_data
             session_data["intent_features"] = self._use_default_label_features(
