@@ -91,7 +91,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    api/event-brokers
    api/lock-stores
    api/training-data-importers
-   api/featurization
+   api/core-featurization
    migration-guide
    changelog
 

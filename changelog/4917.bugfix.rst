@@ -1,0 +1,2 @@
+When loading models from S3, namespaces (folders within a bucket) are now respected. 
+Previously, this would result in an error upon loading the model. 

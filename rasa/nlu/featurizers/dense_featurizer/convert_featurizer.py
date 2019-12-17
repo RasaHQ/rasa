@@ -1,12 +1,13 @@
 import logging
-from rasa.nlu.featurizers import Featurizer
+import warnings
+from rasa.nlu.featurizers.featurzier import Featurizer
 from typing import Any, Dict, List, Optional, Text, Tuple
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_VECTOR_FEATURE_NAMES,
-    SPACY_FEATURIZABLE_ATTRIBUTES,
+    TEXT_ATTRIBUTE,
+    DENSE_FEATURE_NAMES,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
 )
 import numpy as np
 import tensorflow as tf
@@ -17,12 +18,19 @@ logger = logging.getLogger(__name__)
 class ConveRTFeaturizer(Featurizer):
 
     provides = [
-        MESSAGE_VECTOR_FEATURE_NAMES[attribute]
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
+        DENSE_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ]
+
+    defaults = {
+        # if True return a sequence of features (return vector has size
+        # token-size x feature-dimension)
+        # if False token-size will be equal to 1
+        "return_sequence": False
+    }
 
     def _load_model(self) -> None:
 
+        # needed in order to load model
         import tensorflow_text
         import tensorflow_hub as tfhub
 
@@ -44,12 +52,24 @@ class ConveRTFeaturizer(Featurizer):
 
         self._load_model()
 
+        self.return_sequence = self.component_config["return_sequence"]
+
+        if self.return_sequence:
+            raise NotImplementedError(
+                f"ConveRTFeaturizer always returns a feature vector of size "
+                f"(1 x feature-dimensions). It cannot return a proper sequence "
+                f"right now. ConveRTFeaturizer can only be used "
+                f"with 'return_sequence' set to False. Also, any other featurizer "
+                f"used next to ConveRTFeaturizer should have the flag "
+                f"'return_sequence' set to False."
+            )
+
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["tensorflow_text", "tensorflow_hub"]
 
     def _compute_features(
-        self, batch_examples: List[Message], attribute: Text = MESSAGE_TEXT_ATTRIBUTE
+        self, batch_examples: List[Message], attribute: Text = TEXT_ATTRIBUTE
     ) -> np.ndarray:
 
         # Get text for attribute of each example
@@ -72,9 +92,17 @@ class ConveRTFeaturizer(Featurizer):
         **kwargs: Any,
     ) -> None:
 
+        if config is not None and config.language != "en":
+            warnings.warn(
+                f"Since ``ConveRT`` model is trained only on an english "
+                f"corpus of conversations, this featurizer should only be "
+                f"used if your training data is in english language. "
+                f"However, you are training in '{config.language}'."
+            )
+
         batch_size = 64
 
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
             non_empty_examples = list(
                 filter(lambda x: x.get(attribute), training_data.training_examples)
@@ -96,11 +124,11 @@ class ConveRTFeaturizer(Featurizer):
                 for index, ex in enumerate(batch_examples):
 
                     ex.set(
-                        MESSAGE_VECTOR_FEATURE_NAMES[attribute],
-                        self._combine_with_existing_features(
+                        DENSE_FEATURE_NAMES[attribute],
+                        self._combine_with_existing_dense_features(
                             ex,
-                            batch_features[index],
-                            MESSAGE_VECTOR_FEATURE_NAMES[attribute],
+                            np.expand_dims(batch_features[index], axis=0),
+                            DENSE_FEATURE_NAMES[attribute],
                         ),
                     )
 
@@ -110,8 +138,10 @@ class ConveRTFeaturizer(Featurizer):
 
         feats = self._compute_features([message])[0]
         message.set(
-            MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE],
-            self._combine_with_existing_features(
-                message, feats, MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
+            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE],
+            self._combine_with_existing_dense_features(
+                message,
+                np.expand_dims(feats, axis=0),
+                DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE],
             ),
         )
