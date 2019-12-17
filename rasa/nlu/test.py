@@ -1198,6 +1198,13 @@ def combine_result(
     return intent_metrics, entity_metrics, response_selection_metrics
 
 
+def _contains_entity_labels(entity_results: List[EntityEvaluationResult]) -> bool:
+
+    for result in entity_results:
+        if result.entity_targets or result.entity_predictions:
+            return True
+
+
 def cross_validate(
     data: TrainingData,
     n_folds: int,
@@ -1249,6 +1256,7 @@ def cross_validate(
     response_selection_test_results: List[ResponseSelectionEvaluationResult] = ([])
     intent_classifier_present = False
     response_selector_present = False
+    entity_evaluation_possible = False
     extractors: Set[Text] = set()
 
     for train, test in generate_folds(n_folds, data):
@@ -1276,6 +1284,10 @@ def cross_validate(
 
         if not extractors:
             extractors = get_entity_extractors(interpreter)
+            entity_evaluation_possible = (
+                entity_evaluation_possible
+                or _contains_entity_labels(entity_test_results)
+            )
 
         if is_intent_classifier_present(interpreter):
             intent_classifier_present = True
@@ -1295,13 +1307,17 @@ def cross_validate(
             disable_plotting,
         )
 
-    if extractors and entity_test_results:
+    if extractors and entity_evaluation_possible:
         logger.info("Accumulated test folds entity evaluation results:")
         evaluate_entities(entity_test_results, extractors, output, successes, errors)
 
     if response_selector_present and response_selection_test_results:
         logger.info("Accumulated test folds response selection evaluation results:")
         evaluate_response_selections(response_selection_test_results, output)
+
+    if not entity_evaluation_possible:
+        entity_test_metrics = defaultdict(lambda: defaultdict(list))
+        entity_train_metrics = defaultdict(lambda: defaultdict(list))
 
     return (
         CVEvaluationResult(dict(intent_train_metrics), dict(intent_test_metrics)),
