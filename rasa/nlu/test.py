@@ -1347,10 +1347,15 @@ def compute_metrics(
         response_selection_results
     )
 
-    intent_metrics = _compute_metrics(
-        intent_results, "intent_target", "intent_prediction"
-    )
-    entity_metrics = _compute_entity_metrics(entity_results, interpreter)
+    intent_metrics = {}
+    if intent_results:
+        intent_metrics = _compute_metrics(
+            intent_results, "intent_target", "intent_prediction"
+        )
+
+    entity_metrics = {}
+    if entity_results:
+        entity_metrics = _compute_entity_metrics(entity_results, interpreter)
 
     response_selection_metrics = {}
     if response_selection_results:
