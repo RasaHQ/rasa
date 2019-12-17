@@ -68,6 +68,7 @@ def set_log_level(log_level: Optional[int] = None):
     update_tensorflow_log_level()
     update_asyncio_log_level()
     update_apscheduler_log_level()
+    update_socketio_log_level()
 
     os.environ[ENV_LOG_LEVEL] = logging.getLevelName(log_level)
 
@@ -87,7 +88,21 @@ def update_apscheduler_log_level() -> None:
         logging.getLogger(logger_name).propagate = False
 
 
-def update_tensorflow_log_level():
+def update_socketio_log_level() -> None:
+    log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
+
+    socketio_loggers = [
+        "websockets.protocol",
+        "engineio.server",
+        "socketio.server",
+    ]
+
+    for logger_name in socketio_loggers:
+        logging.getLogger(logger_name).setLevel(log_level)
+        logging.getLogger(logger_name).propagate = False
+
+
+def update_tensorflow_log_level() -> None:
     """Set the log level of Tensorflow to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
     import tensorflow as tf
@@ -133,7 +148,7 @@ def update_sanic_log_level(log_file: Optional[Text] = None):
         access_logger.addHandler(file_handler)
 
 
-def update_asyncio_log_level():
+def update_asyncio_log_level() -> None:
     """Set the log level of asyncio to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
@@ -190,7 +205,7 @@ def class_from_module_path(
             m = importlib.import_module(lookup_path)
             return getattr(m, module_path)
         else:
-            raise ImportError("Cannot retrieve class from path {}.".format(module_path))
+            raise ImportError(f"Cannot retrieve class from path {module_path}.")
 
 
 def minimal_kwargs(
@@ -230,9 +245,7 @@ def write_global_config_value(name: Text, value: Any) -> None:
         c[name] = value
         rasa.core.utils.dump_obj_as_yaml_to_file(GLOBAL_USER_CONFIG_PATH, c)
     except Exception as e:
-        logger.warning(
-            "Failed to write global config. Error: {}. Skipping." "".format(e)
-        )
+        logger.warning(f"Failed to write global config. Error: {e}. Skipping.")
 
 
 def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
@@ -242,7 +255,7 @@ def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
         if unavailable_ok:
             return None
         else:
-            raise ValueError("Configuration '{}' key not found.".format(name))
+            raise ValueError(f"Configuration '{name}' key not found.")
 
     if not os.path.exists(GLOBAL_USER_CONFIG_PATH):
         return not_found()
@@ -259,10 +272,10 @@ def mark_as_experimental_feature(feature_name: Text) -> None:
     """Warns users that they are using an experimental feature."""
 
     logger.warning(
-        "The {} is currently experimental and might change or be "
+        f"The {feature_name} is currently experimental and might change or be "
         "removed in the future 🔬 Please share your feedback on it in the "
         "forum (https://forum.rasa.com) to help us make this feature "
-        "ready for production.".format(feature_name)
+        "ready for production."
     )
 
 

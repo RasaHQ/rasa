@@ -12,6 +12,12 @@ def test_test_core(run_in_default_project: Callable[..., RunResult]):
     assert os.path.exists("results")
 
 
+def test_test_core_no_plot(run_in_default_project: Callable[..., RunResult]):
+    run_in_default_project("test", "core", "--no-plot")
+
+    assert not os.path.exists("results/story_confmat.pdf")
+
+
 def test_test(run_in_default_project: Callable[..., RunResult]):
     run_in_default_project("test")
 
@@ -20,12 +26,27 @@ def test_test(run_in_default_project: Callable[..., RunResult]):
     assert os.path.exists("results/confmat.png")
 
 
+def test_test_no_plot(run_in_default_project: Callable[..., RunResult]):
+    run_in_default_project("test", "--no-plot")
+
+    assert not os.path.exists("results/hist.png")
+    assert not os.path.exists("results/confmat.png")
+    assert not os.path.exists("results/story_confmat.pdf")
+
+
 def test_test_nlu(run_in_default_project: Callable[..., RunResult]):
     run_in_default_project("test", "nlu", "--nlu", "data", "--successes")
 
     assert os.path.exists("results/hist.png")
     assert os.path.exists("results/confmat.png")
     assert os.path.exists("results/intent_successes.json")
+
+
+def test_test_nlu_no_plot(run_in_default_project: Callable[..., RunResult]):
+    run_in_default_project("test", "nlu", "--no-plot")
+
+    assert not os.path.exists("results/confmat.png")
+    assert not os.path.exists("results/hist.png")
 
 
 def test_test_nlu_cross_validation(run_in_default_project: Callable[..., RunResult]):
@@ -134,7 +155,7 @@ def test_test_help(run: Callable[..., RunResult]):
                  [--successes] [--no-errors] [--histogram HISTOGRAM]
                  [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
                  [--cross-validation] [-f FOLDS] [-r RUNS]
-                 [-p PERCENTAGES [PERCENTAGES ...]]
+                 [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
                  {core,nlu} ..."""
 
     lines = help_text.split("\n")
@@ -150,7 +171,7 @@ def test_test_nlu_help(run: Callable[..., RunResult]):
                      [--successes] [--no-errors] [--histogram HISTOGRAM]
                      [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
                      [--cross-validation] [-f FOLDS] [-r RUNS]
-                     [-p PERCENTAGES [PERCENTAGES ...]]"""
+                     [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]"""
 
     lines = help_text.split("\n")
 
@@ -165,7 +186,7 @@ def test_test_core_help(run: Callable[..., RunResult]):
                       [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
                       [--e2e] [--endpoints ENDPOINTS]
                       [--fail-on-prediction-errors] [--url URL]
-                      [--evaluate-model-directory]"""
+                      [--evaluate-model-directory] [--no-plot]"""
 
     lines = help_text.split("\n")
 

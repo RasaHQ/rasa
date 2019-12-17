@@ -1,4 +1,5 @@
 import logging
+import warnings
 import json
 import os
 import typing
@@ -10,8 +11,13 @@ from rasa.core.actions.action import (
     ACTION_BACK_NAME,
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
 )
-from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
+from rasa.core.constants import (
+    USER_INTENT_BACK,
+    USER_INTENT_RESTART,
+    USER_INTENT_SESSION_START,
+)
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.events import ActionExecuted
 from rasa.core.policies.policy import Policy
@@ -33,13 +39,13 @@ class MappingPolicy(Policy):
     any other policy."""
 
     @staticmethod
-    def _standard_featurizer():
+    def _standard_featurizer() -> None:
         return None
 
     def __init__(self, priority: int = MAPPING_POLICY_PRIORITY) -> None:
         """Create a new Mapping policy."""
 
-        super(MappingPolicy, self).__init__(priority=priority)
+        super().__init__(priority=priority)
 
     @classmethod
     def validate_against_domain(
@@ -90,6 +96,8 @@ class MappingPolicy(Policy):
             action = ACTION_RESTART_NAME
         elif intent == USER_INTENT_BACK:
             action = ACTION_BACK_NAME
+        elif intent == USER_INTENT_SESSION_START:
+            action = ACTION_SESSION_START_NAME
         else:
             action = domain.intent_properties.get(intent, {}).get("triggers")
 
@@ -97,9 +105,10 @@ class MappingPolicy(Policy):
             if action:
                 idx = domain.index_for_action(action)
                 if idx is None:
-                    logger.warning(
+                    warnings.warn(
                         "MappingPolicy tried to predict unknown "
-                        "action '{}'.".format(action)
+                        f"action '{action}'. Make sure all mapped actions are "
+                        "listed in the domain."
                     )
                 else:
                     prediction[idx] = 1

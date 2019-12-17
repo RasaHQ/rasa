@@ -1,4 +1,5 @@
 import logging
+import warnings
 import multiprocessing
 import os
 import tempfile
@@ -14,7 +15,6 @@ from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
 import rasa
-import rasa.core.brokers.utils
 import rasa.core.utils
 import rasa.utils.common
 import rasa.utils.endpoints
@@ -27,6 +27,7 @@ from rasa.constants import (
     DOCS_BASE_URL,
 )
 from rasa.core.agent import load_agent, Agent
+from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
     UserMessage,
     CollectingOutputChannel,
@@ -45,6 +46,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 if typing.TYPE_CHECKING:
     from ssl import SSLContext
+    from rasa.core.processor import MessageProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +55,14 @@ USE_LATEST_INPUT_CHANNEL_AS_OUTPUT_CHANNEL = "latest"
 
 
 class ErrorResponse(Exception):
-    def __init__(self, status, reason, message, details=None, help_url=None):
+    def __init__(
+        self,
+        status: int,
+        reason: Text,
+        message: Text,
+        details: Any = None,
+        help_url: Optional[Text] = None,
+    ) -> None:
         self.error_info = {
             "version": rasa.__version__,
             "status": "failure",
@@ -200,14 +209,16 @@ def event_verbosity_parameter(
         )
 
 
-def get_tracker(agent: "Agent", conversation_id: Text) -> DialogueStateTracker:
-    tracker = agent.tracker_store.get_or_create_tracker(conversation_id)
+async def get_tracker(
+    processor: "MessageProcessor", conversation_id: Text
+) -> Optional[DialogueStateTracker]:
+    tracker = await processor.get_tracker_with_session_start(conversation_id)
     if not tracker:
         raise ErrorResponse(
             409,
             "Conflict",
-            "Could not retrieve tracker with id '{}'. Most likely "
-            "because there is no domain set on the agent.".format(conversation_id),
+            f"Could not retrieve tracker with id '{conversation_id}'. Most likely "
+            f"because there is no domain set on the agent.",
         )
     return tracker
 
@@ -299,16 +310,14 @@ async def _load_agent(
         action_endpoint = None
 
         if endpoints:
-            _broker = rasa.core.brokers.utils.from_endpoint_config(
-                endpoints.event_broker
-            )
-            tracker_store = TrackerStore.find_tracker_store(
-                None, endpoints.tracker_store, _broker
+            broker = EventBroker.create(endpoints.event_broker)
+            tracker_store = TrackerStore.create(
+                endpoints.tracker_store, event_broker=broker
             )
             generator = endpoints.nlg
             action_endpoint = endpoints.action
             if not lock_store:
-                lock_store = LockStore.find_lock_store(endpoints.lock_store)
+                lock_store = LockStore.create(endpoints.lock_store)
 
         loaded_agent = await load_agent(
             model_path,
@@ -322,14 +331,14 @@ async def _load_agent(
     except Exception as e:
         logger.debug(traceback.format_exc())
         raise ErrorResponse(
-            500, "LoadingError", "An unexpected error occurred. Error: {}".format(e)
+            500, "LoadingError", f"An unexpected error occurred. Error: {e}"
         )
 
     if not loaded_agent:
         raise ErrorResponse(
             400,
             "BadRequest",
-            "Agent with name '{}' could not be loaded.".format(model_path),
+            f"Agent with name '{model_path}' could not be loaded.",
             {"parameter": "model", "in": "query"},
         )
 
@@ -416,7 +425,8 @@ def create_app(
 
         return response.json(
             {
-                "model_file": model.get_latest_model(),
+                "model_file": app.agent.path_to_model_archive
+                or app.agent.model_directory,
                 "fingerprint": model.fingerprint_from_path(app.agent.model_directory),
                 "num_active_training_jobs": app.active_training_processes.value,
             }
@@ -431,7 +441,7 @@ def create_app(
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
-        tracker = get_tracker(app.agent, conversation_id)
+        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
 
         try:
             if until_time is not None:
@@ -442,9 +452,7 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500,
-                "ConversationError",
-                "An unexpected error occurred. Error: {}".format(e),
+                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
     @app.post("/conversations/<conversation_id>/tracker/events")
@@ -466,9 +474,9 @@ def create_app(
         events = [event for event in events if event]
 
         if not events:
-            logger.warning(
-                "Append event called, but could not extract a valid event. "
-                "Request JSON: {}".format(request.json)
+            warnings.warn(
+                f"Append event called, but could not extract a valid event. "
+                f"Request JSON: {request.json}"
             )
             raise ErrorResponse(
                 400,
@@ -481,7 +489,9 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = get_tracker(app.agent, conversation_id)
+                tracker = await get_tracker(
+                    app.agent.create_processor(), conversation_id
+                )
                 for event in events:
                     tracker.update(event, app.agent.domain)
                 app.agent.tracker_store.save(tracker)
@@ -490,9 +500,7 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500,
-                "ConversationError",
-                "An unexpected error occurred. Error: {}".format(e),
+                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
     @app.put("/conversations/<conversation_id>/tracker/events")
@@ -521,9 +529,7 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500,
-                "ConversationError",
-                "An unexpected error occurred. Error: {}".format(e),
+                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
     @app.get("/conversations/<conversation_id>/story")
@@ -533,7 +539,7 @@ def create_app(
         """Get an end-to-end story corresponding to this conversation."""
 
         # retrieve tracker and set to requested state
-        tracker = get_tracker(app.agent, conversation_id)
+        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
 
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
@@ -547,9 +553,7 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500,
-                "ConversationError",
-                "An unexpected error occurred. Error: {}".format(e),
+                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
     @app.post("/conversations/<conversation_id>/execute")
@@ -574,7 +578,9 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = get_tracker(app.agent, conversation_id)
+                tracker = await get_tracker(
+                    app.agent.create_processor(), conversation_id
+                )
                 output_channel = _get_output_channel(request, tracker)
                 await app.agent.execute_action(
                     conversation_id,
@@ -587,12 +593,10 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500,
-                "ConversationError",
-                "An unexpected error occurred. Error: {}".format(e),
+                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-        tracker = get_tracker(app.agent, conversation_id)
+        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
         state = tracker.current_state(verbosity)
 
         response_body = {"tracker": state}
@@ -608,7 +612,7 @@ def create_app(
     async def predict(request: Request, conversation_id: Text):
         try:
             # Fetches the appropriate bot response in a json format
-            responses = app.agent.predict_next(conversation_id)
+            responses = await app.agent.predict_next(conversation_id)
             responses["scores"] = sorted(
                 responses["scores"], key=lambda k: (-k["score"], k["action"])
             )
@@ -616,9 +620,7 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500,
-                "ConversationError",
-                "An unexpected error occurred. Error: {}".format(e),
+                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
     @app.post("/conversations/<conversation_id>/messages")
@@ -658,9 +660,7 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500,
-                "ConversationError",
-                "An unexpected error occurred. Error: {}".format(e),
+                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
     @app.post("/model/train")
@@ -725,14 +725,14 @@ def create_app(
             raise ErrorResponse(
                 400,
                 "InvalidDomainError",
-                "Provided domain file is invalid. Error: {}".format(e),
+                f"Provided domain file is invalid. Error: {e}",
             )
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "TrainingError",
-                "An unexpected error occurred during training. Error: {}".format(e),
+                f"An unexpected error occurred during training. Error: {e}",
             )
         finally:
             with app.active_training_processes.get_lock():
@@ -787,7 +787,7 @@ def create_app(
             raise ErrorResponse(
                 500,
                 "TestingError",
-                "An unexpected error occurred during evaluation. Error: {}".format(e),
+                f"An unexpected error occurred during evaluation. Error: {e}",
             )
 
     @app.post("/model/test/intents")
@@ -828,7 +828,7 @@ def create_app(
             raise ErrorResponse(
                 500,
                 "TestingError",
-                "An unexpected error occurred during evaluation. Error: {}".format(e),
+                f"An unexpected error occurred during evaluation. Error: {e}",
             )
 
     @app.post("/model/predict")
@@ -854,7 +854,7 @@ def create_app(
             raise ErrorResponse(
                 400,
                 "BadRequest",
-                "Supplied events are not valid. {}".format(e),
+                f"Supplied events are not valid. {e}",
                 {"parameter": "", "in": "body"},
             )
 
@@ -879,9 +879,7 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500,
-                "PredictionError",
-                "An unexpected error occurred. Error: {}".format(e),
+                500, "PredictionError", f"An unexpected error occurred. Error: {e}"
             )
 
     @app.post("/model/parse")
@@ -905,9 +903,7 @@ def create_app(
             except Exception as e:
                 logger.debug(traceback.format_exc())
                 raise ErrorResponse(
-                    400,
-                    "ParsingError",
-                    "An unexpected error occurred. Error: {}".format(e),
+                    400, "ParsingError", f"An unexpected error occurred. Error: {e}"
                 )
             response_data = emulator.normalise_response_json(parsed_data)
 
@@ -916,7 +912,7 @@ def create_app(
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
-                500, "ParsingError", "An unexpected error occurred. Error: {}".format(e)
+                500, "ParsingError", f"An unexpected error occurred. Error: {e}"
             )
 
     @app.put("/model")
@@ -936,7 +932,7 @@ def create_app(
                 raise ErrorResponse(
                     400,
                     "BadRequest",
-                    "Supplied 'model_server' is not valid. Error: {}".format(e),
+                    f"Supplied 'model_server' is not valid. Error: {e}",
                     {"parameter": "model_server", "in": "body"},
                 )
 
@@ -944,7 +940,7 @@ def create_app(
             model_path, model_server, remote_storage, endpoints, app.agent.lock_store
         )
 
-        logger.debug("Successfully loaded model '{}'.".format(model_path))
+        logger.debug(f"Successfully loaded model '{model_path}'.")
         return response.json(None, status=204)
 
     @app.delete("/model")
@@ -954,7 +950,7 @@ def create_app(
 
         app.agent = Agent(lock_store=app.agent.lock_store)
 
-        logger.debug("Successfully unloaded model '{}'.".format(model_file))
+        logger.debug(f"Successfully unloaded model '{model_file}'.")
         return response.json(None, status=204)
 
     @app.get("/domain")

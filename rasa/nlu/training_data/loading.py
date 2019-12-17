@@ -34,7 +34,7 @@ UNK = "unk"
 MARKDOWN_NLG = "nlg.md"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
-_markdown_section_markers = ["## {}:".format(s) for s in markdown.available_sections]
+_markdown_section_markers = [f"## {s}:" for s in markdown.available_sections]
 _json_format_heuristics = {
     WIT: lambda js, fn: "data" in js and isinstance(js.get("data"), list),
     LUIS: lambda js, fn: "luis_schema_version" in js,
@@ -51,7 +51,7 @@ _json_format_heuristics = {
 # ##
 # * intent/response_key
 #   - response_text
-_nlg_markdown_marker_regex = re.compile(r"##\s*.*\n\*.*\/.*\n\s*\t*\-.*")
+_nlg_markdown_marker_regex = re.compile(r"##\s*.*\n\*[^:]*\/.*\n\s*\t*\-.*")
 
 
 def load_data(resource_name: Text, language: Optional[Text] = "en") -> "TrainingData":
@@ -61,7 +61,7 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
     from rasa.nlu.training_data import TrainingData
 
     if not os.path.exists(resource_name):
-        raise ValueError("File '{}' does not exist.".format(resource_name))
+        raise ValueError(f"File '{resource_name}' does not exist.")
 
     files = io_utils.list_files(resource_name)
     data_sets = [_load(f, language) for f in files]
@@ -95,7 +95,7 @@ async def load_data_from_endpoint(
 
         return training_data
     except Exception as e:
-        logger.warning("Could not retrieve training data from URL:\n{}".format(e))
+        logger.warning(f"Could not retrieve training data from URL:\n{e}")
 
 
 def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
@@ -130,7 +130,7 @@ def _load(filename: Text, language: Optional[Text] = "en") -> Optional["Training
 
     fformat = guess_format(filename)
     if fformat == UNK:
-        raise ValueError("Unknown data format for file '{}'.".format(filename))
+        raise ValueError(f"Unknown data format for file '{filename}'.")
 
     reader = _reader_factory(fformat)
 
@@ -173,7 +173,7 @@ def guess_format(filename: Text) -> Text:
                 guess = fformat
                 break
 
-    logger.debug("Training data format of '{}' is '{}'.".format(filename, guess))
+    logger.debug(f"Training data format of '{filename}' is '{guess}'.")
 
     return guess
 

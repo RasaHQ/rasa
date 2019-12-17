@@ -1,15 +1,16 @@
 from typing import Any, Dict, Text
 
 from rasa.nlu.emulators.no_emulator import NoEmulator
+from typing import List, Optional
 
 
 class LUISEmulator(NoEmulator):
     def __init__(self) -> None:
 
-        super(LUISEmulator, self).__init__()
+        super().__init__()
         self.name = "luis"
 
-    def _top_intent(self, data):
+    def _top_intent(self, data) -> Optional[Dict[Text, Any]]:
         if data.get("intent"):
             return {
                 "intent": data["intent"]["name"],
@@ -18,7 +19,7 @@ class LUISEmulator(NoEmulator):
         else:
             return None
 
-    def _ranking(self, data):
+    def _ranking(self, data) -> List[Dict[Text, Any]]:
         if data.get("intent_ranking"):
             return [
                 {"intent": el["name"], "score": el["confidence"]}

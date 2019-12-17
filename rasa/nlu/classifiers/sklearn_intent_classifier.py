@@ -1,16 +1,18 @@
 import logging
+import warnings
 import numpy as np
 import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
+from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu import utils
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import MESSAGE_VECTOR_FEATURE_NAMES, MESSAGE_TEXT_ATTRIBUTE
+from rasa.nlu.constants import DENSE_FEATURE_NAMES, SPARSE_FEATURE_NAMES, TEXT_ATTRIBUTE
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +25,7 @@ class SklearnIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = [DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]]
 
     defaults = {
         # C parameter of the svm - cross validation will select the best value
@@ -43,14 +45,14 @@ class SklearnIntentClassifier(Component):
 
     def __init__(
         self,
-        component_config: Dict[Text, Any] = None,
+        component_config: Optional[Dict[Text, Any]] = None,
         clf: "sklearn.model_selection.GridSearchCV" = None,
         le: Optional["sklearn.preprocessing.LabelEncoder"] = None,
     ) -> None:
         """Construct a new intent classifier using the sklearn framework."""
         from sklearn.preprocessing import LabelEncoder
 
-        super(SklearnIntentClassifier, self).__init__(component_config)
+        super().__init__(component_config)
 
         if le is not None:
             self.le = le
@@ -86,7 +88,7 @@ class SklearnIntentClassifier(Component):
         labels = [e.get("intent") for e in training_data.intent_examples]
 
         if len(set(labels)) < 2:
-            logger.warning(
+            warnings.warn(
                 "Can not train an intent classifier. "
                 "Need at least 2 different classes. "
                 "Skipping training of intent classifier."
@@ -95,7 +97,9 @@ class SklearnIntentClassifier(Component):
             y = self.transform_labels_str2num(labels)
             X = np.stack(
                 [
-                    example.get("text_features")
+                    sequence_to_sentence_features(
+                        example.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+                    )
                     for example in training_data.intent_examples
                 ]
             )
@@ -104,11 +108,13 @@ class SklearnIntentClassifier(Component):
 
             self.clf.fit(X, y)
 
-    def _num_cv_splits(self, y):
+    def _num_cv_splits(self, y) -> int:
         folds = self.component_config["max_cross_validation_folds"]
         return max(2, min(folds, np.min(np.bincount(y)) // 5))
 
-    def _create_classifier(self, num_threads, y):
+    def _create_classifier(
+        self, num_threads: int, y
+    ) -> "sklearn.model_selection.GridSearchCV":
         from sklearn.model_selection import GridSearchCV
         from sklearn.svm import SVC
 
@@ -143,7 +149,9 @@ class SklearnIntentClassifier(Component):
             intent = None
             intent_ranking = []
         else:
-            X = message.get("text_features").reshape(1, -1)
+            X = sequence_to_sentence_features(
+                message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+            ).reshape(1, -1)
             intent_ids, probabilities = self.predict(X)
             intents = self.transform_labels_num2str(np.ravel(intent_ids))
             # `predict` returns a matrix as it is supposed

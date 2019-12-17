@@ -5,7 +5,7 @@ import warnings
 
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
 from rasa.nlu.training_data import TrainingData, Message
-from rasa.nlu.constants import MESSAGE_RESPONSE_ATTRIBUTE
+from rasa.nlu.constants import RESPONSE_ATTRIBUTE
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
@@ -90,7 +90,7 @@ def validate_required_components_from_data(
     response_selector_exists = False
     for component in pipeline:
         # check if a response selector is part of NLU pipeline
-        if MESSAGE_RESPONSE_ATTRIBUTE in component.provides:
+        if RESPONSE_ATTRIBUTE in component.provides:
             response_selector_exists = True
 
     if len(data.response_examples) and not response_selector_exists:
@@ -109,7 +109,7 @@ class MissingArgumentError(ValueError):
     """
 
     def __init__(self, message: Text) -> None:
-        super(MissingArgumentError, self).__init__(message)
+        super().__init__(message)
         self.message = message
 
     def __str__(self) -> Text:
@@ -128,7 +128,7 @@ class UnsupportedLanguageError(Exception):
         self.component = component
         self.language = language
 
-        super(UnsupportedLanguageError, self).__init__(component, language)
+        super().__init__(component, language)
 
     def __str__(self) -> Text:
         return "component {} does not support language {}".format(
@@ -146,7 +146,7 @@ class ComponentMetaclass(type):
         return cls.__name__
 
 
-class Component(object, metaclass=ComponentMetaclass):
+class Component(metaclass=ComponentMetaclass):
     """A component is a message processing unit in a pipeline.
 
     Components are collected sequentially in a pipeline. Each component
@@ -335,7 +335,7 @@ class Component(object, metaclass=ComponentMetaclass):
             del d["partial_processing_pipeline"]
         return d
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.__dict__ == other.__dict__
 
     def prepare_partial_processing(
@@ -379,7 +379,7 @@ class Component(object, metaclass=ComponentMetaclass):
         return language in cls.language_list
 
 
-class ComponentBuilder(object):
+class ComponentBuilder:
     """Creates trainers and interpreters based on configurations.
 
     Caches components for reuse.

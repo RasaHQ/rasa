@@ -17,15 +17,15 @@ from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 logger = logging.getLogger(__name__)
 
 
-class Policy(object):
+class Policy:
     SUPPORTS_ONLINE_TRAINING = False
 
     @staticmethod
-    def _standard_featurizer():
+    def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer())
 
     @classmethod
-    def _create_featurizer(cls, featurizer=None):
+    def _create_featurizer(cls, featurizer=None) -> TrackerFeaturizer:
         if featurizer:
             return copy.deepcopy(featurizer)
         else:
@@ -52,9 +52,7 @@ class Policy(object):
         ignored_params = {
             key: kwargs.get(key) for key in kwargs.keys() if not params.get(key)
         }
-        logger.debug(
-            "Parameters ignored by `model.fit(...)`: {}".format(ignored_params)
-        )
+        logger.debug(f"Parameters ignored by `model.fit(...)`: {ignored_params}")
         return params
 
     def featurize_for_training(
@@ -147,7 +145,7 @@ class Policy(object):
         raise NotImplementedError("Policy must have the capacity to load itself.")
 
 
-def confidence_scores_for(action_name, value, domain):
+def confidence_scores_for(action_name, value, domain) -> List[float]:
     """Returns confidence scores if a single action is predicted.
 
     Args:

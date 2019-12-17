@@ -24,10 +24,10 @@ class CallbackOutput(CollectingOutputChannel):
     def __init__(self, endpoint: EndpointConfig) -> None:
 
         self.callback_endpoint = endpoint
-        super(CallbackOutput, self).__init__()
+        super().__init__()
 
     async def _persist_message(self, message: Dict[Text, Any]) -> None:
-        await super(CallbackOutput, self)._persist_message(message)
+        await super()._persist_message(message)
 
         try:
             await self.callback_endpoint.request(

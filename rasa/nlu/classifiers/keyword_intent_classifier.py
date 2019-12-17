@@ -59,8 +59,8 @@ class KeywordIntentClassifier(Component):
                 warnings.warn(
                     f"Keyword '{ex.text}' is a keyword of intent '{self.intent_keyword_map[ex.text]}' and of "
                     f"intent '{ex.get('intent')}', it will be removed from the list of "
-                    "keywords.\n"
-                    "Remove (one of) the duplicates from the training data."
+                    f"keywords.\n"
+                    f"Remove (one of) the duplicates from the training data."
                 )
             else:
                 self.intent_keyword_map[ex.text] = ex.get("intent")
@@ -73,7 +73,7 @@ class KeywordIntentClassifier(Component):
 
         self._validate_keyword_map()
 
-    def _validate_keyword_map(self):
+    def _validate_keyword_map(self) -> None:
         re_flag = 0 if self.case_sensitive else re.IGNORECASE
 
         ambiguous_mappings = []

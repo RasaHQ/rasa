@@ -84,13 +84,14 @@ Understand messages, hold conversations, and connect to messaging channels and A
    api/jupyter-notebooks
    api/agent
    api/custom-nlu-components
+   api/rasa-sdk
    api/events
    api/tracker
    api/tracker-stores
    api/event-brokers
    api/lock-stores
    api/training-data-importers
-   api/featurization
+   api/core-featurization
    migration-guide
    changelog
 

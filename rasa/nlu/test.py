@@ -6,6 +6,7 @@ from collections import defaultdict, namedtuple
 from tqdm import tqdm
 from typing import (
     Iterable,
+    Collection,
     Iterator,
     Tuple,
     List,
@@ -22,7 +23,7 @@ import rasa.utils.io as io_utils
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE
 from rasa.nlu.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE,
-    MESSAGE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_SELECTOR_PROPERTY_NAME,
     OPEN_UTTERANCE_PREDICTION_KEY,
 )
 from rasa.model import get_model
@@ -32,7 +33,7 @@ from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.components import Component
-from rasa.nlu.tokenizers import Token
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.core.constants import RESPOND_PREFIX
 
 logger = logging.getLogger(__name__)
@@ -95,9 +96,9 @@ def plot_confusion_matrix(
 
     if normalize:
         cm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
-        logger.info("Normalized confusion matrix: \n{}".format(cm))
+        logger.info(f"Normalized confusion matrix: \n{cm}")
     else:
-        logger.info("Confusion matrix, without normalization: \n{}".format(cm))
+        logger.info(f"Confusion matrix, without normalization: \n{cm}")
 
     thresh = cm.max() / 2.0
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
@@ -151,10 +152,10 @@ def log_evaluation_table(
 ) -> None:  # pragma: no cover
     """Log the sklearn evaluation metrics."""
 
-    logger.info("F1-Score:  {}".format(f1))
-    logger.info("Precision: {}".format(precision))
-    logger.info("Accuracy:  {}".format(accuracy))
-    logger.info("Classification report: \n{}".format(report))
+    logger.info(f"F1-Score:  {f1}")
+    logger.info(f"Precision: {precision}")
+    logger.info(f"Accuracy:  {accuracy}")
+    logger.info(f"Classification report: \n{report}")
 
 
 def get_evaluation_metrics(
@@ -271,12 +272,8 @@ def collect_nlu_successes(
 
     if successes:
         utils.write_json_to_file(successes_filename, successes)
-        logger.info(
-            "Successful intent predictions saved to {}.".format(successes_filename)
-        )
-        logger.debug(
-            "\n\nSuccessfully predicted the following intents: \n{}".format(successes)
-        )
+        logger.info(f"Successful intent predictions saved to {successes_filename}.")
+        logger.debug(f"\n\nSuccessfully predicted the following intents: \n{successes}")
     else:
         logger.info("No successful intent predictions found.")
 
@@ -301,7 +298,7 @@ def collect_nlu_errors(
 
     if errors:
         utils.write_json_to_file(errors_filename, errors)
-        logger.info("Incorrect intent predictions saved to {}.".format(errors_filename))
+        logger.info(f"Incorrect intent predictions saved to {errors_filename}.")
         logger.debug(
             "\n\nThese intent examples could not be classified "
             "correctly: \n{}".format(errors)
@@ -373,7 +370,7 @@ def evaluate_response_selections(
         report_filename = os.path.join(report_folder, "response_selection_report.json")
 
         utils.write_json_to_file(report_filename, report)
-        logger.info("Classification report saved to {}.".format(report_filename))
+        logger.info(f"Classification report saved to {report_filename}.")
 
     else:
         report, precision, f1, accuracy = get_evaluation_metrics(
@@ -402,6 +399,41 @@ def evaluate_response_selections(
     }
 
 
+def _add_confused_intents_to_report(
+    report: Dict[Text, Dict[Text, float]],
+    cnf_matrix: np.ndarray,
+    labels: Collection[Text],
+) -> Dict[Text, Dict[Text, Union[Dict, float]]]:
+    """Adds a field "confused_with" to the intents in the
+    intent evaluation report. The value is a dict of
+    {"false_positive_label": false_positive_count} pairs.
+    If there are no false positives in the confusion matrix,
+    the dict will be empty. Typically we include the two most
+    commonly false positive labels, three in the rare case that
+    the diagonal element in the confusion matrix is not one of the
+    three highest values in the row.
+    """
+
+    # sort confusion matrix by false positives
+    indices = np.argsort(cnf_matrix, axis=1)
+    n_candidates = min(3, len(labels))
+
+    for label in labels:
+        # it is possible to predict intent 'None'
+        if report.get(label):
+            report[label]["confused_with"] = {}
+
+    for i, label in enumerate(labels):
+        for j in range(n_candidates):
+            label_idx = indices[i, -(1 + j)]
+            false_pos_label = labels[label_idx]
+            false_positives = int(cnf_matrix[i, label_idx])
+            if false_pos_label != label and false_positives > 0:
+                report[label]["confused_with"][false_pos_label] = false_positives
+
+    return report
+
+
 def evaluate_intents(
     intent_results: List[IntentEvaluationResult],
     output_directory: Optional[Text],
@@ -409,6 +441,7 @@ def evaluate_intents(
     errors: bool,
     confmat_filename: Optional[Text],
     intent_hist_filename: Optional[Text],
+    disable_plotting: bool,
 ) -> Dict:  # pragma: no cover
     """Creates a confusion matrix and summary statistics for intent predictions.
 
@@ -420,6 +453,8 @@ def evaluate_intents(
     Others are filtered out. Returns a dictionary of containing the
     evaluation result.
     """
+    import sklearn.metrics
+    import sklearn.utils.multiclass
 
     # remove empty intent targets
     num_examples = len(intent_results)
@@ -435,15 +470,19 @@ def evaluate_intents(
         intent_results, "intent_target", "intent_prediction"
     )
 
+    cnf_matrix = sklearn.metrics.confusion_matrix(target_intents, predicted_intents)
+    labels = sklearn.utils.multiclass.unique_labels(target_intents, predicted_intents)
+
     if output_directory:
         report, precision, f1, accuracy = get_evaluation_metrics(
             target_intents, predicted_intents, output_dict=True
         )
+        report = _add_confused_intents_to_report(report, cnf_matrix, labels)
 
         report_filename = os.path.join(output_directory, "intent_report.json")
 
         utils.write_json_to_file(report_filename, report)
-        logger.info("Classification report saved to {}.".format(report_filename))
+        logger.info(f"Classification report saved to {report_filename}.")
 
     else:
         report, precision, f1, accuracy = get_evaluation_metrics(
@@ -466,30 +505,13 @@ def evaluate_intents(
         # log and save misclassified samples to file for debugging
         collect_nlu_errors(intent_results, errors_filename)
 
-    if confmat_filename:
-        from sklearn.metrics import confusion_matrix
-        from sklearn.utils.multiclass import unique_labels
-        import matplotlib.pyplot as plt
-
-        if output_directory:
-            confmat_filename = os.path.join(output_directory, confmat_filename)
-            intent_hist_filename = os.path.join(output_directory, intent_hist_filename)
-
-        cnf_matrix = confusion_matrix(target_intents, predicted_intents)
-        labels = unique_labels(target_intents, predicted_intents)
-        plot_confusion_matrix(
-            cnf_matrix,
-            classes=labels,
-            title="Intent Confusion matrix",
-            out=confmat_filename,
-        )
-        plt.show(block=False)
-
-        plot_attribute_confidences(
-            intent_results, intent_hist_filename, "intent_target", "intent_prediction"
-        )
-
-        plt.show(block=False)
+    if not disable_plotting:
+        if confmat_filename:
+            _plot_confusion_matrix(
+                output_directory, confmat_filename, cnf_matrix, labels
+            )
+        if intent_hist_filename:
+            _plot_histogram(output_directory, intent_hist_filename, intent_results)
 
     predictions = [
         {
@@ -508,6 +530,35 @@ def evaluate_intents(
         "f1_score": f1,
         "accuracy": accuracy,
     }
+
+
+def _plot_confusion_matrix(
+    output_directory: Optional[Text],
+    confmat_filename: Optional[Text],
+    cnf_matrix: np.array,
+    labels: Collection[Text],
+) -> None:
+    if output_directory:
+        confmat_filename = os.path.join(output_directory, confmat_filename)
+
+    plot_confusion_matrix(
+        cnf_matrix,
+        classes=labels,
+        title="Intent Confusion matrix",
+        out=confmat_filename,
+    )
+
+
+def _plot_histogram(
+    output_directory: Optional[Text],
+    intent_hist_filename: Optional[Text],
+    intent_results: List[IntentEvaluationResult],
+) -> None:
+    if output_directory:
+        intent_hist_filename = os.path.join(output_directory, intent_hist_filename)
+        plot_attribute_confidences(
+            intent_results, intent_hist_filename, "intent_target", "intent_prediction"
+        )
 
 
 def merge_labels(
@@ -543,7 +594,7 @@ def write_incorrect_entity_predictions(
 
     if errors:
         utils.write_json_to_file(error_filename, errors)
-        logger.info("Incorrect entity predictions saved to {}.".format(error_filename))
+        logger.info(f"Incorrect entity predictions saved to {error_filename}.")
         logger.debug(
             "\n\nThese intent examples could not be classified "
             "correctly: \n{}".format(errors)
@@ -586,11 +637,9 @@ def write_successful_entity_predictions(
 
     if successes:
         utils.write_json_to_file(successes_filename, successes)
-        logger.info(
-            "Successful entity predictions saved to {}.".format(successes_filename)
-        )
+        logger.info(f"Successful entity predictions saved to {successes_filename}.")
         logger.debug(
-            "\n\nSuccessfully predicted the following entities: \n{}".format(successes)
+            f"\n\nSuccessfully predicted the following entities: \n{successes}"
         )
     else:
         logger.info("No successful entity prediction found.")
@@ -640,9 +689,9 @@ def evaluate_entities(
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
         merged_predictions = substitute_labels(merged_predictions, "O", NO_ENTITY)
-        logger.info("Evaluation for entity extractor: {} ".format(extractor))
+        logger.info(f"Evaluation for entity extractor: {extractor} ")
         if output_directory:
-            report_filename = "{}_report.json".format(extractor)
+            report_filename = f"{extractor}_report.json"
             extractor_report_filename = os.path.join(output_directory, report_filename)
 
             report, precision, f1, accuracy = get_evaluation_metrics(
@@ -669,7 +718,7 @@ def evaluate_entities(
                 log_evaluation_table(report, precision, f1, accuracy)
 
         if successes:
-            successes_filename = "{}_successes.json".format(extractor)
+            successes_filename = f"{extractor}_successes.json"
             if output_directory:
                 successes_filename = os.path.join(output_directory, successes_filename)
             # save classified samples to file for debugging
@@ -678,7 +727,7 @@ def evaluate_entities(
             )
 
         if errors:
-            errors_filename = "{}_errors.json".format(extractor)
+            errors_filename = f"{extractor}_errors.json"
             if output_directory:
                 errors_filename = os.path.join(output_directory, errors_filename)
             # log and save misclassified samples to file for debugging
@@ -731,7 +780,7 @@ def do_entities_overlap(entities: List[Dict]) -> bool:
             next_ent["start"] < curr_ent["end"]
             and next_ent["entity"] != curr_ent["entity"]
         ):
-            logger.warn("Overlapping entity {} with {}".format(curr_ent, next_ent))
+            logger.warning(f"Overlapping entity {curr_ent} with {next_ent}")
             return True
 
     return False
@@ -786,7 +835,7 @@ def determine_token_labels(
         entity type
     """
 
-    if len(entities) == 0:
+    if entities is None or len(entities) == 0:
         return "O"
     if not do_extractors_support_overlap(extractors) and do_entities_overlap(entities):
         raise ValueError("The possible entities should not overlap")
@@ -830,7 +879,7 @@ def align_entity_predictions(
     for t in result.tokens:
         true_token_labels.append(determine_token_labels(t, result.entity_targets, None))
         for extractor, entities in entities_by_extractors.items():
-            extracted = determine_token_labels(t, entities, set([extractor]))
+            extracted = determine_token_labels(t, entities, {extractor})
             extractor_labels[extractor].append(extracted)
 
     return {
@@ -909,7 +958,7 @@ def get_eval_data(
 
             # including all examples here. Empty response examples are filtered at the time of metric calculation
             intent_target = example.get("intent", "")
-            selector_properties = result.get(MESSAGE_SELECTOR_PROPERTY_NAME, {})
+            selector_properties = result.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
 
             if intent_target in available_response_selector_types:
                 response_prediction_key = intent_target
@@ -950,7 +999,7 @@ def get_entity_extractors(interpreter: Interpreter) -> Set[Text]:
     Processors are removed since they do not
     detect the boundaries themselves."""
 
-    extractors = set([c.name for c in interpreter.pipeline if "entities" in c.provides])
+    extractors = {c.name for c in interpreter.pipeline if "entities" in c.provides}
     return extractors - ENTITY_PROCESSORS
 
 
@@ -1005,6 +1054,7 @@ def run_evaluation(
     confmat: Optional[Text] = None,
     histogram: Optional[Text] = None,
     component_builder: Optional[ComponentBuilder] = None,
+    disable_plotting: bool = False,
 ) -> Dict:  # pragma: no cover
     """
     Evaluate intent classification, response selection and entity extraction.
@@ -1017,6 +1067,7 @@ def run_evaluation(
     :param confmat: path to file that will show the confusion matrix
     :param histogram: path fo file that will show a histogram
     :param component_builder: component builder
+    :param disable_plotting: if true confusion matrix and histogram will not be rendered
 
     :return: dictionary containing evaluation results
     """
@@ -1043,7 +1094,13 @@ def run_evaluation(
     if intent_results:
         logger.info("Intent evaluation results:")
         result["intent_evaluation"] = evaluate_intents(
-            intent_results, output_directory, successes, errors, confmat, histogram
+            intent_results,
+            output_directory,
+            successes,
+            errors,
+            confmat,
+            histogram,
+            disable_plotting,
         )
 
     if response_selection_results:
@@ -1073,7 +1130,7 @@ def generate_folds(
     x = td.intent_examples
     y = [example.get("intent") for example in x]
     for i_fold, (train_index, test_index) in enumerate(skf.split(x, y)):
-        logger.debug("Fold: {}".format(i_fold))
+        logger.debug(f"Fold: {i_fold}")
         train = [x[i] for i in train_index]
         test = [x[i] for i in test_index]
         yield (
@@ -1136,6 +1193,7 @@ def cross_validate(
     errors: bool = False,
     confmat: Optional[Text] = None,
     histogram: Optional[Text] = None,
+    disable_plotting: bool = False,
 ) -> Tuple[CVEvaluationResult, CVEvaluationResult]:
     """Stratified cross validation on data.
 
@@ -1198,7 +1256,13 @@ def cross_validate(
     if intent_classifier_present:
         logger.info("Accumulated test folds intent evaluation results:")
         evaluate_intents(
-            intent_test_results, output, successes, errors, confmat, histogram
+            intent_test_results,
+            output,
+            successes,
+            errors,
+            confmat,
+            histogram,
+            disable_plotting,
         )
 
     if extractors:
@@ -1295,7 +1359,7 @@ def compare_nlu(
         training_examples_per_run = []
 
         for percentage in exclusion_percentages:
-            percent_string = "{}%_exclusion".format(percentage)
+            percent_string = f"{percentage}%_exclusion"
 
             _, train = train.train_test_split(percentage / 100)
             training_examples_per_run.append(len(train.training_examples))
@@ -1320,19 +1384,13 @@ def compare_nlu(
                         fixed_model_name=model_name,
                     )
                 except Exception as e:
-                    logger.warning(
-                        "Training model '{}' failed. Error: {}".format(
-                            model_name, str(e)
-                        )
-                    )
+                    logger.warning(f"Training model '{model_name}' failed. Error: {e}")
                     f_score_results[model_name][run].append(0.0)
                     continue
 
                 model_path = os.path.join(get_model(model_path), "nlu")
 
-                output_path = os.path.join(
-                    model_output_path, "{}_report".format(model_name)
-                )
+                output_path = os.path.join(model_output_path, f"{model_name}_report")
                 result = run_evaluation(
                     test_path, model_path, output_directory=output_path, errors=True
                 )
@@ -1413,7 +1471,7 @@ def return_entity_results(results: EntityMetrics, dataset_name: Text) -> None:
                     test/train
     """
     for extractor, result in results.items():
-        logger.info("Entity extractor: {}".format(extractor))
+        logger.info(f"Entity extractor: {extractor}")
         return_results(result, dataset_name)
 
 

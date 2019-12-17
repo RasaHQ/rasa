@@ -36,9 +36,11 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
 
     print_success("Finished creating project structure.")
 
-    should_train = questionary.confirm(
-        "Do you want to train an initial model? 💪🏽"
-    ).skip_if(args.no_prompt, default=True)
+    should_train = (
+        questionary.confirm("Do you want to train an initial model? 💪🏽")
+        .skip_if(args.no_prompt, default=True)
+        .ask()
+    )
 
     if should_train:
         print_success("Training an initial model...")
@@ -134,7 +136,7 @@ def _ask_create_path(path: Text) -> None:
     import questionary
 
     should_create = questionary.confirm(
-        "Path '{}' does not exist 🧐. Create path?".format(path)
+        f"Path '{path}' does not exist 🧐. Create path?"
     ).ask()
     if should_create:
         os.makedirs(path)
@@ -183,7 +185,7 @@ def run(args: argparse.Namespace) -> None:
         .ask()
     )
 
-    if not os.path.isdir(path):
+    if path and not os.path.isdir(path):
         _ask_create_path(path)
 
     if path is None or not os.path.isdir(path):

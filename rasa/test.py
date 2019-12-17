@@ -45,7 +45,7 @@ def test(
     if kwargs is None:
         kwargs = {}
 
-    test_core(model, stories, endpoints, output, **kwargs)
+    test_core(model, stories, endpoints, output, kwargs)
     test_nlu(model, nlu_data, output, kwargs)
 
 
@@ -92,7 +92,7 @@ def test_core(
     _interpreter = RegexInterpreter()
     if use_e2e:
         if nlu_path:
-            _interpreter = NaturalLanguageInterpreter.create(nlu_path, _endpoints.nlu)
+            _interpreter = NaturalLanguageInterpreter.create(_endpoints.nlu or nlu_path)
         else:
             print_warning(
                 "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
@@ -203,7 +203,7 @@ def perform_nlu_cross_validation(
     data = drop_intents_below_freq(data, cutoff=folds)
     kwargs = utils.minimal_kwargs(kwargs, cross_validate)
     results, entity_results = cross_validate(data, folds, nlu_config, output, **kwargs)
-    logger.info("CV evaluation (n={})".format(folds))
+    logger.info(f"CV evaluation (n={folds})")
 
     if any(results):
         logger.info("Intent evaluation results")

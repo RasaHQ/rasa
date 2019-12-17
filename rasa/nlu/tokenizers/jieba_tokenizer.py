@@ -7,17 +7,14 @@ from typing import Any, Dict, List, Optional, Text
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.tokenizers import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 from rasa.nlu.constants import (
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_INTENT_ATTRIBUTE,
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
+    INTENT_ATTRIBUTE,
+    TEXT_ATTRIBUTE,
+    TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_FEATURE_NAMES,
 )
 
 logger = logging.getLogger(__name__)
@@ -27,9 +24,9 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
 
 
-class JiebaTokenizer(Tokenizer, Component):
+class JiebaTokenizer(Tokenizer):
 
-    provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
+    provides = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     language_list = ["zh"]
 
@@ -39,12 +36,14 @@ class JiebaTokenizer(Tokenizer, Component):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
+        # add __CLS__ token to the end of the list of tokens
+        "use_cls_token": False,
     }  # default don't load custom dictionary
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new intent classifier using the MITIE framework."""
 
-        super(JiebaTokenizer, self).__init__(component_config)
+        super().__init__(component_config)
 
         # path to dictionary file or None
         self.dictionary_path = self.component_config.get("dictionary_path")
@@ -75,9 +74,9 @@ class JiebaTokenizer(Tokenizer, Component):
         """
         import jieba
 
-        jieba_userdicts = glob.glob("{}/*".format(path))
+        jieba_userdicts = glob.glob(f"{path}/*")
         for jieba_userdict in jieba_userdicts:
-            logger.info("Loading Jieba User Dictionary at {}".format(jieba_userdict))
+            logger.info(f"Loading Jieba User Dictionary at {jieba_userdict}")
             jieba.load_userdict(jieba_userdict)
 
     def train(
@@ -90,30 +89,32 @@ class JiebaTokenizer(Tokenizer, Component):
 
                 if example.get(attribute) is not None:
                     example.set(
-                        MESSAGE_TOKENS_NAMES[attribute],
+                        TOKENS_NAMES[attribute],
                         self.tokenize(example.get(attribute), attribute),
                     )
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set(
-            MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE],
-            self.tokenize(message.text, MESSAGE_TEXT_ATTRIBUTE),
+            TOKENS_NAMES[TEXT_ATTRIBUTE], self.tokenize(message.text, TEXT_ATTRIBUTE)
         )
 
-    def preprocess_text(self, text, attribute):
+    def preprocess_text(self, text: Text, attribute: Text) -> Text:
 
-        if attribute == MESSAGE_INTENT_ATTRIBUTE and self.intent_tokenization_flag:
+        if attribute == INTENT_ATTRIBUTE and self.intent_tokenization_flag:
             return " ".join(text.split(self.intent_split_symbol))
         else:
             return text
 
-    def tokenize(self, text: Text, attribute=MESSAGE_TEXT_ATTRIBUTE) -> List[Token]:
+    def tokenize(self, text: Text, attribute: Text = TEXT_ATTRIBUTE) -> List[Token]:
         import jieba
 
         text = self.preprocess_text(text, attribute)
         tokenized = jieba.tokenize(text)
         tokens = [Token(word, start) for (word, start, end) in tokenized]
+
+        self.add_cls_token(tokens, attribute)
+
         return tokens
 
     @classmethod
@@ -137,12 +138,12 @@ class JiebaTokenizer(Tokenizer, Component):
         return cls(meta)
 
     @staticmethod
-    def copy_files_dir_to_dir(input_dir, output_dir):
+    def copy_files_dir_to_dir(input_dir: Text, output_dir: Text) -> None:
         # make sure target path exists
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        target_file_list = glob.glob("{}/*".format(input_dir))
+        target_file_list = glob.glob(f"{input_dir}/*")
         for target_file in target_file_list:
             shutil.copy2(target_file, output_dir)
 

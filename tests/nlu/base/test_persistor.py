@@ -8,7 +8,7 @@ from rasa.nlu import persistor, train
 from tests.nlu import utilities
 
 
-class Object(object):
+class Object:
     pass
 
 
@@ -45,6 +45,33 @@ def test_list_models_method_raise_exeception_in_AWSPersistor():
     result = awspersistor.list_models()
 
     assert result == []
+
+
+# noinspection PyPep8Naming
+@mock_s3
+def test_retrieve_tar_archive_with_s3_namespace():
+    model = "/my/s3/project/model.tar.gz"
+    destination = "dst"
+    with patch.object(persistor.AWSPersistor, "_decompress") as decompress:
+        with patch.object(persistor.AWSPersistor, "_retrieve_tar") as retrieve:
+            persistor.AWSPersistor("rasa-test").retrieve(model, destination)
+        decompress.assert_called_once_with("model.tar.gz", destination)
+        retrieve.assert_called_once_with(model)
+
+
+# noinspection PyPep8Naming
+@mock_s3
+def test_s3_private_retrieve_tar():
+    # Ensure the S3 persistor writes to a filename `model.tar.gz`, whilst
+    # passing the fully namespaced path to boto3
+    model = "/my/s3/project/model.tar.gz"
+    awsPersistor = persistor.AWSPersistor("rasa-test")
+    with patch.object(awsPersistor.bucket, "download_fileobj") as download_fileobj:
+        # noinspection PyProtectedMember
+        awsPersistor._retrieve_tar(model)
+    retrieveArgs = download_fileobj.call_args[0]
+    assert retrieveArgs[0] == model
+    assert retrieveArgs[1].name == "model.tar.gz"
 
 
 # noinspection PyPep8Naming
