@@ -3,7 +3,7 @@ import logging
 import warnings
 import os
 import ruamel.yaml as yaml
-from typing import Any, Dict, List, Optional, Text, Union
+from typing import Any, Dict, List, Optional, Text, Union, Tuple
 
 import rasa.utils.io
 from rasa.constants import DEFAULT_CONFIG_PATH
@@ -69,15 +69,15 @@ def component_config_from_pipeline(
         return override_defaults(defaults, c)
     except IndexError:
         warnings.warn(
-            "Tried to get configuration value for component "
+            f"Tried to get configuration value for component "
             f"number {index} which is not part of the pipeline. "
-            "Returning `defaults`."
+            f"Returning `defaults`."
         )
         return override_defaults(defaults, {})
 
 
 class RasaNLUModelConfig:
-    def __init__(self, configuration_values=None):
+    def __init__(self, configuration_values: Optional[Dict[Text, Any]] = None) -> None:
         """Create a model configuration, optionally overriding
         defaults with a dictionary ``configuration_values``.
         """
@@ -106,10 +106,10 @@ class RasaNLUModelConfig:
                     f"You have specified the pipeline template "
                     f"'{template_name}' which has been renamed to "
                     f"'{new_names[template_name]}'. "
-                    "Please update your code as it will no "
-                    "longer work with future versions of "
-                    "Rasa",
-                    DeprecationWarning,
+                    f"Please update your code as it will no "
+                    f"longer work with future versions of "
+                    f"Rasa.",
+                    FutureWarning,
                 )
                 template_name = new_names[template_name]
 
@@ -124,67 +124,66 @@ class RasaNLUModelConfig:
                 )
 
                 raise InvalidConfigError(
-                    "No pipeline specified and unknown "
-                    "pipeline template '{}' passed. Known "
-                    "pipeline templates: {}"
-                    "".format(template_name, known_templates)
+                    f"No pipeline specified and unknown "
+                    f"pipeline template '{template_name}' passed. Known "
+                    f"pipeline templates: {known_templates}"
                 )
 
         for key, value in self.items():
             setattr(self, key, value)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Text) -> Any:
         return self.__dict__[key]
 
-    def get(self, key, default=None):
+    def get(self, key: Text, default: Any = None) -> Any:
         return self.__dict__.get(key, default)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: Text, value: Any) -> None:
         self.__dict__[key] = value
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: Text) -> None:
         del self.__dict__[key]
 
-    def __contains__(self, key):
+    def __contains__(self, key: Text) -> bool:
         return key in self.__dict__
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.__dict__)
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[Text, Any]:
         return self.as_dict()
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: Dict[Text, Any]) -> None:
         self.override(state)
 
-    def items(self):
+    def items(self) -> List[Any]:
         return list(self.__dict__.items())
 
-    def as_dict(self):
+    def as_dict(self) -> Dict[Text, Any]:
         return dict(list(self.items()))
 
-    def view(self):
+    def view(self) -> Text:
         return json_to_string(self.__dict__, indent=4)
 
-    def for_component(self, index, defaults=None):
+    def for_component(self, index, defaults=None) -> Dict[Text, Any]:
         return component_config_from_pipeline(index, self.pipeline, defaults)
 
     @property
-    def component_names(self):
+    def component_names(self) -> List[Text]:
         if self.pipeline:
             return [c.get("name") for c in self.pipeline]
         else:
             return []
 
-    def set_component_attr(self, index, **kwargs):
+    def set_component_attr(self, index, **kwargs) -> None:
         try:
             self.pipeline[index].update(kwargs)
         except IndexError:
             warnings.warn(
-                "Tried to set configuration value for component "
+                f"Tried to set configuration value for component "
                 f"number {index} which is not part of the pipeline."
             )
 
-    def override(self, config):
+    def override(self, config) -> None:
         if config:
             self.__dict__.update(config)

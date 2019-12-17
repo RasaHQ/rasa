@@ -22,3 +22,8 @@ def test_init_help(run: Callable[..., RunResult]):
     assert (
         output.outlines[0] == "usage: rasa init [-h] [-v] [-vv] [--quiet] [--no-prompt]"
     )
+
+
+def test_user_asked_to_train_model(run_with_stdin: Callable[..., RunResult]):
+    run_with_stdin("init", stdin=b"\nYN")
+    assert not os.path.exists("models")

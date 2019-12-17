@@ -46,12 +46,7 @@ e.g. ``[entity](entity name)``.
     ## regex:zipcode
     - [0-9]{5}
 
-    ## lookup:currencies   <!-- lookup table list -->
-    - Yen
-    - USD
-    - Euro
-
-    ## lookup:additional_currencies  <!-- no list to specify lookup table file -->
+    ## lookup:additional_currencies  <!-- specify lookup tables in an external file -->
     path/to/currencies.txt
 
 The training data for Rasa NLU is structured into different parts:
@@ -67,7 +62,9 @@ learn the domain with fewer examples and also help it be more confident of its p
 Synonyms will map extracted entities to the same name, for example mapping "my savings account" to simply "savings".
 However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms present so that Rasa can learn to pick them up.
 
-Lookup tables may be specified either directly as lists or as txt files containing newline-separated words or phrases.  Upon loading the training data, these files are used to generate case-insensitive regex patterns that are added to the regex features.  For example, in this case a list of currency names is supplied so that it is easier to pick out this entity.
+Lookup tables may be specified as plain text files containing newline-separated words or 
+phrases. Upon loading the training data, these files are used to generate
+case-insensitive regex patterns that are added to the regex features.
 
 .. note::
     The common theme here is that common examples, regex features and lookup tables merely act as cues to the final NLU model by providing additional features to the machine learning algorithm during training. Therefore, it must not be assumed that having a single example would be enough for the model to robustly identify intents and/or entities across all variants of that example.
@@ -155,8 +152,7 @@ for these extractors. Currently, all intent classifiers make use of available re
 
 Lookup Tables
 -------------
-Lookup tables in the form of external files or lists of elements may also be specified in the training data.
-The externally supplied lookup tables must be in a newline-separated format.
+The supplied lookup table files must be in a newline-delimited format.
 For example, ``data/test/lookup_tables/plates.txt`` may contain:
 
 .. literalinclude:: ../../data/test/lookup_tables/plates.txt
@@ -167,16 +163,6 @@ And can be loaded as:
 
     ## lookup:plates
     data/test/lookup_tables/plates.txt
-
-Alternatively, lookup elements may be directly included as a list
-
-.. code-block:: md
-
-    ## lookup:plates
-    - beans
-    - rice
-    - tacos
-    - cheese
 
 When lookup tables are supplied in training data, the contents are combined
 into a large, case-insensitive regex pattern that looks for exact matches in
