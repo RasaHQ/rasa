@@ -68,6 +68,7 @@ def set_log_level(log_level: Optional[int] = None):
     update_tensorflow_log_level()
     update_asyncio_log_level()
     update_apscheduler_log_level()
+    update_socketio_log_level()
 
     os.environ[ENV_LOG_LEVEL] = logging.getLevelName(log_level)
 
@@ -87,7 +88,21 @@ def update_apscheduler_log_level() -> None:
         logging.getLogger(logger_name).propagate = False
 
 
-def update_tensorflow_log_level():
+def update_socketio_log_level() -> None:
+    log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
+
+    socketio_loggers = [
+        "websockets.protocol",
+        "engineio.server",
+        "socketio.server",
+    ]
+
+    for logger_name in socketio_loggers:
+        logging.getLogger(logger_name).setLevel(log_level)
+        logging.getLogger(logger_name).propagate = False
+
+
+def update_tensorflow_log_level() -> None:
     """Set the log level of Tensorflow to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
     import tensorflow as tf
@@ -133,7 +148,7 @@ def update_sanic_log_level(log_file: Optional[Text] = None):
         access_logger.addHandler(file_handler)
 
 
-def update_asyncio_log_level():
+def update_asyncio_log_level() -> None:
     """Set the log level of asyncio to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)

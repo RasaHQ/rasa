@@ -5,13 +5,13 @@ import logging
 import os
 import typing
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set, NamedTuple
 
 import rasa.core.constants
 import rasa.utils.common as common_utils
 import rasa.utils.io
 from rasa.cli.utils import bcolors
-from rasa.constants import DOMAIN_SCHEMA_FILE
+from rasa.constants import DOMAIN_SCHEMA_FILE, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
 from rasa.core.actions.action import Action  # pytype: disable=pyi-error
@@ -32,6 +32,10 @@ logger = logging.getLogger(__name__)
 PREV_PREFIX = "prev_"
 ACTIVE_FORM_PREFIX = "active_form_"
 
+CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
+SESSION_EXPIRATION_TIME_KEY = "session_expiration_time"
+SESSION_CONFIG_KEY = "session_config"
+
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
 
@@ -39,12 +43,25 @@ if typing.TYPE_CHECKING:
 class InvalidDomain(Exception):
     """Exception that can be raised when domain is not valid."""
 
-    def __init__(self, message):
+    def __init__(self, message) -> None:
         self.message = message
 
     def __str__(self):
         # return message in error colours
         return bcolors.FAIL + self.message + bcolors.ENDC
+
+
+class SessionConfig(NamedTuple):
+    session_expiration_time: float  # in minutes
+    carry_over_slots: bool
+
+    @staticmethod
+    def default() -> "SessionConfig":
+        # TODO: 2.0, reconsider how to apply sessions to old projects
+        return SessionConfig(0, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION)
+
+    def are_sessions_enabled(self) -> bool:
+        return self.session_expiration_time > 0
 
 
 class Domain:
@@ -109,6 +126,7 @@ class Domain:
         utter_templates = cls.collect_templates(data.get("templates", {}))
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
+        session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
         intents = data.get("intents", {})
 
         return cls(
@@ -118,8 +136,30 @@ class Domain:
             utter_templates,
             data.get("actions", []),
             data.get("forms", []),
+            session_config=session_config,
             **additional_arguments,
         )
+
+    @staticmethod
+    def _get_session_config(session_config: Dict) -> SessionConfig:
+        session_expiration_time = session_config.get(SESSION_EXPIRATION_TIME_KEY)
+
+        # TODO: 2.0 reconsider how to apply sessions to old projects and legacy trackers
+        if session_expiration_time is None:
+            warnings.warn(
+                "No tracker session configuration was found in the loaded domain. "
+                "Domains without a session config will automatically receive a "
+                "session expiration time of 60 minutes in Rasa version 2.0 if not "
+                "configured otherwise.",
+                FutureWarning,
+            )
+            session_expiration_time = 0
+
+        carry_over_slots = session_config.get(
+            CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
+        )
+
+        return SessionConfig(session_expiration_time, carry_over_slots)
 
     @classmethod
     def from_directory(cls, path: Text) -> "Domain":
@@ -169,6 +209,9 @@ class Domain:
             for key, val in config.items():  # pytype: disable=attribute-error
                 combined["config"][key] = val
 
+        if override or self.session_config == SessionConfig.default():
+            combined[SESSION_CONFIG_KEY] = domain_dict[SESSION_CONFIG_KEY]
+
         # intents is list of dicts
         intents_1 = {list(i.keys())[0]: i for i in combined["intents"]}
         intents_2 = {list(i.keys())[0]: i for i in domain_dict["intents"]}
@@ -189,7 +232,7 @@ class Domain:
         return self.__class__.from_dict(combined)
 
     @staticmethod
-    def collect_slots(slot_dict):
+    def collect_slots(slot_dict: Dict[Text, Any]) -> List[Slot]:
         # it is super important to sort the slots here!!!
         # otherwise state ordering is not consistent
         slots = []
@@ -251,17 +294,17 @@ class Domain:
                 # templates should be a dict with options
                 if isinstance(t, str):
                     warnings.warn(
-                        "Deprecated: Templates should not be strings anymore. "
+                        f"Templates should not be strings anymore. "
                         f"Utterance template '{template_key}' should contain either '- text: ' or "
-                        "'- custom: ' attribute to be a proper template.",
-                        DeprecationWarning,
+                        f"'- custom: ' attribute to be a proper template.",
+                        FutureWarning,
                     )
                     validated_variations.append({"text": t})
                 elif "text" not in t and "custom" not in t:
                     raise InvalidDomain(
-                        "Utter template '{}' needs to contain either "
-                        "'- text: ' or '- custom: ' attribute to be a proper "
-                        "template.".format(template_key)
+                        f"Utter template '{template_key}' needs to contain either "
+                        f"'- text: ' or '- custom: ' attribute to be a proper "
+                        f"template."
                     )
                 else:
                     validated_variations.append(t)
@@ -274,10 +317,11 @@ class Domain:
         intents: Union[Set[Text], List[Union[Text, Dict[Text, Any]]]],
         entities: List[Text],
         slots: List[Slot],
-        templates: Dict[Text, Any],
+        templates: Dict[Text, List[Dict[Text, Any]]],
         action_names: List[Text],
         form_names: List[Text],
         store_entities_as_slots: bool = True,
+        session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
 
         self.intent_properties = self.collect_intent_properties(intents)
@@ -285,6 +329,7 @@ class Domain:
         self.form_names = form_names
         self.slots = slots
         self.templates = templates
+        self.session_config = session_config
 
         # only includes custom actions and utterance actions
         self.user_actions = action_names
@@ -336,7 +381,7 @@ class Domain:
         if self.form_names and REQUESTED_SLOT not in [s.name for s in self.slots]:
             self.slots.append(UnfeaturizedSlot(REQUESTED_SLOT))
 
-    def add_knowledge_base_slots(self):
+    def add_knowledge_base_slots(self) -> None:
         """
         Add slots for the knowledge base action to the list of slots, if the
         default knowledge base action name is present.
@@ -389,7 +434,7 @@ class Domain:
 
         return self.action_for_name(self.action_names[index], action_endpoint)
 
-    def actions(self, action_endpoint):
+    def actions(self, action_endpoint) -> List[Optional[Action]]:
         return [
             self.action_for_name(name, action_endpoint) for name in self.action_names
         ]
@@ -402,17 +447,16 @@ class Domain:
         except ValueError:
             self._raise_action_not_found_exception(action_name)
 
-    def _raise_action_not_found_exception(self, action_name):
+    def _raise_action_not_found_exception(self, action_name) -> typing.NoReturn:
         action_names = "\n".join([f"\t - {a}" for a in self.action_names])
         raise NameError(
-            "Cannot access action '{}', "
-            "as that name is not a registered "
-            "action for this domain. "
-            "Available actions are: \n{}"
-            "".format(action_name, action_names)
+            f"Cannot access action '{action_name}', "
+            f"as that name is not a registered "
+            f"action for this domain. "
+            f"Available actions are: \n{action_names}"
         )
 
-    def random_template_for(self, utter_action):
+    def random_template_for(self, utter_action: Text) -> Optional[Dict[Text, Any]]:
         import numpy as np
 
         if utter_action in self.templates:
@@ -539,8 +583,8 @@ class Domain:
             warnings.warn(
                 f"Entities: '{ambiguous_entities}' are explicitly included and"
                 f" excluded for intent '{intent_name}'."
-                "Excluding takes precedence in this case. "
-                "Please resolve that ambiguity."
+                f"Excluding takes precedence in this case. "
+                f"Please resolve that ambiguity."
             )
 
         return entity_names.intersection(wanted_entities)
@@ -558,10 +602,10 @@ class Domain:
             else:
                 warnings.warn(
                     f"Failed to use action '{latest_action}' in history. "
-                    "Please make sure all actions are listed in the "
-                    "domains action list. If you recently removed an "
-                    "action, don't worry about this warning. It "
-                    "should stop appearing after a while. "
+                    f"Please make sure all actions are listed in the "
+                    f"domains action list. If you recently removed an "
+                    f"action, don't worry about this warning. It "
+                    f"should stop appearing after a while."
                 )
                 return {}
         else:
@@ -591,7 +635,7 @@ class Domain:
             self.get_active_states(tr) for tr in tracker.generate_all_prior_trackers()
         ]
 
-    def slots_for_entities(self, entities):
+    def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
         if self.store_entities_as_slots:
             slot_events = []
             for s in self.slots:
@@ -638,24 +682,27 @@ class Domain:
             missing = ",".join(set(states) - set(self.input_states))
             additional = ",".join(set(self.input_states) - set(states))
             raise InvalidDomain(
-                "Domain specification has changed. "
-                "You MUST retrain the policy. "
-                + "Detected mismatch in domain specification. "
-                + "The following states have been \n"
-                "\t - removed: {} \n"
-                "\t - added:   {} ".format(missing, additional)
+                f"Domain specification has changed. "
+                f"You MUST retrain the policy. "
+                f"Detected mismatch in domain specification. "
+                f"The following states have been \n"
+                f"\t - removed: {missing} \n"
+                f"\t - added:   {additional} "
             )
         else:
             return True
 
-    def _slot_definitions(self):
+    def _slot_definitions(self) -> Dict[Any, Dict[str, Any]]:
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
     def as_dict(self) -> Dict[Text, Any]:
-        additional_config = {"store_entities_as_slots": self.store_entities_as_slots}
 
         return {
-            "config": additional_config,
+            "config": {"store_entities_as_slots": self.store_entities_as_slots},
+            SESSION_CONFIG_KEY: {
+                SESSION_EXPIRATION_TIME_KEY: self.session_config.session_expiration_time,
+                CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
+            },
             "intents": [{k: v} for k, v in self.intent_properties.items()],
             "entities": self.entities,
             "slots": self._slot_definitions(),
@@ -707,7 +754,7 @@ class Domain:
         cleaned_domain_data = self.cleaned_domain()
         utils.dump_obj_as_yaml_to_file(filename, cleaned_domain_data)
 
-    def as_yaml(self, clean_before_dump=False):
+    def as_yaml(self, clean_before_dump: bool = False) -> Text:
         if clean_before_dump:
             domain_data = self.cleaned_domain()
         else:
@@ -799,7 +846,7 @@ class Domain:
             "slot_warnings": slot_warnings,
         }
 
-    def _check_domain_sanity(self):
+    def _check_domain_sanity(self) -> None:
         """Make sure the domain is properly configured.
         If the domain contains any duplicate slots, intents, actions
         or entities, an InvalidDomain error is raised.  This error
@@ -867,9 +914,9 @@ class Domain:
                     if message:
                         message += "\n"
                     message += (
-                        "Duplicate {0} in domain. "
-                        "These {0} occur more than once in "
-                        "the domain: '{1}'".format(name, "', '".join(d))
+                        f"Duplicate {name} in domain. "
+                        f"These {name} occur more than once in "
+                        f"the domain: '{', '.join(d)}'."
                     )
             return message
 
@@ -910,9 +957,9 @@ class Domain:
             for template in missing_templates:
                 warnings.warn(
                     f"Utterance '{template}' is listed as an "
-                    "action in the domain file, but there is "
-                    "no matching utterance template. Please "
-                    "check your domain."
+                    f"action in the domain file, but there is "
+                    f"no matching utterance template. Please "
+                    f"check your domain."
                 )
 
     def is_empty(self) -> bool:

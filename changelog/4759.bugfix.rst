@@ -1,0 +1,1 @@
+Training Luis data with ``luis_schema_version`` higher than 4.x.x will show a warning instead of throwing an exception.

@@ -46,7 +46,7 @@ class KerasPolicy(Policy):
     }
 
     @staticmethod
-    def _standard_featurizer(max_history=None):
+    def _standard_featurizer(max_history=None) -> MaxHistoryTrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(
             BinarySingleStateFeaturizer(), max_history=max_history
         )
@@ -98,7 +98,7 @@ class KerasPolicy(Policy):
         else:
             return None
 
-    def _build_model(self, num_features, num_actions, max_history_len):
+    def _build_model(self, num_features, num_actions, max_history_len) -> None:
         warnings.warn(
             "Deprecated, use `model_architecture` instead.",
             DeprecationWarning,

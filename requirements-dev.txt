@@ -16,6 +16,7 @@ aioresponses==0.6.0
 moto==1.3.8
 fakeredis==1.0.3
 six>=1.12.0   # upstream - should be removed if fakeredis depends on at least 1.12.0
+mongomock==3.18.0
 
 # lint/format/types
 black==19.10b0
@@ -27,3 +28,6 @@ google-cloud-storage==1.7.0
 azure-storage-blob==1.0.0
 coveralls==1.7.0
 
+# release tools
+semantic_version==2.8.3
+towncrier==19.2.0

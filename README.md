@@ -11,7 +11,7 @@
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
 
-Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build chatbots on:
+Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contexual assistants on:
 - Facebook Messenger
 - Slack
 - Microsoft Bot Framework
@@ -25,10 +25,10 @@ or voice assistants as:
 - Alexa Skills
 - Google Home Actions
 
-Rasa's primary purpose is to help you build contextual, layered
-conversations with lots of back-and-forth. To have a real conversation,
-you need to have some memory and build on things that were said earlier.
-Rasa lets you do that in a scalable way.
+Rasa helps you build contextual assistants capable of having layered conversations with 
+lots of back-and-forth. In order for a human to have a meaningful exchange with a contextual 
+assistant, the assistant needs to be able to use context to build on things that were previously 
+discussed – Rasa enables you to build assistants that can do this in a scalable way.
 
 There's a lot more background information in this
 [blog post](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a).
@@ -138,20 +138,18 @@ Releasing a new version is quite simple, as the packages are build and distribut
 * major release (first version part increases): 1.2.0 -> 2.0.0
 
 *Release steps*:
-1. Create a new branch and 
-
-  * Update [rasa/version.py](https://github.com/RasaHQ/rasa/blob/master/rasa/version.py) to reflect the correct version number
-  * Edit the [CHANGELOG.rst](https://github.com/RasaHQ/rasa/blob/master/CHANGELOG.rst), create a new section for the release (eg by moving the items from the collected master section) and create a new master logging section
-  * Edit the [migration guide](https://github.com/RasaHQ/rasa/blob/master/docs/migration-guide.rst) to provide assistance for users updating to the new version
-2. Commit the changes and create a PR against master or the release branch (e.g. `1.2.x`)
-3. Once your PR is merged, tag a new release (this SHOULD always happen on master or release branches), e.g. using
-    ```
-    git tag 1.2.0 -m "Some helpful line describing the release"
+1. Make sure all dependencies are up to date (**especially Rasa SDK**)
+2. Switch to the branch you want to cut the release from (`master` in case of a major / minor, the current feature branch for patch releases) 
+3. Run `make release`
+4. Create a PR against master or the release branch (e.g. `1.2.x`)
+5. Once your PR is merged, tag a new release (this SHOULD always happen on master or release branches), e.g. using
+    ```bash
+    git tag 1.2.0 -m "next release"
     git push origin 1.2.0 --tags
     ```
     travis will build this tag and push a package to [pypi](https://pypi.python.org/pypi/rasa)
-5. **If this is a minor release**, a new release branch should be created pointing to the same commit as the tag to allow for future patch releases, e.g.
-    ```
+6. **If this is a minor release**, a new release branch should be created pointing to the same commit as the tag to allow for future patch releases, e.g.
+    ```bash
     git checkout -b 1.2.x
     git push origin 1.2.x
     ```

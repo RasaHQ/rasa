@@ -54,7 +54,7 @@ class FormPolicy(MemoizationPolicy):
             )
 
     @staticmethod
-    def _get_active_form_name(state):
+    def _get_active_form_name(state: Dict[Text, float]) -> Optional[Text]:
         found_forms = [
             state_name[len(ACTIVE_FORM_PREFIX) :]
             for state_name, prob in state.items()
@@ -64,14 +64,16 @@ class FormPolicy(MemoizationPolicy):
         return found_forms[0] if found_forms else None
 
     @staticmethod
-    def _prev_action_listen_in_state(state):
+    def _prev_action_listen_in_state(state: Dict[Text, float]) -> bool:
         return any(
             PREV_PREFIX + ACTION_LISTEN_NAME in state_name and prob > 0
             for state_name, prob in state.items()
         )
 
     @staticmethod
-    def _modified_states(states):
+    def _modified_states(
+        states: List[Dict[Text, float]]
+    ) -> List[Optional[Dict[Text, float]]]:
         """Modify the states to
             - capture previous meaningful action before action_listen
             - ignore previous intent
@@ -111,7 +113,7 @@ class FormPolicy(MemoizationPolicy):
         # modify the states
         return self._recall_states(self._modified_states(states))
 
-    def state_is_unhappy(self, tracker, domain):
+    def state_is_unhappy(self, tracker: DialogueStateTracker, domain: Domain) -> bool:
         # since it is assumed that training stories contain
         # only unhappy paths, notify the form that
         # it should not be validated if predicted by other policy

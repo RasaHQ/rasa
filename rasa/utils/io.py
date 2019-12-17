@@ -24,7 +24,7 @@ if typing.TYPE_CHECKING:
 DEFAULT_ENCODING = "utf-8"
 
 
-def configure_colored_logging(loglevel):
+def configure_colored_logging(loglevel: Text) -> None:
     import coloredlogs
 
     loglevel = loglevel or os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
@@ -73,7 +73,7 @@ def fix_yaml_loader() -> None:
     yaml.SafeLoader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
 
 
-def replace_environment_variables():
+def replace_environment_variables() -> None:
     """Enable yaml loader to process the environment variables in the yaml."""
     import re
     import os
