@@ -32,7 +32,6 @@ def pipelines_for_tests():
                 "SpacyTokenizer",
                 "MitieFeaturizer",
                 "SpacyFeaturizer",
-                "NGramFeaturizer",
                 "RegexFeaturizer",
                 "CountVectorsFeaturizer",
                 "ConveRTFeaturizer",

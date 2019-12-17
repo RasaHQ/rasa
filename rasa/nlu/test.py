@@ -23,7 +23,7 @@ import rasa.utils.io as io_utils
 from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE
 from rasa.nlu.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE,
-    MESSAGE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_SELECTOR_PROPERTY_NAME,
     OPEN_UTTERANCE_PREDICTION_KEY,
 )
 from rasa.model import get_model
@@ -33,7 +33,7 @@ from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.components import Component
-from rasa.nlu.tokenizers import Token
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.core.constants import RESPOND_PREFIX
 
 logger = logging.getLogger(__name__)
@@ -836,7 +836,7 @@ def determine_token_labels(
         entity type
     """
 
-    if len(entities) == 0:
+    if entities is None or len(entities) == 0:
         return "O"
     if not do_extractors_support_overlap(extractors) and do_entities_overlap(entities):
         raise ValueError("The possible entities should not overlap")
@@ -957,7 +957,7 @@ def get_eval_data(
 
             # including all examples here. Empty response examples are filtered at the time of metric calculation
             intent_target = example.get("intent", "")
-            selector_properties = result.get(MESSAGE_SELECTOR_PROPERTY_NAME, {})
+            selector_properties = result.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
 
             if intent_target in available_response_selector_types:
                 response_prediction_key = intent_target
