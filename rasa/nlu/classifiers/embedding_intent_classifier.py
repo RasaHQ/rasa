@@ -396,7 +396,7 @@ class EmbeddingIntentClassifier(Component):
         self,
         training_data: List["Message"],
         label_id_dict: Optional[Dict[Text, int]] = None,
-        label_attribute: Optional[Text] = None,
+        label_attribute: Optional[Text] = INTENT_ATTRIBUTE,
     ) -> "SessionDataType":
         """Prepare data for training and create a SessionDataType object"""
 
@@ -407,20 +407,21 @@ class EmbeddingIntentClassifier(Component):
         label_ids = []
 
         for e in training_data:
-            _sparse, _dense = self._extract_and_add_features(e, TEXT_ATTRIBUTE)
-            if _sparse is not None:
-                X_sparse.append(_sparse)
-            if _dense is not None:
-                X_dense.append(_dense)
+            if e.get(label_attribute):
+                _sparse, _dense = self._extract_and_add_features(e, TEXT_ATTRIBUTE)
+                if _sparse is not None:
+                    X_sparse.append(_sparse)
+                if _dense is not None:
+                    X_dense.append(_dense)
 
-            _sparse, _dense = self._extract_and_add_features(e, label_attribute)
-            if _sparse is not None:
-                Y_sparse.append(_sparse)
-            if _dense is not None:
-                Y_dense.append(_dense)
+                _sparse, _dense = self._extract_and_add_features(e, label_attribute)
+                if _sparse is not None:
+                    Y_sparse.append(_sparse)
+                if _dense is not None:
+                    Y_dense.append(_dense)
 
-            if label_attribute and e.get(label_attribute):
-                label_ids.append(label_id_dict[e.get(label_attribute)])
+                if label_attribute and e.get(label_attribute):
+                    label_ids.append(label_id_dict[e.get(label_attribute)])
 
         X_sparse = np.array(X_sparse)
         X_dense = np.array(X_dense)
