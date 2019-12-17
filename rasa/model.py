@@ -193,6 +193,7 @@ def unpack_model(
             logger.debug(f"Extracted model to '{working_directory}'.")
     except Exception as e:
         logger.error(f"Failed to extract model at {model_file}. Error: {e}")
+        raise
 
     return TempDirectoryPath(working_directory)
 

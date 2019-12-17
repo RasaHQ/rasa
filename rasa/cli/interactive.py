@@ -1,16 +1,19 @@
 import argparse
 import asyncio
+import logging
 import os
 from typing import List, Optional, Text
 
 from rasa.cli import utils
 import rasa.cli.train as train
 from rasa.cli.arguments import interactive as arguments
-from rasa import data, model
+from rasa import model
 
 # noinspection PyProtectedMember
 from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_ENDPOINTS_PATH
-from rasa.importers.rasa import TrainingDataImporter
+from rasa.importers.importer import TrainingDataImporter
+
+logger = logging.getLogger(__name__)
 
 
 def add_subparser(
@@ -75,6 +78,8 @@ def interactive(args: argparse.Namespace) -> None:
                 f"Interactive learning process cannot be started as no initial model was "
                 f"found at path '{args.model}'.  Use 'rasa train' to train a model."
             )
+        if not args.skip_visualization:
+            logger.info(f"Loading visualization data from {args.data}.")
 
     perform_interactive_learning(args, zipped_model, file_importer)
 
