@@ -1,7 +1,0 @@
-Added a new configuration parameter, ``ranking_length`` to the ``EmbeddingPolicy``, ``EmbeddingIntentClassifier``,
-and ``ResponseSelector`` classes. When used in combination with ``softmax`` loss type, confidence levels will
-be normalized over the ``ranking_length`` number of top results.
-
-The ``EmbeddingPolicy``, ``EmbeddingIntentClassifier``, and ``ResponseSelector`` now by default normalize confidence
-levels over the top 10 results, to improve confidence over larger numbers of intents and actions.
-

@@ -11,6 +11,18 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+.. _migration-to-rasa-1.6:
+
+Rasa 1.5 to Rasa 1.6
+--------------------
+
+General
+~~~~~~~
+- By default, the ``EmbeddingIntentClassifier``, ``EmbeddingPolicy``, and ``ResponseSelector`` will
+  now normalize the top 10 confidence results if the ``loss_type`` is ``"softmax"`` (which has been
+  default since 1.3, see :ref:`migration-to-rasa-1.3`). This is configurable via the ``ranking_length``
+  configuration parameter; to turn off normalization to match the previous behavior, set ``ranking_length: 0``.
+
 .. _migration-to-rasa-1.3:
 
 Rasa 1.2 to Rasa 1.3

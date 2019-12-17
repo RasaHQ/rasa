@@ -566,9 +566,6 @@ class EmbeddingPolicy(Policy):
         if self.loss_type == "softmax" and self.ranking_length > 0:
             ranked = sorted(confidence, reverse=True)
             confidence[confidence < ranked[self.ranking_length - 1]] = 0
-            # for i, value in enumerate(confidence):
-            #     if value < ranked[self.ranking_length - 1]:
-            #         confidence[i] = 0.0
             confidence = confidence / np.sum(confidence)
 
         return confidence.tolist()
