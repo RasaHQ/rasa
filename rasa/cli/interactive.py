@@ -76,7 +76,7 @@ def interactive(args: argparse.Namespace) -> None:
                 f"found at path '{args.model}'.  Use 'rasa train' to train a model."
             )
 
-    perform_interactive_learning(args, zipped_model)
+    perform_interactive_learning(args, zipped_model, file_importer)
 
 
 def _set_not_required_args(args: argparse.Namespace) -> None:
@@ -84,7 +84,9 @@ def _set_not_required_args(args: argparse.Namespace) -> None:
     args.store_uncompressed = False
 
 
-def perform_interactive_learning(args: argparse.Namespace, zipped_model: Text) -> None:
+def perform_interactive_learning(
+    args: argparse.Namespace, zipped_model: Text, file_importer: TrainingDataImporter
+) -> None:
     from rasa.core.train import do_interactive_learning
 
     args.model = zipped_model
@@ -95,13 +97,12 @@ def perform_interactive_learning(args: argparse.Namespace, zipped_model: Text) -
             utils.print_error_and_exit(
                 "Can not run interactive learning on an NLU-only model."
             )
-        stories_directory = data.get_core_directory(args.data)
 
         args.endpoints = utils.get_validated_path(
             args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
         )
 
-        do_interactive_learning(args, stories_directory)
+        do_interactive_learning(args, file_importer)
 
 
 def get_provided_model(arg_model: Text) -> Optional[Text]:

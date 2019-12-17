@@ -50,6 +50,7 @@ from rasa.core.training.visualization import (
     visualize_neighborhood,
 )
 from rasa.core.utils import AvailableEndpoints
+from rasa.importers.rasa import TrainingDataImporter
 from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
@@ -1361,7 +1362,7 @@ async def record_messages(
     endpoint: EndpointConfig,
     sender_id: Text = UserMessage.DEFAULT_SENDER_ID,
     max_message_limit: Optional[int] = None,
-    stories: Optional[Text] = None,
+    file_importer: Optional[TrainingDataImporter] = None,
     skip_visualization: bool = False,
 ):
     """Read messages from the command line and print bot responses."""
@@ -1382,7 +1383,7 @@ async def record_messages(
 
         if not skip_visualization:
             events_including_current_user_id = await _get_tracker_events_to_plot(
-                domain, stories, sender_id
+                domain, file_importer, sender_id
             )
 
             plot_file = DEFAULT_STORY_GRAPH_FILE
@@ -1442,9 +1443,11 @@ async def record_messages(
 
 
 async def _get_tracker_events_to_plot(
-    domain: Dict[Text, Any], stories: Optional[Text], sender_id: Text
+    domain: Dict[Text, Any],
+    file_importer: Optional[TrainingDataImporter],
+    sender_id: Text,
 ) -> List[Union[Text, List[Event]]]:
-    training_trackers = await _get_training_trackers(stories, domain)
+    training_trackers = await _get_training_trackers(file_importer, domain)
     number_of_trackers = len(training_trackers)
     if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
         rasa.cli.utils.print_warning(
@@ -1463,19 +1466,21 @@ async def _get_tracker_events_to_plot(
 
 
 async def _get_training_trackers(
-    stories: Optional[Text], domain: Dict[str, Any]
+    file_importer: Optional[TrainingDataImporter], domain: Dict[str, Any]
 ) -> List[DialogueStateTracker]:
     from rasa.core import training
 
     return await training.load_data(
-        stories,
+        file_importer,
         Domain.from_dict(domain),
         augmentation_factor=0,
         use_story_concatenation=False,
     )
 
 
-def _serve_application(app: Sanic, stories, skip_visualization) -> Sanic:
+def _serve_application(
+    app: Sanic, file_importer: Optional[TrainingDataImporter], skip_visualization: bool
+) -> Sanic:
     """Start a core server and attach the interactive learning IO."""
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
@@ -1485,7 +1490,7 @@ def _serve_application(app: Sanic, stories, skip_visualization) -> Sanic:
 
         await record_messages(
             endpoint=endpoint,
-            stories=stories,
+            file_importer=file_importer,
             skip_visualization=skip_visualization,
             sender_id=uuid.uuid4().hex,
         )
@@ -1581,7 +1586,7 @@ async def wait_til_server_is_running(
 
 
 def run_interactive_learning(
-    stories: Text = None,
+    file_importer: TrainingDataImporter = None,
     skip_visualization: bool = False,
     server_args: Dict[Text, Any] = None,
 ):
@@ -1617,7 +1622,7 @@ def run_interactive_learning(
         "before_server_start",
     )
 
-    _serve_application(app, stories, skip_visualization)
+    _serve_application(app, file_importer, skip_visualization)
 
     if not skip_visualization and p is not None:
         p.terminate()  # pytype: disable=attribute-error

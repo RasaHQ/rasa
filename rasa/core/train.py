@@ -9,12 +9,12 @@ from typing import Dict, Optional, Text, Union, List
 import rasa.utils.io
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, PERCENTAGE_KEY
 from rasa.core.domain import Domain
+from rasa.importers.importer import TrainingDataImporter
 from rasa.utils.common import TempDirectoryPath
 
 if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
     from rasa.core.utils import AvailableEndpoints
-    from rasa.importers.importer import TrainingDataImporter
 
 
 logger = logging.getLogger(__name__)
@@ -173,12 +173,14 @@ async def do_compare_training(
 
 
 def do_interactive_learning(
-    args: argparse.Namespace, stories: Optional[Text] = None,
+    args: argparse.Namespace, file_importer: Optional[TrainingDataImporter] = None,
 ):
     from rasa.core.training import interactive
 
     interactive.run_interactive_learning(
-        stories, skip_visualization=args.skip_visualization, server_args=args.__dict__,
+        file_importer=file_importer,
+        skip_visualization=args.skip_visualization,
+        server_args=args.__dict__,
     )
 
 
