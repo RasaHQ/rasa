@@ -3,7 +3,7 @@ import warnings
 
 from typing import Any, Dict, Optional, Text
 
-from rasa.nlu.featurizers.featurzier import Featurizer
+from rasa.nlu.featurizers.featurizer import Featurizer
 
 logger = logging.getLogger(__name__)
 
