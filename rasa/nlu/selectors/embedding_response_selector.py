@@ -82,6 +82,9 @@ class ResponseSelector(EmbeddingIntentClassifier):
         "similarity_type": "auto",  # string 'auto' or 'cosine' or 'inner'
         # the type of the loss function
         "loss_type": "softmax",  # string 'softmax' or 'margin'
+        # number of top responses to normalize scores for softmax loss_type
+        # set to 0 to turn off normalization
+        "ranking_length": 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct intent labels
         "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'

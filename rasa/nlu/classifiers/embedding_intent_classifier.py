@@ -84,7 +84,7 @@ class EmbeddingIntentClassifier(Component):
         "loss_type": "softmax",  # string 'softmax' or 'margin'
         # number of top intents to normalize scores for softmax loss_type
         # set to 0 to turn off normalization
-        "normalize_top_num_intents": 0,
+        "ranking_length": 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct labels
         "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
@@ -210,7 +210,7 @@ class EmbeddingIntentClassifier(Component):
             elif self.loss_type == "margin":
                 self.similarity_type = "cosine"
 
-        self.normalize_top_num_intents = config["normalize_top_num_intents"]
+        self.ranking_length = config["ranking_length"]
         self.mu_pos = config["mu_pos"]
         self.mu_neg = config["mu_neg"]
         self.use_max_sim_neg = config["use_max_sim_neg"]
@@ -624,9 +624,9 @@ class EmbeddingIntentClassifier(Component):
             if X.any() and label_ids.size > 0:
 
                 # normalise scores if turned on
-                if self.loss_type == "softmax" and self.normalize_top_num_intents > 0:
-                    label_ids = label_ids[: self.normalize_top_num_intents]
-                    message_sim = message_sim[: self.normalize_top_num_intents]
+                if self.loss_type == "softmax" and self.ranking_length > 0:
+                    label_ids = label_ids[: self.ranking_length]
+                    message_sim = message_sim[: self.ranking_length]
                     message_sim = message_sim / np.sum(message_sim)
                 else:
                     label_ids = label_ids[:DEFAULT_LABEL_RANKING_LENGTH]

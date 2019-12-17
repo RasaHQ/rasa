@@ -76,7 +76,7 @@ class EmbeddingPolicy(Policy):
         "loss_type": "softmax",  # string 'softmax' or 'margin'
         # number of top actions to normalize scores for softmax loss_type
         # set to 0 to turn off normalization
-        "normalize_top_num_actions": 0,
+        "ranking_length": 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct labels
         "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
@@ -195,7 +195,7 @@ class EmbeddingPolicy(Policy):
                 self.similarity_type = "inner"
             elif self.loss_type == "margin":
                 self.similarity_type = "cosine"
-        self.normalize_top_num_actions = config["normalize_top_num_actions"]
+        self.ranking_length = config["ranking_length"]
 
         self.mu_pos = config["mu_pos"]
         self.mu_neg = config["mu_neg"]
@@ -563,10 +563,10 @@ class EmbeddingPolicy(Policy):
         confidence = confidence[0, -1, :].tolist()
 
         # normalise scores if turned on
-        if self.loss_type == "softmax" and self.normalize_top_num_actions > 0:
+        if self.loss_type == "softmax" and self.ranking_length > 0:
             ranked = sorted(confidence, reverse=True)
             for i, value in enumerate(confidence):
-                if value < ranked[self.normalize_top_num_actions - 1]:
+                if value < ranked[self.ranking_length - 1]:
                     confidence[i] = 0.0
             confidence = confidence / np.sum(confidence)
 
@@ -588,7 +588,7 @@ class EmbeddingPolicy(Policy):
         meta = {
             "priority": self.priority,
             "loss_type": self.loss_type,
-            "normalize_top_num_actions": self.normalize_top_num_actions,
+            "ranking_length": self.ranking_length,
         }
 
         meta_file = os.path.join(path, "embedding_policy.json")
