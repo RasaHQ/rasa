@@ -20,11 +20,12 @@ def test_convert_featurizer():
 
     featurizer.process(message)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])[0]
+    vecs = message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
 
     expected = np.array([1.0251294, -0.04053932, -0.7018805, -0.82054937, -0.75054353])
 
-    assert np.allclose(vecs[:5], expected, atol=1e-5)
+    assert len(vecs) == 1
+    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
 
 
 def test_convert_featurizer_return_sequence():
@@ -38,11 +39,16 @@ def test_convert_featurizer_return_sequence():
 
     featurizer.process(message)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])[0]
+    vecs = message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
 
-    expected = np.array([[2.1250272, -0.6087107, -0.9836049, -0.41922584, -1.2834225]])
+    expected = np.array([2.2636216, -0.26475656, -1.1358104, -0.49751878, -1.3946456])
+    expected_cls = np.array(
+        [1.0251294, -0.04053932, -0.7018805, -0.82054937, -0.75054353]
+    )
 
-    assert np.allclose(vecs[:5], expected, atol=1e-5)
+    assert len(tokens) == len(vecs)
+    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
+    assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
 
 @pytest.mark.parametrize(

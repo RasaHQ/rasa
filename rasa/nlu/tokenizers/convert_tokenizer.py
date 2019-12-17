@@ -99,11 +99,13 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         for token in tokens_in:
             token_start, token_end, token_text = token.start, token.end, token.text
 
-            # Encode text
+            # Encode text and remove special char added by ConveRT
             split_token_strings = self._tokenize(token_text)[0]
             split_token_strings = [
-                string.decode("utf-8") for string in split_token_strings
+                string.decode("utf-8").replace("﹏", "")
+                for string in split_token_strings
             ]
+            split_token_strings = [string for string in split_token_strings if string]
 
             current_token_offset = token_start
             for index, string in enumerate(split_token_strings):

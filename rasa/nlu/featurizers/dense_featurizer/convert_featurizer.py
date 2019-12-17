@@ -99,7 +99,10 @@ class ConveRTFeaturizer(Featurizer):
             example.get(TOKENS_NAMES[attribute]) for example in batch_examples
         ]
 
-        cls_token_used = list_of_tokens[0][-1] == CLS_TOKEN
+        cls_token_used = list_of_tokens[0][-1].text == CLS_TOKEN
+
+        if cls_token_used:
+            list_of_tokens = [sent_tokens[:-1] for sent_tokens in list_of_tokens]
 
         number_of_tokens_in_sentence = [
             len(sent_tokens) for sent_tokens in list_of_tokens
@@ -140,7 +143,7 @@ class ConveRTFeaturizer(Featurizer):
             for token in sent_tokens:
                 if offset != token.start:
                     text += " "
-                text += token.text.replace("﹏", "")
+                text += token.text
 
                 offset = token.end
             texts.append(text)

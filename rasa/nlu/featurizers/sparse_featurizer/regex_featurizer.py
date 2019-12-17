@@ -118,7 +118,7 @@ class RegexFeaturizer(Featurizer):
                     seq_index = 0
 
                 for match in matches:
-                    if t.offset < match.end() and t.end > match.start():
+                    if t.start < match.end() and t.end > match.start():
                         patterns[pattern["name"]] = True
                         vec[seq_index][pattern_index] = 1.0
 
