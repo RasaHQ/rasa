@@ -32,7 +32,9 @@ class RasaFileImporter(TrainingDataImporter):
 
         self._domain_path = domain_path
 
-        self.story_files, self.nlu_files = data.get_core_nlu_files(training_data_paths)
+        self._story_files, self._nlu_files = data.get_core_nlu_files(
+            training_data_paths
+        )
 
     async def get_config(self) -> Dict:
         return self.config
@@ -46,7 +48,7 @@ class RasaFileImporter(TrainingDataImporter):
     ) -> StoryGraph:
 
         story_steps = await StoryFileReader.read_from_files(
-            self.story_files,
+            self._story_files,
             await self.get_domain(),
             interpreter,
             template_variables,
@@ -56,7 +58,7 @@ class RasaFileImporter(TrainingDataImporter):
         return StoryGraph(story_steps)
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        return utils.training_data_from_paths(self.nlu_files, language)
+        return utils.training_data_from_paths(self._nlu_files, language)
 
     async def get_domain(self) -> Domain:
         domain = Domain.empty()

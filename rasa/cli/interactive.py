@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import os
 from typing import List, Optional, Text
 
@@ -9,7 +10,7 @@ from rasa import data, model
 
 # noinspection PyProtectedMember
 from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_ENDPOINTS_PATH
-from rasa.importers.rasa import RasaFileImporter
+from rasa.importers.rasa import TrainingDataImporter
 
 
 def add_subparser(
@@ -48,11 +49,14 @@ def add_subparser(
 
 def interactive(args: argparse.Namespace) -> None:
     _set_not_required_args(args)
-    file_importer = RasaFileImporter(args.config, args.domain, args.data)
+    file_importer = TrainingDataImporter.load_from_config(
+        args.config, args.domain, args.data
+    )
 
     if args.model is None:
-        story_files = file_importer.story_files
-        if not story_files:
+        loop = asyncio.get_event_loop()
+        story_graph = loop.run_until_complete(file_importer.get_stories())
+        if not story_graph or story_graph.is_empty():
             utils.print_error_and_exit(
                 "Could not run interactive learning without either core data or a model containing core data."
             )
