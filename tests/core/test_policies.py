@@ -33,6 +33,7 @@ from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.utils import train_utils
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
@@ -354,11 +355,11 @@ class TestEmbeddingPolicy(PolicyTestCollection):
         # also check our function is called
         mock = Mock()
         monkeypatch.setattr(
-            EmbeddingPolicy, "_normalize_scores", mock._normalize_scores,
+            train_utils, "normalize_confidence", mock.normalize_confidence
         )
         trained_policy.predict_action_probabilities(tracker, default_domain)
 
-        mock._normalize_scores.assert_called_once()
+        mock.normalize_confidence.assert_called_once()
 
     async def test_gen_batch(self, trained_policy, default_domain):
         training_trackers = await train_trackers(default_domain, augmentation_factor=0)
@@ -409,12 +410,12 @@ class TestEmbeddingPolicyMargin(TestEmbeddingPolicy):
         # Mock actual normalization method
         mock = Mock()
         monkeypatch.setattr(
-            EmbeddingPolicy, "_normalize_scores", mock._normalize_scores,
+            train_utils, "normalize_confidence", mock.normalize_confidence
         )
         trained_policy.predict_action_probabilities(tracker, default_domain)
 
         # function should not get called for margin loss_type
-        mock._normalize_scores.assert_not_called()
+        mock.normalize_confidence.assert_not_called()
 
 
 class TestEmbeddingPolicyWithEval(TestEmbeddingPolicy):
@@ -448,11 +449,11 @@ class TestEmbeddingPolicyNoNormalization(TestEmbeddingPolicy):
         # also check our function is not called
         mock = Mock()
         monkeypatch.setattr(
-            EmbeddingPolicy, "_normalize_scores", mock._normalize_scores,
+            train_utils, "normalize_confidence", mock.normalize_confidence
         )
         trained_policy.predict_action_probabilities(tracker, default_domain)
 
-        mock._normalize_scores.assert_not_called()
+        mock.normalize_confidence.assert_not_called()
 
 
 class TestEmbeddingPolicyLowRankingLength(TestEmbeddingPolicy):

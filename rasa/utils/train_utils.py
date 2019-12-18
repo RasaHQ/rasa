@@ -1275,3 +1275,10 @@ def load_tensor(name: Text) -> Optional[Union["tf.Tensor", List["tf.Tensor"]]]:
         return tensor_list[0]
 
     return tensor_list
+
+
+def normalize_confidence(confidence: "np.ndarray", ranking_length: int):
+    ranked = sorted(confidence, reverse=True)
+    confidence[confidence < ranked[ranking_length - 1]] = 0
+    confidence = confidence / np.sum(confidence)
+    return confidence

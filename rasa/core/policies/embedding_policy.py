@@ -552,12 +552,6 @@ class EmbeddingPolicy(Policy):
 
         return {self.a_in: session_data["dialogue_features"][0]}
 
-    def _normalize_scores(self, confidence):
-        ranked = sorted(confidence, reverse=True)
-        confidence[confidence < ranked[self.ranking_length - 1]] = 0
-        confidence = confidence / np.sum(confidence)
-        return confidence
-
     def predict_action_probabilities(
         self, tracker: "DialogueStateTracker", domain: "Domain"
     ) -> List[float]:
@@ -581,7 +575,9 @@ class EmbeddingPolicy(Policy):
 
         # normalise scores if turned on
         if self.loss_type == "softmax" and self.ranking_length > 0:
-            confidence = self._normalize_scores(confidence)
+            confidence = train_utils.normalize_confidence(
+                confidence, self.ranking_length
+            )
 
         return confidence.tolist()
 
