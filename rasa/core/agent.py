@@ -845,7 +845,7 @@ class Agent:
         )
 
     @staticmethod
-    def _create_domain(domain: Union[Domain, Text]) -> Domain:
+    def _create_domain(domain: Union[Domain, Text, None]) -> Domain:
 
         if isinstance(domain, str):
             domain = Domain.load(domain)
