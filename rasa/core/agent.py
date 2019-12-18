@@ -579,6 +579,11 @@ class Agent:
     def continue_training(
         self, trackers: List[DialogueStateTracker], **kwargs: Any
     ) -> None:
+        warnings.warn(
+            "Continue training will be removed in the next release. It won't be "
+            "possible to continue the training, you should probably retrain instead.",
+            FutureWarning,
+        )
 
         if not self.is_core_ready():
             raise AgentNotReady("Can't continue training without a policy ensemble.")
