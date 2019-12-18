@@ -1,27 +1,27 @@
 from rasa.nlu.constants import CLS_TOKEN
 from rasa.nlu.training_data import TrainingData, Message
 from tests.nlu import utilities
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
 def test_whitespace():
-    from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
-    component_config = {"use_cls_token": False}
-
-    tk = WhitespaceTokenizer(component_config)
+    tk = WhitespaceTokenizer()
 
     assert [t.text for t in tk.tokenize("Forecast for lunch")] == [
         "Forecast",
         "for",
         "lunch",
+        CLS_TOKEN,
     ]
     assert [t.lemma for t in tk.tokenize("Forecast for lunch")] == [
         "Forecast",
         "for",
         "lunch",
+        CLS_TOKEN,
     ]
 
-    assert [t.start for t in tk.tokenize("Forecast for lunch")] == [0, 9, 13]
+    assert [t.start for t in tk.tokenize("Forecast for lunch")] == [0, 9, 13, 19]
 
     # we ignore .,!?
     assert [t.text for t in tk.tokenize("hey ńöñàśçií how're you?")] == [
@@ -30,6 +30,7 @@ def test_whitespace():
         "how",
         "re",
         "you",
+        CLS_TOKEN,
     ]
 
     assert [t.start for t in tk.tokenize("hey ńöñàśçií how're you?")] == [
@@ -38,6 +39,7 @@ def test_whitespace():
         13,
         17,
         20,
+        24,
     ]
 
     assert [t.text for t in tk.tokenize("привет! 10.000, ńöñàśçií. (how're you?)")] == [
@@ -47,11 +49,12 @@ def test_whitespace():
         "how",
         "re",
         "you",
+        CLS_TOKEN,
     ]
 
     assert [
         t.start for t in tk.tokenize("привет! 10.000, ńöñàśçií. (how're you?)")
-    ] == [0, 8, 16, 27, 31, 34]
+    ] == [0, 8, 16, 27, 31, 34, 38]
 
     # urls are single token
     assert [
@@ -67,6 +70,7 @@ def test_whitespace():
         "https://www.google.com/search?"
         "client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8",
         "https://rasa.com/docs/nlu/components/#tokenizer-whitespace",
+        CLS_TOKEN,
     ]
 
     assert [
@@ -78,33 +82,11 @@ def test_whitespace():
             "https://rasa.com/docs/nlu/"
             "components/#tokenizer-whitespace"
         )
-    ] == [0, 83]
-
-
-def test_whitespace_cls_token():
-    from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-
-    component_config = {"use_cls_token": True}
-
-    tk = WhitespaceTokenizer(component_config)
-
-    assert [t.text for t in tk.tokenize("Forecast for lunch")] == [
-        "Forecast",
-        "for",
-        "lunch",
-        CLS_TOKEN,
-    ]
-    assert [t.start for t in tk.tokenize("Forecast for lunch")] == [0, 9, 13, 19]
+    ] == [0, 83, 142]
 
 
 def test_whitespace_custom_intent_symbol():
-    from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-
-    component_config = {
-        "intent_tokenization_flag": True,
-        "intent_split_symbol": "+",
-        "use_cls_token": False,
-    }
+    component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
     tk = WhitespaceTokenizer(component_config)
 
@@ -120,30 +102,31 @@ def test_whitespace_custom_intent_symbol():
 
 
 def test_whitespace_with_case():
-    from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
-    component_config = {"use_cls_token": False}
-    tk = WhitespaceTokenizer(component_config)
+    tk = WhitespaceTokenizer()
     assert [t.text for t in tk.tokenize("Forecast for LUNCH")] == [
         "Forecast",
         "for",
         "LUNCH",
+        CLS_TOKEN,
     ]
 
-    component_config = {"case_sensitive": False, "use_cls_token": False}
+    component_config = {"case_sensitive": False}
     tk = WhitespaceTokenizer(component_config)
     assert [t.text for t in tk.tokenize("Forecast for LUNCH")] == [
         "forecast",
         "for",
         "lunch",
+        CLS_TOKEN,
     ]
 
-    component_config = {"case_sensitive": True, "use_cls_token": False}
+    component_config = {"case_sensitive": True}
     tk = WhitespaceTokenizer(component_config)
     assert [t.text for t in tk.tokenize("Forecast for LUNCH")] == [
         "Forecast",
         "for",
         "LUNCH",
+        CLS_TOKEN,
     ]
 
     _config = utilities.base_test_conf("supervised_embeddings")

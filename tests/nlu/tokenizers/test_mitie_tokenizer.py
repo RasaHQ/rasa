@@ -1,35 +1,9 @@
 from rasa.nlu.constants import CLS_TOKEN
+from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 
 
 def test_mitie():
-    from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
-
-    component_config = {"use_cls_token": False}
-
-    tk = MitieTokenizer(component_config)
-
-    text = "Forecast for lunch"
-    assert [t.text for t in tk.tokenize(text)] == ["Forecast", "for", "lunch"]
-    assert [t.start for t in tk.tokenize(text)] == [0, 9, 13]
-
-    text = "hey ńöñàśçií how're you?"
-    assert [t.text for t in tk.tokenize(text)] == [
-        "hey",
-        "ńöñàśçií",
-        "how",
-        "'re",
-        "you",
-        "?",
-    ]
-    assert [t.start for t in tk.tokenize(text)] == [0, 4, 13, 16, 20, 23]
-
-
-def test_mitie_add_cls_token():
-    from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
-
-    component_config = {"use_cls_token": True}
-
-    tk = MitieTokenizer(component_config)
+    tk = MitieTokenizer()
 
     text = "Forecast for lunch"
     assert [t.text for t in tk.tokenize(text)] == [
@@ -39,3 +13,15 @@ def test_mitie_add_cls_token():
         CLS_TOKEN,
     ]
     assert [t.start for t in tk.tokenize(text)] == [0, 9, 13, 19]
+
+    text = "hey ńöñàśçií how're you?"
+    assert [t.text for t in tk.tokenize(text)] == [
+        "hey",
+        "ńöñàśçií",
+        "how",
+        "'re",
+        "you",
+        "?",
+        CLS_TOKEN,
+    ]
+    assert [t.start for t in tk.tokenize(text)] == [0, 4, 13, 16, 20, 23, 25]

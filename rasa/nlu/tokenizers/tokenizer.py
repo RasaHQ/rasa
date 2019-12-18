@@ -52,25 +52,10 @@ class Token(object):
 
 
 class Tokenizer(Component):
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
-        super(Tokenizer, self).__init__(component_config)
-
-        try:
-            self.use_cls_token = self.component_config["use_cls_token"]
-        except KeyError:
-            raise KeyError(
-                "No default value for 'use_cls_token' was set. Please, "
-                "add it to the default dict of the tokenizer."
-            )
-
     def add_cls_token(
         self, tokens: List[Token], attribute: Text = TEXT_ATTRIBUTE
     ) -> List[Token]:
-        if (
-            attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE]
-            and self.use_cls_token
-            and tokens
-        ):
+        if attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE] and tokens:
             # +1 to have a space between the last token and the __cls__ token
             idx = tokens[-1].end + 1
             tokens.append(Token(CLS_TOKEN, idx))

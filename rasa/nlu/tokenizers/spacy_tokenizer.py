@@ -22,11 +22,6 @@ class SpacyTokenizer(Tokenizer):
 
     requires = [SPACY_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
 
-    defaults = {
-        # add __CLS__ token to the end of the list of tokens
-        "use_cls_token": False
-    }
-
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
     ) -> None:
