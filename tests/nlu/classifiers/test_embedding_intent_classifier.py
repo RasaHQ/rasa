@@ -117,10 +117,18 @@ def as_pipeline(*components):
 @pytest.mark.parametrize(
     "classifier_params, output_length, output_should_sum_to_1",
     [
-        ({}, 10, True),  # default config
-        ({"ranking_length": 0}, 10, False),  # no normalization
-        ({"ranking_length": 3}, 3, True),  # lower than default ranking_length
-        ({"ranking_length": 12}, 10, False),  # higher than default ranking_length
+        ({"random_seed": 42}, 10, True),  # default config
+        ({"random_seed": 42, "ranking_length": 0}, 10, False),  # no normalization
+        (
+            {"random_seed": 42, "ranking_length": 3},
+            3,
+            True,
+        ),  # lower than default ranking_length
+        (
+            {"random_seed": 42, "ranking_length": 12},
+            10,
+            False,
+        ),  # higher than default ranking_length
     ],
 )
 async def test_softmax_normalization(
