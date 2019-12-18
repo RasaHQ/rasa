@@ -996,7 +996,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
             eval_dataset,
             batch_size_in,
             train_func,
-            self.model.loss_metric,
+            [self.model.total_loss_metric,
+             self.model.mask_loss_metric,
+             self.model.intent_loss_metric,
+             self.model.entity_loss_metric,
+             self.model.mask_acc_metric,
+             self.model.intent_acc_metric,
+             self.model.entity_f1_metric],
             self.epochs,
             self.batch_in_size,
             self.evaluate_on_num_examples,
@@ -1346,6 +1352,8 @@ class DIET(tf.Module):
                                                     "logits")
         self._layers.extend(self._get_layers(self._embed))
 
+        self.entity_f1 = tfa.metrics.F1Score(num_classes=self._num_tags, average='micro')
+
         # tf tensors
         self.training = tf.ones((), tf.bool)
         initializer = tf.keras.initializers.GlorotUniform()
@@ -1365,9 +1373,15 @@ class DIET(tf.Module):
 
         # tf training
         self._optimizer = tf.keras.optimizers.Adam(learning_rate)
-        self.loss_metric = tf.keras.metrics.Mean(name='t_loss')
+        self.total_loss_metric = tf.keras.metrics.Mean(name='t_loss')
+
+        self.mask_loss_metric = tf.keras.metrics.Mean(name='m_loss')
+        self.intent_loss_metric = tf.keras.metrics.Mean(name='i_loss')
+        self.entity_loss_metric = tf.keras.metrics.Mean(name='e_loss')
+
+        self.mask_acc_metric = tf.keras.metrics.Mean(name='m_acc')
         self.intent_acc_metric = tf.keras.metrics.Mean(name='i_acc')
-        self.entity_f1_metric = tfa.metrics.F1Score(num_classes=self._num_tags, average='micro', name="e_f1")
+        self.entity_f1_metric = tf.keras.metrics.Mean(name='e_f1')
 
     def _combine_sparse_dense_features(
             self,
@@ -1544,7 +1558,7 @@ class DIET(tf.Module):
         pred_ids, _ = tfa.text.crf.crf_decode(logits, self._crf_params, sequence_lengths)
 
         # calculate f1 score for train predictions
-        score = self.entity_f1_metric(c, pred_ids)
+        score = self.entity_f1(c, pred_ids)
 
         return loss, score
 
@@ -1603,4 +1617,12 @@ class DIET(tf.Module):
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-        self.loss_metric.update_state(total_loss)
+        self.total_loss_metric.update_state(total_loss)
+
+        self.mask_loss_metric.update_state(metrics.loss["m_loss"])
+        self.intent_loss_metric.update_state(metrics.loss["i_loss"])
+        self.entity_loss_metric.update_state(metrics.loss["e_loss"])
+
+        self.mask_acc_metric.update_state(metrics.score["m_acc"])
+        self.intent_acc_metric.update_state(metrics.score["i_acc"])
+        self.entity_f1_metric.update_state(metrics.score["e_f1"])
