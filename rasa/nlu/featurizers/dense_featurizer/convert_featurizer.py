@@ -1,9 +1,9 @@
 import logging
 import warnings
-
-from nlu.tokenizers.tokenizer import Token
-from rasa.nlu.featurizers.featurizer import Featurizer
 from typing import Any, Dict, List, Optional, Text
+
+from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (

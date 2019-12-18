@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Text
 
-from nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
