@@ -1,0 +1,1 @@
+Running ``rasa interactive`` with no NLU data now works, with the functionality of ``rasa interactive core``.
