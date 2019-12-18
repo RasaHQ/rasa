@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
@@ -103,6 +103,14 @@ class PolicyTestCollection:
     @pytest.fixture(scope="module")
     def priority(self):
         return 1
+
+    @pytest.fixture(scope="module")
+    def default_domain(self):
+        return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+
+    @pytest.fixture(scope="module")
+    def tracker(self, default_domain):
+        return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID, default_domain.slots)
 
     @pytest.fixture(scope="module")
     async def trained_policy(self, featurizer, priority):
@@ -220,14 +228,6 @@ class TestSklearnPolicy(PolicyTestCollection):
             yield gs
 
     @pytest.fixture(scope="module")
-    def default_domain(self):
-        return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
-
-    @pytest.fixture
-    def tracker(self, default_domain):
-        return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID, default_domain.slots)
-
-    @pytest.fixture(scope="module")
     async def trackers(self, default_domain):
         return await train_trackers(default_domain, augmentation_factor=20)
 
@@ -337,6 +337,29 @@ class TestEmbeddingPolicy(PolicyTestCollection):
     def test_similarity_type(self, trained_policy):
         assert trained_policy.similarity_type == "inner"
 
+    def test_ranking_length(self, trained_policy):
+        assert trained_policy.ranking_length == 10
+
+    def test_normalization(self, trained_policy, tracker, default_domain, monkeypatch):
+        # first check the output is what we expect
+        predicted_probabilities = trained_policy.predict_action_probabilities(
+            tracker, default_domain
+        )
+        # count number of non-zero confidences
+        assert (
+            sum([confidence > 0 for confidence in predicted_probabilities])
+            == trained_policy.ranking_length
+        )
+
+        # also check our function is called
+        mock = Mock()
+        monkeypatch.setattr(
+            EmbeddingPolicy, "_normalize_scores", mock._normalize_scores,
+        )
+        trained_policy.predict_action_probabilities(tracker, default_domain)
+
+        mock._normalize_scores.assert_called_once()
+
     async def test_gen_batch(self, trained_policy, default_domain):
         training_trackers = await train_trackers(default_domain, augmentation_factor=0)
         training_data = trained_policy.featurize_for_training(
@@ -382,6 +405,17 @@ class TestEmbeddingPolicyMargin(TestEmbeddingPolicy):
     def test_similarity_type(self, trained_policy):
         assert trained_policy.similarity_type == "cosine"
 
+    def test_normalization(self, trained_policy, tracker, default_domain, monkeypatch):
+        # Mock actual normalization method
+        mock = Mock()
+        monkeypatch.setattr(
+            EmbeddingPolicy, "_normalize_scores", mock._normalize_scores,
+        )
+        trained_policy.predict_action_probabilities(tracker, default_domain)
+
+        # function should not get called for margin loss_type
+        mock._normalize_scores.assert_not_called()
+
 
 class TestEmbeddingPolicyWithEval(TestEmbeddingPolicy):
     def create_policy(self, featurizer, priority):
@@ -391,6 +425,56 @@ class TestEmbeddingPolicyWithEval(TestEmbeddingPolicy):
             **{"scale_loss": False, "evaluate_on_num_examples": 4},
         )
         return p
+
+
+class TestEmbeddingPolicyNoNormalization(TestEmbeddingPolicy):
+    def create_policy(self, featurizer, priority):
+        p = EmbeddingPolicy(
+            featurizer=featurizer, priority=priority, **{"ranking_length": 0}
+        )
+        return p
+
+    def test_ranking_length(self, trained_policy):
+        assert trained_policy.ranking_length == 0
+
+    def test_normalization(self, trained_policy, tracker, default_domain, monkeypatch):
+        # first check the output is what we expect
+        predicted_probabilities = trained_policy.predict_action_probabilities(
+            tracker, default_domain
+        )
+        # there should be no normalization
+        assert all([confidence > 0 for confidence in predicted_probabilities])
+
+        # also check our function is not called
+        mock = Mock()
+        monkeypatch.setattr(
+            EmbeddingPolicy, "_normalize_scores", mock._normalize_scores,
+        )
+        trained_policy.predict_action_probabilities(tracker, default_domain)
+
+        mock._normalize_scores.assert_not_called()
+
+
+class TestEmbeddingPolicyLowRankingLength(TestEmbeddingPolicy):
+    def create_policy(self, featurizer, priority):
+        p = EmbeddingPolicy(
+            featurizer=featurizer, priority=priority, **{"ranking_length": 3}
+        )
+        return p
+
+    def test_ranking_length(self, trained_policy):
+        assert trained_policy.ranking_length == 3
+
+
+class TestEmbeddingPolicyHighRankingLength(TestEmbeddingPolicy):
+    def create_policy(self, featurizer, priority):
+        p = EmbeddingPolicy(
+            featurizer=featurizer, priority=priority, **{"ranking_length": 11}
+        )
+        return p
+
+    def test_ranking_length(self, trained_policy):
+        assert trained_policy.ranking_length == 11
 
 
 class TestEmbeddingPolicyWithFullDialogue(TestEmbeddingPolicy):
