@@ -1,12 +1,13 @@
 import json
 import logging
-import sys
-import uuid
 from collections import deque, defaultdict
+
+import uuid
+import typing
 from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
 
 from rasa.core import utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -17,8 +18,12 @@ from rasa.core.events import (
     SlotSet,
     Event,
     ActionExecutionRejected,
+    SessionStarted,
 )
 from rasa.core.trackers import DialogueStateTracker
+
+if typing.TYPE_CHECKING:
+    import networkx as nx
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +137,7 @@ class StoryStep:
             copied.id = self.id
         return copied
 
-    def add_user_message(self, user_message) -> None:
+    def add_user_message(self, user_message: UserUttered) -> None:
         self.add_event(user_message)
 
     def add_event(self, event: Event) -> None:
@@ -159,10 +164,10 @@ class StoryStep:
         )
 
     @staticmethod
-    def _bot_string(story_step_element, prefix: Text = "") -> Text:
+    def _bot_string(story_step_element: Event, prefix: Text = "") -> Text:
         return "    - {}{}\n".format(prefix, story_step_element.as_story_string())
 
-    def _store_bot_strings(self, story_step_element, prefix: Text = "") -> None:
+    def _store_bot_strings(self, story_step_element: Event, prefix: Text = "") -> None:
         self.story_string_helper.no_form_prefix_string += self._bot_string(
             story_step_element
         )
@@ -215,6 +220,10 @@ class StoryStep:
 
                 result += self._bot_string(s)
 
+            elif isinstance(s, SessionStarted):
+                # `SessionStarted` events are not dumped in stories
+                continue
+
             elif isinstance(s, FormValidation):
                 self.story_string_helper.form_validation = s.validate
 
@@ -225,6 +234,8 @@ class StoryStep:
 
             elif isinstance(s, ActionExecuted):
                 if self._is_action_listen(s):
+                    pass
+                elif self._is_action_session_start(s):
                     pass
                 elif self.story_string_helper.active_form is None:
                     result += self._bot_string(s)
@@ -306,12 +317,25 @@ class StoryStep:
         return result
 
     @staticmethod
-    def _is_action_listen(event) -> bool:
+    def _is_action_listen(event: Event) -> bool:
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
+        # pytype: disable=attribute-error
         return type(event) == ActionExecuted and event.action_name == ACTION_LISTEN_NAME
+        # pytype: enable=attribute-error
 
-    def _add_action_listen(self, events) -> None:
+    @staticmethod
+    def _is_action_session_start(event: Event) -> bool:
+        # this is not an `isinstance` because
+        # we don't want to allow subclasses here
+        # pytype: disable=attribute-error
+        return (
+            type(event) == ActionExecuted
+            and event.action_name == ACTION_SESSION_START_NAME
+        )
+        # pytype: enable=attribute-error
+
+    def _add_action_listen(self, events: List[Event]) -> None:
         if not events or not self._is_action_listen(events[-1]):
             # do not add second action_listen
             events.append(ActionExecuted(ACTION_LISTEN_NAME))
@@ -319,13 +343,13 @@ class StoryStep:
     def explicit_events(
         self, domain: Domain, should_append_final_listen: bool = True
     ) -> List[Event]:
-        """Returns events contained in the story step
-            including implicit events.
+        """Returns events contained in the story step including implicit events.
 
         Not all events are always listed in the story dsl. This
         includes listen actions as well as implicitly
         set slots. This functions makes these events explicit and
-        returns them with the rest of the steps events."""
+        returns them with the rest of the steps events.
+        """
 
         events = []
 
@@ -735,7 +759,7 @@ class StoryGraph:
 
         return ordered, sorted(removed_edges)
 
-    def visualize(self, output_file: Optional[Text] = None) -> Any:
+    def visualize(self, output_file: Optional[Text] = None) -> "nx.MultiDiGraph":
         import networkx as nx
         from rasa.core.training import visualization  # pytype: disable=pyi-error
         from colorhash import ColorHash
@@ -744,7 +768,7 @@ class StoryGraph:
         next_node_idx = [0]
         nodes = {"STORY_START": 0, "STORY_END": -1}
 
-        def ensure_checkpoint_is_drawn(cp):
+        def ensure_checkpoint_is_drawn(cp: Checkpoint) -> None:
             if cp.name not in nodes:
                 next_node_idx[0] += 1
                 nodes[cp.name] = next_node_idx[0]
