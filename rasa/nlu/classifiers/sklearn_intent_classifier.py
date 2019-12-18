@@ -5,7 +5,7 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-from rasa.nlu.featurizers.featurzier import sequence_to_sentence_features
+from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu import utils
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
