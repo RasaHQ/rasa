@@ -1,0 +1,1 @@
+Deprecated ``Agent.continue_training``. Instead, a model should be retrained.
