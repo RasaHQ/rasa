@@ -9,32 +9,12 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
 
 
-def test_convert_featurizer():
-    component_config = {"name": "ConveRTFeaturizer", "return_sequence": False}
-    featurizer = ConveRTFeaturizer.create(component_config, RasaNLUModelConfig())
-
-    sentence = "Hey how are you today ?"
-    message = Message(sentence)
-    tokens = WhitespaceTokenizer().tokenize(sentence)
-    message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
-
-    featurizer.process(message)
-
-    vecs = message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
-
-    expected = np.array([1.0251294, -0.04053932, -0.7018805, -0.82054937, -0.75054353])
-
-    assert len(vecs) == 1
-    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
-
-
 def test_convert_featurizer_return_sequence():
-    component_config = {"name": "ConveRTFeaturizer", "return_sequence": True}
-    featurizer = ConveRTFeaturizer.create(component_config, RasaNLUModelConfig())
+    featurizer = ConveRTFeaturizer.create({}, RasaNLUModelConfig())
 
     sentence = "Hey how are you today ?"
     message = Message(sentence)
-    tokens = ConveRTTokenizer({"use_cls_token": True}).tokenize_using_convert(sentence)
+    tokens = ConveRTTokenizer().tokenize_using_convert(sentence)
     message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
 
     featurizer.process(message)
@@ -62,7 +42,8 @@ def test_convert_featurizer_return_sequence():
     ],
 )
 def test_convert_featurizer_tokens_to_text(sentence, expected_text):
-    tokens = ConveRTTokenizer({"use_cls_token": False}).tokenize_using_convert(sentence)
+    tokens = ConveRTTokenizer().tokenize_using_convert(sentence)
+    tokens = tokens[:-1]
 
     actual_text = ConveRTFeaturizer._tokens_to_text([tokens])[0]
 

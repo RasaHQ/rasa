@@ -51,10 +51,10 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
         {"pattern": "[0-1]+", "name": "binary", "usage": "intent"},
     ]
-    ftr = RegexFeaturizer({"return_sequence": True}, known_patterns=patterns)
+    ftr = RegexFeaturizer({}, known_patterns=patterns)
 
     # adds tokens to the message
-    tokenizer = SpacyTokenizer({"use_cls_token": False})
+    tokenizer = SpacyTokenizer({})
     message = Message(sentence, data={RESPONSE_ATTRIBUTE: sentence})
     message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(sentence))
     tokenizer.process(message)
@@ -98,10 +98,10 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
         },
         {"name": "plates", "elements": "data/test/lookup_tables/plates.txt"},
     ]
-    ftr = RegexFeaturizer({"return_sequence": True}, lookup_tables=lookups)
+    ftr = RegexFeaturizer({}, lookup_tables=lookups)
 
     # adds tokens to the message
-    component_config = {"name": "SpacyTokenizer", "use_cls_token": False}
+    component_config = {"name": "SpacyTokenizer"}
     tokenizer = SpacyTokenizer(component_config)
     message = Message(sentence)
     message.set("spacy_doc", spacy_nlp(sentence))
@@ -136,7 +136,7 @@ def test_regex_featurizer_no_sequence(sentence, expected, spacy_nlp):
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
         {"pattern": "[0-1]+", "name": "binary", "usage": "intent"},
     ]
-    ftr = RegexFeaturizer({"return_sequence": False}, known_patterns=patterns)
+    ftr = RegexFeaturizer({}, known_patterns=patterns)
 
     # adds tokens to the message
     tokenizer = SpacyTokenizer()

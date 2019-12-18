@@ -11,7 +11,6 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    CLS_TOKEN,
 )
 import numpy as np
 import tensorflow as tf
@@ -24,13 +23,6 @@ class ConveRTFeaturizer(Featurizer):
     provides = [
         DENSE_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ]
-
-    defaults = {
-        # if True return a sequence of features (return vector has size
-        # token-size x feature-dimension)
-        # if False token-size will be equal to 1
-        "return_sequence": False
-    }
 
     def _load_model(self) -> None:
 
@@ -47,10 +39,9 @@ class ConveRTFeaturizer(Featurizer):
 
             self.text_placeholder = tf.placeholder(dtype=tf.string, shape=[None])
             self.sentence_encoding_tensor = self.module(self.text_placeholder)
-            if self.return_sequence:
-                self.sequence_encoding_tensor = self.module(
-                    self.text_placeholder, signature="encode_sequence", as_dict=True
-                )
+            self.sequence_encoding_tensor = self.module(
+                self.text_placeholder, signature="encode_sequence", as_dict=True
+            )
             self.session.run(tf.tables_initializer())
             self.session.run(tf.global_variables_initializer())
 
@@ -59,8 +50,6 @@ class ConveRTFeaturizer(Featurizer):
         super(ConveRTFeaturizer, self).__init__(component_config)
 
         self._load_model()
-
-        self.return_sequence = self.component_config["return_sequence"]
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -71,9 +60,6 @@ class ConveRTFeaturizer(Featurizer):
     ) -> np.ndarray:
 
         sentence_encodings = self._compute_sentence_encodings(batch_examples, attribute)
-
-        if not self.return_sequence:
-            return sentence_encodings
 
         return self._compute_sequence_encodings(
             batch_examples, sentence_encodings, attribute
@@ -99,10 +85,8 @@ class ConveRTFeaturizer(Featurizer):
             example.get(TOKENS_NAMES[attribute]) for example in batch_examples
         ]
 
-        cls_token_used = list_of_tokens[0][-1].text == CLS_TOKEN
-
-        if cls_token_used:
-            list_of_tokens = [sent_tokens[:-1] for sent_tokens in list_of_tokens]
+        # remove CLS token from list of tokens
+        list_of_tokens = [sent_tokens[:-1] for sent_tokens in list_of_tokens]
 
         number_of_tokens_in_sentence = [
             len(sent_tokens) for sent_tokens in list_of_tokens
@@ -112,9 +96,6 @@ class ConveRTFeaturizer(Featurizer):
         # the returned embeddings from ConveRT matches the length of the tokens
         tokenized_texts = self._tokens_to_text(list_of_tokens)
         sequence_encodings = self._sequence_encoding_of_text(tokenized_texts)
-
-        if not cls_token_used:
-            return sequence_encodings
 
         final_embeddings = []
         for index in range(len(batch_examples)):
