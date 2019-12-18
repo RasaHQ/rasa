@@ -70,7 +70,7 @@ class ConveRTTokenizer(WhitespaceTokenizer):
             TOKENS_NAMES[TEXT_ATTRIBUTE], self.tokenize_using_convert(message.text)
         )
 
-    def _tokenize(self, sentence: Text) -> List[Text]:
+    def _tokenize(self, sentence: Text) -> Any:
         return self.session.run(
             self.tokenized, feed_dict={self.text_placeholder: [sentence]}
         )
@@ -99,36 +99,49 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         for token in tokens_in:
             token_start, token_end, token_text = token.start, token.end, token.text
 
-            # Encode text and remove special char added by ConveRT
+            # use ConveRT model to tokenize the text
             split_token_strings = self._tokenize(token_text)[0]
-            split_token_strings = [
-                string.decode("utf-8").replace("﹏", "")
-                for string in split_token_strings
-            ]
-            split_token_strings = [string for string in split_token_strings if string]
 
-            current_token_offset = token_start
-            for index, string in enumerate(split_token_strings):
-                if index == 0:
-                    if index == len(split_token_strings) - 1:
-                        s_token_end = token_end
-                    else:
-                        s_token_end = current_token_offset + len(string)
-                    tokens_out.append(Token(string, token_start, end=s_token_end))
-                elif index == len(split_token_strings) - 1:
-                    tokens_out.append(
-                        Token(string, current_token_offset, end=token_end)
-                    )
-                else:
-                    tokens_out.append(
-                        Token(
-                            string,
-                            current_token_offset,
-                            end=current_token_offset + len(string),
-                        )
-                    )
-                current_token_offset += len(string)
+            # clean tokens (remove special chars and empty tokens)
+            split_token_strings = self._clean_tokens(split_token_strings)
+
+            _aligned_tokens = self._align_tokens(
+                split_token_strings, token_end, token_start
+            )
+            tokens_out += _aligned_tokens
 
         tokens_out = self.add_cls_token(tokens_out, attribute)
+
+        return tokens_out
+
+    def _clean_tokens(self, tokens: List[Text]):
+        """Encode tokens and remove special char added by ConveRT."""
+        tokens = [string.decode("utf-8").replace("﹏", "") for string in tokens]
+        return [string for string in tokens if string]
+
+    def _align_tokens(self, tokens_in: List[Text], token_end: int, token_start: int):
+        tokens_out = []
+
+        current_token_offset = token_start
+
+        for index, string in enumerate(tokens_in):
+            if index == 0:
+                if index == len(tokens_in) - 1:
+                    s_token_end = token_end
+                else:
+                    s_token_end = current_token_offset + len(string)
+                tokens_out.append(Token(string, token_start, end=s_token_end))
+            elif index == len(tokens_in) - 1:
+                tokens_out.append(Token(string, current_token_offset, end=token_end))
+            else:
+                tokens_out.append(
+                    Token(
+                        string,
+                        current_token_offset,
+                        end=current_token_offset + len(string),
+                    )
+                )
+
+            current_token_offset += len(string)
 
         return tokens_out
