@@ -336,7 +336,7 @@ class Agent:
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         model_directory: Optional[Text] = None,
     ) -> None:
-        self.domain = domain
+        self.domain = self._create_domain(domain)
         self.policy_ensemble = policy_ensemble
 
         if interpreter:
