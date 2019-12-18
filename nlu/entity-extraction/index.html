@@ -191,13 +191,14 @@ AI assistants" />
 <li class="toctree-l1"><a class="reference internal" href="../../api/jupyter-notebooks/">Jupyter Notebooks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/agent/">Agent</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/rasa-sdk/">Rasa SDK</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/events/">Events</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/tracker/">Tracker</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/tracker-stores/">Tracker Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/event-brokers/">Event Brokers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../api/featurization/">Featurization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa OSS Change Log</a></li>
 </ul>
@@ -218,12 +219,13 @@ AI assistants" />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.5.3
+          viewing: 1.6.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.6.0/nlu/entity-extraction/">1.6.0</a>
               <a href="../.././1.5.3/nlu/entity-extraction/">1.5.3</a>
               <a href="../.././1.5.2/nlu/entity-extraction/">1.5.2</a>
               <a href="../.././1.5.1/nlu/entity-extraction/">1.5.1</a>
@@ -428,11 +430,16 @@ associate that with a location entity.</p>
 as a postprocessing step after receiving the response from Rasa NLU.</p>
 </div>
 <div class="section" id="passing-custom-features-to-crfentityextractor">
-<h2><a class="toc-backref" href="#id7">Passing Custom Features to <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></a><a class="headerlink" href="#passing-custom-features-to-crfentityextractor" title="Permalink to this headline">¶</a></h2>
-<p>If you want to pass custom features to <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code>, you can create a <code class="docutils literal notranslate"><span class="pre">Featurizer</span></code> that provides <code class="docutils literal notranslate"><span class="pre">ner_features</span></code>.
-If you do, <code class="docutils literal notranslate"><span class="pre">ner_features</span></code> should be an iterable of <code class="docutils literal notranslate"><span class="pre">len(tokens)</span></code>, where each entry is a vector.
-If <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> finds <code class="docutils literal notranslate"><span class="pre">&quot;ner_features&quot;</span></code> in one of the arrays in <code class="docutils literal notranslate"><span class="pre">features</span></code> in the config, it will pass the <code class="docutils literal notranslate"><span class="pre">ner_features</span></code> vectors to <code class="docutils literal notranslate"><span class="pre">sklearn_crfsuite</span></code>.
-The simplest example of this is to pass word vectors as features, which you can do using :ref:<code class="docutils literal notranslate"><span class="pre">SpacyFeaturizer</span></code>.</p>
+<span id="entity-extraction-custom-features"></span><h2><a class="toc-backref" href="#id7">Passing Custom Features to <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></a><a class="headerlink" href="#passing-custom-features-to-crfentityextractor" title="Permalink to this headline">¶</a></h2>
+<p>If you want to pass custom features, such as pre-trained word embeddings, to <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code>, you can
+add any dense featurizer (except <code class="docutils literal notranslate"><span class="pre">ConveRTFeaturizer</span></code>) to the pipeline before the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code>.
+Make sure to set <code class="docutils literal notranslate"><span class="pre">&quot;return_sequence&quot;</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code> for the corresponding dense featurizer.
+<code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> automatically finds the additional dense features and checks if the dense features are an
+iterable of <code class="docutils literal notranslate"><span class="pre">len(tokens)</span></code>, where each entry is a vector.
+A warning will be shown in case the check fails.
+However, <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> will continue to train just without the additional custom features.
+In case dense features are present, <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> will pass the dense features to <code class="docutils literal notranslate"><span class="pre">sklearn_crfsuite</span></code>
+and use them for training.</p>
 </div>
 </div>
 

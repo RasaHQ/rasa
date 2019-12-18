@@ -191,13 +191,14 @@ of the box." />
 <li class="toctree-l1"><a class="reference internal" href="../jupyter-notebooks/">Jupyter Notebooks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../agent/">Agent</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../custom-nlu-components/">Custom NLU Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rasa-sdk/">Rasa SDK</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../events/">Events</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tracker/">Tracker</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Tracker Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../event-brokers/">Event Brokers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../training-data-importers/">Training Data Importers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../featurization/">Featurization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core-featurization/">Featurization of Conversations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa OSS Change Log</a></li>
 </ul>
@@ -218,12 +219,13 @@ of the box." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.5.3
+          viewing: 1.6.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.6.0/api/tracker-stores/">1.6.0</a>
               <a href="../.././1.5.3/api/tracker-stores/">1.5.3</a>
               <a href="../.././1.5.2/api/tracker-stores/">1.5.2</a>
               <a href="../.././1.5.1/api/tracker-stores/">1.5.1</a>
@@ -347,7 +349,7 @@ add the <code class="docutils literal notranslate"><span class="pre">--endpoints
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><code class="docutils literal notranslate"><span class="pre">domain</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Domain object associated with this tracker store</li>
 <li><code class="docutils literal notranslate"><span class="pre">dialect</span></code> (default: <code class="docutils literal notranslate"><span class="pre">sqlite</span></code>): The dialect used to communicate with your SQL backend.  Consult the <a class="reference external" href="https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls">SQLAlchemy docs</a> for available dialects.</li>
-<li><code class="docutils literal notranslate"><span class="pre">host</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): URL of your SQL server</li>
+<li><code class="docutils literal notranslate"><span class="pre">url</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): URL of your SQL server</li>
 <li><code class="docutils literal notranslate"><span class="pre">port</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Port of your SQL server</li>
 <li><code class="docutils literal notranslate"><span class="pre">db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">rasa.db</span></code>): The path to the database to be used</li>
 <li><code class="docutils literal notranslate"><span class="pre">username</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): The username which is used for authentication</li>
@@ -406,6 +408,7 @@ add the <code class="code docutils literal notranslate"><span class="pre">--endp
 <li><code class="docutils literal notranslate"><span class="pre">password</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Password used for authentication
 (<code class="docutils literal notranslate"><span class="pre">None</span></code> equals no authentication)</li>
 <li><code class="docutils literal notranslate"><span class="pre">record_exp</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Record expiry in seconds</li>
+<li><code class="docutils literal notranslate"><span class="pre">use_ssl</span></code> (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>): whether or not to use SSL for transit encryption</li>
 </ul>
 </td>
 </tr>
@@ -459,9 +462,9 @@ a parameter to the url field, e.g. mongodb://localhost:27017/?ssl=true</p>
 <li><code class="docutils literal notranslate"><span class="pre">db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">rasa</span></code>): The database name which should be used</li>
 <li><code class="docutils literal notranslate"><span class="pre">username</span></code> (default: <code class="docutils literal notranslate"><span class="pre">0</span></code>): The username which is used for authentication</li>
 <li><code class="docutils literal notranslate"><span class="pre">password</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): The password which is used for authentication</li>
+<li><code class="docutils literal notranslate"><span class="pre">auth_source</span></code> (default: <code class="docutils literal notranslate"><span class="pre">admin</span></code>): database name associated with the user’s credentials.</li>
 <li><code class="docutils literal notranslate"><span class="pre">collection</span></code> (default: <code class="docutils literal notranslate"><span class="pre">conversations</span></code>): The collection name which is
 used to store the conversations</li>
-<li><code class="docutils literal notranslate"><span class="pre">auth_source</span></code> (default: <code class="docutils literal notranslate"><span class="pre">admin</span></code>): database name associated with the user’s credentials.</li>
 </ul>
 </td>
 </tr>
