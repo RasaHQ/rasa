@@ -11,22 +11,32 @@ from aioresponses import aioresponses
 from mock import Mock
 
 import rasa.utils.io
+from rasa.core.actions import action
 from rasa.core.channels import UserMessage
-from rasa.core.trackers import DialogueStateTracker
+from rasa.core.domain import Domain
 from rasa.core.events import BotUttered
+from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training import interactive
+from rasa.importers.rasa import TrainingDataImporter
+from rasa.nlu.training_data import Message
 from rasa.nlu.training_data.loading import RASA, MARKDOWN
 from rasa.utils.endpoints import EndpointConfig
-from rasa.core.actions.action import default_actions
-from rasa.core.domain import Domain
-from rasa.nlu.training_data import Message
-from tests.utilities import latest_request, json_of_latest_request
+from tests import utilities
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
 @pytest.fixture
 def mock_endpoint():
     return EndpointConfig("https://example.com")
+
+
+@pytest.fixture
+def mock_file_importer(
+    default_stack_config, default_domain, default_nlu_data, default_stories_file
+):
+    return TrainingDataImporter.load_from_config(
+        default_stack_config, default_domain, [default_nlu_data, default_stories_file]
+    )
 
 
 async def test_send_message(mock_endpoint):
@@ -38,13 +48,13 @@ async def test_send_message(mock_endpoint):
 
         await interactive.send_message(mock_endpoint, sender_id, "Hello")
 
-        r = latest_request(mocked, "post", url)
+        r = utilities.latest_request(mocked, "post", url)
 
         assert r
 
         expected = {"sender": "user", "text": "Hello", "parse_data": None}
 
-        assert json_of_latest_request(r) == expected
+        assert utilities.json_of_latest_request(r) == expected
 
 
 async def test_request_prediction(mock_endpoint):
@@ -57,7 +67,7 @@ async def test_request_prediction(mock_endpoint):
 
         await interactive.request_prediction(mock_endpoint, sender_id)
 
-        assert latest_request(mocked, "post", url) is not None
+        assert utilities.latest_request(mocked, "post", url) is not None
 
 
 def test_bot_output_format():
@@ -167,7 +177,7 @@ async def test_print_history(mock_endpoint):
 
         await interactive._print_history(sender_id, mock_endpoint)
 
-        assert latest_request(mocked, "get", url) is not None
+        assert utilities.latest_request(mocked, "get", url) is not None
 
 
 async def test_is_listening_for_messages(mock_endpoint):
@@ -279,13 +289,13 @@ async def test_undo_latest_msg(mock_endpoint):
 
         await interactive._undo_latest(sender_id, mock_endpoint)
 
-        r = latest_request(mocked, "post", append_url)
+        r = utilities.latest_request(mocked, "post", append_url)
 
         assert r
 
         # this should be the events the interactive call send to the endpoint
         # these events should have the last utterance omitted
-        corrected_event = json_of_latest_request(r)
+        corrected_event = utilities.json_of_latest_request(r)
         assert corrected_event["event"] == "undo"
 
 
@@ -332,7 +342,7 @@ async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
 
     saved_domain = rasa.utils.io.read_config_file(domain_path)
 
-    for default_action in default_actions():
+    for default_action in action.default_actions():
         assert default_action.name() not in saved_domain["actions"]
 
 
@@ -386,6 +396,7 @@ async def test_initial_plotting_call(
     monkeypatch: MonkeyPatch,
     trackers: List[Text],
     expected_trackers: List[Text],
+    mock_file_importer: TrainingDataImporter,
 ):
     get_training_trackers = Mock(return_value=trackers)
     monkeypatch.setattr(
@@ -401,7 +412,7 @@ async def test_initial_plotting_call(
     with aioresponses() as mocked:
         mocked.get(url, payload={})
 
-        await interactive.record_messages(mock_endpoint)
+        await interactive.record_messages(mock_endpoint, mock_file_importer)
 
     get_training_trackers.assert_called_once()
     plot_trackers.assert_called_once_with(
@@ -421,6 +432,8 @@ async def test_not_getting_trackers_when_skipping_visualization(
     with aioresponses() as mocked:
         mocked.get(url, payload={})
 
-        await interactive.record_messages(mock_endpoint, skip_visualization=True)
+        await interactive.record_messages(
+            mock_endpoint, mock_file_importer, skip_visualization=True
+        )
 
     get_trackers.assert_not_called()
