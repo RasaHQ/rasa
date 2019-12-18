@@ -32,10 +32,11 @@ def mock_endpoint():
 
 @pytest.fixture
 def mock_file_importer(
-    default_stack_config, default_domain, default_nlu_data, default_stories_file
+    default_stack_config: Text, default_nlu_data: Text, default_stories_file: Text,
 ):
+    domain_path = DEFAULT_DOMAIN_PATH_WITH_SLOTS
     return TrainingDataImporter.load_from_config(
-        default_stack_config, default_domain, [default_nlu_data, default_stories_file]
+        default_stack_config, domain_path, [default_nlu_data, default_stories_file]
     )
 
 
