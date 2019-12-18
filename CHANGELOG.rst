@@ -17,6 +17,118 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.6.0] - 2019-12-18
+^^^^^^^^^^^^^^^^^^^^
+
+Deprecations and Removals
+-------------------------
+- `#4935 <https://github.com/rasahq/rasa/issues/4935>`_: Removed ``ner_features`` as a feature name from ``CRFEntityExtractor``, use ``text_dense_features`` instead. If
+
+  The following settings match the previous ``NGramFeaturizer``:
+
+  .. code-block:: yaml
+
+      - name: 'CountVectorsFeaturizer'
+          analyzer: 'char_wb'
+          min_ngram: 3
+          max_ngram: 17
+          max_features: 10
+          min_df: 5
+- `#4957 <https://github.com/rasahq/rasa/issues/4957>`_: To use custom features in the ``CRFEntityExtractor`` use ``text_dense_features`` instead of ``ner_features``. If
+  ``text_dense_features`` are present in the feature set, the ``CRFEntityExtractor`` will automatically make use of
+  them. Just make sure to add a dense featurizer in front of the ``CRFEntityExtractor`` in your pipeline and set the
+  flag ``return_sequence`` to ``True`` for that featurizer.
+  See https://rasa.com/docs/rasa/nlu/entity-extraction/#passing-custom-features-to-crfentityextractor.
+- `#4990 <https://github.com/rasahq/rasa/issues/4990>`_: Deprecated ``Agent.continue_training``. Instead, a model should be retrained.
+- `#684 <https://github.com/rasahq/rasa/issues/684>`_: Specifying lookup tables directly in the NLU file is now deprecated. Please specify
+  them in an external file.
+
+Features
+--------
+- `#4795 <https://github.com/rasahq/rasa/issues/4795>`_: Replaced the warnings about missing templates, intents etc. in validator.py by debug messages.
+- `#4830 <https://github.com/rasahq/rasa/issues/4830>`_: Added conversation sessions to trackers.
+
+  A conversation session represents the dialog between the assistant and a user.
+  Conversation sessions can begin in three ways: 1. the user begins the conversation
+  with the assistant, 2. the user sends their first message after a configurable period
+  of inactivity, or 3. a manual session start is triggered with the ``/session_start``
+  intent message. The period of inactivity after which a new conversation session is
+  triggered is defined in the domain using the ``session_expiration_time`` key in the
+  ``session_config`` section. The introduction of conversation sessions comprises the
+  following changes:
+
+  - Added a new event ``SessionStarted`` that marks the beginning of a new conversation
+    session.
+  - Added a new default action ``ActionSessionStart``. This action takes all
+    ``SlotSet`` events from the previous session and applies it to the next session.
+  - Added a new default intent ``session_start`` which triggers the start of a new
+    conversation session.
+  - ``SQLTrackerStore`` and ``MongoTrackerStore`` only retrieve
+    events from the last session from the database.
+
+
+  .. note::
+
+    The session behaviour is disabled for existing projects, i.e. existing domains
+    without session config section.
+- `#4935 <https://github.com/rasahq/rasa/issues/4935>`_: Preparation for an upcoming change in the ``EmbeddingIntentClassifier``:
+
+  Add option ``use_cls_token`` to all tokenizers. If it is set to ``True``, the token ``__CLS__`` will be added to
+  the end of the list of tokens. Default is set to ``False``. No need to change the default value for now.
+
+  Add option ``return_sequence`` to all featurizers. By default all featurizers return a matrix of size
+  (1 x feature-dimension). If the option ``return_sequence`` is set to ``True``, the corresponding featurizer will return
+  a matrix of size (token-length x feature-dimension). See https://rasa.com/docs/rasa/nlu/components/#featurizers.
+  Default value is set to ``False``. However, you might want to set it to ``True`` if you want to use custom features
+  in the ``CRFEntityExtractor``.
+  See https://rasa.com/docs/rasa/nlu/entity-extraction/#passing-custom-features-to-crfentityextractor.
+
+  .. warning::
+
+      These changes break model compatibility. You will need to retrain your old models!
+
+Improvements
+------------
+- `#3549 <https://github.com/rasahq/rasa/issues/3549>`_: Added ``--no-plot`` option for ``rasa test`` command, which disables rendering of confusion matrix and histogram. By default plots will be rendered.
+- `#4086 <https://github.com/rasahq/rasa/issues/4086>`_: If matplotlib couldn't set up a default backend, it will be set automatically to TkAgg/Agg one
+- `#4647 <https://github.com/rasahq/rasa/issues/4647>`_: Add the option ```random_seed``` to the ```rasa data split nlu``` command to generate
+  reproducible train/test splits.
+- `#4734 <https://github.com/rasahq/rasa/issues/4734>`_: Changed ``url`` ``__init__()`` arguments for custom tracker stores to ``host`` to reflect the ``__init__`` arguments of 
+  currently supported tracker stores. Note that in ``endpoints.yml``, these are still declared as ``url``.
+- `#4751 <https://github.com/rasahq/rasa/issues/4751>`_: The ``kafka-python`` dependency has become as an "extra" dependency. To use the
+  ``KafkaEventConsumer``, ``rasa`` has to be installed with the ``[kafka]`` option, i.e.
+
+  .. code-block:: bash
+
+    $ pip install rasa[kafka]
+- `#4801 <https://github.com/rasahq/rasa/issues/4801>`_: Allow creation of natural language interpreter and generator by classname reference
+  in ``endpoints.yml``.
+- `#4834 <https://github.com/rasahq/rasa/issues/4834>`_: Made it explicit that interactive learning does not work with NLU-only models.
+
+  Interactive learning no longer trains NLU-only models if no model is provided
+  and no core data is provided.
+- `#4899 <https://github.com/rasahq/rasa/issues/4899>`_: The ``intent_report.json`` created by ``rasa test`` now creates an extra field 
+  ``confused_with`` for each intent. This is a dictionary containing the names of
+  the most common false positives when this intent should be predicted, and the 
+  number of such false positives.
+- `#4976 <https://github.com/rasahq/rasa/issues/4976>`_: ``rasa test nlu --cross-validation`` now also includes an evaluation of the response selector.
+  As a result, the train and test F1-score, accuracy and precision is logged for the response selector.
+  A report is also generated in the ``results`` folder by the name ``response_selection_report.json``
+
+Bugfixes
+--------
+- `#4635 <https://github.com/rasahq/rasa/issues/4635>`_: If a ``wait_time_between_pulls`` is configured for the model server in ``endpoints.yml``,
+  this will be used instead of the default one when running Rasa X.
+- `#4759 <https://github.com/rasahq/rasa/issues/4759>`_: Training Luis data with ``luis_schema_version`` higher than 4.x.x will show a warning instead of throwing an exception.
+- `#4799 <https://github.com/rasahq/rasa/issues/4799>`_: Running ``rasa interactive`` with no NLU data now works, with the functionality of ``rasa interactive core``.
+- `#4917 <https://github.com/rasahq/rasa/issues/4917>`_: When loading models from S3, namespaces (folders within a bucket) are now respected. 
+  Previously, this would result in an error upon loading the model.
+- `#4925 <https://github.com/rasahq/rasa/issues/4925>`_: "rasa init" will ask if user wants to train a model
+- `#4942 <https://github.com/rasahq/rasa/issues/4942>`_: Pin ``multidict`` dependency to 4.6.1 to prevent sanic from breaking,
+  see https://github.com/huge-success/sanic/issues/1729
+- `#4985 <https://github.com/rasahq/rasa/issues/4985>`_: Fix errors during training and testing of ``ResponseSelector``.
+
+
 [1.5.3] - 2019-12-11
 ^^^^^^^^^^^^^^^^^^^^
 

@@ -1,1 +1,0 @@
-If matplotlib couldn't set up a default backend, it will be set automatically to TkAgg/Agg one

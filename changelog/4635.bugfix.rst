@@ -1,2 +1,0 @@
-If a ``wait_time_between_pulls`` is configured for the model server in ``endpoints.yml``,
-this will be used instead of the default one when running Rasa X.
