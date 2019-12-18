@@ -1,7 +1,12 @@
 import numpy as np
 import pytest
 
-from rasa.nlu.constants import TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE, SPACY_DOCS
+from rasa.nlu.constants import (
+    TEXT_ATTRIBUTE,
+    RESPONSE_ATTRIBUTE,
+    SPACY_DOCS,
+    TOKENS_NAMES,
+)
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.training_data import Message
 
@@ -17,6 +22,7 @@ from rasa.nlu.training_data import Message
                 [0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
             ],
             [0],
         ),
@@ -28,17 +34,30 @@ from rasa.nlu.training_data import Message
                 [0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0],
+                [1.0, 1.0, 0.0],
             ],
             [1, 0],
         ),
         (
             "blah balh random eh",
-            [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+            [
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+            ],
             [],
         ),
         (
             "a 1 digit number",
-            [[0.0, 0.0, 0.0], [1.0, 0.0, 1.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 1.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 1.0],
+            ],
             [1, 1],
         ),
     ],
@@ -63,9 +82,9 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     assert np.allclose(result.toarray(), expected, atol=1e-10)
 
     # the tokenizer should have added tokens
-    assert len(message.get("tokens", [])) > 0
+    assert len(message.get(TOKENS_NAMES[TEXT_ATTRIBUTE], [])) > 0
     # the number of regex matches on each token should match
-    for i, token in enumerate(message.get("tokens")):
+    for i, token in enumerate(message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])):
         token_matches = token.get("pattern").values()
         num_matches = sum(token_matches)
         assert num_matches == labeled_tokens.count(i)
@@ -76,16 +95,32 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     [
         (
             "lemonade and mapo tofu",
-            [[1.0, 0.0], [0.0, 0.0], [0.0, 1.0], [0.0, 1.0]],
+            [[1.0, 0.0], [0.0, 0.0], [0.0, 1.0], [0.0, 1.0], [1.0, 1.0]],
             [0.0, 2.0, 3.0],
         ),
-        ("a cup of tea", [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [1.0, 0.0]], [3.0]),
+        (
+            "a cup of tea",
+            [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [1.0, 0.0], [1.0, 0.0]],
+            [3.0],
+        ),
         (
             "Is burrito my favorite food?",
-            [[0.0, 0.0], [0.0, 1.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+            [
+                [0.0, 0.0],
+                [0.0, 1.0],
+                [0.0, 0.0],
+                [0.0, 0.0],
+                [0.0, 0.0],
+                [0.0, 0.0],
+                [0.0, 1.0],
+            ],
             [1.0],
         ),
-        ("I want club?mate", [[0.0, 0.0], [0.0, 0.0], [1.0, 0.0]], [2.0, 3.0]),
+        (
+            "I want club?mate",
+            [[0.0, 0.0], [0.0, 0.0], [1.0, 0.0], [1.0, 0.0]],
+            [2.0, 3.0],
+        ),
     ],
 )
 def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):

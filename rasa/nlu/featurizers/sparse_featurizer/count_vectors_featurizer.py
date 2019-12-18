@@ -17,6 +17,7 @@ from rasa.nlu.constants import (
     SPARSE_FEATURE_NAMES,
     INTENT_ATTRIBUTE,
     DENSE_FEATURIZABLE_ATTRIBUTES,
+    RESPONSE_ATTRIBUTE,
 )
 
 logger = logging.getLogger(__name__)
@@ -72,10 +73,6 @@ class CountVectorsFeaturizer(Featurizer):
         # will be converted to lowercase if lowercase is True
         "OOV_token": None,  # string or None
         "OOV_words": [],  # string or list of strings
-        # if True return a sequence of features (return vector has size
-        # token-size x feature-dimension)
-        # if False token-size will be equal to 1
-        "return_sequence": False,
     }
 
     @classmethod
@@ -115,9 +112,6 @@ class CountVectorsFeaturizer(Featurizer):
 
         # if convert all characters to lowercase
         self.lowercase = self.component_config["lowercase"]
-
-        # whether to return a sequence or not
-        self.return_sequence = self.component_config["return_sequence"]
 
     # noinspection PyPep8Naming
     def _load_OOV_params(self) -> None:
@@ -328,9 +322,11 @@ class CountVectorsFeaturizer(Featurizer):
         attribute_texts = {}
 
         for attribute in attribute_tokens.keys():
-            attribute_texts[attribute] = [
-                " ".join(tokens) for tokens in attribute_tokens[attribute]
-            ]
+            tokens = attribute_tokens[attribute]
+            if attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE]:
+                # ignore the CLS token
+                tokens = [t[:-1] for t in tokens]
+            attribute_texts[attribute] = [" ".join(t) for t in tokens]
 
         return attribute_texts
 
@@ -412,12 +408,18 @@ class CountVectorsFeaturizer(Featurizer):
             # [n_samples, n_features]
             # set input to list of tokens if sequence should be returned
             # otherwise join all tokens to a single string and pass that as a list
-            input = tokens
-            if not self.return_sequence:
-                input = [" ".join(tokens)]
+            tokens_without_cls = tokens
+            if attribute in [TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE]:
+                tokens_without_cls = tokens[:-1]
+            tokens_text = [" ".join(tokens_without_cls)]
 
-            x = self.vectorizers[attribute].transform(input)
-            x.sort_indices()
+            seq_vec = self.vectorizers[attribute].transform(tokens_without_cls)
+            seq_vec.sort_indices()
+
+            cls_vec = self.vectorizers[attribute].transform(tokens_text)
+            cls_vec.sort_indices()
+
+            x = scipy.sparse.vstack([seq_vec, cls_vec])
             X.append(x.tocoo())
 
         return X

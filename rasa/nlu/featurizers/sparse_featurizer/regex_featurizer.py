@@ -33,13 +33,6 @@ class RegexFeaturizer(Featurizer):
 
     requires = [TOKENS_NAMES[TEXT_ATTRIBUTE]]
 
-    defaults = {
-        # if True return a sequence of features (return vector has size
-        # token-size x feature-dimension)
-        # if False token-size will be equal to 1
-        "return_sequence": False
-    }
-
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
@@ -52,8 +45,6 @@ class RegexFeaturizer(Featurizer):
         self.known_patterns = known_patterns if known_patterns else []
         lookup_tables = lookup_tables or []
         self._add_lookup_table_regexes(lookup_tables)
-
-        self.return_sequence = self.component_config["return_sequence"]
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
@@ -97,10 +88,7 @@ class RegexFeaturizer(Featurizer):
         relating the name of the regex to whether it was matched."""
         tokens = message.get(TOKENS_NAMES[attribute], [])
 
-        if self.return_sequence:
-            seq_length = len(tokens)
-        else:
-            seq_length = 1
+        seq_length = len(tokens)
 
         vec = np.zeros([seq_length, len(self.known_patterns)])
 
@@ -112,15 +100,14 @@ class RegexFeaturizer(Featurizer):
                 patterns = t.get("pattern", default={})
                 patterns[pattern["name"]] = False
 
-                if self.return_sequence:
-                    seq_index = token_index
-                else:
-                    seq_index = 0
+                seq_index = token_index
 
                 for match in matches:
                     if t.start < match.end() and t.end > match.start():
                         patterns[pattern["name"]] = True
                         vec[seq_index][pattern_index] = 1.0
+                        # cls token vector should contain all patterns
+                        vec[-1][pattern_index] = 1.0
 
                 t.set("pattern", patterns)
 
