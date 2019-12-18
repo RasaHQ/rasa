@@ -22,7 +22,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Deprecations and Removals
 -------------------------
-- `#4935 <https://github.com/rasahq/rasa/issues/4935>`_: Removed ``ner_features`` as a feature name from ``CRFEntityExtractor``, use ``text_dense_features`` instead. If
+- `#4935 <https://github.com/rasahq/rasa/issues/4935>`_: Removed ``ner_features`` as a feature name from ``CRFEntityExtractor``, use ``text_dense_features`` instead.
 
   The following settings match the previous ``NGramFeaturizer``:
 
