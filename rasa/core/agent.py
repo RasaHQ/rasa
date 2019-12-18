@@ -783,6 +783,14 @@ class Agent:
     def persist(self, model_path: Text, dump_flattened_stories: bool = False) -> None:
         """Persists this agent into a directory for later loading and usage."""
 
+        if dump_flattened_stories:
+            warnings.warn(
+                "The `dump_flattened_stories` argument will be removed from "
+                "`Agent.persist` in the next release. Please dump your "
+                "training data separately if you need it to be part of the model.",
+                FutureWarning,
+            )
+
         if not self.is_core_ready():
             raise AgentNotReady("Can't persist without a policy ensemble.")
 
