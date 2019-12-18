@@ -11,7 +11,6 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 from shutil import copyfile
 
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from tf_metrics import f1
 
 import rasa.utils.io as io_utils
 from rasa.utils.plotter import Plotter
@@ -20,6 +19,7 @@ from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
+from rasa.utils import tf_layers
 from rasa.utils.train_utils import SessionDataType, TrainingMetrics
 from rasa.nlu.constants import (
     MESSAGE_INTENT_ATTRIBUTE,
@@ -31,9 +31,7 @@ from rasa.nlu.constants import (
 )
 
 import tensorflow as tf
-
-# avoid warning println on contrib import - remove for tf 2
-tf.contrib._warning = None
+import tensorflow_addons as tfa
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +43,7 @@ if typing.TYPE_CHECKING:
 
 
 MESSAGE_BILOU_ENTITIES_ATTRIBUTE = "BILOU_entities"
+shapes, types = None, None
 
 
 class EmbeddingIntentClassifier(EntityExtractor):
@@ -309,7 +308,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self._iterator = None
         self._train_op = None
         self._is_training = None
-        self._in_layer_norm = {}
 
         # number of entity tags
         self.num_tags = 0
@@ -659,322 +657,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return session_data
 
-    # tf helpers:
-    def _create_tf_embed_fnn(
-        self,
-        x_in: "tf.Tensor",
-        layer_sizes: List[int],
-        fnn_name: Text,
-        embed_name: Text,
-    ) -> "tf.Tensor":
-        """Create nn with hidden layers and name"""
-
-        x = train_utils.create_tf_fnn(
-            x_in,
-            layer_sizes,
-            self.droprate,
-            self.C2,
-            self._is_training,
-            layer_name_suffix=fnn_name,
-        )
-        return train_utils.create_tf_embed(
-            x, self.embed_dim, self.C2, embed_name, self.similarity_type
-        )
-
-    def combine_sparse_dense_features(
-        self,
-        features: List[Union["tf.Tensor", "tf.SparseTensor"]],
-        mask: "tf.Tensor",
-        name: Text,
-        sparse_dropout: bool = False,
-    ) -> "tf.Tensor":
-
-        dense_features = []
-
-        dense_dim = self.dense_dim
-        # if dense features are present use the feature dimension of the dense features
-        for f in features:
-            if not isinstance(f, tf.SparseTensor):
-                dense_dim = f.shape[-1]
-                break
-
-        for f in features:
-            if isinstance(f, tf.SparseTensor):
-                if sparse_dropout:
-                    to_retain_prob = tf.random.uniform(
-                        tf.shape(f.values), 0, 1, f.values.dtype
-                    )
-                    to_retain = tf.greater_equal(to_retain_prob, self.droprate)
-                    _f = tf.sparse.retain(f, to_retain)
-                    _f = tf.cond(self._is_training, lambda: _f, lambda: f)
-                else:
-                    _f = f
-
-                dense_features.append(
-                    train_utils.tf_dense_layer_for_sparse(
-                        _f, dense_dim, name, self.C2, input_dim=int(f.shape[-1])
-                    )
-                )
-            else:
-                dense_features.append(f)
-
-        # if self._in_layer_norm.get(name) is None:
-        #     self._in_layer_norm[name] = tf.keras.layers.LayerNormalization(name=name)
-        # return self._in_layer_norm[name](tf.concat(dense_features, axis=-1))
-
-        return tf.concat(dense_features, axis=-1) * mask
-
-    def _mask_input(
-        self, a: "tf.Tensor", mask: "tf.Tensor"
-    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
-        """Randomly mask input sequences."""
-
-        # do not substitute with cls token
-        pad_mask_up_to_last = tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
-        mask_up_to_last = 1 - pad_mask_up_to_last
-
-        a_random_pad = (
-            tf.random.uniform(tf.shape(a), tf.reduce_min(a), tf.reduce_max(a), a.dtype)
-            * pad_mask_up_to_last
-        )
-        a_shuffle = tf.stop_gradient(
-            tf.random.shuffle(a * mask_up_to_last + a_random_pad)
-        )
-
-        mask_vector = tf.get_variable("mask_vector", (1, 1, a.shape[-1]), a.dtype)
-        a_mask = tf.tile(mask_vector, (tf.shape(a)[0], tf.shape(a)[1], 1))
-
-        other_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype)
-        other_prob = tf.tile(other_prob, (1, 1, a.shape[-1]))
-        a_other = tf.where(
-            other_prob < 0.70, a_mask, tf.where(other_prob < 0.80, a_shuffle, a)
-        )
-
-        lm_mask_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype) * mask
-        lm_mask_bool = tf.greater_equal(lm_mask_prob, 0.85)
-        a_pre = tf.where(tf.tile(lm_mask_bool, (1, 1, a.shape[-1])), a_other, a)
-
-        a_pre = tf.cond(self._is_training, lambda: a_pre, lambda: a)
-
-        return a_pre, lm_mask_bool
-
-    def _create_tf_sequence(self, a_in: "tf.Tensor", mask: "tf.Tensor") -> "tf.Tensor":
-        """Create sequence level embedding and mask."""
-
-        a_in = train_utils.create_tf_fnn(
-            a_in,
-            self.hidden_layer_sizes["text"],
-            self.droprate,
-            self.C2,
-            self._is_training,
-            layer_name_suffix="text_intent" if self.share_hidden_layers else "text",
-        )
-
-        self.attention_weights = {}
-        hparams = train_utils.create_t2t_hparams(
-            self.num_transformer_layers,
-            self.transformer_size,
-            self.num_heads,
-            self.droprate,
-            self.pos_encoding,
-            self.max_seq_length,
-            self._is_training,
-            self.unidirectional_encoder,
-        )
-
-        a = train_utils.create_t2t_transformer_encoder(
-            a_in, mask, self.attention_weights, hparams, self.C2, self._is_training
-        )
-
-        return a
-
-    # build tf graphs:
-    def _build_tf_train_graph(self, session_data: SessionDataType) -> TrainingMetrics:
-
-        # get in tensors from generator
-        self.batch_in = self._iterator.get_next()
-        # convert encoded all labels into the batch format
-        label_batch = train_utils.prepare_batch(self._label_data)
-
-        # convert batch format into sparse and dense tensors
-        batch_data, _ = train_utils.batch_to_session_data(self.batch_in, session_data)
-        label_data, _ = train_utils.batch_to_session_data(label_batch, self._label_data)
-
-        mask = batch_data["text_mask"][0]
-        a = self.combine_sparse_dense_features(
-            batch_data["text_features"],
-            mask,
-            "text",
-            sparse_dropout=self.sparse_input_dropout,
-        )
-
-        if self.masked_lm_loss:
-            a_pre, lm_mask_bool = self._mask_input(a, mask)
-        else:
-            a_pre, lm_mask_bool = (a, None)
-
-        # transformer
-        a_transformed = self._create_tf_sequence(a_pre, mask)
-
-        metrics = TrainingMetrics(loss={}, score={})
-
-        if self.masked_lm_loss:
-            loss, acc = self._train_mask_graph(a_transformed, a, lm_mask_bool)
-
-            metrics.loss["m_loss"] = loss
-            metrics.score["m_acc"] = acc
-
-        if self.intent_classification:
-            b = self.combine_sparse_dense_features(
-                batch_data["intent_features"], batch_data["intent_mask"][0], "intent"
-            )
-            all_bs = self.combine_sparse_dense_features(
-                label_data["intent_features"], label_data["intent_mask"][0], "intent"
-            )
-
-            loss, acc = self._train_intent_graph(a_transformed, b, all_bs, mask)
-            metrics.loss["i_loss"] = loss
-            metrics.score["i_acc"] = acc
-
-        if self.named_entity_recognition:
-            c = self.combine_sparse_dense_features(batch_data["tag_ids"], mask, "tag")
-
-            loss, f1_score = self._train_entity_graph(a_transformed, c, mask)
-            metrics.loss["e_loss"] = loss
-            metrics.score["e_f1"] = f1_score
-
-        return metrics
-
-    def _train_mask_graph(self, a_transformed, a, lm_mask_bool):
-
-        # make sure there is at least one element in the mask
-        lm_mask_bool = tf.cond(
-            tf.reduce_any(lm_mask_bool),
-            lambda: lm_mask_bool,
-            lambda: tf.scatter_nd([[0, 0, 0]], [True], tf.shape(lm_mask_bool)),
-        )
-
-        lm_mask_bool = tf.squeeze(lm_mask_bool, -1)
-        a_t_masked = tf.boolean_mask(a_transformed, lm_mask_bool)
-        a_masked = tf.boolean_mask(a, lm_mask_bool)
-
-        a_t_masked_embed = train_utils.create_tf_embed(
-            a_t_masked, self.embed_dim, self.C2, "a_transformed", self.similarity_type
-        )
-
-        a_embed = train_utils.create_tf_embed(
-            a, self.embed_dim, self.C2, "a", self.similarity_type
-        )
-        a_embed_masked = tf.boolean_mask(a_embed, lm_mask_bool)
-
-        return train_utils.calculate_loss_acc(
-            a_t_masked_embed,
-            a_embed_masked,
-            a_masked,
-            a_embed,
-            a,
-            self.num_neg,
-            None,
-            self.loss_type,
-            self.mu_pos,
-            self.mu_neg,
-            self.use_max_sim_neg,
-            self.C_emb,
-            self.scale_loss,
-        )
-
-    def _train_entity_graph(
-        self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor"
-    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
-        mask_up_to_last = 1 - tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
-        sequence_lengths = tf.cast(tf.reduce_sum(mask_up_to_last[:, :, 0], 1), tf.int32)
-        sequence_lengths.set_shape([mask.shape[0]])
-
-        c = tf.reduce_sum(tf.nn.relu(c), -1)
-        c = tf.cast(c, tf.int32)
-
-        # tensor shapes
-        # a: tensor(batch-size, max-seq-len, dim)
-        # sequence_lengths: tensor(batch-size)
-        # c: (batch-size, max-seq-len)
-
-        # CRF
-        crf_params, logits, pred_ids = self._create_crf(a, sequence_lengths)
-
-        # Loss
-        log_likelihood, _ = tf.contrib.crf.crf_log_likelihood(
-            logits, c, sequence_lengths, crf_params
-        )
-        loss = tf.reduce_mean(-log_likelihood)
-
-        # calculate f1 score for train predictions
-        pos_tag_indices = [k for k, v in self.inverted_tag_dict.items() if v != "O"]
-        score = f1(c, pred_ids, self.num_tags, pos_tag_indices, mask_up_to_last)
-
-        return loss, score[1]
-
-    def _train_intent_graph(
-        self, a: "tf.Tensor", b: "tf.Tensor", all_bs: "tf.Tensor", mask: "tf.Tensor"
-    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
-        last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
-
-        # get _cls_ vector for intent classification
-        self.cls_embed = tf.reduce_sum(a * last, 1)
-        self.cls_embed = train_utils.create_tf_embed(
-            self.cls_embed, self.embed_dim, self.C2, "cls", self.similarity_type
-        )
-
-        b = tf.reduce_sum(tf.nn.relu(b), 1)
-        all_bs = tf.reduce_sum(tf.nn.relu(all_bs), 1)
-
-        self.label_embed = self._create_tf_embed_fnn(
-            b,
-            self.hidden_layer_sizes["intent"],
-            fnn_name="text_intent" if self.share_hidden_layers else "intent",
-            embed_name="intent",
-        )
-        self.all_labels_embed = self._create_tf_embed_fnn(
-            all_bs,
-            self.hidden_layer_sizes["intent"],
-            fnn_name="text_intent" if self.share_hidden_layers else "intent",
-            embed_name="intent",
-        )
-
-        return train_utils.calculate_loss_acc(
-            self.cls_embed,
-            self.label_embed,
-            b,
-            self.all_labels_embed,
-            all_bs,
-            self.num_neg,
-            None,
-            self.loss_type,
-            self.mu_pos,
-            self.mu_neg,
-            self.use_max_sim_neg,
-            self.C_emb,
-            self.scale_loss,
-        )
-
-    def _create_crf(
-        self, input: tf.Tensor, sequence_lengths: tf.Tensor
-    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-        with tf.variable_scope("ner", reuse=tf.AUTO_REUSE):
-            logits = train_utils.create_tf_embed(
-                input, self.num_tags, self.C2, "crf-logits"
-            )
-            crf_params = tf.get_variable(
-                "crf-params",
-                [self.num_tags, self.num_tags],
-                dtype=tf.float32,
-                regularizer=tf.contrib.layers.l2_regularizer(self.C2),
-            )
-            pred_ids, _ = tf.contrib.crf.crf_decode(
-                logits, crf_params, sequence_lengths
-            )
-
-            return crf_params, logits, pred_ids
-
     def _build_tf_pred_graph(self, session_data: "SessionDataType"):
 
         shapes, types = train_utils.get_shapes_types(session_data)
@@ -1264,75 +946,70 @@ class EmbeddingIntentClassifier(EntityExtractor):
         else:
             eval_session_data = None
 
-        self.graph = tf.Graph()
-        with self.graph.as_default():
-            # set random seed
-            tf.set_random_seed(self.random_seed)
+        # set random seed
+        tf.random.set_seed(self.random_seed)
 
-            # allows increasing batch size
-            batch_size_in = tf.placeholder(tf.int64)
+        # allows increasing batch size
+        batch_size_in = self.batch_in_size[0] #* tf.ones((), tf.int32)
 
-            (
-                self._iterator,
-                train_init_op,
-                eval_init_op,
-            ) = train_utils.create_iterator_init_datasets(
-                session_data,
-                eval_session_data,
-                batch_size_in,
-                self.batch_in_strategy,
-                label_key="intent_ids",
-            )
+        train_dataset, eval_dataset = train_utils.create_datasets(
+            session_data,
+            eval_session_data,
+            batch_size_in,
+            self.batch_in_strategy,
+            label_key="intent_ids",
+        )
 
-            self._is_training = tf.placeholder_with_default(False, shape=())
+        self.model = DIET(session_data,
+                          self._label_data,
+                          self.dense_dim,
+                          self.embed_dim,
+                          self.hidden_layer_sizes,
+                          self.share_hidden_layers,
+                          self.num_transformer_layers,
+                          self.transformer_size,
+                          self.num_heads,
+                          self.pos_encoding,
+                          self.max_seq_length,
+                          self.unidirectional_encoder,
+                          self.C2,
+                          self.droprate,
+                          self.sparse_input_dropout,
+                          self.num_neg,
+                          self.loss_type,
+                          self.mu_pos,
+                          self.mu_neg,
+                          self.use_max_sim_neg,
+                          self.C_emb,
+                          self.scale_loss,
+                          self.similarity_type,
+                          self.masked_lm_loss,
+                          self.intent_classification,
+                          self.named_entity_recognition,
+                          self.inverted_tag_dict,
+                          self.learning_rate)
 
-            metrics = self._build_tf_train_graph(session_data)
+        train_func = tf.function(self.model.train, input_signature=[train_dataset.element_spec])
+        # train_func = self.model.train
+        train_utils.train_tf_dataset(
+            train_dataset,
+            eval_dataset,
+            batch_size_in,
+            train_func,
+            self.model.loss_metric,
+            self.epochs,
+            self.batch_in_size,
+            self.evaluate_on_num_examples,
+            self.evaluate_every_num_epochs,
+            output_file=self.training_log_file,
+        )
 
-            # calculate overall loss
-            if self.normalize_loss:
-                loss = tf.add_n(
-                    [
-                        _loss / (tf.stop_gradient(_loss) + 1e-8)
-                        for _loss in metrics.loss.values()
-                    ]
-                )
-            else:
-                loss = tf.add_n(list(metrics.loss.values()))
+        # rebuild the graph for prediction
+        self._build_tf_pred_graph(session_data)
 
-            # define which optimizer to use
-            if self.optimizer.lower() == "nadam":
-                self._train_op = tf.contrib.opt.NadamOptimizer(
-                    learning_rate=self.learning_rate
-                ).minimize(loss)
-            else:
-                self._train_op = tf.train.AdamOptimizer(
-                    learning_rate=self.learning_rate
-                ).minimize(loss)
-
-            # train tensorflow graph
-            self.session = tf.Session(config=self._tf_config)
-
-            train_utils.train_tf_dataset(
-                train_init_op,
-                eval_init_op,
-                batch_size_in,
-                metrics,
-                self._train_op,
-                self.session,
-                self._is_training,
-                self.epochs,
-                self.batch_in_size,
-                self.evaluate_on_num_examples,
-                self.evaluate_every_num_epochs,
-                output_file=self.training_log_file,
-            )
-
-            # rebuild the graph for prediction
-            self._build_tf_pred_graph(session_data)
-
-            self.attention_weights = train_utils.extract_attention(
-                self.attention_weights
-            )
+        self.attention_weights = train_utils.extract_attention(
+            self.attention_weights
+        )
 
     def process(self, message: "Message", **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""
@@ -1493,3 +1170,441 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 "doesn't exist."
             )
             return cls(component_config=meta)
+
+
+class DIET(tf.Module):
+
+    @staticmethod
+    def _create_sparse_dense_layer(values, name, C2, dense_dim):
+
+        input_dim = None
+        for v in values:
+            if isinstance(v[0], scipy.sparse.spmatrix):
+                input_dim = v[0].shape[-1]
+            else:
+                # if dense features are present
+                # use the feature dimension of the dense features
+                dense_dim = v[0].shape[-1]
+
+        if input_dim:
+            return tf_layers.DenseForSparse(input_dim=input_dim,
+                                            units=dense_dim,
+                                            C2=C2,
+                                            name=name)
+
+    @staticmethod
+    def _input_dim(values, dense_dim):
+
+        for v in values:
+            if not isinstance(v[0], scipy.sparse.spmatrix):
+                # if dense features are present
+                # use the feature dimension of the dense features
+                dense_dim = v[0].shape[-1]
+                break
+
+        return dense_dim * len(values)
+
+    @staticmethod
+    def _get_layers(layers: Dict):
+        return [layer for layer in layers.values() if layer is not None]
+
+    def __init__(self,
+                 session_data,
+                 label_data,
+                 dense_dim,
+                 embed_dim,
+                 hidden_layer_sizes,
+                 share_hidden_layers,
+                 num_transformer_layers,
+                 transformer_size,
+                 num_heads,
+                 pos_encoding,
+                 max_seq_length,
+                 unidirectional_encoder,
+                 C2,
+                 droprate,
+                 sparse_input_dropout,
+                 num_neg,
+                 loss_type,
+                 mu_pos,
+                 mu_neg,
+                 use_max_sim_neg,
+                 C_emb,
+                 scale_loss,
+                 similarity_type,
+                 masked_lm_loss,
+                 intent_classification,
+                 named_entity_recognition,
+                 inverted_tag_dict,
+                 learning_rate):
+        super(DIET, self).__init__(name="DIET")
+
+        # data
+        self.session_data = session_data
+        label_batch = train_utils.prepare_batch(label_data)
+        self.tf_label_data, _ = train_utils.batch_to_session_data(label_batch, label_data)
+
+        # options
+        self._sparse_input_dropout = sparse_input_dropout
+        # self._hparams = train_utils.create_t2t_hparams(
+        #     num_transformer_layers,
+        #     transformer_size,
+        #     num_heads,
+        #     droprate,
+        #     pos_encoding,
+        #     max_seq_length,
+        #     unidirectional_encoder,
+        # )
+        self._num_neg = num_neg
+        self._loss_type = loss_type
+        self._mu_pos = mu_pos
+        self._mu_neg = mu_neg
+        self._use_max_sim_neg = use_max_sim_neg
+        self._C_emb = C_emb
+        self._scale_loss = scale_loss
+        self._masked_lm_loss = masked_lm_loss
+        self._intent_classification = intent_classification
+        self._named_entity_recognition = named_entity_recognition
+        self._inverted_tag_dict = inverted_tag_dict
+        self._num_tags = len(inverted_tag_dict)
+        print(inverted_tag_dict)
+        exit()
+
+        # tf objects
+        self._layers = []
+
+        self._sparse_dropout = tf_layers.SparseDropout(rate=droprate)
+        self._sparse_to_dense = {
+            "text": self._create_sparse_dense_layer(session_data["text_features"],
+                                                    "text",
+                                                    C2,
+                                                    dense_dim),
+            "intent": self._create_sparse_dense_layer(session_data["intent_features"],
+                                                      "intent",
+                                                      C2,
+                                                      dense_dim),
+        }
+        self._layers.extend(self._get_layers(self._sparse_to_dense))
+
+        text_input_dim = self._input_dim(session_data["text_features"], dense_dim)
+        intent_input_dim = self._input_dim(session_data["intent_features"], dense_dim)
+
+        self._ffnn = {
+            "text": tf_layers.Ffnn(text_input_dim,
+                                   hidden_layer_sizes["text"],
+                                   droprate,
+                                   C2,
+                                   "text_intent" if share_hidden_layers else "text"),
+            "intent": tf_layers.Ffnn(intent_input_dim,
+                                     hidden_layer_sizes["intent"],
+                                     droprate,
+                                     C2,
+                                     "text_intent" if share_hidden_layers else "intent")
+        }
+        self._layers.extend(self._get_layers(self._ffnn))
+
+        # noinspection PyUnresolvedReferences
+        if num_transformer_layers > 0:
+            self._transformer = tf_layers.TransformerEncoder(
+                num_transformer_layers,
+                transformer_size,
+                num_heads,
+                transformer_size * 4,
+                self._ffnn["text"].output_dim,
+                256,
+                droprate
+            )
+            self._layers.append(self._transformer)
+        else:
+            self._transformer = lambda x, mask, training: x
+
+        self._embed = {}
+        if self._masked_lm_loss:
+            self._embed["text_mask"] = tf_layers.Embed(transformer_size,
+                                                       embed_dim,
+                                                       C2,
+                                                       "text_mask",
+                                                       similarity_type)
+            self._embed["text_token"] = tf_layers.Embed(text_input_dim,
+                                                        embed_dim,
+                                                        C2,
+                                                        "text_token",
+                                                        similarity_type)
+        if self._intent_classification:
+            self._embed["text"] = tf_layers.Embed(transformer_size,
+                                                  embed_dim,
+                                                  C2,
+                                                  "text",
+                                                  similarity_type)
+            self._embed["intent"] = tf_layers.Embed(self._ffnn["intent"].output_dim,
+                                                    embed_dim,
+                                                    C2,
+                                                    "intent",
+                                                    similarity_type)
+        if self._named_entity_recognition:
+            self._embed["logits"] = tf_layers.Embed(transformer_size,
+                                                    self._num_tags,
+                                                    C2,
+                                                    "logits")
+        self._layers.extend(self._get_layers(self._embed))
+
+        # tf tensors
+        self.training = tf.ones((), tf.bool)
+        initializer = tf.keras.initializers.GlorotUniform()
+        self._mask_vector = tf.Variable(
+            initial_value=initializer((1, 1, text_input_dim)),
+            trainable=True,
+            name="mask_vector"
+        )
+        self._crf_params = tf.Variable(
+            initial_value=initializer((self._num_tags, self._num_tags)),
+            trainable=True,
+            name="crf_params"
+        )
+        self.all_labels = None
+        self.all_labels_embed = None
+        self.attention_weights = {}
+
+        # tf training
+        self._optimizer = tf.keras.optimizers.Adam(learning_rate)
+        self.loss_metric = tf.keras.metrics.Mean(name='t_loss')
+        self.intent_acc_metric = tf.keras.metrics.Mean(name='i_acc')
+        self.entity_f1_metric = tfa.metrics.F1Score(num_classes=self._num_tags, average='micro', name="e_f1")
+
+    def _combine_sparse_dense_features(
+            self,
+            features: List[Union["tf.Tensor", "tf.SparseTensor"]],
+            mask: "tf.Tensor",
+            name: Text,
+            sparse_dropout: bool = False,
+    ) -> "tf.Tensor":
+
+        dense_features = []
+
+        for f in features:
+            if isinstance(f, tf.SparseTensor):
+                if sparse_dropout:
+                    _f = self._sparse_dropout(f, self.training)
+                else:
+                    _f = f
+
+                dense_features.append(
+                    self._sparse_to_dense[name](_f)
+                )
+            else:
+                dense_features.append(f)
+
+        return tf.concat(dense_features, axis=-1) * mask
+
+    def _create_bow(self,
+                    features: List[Union["tf.Tensor", "tf.SparseTensor"]],
+                    mask: "tf.Tensor",
+                    name: Text):
+
+        x = self._combine_sparse_dense_features(features, mask, name)
+        return self._ffnn[name](tf.reduce_sum(x, 1), self.training)
+
+    def _mask_input(
+            self, a: "tf.Tensor", mask: "tf.Tensor"
+    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+        """Randomly mask input sequences."""
+
+        # do not substitute with cls token
+        pad_mask_up_to_last = tf.math.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
+        mask_up_to_last = 1 - pad_mask_up_to_last
+
+        a_random_pad = (
+                tf.random.uniform(tf.shape(a), tf.reduce_min(a), tf.reduce_max(a), a.dtype)
+                * pad_mask_up_to_last
+        )
+        a_shuffle = tf.stop_gradient(
+            tf.random.shuffle(a * mask_up_to_last + a_random_pad)
+        )
+
+        a_mask = tf.tile(self._mask_vector, (tf.shape(a)[0], tf.shape(a)[1], 1))
+
+        other_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype)
+        other_prob = tf.tile(other_prob, (1, 1, a.shape[-1]))
+        a_other = tf.where(
+            other_prob < 0.70, a_mask, tf.where(other_prob < 0.80, a_shuffle, a)
+        )
+
+        lm_mask_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype) * mask
+        lm_mask_bool = tf.greater_equal(lm_mask_prob, 0.85)
+        a_pre = tf.where(tf.tile(lm_mask_bool, (1, 1, a.shape[-1])), a_other, a)
+
+        a_pre = tf.cond(self.training, lambda: a_pre, lambda: a)
+
+        return a_pre, lm_mask_bool
+
+    def _create_sequence(self,
+                         features: List[Union["tf.Tensor", "tf.SparseTensor"]],
+                         mask: "tf.Tensor",
+                         name: Text,
+                         masked_lm_loss: bool):
+        x = self._combine_sparse_dense_features(
+            features,
+            mask,
+            name,
+            sparse_dropout=self._sparse_input_dropout,
+        )
+
+        if masked_lm_loss:
+            pre, lm_mask_bool = self._mask_input(x, mask)
+        else:
+            pre, lm_mask_bool = (x, None)
+
+        transformed = self._transformer(pre, mask, self.training)
+        # transformed = train_utils.create_t2t_transformer_encoder(
+        #     self._ffnn[name](pre),
+        #     self._pre_transformer,
+        #     mask,
+        #     self.attention_weights,
+        #     self._hparams,
+        #     name,
+        # )
+
+        return transformed, x, lm_mask_bool
+
+    def _mask_loss(self, a_transformed, a, lm_mask_bool, name):
+        # make sure there is at least one element in the mask
+        lm_mask_bool = tf.cond(
+            tf.reduce_any(lm_mask_bool),
+            lambda: lm_mask_bool,
+            lambda: tf.scatter_nd([[0, 0, 0]], [True], tf.shape(lm_mask_bool)),
+        )
+
+        lm_mask_bool = tf.squeeze(lm_mask_bool, -1)
+        a_t_masked = tf.boolean_mask(a_transformed, lm_mask_bool)
+        a_masked = tf.boolean_mask(a, lm_mask_bool)
+
+        a_t_masked_embed = self._embed[f"{name}_mask"](a_t_masked)
+        a_embed = self._embed[f"{name}_token"](a)
+
+        a_embed_masked = tf.boolean_mask(a_embed, lm_mask_bool)
+
+        return train_utils.calculate_loss_acc(
+            a_t_masked_embed,
+            a_embed_masked,
+            a_masked,
+            a_embed,
+            a,
+            self._num_neg,
+            None,
+            self._loss_type,
+            self._mu_pos,
+            self._mu_neg,
+            self._use_max_sim_neg,
+            self._C_emb,
+            self._scale_loss,
+        )
+
+    def _intent_loss(self, a, b):
+
+        a_embed = self._embed["text"](a)
+        b_embed = self._embed["intent"](b)
+
+        return train_utils.calculate_loss_acc(
+            a_embed,
+            b_embed,
+            b,
+            self.all_labels_embed,
+            self.all_labels,
+            self._num_neg,
+            None,
+            self._loss_type,
+            self._mu_pos,
+            self._mu_neg,
+            self._use_max_sim_neg,
+            self._C_emb,
+            self._scale_loss,
+        )
+
+    def _entity_loss(
+        self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor"
+    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+
+        mask_up_to_last = 1 - tf.math.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
+        sequence_lengths = tf.cast(tf.reduce_sum(mask_up_to_last[:, :, 0], 1), tf.int32)
+        sequence_lengths.set_shape([mask.shape[0]])
+
+        c = tf.cast(c[:, :, 0], tf.int32)
+        logits = self._embed["logits"](a)
+
+        # tensor shapes
+        # a: tensor(batch-size, max-seq-len, dim)
+        # sequence_lengths: tensor(batch-size)
+        # c: (batch-size, max-seq-len)
+
+        # CRF Loss
+        log_likelihood, _ = tfa.text.crf.crf_log_likelihood(
+            logits, c, sequence_lengths, self._crf_params
+        )
+        tf.print("ll", tf.reduce_max(log_likelihood))
+        loss = tf.reduce_mean(-log_likelihood)
+        tf.print("loss", loss)
+
+        # CRF preds
+        pred_ids, _ = tfa.text.crf.crf_decode(logits, self._crf_params, sequence_lengths)
+
+        # calculate f1 score for train predictions
+        score = self.entity_f1_metric(c, pred_ids)
+
+        return loss, score
+
+    def _build_all_b(self):
+        if self._intent_classification:
+            self.all_labels = self._create_bow(
+                self.tf_label_data["intent_features"], self.tf_label_data["intent_mask"][0], "intent"
+            )
+            self.all_labels_embed = self._embed["intent"](self.all_labels)
+
+    def _create_metrics(self, batch_in):
+        tf_batch_data, _ = train_utils.batch_to_session_data(batch_in, self.session_data)
+
+        mask_text = tf_batch_data["text_mask"][0]
+        text_transformed, text_in, lm_mask_bool_text = self._create_sequence(
+            tf_batch_data["text_features"], mask_text, "text", self._masked_lm_loss)
+
+        metrics = TrainingMetrics(loss={}, score={})
+
+        # if self._masked_lm_loss:
+        #     loss, acc = self._mask_loss(text_transformed, text_in, lm_mask_bool_text, "text")
+        #
+        #     metrics.loss["m_loss"] = loss
+        #     metrics.score["m_acc"] = acc
+
+        # if self._intent_classification:
+        #     last_text = mask_text * tf.math.cumprod(1 - mask_text, axis=1, exclusive=True, reverse=True)
+        #     # get _cls_ vector for intent classification
+        #     cls = tf.reduce_sum(text_transformed * last_text, 1)
+        #     label = self._create_bow(
+        #         tf_batch_data["intent_features"], tf_batch_data["intent_mask"][0], "intent"
+        #     )
+        #     loss, acc = self._intent_loss(cls, label)
+        #
+        #     metrics.loss["i_loss"] = loss
+        #     metrics.score["i_acc"] = acc
+
+        if self._named_entity_recognition:
+            tags = tf_batch_data["tag_ids"][0]
+
+            loss, f1_score = self._entity_loss(text_transformed, tags, mask_text)
+            metrics.loss["e_loss"] = loss
+            metrics.score["e_f1"] = f1_score
+
+        return metrics
+
+    def train(self, batch_in):
+
+        with tf.GradientTape() as tape:
+            self._build_all_b()
+            metrics = self._create_metrics(batch_in)
+            reg_losses = tf.math.add_n([tf.math.add_n(layer.losses) for layer in self._layers if layer.losses])
+            # total_loss = reg_losses
+            total_loss = tf.math.add_n(list(metrics.loss.values()))# + reg_losses
+
+        gradients = tape.gradient(total_loss, self.trainable_variables)
+        self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+
+        self.loss_metric.update_state(total_loss)

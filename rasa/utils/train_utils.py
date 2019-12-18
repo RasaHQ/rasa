@@ -18,20 +18,17 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
-from tensor2tensor.models.transformer import (
-    transformer_base,
-    transformer_prepare_encoder,
-    transformer_encoder,
-)
-from tensor2tensor.layers.common_attention import large_compatible_negative
+# from tensor2tensor.models.transformer import (
+#     transformer_base,
+#     transformer_prepare_encoder,
+#     transformer_encoder,
+# )
+# from tensor2tensor.layers.common_attention import large_compatible_negative
 from rasa.utils.common import is_logging_disabled
 
 
 if typing.TYPE_CHECKING:
     from tensor2tensor.utils.hparam import HParams
-
-# avoid warning println on contrib import - remove for tf 2
-tf.contrib._warning = None
 
 logger = logging.getLogger(__name__)
 
@@ -517,13 +514,13 @@ def get_shapes_types(session_data: SessionDataType) -> Tuple:
     return tuple(shapes), tuple(types)
 
 
-def create_iterator_init_datasets(
+def create_datasets(
     session_data: SessionDataType,
     eval_session_data: SessionDataType,
     batch_size: Union["tf.Tensor", int],
     batch_strategy: Text,
     label_key: Text,
-) -> Tuple["tf.data.Iterator", "tf.Operation", "tf.Operation"]:
+) -> Tuple["tf.data.Dataset", "tf.data.Dataset"]:
     """Create iterator and init datasets."""
 
     train_dataset = create_tf_dataset(
@@ -534,237 +531,100 @@ def create_iterator_init_datasets(
         shuffle=True,
     )
 
-    iterator = tf.data.Iterator.from_structure(
-        train_dataset.output_types, train_dataset.output_shapes
-    )
-
-    train_init_op = iterator.make_initializer(train_dataset)
-
     if eval_session_data is not None:
-        eval_init_op = iterator.make_initializer(
-            create_tf_dataset(eval_session_data, batch_size, label_key=label_key)
-        )
+        eval_dataset = create_tf_dataset(eval_session_data, batch_size, label_key=label_key)
     else:
-        eval_init_op = None
+        eval_dataset = None
 
-    return iterator, train_init_op, eval_init_op
-
-
-# noinspection PyPep8Naming
-def tf_dense_layer_for_sparse(
-    inputs: tf.SparseTensor,
-    units: int,
-    name: Text,
-    C2: float,
-    activation: Optional[Callable] = tf.nn.relu,
-    use_bias: bool = True,
-    input_dim: Optional[int] = None,
-) -> tf.Tensor:
-    """Dense layer for sparse input tensor"""
-
-    if not isinstance(inputs, tf.SparseTensor):
-        raise ValueError("Input tensor should be sparse.")
-
-    with tf.variable_scope("dense_layer_for_sparse_" + name, reuse=tf.AUTO_REUSE):
-        kernel_regularizer = tf.contrib.layers.l2_regularizer(C2)
-        input_dim = input_dim or int(inputs.shape[-1])
-        kernel = tf.get_variable(
-            "kernel",
-            shape=[input_dim, units],
-            dtype=inputs.dtype,
-            regularizer=kernel_regularizer,
-        )
-        bias = tf.get_variable("bias", shape=[units], dtype=inputs.dtype)
-
-        # outputs will be 2D
-        outputs = tf.sparse.matmul(tf.sparse.reshape(inputs, [-1, input_dim]), kernel)
-
-        if len(inputs.shape) == 3:
-            # reshape back
-            outputs = tf.reshape(
-                outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], -1)
-            )
-
-        if use_bias:
-            outputs = tf.nn.bias_add(outputs, bias)
-
-    if activation is None:
-        return outputs
-
-    return activation(outputs)
+    return train_dataset, eval_dataset
 
 
-# noinspection PyPep8Naming
-def create_tf_fnn(
-    x_in: "tf.Tensor",
-    layer_sizes: List[int],
-    droprate: float,
-    C2: float,
-    is_training: "tf.Tensor",
-    layer_name_suffix: Text,
-    activation: Optional[Callable] = tf.nn.relu,
-    use_bias: bool = True,
-    kernel_initializer: Optional["tf.keras.initializers.Initializer"] = None,
-) -> "tf.Tensor":
-    """Create nn with hidden layers and name suffix."""
-
-    reg = tf.contrib.layers.l2_regularizer(C2)
-    x = tf.nn.relu(x_in)
-    for i, layer_size in enumerate(layer_sizes):
-        x = tf.layers.dense(
-            inputs=x,
-            units=layer_size,
-            activation=activation,
-            use_bias=use_bias,
-            kernel_initializer=kernel_initializer,
-            kernel_regularizer=reg,
-            name=f"hidden_layer_{layer_name_suffix}_{i}",
-            reuse=tf.AUTO_REUSE,
-        )
-        x = tf.layers.dropout(x, rate=droprate, training=is_training)
-    return x
-
-
-def tf_normalize_if_cosine(x: "tf.Tensor", similarity_type: Text) -> "tf.Tensor":
-    """Normalize embedding if similarity type is cosine."""
-
-    if similarity_type == "cosine":
-        return tf.nn.l2_normalize(x, -1)
-    elif similarity_type == "inner":
-        return x
-    else:
-        raise ValueError(
-            f"Wrong similarity type '{similarity_type}', "
-            f"should be 'cosine' or 'inner'"
-        )
-
-
-# noinspection PyPep8Naming
-def create_tf_embed(
-    x: "tf.Tensor",
-    embed_dim: int,
-    C2: float,
-    layer_name_suffix: Text,
-    similarity_type: Optional[Text] = None,
-) -> "tf.Tensor":
-    """Create dense embedding layer with a name."""
-
-    reg = tf.contrib.layers.l2_regularizer(C2)
-    embed_x = tf.layers.dense(
-        inputs=x,
-        units=embed_dim,
-        activation=None,
-        kernel_regularizer=reg,
-        name=f"embed_layer_{layer_name_suffix}",
-        reuse=tf.AUTO_REUSE,
-    )
-
-    if similarity_type:
-        # normalize embedding vectors for cosine similarity
-        return tf_normalize_if_cosine(embed_x, similarity_type)
-
-    return embed_x
-
-
-def create_t2t_hparams(
-    num_transformer_layers: int,
-    transformer_size: int,
-    num_heads: int,
-    droprate: float,
-    pos_encoding: Text,
-    max_seq_length: int,
-    is_training: "tf.Tensor",
-    unidirectional_encoder: bool = True,
-) -> "HParams":
-    """Create parameters for t2t transformer."""
-
-    hparams = transformer_base()
-
-    hparams.num_hidden_layers = num_transformer_layers
-    hparams.hidden_size = transformer_size
-    # it seems to be factor of 4 for transformer architectures in t2t
-    hparams.filter_size = hparams.hidden_size * 4
-    hparams.num_heads = num_heads
-    hparams.relu_dropout = droprate
-    hparams.pos = pos_encoding
-
-    hparams.max_length = max_seq_length
-
-    hparams.unidirectional_encoder = unidirectional_encoder
-
-    hparams.self_attention_type = "dot_product_relative_v2"
-    hparams.max_relative_position = 5
-    hparams.add_relative_to_values = True
-
-    # When not in training mode, set all forms of dropout to zero.
-    for key, value in hparams.values().items():
-        if key.endswith("dropout") or key == "label_smoothing":
-            setattr(hparams, key, value * tf.cast(is_training, tf.float32))
-
-    return hparams
-
-
-# noinspection PyUnresolvedReferences
-# noinspection PyPep8Naming
-def create_t2t_transformer_encoder(
-    x_in: "tf.Tensor",
-    mask: "tf.Tensor",
-    attention_weights: Dict[Text, "tf.Tensor"],
-    hparams: "HParams",
-    C2: float,
-    is_training: "tf.Tensor",
-) -> "tf.Tensor":
-    """Create t2t transformer encoder."""
-    with tf.variable_scope("transformer", reuse=tf.AUTO_REUSE):
-        if len(mask.shape) == 2:
-            _mask = tf.expand_dims(mask, -1)
-        else:
-            _mask = mask
-
-        x = create_tf_fnn(
-            x_in,
-            [hparams.hidden_size],
-            hparams.layer_prepostprocess_dropout,
-            C2,
-            is_training,
-            layer_name_suffix="pre_embed",
-            activation=None,
-            use_bias=False,
-            kernel_initializer=tf.random_normal_initializer(
-                0.0, hparams.hidden_size ** -0.5
-            ),
-        )
-        if hparams.multiply_embedding_mode == "sqrt_depth":
-            x *= hparams.hidden_size ** 0.5
-
-        x *= _mask
-        (
-            x,
-            self_attention_bias,
-            encoder_decoder_attention_bias,
-        ) = transformer_prepare_encoder(x, None, hparams)
-
-        x *= _mask
-
-        x = tf.nn.dropout(x, 1.0 - hparams.layer_prepostprocess_dropout)
-
-        attn_bias_for_padding = None
-        # Otherwise the encoder will just use encoder_self_attention_bias.
-        if hparams.unidirectional_encoder:
-            attn_bias_for_padding = encoder_decoder_attention_bias
-
-        x = transformer_encoder(
-            x,
-            self_attention_bias,
-            hparams,
-            nonpadding=_mask,
-            save_weights_to=attention_weights,
-            attn_bias_for_padding=attn_bias_for_padding,
-        )
-
-        x *= _mask
-
-        return tf.nn.dropout(tf.nn.relu(x), 1.0 - hparams.layer_prepostprocess_dropout)
+# def create_t2t_hparams(
+#     num_transformer_layers: int,
+#     transformer_size: int,
+#     num_heads: int,
+#     droprate: float,
+#     pos_encoding: Text,
+#     max_seq_length: int,
+#     unidirectional_encoder: bool = True,
+# ) -> "HParams":
+#     """Create parameters for t2t transformer."""
+#
+#     hparams = transformer_base()
+#
+#     hparams.num_hidden_layers = num_transformer_layers
+#     hparams.hidden_size = transformer_size
+#     # it seems to be factor of 4 for transformer architectures in t2t
+#     hparams.filter_size = hparams.hidden_size * 4
+#     hparams.num_heads = num_heads
+#     hparams.relu_dropout = droprate
+#     hparams.pos = pos_encoding
+#
+#     hparams.max_length = max_seq_length
+#
+#     hparams.unidirectional_encoder = unidirectional_encoder
+#
+#     hparams.self_attention_type = "dot_product_relative_v2"
+#     hparams.max_relative_position = 5
+#     hparams.add_relative_to_values = True
+#
+#     # When not in training mode, set all forms of dropout to zero.
+#     training = tf.keras.backend.learning_phase()
+#     for key, value in hparams.values().items():
+#         if key.endswith("dropout") or key == "label_smoothing":
+#             setattr(hparams, key, value * tf.cast(training, tf.float32))
+#
+#     return hparams
+#
+#
+# # noinspection PyUnresolvedReferences
+# def create_t2t_transformer_encoder(
+#     x_in: "tf.Tensor",
+#     pre_transformer: "tf.keras.layers.Layer",
+#     mask: "tf.Tensor",
+#     attention_weights: Dict[Text, "tf.Tensor"],
+#     hparams: "HParams",
+#     name: Text,
+# ) -> "tf.Tensor":
+#     """Create t2t transformer encoder."""
+#     with tf.variable_scope(f"transformer_{name}", reuse=tf.AUTO_REUSE):
+#         if len(mask.shape) == 2:
+#             _mask = tf.expand_dims(mask, -1)
+#         else:
+#             _mask = mask
+#
+#         x = pre_transformer(x_in)
+#
+#         if hparams.multiply_embedding_mode == "sqrt_depth":
+#             x *= hparams.hidden_size ** 0.5
+#
+#         (
+#             x,
+#             self_attention_bias,
+#             encoder_decoder_attention_bias,
+#         ) = transformer_prepare_encoder(x, None, hparams)
+#
+#         x *= _mask
+#
+#         x = tf.nn.dropout(x, 1.0 - hparams.layer_prepostprocess_dropout)
+#
+#         attn_bias_for_padding = None
+#         # Otherwise the encoder will just use encoder_self_attention_bias.
+#         if hparams.unidirectional_encoder:
+#             attn_bias_for_padding = encoder_decoder_attention_bias
+#
+#         x = transformer_encoder(
+#             x,
+#             self_attention_bias,
+#             hparams,
+#             nonpadding=_mask,
+#             save_weights_to=attention_weights,
+#             attn_bias_for_padding=attn_bias_for_padding,
+#         )
+#
+#         x *= _mask
+#
+#         return tf.nn.dropout(tf.nn.relu(x), 1.0 - hparams.layer_prepostprocess_dropout)
 
 
 def _tf_make_flat(x: "tf.Tensor") -> "tf.Tensor":
@@ -780,7 +640,7 @@ def _tf_sample_neg(
 
     tiled_all_bs = tf.tile(tf.expand_dims(all_bs, 0), (batch_size, 1, 1))
 
-    return tf.batch_gather(tiled_all_bs, neg_ids)
+    return tf.gather(tiled_all_bs, neg_ids, batch_dims=-1)
 
 
 def _tf_get_bad_mask(
@@ -838,7 +698,7 @@ def _tf_get_negs(
     return neg_embed, bad_negs
 
 
-def sample_negatives(
+def _sample_negatives(
     a_embed: "tf.Tensor",
     b_embed: "tf.Tensor",
     b_raw: "tf.Tensor",
@@ -879,7 +739,7 @@ def tf_raw_sim(
     return sim
 
 
-def tf_sim(
+def _tf_sim(
     pos_dial_embed: "tf.Tensor",
     pos_bot_embed: "tf.Tensor",
     neg_dial_embed: "tf.Tensor",
@@ -892,7 +752,7 @@ def tf_sim(
 
     # calculate similarity with several
     # embedded actions for the loss
-    neg_inf = large_compatible_negative(pos_dial_embed.dtype)
+    neg_inf = -1e9  # large_compatible_negative(pos_dial_embed.dtype)
 
     sim_pos = tf_raw_sim(pos_dial_embed, pos_bot_embed, mask)
     sim_neg = tf_raw_sim(pos_dial_embed, neg_bot_embed, mask) + neg_inf * bot_bad_negs
@@ -911,7 +771,7 @@ def tf_sim(
     return sim_pos, sim_neg, sim_neg_bot_bot, sim_neg_dial_dial, sim_neg_bot_dial
 
 
-def tf_calc_accuracy(sim_pos: "tf.Tensor", sim_neg: "tf.Tensor") -> "tf.Tensor":
+def _tf_calc_accuracy(sim_pos: "tf.Tensor", sim_neg: "tf.Tensor") -> "tf.Tensor":
     """Calculate accuracy"""
 
     max_all_sim = tf.reduce_max(tf.concat([sim_pos, sim_neg], -1), -1)
@@ -921,7 +781,7 @@ def tf_calc_accuracy(sim_pos: "tf.Tensor", sim_neg: "tf.Tensor") -> "tf.Tensor":
 
 
 # noinspection PyPep8Naming
-def tf_loss_margin(
+def _tf_loss_margin(
     sim_pos: "tf.Tensor",
     sim_neg: "tf.Tensor",
     sim_neg_bot_bot: "tf.Tensor",
@@ -969,13 +829,10 @@ def tf_loss_margin(
     # average the loss over the batch
     loss = tf.reduce_mean(loss)
 
-    # add regularization losses
-    loss += tf.losses.get_regularization_loss()
-
     return loss
 
 
-def tf_loss_softmax(
+def _tf_loss_softmax(
     sim_pos: "tf.Tensor",
     sim_neg: "tf.Tensor",
     sim_neg_bot_bot: "tf.Tensor",
@@ -990,14 +847,8 @@ def tf_loss_softmax(
         [sim_pos, sim_neg, sim_neg_bot_bot, sim_neg_dial_dial, sim_neg_bot_dial], -1
     )
 
-    # create labels for softmax
-    if len(logits.shape) == 3:
-        pos_labels = tf.ones_like(logits[:, :, :1])
-        neg_labels = tf.zeros_like(logits[:, :, 1:])
-    else:  # len(logits.shape) == 2
-        pos_labels = tf.ones_like(logits[:, :1])
-        neg_labels = tf.zeros_like(logits[:, 1:])
-    labels = tf.concat([pos_labels, neg_labels], -1)
+    # create label_ids for softmax
+    label_ids = tf.zeros_like(logits[..., 0], tf.int32)
 
     if mask is None:
         mask = 1.0
@@ -1005,17 +856,27 @@ def tf_loss_softmax(
     if scale_loss:
         # mask loss by prediction confidence
         pos_pred = tf.nn.softmax(logits)[..., 0]
-        mask *= tf.pow(tf.minimum(0.5, 1 - pos_pred) / 0.5, 4)
+        scale_mask = mask * tf.pow(tf.minimum(0.5, 1 - pos_pred) / 0.5, 4)
+    else:
+        scale_mask = mask
 
-    loss = tf.losses.softmax_cross_entropy(labels, logits, mask)
-    # add regularization losses
-    loss += tf.losses.get_regularization_loss()
+    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=label_ids, logits=logits)
+
+    # scale loss
+    if len(loss.shape) == 2:
+        # average over the sequence
+        loss = tf.reduce_sum(loss * scale_mask, -1) / tf.reduce_sum(mask, -1)
+    else:
+        loss *= scale_mask
+
+    # average the loss over all examples
+    loss = tf.reduce_mean(loss)
 
     return loss
 
 
 # noinspection PyPep8Naming
-def choose_loss(
+def _choose_loss(
     sim_pos: "tf.Tensor",
     sim_neg: "tf.Tensor",
     sim_neg_bot_bot: "tf.Tensor",
@@ -1032,7 +893,7 @@ def choose_loss(
     """Use loss depending on given option."""
 
     if loss_type == "margin":
-        return tf_loss_margin(
+        return _tf_loss_margin(
             sim_pos,
             sim_neg,
             sim_neg_bot_bot,
@@ -1045,7 +906,7 @@ def choose_loss(
             C_emb,
         )
     elif loss_type == "softmax":
-        return tf_loss_softmax(
+        return _tf_loss_softmax(
             sim_pos,
             sim_neg,
             sim_neg_bot_bot,
@@ -1085,10 +946,10 @@ def calculate_loss_acc(
         neg_bot_embed,
         dial_bad_negs,
         bot_bad_negs,
-    ) = sample_negatives(a_embed, b_embed, b_raw, all_b_embed, all_b_raw, num_neg)
+    ) = _sample_negatives(a_embed, b_embed, b_raw, all_b_embed, all_b_raw, num_neg)
 
     # calculate similarities
-    (sim_pos, sim_neg, sim_neg_bot_bot, sim_neg_dial_dial, sim_neg_bot_dial) = tf_sim(
+    (sim_pos, sim_neg, sim_neg_bot_bot, sim_neg_dial_dial, sim_neg_bot_dial) = _tf_sim(
         pos_dial_embed,
         pos_bot_embed,
         neg_dial_embed,
@@ -1098,9 +959,9 @@ def calculate_loss_acc(
         mask,
     )
 
-    acc = tf_calc_accuracy(sim_pos, sim_neg)
+    acc = _tf_calc_accuracy(sim_pos, sim_neg)
 
-    loss = choose_loss(
+    loss = _choose_loss(
         sim_pos,
         sim_neg,
         sim_neg_bot_bot,
@@ -1183,13 +1044,11 @@ def output_validation_stat(
 
 
 def train_tf_dataset(
-    train_init_op: "tf.Operation",
-    eval_init_op: "tf.Operation",
+    train_dataset: "tf.data.Dataset",
+    eval_dataset: "tf.data.Dataset",
     batch_size_in: "tf.Tensor",
-    metrics: TrainingMetrics,
-    train_op: "tf.Tensor",
-    session: "tf.Session",
-    is_training: "tf.Session",
+    train: Callable,
+    loss_metric,
     epochs: int,
     batch_size: Union[List[int], int],
     evaluate_on_num_examples: int,
@@ -1197,9 +1056,6 @@ def train_tf_dataset(
     output_file: Optional[Text] = None,
 ) -> None:
     """Train tf graph"""
-
-    session.run(tf.global_variables_initializer())
-    session.run(tf.local_variables_initializer())
 
     if evaluate_on_num_examples:
         logger.info(
@@ -1210,54 +1066,46 @@ def train_tf_dataset(
 
     train_metrics = TrainingMetrics(loss={}, score={})
     val_metrics = TrainingMetrics(loss={}, score={})
+
     for ep in pbar:
 
-        ep_batch_size = linearly_increasing_batch_size(ep, batch_size, epochs)
-
-        session.run(train_init_op, feed_dict={batch_size_in: ep_batch_size})
+        # ep_batch_size = linearly_increasing_batch_size(ep, batch_size, epochs)
+        # batchsize_in += ep_batch_size - batch_size_in
 
         ep_train_metrics = TrainingMetrics(
             loss=defaultdict(lambda: 0.0), score=defaultdict(lambda: 0.0)
         )
-        batches_per_epoch = 0
-        while True:
-            try:
-                _, batch_train_metric = session.run(
-                    [train_op, metrics], feed_dict={is_training: True}
-                )
-                batches_per_epoch += 1
-                for name, value in batch_train_metric.loss.items():
-                    ep_train_metrics.loss[name] += value
-                for name, value in batch_train_metric.score.items():
-                    ep_train_metrics.score[name] += value
 
-            except tf.errors.OutOfRangeError:
-                break
+        for batch_in in train_dataset:
+            train(batch_in)
+            # exit()
 
-        for name, value in ep_train_metrics.loss.items():
-            train_metrics.loss[name] = value / batches_per_epoch
-        for name, value in ep_train_metrics.score.items():
-            train_metrics.score[name] = value / batches_per_epoch
+        mean_loss = loss_metric.result()
 
-        postfix_dict = {}
+        # for name, value in ep_train_metrics.loss.items():
+        #     train_metrics.loss[name] = value / batches_per_epoch
+        # for name, value in ep_train_metrics.score.items():
+        #     train_metrics.score[name] = value / batches_per_epoch
+
+        postfix_dict = {"loss": mean_loss.numpy()}
         postfix_dict = _update_postfix_dict(postfix_dict, train_metrics)
 
-        if eval_init_op is not None:
-            if (ep + 1) % evaluate_every_num_epochs == 0 or (ep + 1) == epochs:
-                val_metrics = output_validation_stat(
-                    eval_init_op,
-                    metrics,
-                    session,
-                    is_training,
-                    batch_size_in,
-                    ep_batch_size,
-                )
-
-            postfix_dict = _update_postfix_dict(postfix_dict, val_metrics, "val_")
+        # if eval_init_op is not None:
+        #     if (ep + 1) % evaluate_every_num_epochs == 0 or (ep + 1) == epochs:
+        #         val_metrics = output_validation_stat(
+        #             eval_init_op,
+        #             metrics,
+        #             session,
+        #             is_training,
+        #             batch_size_in,
+        #             ep_batch_size,
+        #         )
+        #
+        #     postfix_dict = _update_postfix_dict(postfix_dict, val_metrics, "val_")
 
         pbar.set_postfix(postfix_dict)
 
-        _write_training_metrics(output_file, ep, train_metrics, val_metrics)
+        # _write_training_metrics(output_file, ep, train_metrics, val_metrics)
 
     logger.info("Finished training.")
 

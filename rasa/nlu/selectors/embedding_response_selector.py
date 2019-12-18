@@ -16,11 +16,6 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message
 
-import tensorflow as tf
-
-# avoid warning println on contrib import - remove for tf 2
-tf.contrib._warning = None
-
 
 class ResponseSelector(EmbeddingIntentClassifier):
     """Response selector using supervised embeddings.
