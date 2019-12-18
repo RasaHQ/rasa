@@ -80,18 +80,25 @@ def test_combine_with_existing_sparse_features_shape_mismatch():
 
 
 @pytest.mark.parametrize(
-    "features, expected",
+    "features, cls_token_used, expected",
     [
-        ([[1, 0, 2, 3], [2, 0, 0, 1]], [1.5, 0, 1, 2]),
+        ([[1, 0, 2, 3], [2, 0, 0, 1]], False, [1.5, 0, 1, 2]),
         (
             scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]),
+            False,
             scipy.sparse.csr_matrix([3, 0, 2, 4]),
         ),
-        (None, None),
+        (None, False, None),
+        ([[1, 0, 2, 3], [2, 0, 0, 1]], True, [2, 0, 0, 1]),
+        (
+            scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]),
+            True,
+            scipy.sparse.csr_matrix([2, 0, 0, 1]),
+        ),
     ],
 )
-def test_sequence_to_sentence_features(features, expected):
-    actual = sequence_to_sentence_features(features)
+def test_sequence_to_sentence_features(features, cls_token_used, expected):
+    actual = sequence_to_sentence_features(features, cls_token_used)
 
     if isinstance(expected, scipy.sparse.spmatrix):
         assert np.all(expected.toarray() == actual.toarray())

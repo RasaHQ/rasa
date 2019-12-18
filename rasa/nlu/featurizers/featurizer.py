@@ -7,10 +7,16 @@ from rasa.nlu.constants import SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, TEXT_A
 
 
 def sequence_to_sentence_features(
-    features: Union[np.ndarray, scipy.sparse.spmatrix]
+    features: Union[np.ndarray, scipy.sparse.spmatrix], cls_token_used: bool
 ) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
     if features is None:
         return None
+
+    if cls_token_used:
+        if isinstance(features, scipy.sparse.spmatrix):
+            return scipy.sparse.coo_matrix(features[-1])
+
+        return features[-1]
 
     if isinstance(features, scipy.sparse.spmatrix):
         return scipy.sparse.coo_matrix(features.sum(axis=0))
