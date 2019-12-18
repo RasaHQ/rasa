@@ -8,7 +8,7 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import warnings
 
-from rasa.nlu.classifiers import DEFAULT_LABEL_RANKING_LENGTH
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.utils import train_utils
 from rasa.utils.train_utils import SessionDataType
@@ -831,15 +831,12 @@ class EmbeddingIntentClassifier(Component):
             # normalise scores if turned on
             if self.loss_type == "softmax" and self.ranking_length > 0:
                 ranking_length = self.ranking_length
+                label_ids = label_ids[:ranking_length]
                 message_sim = message_sim[:ranking_length] / (
                     np.sum(message_sim[:ranking_length])
                 )
-            else:
-                ranking_length = DEFAULT_LABEL_RANKING_LENGTH
 
-            label_ids = label_ids[:ranking_length]
-            message_sim = message_sim[:ranking_length]
-
+            message_sim = message_sim[:LABEL_RANKING_LENGTH]
             ranking = list(zip(list(label_ids), message_sim))
             label_ranking = [
                 {"name": self.inverted_label_dict[label_idx], "confidence": score}
