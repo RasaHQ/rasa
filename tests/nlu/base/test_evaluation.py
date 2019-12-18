@@ -291,10 +291,12 @@ def test_run_cv_evaluation():
 
 
 def test_run_cv_evaluation_with_response_selector():
-    training_data = training_data.load_data("data/examples/rasa/demo-rasa.md")
-    td_responses = training_data.load_data("data/examples/rasa/demo-rasa-responses.md")
-    td = td.merge(td_responses)
-    td.fill_response_phrases()
+    training_data_obj = training_data.load_data("data/examples/rasa/demo-rasa.md")
+    training_data_responses_obj = training_data.load_data(
+        "data/examples/rasa/demo-rasa-responses.md"
+    )
+    training_data_obj = training_data_obj.merge(training_data_responses_obj)
+    training_data_obj.fill_response_phrases()
 
     nlu_config = config.load(
         "sample_configs/config_embedding_intent_response_selector.yml"
@@ -302,7 +304,7 @@ def test_run_cv_evaluation_with_response_selector():
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
-        td, n_folds, nlu_config
+        training_data_obj, n_folds, nlu_config
     )
 
     assert len(intent_results.train["Accuracy"]) == n_folds
