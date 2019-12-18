@@ -48,7 +48,6 @@ import os
 from rasa.nlu import training_data, config
 from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH, NLU_DEFAULT_CONFIG_PATH
-from rasa.nlu.model import Interpreter
 from rasa.nlu.selectors.embedding_response_selector import ResponseSelector
 from rasa.nlu.test import is_response_selector_present
 
@@ -292,7 +291,7 @@ def test_run_cv_evaluation():
 
 
 def test_run_cv_evaluation_with_response_selector():
-    td = training_data.load_data("data/examples/rasa/demo-rasa.md")
+    training_data = training_data.load_data("data/examples/rasa/demo-rasa.md")
     td_responses = training_data.load_data("data/examples/rasa/demo-rasa-responses.md")
     td = td.merge(td_responses)
     td.fill_response_phrases()
@@ -324,7 +323,6 @@ def test_run_cv_evaluation_with_response_selector():
 
 
 def test_response_selector_present():
-
     response_selector_component = ResponseSelector()
 
     interpreter_with_response_selector = Interpreter(
