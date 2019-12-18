@@ -1267,8 +1267,6 @@ class DIET(tf.Module):
         self._named_entity_recognition = named_entity_recognition
         self._inverted_tag_dict = inverted_tag_dict
         self._num_tags = len(inverted_tag_dict)
-        print(inverted_tag_dict)
-        exit()
 
         # tf objects
         self._layers = []
@@ -1540,9 +1538,7 @@ class DIET(tf.Module):
         log_likelihood, _ = tfa.text.crf.crf_log_likelihood(
             logits, c, sequence_lengths, self._crf_params
         )
-        tf.print("ll", tf.reduce_max(log_likelihood))
         loss = tf.reduce_mean(-log_likelihood)
-        tf.print("loss", loss)
 
         # CRF preds
         pred_ids, _ = tfa.text.crf.crf_decode(logits, self._crf_params, sequence_lengths)
@@ -1568,23 +1564,23 @@ class DIET(tf.Module):
 
         metrics = TrainingMetrics(loss={}, score={})
 
-        # if self._masked_lm_loss:
-        #     loss, acc = self._mask_loss(text_transformed, text_in, lm_mask_bool_text, "text")
-        #
-        #     metrics.loss["m_loss"] = loss
-        #     metrics.score["m_acc"] = acc
+        if self._masked_lm_loss:
+            loss, acc = self._mask_loss(text_transformed, text_in, lm_mask_bool_text, "text")
 
-        # if self._intent_classification:
-        #     last_text = mask_text * tf.math.cumprod(1 - mask_text, axis=1, exclusive=True, reverse=True)
-        #     # get _cls_ vector for intent classification
-        #     cls = tf.reduce_sum(text_transformed * last_text, 1)
-        #     label = self._create_bow(
-        #         tf_batch_data["intent_features"], tf_batch_data["intent_mask"][0], "intent"
-        #     )
-        #     loss, acc = self._intent_loss(cls, label)
-        #
-        #     metrics.loss["i_loss"] = loss
-        #     metrics.score["i_acc"] = acc
+            metrics.loss["m_loss"] = loss
+            metrics.score["m_acc"] = acc
+
+        if self._intent_classification:
+            last_text = mask_text * tf.math.cumprod(1 - mask_text, axis=1, exclusive=True, reverse=True)
+            # get _cls_ vector for intent classification
+            cls = tf.reduce_sum(text_transformed * last_text, 1)
+            label = self._create_bow(
+                tf_batch_data["intent_features"], tf_batch_data["intent_mask"][0], "intent"
+            )
+            loss, acc = self._intent_loss(cls, label)
+
+            metrics.loss["i_loss"] = loss
+            metrics.score["i_acc"] = acc
 
         if self._named_entity_recognition:
             tags = tf_batch_data["tag_ids"][0]
@@ -1601,8 +1597,8 @@ class DIET(tf.Module):
             self._build_all_b()
             metrics = self._create_metrics(batch_in)
             reg_losses = tf.math.add_n([tf.math.add_n(layer.losses) for layer in self._layers if layer.losses])
-            # total_loss = reg_losses
-            total_loss = tf.math.add_n(list(metrics.loss.values()))# + reg_losses
+
+            total_loss = tf.math.add_n(list(metrics.loss.values())) + reg_losses
 
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
