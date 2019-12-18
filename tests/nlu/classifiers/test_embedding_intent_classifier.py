@@ -2,6 +2,8 @@ import numpy as np
 import pytest
 import scipy.sparse
 
+from rasa.nlu import train
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
@@ -9,6 +11,8 @@ from rasa.nlu.constants import (
     INTENT_ATTRIBUTE,
 )
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
+from tests.nlu.conftest import DEFAULT_DATA_PATH
+from rasa.nlu.model import Interpreter
 from rasa.nlu.training_data import Message
 
 
@@ -104,3 +108,47 @@ def test_check_labels_features_exist(messages, expected):
         EmbeddingIntentClassifier._check_labels_features_exist(messages, attribute)
         == expected
     )
+
+
+def as_pipeline(*components):
+    return [{"name": c} for c in components]
+
+
+@pytest.mark.parametrize(
+    "classifier_params, output_length, output_should_sum_to_1",
+    [
+        ({}, 10, True),  # default config
+        ({"ranking_length": 0}, 10, False),  # no normalization
+        ({"ranking_length": 3}, 3, True),  # lower than default ranking_length
+        ({"ranking_length": 12}, 10, False),  # higher than default ranking_length
+    ],
+)
+async def test_softmax_normalization(
+    component_builder, tmpdir, classifier_params, output_length, output_should_sum_to_1,
+):
+    pipeline = as_pipeline(
+        "WhitespaceTokenizer", "CountVectorsFeaturizer", "EmbeddingIntentClassifier"
+    )
+    assert pipeline[2]["name"] == "EmbeddingIntentClassifier"
+    pipeline[2].update(classifier_params)
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline})
+    (trained_model, _, persisted_path) = await train(
+        _config,
+        path=tmpdir.strpath,
+        data="data/test/many_intents.md",
+        component_builder=component_builder,
+    )
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    parse_data = loaded.parse("hello")
+    intent_ranking = parse_data.get("intent_ranking")
+    # check that the output was correctly truncated after normalization
+    assert len(intent_ranking) == output_length
+
+    # check whether normalization had the expected effect
+    output_sums_to_1 = sum([intent.get("confidence") for intent in intent_ranking]) == 1
+    assert output_sums_to_1 == output_should_sum_to_1
+
+    # check whether the normalization of intent_rankings is reflected in intent prediction
+    assert parse_data.get("intent") == intent_ranking[0]
