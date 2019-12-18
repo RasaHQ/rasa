@@ -692,7 +692,7 @@ SpacyTokenizer
 .. _ConveRTTokenizer:
 
 ConveRTTokenizer
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 :Short: Tokenizer using ConveRT
 :Outputs: nothing

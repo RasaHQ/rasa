@@ -133,17 +133,3 @@ async def test_train_cls_token_present(component_builder, tmpdir):
     assert loaded.pipeline
     assert loaded.parse("hello") is not None
     assert loaded.parse("Hello today is Monday, again!") is not None
-
-
-async def test_train_no_features(component_builder, tmpdir):
-    pipeline = [{"name": "WhitespaceTokenizer"}, {"name": "EmbeddingIntentClassifier"}]
-
-    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
-
-    with pytest.raises(ValueError):
-        (trained, _, persisted_path) = await train(
-            _config,
-            path=tmpdir.strpath,
-            data=DEFAULT_DATA_PATH,
-            component_builder=component_builder,
-        )

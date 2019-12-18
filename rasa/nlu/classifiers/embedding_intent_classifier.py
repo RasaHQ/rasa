@@ -456,12 +456,6 @@ class EmbeddingIntentClassifier(Component):
         self._add_mask_to_session_data(session_data, "text_mask", "text_features")
         self._add_mask_to_session_data(session_data, "label_mask", "label_features")
 
-        if "text_features" not in session_data or not session_data["text_features"]:
-            raise ValueError(
-                "No text features present. Please make sure to add a "
-                "featurizer to your pipeline."
-            )
-
         return session_data
 
     @staticmethod
