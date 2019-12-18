@@ -124,7 +124,7 @@ make test
 
 They can also be run at multiple jobs to save some time:
 ```bash
-make test -j [n]
+JOBS=[n] make test
 ```
 
 Where `[n]` is the number of jobs desired. If omitted, `[n]` will be automatically chosen by pytest.
