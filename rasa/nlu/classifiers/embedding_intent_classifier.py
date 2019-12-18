@@ -826,7 +826,7 @@ class EmbeddingIntentClassifier(Component):
         label_ids, message_sim = self._calculate_message_sim(batch)
 
         # if X contains all zeros do not predict some label
-        if X.any() and label_ids.size > 0:
+        if label_ids.size > 0:
 
             # normalise scores if turned on
             if self.loss_type == "softmax" and self.ranking_length > 0:
