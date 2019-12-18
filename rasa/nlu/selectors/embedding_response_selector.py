@@ -6,7 +6,7 @@ from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClas
 from rasa.nlu.constants import (
     RESPONSE_ATTRIBUTE,
     TEXT_ATTRIBUTE,
-    SPARSE_FEATURE_NAMES,
+    TOKENS_NAMES,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     DEFAULT_OPEN_UTTERANCE_TYPE,
 )
@@ -43,7 +43,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     provides = ["response", "response_ranking"]
 
-    requires = []
+    requires = [TOKENS_NAMES[TEXT_ATTRIBUTE]]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {

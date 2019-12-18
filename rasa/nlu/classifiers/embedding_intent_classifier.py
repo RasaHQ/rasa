@@ -17,6 +17,8 @@ from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
     DENSE_FEATURE_NAMES,
+    CLS_TOKEN,
+    TOKENS_NAMES,
 )
 
 import tensorflow as tf
@@ -54,7 +56,7 @@ class EmbeddingIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = []
+    requires = [TOKENS_NAMES[TEXT_ATTRIBUTE]]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -247,6 +249,8 @@ class EmbeddingIntentClassifier(Component):
         self._train_op = None
         self._is_training = None
 
+        self.cls_token_used = False
+
     # training data helpers:
     @staticmethod
     def _create_label_id_dict(
@@ -400,6 +404,11 @@ class EmbeddingIntentClassifier(Component):
     ) -> "SessionDataType":
         """Prepare data for training and create a SessionDataType object"""
 
+        if training_data:
+            self.cls_token_used = (
+                training_data[0].get(TOKENS_NAMES[TEXT_ATTRIBUTE])[-1].text == CLS_TOKEN
+            )
+
         X_sparse = []
         X_dense = []
         Y_sparse = []
@@ -446,6 +455,12 @@ class EmbeddingIntentClassifier(Component):
 
         self._add_mask_to_session_data(session_data, "text_mask", "text_features")
         self._add_mask_to_session_data(session_data, "label_mask", "label_features")
+
+        if "text_features" not in session_data or not session_data["text_features"]:
+            raise ValueError(
+                "No text features present. Please make sure to add a "
+                "featurizer to your pipeline."
+            )
 
         return session_data
 
@@ -526,9 +541,14 @@ class EmbeddingIntentClassifier(Component):
             else:
                 dense_features.append(f)
 
-        output = tf.concat(dense_features, axis=-1) * mask
-        # apply mean to convert sequence to sentence features
-        output = tf.reduce_sum(output, axis=1) / tf.reduce_sum(mask, axis=1)
+        if self.cls_token_used and name == "text":
+            dense_features = [f[:, -1, :] for f in dense_features]
+            output = tf.concat(dense_features, axis=-1)
+        else:
+            output = tf.concat(dense_features, axis=-1) * mask
+            # apply mean to convert sequence to sentence features
+            output = tf.reduce_sum(output, axis=1) / tf.reduce_sum(mask, axis=1)
+
         return output
 
     def _build_tf_train_graph(

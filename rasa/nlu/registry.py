@@ -29,6 +29,7 @@ from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeat
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
+from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
@@ -53,6 +54,7 @@ component_classes = [
     MitieTokenizer,
     SpacyTokenizer,
     WhitespaceTokenizer,
+    ConveRTTokenizer,
     JiebaTokenizer,
     # extractors
     SpacyEntityExtractor,

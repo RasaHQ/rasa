@@ -2,6 +2,9 @@ import numpy as np
 import pytest
 import scipy.sparse
 
+from rasa.nlu import train
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.model import Interpreter
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
@@ -10,6 +13,7 @@ from rasa.nlu.constants import (
 )
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.training_data import Message
+from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
 def test_compute_default_label_features():
@@ -104,3 +108,42 @@ def test_check_labels_features_exist(messages, expected):
         EmbeddingIntentClassifier._check_labels_features_exist(messages, attribute)
         == expected
     )
+
+
+async def test_train_cls_token_present(component_builder, tmpdir):
+    pipeline = [
+        {"name": "ConveRTTokenizer", "use_cls_token": True},
+        {"name": "CountVectorsFeaturizer"},
+        {"name": "ConveRTFeaturizer"},
+        {"name": "EmbeddingIntentClassifier"},
+    ]
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
+
+    (trained, _, persisted_path) = await train(
+        _config,
+        path=tmpdir.strpath,
+        data=DEFAULT_DATA_PATH,
+        component_builder=component_builder,
+    )
+
+    assert trained.pipeline
+
+    loaded = Interpreter.load(persisted_path, component_builder)
+    assert loaded.pipeline
+    assert loaded.parse("hello") is not None
+    assert loaded.parse("Hello today is Monday, again!") is not None
+
+
+async def test_train_no_features(component_builder, tmpdir):
+    pipeline = [{"name": "WhitespaceTokenizer"}, {"name": "EmbeddingIntentClassifier"}]
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
+
+    with pytest.raises(ValueError):
+        (trained, _, persisted_path) = await train(
+            _config,
+            path=tmpdir.strpath,
+            data=DEFAULT_DATA_PATH,
+            component_builder=component_builder,
+        )

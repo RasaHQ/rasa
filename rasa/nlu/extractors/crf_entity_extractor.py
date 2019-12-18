@@ -243,12 +243,12 @@ class CRFEntityExtractor(EntityExtractor):
         confidence: float,
     ) -> Dict[Text, Any]:
         if isinstance(tokens, list):  # tokens is a list of Token
-            _start = tokens[start].offset
+            _start = tokens[start].start
             _end = tokens[end].end
             value = tokens[start].text
             value += "".join(
                 [
-                    message.text[tokens[i - 1].end : tokens[i].offset] + tokens[i].text
+                    message.text[tokens[i - 1].end : tokens[i].start] + tokens[i].text
                     for i in range(start + 1, end + 1)
                 ]
             )
@@ -385,7 +385,7 @@ class CRFEntityExtractor(EntityExtractor):
                     start = word.idx
                     end = word.idx + len(word)
                 else:
-                    start = word.offset
+                    start = word.start
                     end = word.end
                 ent = {
                     "start": start,
@@ -533,7 +533,7 @@ class CRFEntityExtractor(EntityExtractor):
     @staticmethod
     def _bilou_tags_from_offsets(tokens, entities, missing: Text = "O") -> List[Text]:
         # From spacy.spacy.GoldParse, under MIT License
-        starts = {token.offset: i for i, token in enumerate(tokens)}
+        starts = {token.start: i for i, token in enumerate(tokens)}
         ends = {token.end: i for i, token in enumerate(tokens)}
         bilou = ["-" for _ in tokens]
         # Handle entity cases
@@ -555,7 +555,7 @@ class CRFEntityExtractor(EntityExtractor):
             for i in range(start_char, end_char):
                 entity_chars.add(i)
         for n, token in enumerate(tokens):
-            for i in range(token.offset, token.end):
+            for i in range(token.start, token.end):
                 if i in entity_chars:
                     break
             else:
