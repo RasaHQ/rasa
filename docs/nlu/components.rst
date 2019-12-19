@@ -91,15 +91,12 @@ As those feature vectors would normally take up a lot of memory, we store them a
 Sparse features only store the values that are non zero and their positions in the vector.
 Thus, we save a lot of memroy and are able to train on larger datasets.
 
-By default all featurizers will return a matrix of length (1 x feature-dimension).
-All featurizer have the option to return a sequence instead.
-In case the flag ``"return_sequence"`` is set to ``True``, the returned matrix of the featurizer will have the size
-(token-length x feature-dimension).
-So, the returned matrix will have an entry for every token.
-Otherwise, the matrix will just have one entry for the complete utterance.
-If you want to use custom features for your ``CRFEntityExtractor``, you should set ``"return_sequence"`` to ``True``.
-For more details, take a look :ref:`entity-extraction-custom-features`.
-
+By default all featurizers will return a matrix of length (token-length x feature-dimension).
+So, the returned matrix will have a feature vector for every token.
+This allows us to train sequence models.
+However, the additional token at the end (e.g. ``__CLS__``) contains features for the complete utterance.
+This feature vector can be used in any non-sequence models.
+The corresponding classifier can therefore decide what kind of features to use.
 
 MitieFeaturizer
 ~~~~~~~~~~~~~~~
@@ -616,6 +613,10 @@ Response Selector
 Tokenizers
 ----------
 
+    .. note:: All tokenizer add an additional token ``__CLS__`` to the end of the list of tokens when tokenizing
+              text and responses.
+
+
 WhitespaceTokenizer
 ~~~~~~~~~~~~~~~~~~~
 
@@ -837,8 +838,7 @@ CRFEntityExtractor
     neighbouring entity tags: the most likely set of tags is then calculated and returned.
     If POS features are used (pos or pos2), spaCy has to be installed. If you want to use
     additional features, such as pre-trained word embeddings, from any provided dense
-    featurizer, use ``"text_dense_features"``. Make sure to set ``"return_sequence"`` to
-    ``True`` in the corresponding featurizer.
+    featurizer, use ``"text_dense_features"``.
 :Configuration:
    .. code-block:: yaml
 
