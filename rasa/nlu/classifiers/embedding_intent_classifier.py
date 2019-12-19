@@ -1605,7 +1605,9 @@ class DIET(tf.Module):
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
         self.total_loss_metric.update_state(total_loss)
-
-        self.mask_loss_metric.update_state(losses["m_loss"])
-        self.intent_loss_metric.update_state(losses["i_loss"])
-        self.entity_loss_metric.update_state(losses["e_loss"])
+        if self._masked_lm_loss:
+            self.mask_loss_metric.update_state(losses["m_loss"])
+        if self._intent_classification:
+            self.intent_loss_metric.update_state(losses["i_loss"])
+        if self._named_entity_recognition:
+            self.entity_loss_metric.update_state(losses["e_loss"])
