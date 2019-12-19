@@ -324,7 +324,7 @@ class CountVectorsFeaturizer(Featurizer):
         for attribute in attribute_tokens.keys():
             tokens = attribute_tokens[attribute]
             if attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE]:
-                # ignore the CLS token
+                # vocabulary should not contain CLS token
                 tokens = [t[:-1] for t in tokens]
             attribute_texts[attribute] = [" ".join(t) for t in tokens]
 
@@ -416,10 +416,14 @@ class CountVectorsFeaturizer(Featurizer):
             seq_vec = self.vectorizers[attribute].transform(tokens_without_cls)
             seq_vec.sort_indices()
 
-            cls_vec = self.vectorizers[attribute].transform(tokens_text)
-            cls_vec.sort_indices()
+            if attribute in [TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE]:
+                cls_vec = self.vectorizers[attribute].transform(tokens_text)
+                cls_vec.sort_indices()
 
-            x = scipy.sparse.vstack([seq_vec, cls_vec])
+                x = scipy.sparse.vstack([seq_vec, cls_vec])
+            else:
+                x = seq_vec
+
             X.append(x.tocoo())
 
         return X

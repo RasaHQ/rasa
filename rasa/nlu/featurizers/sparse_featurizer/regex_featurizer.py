@@ -18,6 +18,8 @@ from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     RESPONSE_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
+    CLS_TOKEN,
 )
 from rasa.constants import DOCS_BASE_URL
 
@@ -87,7 +89,6 @@ class RegexFeaturizer(Featurizer):
         message is tokenized, the function will mark all tokens with a dict
         relating the name of the regex to whether it was matched."""
         tokens = message.get(TOKENS_NAMES[attribute], [])
-
         seq_length = len(tokens)
 
         vec = np.zeros([seq_length, len(self.known_patterns)])
@@ -100,14 +101,17 @@ class RegexFeaturizer(Featurizer):
                 patterns = t.get("pattern", default={})
                 patterns[pattern["name"]] = False
 
-                seq_index = token_index
+                if t.text == CLS_TOKEN:
+                    t.set("pattern", patterns)
+                    continue
 
                 for match in matches:
                     if t.start < match.end() and t.end > match.start():
                         patterns[pattern["name"]] = True
-                        vec[seq_index][pattern_index] = 1.0
-                        # cls token vector should contain all patterns
-                        vec[-1][pattern_index] = 1.0
+                        vec[token_index][pattern_index] = 1.0
+                        if attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE]:
+                            # CLS token vector should contain all patterns
+                            vec[-1][pattern_index] = 1.0
 
                 t.set("pattern", patterns)
 
