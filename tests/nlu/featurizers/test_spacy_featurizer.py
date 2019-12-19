@@ -1,12 +1,20 @@
 import numpy as np
 import pytest
 
+from nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu import training_data
 from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
-from rasa.nlu.constants import SPACY_DOCS, TEXT_ATTRIBUTE, DENSE_FEATURE_NAMES
+from rasa.nlu.constants import (
+    SPACY_DOCS,
+    TEXT_ATTRIBUTE,
+    DENSE_FEATURE_NAMES,
+    RESPONSE_ATTRIBUTE,
+    INTENT_ATTRIBUTE,
+    TOKENS_NAMES,
+)
 
 
 def test_spacy_featurizer_cls_vector(spacy_nlp):
@@ -132,3 +140,36 @@ def test_spacy_featurizer_casing(spacy_nlp):
         ), "Vectors are unequal for texts '{}' and '{}'".format(
             e.text, e.text.capitalize()
         )
+
+
+def test_spacy_featurizer_train(spacy_nlp):
+
+    featurizer = SpacyFeaturizer.create({}, RasaNLUModelConfig())
+
+    sentence = "Hey how are you today"
+    message = Message(sentence)
+    message.set(RESPONSE_ATTRIBUTE, sentence)
+    message.set(INTENT_ATTRIBUTE, "intent")
+    message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(sentence))
+    message.set(SPACY_DOCS[RESPONSE_ATTRIBUTE], spacy_nlp(sentence))
+
+    featurizer.train(TrainingData([message]), RasaNLUModelConfig())
+
+    expected = np.array([-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])
+    expected_cls = np.array([-0.196496, 0.3249364, -0.37408298, -0.10622784, 0.062756])
+
+    vecs = message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+
+    assert 6 == len(vecs)
+    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
+    assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
+
+    vecs = message.get(DENSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE])
+
+    assert 6 == len(vecs)
+    assert np.allclose(vecs[0][:5], expected, atol=1e-5)
+    assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
+
+    vecs = message.get(DENSE_FEATURE_NAMES[INTENT_ATTRIBUTE])
+
+    assert vecs is None

@@ -1,11 +1,17 @@
 import numpy as np
 import pytest
 
+from nlu.training_data import TrainingData
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     RESPONSE_ATTRIBUTE,
     SPACY_DOCS,
     TOKENS_NAMES,
+    INTENT_ATTRIBUTE,
+    SPARSE_FEATURE_NAMES,
 )
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.training_data import Message
@@ -160,7 +166,6 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     ],
 )
 def test_regex_featurizer_no_sequence(sentence, expected, expected_cls, spacy_nlp):
-    from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 
     patterns = [
         {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
@@ -178,3 +183,45 @@ def test_regex_featurizer_no_sequence(sentence, expected, expected_cls, spacy_nl
     result = ftr._features_for_patterns(message, TEXT_ATTRIBUTE)
     assert np.allclose(result.toarray()[0], expected, atol=1e-10)
     assert np.allclose(result.toarray()[-1], expected_cls, atol=1e-10)
+
+
+def test_regex_featurizer_train():
+
+    patterns = [
+        {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
+        {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
+        {"pattern": "[0-1]+", "name": "binary", "usage": "intent"},
+    ]
+
+    featurizer = RegexFeaturizer.create({}, RasaNLUModelConfig())
+
+    sentence = "hey how are you today 19.12.2019 ?"
+    message = Message(sentence)
+    message.set(RESPONSE_ATTRIBUTE, sentence)
+    message.set(INTENT_ATTRIBUTE, "intent")
+    tokens = WhitespaceTokenizer().tokenize(sentence)
+    message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
+    message.set(TOKENS_NAMES[RESPONSE_ATTRIBUTE], tokens)
+
+    featurizer.train(
+        TrainingData([message], regex_features=patterns), RasaNLUModelConfig()
+    )
+
+    expected = np.array([0, 1, 0])
+    expected_cls = np.array([1, 1, 1])
+
+    vecs = message.get(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+
+    assert (7, 3) == vecs.shape
+    assert np.all(vecs.toarray()[0] == expected)
+    assert np.all(vecs.toarray()[-1] == expected_cls)
+
+    vecs = message.get(SPARSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE])
+
+    assert (7, 3) == vecs.shape
+    assert np.all(vecs.toarray()[0] == expected)
+    assert np.all(vecs.toarray()[-1] == expected_cls)
+
+    vecs = message.get(SPARSE_FEATURE_NAMES[INTENT_ATTRIBUTE])
+
+    assert vecs is None

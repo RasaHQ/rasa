@@ -15,7 +15,6 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     TOKENS_NAMES,
-    CLS_TOKEN,
 )
 
 

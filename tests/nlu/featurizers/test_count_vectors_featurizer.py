@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 import scipy.sparse
 
+from nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.constants import (
     CLS_TOKEN,
@@ -37,8 +38,6 @@ def test_count_vector_featurizer(sentence, expected, expected_cls):
     tokens = WhitespaceTokenizer().tokenize(sentence)
     train_message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
     test_message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
-    # this is needed for a valid training example
-    train_message.set(INTENT_ATTRIBUTE, "test")
 
     ftr.train(TrainingData([train_message]))
 
@@ -156,8 +155,6 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
     train_message = Message(sentence)
     tokens = WhitespaceTokenizer().tokenize(sentence)
     train_message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
-    # this is needed for a valid training example
-    train_message.set(INTENT_ATTRIBUTE, "bla")
 
     data = TrainingData([train_message])
     ftr.train(data)
@@ -191,8 +188,6 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
     train_message = Message(sentence)
     tokens = WhitespaceTokenizer().tokenize(sentence)
     train_message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
-    # this is needed for a valid training example
-    train_message.set(INTENT_ATTRIBUTE, "bla")
 
     data = TrainingData([train_message])
     ftr.train(data)
@@ -228,9 +223,8 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
     tokens_feature = [Token(i, 0) for i in tokens]
 
     train_message = Message("")
-    train_message.set("tokens", tokens_feature)
-    # this is needed for a valid training example
-    train_message.set(INTENT_ATTRIBUTE, "bla")
+    train_message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens_feature)
+
     data = TrainingData([train_message])
 
     ftr.train(data)
@@ -259,8 +253,6 @@ def test_count_vector_featurizer_char(sentence, expected):
     train_message = Message(sentence)
     tokens = WhitespaceTokenizer().tokenize(sentence)
     train_message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
-    # this is needed for a valid training example
-    train_message.set(INTENT_ATTRIBUTE, "bla")
 
     data = TrainingData([train_message])
     ftr.train(data)
@@ -296,17 +288,16 @@ def test_count_vector_featurizer_persist_load(tmpdir):
     train_message1 = Message(sentence1)
     train_message2 = Message(sentence2)
 
-    # this is needed for a valid training example
-    train_message1.set(INTENT_ATTRIBUTE, "bla")
-    train_message2.set(INTENT_ATTRIBUTE, "bla")
     data = TrainingData([train_message1, train_message2])
     train_ftr.train(data)
+
     # persist featurizer
     file_dict = train_ftr.persist("ftr", tmpdir.strpath)
     train_vect_params = {
         attribute: vectorizer.get_params()
         for attribute, vectorizer in train_ftr.vectorizers.items()
     }
+
     # add trained vocabulary to vectorizer params
     for attribute, attribute_vect_params in train_vect_params.items():
         if hasattr(train_ftr.vectorizers[attribute], "vocabulary_"):
@@ -339,3 +330,38 @@ def test_count_vector_featurizer_persist_load(tmpdir):
             == test_message2.get(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]).toarray(),
         ]
     )
+
+
+def test_count_vectors_featurizer_train():
+
+    featurizer = CountVectorsFeaturizer.create({}, RasaNLUModelConfig())
+
+    sentence = "Hey how are you today ?"
+    message = Message(sentence)
+    message.set(RESPONSE_ATTRIBUTE, sentence)
+    message.set(INTENT_ATTRIBUTE, "intent")
+    tokens = WhitespaceTokenizer().tokenize(sentence)
+    message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
+    message.set(TOKENS_NAMES[RESPONSE_ATTRIBUTE], tokens)
+
+    featurizer.train(TrainingData([message]), RasaNLUModelConfig())
+
+    expected = np.array([0, 1, 0, 0, 0])
+    expected_cls = np.array([1, 1, 1, 1, 1])
+
+    vecs = message.get(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+
+    assert (6, 5) == vecs.shape
+    assert np.all(vecs.toarray()[0] == expected)
+    assert np.all(vecs.toarray()[-1] == expected_cls)
+
+    vecs = message.get(SPARSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE])
+
+    assert (6, 5) == vecs.shape
+    assert np.all(vecs.toarray()[0] == expected)
+    assert np.all(vecs.toarray()[-1] == expected_cls)
+
+    vecs = message.get(SPARSE_FEATURE_NAMES[INTENT_ATTRIBUTE])
+
+    assert (1, 1) == vecs.shape
+    assert np.all(vecs.toarray()[0] == np.array([1]))
