@@ -89,16 +89,19 @@ class MitieEntityExtractor(EntityExtractor):
         if found_one_entity:
             self.ner = trainer.train()
 
-    def _prepare_mitie_sample(self, training_example) -> Any:
+    def _prepare_mitie_sample(self, training_example: Message) -> Any:
         import mitie
 
         text = training_example.text
         tokens = training_example.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
-        sample = mitie.ner_training_instance([t.text for t in tokens])
+        tokens_without_cls = tokens[:-1]
+        sample = mitie.ner_training_instance([t.text for t in tokens_without_cls])
         for ent in training_example.get(ENTITIES_ATTRIBUTE, []):
             try:
                 # if the token is not aligned an exception will be raised
-                start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
+                start, end = MitieEntityExtractor.find_entity(
+                    ent, text, tokens_without_cls
+                )
             except ValueError as e:
                 warnings.warn(f"Example skipped: {e}")
                 continue
@@ -126,7 +129,7 @@ class MitieEntityExtractor(EntityExtractor):
 
         ents = self.extract_entities(
             message.text,
-            message.get(TOKENS_NAMES[TEXT_ATTRIBUTE]),
+            message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1],
             mitie_feature_extractor,
         )
         extracted = self.add_extractor_name(ents)

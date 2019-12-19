@@ -336,7 +336,7 @@ class CRFEntityExtractor(EntityExtractor):
         if self.pos_features:
             tokens = message.get(SPACY_DOCS[TEXT_ATTRIBUTE])
         else:
-            tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
+            tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
 
         if len(tokens) != len(entities):
             raise Exception(
@@ -501,7 +501,7 @@ class CRFEntityExtractor(EntityExtractor):
             gold = GoldParse(doc_or_tokens, entities=entity_offsets)
             ents = [l[5] for l in gold.orig_annot]
         else:
-            doc_or_tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
+            doc_or_tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
             ents = self._bilou_tags_from_offsets(doc_or_tokens, entity_offsets)
 
         # collect badly annotated examples
@@ -615,7 +615,7 @@ class CRFEntityExtractor(EntityExtractor):
         if self.pos_features:
             tokens = message.get(SPACY_DOCS[TEXT_ATTRIBUTE])
         else:
-            tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
+            tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
 
         text_dense_features = self.__get_dense_features(message)
 
