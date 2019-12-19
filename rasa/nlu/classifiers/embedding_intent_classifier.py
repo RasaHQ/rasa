@@ -1253,15 +1253,6 @@ class DIET(tf.Module):
 
         # options
         self._sparse_input_dropout = sparse_input_dropout
-        # self._hparams = train_utils.create_t2t_hparams(
-        #     num_transformer_layers,
-        #     transformer_size,
-        #     num_heads,
-        #     droprate,
-        #     pos_encoding,
-        #     max_seq_length,
-        #     unidirectional_encoder,
-        # )
         self._num_neg = num_neg
         self._loss_type = loss_type
         self._mu_pos = mu_pos
@@ -1308,7 +1299,6 @@ class DIET(tf.Module):
         }
         self._layers.extend(self._get_layers(self._ffnn))
 
-        # noinspection PyUnresolvedReferences
         if num_transformer_layers > 0:
             self._transformer = tf_layers.TransformerEncoder(
                 num_transformer_layers,
@@ -1316,7 +1306,7 @@ class DIET(tf.Module):
                 num_heads,
                 transformer_size * 4,
                 self._ffnn["text"].output_dim,
-                256,
+                max_seq_length,
                 droprate
             )
             self._layers.append(self._transformer)
@@ -1366,9 +1356,6 @@ class DIET(tf.Module):
             trainable=True,
             name="crf_params"
         )
-        self.all_labels = None
-        self.all_labels_embed = None
-        self.attention_weights = {}
 
         # tf training
         self._optimizer = tf.keras.optimizers.Adam(learning_rate)
@@ -1466,14 +1453,6 @@ class DIET(tf.Module):
             pre, lm_mask_bool = (x, None)
 
         transformed = self._transformer(pre, mask, self.training)
-        # transformed = train_utils.create_t2t_transformer_encoder(
-        #     self._ffnn[name](pre),
-        #     self._pre_transformer,
-        #     mask,
-        #     self.attention_weights,
-        #     self._hparams,
-        #     name,
-        # )
 
         return transformed, x, lm_mask_bool
 
@@ -1513,7 +1492,16 @@ class DIET(tf.Module):
 
         return loss
 
+    def _build_all_b(self):
+        all_labels = self._create_bow(
+            self.tf_label_data["intent_features"], self.tf_label_data["intent_mask"][0], "intent"
+        )
+        all_labels_embed = self._embed["intent"](all_labels)
+
+        return all_labels_embed, all_labels
+
     def _intent_loss(self, a, b):
+        all_labels_embed, all_labels = self._build_all_b()
 
         a_embed = self._embed["text"](a)
         b_embed = self._embed["intent"](b)
@@ -1522,8 +1510,8 @@ class DIET(tf.Module):
             a_embed,
             b_embed,
             b,
-            self.all_labels_embed,
-            self.all_labels,
+            all_labels_embed,
+            all_labels,
             self._num_neg,
             None,
             self._loss_type,
@@ -1533,18 +1521,17 @@ class DIET(tf.Module):
             self._C_emb,
             self._scale_loss,
         )
+
         self.intent_acc_metric.update_state(acc)
 
         return loss
 
     def _entity_loss(
-        self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor"
+        self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor", sequence_lengths
     ) -> Tuple["tf.Tensor", "tf.Tensor"]:
 
-        mask_up_to_last = 1 - tf.math.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
-        sequence_lengths = tf.cast(tf.reduce_sum(mask_up_to_last[:, :, 0], 1), tf.int32)
-        sequence_lengths.set_shape([mask.shape[0]])
-
+        # remove cls token
+        sequence_lengths = tf.maximum(tf.constant(0, dtype=sequence_lengths.dtype), sequence_lengths - 1)
         c = tf.cast(c[:, :, 0], tf.int32)
         logits = self._embed["logits"](a)
 
@@ -1563,9 +1550,9 @@ class DIET(tf.Module):
         pred_ids, _ = tfa.text.crf.crf_decode(logits, self._crf_params, sequence_lengths)
 
         # calculate f1 score for train predictions
-        mask_up_to_last_bool = tf.cast(mask_up_to_last[:, :, 0], tf.bool)
-        c_masked = tf.boolean_mask(c, mask_up_to_last_bool)
-        pred_ids_masked = tf.boolean_mask(pred_ids, mask_up_to_last_bool)
+        mask_bool = tf.cast(mask[:, :, 0], tf.bool)
+        c_masked = tf.boolean_mask(c, mask_bool)
+        pred_ids_masked = tf.boolean_mask(pred_ids, mask_bool)
         # set `0` prediction to not a prediction
         c_masked_1 = tf.one_hot(c_masked - 1, self._num_tags - 1)
         pred_ids_masked_1 = tf.one_hot(pred_ids_masked - 1, self._num_tags - 1)
@@ -1574,46 +1561,42 @@ class DIET(tf.Module):
 
         return loss
 
-    def _build_all_b(self):
-        if self._intent_classification:
-            self.all_labels = self._create_bow(
-                self.tf_label_data["intent_features"], self.tf_label_data["intent_mask"][0], "intent"
-            )
-            self.all_labels_embed = self._embed["intent"](self.all_labels)
-
     def _losses(self, batch_in):
         tf_batch_data, _ = train_utils.batch_to_session_data(batch_in, self.session_data)
 
         mask_text = tf_batch_data["text_mask"][0]
+        sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
+        sequence_lengths.set_shape([mask_text.shape[0]])
 
         text_transformed, text_in, lm_mask_bool_text = self._create_sequence(
             tf_batch_data["text_features"], mask_text, "text", self._masked_lm_loss)
 
         losses = {}
 
-        # if self._masked_lm_loss:
-        #     losses["m_loss"] = self._mask_loss(text_transformed, text_in, lm_mask_bool_text, "text")
-        #
-        # if self._intent_classification:
-        #     last_text = mask_text * tf.math.cumprod(1 - mask_text, axis=1, exclusive=True, reverse=True)
-        #     # get _cls_ vector for intent classification
-        #     cls = tf.reduce_sum(text_transformed * last_text, 1)
-        #     label = self._create_bow(
-        #         tf_batch_data["intent_features"], tf_batch_data["intent_mask"][0], "intent"
-        #     )
-        #     losses["i_loss"] = self._intent_loss(cls, label)
+        if self._masked_lm_loss:
+            losses["m_loss"] = self._mask_loss(text_transformed, text_in, lm_mask_bool_text, "text")
+
+        if self._intent_classification:
+            # get _cls_ vector for intent classification
+            last_index = tf.maximum(tf.constant(0, dtype=sequence_lengths.dtype), sequence_lengths - 1)
+            idxs = tf.stack([tf.range(tf.shape(last_index)[0]), last_index], axis=1)
+            cls = tf.gather_nd(text_transformed, idxs)
+
+            label = self._create_bow(
+                tf_batch_data["intent_features"], tf_batch_data["intent_mask"][0], "intent"
+            )
+            losses["i_loss"] = self._intent_loss(cls, label)
 
         if self._named_entity_recognition:
             tags = tf_batch_data["tag_ids"][0]
 
-            losses["e_loss"] = self._entity_loss(text_transformed, tags, mask_text)
+            losses["e_loss"] = self._entity_loss(text_transformed, tags, mask_text, sequence_lengths)
 
         return losses
 
     def train(self, batch_in):
 
         with tf.GradientTape() as tape:
-            self._build_all_b()
             losses = self._losses(batch_in)
             reg_losses = tf.math.add_n([tf.math.add_n(layer.losses) for layer in self._layers if layer.losses])
 
@@ -1624,6 +1607,6 @@ class DIET(tf.Module):
 
         self.total_loss_metric.update_state(total_loss)
 
-        # self.mask_loss_metric.update_state(metrics.loss["m_loss"])
-        # self.intent_loss_metric.update_state(metrics.loss["i_loss"])
+        self.mask_loss_metric.update_state(losses["m_loss"])
+        self.intent_loss_metric.update_state(losses["i_loss"])
         self.entity_loss_metric.update_state(losses["e_loss"])

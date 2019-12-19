@@ -855,7 +855,7 @@ def _tf_loss_softmax(
 
     if scale_loss:
         # mask loss by prediction confidence
-        pos_pred = tf.nn.softmax(logits)[..., 0]
+        pos_pred = tf.stop_gradient(tf.nn.softmax(logits)[..., 0])
         scale_mask = mask * tf.pow(tf.minimum(0.5, 1 - pos_pred) / 0.5, 4)
     else:
         scale_mask = mask
