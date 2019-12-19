@@ -47,7 +47,7 @@ methods that you should implement:
     <https://github.com/RasaHQ/rasa/blob/master/rasa/nlu/tokenizers/tokenizer.py#L64/>`_.
 
 .. note::
-    If you create a custom tokenizer you should have the following entry in your default dict.
+    If you create a custom featurizer you should have the following entry in your default dict.
 
     .. code-block:: none
 
