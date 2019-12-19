@@ -35,6 +35,16 @@ methods that you should implement:
     :language: python
     :linenos:
 
+.. note::
+    If you create a custom tokenizer you should add a special token ``__CLS__`` to the end of list of tokens.
+    Use the function `add_cls_token()
+    <https://github.com/RasaHQ/rasa/blob/master/rasa/nlu/tokenizers/tokenizer.py#L64/>`_ to add the token to your
+    token list.
+
+.. note::
+    If you create a custom featurizer you should return a sequence of features.
+    E.g. your featurizer should return a matrix of size (token-size x feature-dimension).
+    The feature vector of the ``__CLS__`` token should contain features for the complete message.
 
 Component
 ^^^^^^^^^

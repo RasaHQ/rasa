@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from nlu.training_data import TrainingData
+from rasa.nlu.training_data import TrainingData
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,

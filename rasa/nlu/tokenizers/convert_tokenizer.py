@@ -112,7 +112,7 @@ class ConveRTTokenizer(WhitespaceTokenizer):
 
         return tokens_out
 
-    def _clean_tokens(self, tokens: List[Text]):
+    def _clean_tokens(self, tokens: List[bytes]):
         """Encode tokens and remove special char added by ConveRT."""
         tokens = [string.decode("utf-8").replace("﹏", "") for string in tokens]
         return [string for string in tokens if string]

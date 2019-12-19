@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import scipy.sparse
 
-from nlu.config import RasaNLUModelConfig
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.constants import (
     CLS_TOKEN,

@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-from nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu import training_data
 from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
@@ -13,7 +12,6 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     RESPONSE_ATTRIBUTE,
     INTENT_ATTRIBUTE,
-    TOKENS_NAMES,
 )
 
 
