@@ -1,3 +1,6 @@
+import logging
+from typing import Optional, Text
+
 import pytest
 import tempfile
 from jsonschema import ValidationError
@@ -677,7 +680,9 @@ def test_dump_nlu_with_responses():
         (MitieEntityExtractor.__name__, "- test"),
     ],
 )
-def test_dump_trainable_entities(entity_extractor, expected_output):
+def test_dump_trainable_entities(
+    entity_extractor: Optional[Text], expected_output: Text
+):
     training_data_json = {
         "rasa_nlu_data": {
             "common_examples": [

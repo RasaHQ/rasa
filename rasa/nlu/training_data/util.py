@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import warnings
@@ -73,16 +74,22 @@ def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:
     ]
 
     example_entities = example.get(ENTITIES_ATTRIBUTE)
-    if example_entities:
-        trainable_entities = []
-        for entity in example_entities:
-            if entity.get(EXTRACTOR_ATTRIBUTE) in untrainable_entity_extractors:
-                logger.debug(
-                    f"Exclude entity marking of the following extractors "
-                    f"{untrainable_entity_extractors} when writing NLU data "
-                    f"to file."
-                )
-            else:
-                trainable_entities.append(entity)
 
-        example[ENTITIES_ATTRIBUTE] = trainable_entities
+    if not example_entities:
+        # example contains no entities, so there's nothing to do
+        return None
+
+    trainable_entities = []
+
+    for entity in example_entities:
+        if entity.get(EXTRACTOR_ATTRIBUTE) in untrainable_entity_extractors:
+            logger.debug(
+                f"Excluding entity '{json.dumps(entity)}' from training data. "
+                f"Entity examples extracted by the following classes are not "
+                f"dumped to training data in markdown format: "
+                f"`{'`, `'.join(untrainable_entity_extractors)}`."
+            )
+        else:
+            trainable_entities.append(entity)
+
+    example[ENTITIES_ATTRIBUTE] = trainable_entities
