@@ -1076,9 +1076,20 @@ def train_tf_dataset(
             loss=defaultdict(lambda: 0.0), score=defaultdict(lambda: 0.0)
         )
 
+        # Reset the metrics
+        loss_metrics[0].reset_states()
+        loss_metrics[1].reset_states()
+        loss_metrics[2].reset_states()
+        loss_metrics[3].reset_states()
+        loss_metrics[4].reset_states()
+        loss_metrics[5].reset_states()
+        loss_metrics[6].reset_states()
+
+        # Train on batches
         for batch_in in train_dataset:
             train(batch_in)
 
+        # Get the metric results
         mean_total_loss = loss_metrics[0].result()
         mean_mask_loss = loss_metrics[1].result()
         mean_intent_loss = loss_metrics[2].result()

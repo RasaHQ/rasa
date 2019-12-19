@@ -1566,7 +1566,6 @@ class DIET(tf.Module):
 
         mask_text = tf_batch_data["text_mask"][0]
         sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
-        sequence_lengths.set_shape([mask_text.shape[0]])
 
         text_transformed, text_in, lm_mask_bool_text = self._create_sequence(
             tf_batch_data["text_features"], mask_text, "text", self._masked_lm_loss)
