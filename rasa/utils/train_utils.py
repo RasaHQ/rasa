@@ -1078,7 +1078,6 @@ def train_tf_dataset(
 
         for batch_in in train_dataset:
             train(batch_in)
-            # exit()
 
         mean_total_loss = loss_metrics[0].result()
         mean_mask_loss = loss_metrics[1].result()

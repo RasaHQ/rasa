@@ -991,6 +991,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         train_func = tf.function(self.model.train, input_signature=[train_dataset.element_spec])
         # train_func = self.model.train
+
         train_utils.train_tf_dataset(
             train_dataset,
             eval_dataset,
@@ -1352,8 +1353,6 @@ class DIET(tf.Module):
                                                     "logits")
         self._layers.extend(self._get_layers(self._embed))
 
-        self.entity_f1 = tfa.metrics.F1Score(num_classes=self._num_tags, average='micro')
-
         # tf tensors
         self.training = tf.ones((), tf.bool)
         initializer = tf.keras.initializers.GlorotUniform()
@@ -1381,7 +1380,7 @@ class DIET(tf.Module):
 
         self.mask_acc_metric = tf.keras.metrics.Mean(name='m_acc')
         self.intent_acc_metric = tf.keras.metrics.Mean(name='i_acc')
-        self.entity_f1_metric = tf.keras.metrics.Mean(name='e_f1')
+        self.entity_f1_metric = tfa.metrics.F1Score(num_classes=self._num_tags, average='micro')
 
     def _combine_sparse_dense_features(
             self,
@@ -1495,7 +1494,7 @@ class DIET(tf.Module):
 
         a_embed_masked = tf.boolean_mask(a_embed, lm_mask_bool)
 
-        return train_utils.calculate_loss_acc(
+        loss, acc = train_utils.calculate_loss_acc(
             a_t_masked_embed,
             a_embed_masked,
             a_masked,
@@ -1510,13 +1509,16 @@ class DIET(tf.Module):
             self._C_emb,
             self._scale_loss,
         )
+        self.mask_acc_metric.update_state(acc)
+
+        return loss
 
     def _intent_loss(self, a, b):
 
         a_embed = self._embed["text"](a)
         b_embed = self._embed["intent"](b)
 
-        return train_utils.calculate_loss_acc(
+        loss, acc = train_utils.calculate_loss_acc(
             a_embed,
             b_embed,
             b,
@@ -1531,6 +1533,9 @@ class DIET(tf.Module):
             self._C_emb,
             self._scale_loss,
         )
+        self.intent_acc_metric.update_state(acc)
+
+        return loss
 
     def _entity_loss(
         self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor"
@@ -1558,9 +1563,16 @@ class DIET(tf.Module):
         pred_ids, _ = tfa.text.crf.crf_decode(logits, self._crf_params, sequence_lengths)
 
         # calculate f1 score for train predictions
-        score = self.entity_f1(c, pred_ids)
+        mask_up_to_last_bool = tf.cast(mask_up_to_last[:, :, 0], tf.bool)
+        c_masked = tf.boolean_mask(c, mask_up_to_last_bool)
+        pred_ids_masked = tf.boolean_mask(pred_ids, mask_up_to_last_bool)
+        # set `0` prediction to not a prediction
+        c_masked_1 = tf.one_hot(c_masked - 1, self._num_tags - 1)
+        pred_ids_masked_1 = tf.one_hot(pred_ids_masked - 1, self._num_tags - 1)
 
-        return loss, score
+        self.entity_f1_metric.update_state(c_masked_1, pred_ids_masked_1)
+
+        return loss
 
     def _build_all_b(self):
         if self._intent_classification:
@@ -1569,60 +1581,49 @@ class DIET(tf.Module):
             )
             self.all_labels_embed = self._embed["intent"](self.all_labels)
 
-    def _create_metrics(self, batch_in):
+    def _losses(self, batch_in):
         tf_batch_data, _ = train_utils.batch_to_session_data(batch_in, self.session_data)
 
         mask_text = tf_batch_data["text_mask"][0]
+
         text_transformed, text_in, lm_mask_bool_text = self._create_sequence(
             tf_batch_data["text_features"], mask_text, "text", self._masked_lm_loss)
 
-        metrics = TrainingMetrics(loss={}, score={})
+        losses = {}
 
-        if self._masked_lm_loss:
-            loss, acc = self._mask_loss(text_transformed, text_in, lm_mask_bool_text, "text")
-
-            metrics.loss["m_loss"] = loss
-            metrics.score["m_acc"] = acc
-
-        if self._intent_classification:
-            last_text = mask_text * tf.math.cumprod(1 - mask_text, axis=1, exclusive=True, reverse=True)
-            # get _cls_ vector for intent classification
-            cls = tf.reduce_sum(text_transformed * last_text, 1)
-            label = self._create_bow(
-                tf_batch_data["intent_features"], tf_batch_data["intent_mask"][0], "intent"
-            )
-            loss, acc = self._intent_loss(cls, label)
-
-            metrics.loss["i_loss"] = loss
-            metrics.score["i_acc"] = acc
+        # if self._masked_lm_loss:
+        #     losses["m_loss"] = self._mask_loss(text_transformed, text_in, lm_mask_bool_text, "text")
+        #
+        # if self._intent_classification:
+        #     last_text = mask_text * tf.math.cumprod(1 - mask_text, axis=1, exclusive=True, reverse=True)
+        #     # get _cls_ vector for intent classification
+        #     cls = tf.reduce_sum(text_transformed * last_text, 1)
+        #     label = self._create_bow(
+        #         tf_batch_data["intent_features"], tf_batch_data["intent_mask"][0], "intent"
+        #     )
+        #     losses["i_loss"] = self._intent_loss(cls, label)
 
         if self._named_entity_recognition:
             tags = tf_batch_data["tag_ids"][0]
 
-            loss, f1_score = self._entity_loss(text_transformed, tags, mask_text)
-            metrics.loss["e_loss"] = loss
-            metrics.score["e_f1"] = f1_score
+            losses["e_loss"] = self._entity_loss(text_transformed, tags, mask_text)
 
-        return metrics
+        return losses
 
     def train(self, batch_in):
 
         with tf.GradientTape() as tape:
             self._build_all_b()
-            metrics = self._create_metrics(batch_in)
+            losses = self._losses(batch_in)
             reg_losses = tf.math.add_n([tf.math.add_n(layer.losses) for layer in self._layers if layer.losses])
 
-            total_loss = tf.math.add_n(list(metrics.loss.values())) + reg_losses
+            total_loss = tf.math.add_n(list(losses.values())) + reg_losses
 
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
         self.total_loss_metric.update_state(total_loss)
 
-        self.mask_loss_metric.update_state(metrics.loss["m_loss"])
-        self.intent_loss_metric.update_state(metrics.loss["i_loss"])
-        self.entity_loss_metric.update_state(metrics.loss["e_loss"])
-
-        self.mask_acc_metric.update_state(metrics.score["m_acc"])
-        self.intent_acc_metric.update_state(metrics.score["i_acc"])
-        self.entity_f1_metric.update_state(metrics.score["e_f1"])
+        # self.mask_loss_metric.update_state(metrics.loss["m_loss"])
+        # self.intent_loss_metric.update_state(metrics.loss["i_loss"])
+        self.entity_loss_metric.update_state(losses["e_loss"])
