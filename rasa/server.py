@@ -2083,7 +2083,7 @@ def create_app(
                 resMap['value'] = value
                 entMap.append(resMap)
                 resMap = {}
-        if intent == "searchintent" or intent == "cancelholdintent" or intent == "renewintent" or intent == "listcheckOutintent":
+        if intent == "searchintent" or intent == "cancelholdintent" or intent == "renewintent" or intent == "listcheckOutintent" or intent == "listholdintent":
             contentMap = {}
             for data in entMap:
                 contentMap[data['name']] = data['value']
