@@ -103,8 +103,7 @@ class SklearnIntentClassifier(Component):
             X = np.stack(
                 [
                     sequence_to_sentence_features(
-                        example.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]),
-                        example.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[-1].text == CLS_TOKEN,
+                        example.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
                     )
                     for example in training_data.intent_examples
                 ]
@@ -156,8 +155,7 @@ class SklearnIntentClassifier(Component):
             intent_ranking = []
         else:
             X = sequence_to_sentence_features(
-                message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]),
-                message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[-1].text == CLS_TOKEN,
+                message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
             ).reshape(1, -1)
             intent_ids, probabilities = self.predict(X)
             intents = self.transform_labels_num2str(np.ravel(intent_ids))
