@@ -249,8 +249,6 @@ class EmbeddingIntentClassifier(Component):
         self._train_op = None
         self._is_training = None
 
-        self.cls_token_used = False
-
     # training data helpers:
     @staticmethod
     def _create_label_id_dict(
@@ -404,11 +402,6 @@ class EmbeddingIntentClassifier(Component):
     ) -> "SessionDataType":
         """Prepare data for training and create a SessionDataType object"""
 
-        if training_data:
-            self.cls_token_used = (
-                training_data[0].get(TOKENS_NAMES[TEXT_ATTRIBUTE])[-1].text == CLS_TOKEN
-            )
-
         X_sparse = []
         X_dense = []
         Y_sparse = []
@@ -513,10 +506,7 @@ class EmbeddingIntentClassifier(Component):
         )
 
     def _combine_sparse_dense_features(
-        self,
-        features: List[Union[tf.Tensor, tf.SparseTensor]],
-        mask: tf.Tensor,
-        name: Text,
+        self, features: List[Union[tf.Tensor, tf.SparseTensor]], name: Text
     ) -> tf.Tensor:
         dense_features = []
 
@@ -535,13 +525,8 @@ class EmbeddingIntentClassifier(Component):
             else:
                 dense_features.append(f)
 
-        if self.cls_token_used and name == "text":
-            dense_features = [f[:, -1, :] for f in dense_features]
-            output = tf.concat(dense_features, axis=-1)
-        else:
-            output = tf.concat(dense_features, axis=-1) * mask
-            # apply mean to convert sequence to sentence features
-            output = tf.reduce_sum(output, axis=1) / tf.reduce_sum(mask, axis=1)
+        dense_features = [f[:, -1, :] for f in dense_features]
+        output = tf.concat(dense_features, axis=-1)
 
         return output
 
@@ -558,14 +543,10 @@ class EmbeddingIntentClassifier(Component):
         batch_data, _ = train_utils.batch_to_session_data(self.batch_in, session_data)
         label_data, _ = train_utils.batch_to_session_data(label_batch, self._label_data)
 
-        a = self._combine_sparse_dense_features(
-            batch_data["text_features"], batch_data["text_mask"][0], "text"
-        )
-        b = self._combine_sparse_dense_features(
-            batch_data["label_features"], batch_data["label_mask"][0], "label"
-        )
+        a = self._combine_sparse_dense_features(batch_data["text_features"], "text")
+        b = self._combine_sparse_dense_features(batch_data["label_features"], "label")
         all_bs = self._combine_sparse_dense_features(
-            label_data["label_features"], label_data["label_mask"][0], "label"
+            label_data["label_features"], "label"
         )
 
         self.message_embed = self._create_tf_embed_fnn(
@@ -617,12 +598,8 @@ class EmbeddingIntentClassifier(Component):
             self.batch_in, session_data
         )
 
-        a = self._combine_sparse_dense_features(
-            batch_data["text_features"], batch_data["text_mask"][0], "text"
-        )
-        b = self._combine_sparse_dense_features(
-            batch_data["label_features"], batch_data["label_mask"][0], "label"
-        )
+        a = self._combine_sparse_dense_features(batch_data["text_features"], "text")
+        b = self._combine_sparse_dense_features(batch_data["label_features"], "label")
 
         self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
 
