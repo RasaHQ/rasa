@@ -110,9 +110,9 @@ def test_check_labels_features_exist(messages, expected):
     )
 
 
-async def test_train_cls_token_present(component_builder, tmpdir):
+async def test_train(component_builder, tmpdir):
     pipeline = [
-        {"name": "ConveRTTokenizer", "use_cls_token": True},
+        {"name": "ConveRTTokenizer"},
         {"name": "CountVectorsFeaturizer"},
         {"name": "ConveRTFeaturizer"},
         {"name": "EmbeddingIntentClassifier"},

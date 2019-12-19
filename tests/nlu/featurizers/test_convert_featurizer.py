@@ -38,7 +38,7 @@ def test_convert_featurizer_process():
     assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
 
-def test_convert_featurizer_return_sequence():
+def test_convert_featurizer_train():
     featurizer = ConveRTFeaturizer.create({}, RasaNLUModelConfig())
 
     sentence = "Hey how are you today ?"
