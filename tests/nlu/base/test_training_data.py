@@ -4,11 +4,14 @@ from jsonschema import ValidationError
 
 from rasa.nlu import training_data
 from rasa.nlu.convert import convert_training_data
+from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.training_data.formats import MarkdownReader
-from rasa.nlu.training_data.formats.rasa import validate_rasa_nlu_data
+from rasa.nlu.training_data.formats import MarkdownReader, MarkdownWriter
+from rasa.nlu.training_data.formats.rasa import validate_rasa_nlu_data, RasaReader
 from rasa.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.nlu.training_data.util import get_file_format
 import rasa.utils.io as io_utils
@@ -660,3 +663,39 @@ def test_dump_nlu_with_responses():
 
     dumped = nlu_data.nlu_as_markdown()
     assert dumped == md
+
+
+@pytest.mark.parametrize(
+    "entity_extractor,expected_output",
+    [
+        (None, "- [test](word:random)"),
+        ("", "- [test](word:random)"),
+        ("random-extractor", "- [test](word:random)"),
+        (CRFEntityExtractor.__name__, "- [test](word:random)"),
+        (DucklingHTTPExtractor.__name__, "- test"),
+        (SpacyEntityExtractor.__name__, "- test"),
+        (MitieEntityExtractor.__name__, "- test"),
+    ],
+)
+def test_dump_trainable_entities(entity_extractor, expected_output):
+    training_data_json = {
+        "rasa_nlu_data": {
+            "common_examples": [
+                {
+                    "text": "test",
+                    "intent": "greet",
+                    "entities": [
+                        {"start": 0, "end": 4, "value": "random", "entity": "word"}
+                    ],
+                }
+            ]
+        }
+    }
+    if entity_extractor is not None:
+        training_data_json["rasa_nlu_data"]["common_examples"][0]["entities"][0][
+            "extractor"
+        ] = entity_extractor
+
+    training_data_object = RasaReader().read_from_json(training_data_json)
+    md_dump = MarkdownWriter().dumps(training_data_object)
+    assert md_dump.splitlines()[1] == expected_output

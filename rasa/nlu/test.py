@@ -25,6 +25,7 @@ from rasa.nlu.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     OPEN_UTTERANCE_PREDICTION_KEY,
+    EXTRACTOR_ATTRIBUTE,
 )
 from rasa.model import get_model
 from rasa.nlu import config, training_data, utils
@@ -873,7 +874,7 @@ def align_entity_predictions(
         extractor: [] for extractor in extractors
     }
     for p in result.entity_predictions:
-        entities_by_extractors[p["extractor"]].append(p)
+        entities_by_extractors[p[EXTRACTOR_ATTRIBUTE]].append(p)
     extractor_labels: Dict[Text, List] = {extractor: [] for extractor in extractors}
     for t in result.tokens:
         true_token_labels.append(determine_token_labels(t, result.entity_targets, None))

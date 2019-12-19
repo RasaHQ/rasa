@@ -4,6 +4,7 @@ import warnings
 from typing import Any, Dict, Optional, Text
 
 import rasa.utils.io as io_utils
+from rasa.nlu.constants import ENTITIES_ATTRIBUTE, EXTRACTOR_ATTRIBUTE
 
 logger = logging.getLogger(__name__)
 
@@ -49,3 +50,39 @@ def get_file_format(resource_name: Text) -> Text:
         return fformat
 
     return "json"
+
+
+def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:
+    """Remove untrainable entities from serialised training example `example`.
+
+    Entities with an untrainable extractor will be removed. Untrainable extractors
+    are `DucklingHTTPExtractor`, `MitieEntityExtractor` and `SpacyEntityExtractor`.
+
+    Args:
+        example: Serialised training example to inspect.
+    """
+
+    from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
+    from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+    from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+
+    untrainable_entity_extractors = [
+        DucklingHTTPExtractor.__name__,
+        SpacyEntityExtractor.__name__,
+        MitieEntityExtractor.__name__,
+    ]
+
+    example_entities = example.get(ENTITIES_ATTRIBUTE)
+    if example_entities:
+        trainable_entities = []
+        for entity in example_entities:
+            if entity.get(EXTRACTOR_ATTRIBUTE) in untrainable_entity_extractors:
+                logger.debug(
+                    f"Exclude entity marking of the following extractors "
+                    f"{untrainable_entity_extractors} when writing NLU data "
+                    f"to file."
+                )
+            else:
+                trainable_entities.append(entity)
+
+        example[ENTITIES_ATTRIBUTE] = trainable_entities
