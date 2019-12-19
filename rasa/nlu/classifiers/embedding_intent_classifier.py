@@ -525,6 +525,7 @@ class EmbeddingIntentClassifier(Component):
             else:
                 dense_features.append(f)
 
+        # extract the CLS token feature vector
         dense_features = [f[:, -1, :] for f in dense_features]
         output = tf.concat(dense_features, axis=-1)
 

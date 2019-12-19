@@ -1,0 +1,9 @@
+Remove option ``use_cls_token`` from tokenizers and option ``return_sequence`` from featurizers.
+
+By default all tokenizer add a special token (``__CLS__``) to the end of the list of tokens.
+This token will be used to capture the features of the whole utterance.
+
+The featurizers will return a matrix of size (token-length x feature-dimension) by default.
+This allows to train sequence models.
+However, the feature vector of the ``__CLS__`` token can be used to train non-sequence models.
+The corresponding classifier can decide what kind of features to use.

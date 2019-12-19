@@ -80,8 +80,8 @@ class MitieIntentClassifier(Component):
     @staticmethod
     def _tokens_of_message(message) -> List[Text]:
         tokens = [token.text for token in message.get(TOKENS_NAMES[TEXT_ATTRIBUTE], [])]
-        tokens_without_cls = tokens[:-1]
-        return tokens_without_cls
+        # return tokens without CLS token
+        return tokens[:-1]
 
     @classmethod
     def load(
