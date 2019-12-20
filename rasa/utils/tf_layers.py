@@ -311,7 +311,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         self.num_layers = num_layers
 
         # TODO use Embed
-        self.embedding = tf.keras.layers.Dense(input_dim=input_dim, units=d_model)
+        self.embedding = tf.keras.layers.Dense(input_dim=input_dim, units=d_model, use_bias=False)
         self.pos_encoding = self._positional_encoding(maximum_position_encoding,
                                                       self.d_model)
 
