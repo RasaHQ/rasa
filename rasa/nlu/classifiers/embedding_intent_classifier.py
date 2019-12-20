@@ -1415,9 +1415,16 @@ class DIET(tf.Module):
                 tf.random.uniform(tf.shape(a), tf.reduce_min(a), tf.reduce_max(a), a.dtype)
                 * pad_mask_up_to_last
         )
-        a_shuffle = tf.stop_gradient(
-            tf.random.shuffle(a * mask_up_to_last + a_random_pad)
-        )
+        # shuffle over batch dim
+        a_shuffle = tf.random.shuffle(a * mask_up_to_last + a_random_pad)
+
+        # shuffle over sequence dim
+        a_shuffle = tf.transpose(a_shuffle, [1, 0, 2])
+        a_shuffle = tf.random.shuffle(a_shuffle)
+        a_shuffle = tf.transpose(a_shuffle, [1, 0, 2])
+
+        # shuffle doesn't support backprop
+        a_shuffle = tf.stop_gradient(a_shuffle)
 
         a_mask = tf.tile(self._mask_vector, (tf.shape(a)[0], tf.shape(a)[1], 1))
 
@@ -1531,7 +1538,7 @@ class DIET(tf.Module):
     ) -> Tuple["tf.Tensor", "tf.Tensor"]:
 
         # remove cls token
-        sequence_lengths = tf.maximum(tf.constant(0, dtype=sequence_lengths.dtype), sequence_lengths - 1)
+        sequence_lengths = sequence_lengths - 1
         c = tf.cast(c[:, :, 0], tf.int32)
         logits = self._embed["logits"](a)
 
