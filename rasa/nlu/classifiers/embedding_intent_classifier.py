@@ -1182,7 +1182,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 class DIET(tf.Module):
 
     @staticmethod
-    def _create_sparse_dense_layer(values, name, C2, dense_dim):
+    def _create_sparse_dense_layer(values, name, reg_lambda, dense_dim):
 
         sparse = False
         for v in values:
@@ -1195,7 +1195,7 @@ class DIET(tf.Module):
 
         if sparse:
             return tf_layers.DenseForSparse(units=dense_dim,
-                                            C2=C2,
+                                            reg_lambda=reg_lambda,
                                             name=name)
 
     @staticmethod
@@ -1227,7 +1227,7 @@ class DIET(tf.Module):
                  pos_encoding,
                  max_seq_length,
                  unidirectional_encoder,
-                 C2,
+                 reg_lambda,
                  droprate,
                  sparse_input_dropout,
                  num_neg,
@@ -1272,11 +1272,11 @@ class DIET(tf.Module):
         self._sparse_to_dense = {
             "text": self._create_sparse_dense_layer(session_data["text_features"],
                                                     "text",
-                                                    C2,
+                                                    reg_lambda,
                                                     dense_dim),
             "intent": self._create_sparse_dense_layer(session_data["intent_features"],
                                                       "intent",
-                                                      C2,
+                                                      reg_lambda,
                                                       dense_dim),
         }
         self._layers.extend(self._get_layers(self._sparse_to_dense))
@@ -1284,11 +1284,11 @@ class DIET(tf.Module):
         self._ffnn = {
             "text": tf_layers.Ffnn(hidden_layer_sizes["text"],
                                    droprate,
-                                   C2,
+                                   reg_lambda,
                                    "text_intent" if share_hidden_layers else "text"),
             "intent": tf_layers.Ffnn(hidden_layer_sizes["intent"],
                                      droprate,
-                                     C2,
+                                     reg_lambda,
                                      "text_intent" if share_hidden_layers else "intent")
         }
         self._layers.extend(self._get_layers(self._ffnn))
@@ -1300,7 +1300,8 @@ class DIET(tf.Module):
                 num_heads,
                 transformer_size * 4,
                 max_seq_length,
-                droprate
+                droprate,
+                unidirectional_encoder,
             )
             self._layers.append(self._transformer)
         else:
@@ -1309,25 +1310,25 @@ class DIET(tf.Module):
         self._embed = {}
         if self._masked_lm_loss:
             self._embed["text_mask"] = tf_layers.Embed(embed_dim,
-                                                       C2,
+                                                       reg_lambda,
                                                        "text_mask",
                                                        similarity_type)
             self._embed["text_token"] = tf_layers.Embed(embed_dim,
-                                                        C2,
+                                                        reg_lambda,
                                                         "text_token",
                                                         similarity_type)
         if self._intent_classification:
             self._embed["text"] = tf_layers.Embed(embed_dim,
-                                                  C2,
+                                                  reg_lambda,
                                                   "text",
                                                   similarity_type)
             self._embed["intent"] = tf_layers.Embed(embed_dim,
-                                                    C2,
+                                                    reg_lambda,
                                                     "intent",
                                                     similarity_type)
         if self._named_entity_recognition:
             self._embed["logits"] = tf_layers.Embed(self._num_tags,
-                                                    C2,
+                                                    reg_lambda,
                                                     "logits")
         self._layers.extend(self._get_layers(self._embed))
 
