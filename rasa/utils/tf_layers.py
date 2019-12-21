@@ -33,6 +33,7 @@ class SparseDropout(tf.keras.layers.Dropout):
         to_retain = tf.greater_equal(to_retain_prob, self.rate)
         dropped_inputs = tf.sparse.retain(inputs, to_retain)
         outputs = tf.cond(training, lambda: dropped_inputs, lambda: inputs)
+        # noinspection PyProtectedMember
         outputs._dense_shape = inputs._dense_shape
 
         return outputs
@@ -43,13 +44,11 @@ class DenseForSparse(tf.keras.layers.Dense):
 
     # noinspection PyPep8Naming
     def __init__(self,
-                 C2: float,
-                 activation: Optional[Callable] = tf.nn.relu,
+                 reg_lambda: float,
                  **kwargs):
-        kernel_regularizer = tf.keras.regularizers.l1(C2)
+        kernel_regularizer = tf.keras.regularizers.l1(reg_lambda)
 
         super(DenseForSparse, self).__init__(kernel_regularizer=kernel_regularizer,
-                                             activation=activation,
                                              **kwargs)
 
     def call(self, inputs):
@@ -80,11 +79,8 @@ class Ffnn(tf.keras.layers.Layer):
         self,
         layer_sizes: List[int],
         droprate: float,
-        C2: float,
+        reg_lambda: float,
         layer_name_suffix: Text,
-        activation: Optional[Callable] = tf.nn.relu,
-        use_bias: bool = True,
-        kernel_initializer: Optional["tf.keras.initializers.Initializer"] = None,
     ):
         super(Ffnn, self).__init__(name=f"ffnn_{layer_name_suffix}")
 
@@ -92,10 +88,8 @@ class Ffnn(tf.keras.layers.Layer):
         for i, layer_size in enumerate(layer_sizes):
             self._layers.append(tf.keras.layers.Dense(
                 units=layer_size,
-                activation=activation,
-                use_bias=use_bias,
-                kernel_initializer=kernel_initializer,
-                kernel_regularizer=tf.keras.regularizers.l2(C2),
+                activation='relu',
+                kernel_regularizer=tf.keras.regularizers.l2(reg_lambda),
                 name=f"hidden_layer_{layer_name_suffix}_{i}",
             ))
             self._layers.append(tf.keras.layers.Dropout(rate=droprate))
@@ -115,7 +109,7 @@ class Embed(tf.keras.layers.Layer):
     def __init__(
             self,
             embed_dim: int,
-            C2: float,
+            reg_lambda: float,
             layer_name_suffix: Text,
             similarity_type: Optional[Text] = None,
     ):
@@ -131,7 +125,7 @@ class Embed(tf.keras.layers.Layer):
         self._layers = [tf.keras.layers.Dense(
             units=embed_dim,
             activation=None,
-            kernel_regularizer=tf.keras.regularizers.l2(C2),
+            kernel_regularizer=tf.keras.regularizers.l2(reg_lambda),
             name=f"embed_layer_{layer_name_suffix}",
         )]
 
