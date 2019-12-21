@@ -78,7 +78,6 @@ class Ffnn(tf.keras.layers.Layer):
     # noinspection PyPep8Naming
     def __init__(
         self,
-        input_dim: int,
         layer_sizes: List[int],
         droprate: float,
         C2: float,
@@ -93,17 +92,13 @@ class Ffnn(tf.keras.layers.Layer):
         for i, layer_size in enumerate(layer_sizes):
             self._layers.append(tf.keras.layers.Dense(
                 units=layer_size,
-                input_dim=input_dim,
                 activation=activation,
                 use_bias=use_bias,
                 kernel_initializer=kernel_initializer,
                 kernel_regularizer=tf.keras.regularizers.l2(C2),
                 name=f"hidden_layer_{layer_name_suffix}_{i}",
             ))
-            input_dim = layer_size
             self._layers.append(tf.keras.layers.Dropout(rate=droprate))
-
-        self.output_dim = input_dim
 
     def call(self, inputs, training):
         x = inputs
@@ -119,7 +114,6 @@ class Embed(tf.keras.layers.Layer):
     # noinspection PyPep8Naming
     def __init__(
             self,
-            input_dim: int,
             embed_dim: int,
             C2: float,
             layer_name_suffix: Text,
@@ -136,7 +130,6 @@ class Embed(tf.keras.layers.Layer):
 
         self._layers = [tf.keras.layers.Dense(
             units=embed_dim,
-            input_dim=input_dim,
             activation=None,
             kernel_regularizer=tf.keras.regularizers.l2(C2),
             name=f"embed_layer_{layer_name_suffix}",
@@ -312,17 +305,16 @@ class TransformerEncoder(tf.keras.layers.Layer):
 
         return tf.cast(pos_encoding, dtype=tf.float32)
 
-    def __init__(self, num_layers, d_model, num_heads, dff, input_dim,
-                 maximum_position_encoding, rate=0.1, unidirectional=False):
+    def __init__(self, num_layers, d_model, num_heads, dff,
+                 max_seq_length, rate=0.1, unidirectional=False):
         super(TransformerEncoder, self).__init__()
 
         self.d_model = d_model
         self.unidirectional = unidirectional
 
         # TODO use Embed
-        self.embedding = tf.keras.layers.Dense(input_dim=input_dim,
-                                               units=d_model, use_bias=False)
-        self.pos_encoding = self._positional_encoding(maximum_position_encoding,
+        self.embedding = tf.keras.layers.Dense(units=d_model, use_bias=False)
+        self.pos_encoding = self._positional_encoding(max_seq_length,
                                                       self.d_model)
         self.dropout = tf.keras.layers.Dropout(rate)
         self.enc_layers = [TransformerEncoderLayer(d_model, num_heads, dff, rate)
@@ -336,18 +328,17 @@ class TransformerEncoder(tf.keras.layers.Layer):
         # adding embedding and position encoding.
         x = self.embedding(x)  # (batch_size, input_seq_len, d_model)
         x *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
-        x += self.pos_encoding[:, :seq_len, :]
+        x += self.pos_encoding[:, :seq_len, :] * (1 - pad_mask)
         x = self.dropout(x, training=training)
-        x *= 1 - pad_mask
 
-        # TODO add unidirectional
         pad_mask = tf.squeeze(pad_mask, -1)
         pad_mask = pad_mask[:, tf.newaxis, tf.newaxis, :]  # (batch_size, 1, 1, seq_len)
-        # if self.unidirectional:
-        #     pad_mask *= self._look_ahead_pad_mask(tf.shape(pad_mask)[-1])
+        if self.unidirectional:
+            pad_mask = tf.minimum(
+                1.0, pad_mask + self._look_ahead_pad_mask(tf.shape(pad_mask)[-1])
+            )  # (batch_size, 1, seq_len, seq_len)
 
         for layer in self.enc_layers:
-            # padding mask is (batch_size, 1, 1, seq_len)
             x = layer(x, pad_mask, training)
 
         # if normalization is done in layer_preprocess, then it should also be done

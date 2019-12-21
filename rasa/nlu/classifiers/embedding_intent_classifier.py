@@ -1184,18 +1184,17 @@ class DIET(tf.Module):
     @staticmethod
     def _create_sparse_dense_layer(values, name, C2, dense_dim):
 
-        input_dim = None
+        sparse = False
         for v in values:
             if isinstance(v[0], scipy.sparse.spmatrix):
-                input_dim = v[0].shape[-1]
+                sparse = True
             else:
                 # if dense features are present
                 # use the feature dimension of the dense features
                 dense_dim = v[0].shape[-1]
 
-        if input_dim:
-            return tf_layers.DenseForSparse(input_dim=input_dim,
-                                            units=dense_dim,
+        if sparse:
+            return tf_layers.DenseForSparse(units=dense_dim,
                                             C2=C2,
                                             name=name)
 
@@ -1282,17 +1281,12 @@ class DIET(tf.Module):
         }
         self._layers.extend(self._get_layers(self._sparse_to_dense))
 
-        text_input_dim = self._input_dim(session_data["text_features"], dense_dim)
-        intent_input_dim = self._input_dim(session_data["intent_features"], dense_dim)
-
         self._ffnn = {
-            "text": tf_layers.Ffnn(text_input_dim,
-                                   hidden_layer_sizes["text"],
+            "text": tf_layers.Ffnn(hidden_layer_sizes["text"],
                                    droprate,
                                    C2,
                                    "text_intent" if share_hidden_layers else "text"),
-            "intent": tf_layers.Ffnn(intent_input_dim,
-                                     hidden_layer_sizes["intent"],
+            "intent": tf_layers.Ffnn(hidden_layer_sizes["intent"],
                                      droprate,
                                      C2,
                                      "text_intent" if share_hidden_layers else "intent")
@@ -1305,7 +1299,6 @@ class DIET(tf.Module):
                 transformer_size,
                 num_heads,
                 transformer_size * 4,
-                self._ffnn["text"].output_dim,
                 max_seq_length,
                 droprate
             )
@@ -1315,30 +1308,25 @@ class DIET(tf.Module):
 
         self._embed = {}
         if self._masked_lm_loss:
-            self._embed["text_mask"] = tf_layers.Embed(transformer_size,
-                                                       embed_dim,
+            self._embed["text_mask"] = tf_layers.Embed(embed_dim,
                                                        C2,
                                                        "text_mask",
                                                        similarity_type)
-            self._embed["text_token"] = tf_layers.Embed(text_input_dim,
-                                                        embed_dim,
+            self._embed["text_token"] = tf_layers.Embed(embed_dim,
                                                         C2,
                                                         "text_token",
                                                         similarity_type)
         if self._intent_classification:
-            self._embed["text"] = tf_layers.Embed(transformer_size,
-                                                  embed_dim,
+            self._embed["text"] = tf_layers.Embed(embed_dim,
                                                   C2,
                                                   "text",
                                                   similarity_type)
-            self._embed["intent"] = tf_layers.Embed(self._ffnn["intent"].output_dim,
-                                                    embed_dim,
+            self._embed["intent"] = tf_layers.Embed(embed_dim,
                                                     C2,
                                                     "intent",
                                                     similarity_type)
         if self._named_entity_recognition:
-            self._embed["logits"] = tf_layers.Embed(transformer_size,
-                                                    self._num_tags,
+            self._embed["logits"] = tf_layers.Embed(self._num_tags,
                                                     C2,
                                                     "logits")
         self._layers.extend(self._get_layers(self._embed))
@@ -1346,6 +1334,7 @@ class DIET(tf.Module):
         # tf tensors
         self.training = tf.ones((), tf.bool)
         initializer = tf.keras.initializers.GlorotUniform()
+        text_input_dim = self._input_dim(session_data["text_features"], dense_dim)
         self._mask_vector = tf.Variable(
             initial_value=initializer((1, 1, text_input_dim)),
             trainable=True,
