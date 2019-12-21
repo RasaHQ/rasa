@@ -1459,7 +1459,8 @@ class DIET(tf.Module):
         else:
             pre, lm_mask_bool = (x, None)
 
-        transformed = self._transformer(pre, mask, self.training)
+        transformed = self._transformer(pre, 1 - mask, self.training)
+        transformed = tf.nn.relu(transformed)
 
         return transformed, x, lm_mask_bool
 
