@@ -231,8 +231,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         x = tf.transpose(x, perm=[0, 2, 1, 3])  # (batch_size, seq_len_q, num_heads, depth)
         return tf.reshape(x, (tf.shape(x)[0], -1, self.d_model))  # (batch_size, seq_len_q, d_model)
 
-    def call(self, v, k, q, pad_mask):
-
+    def call(self, v, k, q, pad_mask=None):
         q = self.wq(q)  # (batch_size, seq_len, d_model)
         k = self.wk(k)  # (batch_size, seq_len, d_model)
         v = self.wv(v)  # (batch_size, seq_len, d_model)
@@ -257,31 +256,31 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
     def __init__(self, d_model, num_heads, dff, rate=0.1):
         super(TransformerEncoderLayer, self).__init__()
 
+        self.layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
         self.mha = MultiHeadAttention(d_model, num_heads)
-        self.ffn = tf.keras.Sequential([
+        self.dropout = tf.keras.layers.Dropout(rate)
+
+        self.ffn_layers = [
+            tf.keras.layers.LayerNormalization(epsilon=1e-6),
             tf.keras.layers.Dense(dff, activation='relu'),  # (batch_size, seq_len, dff)
             tf.keras.layers.Dropout(rate),
-            tf.keras.layers.Dense(d_model)  # (batch_size, seq_len, d_model)
-        ])
-
-        self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
-        self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
-
-        self.dropout1 = tf.keras.layers.Dropout(rate)
-        self.dropout2 = tf.keras.layers.Dropout(rate)
+            tf.keras.layers.Dense(d_model),  # (batch_size, seq_len, d_model)
+            tf.keras.layers.Dropout(rate),
+        ]
 
     def call(self, x, pad_mask, training):
-        x1 = self.layernorm1(x)  # (batch_size, input_seq_len, d_model)
-        attn_output, _ = self.mha(x1, x1, x1, pad_mask)  # (batch_size, input_seq_len, d_model)
-        attn_output = self.dropout1(attn_output, training=training)
-        out1 = x + attn_output
 
-        out2 = self.layernorm2(out1)  # (batch_size, input_seq_len, d_model)
-        ffn_output = self.ffn(out2)  # (batch_size, input_seq_len, d_model)
-        ffn_output = self.dropout2(ffn_output, training=training)
-        out2 = out1 + ffn_output
+        x_norm = self.layernorm(x)  # (batch_size, input_seq_len, d_model)
+        attn, _ = self.mha(x_norm, x_norm, x_norm, pad_mask)  # (batch_size, input_seq_len, d_model)
+        attn = self.dropout(attn, training=training)
+        x += attn
 
-        return out2
+        ffn = x
+        for layer in self.ffn_layers:
+            ffn = layer(ffn, training=training)  # (batch_size, input_seq_len, d_model)
+        x += ffn
+
+        return x
 
 
 # TODO collect losses
@@ -314,14 +313,13 @@ class TransformerEncoder(tf.keras.layers.Layer):
         return tf.cast(pos_encoding, dtype=tf.float32)
 
     def __init__(self, num_layers, d_model, num_heads, dff, input_dim,
-                 maximum_position_encoding, rate=0.1):
+                 maximum_position_encoding, rate=0.1, unidirectional=False):
         super(TransformerEncoder, self).__init__()
 
         self.d_model = d_model
-        self.num_layers = num_layers
+        self.unidirectional = unidirectional
 
         # TODO use Embed
-        # TODO add unidirectional
         self.embedding = tf.keras.layers.Dense(input_dim=input_dim,
                                                units=d_model, use_bias=False)
         self.pos_encoding = self._positional_encoding(maximum_position_encoding,
@@ -342,11 +340,15 @@ class TransformerEncoder(tf.keras.layers.Layer):
         x = self.dropout(x, training=training)
         x *= 1 - pad_mask
 
+        # TODO add unidirectional
         pad_mask = tf.squeeze(pad_mask, -1)
         pad_mask = pad_mask[:, tf.newaxis, tf.newaxis, :]  # (batch_size, 1, 1, seq_len)
-        for i in range(self.num_layers):
+        # if self.unidirectional:
+        #     pad_mask *= self._look_ahead_pad_mask(tf.shape(pad_mask)[-1])
+
+        for layer in self.enc_layers:
             # padding mask is (batch_size, 1, 1, seq_len)
-            x = self.enc_layers[i](x, pad_mask, training)
+            x = layer(x, pad_mask, training)
 
         # if normalization is done in layer_preprocess, then it should also be done
         # on the output, since the output can grow very large, being the sum of
