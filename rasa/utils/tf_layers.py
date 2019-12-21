@@ -146,8 +146,7 @@ class Embed(tf.keras.layers.Layer):
 
 
 # from https://www.tensorflow.org/tutorials/text/transformer
-# and https://github.com/tensorflow/tensor2tensor/blob/master/tensor2tensor/layers/transformer_layers.py#L137
-# TODO add weight regularization (L1)
+# and https://github.com/tensorflow/tensor2tensor
 # TODO collect losses
 class MultiHeadAttention(tf.keras.layers.Layer):
 
@@ -197,10 +196,12 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         self.depth = d_model // self.num_heads
 
+        # TODO add weight regularization (L1)
         self.wq = tf.keras.layers.Dense(d_model, use_bias=False)
         self.wk = tf.keras.layers.Dense(d_model, use_bias=False)
         self.wv = tf.keras.layers.Dense(d_model, use_bias=False)
 
+        # TODO add weight regularization (L2)
         self.dense = tf.keras.layers.Dense(d_model, use_bias=False)
 
     def _split_heads(self, x):
@@ -243,7 +244,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         return output, attention_weights
 
 
-# TODO add weight regularization (L2)
 # TODO collect losses
 class TransformerEncoderLayer(tf.keras.layers.Layer):
     def __init__(self, d_model, num_heads, dff, rate=0.1):
@@ -253,6 +253,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         self.mha = MultiHeadAttention(d_model, num_heads)
         self.dropout = tf.keras.layers.Dropout(rate)
 
+        # TODO add weight regularization (L2)
         self.ffn_layers = [
             tf.keras.layers.LayerNormalization(epsilon=1e-6),
             tf.keras.layers.Dense(dff, activation='relu'),  # (batch_size, seq_len, dff)
@@ -263,25 +264,25 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
 
     def call(self, x, pad_mask, training):
 
-        x_norm = self.layernorm(x)  # (batch_size, input_seq_len, d_model)
-        attn, _ = self.mha(x_norm, x_norm, x_norm, pad_mask)  # (batch_size, input_seq_len, d_model)
+        x_norm = self.layernorm(x)  # (batch_size, seq_len, d_model)
+        attn, _ = self.mha(x_norm, x_norm, x_norm, pad_mask)
         attn = self.dropout(attn, training=training)
         x += attn
 
-        ffn = x
+        ffn = x  # (batch_size, seq_len, d_model)
         for layer in self.ffn_layers:
-            ffn = layer(ffn, training=training)  # (batch_size, input_seq_len, d_model)
+            ffn = layer(ffn, training=training)
         x += ffn
 
-        return x
+        return x  # (batch_size, seq_len, d_model)
 
 
 # TODO collect losses
 class TransformerEncoder(tf.keras.layers.Layer):
 
     @staticmethod
-    def _look_ahead_pad_mask(size):
-        pad_mask = 1 - tf.linalg.band_part(tf.ones((size, size)), -1, 0)
+    def _look_ahead_pad_mask(seq_len):
+        pad_mask = 1 - tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
         return pad_mask[tf.newaxis, tf.newaxis, :, :]   # (1, 1, seq_len, seq_len)
 
     @staticmethod
@@ -323,17 +324,16 @@ class TransformerEncoder(tf.keras.layers.Layer):
 
     def call(self, x, pad_mask, training):
 
-        seq_len = tf.shape(x)[1]
-
         # adding embedding and position encoding.
-        x = self.embedding(x)  # (batch_size, input_seq_len, d_model)
+        x = self.embedding(x)  # (batch_size, seq_len, d_model)
         x *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
-        x += self.pos_encoding[:, :seq_len, :] * (1 - pad_mask)
+        x += self.pos_encoding[:, :tf.shape(x)[1], :] * (1 - pad_mask)
         x = self.dropout(x, training=training)
 
-        pad_mask = tf.squeeze(pad_mask, -1)
+        pad_mask = tf.squeeze(pad_mask, -1)  # (batch_size, seq_len)
         pad_mask = pad_mask[:, tf.newaxis, tf.newaxis, :]  # (batch_size, 1, 1, seq_len)
         if self.unidirectional:
+            # add look ahead pad mask to emulate unidirectional behavior
             pad_mask = tf.minimum(
                 1.0, pad_mask + self._look_ahead_pad_mask(tf.shape(pad_mask)[-1])
             )  # (batch_size, 1, seq_len, seq_len)
@@ -341,7 +341,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         for layer in self.enc_layers:
             x = layer(x, pad_mask, training)
 
-        # if normalization is done in layer_preprocess, then it should also be done
+        # if normalization is done in encoding layers, then it should also be done
         # on the output, since the output can grow very large, being the sum of
         # a whole stack of unnormalized layer outputs.
-        return self.layernorm(x)  # (batch_size, input_seq_len, d_model)
+        return self.layernorm(x)  # (batch_size, seq_len, d_model)
