@@ -1347,6 +1347,12 @@ class DIET(tf.keras.layers.Layer):
             average="micro",
         )
 
+    def set_trainig_phase(self, training: bool):
+        if training:
+            self.training = tf.ones((), tf.bool)
+        else:
+            self.training = tf.zeros((), tf.bool)
+
     def _combine_sparse_dense_features(
         self,
         features: List[Union["tf.Tensor", "tf.SparseTensor"]],
