@@ -1347,7 +1347,7 @@ class DIET(tf.keras.layers.Layer):
             average="micro",
         )
 
-    def set_trainig_phase(self, training: bool):
+    def set_training_phase(self, training: bool):
         if training:
             self.training = tf.ones((), tf.bool)
         else:

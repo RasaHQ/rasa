@@ -975,7 +975,7 @@ def train_tf_dataset(
             metric.reset_states()
 
         # Train on batches
-        model.set_trainig_phase(True)
+        model.set_training_phase(True)
         for batch_in in train_dataset_func(ep_batch_size):
             train_func(batch_in)
 
@@ -993,7 +993,7 @@ def train_tf_dataset(
                     metric.reset_states()
 
                 # Eval on batches
-                model.set_trainig_phase(False)
+                model.set_training_phase(False)
                 for batch_in in eval_dataset_func(ep_batch_size):
                     eval_func(batch_in)
 
