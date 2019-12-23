@@ -1186,10 +1186,6 @@ class DIET(tf.keras.layers.Layer):
 
         return dense_dim * len(values)
 
-    @staticmethod
-    def _get_layers(layers: Dict):
-        return [layer for layer in layers.values() if layer is not None]
-
     def __init__(
         self,
         session_data,
@@ -1290,6 +1286,8 @@ class DIET(tf.keras.layers.Layer):
             self._transformer = lambda x, mask, training: x
 
         self._embed = {}
+        self.train_metrics = {"t_loss": tf.keras.metrics.Mean(name="t_loss")}
+        self.eval_metrics = {"val_t_loss": tf.keras.metrics.Mean(name="val_t_loss")}
         if self._masked_lm_loss:
             self._embed["text_mask"] = tf_layers.Embed(
                 embed_dim, reg_lambda, "text_mask", similarity_type
@@ -1297,6 +1295,11 @@ class DIET(tf.keras.layers.Layer):
             self._embed["text_token"] = tf_layers.Embed(
                 embed_dim, reg_lambda, "text_token", similarity_type
             )
+            self.train_metrics["m_loss"] = tf.keras.metrics.Mean(name="m_loss")
+            self.train_metrics["m_acc"] = tf.keras.metrics.Mean(name="m_acc")
+            self.eval_metrics["val_m_loss"] = tf.keras.metrics.Mean(name="val_m_loss")
+            self.eval_metrics["val_m_acc"] = tf.keras.metrics.Mean(name="val_m_acc")
+
         if self._intent_classification:
             self._embed["text"] = tf_layers.Embed(
                 embed_dim, reg_lambda, "text", similarity_type
@@ -1304,10 +1307,19 @@ class DIET(tf.keras.layers.Layer):
             self._embed["intent"] = tf_layers.Embed(
                 embed_dim, reg_lambda, "intent", similarity_type
             )
+            self.train_metrics["i_loss"] = tf.keras.metrics.Mean(name="i_loss")
+            self.train_metrics["i_acc"] = tf.keras.metrics.Mean(name="i_acc")
+            self.eval_metrics["val_i_loss"] = tf.keras.metrics.Mean(name="val_i_loss")
+            self.eval_metrics["val_i_acc"] = tf.keras.metrics.Mean(name="val_i_acc")
+
         if self._named_entity_recognition:
             self._embed["logits"] = tf_layers.Embed(
                 self._num_tags, reg_lambda, "logits"
             )
+            self.train_metrics["e_loss"] = tf.keras.metrics.Mean(name="e_loss")
+            self.train_metrics["e_f1"] = tf.keras.metrics.Mean(name="e_f1")
+            self.eval_metrics["val_e_loss"] = tf.keras.metrics.Mean(name="val_e_loss")
+            self.eval_metrics["val_e_f1"] = tf.keras.metrics.Mean(name="val_e_f1")
 
         # tf tensors
         self.training = tf.ones((), tf.bool)
@@ -1330,19 +1342,10 @@ class DIET(tf.keras.layers.Layer):
 
         # tf training
         self._optimizer = tf.keras.optimizers.Adam(learning_rate)
-        self.out_metrics = {
-            "t_loss": tf.keras.metrics.Mean(name="t_loss"),
-            "m_loss": tf.keras.metrics.Mean(name="m_loss"),
-            "i_loss": tf.keras.metrics.Mean(name="i_loss"),
-            "e_loss": tf.keras.metrics.Mean(name="e_loss"),
-            "m_acc": tf.keras.metrics.Mean(name="m_acc"),
-            "i_acc": tf.keras.metrics.Mean(name="i_acc"),
-            "e_f1": tfa.metrics.F1Score(
-                num_classes=self._num_tags - 1,  # `0` prediction is not a prediction
-                average="micro",
-                name="e_f1",
-            ),
-        }
+        self.entity_f1 = tfa.metrics.F1Score(
+            num_classes=self._num_tags - 1,  # `0` prediction is not a prediction
+            average="micro",
+        )
 
     def _combine_sparse_dense_features(
         self,
@@ -1457,7 +1460,7 @@ class DIET(tf.keras.layers.Layer):
 
         a_embed_masked = tf.boolean_mask(a_embed, lm_mask_bool)
 
-        loss, acc = train_utils.calculate_loss_acc(
+        return train_utils.calculate_loss_acc(
             a_t_masked_embed,
             a_embed_masked,
             a_masked,
@@ -1472,10 +1475,6 @@ class DIET(tf.keras.layers.Layer):
             self._C_emb,
             self._scale_loss,
         )
-        self.out_metrics["m_loss"].update_state(loss)
-        self.out_metrics["m_acc"].update_state(acc)
-
-        return loss
 
     def _build_all_b(self):
         all_labels = self._create_bow(
@@ -1493,7 +1492,7 @@ class DIET(tf.keras.layers.Layer):
         a_embed = self._embed["text"](a)
         b_embed = self._embed["intent"](b)
 
-        loss, acc = train_utils.calculate_loss_acc(
+        return train_utils.calculate_loss_acc(
             a_embed,
             b_embed,
             b,
@@ -1508,10 +1507,6 @@ class DIET(tf.keras.layers.Layer):
             self._C_emb,
             self._scale_loss,
         )
-        self.out_metrics["i_loss"].update_state(loss)
-        self.out_metrics["i_acc"].update_state(acc)
-
-        return loss
 
     def _entity_loss(
         self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor", sequence_lengths
@@ -1546,12 +1541,11 @@ class DIET(tf.keras.layers.Layer):
         c_masked_1 = tf.one_hot(c_masked - 1, self._num_tags - 1)
         pred_ids_masked_1 = tf.one_hot(pred_ids_masked - 1, self._num_tags - 1)
 
-        self.out_metrics["e_loss"].update_state(loss)
-        self.out_metrics["e_f1"].update_state(c_masked_1, pred_ids_masked_1)
+        f1 = self.entity_f1(c_masked_1, pred_ids_masked_1)
 
-        return loss
+        return loss, f1
 
-    def _multi_task_losses(self, batch_in):
+    def _train_losses_scores(self, batch_in):
         tf_batch_data, _ = train_utils.batch_to_session_data(
             batch_in, self.session_data
         )
@@ -1564,11 +1558,14 @@ class DIET(tf.keras.layers.Layer):
         )
 
         losses = {}
+        scores = {}
 
         if self._masked_lm_loss:
-            losses["m_loss"] = self._mask_loss(
+            loss, acc = self._mask_loss(
                 text_transformed, text_in, lm_mask_bool_text, "text"
             )
+            losses["m_loss"] = loss
+            scores["m_acc"] = acc
 
         if self._intent_classification:
             # get _cls_ vector for intent classification
@@ -1583,26 +1580,34 @@ class DIET(tf.keras.layers.Layer):
                 tf_batch_data["intent_mask"][0],
                 "intent",
             )
-            losses["i_loss"] = self._intent_loss(cls, label)
+            loss, acc = self._intent_loss(cls, label)
+            losses["i_loss"] = loss
+            scores["i_acc"] = acc
 
         if self._named_entity_recognition:
             tags = tf_batch_data["tag_ids"][0]
 
-            losses["e_loss"] = self._entity_loss(
+            loss, f1 = self._entity_loss(
                 text_transformed, tags, mask_text, sequence_lengths
             )
+            losses["e_loss"] = loss
+            scores["e_f1"] = f1
 
-        return losses
+        return losses, scores
 
     def train(self, batch_in):
         with tf.GradientTape() as tape:
-            losses = self._multi_task_losses(batch_in)
+            losses, scores = self._train_losses_scores(batch_in)
             total_loss = tf.math.add_n(list(losses.values())) + self.losses
 
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-        self.out_metrics["t_loss"].update_state(total_loss)
+        self.train_metrics["t_loss"].update_state(total_loss)
+        for k, v in losses.items():
+            self.train_metrics[k].update_state(v)
+        for k, v in scores.items():
+            self.train_metrics[k].update_state(v)
 
     def train_dataset(self, batch_size):
         return train_utils.create_tf_dataset(
@@ -1613,10 +1618,18 @@ class DIET(tf.keras.layers.Layer):
             shuffle=True,
         )
 
+    def eval(self, batch_in):
+        losses, scores = self._train_losses_scores(batch_in)
+        total_loss = tf.math.add_n(list(losses.values())) + self.losses
+
+        self.eval_metrics["val_t_loss"].update_state(total_loss)
+        for k, v in losses.items():
+            self.eval_metrics[f"val_{k}"].update_state(v)
+        for k, v in scores.items():
+            self.eval_metrics[f"val_{k}"].update_state(v)
+
     def eval_dataset(self, batch_size):
         if self.eval_session_data is not None:
             return train_utils.create_tf_dataset(
-                self.eval_session_data,
-                batch_size,
-                label_key="intent_ids",
+                self.eval_session_data, batch_size, label_key="intent_ids"
             )

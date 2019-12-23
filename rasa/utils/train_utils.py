@@ -950,6 +950,7 @@ def train_tf_dataset(
         )
     pbar = tqdm(range(epochs), desc="Epochs", disable=is_logging_disabled())
 
+    # allows increasing batch size
     train_dataset_func = tf.function(model.train_dataset)
     eval_dataset_func = tf.function(model.eval_dataset)
 
@@ -957,15 +958,20 @@ def train_tf_dataset(
     train_func = tf.function(
         model.train, input_signature=[train_dataset_func(tf_batch_size).element_spec]
     )
-    # train_func = self.model.train
+    if evaluate_on_num_examples > 0:
+        eval_func = tf.function(
+            model.eval, input_signature=[eval_dataset_func(tf_batch_size).element_spec]
+        )
+    else:
+        eval_func = None
 
     for ep in pbar:
-
-        # allows increasing batch size
-        ep_batch_size = tf_batch_size * linearly_increasing_batch_size(ep, batch_size, epochs)
+        ep_batch_size = tf_batch_size * linearly_increasing_batch_size(
+            ep, batch_size, epochs
+        )
 
         # Reset the metrics
-        for metric in model.out_metrics.values():
+        for metric in model.train_metrics.values():
             metric.reset_states()
 
         # Train on batches
@@ -973,20 +979,26 @@ def train_tf_dataset(
             train_func(batch_in)
 
         # Get the metric results
-        postfix_dict = {k: v.result().numpy() for k, v in model.out_metrics.items()}
+        postfix_dict = {k: v.result().numpy() for k, v in model.train_metrics.items()}
 
-        # if eval_dataset_func(ep_batch_size) is not None:
-        #     if (ep + 1) % evaluate_every_num_epochs == 0 or (ep + 1) == epochs:
-        #         val_metrics = output_validation_stat(
-        #             eval_init_op,
-        #             metrics,
-        #             session,
-        #             is_training,
-        #             batch_size_in,
-        #             ep_batch_size,
-        #         )
-        #
-        #     postfix_dict = _update_postfix_dict(postfix_dict, val_metrics, "val_")
+        if evaluate_on_num_examples > 0:
+            if (
+                ep == 0
+                or (ep + 1) % evaluate_every_num_epochs == 0
+                or (ep + 1) == epochs
+            ):
+                # Reset the metrics
+                for metric in model.eval_metrics.values():
+                    metric.reset_states()
+
+                # Eval on batches
+                for batch_in in eval_dataset_func(ep_batch_size):
+                    eval_func(batch_in)
+
+            # Get the metric results
+            postfix_dict.update(
+                {k: v.result().numpy() for k, v in model.eval_metrics.items()}
+            )
 
         pbar.set_postfix(postfix_dict)
 
