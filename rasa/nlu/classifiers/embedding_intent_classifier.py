@@ -1001,15 +1001,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             eval_dataset,
             batch_size_in,
             train_func,
-            [
-                self.model.total_loss_metric,
-                self.model.mask_loss_metric,
-                self.model.intent_loss_metric,
-                self.model.entity_loss_metric,
-                self.model.mask_acc_metric,
-                self.model.intent_acc_metric,
-                self.model.entity_f1_metric,
-            ],
+            self.model.out_metrics,
             self.epochs,
             self.batch_in_size,
             self.evaluate_on_num_examples,
@@ -1354,17 +1346,19 @@ class DIET(tf.keras.layers.Layer):
 
         # tf training
         self._optimizer = tf.keras.optimizers.Adam(learning_rate)
-        self.total_loss_metric = tf.keras.metrics.Mean(name="t_loss")
-
-        self.mask_loss_metric = tf.keras.metrics.Mean(name="m_loss")
-        self.intent_loss_metric = tf.keras.metrics.Mean(name="i_loss")
-        self.entity_loss_metric = tf.keras.metrics.Mean(name="e_loss")
-
-        self.mask_acc_metric = tf.keras.metrics.Mean(name="m_acc")
-        self.intent_acc_metric = tf.keras.metrics.Mean(name="i_acc")
-        self.entity_f1_metric = tfa.metrics.F1Score(
-            num_classes=self._num_tags, average="micro", name="e_f1"
-        )
+        self.out_metrics = {
+            "t_loss": tf.keras.metrics.Mean(name="t_loss"),
+            "m_loss": tf.keras.metrics.Mean(name="m_loss"),
+            "i_loss": tf.keras.metrics.Mean(name="i_loss"),
+            "e_loss": tf.keras.metrics.Mean(name="e_loss"),
+            "m_acc": tf.keras.metrics.Mean(name="m_acc"),
+            "i_acc": tf.keras.metrics.Mean(name="i_acc"),
+            "e_f1": tfa.metrics.F1Score(
+                num_classes=self._num_tags - 1,  # `0` prediction is not a prediction
+                average="micro",
+                name="e_f1",
+            ),
+        }
 
     def _combine_sparse_dense_features(
         self,
@@ -1494,7 +1488,8 @@ class DIET(tf.keras.layers.Layer):
             self._C_emb,
             self._scale_loss,
         )
-        self.mask_acc_metric.update_state(acc)
+        self.out_metrics["m_loss"].update_state(loss)
+        self.out_metrics["m_acc"].update_state(acc)
 
         return loss
 
@@ -1529,8 +1524,8 @@ class DIET(tf.keras.layers.Layer):
             self._C_emb,
             self._scale_loss,
         )
-
-        self.intent_acc_metric.update_state(acc)
+        self.out_metrics["i_loss"].update_state(loss)
+        self.out_metrics["i_acc"].update_state(acc)
 
         return loss
 
@@ -1567,7 +1562,8 @@ class DIET(tf.keras.layers.Layer):
         c_masked_1 = tf.one_hot(c_masked - 1, self._num_tags - 1)
         pred_ids_masked_1 = tf.one_hot(pred_ids_masked - 1, self._num_tags - 1)
 
-        self.entity_f1_metric.update_state(c_masked_1, pred_ids_masked_1)
+        self.out_metrics["e_loss"].update_state(loss)
+        self.out_metrics["e_f1"].update_state(c_masked_1, pred_ids_masked_1)
 
         return loss
 
@@ -1623,10 +1619,4 @@ class DIET(tf.keras.layers.Layer):
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-        self.total_loss_metric.update_state(total_loss)
-        if self._masked_lm_loss:
-            self.mask_loss_metric.update_state(losses["m_loss"])
-        if self._intent_classification:
-            self.intent_loss_metric.update_state(losses["i_loss"])
-        if self._named_entity_recognition:
-            self.entity_loss_metric.update_state(losses["e_loss"])
+        self.out_metrics["t_loss"].update_state(total_loss)

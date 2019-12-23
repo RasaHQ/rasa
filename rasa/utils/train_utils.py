@@ -1053,7 +1053,7 @@ def train_tf_dataset(
     eval_dataset: "tf.data.Dataset",
     batch_size_in: "tf.Tensor",
     train: Callable,
-    loss_metrics,
+    metrics,
     epochs: int,
     batch_size: Union[List[int], int],
     evaluate_on_num_examples: int,
@@ -1082,41 +1082,16 @@ def train_tf_dataset(
         )
 
         # Reset the metrics
-        loss_metrics[0].reset_states()
-        loss_metrics[1].reset_states()
-        loss_metrics[2].reset_states()
-        loss_metrics[3].reset_states()
-        loss_metrics[4].reset_states()
-        loss_metrics[5].reset_states()
-        loss_metrics[6].reset_states()
+        for metric in metrics.values():
+            metric.reset_states()
 
         # Train on batches
         for batch_in in train_dataset:
             train(batch_in)
 
         # Get the metric results
-        mean_total_loss = loss_metrics[0].result()
-        mean_mask_loss = loss_metrics[1].result()
-        mean_intent_loss = loss_metrics[2].result()
-        mean_entity_loss = loss_metrics[3].result()
-        mean_mask_acc = loss_metrics[4].result()
-        mean_intent_acc = loss_metrics[5].result()
-        mean_entity_f1 = loss_metrics[6].result()
+        postfix_dict = {k: v.result().numpy() for k, v in metrics.items()}
 
-        # for name, value in ep_train_metrics.loss.items():
-        #     train_metrics.loss[name] = value / batches_per_epoch
-        # for name, value in ep_train_metrics.score.items():
-        #     train_metrics.score[name] = value / batches_per_epoch
-
-        postfix_dict = {
-            "t_loss": mean_total_loss.numpy(),
-            "m_loss": mean_mask_loss.numpy(),
-            "i_loss": mean_intent_loss.numpy(),
-            "e_loss": mean_entity_loss.numpy(),
-            "m_acc": mean_mask_acc.numpy(),
-            "i_acc": mean_intent_acc.numpy(),
-            "e_f1": mean_entity_f1.numpy(),
-        }
         postfix_dict = _update_postfix_dict(postfix_dict, train_metrics)
 
         # if eval_init_op is not None:

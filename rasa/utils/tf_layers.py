@@ -140,6 +140,7 @@ class Embed(tf.keras.layers.Layer):
 
 # from https://www.tensorflow.org/tutorials/text/transformer
 # and https://github.com/tensorflow/tensor2tensor
+# TODO implement relative attention
 class MultiHeadAttention(tf.keras.layers.Layer):
     @staticmethod
     def _scaled_dot_product_attention(q, k, v, pad_mask):
@@ -201,9 +202,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         )
 
         l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
-        self._dense = tf.keras.layers.Dense(
-            d_model, use_bias=False, kernel_regularizer=l2_regularizer
-        )
+        self._dense = tf.keras.layers.Dense(d_model, kernel_regularizer=l2_regularizer)
 
     def _split_heads(self, x):
         """Split the last dimension into (num_heads, depth).
