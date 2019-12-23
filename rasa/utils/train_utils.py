@@ -515,121 +515,6 @@ def get_shapes_types(session_data: SessionDataType) -> Tuple:
     return tuple(shapes), tuple(types)
 
 
-def create_datasets(
-    session_data: SessionDataType,
-    eval_session_data: SessionDataType,
-    batch_size: Union["tf.Tensor", int],
-    batch_strategy: Text,
-    label_key: Text,
-) -> Tuple["tf.data.Dataset", "tf.data.Dataset"]:
-    """Create iterator and init datasets."""
-
-    train_dataset = create_tf_dataset(
-        session_data,
-        batch_size,
-        label_key=label_key,
-        batch_strategy=batch_strategy,
-        shuffle=True,
-    )
-
-    if eval_session_data is not None:
-        eval_dataset = create_tf_dataset(
-            eval_session_data, batch_size, label_key=label_key
-        )
-    else:
-        eval_dataset = None
-
-    return train_dataset, eval_dataset
-
-
-# def create_t2t_hparams(
-#     num_transformer_layers: int,
-#     transformer_size: int,
-#     num_heads: int,
-#     droprate: float,
-#     pos_encoding: Text,
-#     max_seq_length: int,
-#     unidirectional_encoder: bool = True,
-# ) -> "HParams":
-#     """Create parameters for t2t transformer."""
-#
-#     hparams = transformer_base()
-#
-#     hparams.num_hidden_layers = num_transformer_layers
-#     hparams.hidden_size = transformer_size
-#     # it seems to be factor of 4 for transformer architectures in t2t
-#     hparams.filter_size = hparams.hidden_size * 4
-#     hparams.num_heads = num_heads
-#     hparams.relu_dropout = droprate
-#     hparams.pos = pos_encoding
-#
-#     hparams.max_length = max_seq_length
-#
-#     hparams.unidirectional_encoder = unidirectional_encoder
-#
-#     hparams.self_attention_type = "dot_product_relative_v2"
-#     hparams.max_relative_position = 5
-#     hparams.add_relative_to_values = True
-#
-#     # When not in training mode, set all forms of dropout to zero.
-#     training = tf.keras.backend.learning_phase()
-#     for key, value in hparams.values().items():
-#         if key.endswith("dropout") or key == "label_smoothing":
-#             setattr(hparams, key, value * tf.cast(training, tf.float32))
-#
-#     return hparams
-#
-#
-# # noinspection PyUnresolvedReferences
-# def create_t2t_transformer_encoder(
-#     x_in: "tf.Tensor",
-#     pre_transformer: "tf.keras.layers.Layer",
-#     mask: "tf.Tensor",
-#     attention_weights: Dict[Text, "tf.Tensor"],
-#     hparams: "HParams",
-#     name: Text,
-# ) -> "tf.Tensor":
-#     """Create t2t transformer encoder."""
-#     with tf.variable_scope(f"transformer_{name}", reuse=tf.AUTO_REUSE):
-#         if len(mask.shape) == 2:
-#             _mask = tf.expand_dims(mask, -1)
-#         else:
-#             _mask = mask
-#
-#         x = pre_transformer(x_in)
-#
-#         if hparams.multiply_embedding_mode == "sqrt_depth":
-#             x *= hparams.hidden_size ** 0.5
-#
-#         (
-#             x,
-#             self_attention_bias,
-#             encoder_decoder_attention_bias,
-#         ) = transformer_prepare_encoder(x, None, hparams)
-#
-#         x *= _mask
-#
-#         x = tf.nn.dropout(x, 1.0 - hparams.layer_prepostprocess_dropout)
-#
-#         attn_bias_for_padding = None
-#         # Otherwise the encoder will just use encoder_self_attention_bias.
-#         if hparams.unidirectional_encoder:
-#             attn_bias_for_padding = encoder_decoder_attention_bias
-#
-#         x = transformer_encoder(
-#             x,
-#             self_attention_bias,
-#             hparams,
-#             nonpadding=_mask,
-#             save_weights_to=attention_weights,
-#             attn_bias_for_padding=attn_bias_for_padding,
-#         )
-#
-#         x *= _mask
-#
-#         return tf.nn.dropout(tf.nn.relu(x), 1.0 - hparams.layer_prepostprocess_dropout)
-
-
 def _tf_make_flat(x: "tf.Tensor") -> "tf.Tensor":
     """Make tensor 2D."""
 
@@ -1049,11 +934,7 @@ def output_validation_stat(
 
 
 def train_tf_dataset(
-    train_dataset: "tf.data.Dataset",
-    eval_dataset: "tf.data.Dataset",
-    batch_size_in: "tf.Tensor",
-    train: Callable,
-    metrics,
+    model,
     epochs: int,
     batch_size: Union[List[int], int],
     evaluate_on_num_examples: int,
@@ -1069,32 +950,32 @@ def train_tf_dataset(
         )
     pbar = tqdm(range(epochs), desc="Epochs", disable=is_logging_disabled())
 
-    train_metrics = TrainingMetrics(loss={}, score={})
-    val_metrics = TrainingMetrics(loss={}, score={})
+    train_dataset_func = tf.function(model.train_dataset)
+    eval_dataset_func = tf.function(model.eval_dataset)
+
+    tf_batch_size = tf.ones((), tf.int32)
+    train_func = tf.function(
+        model.train, input_signature=[train_dataset_func(tf_batch_size).element_spec]
+    )
+    # train_func = self.model.train
 
     for ep in pbar:
 
-        # ep_batch_size = linearly_increasing_batch_size(ep, batch_size, epochs)
-        # batchsize_in += ep_batch_size - batch_size_in
-
-        ep_train_metrics = TrainingMetrics(
-            loss=defaultdict(lambda: 0.0), score=defaultdict(lambda: 0.0)
-        )
+        # allows increasing batch size
+        ep_batch_size = tf_batch_size * linearly_increasing_batch_size(ep, batch_size, epochs)
 
         # Reset the metrics
-        for metric in metrics.values():
+        for metric in model.out_metrics.values():
             metric.reset_states()
 
         # Train on batches
-        for batch_in in train_dataset:
-            train(batch_in)
+        for batch_in in train_dataset_func(ep_batch_size):
+            train_func(batch_in)
 
         # Get the metric results
-        postfix_dict = {k: v.result().numpy() for k, v in metrics.items()}
+        postfix_dict = {k: v.result().numpy() for k, v in model.out_metrics.items()}
 
-        postfix_dict = _update_postfix_dict(postfix_dict, train_metrics)
-
-        # if eval_init_op is not None:
+        # if eval_dataset_func(ep_batch_size) is not None:
         #     if (ep + 1) % evaluate_every_num_epochs == 0 or (ep + 1) == epochs:
         #         val_metrics = output_validation_stat(
         #             eval_init_op,
@@ -1115,7 +996,7 @@ def train_tf_dataset(
 
 
 def _update_postfix_dict(
-    postfix_dict: Dict[Text, Text], metrics: TrainingMetrics, prefix: Text = ""
+    postfix_dict: Dict[Text, Text], metrics, prefix: Text = ""
 ) -> Dict[Text, Text]:
     for name, value in metrics.loss.items():
         postfix_dict[f"{prefix}{name}"] = f"{value:.3f}"

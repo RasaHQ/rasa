@@ -949,19 +949,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # set random seed
         tf.random.set_seed(self.random_seed)
 
-        # allows increasing batch size
-        batch_size_in = self.batch_in_size[0]  # * tf.ones((), tf.int32)
-
-        train_dataset, eval_dataset = train_utils.create_datasets(
-            session_data,
-            eval_session_data,
-            batch_size_in,
-            self.batch_in_strategy,
-            label_key="intent_ids",
-        )
-
         self.model = DIET(
             session_data,
+            eval_session_data,
             self._label_data,
             self.dense_dim,
             self.embed_dim,
@@ -970,7 +960,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.num_transformer_layers,
             self.transformer_size,
             self.num_heads,
-            self.pos_encoding,
             self.max_seq_length,
             self.unidirectional_encoder,
             self.C2,
@@ -989,19 +978,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.named_entity_recognition,
             self.inverted_tag_dict,
             self.learning_rate,
+            self.batch_in_strategy,
         )
-
-        train_func = tf.function(
-            self.model.train, input_signature=[train_dataset.element_spec]
-        )
-        # train_func = self.model.train
 
         train_utils.train_tf_dataset(
-            train_dataset,
-            eval_dataset,
-            batch_size_in,
-            train_func,
-            self.model.out_metrics,
+            self.model,
             self.epochs,
             self.batch_in_size,
             self.evaluate_on_num_examples,
@@ -1212,6 +1193,7 @@ class DIET(tf.keras.layers.Layer):
     def __init__(
         self,
         session_data,
+        eval_session_data,
         label_data,
         dense_dim,
         embed_dim,
@@ -1220,7 +1202,6 @@ class DIET(tf.keras.layers.Layer):
         num_transformer_layers,
         transformer_size,
         num_heads,
-        pos_encoding,
         max_seq_length,
         unidirectional_encoder,
         reg_lambda,
@@ -1239,11 +1220,13 @@ class DIET(tf.keras.layers.Layer):
         named_entity_recognition,
         inverted_tag_dict,
         learning_rate,
+        batch_in_strategy,
     ):
         super(DIET, self).__init__(name="DIET")
 
         # data
         self.session_data = session_data
+        self.eval_session_data = eval_session_data
         label_batch = train_utils.prepare_batch(label_data)
         self.tf_label_data, _ = train_utils.batch_to_session_data(
             label_batch, label_data
@@ -1263,6 +1246,7 @@ class DIET(tf.keras.layers.Layer):
         self._named_entity_recognition = named_entity_recognition
         self._inverted_tag_dict = inverted_tag_dict
         self._num_tags = len(inverted_tag_dict)
+        self._batch_in_strategy = batch_in_strategy
 
         # tf objects
         self._sparse_dropout = tf_layers.SparseDropout(rate=droprate)
@@ -1611,7 +1595,6 @@ class DIET(tf.keras.layers.Layer):
         return losses
 
     def train(self, batch_in):
-
         with tf.GradientTape() as tape:
             losses = self._multi_task_losses(batch_in)
             total_loss = tf.math.add_n(list(losses.values())) + self.losses
@@ -1620,3 +1603,20 @@ class DIET(tf.keras.layers.Layer):
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
         self.out_metrics["t_loss"].update_state(total_loss)
+
+    def train_dataset(self, batch_size):
+        return train_utils.create_tf_dataset(
+            self.session_data,
+            batch_size,
+            label_key="intent_ids",
+            batch_strategy=self._batch_in_strategy,
+            shuffle=True,
+        )
+
+    def eval_dataset(self, batch_size):
+        if self.eval_session_data is not None:
+            return train_utils.create_tf_dataset(
+                self.eval_session_data,
+                batch_size,
+                label_key="intent_ids",
+            )
