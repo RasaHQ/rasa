@@ -18,6 +18,7 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
+
 # from tensor2tensor.models.transformer import (
 #     transformer_base,
 #     transformer_prepare_encoder,
@@ -532,7 +533,9 @@ def create_datasets(
     )
 
     if eval_session_data is not None:
-        eval_dataset = create_tf_dataset(eval_session_data, batch_size, label_key=label_key)
+        eval_dataset = create_tf_dataset(
+            eval_session_data, batch_size, label_key=label_key
+        )
     else:
         eval_dataset = None
 
@@ -860,7 +863,9 @@ def _tf_loss_softmax(
     else:
         scale_mask = mask
 
-    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=label_ids, logits=logits)
+    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+        labels=label_ids, logits=logits
+    )
 
     # scale loss
     if len(loss.shape) == 2:
@@ -1103,14 +1108,15 @@ def train_tf_dataset(
         # for name, value in ep_train_metrics.score.items():
         #     train_metrics.score[name] = value / batches_per_epoch
 
-        postfix_dict = {"t_loss": mean_total_loss.numpy(),
-                        "m_loss": mean_mask_loss.numpy(),
-                        "i_loss": mean_intent_loss.numpy(),
-                        "e_loss": mean_entity_loss.numpy(),
-                        "m_acc": mean_mask_acc.numpy(),
-                        "i_acc": mean_intent_acc.numpy(),
-                        "e_f1": mean_entity_f1.numpy(),
-                        }
+        postfix_dict = {
+            "t_loss": mean_total_loss.numpy(),
+            "m_loss": mean_mask_loss.numpy(),
+            "i_loss": mean_intent_loss.numpy(),
+            "e_loss": mean_entity_loss.numpy(),
+            "m_acc": mean_mask_acc.numpy(),
+            "i_acc": mean_intent_acc.numpy(),
+            "e_f1": mean_entity_f1.numpy(),
+        }
         postfix_dict = _update_postfix_dict(postfix_dict, train_metrics)
 
         # if eval_init_op is not None:

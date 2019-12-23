@@ -143,10 +143,7 @@ class Event:
         return [cls(parameters.get("timestamp"), parameters.get("metadata"))]
 
     def as_dict(self):
-        d = {
-            "event": self.type_name,
-            "timestamp": self.timestamp,
-        }
+        d = {"event": self.type_name, "timestamp": self.timestamp}
 
         if self.metadata:
             d["metadata"] = self.metadata

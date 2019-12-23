@@ -950,7 +950,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         tf.random.set_seed(self.random_seed)
 
         # allows increasing batch size
-        batch_size_in = self.batch_in_size[0] #* tf.ones((), tf.int32)
+        batch_size_in = self.batch_in_size[0]  # * tf.ones((), tf.int32)
 
         train_dataset, eval_dataset = train_utils.create_datasets(
             session_data,
@@ -960,36 +960,40 @@ class EmbeddingIntentClassifier(EntityExtractor):
             label_key="intent_ids",
         )
 
-        self.model = DIET(session_data,
-                          self._label_data,
-                          self.dense_dim,
-                          self.embed_dim,
-                          self.hidden_layer_sizes,
-                          self.share_hidden_layers,
-                          self.num_transformer_layers,
-                          self.transformer_size,
-                          self.num_heads,
-                          self.pos_encoding,
-                          self.max_seq_length,
-                          self.unidirectional_encoder,
-                          self.C2,
-                          self.droprate,
-                          self.sparse_input_dropout,
-                          self.num_neg,
-                          self.loss_type,
-                          self.mu_pos,
-                          self.mu_neg,
-                          self.use_max_sim_neg,
-                          self.C_emb,
-                          self.scale_loss,
-                          self.similarity_type,
-                          self.masked_lm_loss,
-                          self.intent_classification,
-                          self.named_entity_recognition,
-                          self.inverted_tag_dict,
-                          self.learning_rate)
+        self.model = DIET(
+            session_data,
+            self._label_data,
+            self.dense_dim,
+            self.embed_dim,
+            self.hidden_layer_sizes,
+            self.share_hidden_layers,
+            self.num_transformer_layers,
+            self.transformer_size,
+            self.num_heads,
+            self.pos_encoding,
+            self.max_seq_length,
+            self.unidirectional_encoder,
+            self.C2,
+            self.droprate,
+            self.sparse_input_dropout,
+            self.num_neg,
+            self.loss_type,
+            self.mu_pos,
+            self.mu_neg,
+            self.use_max_sim_neg,
+            self.C_emb,
+            self.scale_loss,
+            self.similarity_type,
+            self.masked_lm_loss,
+            self.intent_classification,
+            self.named_entity_recognition,
+            self.inverted_tag_dict,
+            self.learning_rate,
+        )
 
-        train_func = tf.function(self.model.train, input_signature=[train_dataset.element_spec])
+        train_func = tf.function(
+            self.model.train, input_signature=[train_dataset.element_spec]
+        )
         # train_func = self.model.train
 
         train_utils.train_tf_dataset(
@@ -997,13 +1001,15 @@ class EmbeddingIntentClassifier(EntityExtractor):
             eval_dataset,
             batch_size_in,
             train_func,
-            [self.model.total_loss_metric,
-             self.model.mask_loss_metric,
-             self.model.intent_loss_metric,
-             self.model.entity_loss_metric,
-             self.model.mask_acc_metric,
-             self.model.intent_acc_metric,
-             self.model.entity_f1_metric],
+            [
+                self.model.total_loss_metric,
+                self.model.mask_loss_metric,
+                self.model.intent_loss_metric,
+                self.model.entity_loss_metric,
+                self.model.mask_acc_metric,
+                self.model.intent_acc_metric,
+                self.model.entity_f1_metric,
+            ],
             self.epochs,
             self.batch_in_size,
             self.evaluate_on_num_examples,
@@ -1014,9 +1020,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # rebuild the graph for prediction
         self._build_tf_pred_graph(session_data)
 
-        self.attention_weights = train_utils.extract_attention(
-            self.attention_weights
-        )
+        self.attention_weights = train_utils.extract_attention(self.attention_weights)
 
     def process(self, message: "Message", **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""
@@ -1179,8 +1183,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             return cls(component_config=meta)
 
 
-class DIET(tf.Module):
-
+class DIET(tf.keras.layers.Layer):
     @staticmethod
     def _create_sparse_dense_layer(values, name, reg_lambda, dense_dim):
 
@@ -1194,9 +1197,9 @@ class DIET(tf.Module):
                 dense_dim = v[0].shape[-1]
 
         if sparse:
-            return tf_layers.DenseForSparse(units=dense_dim,
-                                            reg_lambda=reg_lambda,
-                                            name=name)
+            return tf_layers.DenseForSparse(
+                units=dense_dim, reg_lambda=reg_lambda, name=name
+            )
 
     @staticmethod
     def _input_dim(values, dense_dim):
@@ -1214,41 +1217,45 @@ class DIET(tf.Module):
     def _get_layers(layers: Dict):
         return [layer for layer in layers.values() if layer is not None]
 
-    def __init__(self,
-                 session_data,
-                 label_data,
-                 dense_dim,
-                 embed_dim,
-                 hidden_layer_sizes,
-                 share_hidden_layers,
-                 num_transformer_layers,
-                 transformer_size,
-                 num_heads,
-                 pos_encoding,
-                 max_seq_length,
-                 unidirectional_encoder,
-                 reg_lambda,
-                 droprate,
-                 sparse_input_dropout,
-                 num_neg,
-                 loss_type,
-                 mu_pos,
-                 mu_neg,
-                 use_max_sim_neg,
-                 C_emb,
-                 scale_loss,
-                 similarity_type,
-                 masked_lm_loss,
-                 intent_classification,
-                 named_entity_recognition,
-                 inverted_tag_dict,
-                 learning_rate):
+    def __init__(
+        self,
+        session_data,
+        label_data,
+        dense_dim,
+        embed_dim,
+        hidden_layer_sizes,
+        share_hidden_layers,
+        num_transformer_layers,
+        transformer_size,
+        num_heads,
+        pos_encoding,
+        max_seq_length,
+        unidirectional_encoder,
+        reg_lambda,
+        droprate,
+        sparse_input_dropout,
+        num_neg,
+        loss_type,
+        mu_pos,
+        mu_neg,
+        use_max_sim_neg,
+        C_emb,
+        scale_loss,
+        similarity_type,
+        masked_lm_loss,
+        intent_classification,
+        named_entity_recognition,
+        inverted_tag_dict,
+        learning_rate,
+    ):
         super(DIET, self).__init__(name="DIET")
 
         # data
         self.session_data = session_data
         label_batch = train_utils.prepare_batch(label_data)
-        self.tf_label_data, _ = train_utils.batch_to_session_data(label_batch, label_data)
+        self.tf_label_data, _ = train_utils.batch_to_session_data(
+            label_batch, label_data
+        )
 
         # options
         self._sparse_input_dropout = sparse_input_dropout
@@ -1266,32 +1273,30 @@ class DIET(tf.Module):
         self._num_tags = len(inverted_tag_dict)
 
         # tf objects
-        self._layers = []
-
         self._sparse_dropout = tf_layers.SparseDropout(rate=droprate)
         self._sparse_to_dense = {
-            "text": self._create_sparse_dense_layer(session_data["text_features"],
-                                                    "text",
-                                                    reg_lambda,
-                                                    dense_dim),
-            "intent": self._create_sparse_dense_layer(session_data["intent_features"],
-                                                      "intent",
-                                                      reg_lambda,
-                                                      dense_dim),
+            "text": self._create_sparse_dense_layer(
+                session_data["text_features"], "text", reg_lambda, dense_dim
+            ),
+            "intent": self._create_sparse_dense_layer(
+                session_data["intent_features"], "intent", reg_lambda, dense_dim
+            ),
         }
-        self._layers.extend(self._get_layers(self._sparse_to_dense))
 
         self._ffnn = {
-            "text": tf_layers.Ffnn(hidden_layer_sizes["text"],
-                                   droprate,
-                                   reg_lambda,
-                                   "text_intent" if share_hidden_layers else "text"),
-            "intent": tf_layers.Ffnn(hidden_layer_sizes["intent"],
-                                     droprate,
-                                     reg_lambda,
-                                     "text_intent" if share_hidden_layers else "intent")
+            "text": tf_layers.ReluFfn(
+                hidden_layer_sizes["text"],
+                droprate,
+                reg_lambda,
+                "text_intent" if share_hidden_layers else "text",
+            ),
+            "intent": tf_layers.ReluFfn(
+                hidden_layer_sizes["intent"],
+                droprate,
+                reg_lambda,
+                "text_intent" if share_hidden_layers else "intent",
+            ),
         }
-        self._layers.extend(self._get_layers(self._ffnn))
 
         if num_transformer_layers > 0:
             self._transformer = tf_layers.TransformerEncoder(
@@ -1300,71 +1305,73 @@ class DIET(tf.Module):
                 num_heads,
                 transformer_size * 4,
                 max_seq_length,
+                reg_lambda,
                 droprate,
                 unidirectional_encoder,
+                name="text_encoder",
             )
-            self._layers.append(self._transformer)
         else:
             self._transformer = lambda x, mask, training: x
 
         self._embed = {}
         if self._masked_lm_loss:
-            self._embed["text_mask"] = tf_layers.Embed(embed_dim,
-                                                       reg_lambda,
-                                                       "text_mask",
-                                                       similarity_type)
-            self._embed["text_token"] = tf_layers.Embed(embed_dim,
-                                                        reg_lambda,
-                                                        "text_token",
-                                                        similarity_type)
+            self._embed["text_mask"] = tf_layers.Embed(
+                embed_dim, reg_lambda, "text_mask", similarity_type
+            )
+            self._embed["text_token"] = tf_layers.Embed(
+                embed_dim, reg_lambda, "text_token", similarity_type
+            )
         if self._intent_classification:
-            self._embed["text"] = tf_layers.Embed(embed_dim,
-                                                  reg_lambda,
-                                                  "text",
-                                                  similarity_type)
-            self._embed["intent"] = tf_layers.Embed(embed_dim,
-                                                    reg_lambda,
-                                                    "intent",
-                                                    similarity_type)
+            self._embed["text"] = tf_layers.Embed(
+                embed_dim, reg_lambda, "text", similarity_type
+            )
+            self._embed["intent"] = tf_layers.Embed(
+                embed_dim, reg_lambda, "intent", similarity_type
+            )
         if self._named_entity_recognition:
-            self._embed["logits"] = tf_layers.Embed(self._num_tags,
-                                                    reg_lambda,
-                                                    "logits")
-        self._layers.extend(self._get_layers(self._embed))
+            self._embed["logits"] = tf_layers.Embed(
+                self._num_tags, reg_lambda, "logits"
+            )
 
         # tf tensors
         self.training = tf.ones((), tf.bool)
         initializer = tf.keras.initializers.GlorotUniform()
         text_input_dim = self._input_dim(session_data["text_features"], dense_dim)
-        self._mask_vector = tf.Variable(
-            initial_value=initializer((1, 1, text_input_dim)),
+        self._mask_vector = self.add_weight(
+            shape=(1, 1, text_input_dim),
+            initializer=initializer,
             trainable=True,
-            name="mask_vector"
+            name="mask_vector",
         )
-        self._crf_params = tf.Variable(
-            initial_value=initializer((self._num_tags, self._num_tags)),
+        l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
+        self._crf_params = self.add_weight(
+            shape=(self._num_tags, self._num_tags),
+            initializer=initializer,
+            regularizer=l2_regularizer,
             trainable=True,
-            name="crf_params"
+            name="crf_params",
         )
 
         # tf training
         self._optimizer = tf.keras.optimizers.Adam(learning_rate)
-        self.total_loss_metric = tf.keras.metrics.Mean(name='t_loss')
+        self.total_loss_metric = tf.keras.metrics.Mean(name="t_loss")
 
-        self.mask_loss_metric = tf.keras.metrics.Mean(name='m_loss')
-        self.intent_loss_metric = tf.keras.metrics.Mean(name='i_loss')
-        self.entity_loss_metric = tf.keras.metrics.Mean(name='e_loss')
+        self.mask_loss_metric = tf.keras.metrics.Mean(name="m_loss")
+        self.intent_loss_metric = tf.keras.metrics.Mean(name="i_loss")
+        self.entity_loss_metric = tf.keras.metrics.Mean(name="e_loss")
 
-        self.mask_acc_metric = tf.keras.metrics.Mean(name='m_acc')
-        self.intent_acc_metric = tf.keras.metrics.Mean(name='i_acc')
-        self.entity_f1_metric = tfa.metrics.F1Score(num_classes=self._num_tags, average='micro')
+        self.mask_acc_metric = tf.keras.metrics.Mean(name="m_acc")
+        self.intent_acc_metric = tf.keras.metrics.Mean(name="i_acc")
+        self.entity_f1_metric = tfa.metrics.F1Score(
+            num_classes=self._num_tags, average="micro", name="e_f1"
+        )
 
     def _combine_sparse_dense_features(
-            self,
-            features: List[Union["tf.Tensor", "tf.SparseTensor"]],
-            mask: "tf.Tensor",
-            name: Text,
-            sparse_dropout: bool = False,
+        self,
+        features: List[Union["tf.Tensor", "tf.SparseTensor"]],
+        mask: "tf.Tensor",
+        name: Text,
+        sparse_dropout: bool = False,
     ) -> "tf.Tensor":
 
         dense_features = []
@@ -1376,34 +1383,36 @@ class DIET(tf.Module):
                 else:
                     _f = f
 
-                dense_features.append(
-                    self._sparse_to_dense[name](_f)
-                )
+                dense_features.append(self._sparse_to_dense[name](_f))
             else:
                 dense_features.append(f)
 
         return tf.concat(dense_features, axis=-1) * mask
 
-    def _create_bow(self,
-                    features: List[Union["tf.Tensor", "tf.SparseTensor"]],
-                    mask: "tf.Tensor",
-                    name: Text):
+    def _create_bow(
+        self,
+        features: List[Union["tf.Tensor", "tf.SparseTensor"]],
+        mask: "tf.Tensor",
+        name: Text,
+    ):
 
         x = self._combine_sparse_dense_features(features, mask, name)
         return self._ffnn[name](tf.reduce_sum(x, 1), self.training)
 
     def _mask_input(
-            self, a: "tf.Tensor", mask: "tf.Tensor"
+        self, a: "tf.Tensor", mask: "tf.Tensor"
     ) -> Tuple["tf.Tensor", "tf.Tensor"]:
         """Randomly mask input sequences."""
 
         # do not substitute with cls token
-        pad_mask_up_to_last = tf.math.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
+        pad_mask_up_to_last = tf.math.cumprod(
+            1 - mask, axis=1, exclusive=True, reverse=True
+        )
         mask_up_to_last = 1 - pad_mask_up_to_last
 
         a_random_pad = (
-                tf.random.uniform(tf.shape(a), tf.reduce_min(a), tf.reduce_max(a), a.dtype)
-                * pad_mask_up_to_last
+            tf.random.uniform(tf.shape(a), tf.reduce_min(a), tf.reduce_max(a), a.dtype)
+            * pad_mask_up_to_last
         )
         # shuffle over batch dim
         a_shuffle = tf.random.shuffle(a * mask_up_to_last + a_random_pad)
@@ -1432,16 +1441,15 @@ class DIET(tf.Module):
 
         return a_pre, lm_mask_bool
 
-    def _create_sequence(self,
-                         features: List[Union["tf.Tensor", "tf.SparseTensor"]],
-                         mask: "tf.Tensor",
-                         name: Text,
-                         masked_lm_loss: bool):
+    def _create_sequence(
+        self,
+        features: List[Union["tf.Tensor", "tf.SparseTensor"]],
+        mask: "tf.Tensor",
+        name: Text,
+        masked_lm_loss: bool,
+    ):
         x = self._combine_sparse_dense_features(
-            features,
-            mask,
-            name,
-            sparse_dropout=self._sparse_input_dropout,
+            features, mask, name, sparse_dropout=self._sparse_input_dropout
         )
 
         if masked_lm_loss:
@@ -1492,7 +1500,9 @@ class DIET(tf.Module):
 
     def _build_all_b(self):
         all_labels = self._create_bow(
-            self.tf_label_data["intent_features"], self.tf_label_data["intent_mask"][0], "intent"
+            self.tf_label_data["intent_features"],
+            self.tf_label_data["intent_mask"][0],
+            "intent",
         )
         all_labels_embed = self._embed["intent"](all_labels)
 
@@ -1545,7 +1555,9 @@ class DIET(tf.Module):
         loss = tf.reduce_mean(-log_likelihood)
 
         # CRF preds
-        pred_ids, _ = tfa.text.crf.crf_decode(logits, self._crf_params, sequence_lengths)
+        pred_ids, _ = tfa.text.crf.crf_decode(
+            logits, self._crf_params, sequence_lengths
+        )
 
         # calculate f1 score for train predictions
         mask_bool = tf.cast(mask[:, :, 0], tf.bool)
@@ -1559,45 +1571,54 @@ class DIET(tf.Module):
 
         return loss
 
-    def _losses(self, batch_in):
-        tf_batch_data, _ = train_utils.batch_to_session_data(batch_in, self.session_data)
+    def _multi_task_losses(self, batch_in):
+        tf_batch_data, _ = train_utils.batch_to_session_data(
+            batch_in, self.session_data
+        )
 
         mask_text = tf_batch_data["text_mask"][0]
         sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
 
         text_transformed, text_in, lm_mask_bool_text = self._create_sequence(
-            tf_batch_data["text_features"], mask_text, "text", self._masked_lm_loss)
+            tf_batch_data["text_features"], mask_text, "text", self._masked_lm_loss
+        )
 
         losses = {}
 
         if self._masked_lm_loss:
-            losses["m_loss"] = self._mask_loss(text_transformed, text_in, lm_mask_bool_text, "text")
+            losses["m_loss"] = self._mask_loss(
+                text_transformed, text_in, lm_mask_bool_text, "text"
+            )
 
         if self._intent_classification:
             # get _cls_ vector for intent classification
-            last_index = tf.maximum(tf.constant(0, dtype=sequence_lengths.dtype), sequence_lengths - 1)
+            last_index = tf.maximum(
+                tf.constant(0, dtype=sequence_lengths.dtype), sequence_lengths - 1
+            )
             idxs = tf.stack([tf.range(tf.shape(last_index)[0]), last_index], axis=1)
             cls = tf.gather_nd(text_transformed, idxs)
 
             label = self._create_bow(
-                tf_batch_data["intent_features"], tf_batch_data["intent_mask"][0], "intent"
+                tf_batch_data["intent_features"],
+                tf_batch_data["intent_mask"][0],
+                "intent",
             )
             losses["i_loss"] = self._intent_loss(cls, label)
 
         if self._named_entity_recognition:
             tags = tf_batch_data["tag_ids"][0]
 
-            losses["e_loss"] = self._entity_loss(text_transformed, tags, mask_text, sequence_lengths)
+            losses["e_loss"] = self._entity_loss(
+                text_transformed, tags, mask_text, sequence_lengths
+            )
 
         return losses
 
     def train(self, batch_in):
 
         with tf.GradientTape() as tape:
-            losses = self._losses(batch_in)
-            reg_losses = tf.math.add_n([tf.math.add_n(layer.losses) for layer in self._layers if layer.losses])
-
-            total_loss = tf.math.add_n(list(losses.values())) + reg_losses
+            losses = self._multi_task_losses(batch_in)
+            total_loss = tf.math.add_n(list(losses.values())) + self.losses
 
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
