@@ -141,6 +141,7 @@ class Embed(tf.keras.layers.Layer):
 # from https://www.tensorflow.org/tutorials/text/transformer
 # and https://github.com/tensorflow/tensor2tensor
 # TODO implement relative attention
+# TODO save attention weights
 class MultiHeadAttention(tf.keras.layers.Layer):
     @staticmethod
     def _scaled_dot_product_attention(q, k, v, pad_mask):

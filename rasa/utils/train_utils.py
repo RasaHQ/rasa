@@ -422,7 +422,7 @@ def pad_dense_data(array_of_dense: np.ndarray) -> np.ndarray:
 
 def batch_to_session_data(
     batch: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], session_data: SessionDataType
-) -> Tuple[Dict[Text, List[tf.Tensor]], Dict[Text, int]]:
+) -> Dict[Text, List[tf.Tensor]]:
     """Convert input batch tensors into batch data format.
 
     Batch contains any number of batch data. The order is equal to the
@@ -432,12 +432,9 @@ def batch_to_session_data(
     """
 
     batch_data = defaultdict(list)
-    # save the amount of placeholders attributed to session data keys
-    tuple_sizes = defaultdict(int)
 
     idx = 0
     for k, values in session_data.items():
-        tuple_sizes[k] = 0
         for v in values:
             if isinstance(v[0], scipy.sparse.spmatrix):
                 # explicitly substitute last dimension in shape with known static value
@@ -448,14 +445,33 @@ def batch_to_session_data(
                         [batch[idx + 2][0], batch[idx + 2][1], v[0].shape[-1]],
                     )
                 )
-                tuple_sizes[k] += 3
                 idx += 3
             else:
                 batch_data[k].append(batch[idx])
+                idx += 1
+
+    return batch_data
+
+
+def batch_tuple_sizes(
+    session_data: SessionDataType
+) -> Dict[Text, int]:
+
+    # save the amount of placeholders attributed to session data keys
+    tuple_sizes = defaultdict(int)
+
+    idx = 0
+    for k, values in session_data.items():
+        tuple_sizes[k] = 0
+        for v in values:
+            if isinstance(v[0], scipy.sparse.spmatrix):
+                tuple_sizes[k] += 3
+                idx += 3
+            else:
                 tuple_sizes[k] += 1
                 idx += 1
 
-    return batch_data, tuple_sizes
+    return tuple_sizes
 
 
 def create_tf_dataset(
@@ -943,7 +959,7 @@ def train_tf_dataset(
 ) -> None:
     """Train tf graph"""
 
-    if evaluate_on_num_examples:
+    if evaluate_on_num_examples > 0:
         logger.info(
             f"Validation accuracy is calculated every {evaluate_every_num_epochs} "
             f"epochs."

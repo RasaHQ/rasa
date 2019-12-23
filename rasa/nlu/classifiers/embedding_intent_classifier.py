@@ -657,77 +657,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return session_data
 
-    def _build_tf_pred_graph(self, session_data: "SessionDataType"):
-
-        shapes, types = train_utils.get_shapes_types(session_data)
-
-        batch_placeholder = []
-        for s, t in zip(shapes, types):
-            batch_placeholder.append(tf.placeholder(t, s))
-
-        self.batch_in = tf.tuple(batch_placeholder)
-
-        batch_data, self.batch_tuple_sizes = train_utils.batch_to_session_data(
-            self.batch_in, session_data
-        )
-
-        mask = batch_data["text_mask"][0]
-        a = self.combine_sparse_dense_features(
-            batch_data["text_features"], mask, "text"
-        )
-
-        # transformer
-        a = self._create_tf_sequence(a, mask)
-
-        if self.intent_classification:
-            b = self.combine_sparse_dense_features(
-                batch_data["intent_features"], batch_data["intent_mask"][0], "intent"
-            )
-            self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
-
-            self._pred_intent_graph(a, b, mask)
-
-        if self.named_entity_recognition:
-            self._pred_entity_graph(a, mask)
-
-    def _pred_intent_graph(self, a: "tf.Tensor", b: "tf.Tensor", mask: "tf.Tensor"):
-        last = mask * tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
-
-        # get _cls_ embedding
-        self.cls_embed = tf.reduce_sum(a * last, 1)
-        self.cls_embed = train_utils.create_tf_embed(
-            self.cls_embed, self.embed_dim, self.C2, "cls", self.similarity_type
-        )
-
-        b = tf.reduce_sum(b, 1)
-
-        self.sim_all = train_utils.tf_raw_sim(
-            self.cls_embed[:, tf.newaxis, :],
-            self.all_labels_embed[tf.newaxis, :, :],
-            None,
-        )
-        self.label_embed = self._create_tf_embed_fnn(
-            b,
-            self.hidden_layer_sizes["intent"],
-            fnn_name="text_intent" if self.share_hidden_layers else "intent",
-            embed_name="intent",
-        )
-        self.sim = train_utils.tf_raw_sim(
-            self.cls_embed[:, tf.newaxis, :], self.label_embed, None
-        )
-
-        self.intent_prediction = train_utils.confidence_from_sim(
-            self.sim_all, self.similarity_type
-        )
-
-    def _pred_entity_graph(self, a: "tf.Tensor", mask: "tf.Tensor"):
-        mask_up_to_last = 1 - tf.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
-        sequence_lengths = tf.cast(tf.reduce_sum(mask_up_to_last[:, :, 0], 1), tf.int32)
-
-        # predict tagsx
-        _, _, pred_ids = self._create_crf(a, sequence_lengths)
-        self.entity_prediction = tf.to_int64(pred_ids)
-
     # train helpers
     def preprocess_train_data(self, training_data: "TrainingData"):
         """Prepares data for training.
@@ -991,9 +920,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
         # rebuild the graph for prediction
-        self._build_tf_pred_graph(session_data)
+        self.model.build_for_predict()
 
-        self.attention_weights = train_utils.extract_attention(self.attention_weights)
+        # self.attention_weights = train_utils.extract_attention(self.attention_weights)
 
     def process(self, message: "Message", **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""
@@ -1224,7 +1153,7 @@ class DIET(tf.keras.layers.Layer):
         self.session_data = session_data
         self.eval_session_data = eval_session_data
         label_batch = train_utils.prepare_batch(label_data)
-        self.tf_label_data, _ = train_utils.batch_to_session_data(
+        self.tf_label_data = train_utils.batch_to_session_data(
             label_batch, label_data
         )
 
@@ -1237,6 +1166,7 @@ class DIET(tf.keras.layers.Layer):
         self._use_max_sim_neg = use_max_sim_neg
         self._C_emb = C_emb
         self._scale_loss = scale_loss
+        self._similarity_type = similarity_type
         self._masked_lm_loss = masked_lm_loss
         self._intent_classification = intent_classification
         self._named_entity_recognition = named_entity_recognition
@@ -1347,6 +1277,10 @@ class DIET(tf.keras.layers.Layer):
             average="micro",
         )
 
+        # persist
+        self.all_labels_embed = None
+        self.batch_tuple_sizes = None
+
     def set_training_phase(self, training: bool):
         if training:
             self.training = tf.ones((), tf.bool)
@@ -1433,7 +1367,7 @@ class DIET(tf.keras.layers.Layer):
         features: List[Union["tf.Tensor", "tf.SparseTensor"]],
         mask: "tf.Tensor",
         name: Text,
-        masked_lm_loss: bool,
+        masked_lm_loss: bool = False,
     ):
         x = self._combine_sparse_dense_features(
             features, mask, name, sparse_dropout=self._sparse_input_dropout
@@ -1552,7 +1486,7 @@ class DIET(tf.keras.layers.Layer):
         return loss, f1
 
     def _train_losses_scores(self, batch_in):
-        tf_batch_data, _ = train_utils.batch_to_session_data(
+        tf_batch_data = train_utils.batch_to_session_data(
             batch_in, self.session_data
         )
 
@@ -1639,3 +1573,61 @@ class DIET(tf.keras.layers.Layer):
             return train_utils.create_tf_dataset(
                 self.eval_session_data, batch_size, label_key="intent_ids"
             )
+
+    def build_for_predict(self):
+        self.batch_tuple_sizes = train_utils.batch_tuple_sizes(self.session_data)
+
+        all_labels_embed, _ = self._build_all_b()
+        self.all_labels_embed = tf.constant(all_labels_embed.numpy())
+
+    def predict(self, batch_in):
+        tf_batch_data, _ = train_utils.batch_to_session_data(
+            batch_in, self.session_data
+        )
+
+        mask_text = tf_batch_data["text_mask"][0]
+        sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
+
+        text_transformed, text_in, lm_mask_bool_text = self._create_sequence(
+            tf_batch_data["text_features"], mask_text, "text"
+        )
+
+        out = {}
+        if self._intent_classification:
+            # get _cls_ vector for intent classification
+            last_index = tf.maximum(
+                tf.constant(0, dtype=sequence_lengths.dtype), sequence_lengths - 1
+            )
+            idxs = tf.stack([tf.range(tf.shape(last_index)[0]), last_index], axis=1)
+            cls = tf.gather_nd(text_transformed, idxs)
+            cls_embed = self._embed["text"](cls)
+
+            sim_all = train_utils.tf_raw_sim(
+                cls_embed[:, tf.newaxis, :],
+                self.all_labels_embed[tf.newaxis, :, :],
+                None,
+            )
+            label = self._create_bow(
+                tf_batch_data["intent_features"],
+                tf_batch_data["intent_mask"][0],
+                "intent",
+            )
+            label_embed = self._embed["intent"](label)
+            sim = train_utils.tf_raw_sim(
+                cls_embed[:, tf.newaxis, :], label_embed, None
+            )
+
+            scores = train_utils.confidence_from_sim(
+                sim_all, self._similarity_type
+            )
+            out["i_scores"] = scores
+
+        if self.named_entity_recognition:
+            sequence_lengths = sequence_lengths - 1
+            logits = self._embed["logits"](text_transformed)
+            pred_ids, _ = tfa.text.crf.crf_decode(
+                logits, self._crf_params, sequence_lengths
+            )
+            out["e_ids"] = pred_ids
+
+        return out
