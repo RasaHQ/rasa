@@ -1,2 +1,0 @@
-Specifying lookup tables directly in the NLU file is now deprecated. Please specify
-them in an external file.

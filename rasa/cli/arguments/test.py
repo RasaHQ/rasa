@@ -142,7 +142,7 @@ def add_test_nlu_argument_group(
         "-f",
         "--folds",
         required=False,
-        default=10,
+        default=5,
         help="Number of cross validation folds (cross validation only).",
     )
     comparison_arguments = parser.add_argument_group("Comparison Mode")
@@ -182,7 +182,7 @@ def add_test_core_model_param(parser: argparse.ArgumentParser):
 
 
 def add_no_plot_param(
-    parser: argparse.ArgumentParser, default: bool = False, required: bool = False,
+    parser: argparse.ArgumentParser, default: bool = False, required: bool = False
 ) -> None:
     parser.add_argument(
         "--no-plot",

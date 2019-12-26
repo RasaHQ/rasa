@@ -1,1 +1,0 @@
-Replaced the warnings about missing templates, intents etc. in validator.py by debug messages.
