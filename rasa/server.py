@@ -571,7 +571,7 @@ def create_app(
         # Deprecation warning
         warnings.warn(
             "Triggering actions via the execute endpoint is deprecated. "
-            "Trigger an intent via the /conversations/<conversation_id>/inject-intent endpoint instead.",
+            "Trigger an intent via the /conversations/<conversation_id>/trigger_intent endpoint instead.",
             FutureWarning,
         )
 
@@ -610,13 +610,13 @@ def create_app(
     @app.post("/conversations/<conversation_id>/trigger_intent")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def inject_intent(request: Request, conversation_id: Text) -> HTTPResponse:
+    async def trigger_intent(request: Request, conversation_id: Text) -> HTTPResponse:
         request_params = request.json
 
-        intent_to_inject = request_params.get("name")
+        intent_to_trigger = request_params.get("name")
         entities = request_params.get("entities", [])
 
-        if not intent_to_inject:
+        if not intent_to_trigger:
             raise ErrorResponse(
                 400,
                 "BadRequest",
@@ -630,14 +630,14 @@ def create_app(
             async with app.agent.lock_store.lock(conversation_id):
                 tracker = get_tracker(app.agent, conversation_id)
                 output_channel = _get_output_channel(request, tracker)
-                if intent_to_inject not in app.agent.domain.intents:
+                if intent_to_trigger not in app.agent.domain.intents:
                     raise ErrorResponse(
                         500,
                         "ValueError",
-                        f"The intent {inject_intent} does not exist in the domain.",
+                        f"The intent {trigger_intent} does not exist in the domain.",
                     )
                 await app.agent.inject_intent(
-                    intent_name=intent_to_inject,
+                    intent_name=intent_to_trigger,
                     entities=entities,
                     output_channel=output_channel,
                     tracker=tracker,

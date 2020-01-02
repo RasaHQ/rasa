@@ -526,10 +526,10 @@ class Agent:
         output_channel: OutputChannel,
         tracker: DialogueStateTracker,
     ) -> DialogueStateTracker:
-        """Inject a user intent, e.g. triggered by an external event."""
+        """Trigger a user intent, e.g. triggered by an external event."""
 
         processor = self.create_processor()
-        await processor.inject_external_user_uttered(
+        await processor.trigger_external_user_uttered(
             intent_name, entities, tracker, output_channel,
         )
         return tracker

@@ -270,11 +270,11 @@ class MessageProcessor:
             )
         else:
             intent_name = reminder_event.intent
-            await self.inject_external_user_uttered(
+            await self.trigger_external_user_uttered(
                 intent_name, [], tracker, output_channel
             )
 
-    async def inject_external_user_uttered(
+    async def trigger_external_user_uttered(
         self,
         intent_name: Text,
         entities: List[Text],
