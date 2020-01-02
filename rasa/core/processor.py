@@ -280,7 +280,7 @@ class MessageProcessor:
         entities: List[Text],
         tracker: DialogueStateTracker,
         output_channel: OutputChannel,
-    ):
+    ) -> None:
         tracker.update(
             UserUttered(
                 text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
@@ -400,7 +400,7 @@ class MessageProcessor:
         )
 
     async def _predict_and_execute_next_action(
-        self, output_channel: Optional[OutputChannel], tracker: DialogueStateTracker
+        self, output_channel: OutputChannel, tracker: DialogueStateTracker
     ):
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
