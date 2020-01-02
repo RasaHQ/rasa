@@ -103,6 +103,8 @@ class SklearnIntentClassifier(Component):
                     for example in training_data.intent_examples
                 ]
             )
+            # reduce dimensionality
+            X = np.squeeze(X, axis=1)
 
             self.clf = self._create_classifier(num_threads, y)
 

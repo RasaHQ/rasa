@@ -172,7 +172,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         return dataset
 
-    def _check_spacy_doc(self, message) -> None:
+    def _check_spacy_doc(self, message: Message) -> None:
         if self.pos_features and message.get(SPACY_DOCS[TEXT_ATTRIBUTE]) is None:
             raise InvalidConfigError(
                 "Could not find `spacy_doc` attribute for "
@@ -212,7 +212,7 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             return []
 
-    def most_likely_entity(self, idx, entities) -> Tuple[Text, Any]:
+    def most_likely_entity(self, idx: int, entities: List[Any]) -> Tuple[Text, Any]:
         if len(entities) > idx:
             entity_probs = entities[idx]
         else:
@@ -319,7 +319,9 @@ class CRFEntityExtractor(EntityExtractor):
                 )
         return ent_word_idx, confidence
 
-    def _handle_bilou_label(self, word_idx: int, entities) -> Tuple[Any, Any, Any]:
+    def _handle_bilou_label(
+        self, word_idx: int, entities: List[Any]
+    ) -> Tuple[Any, Any, Any]:
         label, confidence = self.most_likely_entity(word_idx, entities)
         entity_label = self._entity_from_label(label)
 
@@ -378,7 +380,7 @@ class CRFEntityExtractor(EntityExtractor):
         return json_ents
 
     def _convert_simple_tagging_to_entity_result(
-        self, tokens, entities
+        self, tokens: List[Union[Token, Any]], entities: List[Any]
     ) -> List[Dict[Text, Any]]:
         json_ents = []
 
@@ -386,7 +388,7 @@ class CRFEntityExtractor(EntityExtractor):
             entity_label, confidence = self.most_likely_entity(word_idx, entities)
             word = tokens[word_idx]
             if entity_label != "O":
-                if self.pos_features:
+                if self.pos_features and not isinstance(word, Token):
                     start = word.idx
                     end = word.idx + len(word)
                 else:
@@ -569,14 +571,14 @@ class CRFEntityExtractor(EntityExtractor):
         return bilou
 
     @staticmethod
-    def __pattern_of_token(message, i):
+    def __pattern_of_token(message: Message, i: int) -> Dict:
         if message.get(TOKENS_NAMES[TEXT_ATTRIBUTE]) is not None:
             return message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[i].get("pattern", {})
         else:
             return {}
 
     @staticmethod
-    def __tag_of_token(token):
+    def __tag_of_token(token: Any) -> Text:
         if spacy.about.__version__ > "2" and token._.has("tag"):
             return token._.get("tag")
         else:
