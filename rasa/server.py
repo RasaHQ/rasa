@@ -612,7 +612,7 @@ def create_app(
     async def inject_intent(request: Request, conversation_id: Text):
         request_params = request.json
 
-        intent_to_inject = request_params.get("name", None)
+        intent_to_inject = request_params.get("name")
         entities = request_params.get("entities", [])
 
         if not intent_to_inject:
