@@ -580,16 +580,17 @@ class AllSlotsReset(Event):
 
 # noinspection PyProtectedMember
 class ReminderScheduled(Event):
-    """ Allows asynchronous scheduling of intent or action execution.
+    """ Allows asynchronous scheduling of intent / entity triggering.
 
-    As a side effect the message processor will schedule an intent or
-    action to be run at the trigger date."""
+    As a side effect the message processor will schedule an intent
+    to be run at the trigger date."""
 
     type_name = "reminder"
 
     def __init__(
         self,
         intent: Text,
+        entities: Optional[List[Text]],
         trigger_date_time: datetime,
         name: Optional[Text] = None,
         kill_on_user_message: bool = True,
@@ -610,6 +611,7 @@ class ReminderScheduled(Event):
             metadata: optional event metadata
         """
         self.intent = intent
+        self.entities = entities
         self.trigger_date_time = trigger_date_time
         self.kill_on_user_message = kill_on_user_message
         self.name = name if name is not None else str(uuid.uuid1())
@@ -619,6 +621,7 @@ class ReminderScheduled(Event):
         return hash(
             (
                 self.intent,
+                self.entities,
                 self.trigger_date_time.isoformat(),
                 self.kill_on_user_message,
                 self.name,
@@ -632,11 +635,13 @@ class ReminderScheduled(Event):
             return self.name == other.name
 
     def __str__(self) -> str:
-        return f"ReminderScheduled(intent: {self.intent}, trigger_date: {self.trigger_date_time}, name: {self.name})"
+        return f"ReminderScheduled(intent: {self.intent}, entities: {self.entities}, " \
+               f"trigger_date: {self.trigger_date_time}, name: {self.name})"
 
     def _data_obj(self) -> Dict[Text, Any]:
         return {
             "intent": self.intent,
+            "entities": self.entities,
             "date_time": self.trigger_date_time.isoformat(),
             "name": self.name,
             "kill_on_user_msg": self.kill_on_user_message,
@@ -655,11 +660,11 @@ class ReminderScheduled(Event):
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
 
         trigger_date_time = parser.parse(parameters.get("date_time"))
-        intent = parameters.get("intent")
 
         return [
             ReminderScheduled(
-                intent,
+                parameters.get("intent"),
+                parameters.get("entities"),
                 trigger_date_time,
                 name=parameters.get("name"),
                 kill_on_user_message=parameters.get("kill_on_user_msg", True),
