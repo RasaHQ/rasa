@@ -957,13 +957,11 @@ components:
       type: object
       properties:
         name:
-          description: >-
-            Name of the action to be executed.
+          description: Name of the action to be executed.
           type: string
           example: utter_greet
         policy:
-          description: >-
-            Name of the policy that predicted the action (optional).
+          description: Name of the policy that predicted the action (optional).
           type: string
         confidence:
           description: >-
@@ -976,8 +974,7 @@ components:
       type: object
       properties:
         name:
-          description: >-
-            Name of the intent to be executed.
+          description: Name of the intent to be executed.
           type: string
           example: greet
         entities:
