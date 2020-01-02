@@ -599,7 +599,7 @@ class ReminderScheduled(Event):
         """Creates the reminder
 
         Args:
-            intent: name of the event to be scheduled
+            intent: name of the intent to be triggered
             trigger_date_time: date at which the execution of the action
                 should be triggered (either utc or with tz)
             name: id of the reminder. if there are multiple reminders with
