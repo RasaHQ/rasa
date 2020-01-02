@@ -281,6 +281,10 @@ class MessageProcessor:
         tracker: DialogueStateTracker,
         output_channel: OutputChannel,
     ) -> None:
+        """
+        Trigger an external message (like a user message,
+        but invisible; used, e.g., by a Reminder)
+        """
         tracker.update(
             UserUttered(
                 text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
