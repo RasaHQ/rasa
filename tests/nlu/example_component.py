@@ -22,6 +22,13 @@ class MyComponent(Component):
     # within the above described `provides` property.
     requires = []
 
+    # At least one of the attributes on a message is required by this
+    # component. E.g. if requires_one_of contains "text_dense_features" and
+    # "text_sparse_features", than a previous component in the pipeline needs
+    # to have "text_dense_features" or "text_sparse_features"
+    # within the above described `provides` property.
+    requires_one_of = []
+
     # Defines the default configuration parameters of a component
     # these values can be overwritten in the pipeline configuration
     # of the model. The component should choose sensible defaults

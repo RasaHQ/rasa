@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 import scipy.sparse
 
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
@@ -10,6 +11,7 @@ from rasa.nlu.constants import (
 )
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.training_data import Message
+from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
 def test_compute_default_label_features():
@@ -104,3 +106,25 @@ def test_check_labels_features_exist(messages, expected):
         EmbeddingIntentClassifier._check_labels_features_exist(messages, attribute)
         == expected
     )
+
+
+async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
+    from rasa.nlu import train
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "EmbeddingIntentClassifier"},
+            ],
+            "language": "en",
+        }
+    )
+
+    with pytest.raises(Exception):
+        await train(
+            _config,
+            path=tmpdir.strpath,
+            data=DEFAULT_DATA_PATH,
+            component_builder=component_builder,
+        )

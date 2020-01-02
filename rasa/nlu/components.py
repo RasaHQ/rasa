@@ -43,12 +43,11 @@ def validate_requirements(component_names: List[Text]) -> None:
         # if available, use the development file to figure out the correct
         # version numbers for each requirement
         raise Exception(
-            "Not all required importable packages are installed. "
-            + "To use this pipeline, you need to install the "
-            "missing dependencies. "
-            + "Please install the package(s) that contain the module(s): {}".format(
-                ", ".join(failed_imports)
-            )
+            f"Not all required importable packages are installed. "
+            f"To use this pipeline, you need to install the "
+            f"missing dependencies. "
+            f"Please install the package(s) that contain the module(s): "
+            f"{', '.join(failed_imports)}"
         )
 
 
@@ -65,8 +64,8 @@ def validate_arguments(
         raise ValueError(
             "Can not train an empty pipeline. "
             "Make sure to specify a proper pipeline in "
-            "the configuration using the `pipeline` key."
-            + "The `backend` configuration key is "
+            "the configuration using the `pipeline` key. "
+            "The `backend` configuration key is "
             "NOT supported anymore."
         )
 
@@ -76,10 +75,22 @@ def validate_arguments(
         for r in component.requires:
             if r not in provided_properties:
                 raise Exception(
-                    "Failed to validate at component "
-                    "'{}'. Missing property: '{}'"
-                    "".format(component.name, r)
+                    f"Failed to validate component {component.name}. "
+                    f"Missing property: '{r}'"
                 )
+
+        if component.requires_one_of:
+            attribute_present = False
+            for r in component.requires_one_of:
+                if r in provided_properties:
+                    attribute_present = True
+            if not attribute_present:
+                raise Exception(
+                    f"Failed to validate component {component.name}. "
+                    f"Missing one of the following properties: "
+                    f"{component.requires_one_of}."
+                )
+
         provided_properties.update(component.provides)
 
 
@@ -96,7 +107,7 @@ def validate_required_components_from_data(
     if len(data.response_examples) and not response_selector_exists:
         warnings.warn(
             "Training data consists examples for training a response selector but "
-            "no response selector component specified inside NLU pipeline"
+            "no response selector component specified inside NLU pipeline."
         )
 
 
@@ -131,9 +142,7 @@ class UnsupportedLanguageError(Exception):
         super().__init__(component, language)
 
     def __str__(self) -> Text:
-        return "component {} does not support language {}".format(
-            self.component, self.language
-        )
+        return f"component {self.component} does not support language {self.language}"
 
 
 class ComponentMetaclass(type):
@@ -189,6 +198,13 @@ class Component(metaclass=ComponentMetaclass):
     # previous component in the pipeline needs to have "tokens"
     # within the above described `provides` property.
     requires = []
+
+    # At least one of the attributes on a message is required by this
+    # component. E.g. if requires_one_of contains "text_dense_features" and
+    # "text_sparse_features", than a previous component in the pipeline needs
+    # to have "text_dense_features" or "text_sparse_features"
+    # within the above described `provides` property.
+    requires_one_of = []
 
     # Defines the default configuration parameters of a component
     # these values can be overwritten in the pipeline configuration
@@ -420,8 +436,7 @@ class ComponentBuilder:
         if cache_key is not None and self.use_cache:
             self.component_cache[cache_key] = component
             logger.info(
-                "Added '{}' to component cache. Key '{}'."
-                "".format(component.name, cache_key)
+                f"Added '{component.name}' to component cache. Key '{cache_key}'."
             )
 
     def load_component(
@@ -462,8 +477,8 @@ class ComponentBuilder:
             return component
         except MissingArgumentError as e:  # pragma: no cover
             raise Exception(
-                "Failed to load component from file `{}`. "
-                "{}".format(component_meta.get("file"), e)
+                f"Failed to load component from file `{component_meta.get('file')}`. "
+                f"Error: {e}"
             )
 
     def create_component(
@@ -484,6 +499,6 @@ class ComponentBuilder:
             return component
         except MissingArgumentError as e:  # pragma: no cover
             raise Exception(
-                "Failed to create component `{}`. "
-                "{}".format(component_config["name"], e)
+                f"Failed to create component `{component_config['name']}`. "
+                f"Error: {e}"
             )
