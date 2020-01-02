@@ -523,7 +523,7 @@ class Agent:
     async def inject_intent(
         self,
         intent_name: Text,
-        entities,
+        entities: List[Text],
         output_channel: OutputChannel,
         tracker: DialogueStateTracker,
     ) -> DialogueStateTracker:

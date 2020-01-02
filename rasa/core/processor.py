@@ -277,7 +277,7 @@ class MessageProcessor:
     async def inject_external_user_uttered(
         self,
         intent_name: Text,
-        entities,
+        entities: List[Text],
         tracker: DialogueStateTracker,
         output_channel: OutputChannel,
     ):
