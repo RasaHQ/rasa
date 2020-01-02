@@ -43,7 +43,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     provides = ["response", "response_ranking"]
 
-    requires = [TOKENS_NAMES[TEXT_ATTRIBUTE]]
+    requires = []
 
     # default properties (DOC MARKER - don't remove)
     defaults = {

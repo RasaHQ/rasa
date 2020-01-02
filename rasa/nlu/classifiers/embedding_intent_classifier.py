@@ -55,7 +55,7 @@ class EmbeddingIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = [TOKENS_NAMES[TEXT_ATTRIBUTE]]
+    requires = []
 
     # default properties (DOC MARKER - don't remove)
     defaults = {

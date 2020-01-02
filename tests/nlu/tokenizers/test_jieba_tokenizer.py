@@ -5,7 +5,7 @@ from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 import pytest
 
 from rasa.nlu.training_data import Message
-from rasa.nlu.constants import TEXT_ATTRIBUTE
+from rasa.nlu.constants import TEXT_ATTRIBUTE, INTENT_ATTRIBUTE
 
 
 @pytest.mark.parametrize(
@@ -45,3 +45,23 @@ def test_jieba_load_dictionary(tmpdir_factory):
         tk.tokenize(Message(""), attribute=TEXT_ATTRIBUTE)
 
     mock_method.assert_called_once_with(dictionary_path)
+
+
+@pytest.mark.parametrize(
+    "text, expected_tokens",
+    [
+        ("Forecast_for_LUNCH", ["Forecast", "_", "for", "_", "LUNCH"]),
+        ("Forecast for LUNCH", ["Forecast", " ", "for", " ", "LUNCH"]),
+    ],
+)
+def test_jieba_custom_intent_symbol(text, expected_tokens):
+    component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
+
+    tk = JiebaTokenizer(component_config)
+
+    message = Message(text)
+    message.set(INTENT_ATTRIBUTE, text)
+
+    assert [
+        t.text for t in tk.tokenize(message, attribute=INTENT_ATTRIBUTE)
+    ] == expected_tokens

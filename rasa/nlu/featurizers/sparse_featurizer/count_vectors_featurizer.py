@@ -411,12 +411,12 @@ class CountVectorsFeaturizer(Featurizer):
             tokens_without_cls = tokens
             if attribute in [TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE]:
                 tokens_without_cls = tokens[:-1]
-            tokens_text = [" ".join(tokens_without_cls)]
 
             seq_vec = self.vectorizers[attribute].transform(tokens_without_cls)
             seq_vec.sort_indices()
 
             if attribute in [TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE]:
+                tokens_text = [" ".join(tokens_without_cls)]
                 cls_vec = self.vectorizers[attribute].transform(tokens_text)
                 cls_vec.sort_indices()
 

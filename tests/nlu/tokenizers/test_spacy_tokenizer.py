@@ -1,7 +1,15 @@
 import pytest
 
+from nlu.training_data import TrainingData
 from rasa.nlu.training_data import Message
-from rasa.nlu.constants import CLS_TOKEN, TEXT_ATTRIBUTE, SPACY_DOCS
+from rasa.nlu.constants import (
+    CLS_TOKEN,
+    TEXT_ATTRIBUTE,
+    SPACY_DOCS,
+    INTENT_ATTRIBUTE,
+    RESPONSE_ATTRIBUTE,
+    TOKENS_NAMES,
+)
 from rasa.nlu import training_data
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 
@@ -24,7 +32,6 @@ from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 def test_spacy(text, expected_tokens, expected_indices, spacy_nlp):
     tk = SpacyTokenizer()
 
-    text = "Forecast for lunch"
     message = Message(text)
     message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(text))
 
@@ -35,17 +42,37 @@ def test_spacy(text, expected_tokens, expected_indices, spacy_nlp):
     assert [t.end for t in tokens] == [i[1] for i in expected_indices]
 
 
-def test_spacy_intent_tokenizer(spacy_nlp_component):
+@pytest.mark.parametrize(
+    "text, expected_tokens, expected_indices",
+    [
+        (
+            "Forecast for lunch",
+            ["Forecast", "for", "lunch", CLS_TOKEN],
+            [(0, 8), (9, 12), (13, 18), (19, 26)],
+        )
+    ],
+)
+def test_train_tokenizer(text, expected_tokens, expected_indices, spacy_nlp):
+    tk = SpacyTokenizer()
 
-    td = training_data.load_data("data/examples/rasa/demo-rasa.json")
-    spacy_nlp_component.train(td, config=None)
-    spacy_tokenizer = SpacyTokenizer()
-    spacy_tokenizer.train(td, config=None)
+    message = Message(text)
+    message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(text))
+    message.set(RESPONSE_ATTRIBUTE, text)
+    message.set(SPACY_DOCS[RESPONSE_ATTRIBUTE], spacy_nlp(text))
+    message.set(INTENT_ATTRIBUTE, text)
 
-    intent_tokens_exist = [
-        True if example.get("intent_tokens") is not None else False
-        for example in td.intent_examples
-    ]
+    training_data = TrainingData()
+    training_data.training_examples = [message]
 
-    # no intent tokens should have been set
-    assert not any(intent_tokens_exist)
+    tk.train(training_data)
+
+    for attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE]:
+        tokens = training_data.training_examples[0].get(TOKENS_NAMES[attribute])
+
+        assert [t.text for t in tokens] == expected_tokens
+        assert [t.start for t in tokens] == [i[0] for i in expected_indices]
+        assert [t.end for t in tokens] == [i[1] for i in expected_indices]
+
+    # no intent tokens set
+    tokens = training_data.training_examples[0].get(TOKENS_NAMES[INTENT_ATTRIBUTE])
+    assert tokens is None

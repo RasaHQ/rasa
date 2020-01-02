@@ -117,11 +117,16 @@ class ConveRTFeaturizer(Featurizer):
 
     @staticmethod
     def _tokens_to_text(list_of_tokens: List[List[Token]]) -> List[Text]:
+        """Convert list of tokens to text.
+
+        Add a whitespace between two tokens if the end value of the first tokens is
+        not the same as the end value of the second token."""
+
         texts = []
-        for sent_tokens in list_of_tokens:
+        for tokens in list_of_tokens:
             text = ""
             offset = 0
-            for token in sent_tokens:
+            for token in tokens:
                 if offset != token.start:
                     text += " "
                 text += token.text

@@ -12,12 +12,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import (
-    DENSE_FEATURE_NAMES,
-    TEXT_ATTRIBUTE,
-    CLS_TOKEN,
-    TOKENS_NAMES,
-)
+from rasa.nlu.constants import DENSE_FEATURE_NAMES, TEXT_ATTRIBUTE
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +25,7 @@ class SklearnIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = [DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE], TOKENS_NAMES[TEXT_ATTRIBUTE]]
+    requires = [DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]]
 
     defaults = {
         # C parameter of the svm - cross validation will select the best value

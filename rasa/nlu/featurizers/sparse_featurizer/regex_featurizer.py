@@ -18,7 +18,6 @@ from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     RESPONSE_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
     CLS_TOKEN,
 )
 from rasa.constants import DOCS_BASE_URL

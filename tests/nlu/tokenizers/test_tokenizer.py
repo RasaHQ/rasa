@@ -6,6 +6,7 @@ from nlu.constants import (
     INTENT_ATTRIBUTE,
     RESPONSE_ATTRIBUTE,
     TOKENS_NAMES,
+    MESSAGE_ATTRIBUTES,
 )
 from nlu.training_data import Message, TrainingData
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -41,6 +42,7 @@ def test_train_tokenizer(text, expected_tokens, expected_indices):
 
     message = Message(text)
     message.set(RESPONSE_ATTRIBUTE, text)
+    message.set(INTENT_ATTRIBUTE, text)
 
     training_data = TrainingData()
     training_data.training_examples = [message]
@@ -53,6 +55,11 @@ def test_train_tokenizer(text, expected_tokens, expected_indices):
         assert [t.text for t in tokens] == expected_tokens
         assert [t.start for t in tokens] == [i[0] for i in expected_indices]
         assert [t.end for t in tokens] == [i[1] for i in expected_indices]
+
+    # check intent attribute
+    tokens = training_data.training_examples[0].get(TOKENS_NAMES[INTENT_ATTRIBUTE])
+
+    assert [t.text for t in tokens] == [text]
 
 
 @pytest.mark.parametrize(
