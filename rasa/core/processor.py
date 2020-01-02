@@ -3,7 +3,7 @@ import warnings
 import logging
 import os
 from types import LambdaType
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import numpy as np
 import time
@@ -276,7 +276,7 @@ class MessageProcessor:
     async def trigger_external_user_uttered(
         self,
         intent_name: Text,
-        entities: List[Text],
+        entities: Union[List[Dict[Text, Any]], Dict[Text, Text]],
         tracker: DialogueStateTracker,
         output_channel: OutputChannel,
     ) -> None:
@@ -284,12 +284,19 @@ class MessageProcessor:
         Trigger an external message (like a user message,
         but invisible; used, e.g., by a Reminder)
         """
+        if isinstance(type, list):
+            entity_list = entities
+        else:
+            # Allow for a short-hand notation {"ent1": "val1", "ent2": "val2", ...}.
+            # Useful if properties like 'start', 'end', or 'extractor' are not given,
+            # e.g. for external events.
+            entity_list = [{"entity": ent, "value": val} for ent, val in entities.items()]
         tracker.update(
             UserUttered(
                 text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
                 intent={"name": intent_name},
                 metadata={IS_EXTERNAL: True},
-                entities=entities,
+                entities=entity_list,
             )
         )
         await self._predict_and_execute_next_action(output_channel, tracker)
