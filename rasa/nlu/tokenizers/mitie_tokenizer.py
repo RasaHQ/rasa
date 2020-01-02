@@ -15,17 +15,6 @@ class MitieTokenizer(Tokenizer):
     def required_packages(cls) -> List[Text]:
         return ["mitie"]
 
-    def train_attributes(self) -> List[Text]:
-        return MESSAGE_ATTRIBUTES
-
-    def _token_from_offset(
-        self, text: bytes, offset: int, encoded_sentence: bytes
-    ) -> Token:
-        return Token(
-            text.decode(DEFAULT_ENCODING),
-            self._byte_to_char_offset(encoded_sentence, offset),
-        )
-
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         import mitie
 
@@ -39,6 +28,14 @@ class MitieTokenizer(Tokenizer):
         ]
 
         return tokens
+
+    def _token_from_offset(
+        self, text: bytes, offset: int, encoded_sentence: bytes
+    ) -> Token:
+        return Token(
+            text.decode(DEFAULT_ENCODING),
+            self._byte_to_char_offset(encoded_sentence, offset),
+        )
 
     @staticmethod
     def _byte_to_char_offset(text: bytes, byte_offset: int) -> int:

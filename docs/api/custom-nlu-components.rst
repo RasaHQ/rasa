@@ -36,10 +36,11 @@ methods that you should implement:
     :linenos:
 
 .. note::
-    If you create a custom tokenizer you should add a special token ``__CLS__`` to the end of list of tokens.
-    Use the function `add_cls_token()
-    <https://github.com/RasaHQ/rasa/blob/master/rasa/nlu/tokenizers/tokenizer.py#L64/>`_ to add the token to your
-    token list.
+    If you create a custom tokenizer you should implement the methods of :
+    class:`rasa.nlu.tokenizers.tokenizer.Tokenizer`.
+    The ``train`` and ``process`` methods are already implemented and you simply need to overwrite the ``tokenize``
+    method. ``train`` and ``process`` will automatically add a special token ``__CLS__`` to the end of list of tokens,
+    which is needed further down the pipeline.
 
 .. note::
     If you create a custom featurizer you should return a sequence of features.

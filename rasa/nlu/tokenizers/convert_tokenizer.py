@@ -51,9 +51,6 @@ class ConveRTTokenizer(WhitespaceTokenizer):
             self.tokenized, feed_dict={self.text_placeholder: [sentence]}
         )
 
-    def train_attributes(self) -> List[Text]:
-        return MESSAGE_ATTRIBUTES
-
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         """Tokenize the text using the ConveRT model.
 

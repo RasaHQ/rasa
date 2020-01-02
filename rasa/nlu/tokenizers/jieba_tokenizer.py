@@ -71,16 +71,6 @@ class JiebaTokenizer(Tokenizer):
             logger.info(f"Loading Jieba User Dictionary at {jieba_userdict}")
             jieba.load_userdict(jieba_userdict)
 
-    def train_attributes(self) -> List[Text]:
-        return MESSAGE_ATTRIBUTES
-
-    def preprocess_text(self, text: Text, attribute: Text) -> Text:
-
-        if attribute == INTENT_ATTRIBUTE and self.intent_tokenization_flag:
-            return " ".join(text.split(self.intent_split_symbol))
-        else:
-            return text
-
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         import jieba
 
@@ -91,6 +81,13 @@ class JiebaTokenizer(Tokenizer):
         tokens = [Token(word, start) for (word, start, end) in tokenized]
 
         return tokens
+
+    def preprocess_text(self, text: Text, attribute: Text) -> Text:
+
+        if attribute == INTENT_ATTRIBUTE and self.intent_tokenization_flag:
+            return " ".join(text.split(self.intent_split_symbol))
+        else:
+            return text
 
     @classmethod
     def load(

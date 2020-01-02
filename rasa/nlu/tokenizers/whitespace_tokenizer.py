@@ -31,9 +31,6 @@ class WhitespaceTokenizer(Tokenizer):
         self.intent_split_symbol = self.component_config["intent_split_symbol"]
         self.case_sensitive = self.component_config["case_sensitive"]
 
-    def train_attributes(self) -> List[Text]:
-        return MESSAGE_ATTRIBUTES
-
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         text = message.get(attribute)
 

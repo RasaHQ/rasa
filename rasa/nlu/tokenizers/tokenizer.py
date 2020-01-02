@@ -10,6 +10,7 @@ from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     CLS_TOKEN,
     TOKENS_NAMES,
+    MESSAGE_ATTRIBUTES,
 )
 
 logger = logging.getLogger(__name__)
@@ -63,7 +64,7 @@ class Tokenizer(Component):
         """Returns the attributes of a message that indicate what kind of texts should
         be tokenized."""
 
-        raise NotImplementedError
+        return MESSAGE_ATTRIBUTES
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         """Tokenizes the text of the provided attribute of the incoming message."""
