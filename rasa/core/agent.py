@@ -48,7 +48,6 @@ from rasa.model import (
 from rasa.nlu.utils import is_url
 from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
-from rasa.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL
 
 logger = logging.getLogger(__name__)
 
