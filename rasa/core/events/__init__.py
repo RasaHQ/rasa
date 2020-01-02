@@ -203,8 +203,8 @@ class UserUttered(Event):
     def __init__(
         self,
         text: Optional[Text] = None,
-        intent=None,
-        entities=None,
+        intent: Optional[Dict] = None,
+        entities: Optional[List[Dict]] = None,
         parse_data: Optional[Dict[Text, Any]] = None,
         timestamp: Optional[int] = None,
         input_channel: Optional[Text] = None,
