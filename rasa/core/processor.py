@@ -269,9 +269,8 @@ class MessageProcessor:
                 f"(event: {reminder_event.intent} id: {reminder_event.name})"
             )
         else:
-            intent_name = reminder_event.intent
             await self.trigger_external_user_uttered(
-                intent_name, [], tracker, output_channel
+                reminder_event.intent, reminder_event.entities, tracker, output_channel
             )
 
     async def trigger_external_user_uttered(
