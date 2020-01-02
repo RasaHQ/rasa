@@ -297,7 +297,7 @@ paths:
         500:
           $ref: '#/components/responses/500ServerError'
 
-  /conversations/{conversation_id}/inject-intent:
+  /conversations/{conversation_id}/trigger_intent:
     post:
       security:
         - TokenAuth: []
