@@ -307,8 +307,8 @@ paths:
         - Tracker
       summary: Inject an intent into a conversation
       description: >-
-        Sends a message with the specified intent and entities in place
-        of the user, then predicts and executes a response action.
+        Sends a specified intent and list of entities in place of a
+        user message. The bot then predicts and executes a response action.
         Any responses sent by the executed action will be forwarded
         to the channel specified in the ``output_channel`` parameter.
         If no output channel is specified, any messages that should be
