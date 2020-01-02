@@ -35,6 +35,26 @@ methods that you should implement:
     :language: python
     :linenos:
 
+.. note::
+    If you create a custom tokenizer you should have the following entry in your default dict.
+
+    .. code-block:: none
+
+        # add __CLS__ token to the end of the list of tokens
+        "use_cls_token": False,
+
+    To add the __CLS__ token you can use the function `add_cls_token()
+    <https://github.com/RasaHQ/rasa/blob/master/rasa/nlu/tokenizers/tokenizer.py#L64/>`_.
+
+.. note::
+    If you create a custom featurizer you should have the following entry in your default dict.
+
+    .. code-block:: none
+
+        # if True return a sequence of features (return vector has size
+        # token-size x feature-dimension)
+        # if False token-size will be equal to 1
+        "return_sequence": False,
 
 Component
 ^^^^^^^^^
