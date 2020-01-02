@@ -522,7 +522,7 @@ class Agent:
     async def trigger_intent(
         self,
         intent_name: Text,
-        entities: List[Text],
+        entities: List[Dict[Text, Any]],
         output_channel: OutputChannel,
         tracker: DialogueStateTracker,
     ) -> DialogueStateTracker:
