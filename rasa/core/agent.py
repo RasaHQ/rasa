@@ -520,7 +520,7 @@ class Agent:
             sender_id, action, output_channel, self.nlg, policy, confidence
         )
 
-    async def inject_intent(
+    async def trigger_intent(
         self,
         intent_name: Text,
         entities,
