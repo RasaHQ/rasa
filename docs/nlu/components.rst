@@ -95,7 +95,7 @@ By default all featurizers will return a matrix of length (token-length x featur
 So, the returned matrix will have a feature vector for every token.
 This allows us to train sequence models.
 However, the additional token at the end (e.g. ``__CLS__``) contains features for the complete utterance.
-This feature vector can be used in any non-sequence models.
+This feature vector can be used in any non-sequence model.
 The corresponding classifier can therefore decide what kind of features to use.
 
 MitieFeaturizer

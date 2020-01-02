@@ -17,7 +17,6 @@ from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
     DENSE_FEATURE_NAMES,
-    CLS_TOKEN,
     TOKENS_NAMES,
 )
 

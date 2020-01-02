@@ -275,6 +275,11 @@ class CRFEntityExtractor(EntityExtractor):
             return label[0].upper()
         return None
 
+    @staticmethod
+    def _tokens_without_cls(message: Message) -> List[Token]:
+        # [:-1] to remove the CLS token from the list of tokens
+        return message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
+
     def _find_bilou_end(self, word_idx, entities) -> Any:
         ent_word_idx = word_idx + 1
         finished = False
@@ -336,7 +341,7 @@ class CRFEntityExtractor(EntityExtractor):
         if self.pos_features:
             tokens = message.get(SPACY_DOCS[TEXT_ATTRIBUTE])
         else:
-            tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
+            tokens = self._tokens_without_cls(message)
 
         if len(tokens) != len(entities):
             raise Exception(
@@ -501,7 +506,7 @@ class CRFEntityExtractor(EntityExtractor):
             gold = GoldParse(doc_or_tokens, entities=entity_offsets)
             ents = [l[5] for l in gold.orig_annot]
         else:
-            doc_or_tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
+            doc_or_tokens = self._tokens_without_cls(message)
             ents = self._bilou_tags_from_offsets(doc_or_tokens, entity_offsets)
 
         # collect badly annotated examples
@@ -615,7 +620,7 @@ class CRFEntityExtractor(EntityExtractor):
         if self.pos_features:
             tokens = message.get(SPACY_DOCS[TEXT_ATTRIBUTE])
         else:
-            tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
+            tokens = self._tokens_without_cls(message)
 
         text_dense_features = self.__get_dense_features(message)
 

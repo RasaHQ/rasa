@@ -33,6 +33,11 @@ class MitieEntityExtractor(EntityExtractor):
     def required_packages(cls) -> List[Text]:
         return ["mitie"]
 
+    @staticmethod
+    def _tokens_without_cls(message: Message) -> List[Token]:
+        # [:-1] to remove the CLS token from the list of tokens
+        return message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
+
     def extract_entities(
         self, text: Text, tokens: List[Token], feature_extractor
     ) -> List[Dict[Text, Any]]:
@@ -93,15 +98,12 @@ class MitieEntityExtractor(EntityExtractor):
         import mitie
 
         text = training_example.text
-        tokens = training_example.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
-        tokens_without_cls = tokens[:-1]
-        sample = mitie.ner_training_instance([t.text for t in tokens_without_cls])
+        tokens = self._tokens_without_cls(training_example)
+        sample = mitie.ner_training_instance([t.text for t in tokens])
         for ent in training_example.get(ENTITIES_ATTRIBUTE, []):
             try:
                 # if the token is not aligned an exception will be raised
-                start, end = MitieEntityExtractor.find_entity(
-                    ent, text, tokens_without_cls
-                )
+                start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
             except ValueError as e:
                 warnings.warn(f"Example skipped: {e}")
                 continue
@@ -128,9 +130,7 @@ class MitieEntityExtractor(EntityExtractor):
             )
 
         ents = self.extract_entities(
-            message.text,
-            message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1],
-            mitie_feature_extractor,
+            message.text, self._tokens_without_cls(message), mitie_feature_extractor
         )
         extracted = self.add_extractor_name(ents)
         message.set(

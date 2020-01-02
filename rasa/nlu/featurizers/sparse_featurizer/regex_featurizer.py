@@ -102,6 +102,8 @@ class RegexFeaturizer(Featurizer):
                 patterns[pattern["name"]] = False
 
                 if t.text == CLS_TOKEN:
+                    # make sure to set all patterns for the CLS token to False
+                    # the attribute patterns is needed later on and in the tests
                     t.set("pattern", patterns)
                     continue
 
