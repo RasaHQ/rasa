@@ -590,7 +590,7 @@ class ReminderScheduled(Event):
     def __init__(
         self,
         intent: Text,
-        entities: Optional[List[Text]],
+        entities: Optional[List[Dict]],
         trigger_date_time: datetime,
         name: Optional[Text] = None,
         kill_on_user_message: bool = True,
