@@ -635,8 +635,10 @@ class ReminderScheduled(Event):
             return self.name == other.name
 
     def __str__(self) -> str:
-        return f"ReminderScheduled(intent: {self.intent}, entities: {self.entities}, " \
-               f"trigger_date: {self.trigger_date_time}, name: {self.name})"
+        return (
+            f"ReminderScheduled(intent: {self.intent}, entities: {self.entities}, "
+            f"trigger_date: {self.trigger_date_time}, name: {self.name})"
+        )
 
     def _data_obj(self) -> Dict[Text, Any]:
         return {

@@ -292,7 +292,9 @@ class MessageProcessor:
             # Allow for a short-hand notation {"ent1": "val1", "ent2": "val2", ...}.
             # Useful if properties like 'start', 'end', or 'extractor' are not given,
             # e.g. for external events.
-            entity_list = [{"entity": ent, "value": val} for ent, val in entities.items()]
+            entity_list = [
+                {"entity": ent, "value": val} for ent, val in entities.items()
+            ]
         tracker.update(
             UserUttered(
                 text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
