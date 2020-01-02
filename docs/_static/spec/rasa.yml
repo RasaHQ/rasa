@@ -255,6 +255,7 @@ paths:
       tags:
       - Tracker
       summary: Run an action in a conversation
+      deprecated: true
       description: >-
         DEPRECATED. Runs the action, calling the action server if necessary.
         Any responses sent by the executed action will be forwarded
