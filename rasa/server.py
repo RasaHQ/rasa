@@ -570,7 +570,7 @@ def create_app(
         # Deprecation warning
         warnings.warn(
             "Triggering actions via the execute endpoint is deprecated. "
-            "Trigger an intent via the inject-intent endpoint instead.",
+            "Trigger an intent via the /conversations/<conversation_id>/inject-intent endpoint instead.",
             FutureWarning,
         )
 
