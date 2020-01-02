@@ -280,7 +280,7 @@ class MessageProcessor:
         entities,
         tracker: DialogueStateTracker,
         output_channel: OutputChannel,
-    ):
+    ) -> None:
         tracker.update(
             UserUttered(
                 text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
