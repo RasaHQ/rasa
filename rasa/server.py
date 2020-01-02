@@ -606,7 +606,7 @@ def create_app(
 
         return response.json(response_body)
 
-    @app.post("/conversations/<conversation_id>/inject-intent")
+    @app.post("/conversations/<conversation_id>/trigger_intent")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def inject_intent(request: Request, conversation_id: Text) -> HTTPResponse:
