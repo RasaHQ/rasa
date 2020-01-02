@@ -36,8 +36,7 @@ methods that you should implement:
     :linenos:
 
 .. note::
-    If you create a custom tokenizer you should implement the methods of :
-    class:`rasa.nlu.tokenizers.tokenizer.Tokenizer`.
+    If you create a custom tokenizer you should implement the methods of ``rasa.nlu.tokenizers.tokenizer.Tokenizer``.
     The ``train`` and ``process`` methods are already implemented and you simply need to overwrite the ``tokenize``
     method. ``train`` and ``process`` will automatically add a special token ``__CLS__`` to the end of list of tokens,
     which is needed further down the pipeline.
