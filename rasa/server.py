@@ -641,7 +641,8 @@ def create_app(
                     output_channel=output_channel,
                     tracker=tracker,
                 )
-
+        except ErrorResponse:
+            raise
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
