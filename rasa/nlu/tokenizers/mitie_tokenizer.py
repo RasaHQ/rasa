@@ -1,10 +1,9 @@
-from typing import Any, List, Text
+from typing import List, Text
 
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.training_data import Message
 
-from rasa.nlu.constants import TEXT_ATTRIBUTE, TOKENS_NAMES, MESSAGE_ATTRIBUTES
+from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
 from rasa.utils.io import DEFAULT_ENCODING
 
 
@@ -16,23 +15,8 @@ class MitieTokenizer(Tokenizer):
     def required_packages(cls) -> List[Text]:
         return ["mitie"]
 
-    def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
-    ) -> None:
-
-        for example in training_data.training_examples:
-
-            for attribute in MESSAGE_ATTRIBUTES:
-
-                if example.get(attribute) is not None:
-                    example.set(
-                        TOKENS_NAMES[attribute],
-                        self.tokenize(example.get(attribute), attribute),
-                    )
-
-    def process(self, message: Message, **kwargs: Any) -> None:
-
-        message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], self.tokenize(message.text))
+    def train_attributes(self) -> List[Text]:
+        return MESSAGE_ATTRIBUTES
 
     def _token_from_offset(
         self, text: bytes, offset: int, encoded_sentence: bytes
@@ -42,8 +26,10 @@ class MitieTokenizer(Tokenizer):
             self._byte_to_char_offset(encoded_sentence, offset),
         )
 
-    def tokenize(self, text: Text, attribute: Text = TEXT_ATTRIBUTE) -> List[Token]:
+    def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         import mitie
+
+        text = message.get(attribute)
 
         encoded_sentence = text.encode(DEFAULT_ENCODING)
         tokenized = mitie.tokenize_with_offsets(encoded_sentence)
@@ -51,8 +37,6 @@ class MitieTokenizer(Tokenizer):
             self._token_from_offset(token, offset, encoded_sentence)
             for token, offset in tokenized
         ]
-
-        self.add_cls_token(tokens, attribute)
 
         return tokens
 

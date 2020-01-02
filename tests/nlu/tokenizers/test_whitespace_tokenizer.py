@@ -1,88 +1,44 @@
-from rasa.nlu.constants import CLS_TOKEN
+import pytest
+
+from rasa.nlu.constants import CLS_TOKEN, TEXT_ATTRIBUTE, INTENT_ATTRIBUTE
 from rasa.nlu.training_data import TrainingData, Message
 from tests.nlu import utilities
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
-def test_whitespace():
+@pytest.mark.parametrize(
+    "text, expected_tokens, expected_indices",
+    [
+        (
+            "Forecast for lunch",
+            ["Forecast", "for", "lunch"],
+            [(0, 8), (9, 12), (13, 18)],
+        ),
+        (
+            "hey ńöñàśçií how're you?",
+            ["hey", "ńöñàśçií", "how", "'re", "you", "?"],
+            [(0, 3), (4, 12), (13, 16), (16, 19), (20, 23), (23, 24)],
+        ),
+        (
+            "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 https://rasa.com/docs/nlu/components/#tokenizer-whitespace",
+            [
+                "https://www.google.com/search?"
+                "client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8",
+                "https://rasa.com/docs/nlu/components/#tokenizer-whitespace",
+            ],
+            [(0, 83), (84, 142)],
+        ),
+    ],
+)
+def test_whitespace(text, expected_tokens, expected_indices):
 
     tk = WhitespaceTokenizer()
 
-    assert [t.text for t in tk.tokenize("Forecast for lunch")] == [
-        "Forecast",
-        "for",
-        "lunch",
-        CLS_TOKEN,
-    ]
-    assert [t.lemma for t in tk.tokenize("Forecast for lunch")] == [
-        "Forecast",
-        "for",
-        "lunch",
-        CLS_TOKEN,
-    ]
+    tokens = tk.tokenize(Message(text), attribute=TEXT_ATTRIBUTE)
 
-    assert [t.start for t in tk.tokenize("Forecast for lunch")] == [0, 9, 13, 19]
-
-    # we ignore .,!?
-    assert [t.text for t in tk.tokenize("hey ńöñàśçií how're you?")] == [
-        "hey",
-        "ńöñàśçií",
-        "how",
-        "re",
-        "you",
-        CLS_TOKEN,
-    ]
-
-    assert [t.start for t in tk.tokenize("hey ńöñàśçií how're you?")] == [
-        0,
-        4,
-        13,
-        17,
-        20,
-        24,
-    ]
-
-    assert [t.text for t in tk.tokenize("привет! 10.000, ńöñàśçií. (how're you?)")] == [
-        "привет",
-        "10.000",
-        "ńöñàśçií",
-        "how",
-        "re",
-        "you",
-        CLS_TOKEN,
-    ]
-
-    assert [
-        t.start for t in tk.tokenize("привет! 10.000, ńöñàśçií. (how're you?)")
-    ] == [0, 8, 16, 27, 31, 34, 38]
-
-    # urls are single token
-    assert [
-        t.text
-        for t in tk.tokenize(
-            "https://www.google.com/search?client="
-            "safari&rls=en&q="
-            "i+like+rasa&ie=UTF-8&oe=UTF-8 "
-            "https://rasa.com/docs/nlu/"
-            "components/#tokenizer-whitespace"
-        )
-    ] == [
-        "https://www.google.com/search?"
-        "client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8",
-        "https://rasa.com/docs/nlu/components/#tokenizer-whitespace",
-        CLS_TOKEN,
-    ]
-
-    assert [
-        t.start
-        for t in tk.tokenize(
-            "https://www.google.com/search?client="
-            "safari&rls=en&q="
-            "i+like+rasa&ie=UTF-8&oe=UTF-8 "
-            "https://rasa.com/docs/nlu/"
-            "components/#tokenizer-whitespace"
-        )
-    ] == [0, 83, 142]
+    assert [t.text for t in tokens] == expected_tokens
+    assert [t.start for t in tokens] == [i[0] for i in expected_indices]
+    assert [t.end for t in tokens] == [i[1] for i in expected_indices]
 
 
 def test_whitespace_custom_intent_symbol():
@@ -90,11 +46,12 @@ def test_whitespace_custom_intent_symbol():
 
     tk = WhitespaceTokenizer(component_config)
 
-    assert [t.text for t in tk.tokenize("Forecast_for_LUNCH", attribute="intent")] == [
+    text = "Forecast_for_LUNCH"
+    assert [t.text for t in tk.tokenize(Message(text), attribute=INTENT_ATTRIBUTE)] == [
         "Forecast_for_LUNCH"
     ]
 
-    assert [t.text for t in tk.tokenize("Forecast+for+LUNCH", attribute="intent")] == [
+    assert [t.text for t in tk.tokenize(Message(text), attribute=INTENT_ATTRIBUTE)] == [
         "Forecast",
         "for",
         "LUNCH",
@@ -104,7 +61,8 @@ def test_whitespace_custom_intent_symbol():
 def test_whitespace_with_case():
 
     tk = WhitespaceTokenizer()
-    assert [t.text for t in tk.tokenize("Forecast for LUNCH")] == [
+    text = "Forecast for LUNCH"
+    assert [t.text for t in tk.tokenize(Message(text), attribute=TEXT_ATTRIBUTE)] == [
         "Forecast",
         "for",
         "LUNCH",
@@ -113,7 +71,7 @@ def test_whitespace_with_case():
 
     component_config = {"case_sensitive": False}
     tk = WhitespaceTokenizer(component_config)
-    assert [t.text for t in tk.tokenize("Forecast for LUNCH")] == [
+    assert [t.text for t in tk.tokenize(Message(text), attribute=TEXT_ATTRIBUTE)] == [
         "forecast",
         "for",
         "lunch",
@@ -122,7 +80,7 @@ def test_whitespace_with_case():
 
     component_config = {"case_sensitive": True}
     tk = WhitespaceTokenizer(component_config)
-    assert [t.text for t in tk.tokenize("Forecast for LUNCH")] == [
+    assert [t.text for t in tk.tokenize(Message(text), attribute=TEXT_ATTRIBUTE)] == [
         "Forecast",
         "for",
         "LUNCH",

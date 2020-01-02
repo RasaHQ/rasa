@@ -2,14 +2,8 @@ from typing import Any, Dict, List, Text
 
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import (
-    CLS_TOKEN,
-    MESSAGE_ATTRIBUTES,
-    TOKENS_NAMES,
-    TEXT_ATTRIBUTE,
-)
+from rasa.nlu.training_data import Message
+from rasa.nlu.constants import CLS_TOKEN, MESSAGE_ATTRIBUTES, TOKENS_NAMES
 import tensorflow as tf
 
 
@@ -52,26 +46,15 @@ class ConveRTTokenizer(WhitespaceTokenizer):
             self.session.run(tf.tables_initializer())
             self.session.run(tf.global_variables_initializer())
 
-    def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
-    ) -> None:
-        for example in training_data.training_examples:
-            for attribute in MESSAGE_ATTRIBUTES:
-                if example.get(attribute) is not None:
-                    example.set(
-                        TOKENS_NAMES[attribute],
-                        self.tokenize(example.get(attribute), attribute),
-                    )
-
-    def process(self, message: Message, **kwargs: Any) -> None:
-        message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], self.tokenize(message.text))
-
     def _tokenize(self, sentence: Text) -> Any:
         return self.session.run(
             self.tokenized, feed_dict={self.text_placeholder: [sentence]}
         )
 
-    def tokenize(self, text: Text, attribute: Text = TEXT_ATTRIBUTE) -> List[Token]:
+    def train_attributes(self) -> List[Text]:
+        return MESSAGE_ATTRIBUTES
+
+    def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         """Tokenize the text using the ConveRT model.
 
         ConveRT adds a special char in front of (some) words and splits words into
@@ -82,11 +65,7 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         """
 
         # perform whitespace tokenization
-        tokens_in = super().tokenize(text, attribute)
-
-        # remove CLS token if present
-        if tokens_in[-1].text == CLS_TOKEN:
-            tokens_in = tokens_in[:-1]
+        tokens_in = super().tokenize(message, attribute)
 
         tokens_out = []
 
@@ -103,8 +82,6 @@ class ConveRTTokenizer(WhitespaceTokenizer):
                 split_token_strings, token_end, token_start
             )
             tokens_out += _aligned_tokens
-
-        tokens_out = self.add_cls_token(tokens_out, attribute)
 
         return tokens_out
 

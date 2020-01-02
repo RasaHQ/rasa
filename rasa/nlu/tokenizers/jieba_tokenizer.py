@@ -6,16 +6,10 @@ import typing
 from typing import Any, Dict, List, Optional, Text
 
 from rasa.nlu.components import Component
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.training_data import Message
 
-from rasa.nlu.constants import (
-    INTENT_ATTRIBUTE,
-    TEXT_ATTRIBUTE,
-    TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-)
+from rasa.nlu.constants import INTENT_ATTRIBUTE, TOKENS_NAMES, MESSAGE_ATTRIBUTES
 
 logger = logging.getLogger(__name__)
 
@@ -77,25 +71,8 @@ class JiebaTokenizer(Tokenizer):
             logger.info(f"Loading Jieba User Dictionary at {jieba_userdict}")
             jieba.load_userdict(jieba_userdict)
 
-    def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
-    ) -> None:
-
-        for example in training_data.training_examples:
-
-            for attribute in MESSAGE_ATTRIBUTES:
-
-                if example.get(attribute) is not None:
-                    example.set(
-                        TOKENS_NAMES[attribute],
-                        self.tokenize(example.get(attribute), attribute),
-                    )
-
-    def process(self, message: Message, **kwargs: Any) -> None:
-
-        message.set(
-            TOKENS_NAMES[TEXT_ATTRIBUTE], self.tokenize(message.text, TEXT_ATTRIBUTE)
-        )
+    def train_attributes(self) -> List[Text]:
+        return MESSAGE_ATTRIBUTES
 
     def preprocess_text(self, text: Text, attribute: Text) -> Text:
 
@@ -104,14 +81,14 @@ class JiebaTokenizer(Tokenizer):
         else:
             return text
 
-    def tokenize(self, text: Text, attribute: Text = TEXT_ATTRIBUTE) -> List[Token]:
+    def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         import jieba
+
+        text = message.get(attribute)
 
         text = self.preprocess_text(text, attribute)
         tokenized = jieba.tokenize(text)
         tokens = [Token(word, start) for (word, start, end) in tokenized]
-
-        self.add_cls_token(tokens, attribute)
 
         return tokens
 
