@@ -661,7 +661,7 @@ class ReminderScheduled(Event):
             ReminderScheduled(
                 intent,
                 trigger_date_time,
-                name=parameters.get("name", None),
+                name=parameters.get("name"),
                 kill_on_user_message=parameters.get("kill_on_user_msg", True),
                 timestamp=parameters.get("timestamp"),
                 metadata=parameters.get("metadata"),
