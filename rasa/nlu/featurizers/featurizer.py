@@ -19,9 +19,9 @@ def sequence_to_sentence_features(
         return None
 
     if isinstance(features, scipy.sparse.spmatrix):
-        return scipy.sparse.coo_matrix(features[-1])
+        return scipy.sparse.coo_matrix(features.toarray()[-1])
 
-    return features[-1]
+    return np.expand_dims(features[-1], axis=0)
 
 
 class Featurizer(Component):

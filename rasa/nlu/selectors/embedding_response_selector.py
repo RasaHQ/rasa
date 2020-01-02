@@ -5,8 +5,6 @@ from typing import Any, Dict, Text
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.constants import (
     RESPONSE_ATTRIBUTE,
-    TEXT_ATTRIBUTE,
-    TOKENS_NAMES,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     DEFAULT_OPEN_UTTERANCE_TYPE,
 )

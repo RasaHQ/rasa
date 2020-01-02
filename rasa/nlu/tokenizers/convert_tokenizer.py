@@ -3,12 +3,7 @@ from typing import Any, Dict, List, Text
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import Message
-from rasa.nlu.constants import (
-    CLS_TOKEN,
-    MESSAGE_ATTRIBUTES,
-    TOKENS_NAMES,
-    INTENT_ATTRIBUTE,
-)
+from rasa.nlu.constants import MESSAGE_ATTRIBUTES, TOKENS_NAMES, INTENT_ATTRIBUTE
 import tensorflow as tf
 
 

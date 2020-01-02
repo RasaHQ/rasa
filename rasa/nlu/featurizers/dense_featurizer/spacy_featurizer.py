@@ -1,6 +1,6 @@
 import numpy as np
 import typing
-from typing import Any, Optional, Dict, Text
+from typing import Any, Optional, Text
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurizer import Featurizer
