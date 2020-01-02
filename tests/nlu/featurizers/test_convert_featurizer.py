@@ -21,7 +21,7 @@ def test_convert_featurizer_process():
 
     sentence = "Hey how are you today ?"
     message = Message(sentence)
-    tokens = ConveRTTokenizer().tokenize_using_convert(sentence)
+    tokens = ConveRTTokenizer().tokenize(sentence)
     message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
 
     featurizer.process(message)
@@ -44,7 +44,7 @@ def test_convert_featurizer_train():
     sentence = "Hey how are you today ?"
     message = Message(sentence)
     message.set(RESPONSE_ATTRIBUTE, sentence)
-    tokens = ConveRTTokenizer().tokenize_using_convert(sentence)
+    tokens = ConveRTTokenizer().tokenize(sentence)
     message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
     message.set(TOKENS_NAMES[RESPONSE_ATTRIBUTE], tokens)
 
@@ -83,7 +83,7 @@ def test_convert_featurizer_train():
     ],
 )
 def test_convert_featurizer_tokens_to_text(sentence, expected_text):
-    tokens = ConveRTTokenizer().tokenize_using_convert(sentence)
+    tokens = ConveRTTokenizer().tokenize(sentence)
     # remove cls token
     tokens = tokens[:-1]
 

@@ -7,24 +7,19 @@ from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 def test_convert_tokenizer():
     tk = ConveRTTokenizer()
 
-    assert [t.text for t in tk.tokenize_using_convert("Forecast for lunch")] == [
+    assert [t.text for t in tk.tokenize("Forecast for lunch")] == [
         "forecast",
         "for",
         "lunch",
         CLS_TOKEN,
     ]
-    assert [t.lemma for t in tk.tokenize_using_convert("Forecast for lunch")] == [
+    assert [t.lemma for t in tk.tokenize("Forecast for lunch")] == [
         "forecast",
         "for",
         "lunch",
         CLS_TOKEN,
     ]
-    assert [t.start for t in tk.tokenize_using_convert("Forecast for lunch")] == [
-        0,
-        9,
-        13,
-        19,
-    ]
+    assert [t.start for t in tk.tokenize("Forecast for lunch")] == [0, 9, 13, 19]
 
 
 @pytest.mark.parametrize(
@@ -44,7 +39,7 @@ def test_convert_tokenizer():
 def test_convert_tokenizer_edge_cases(text, expected_tokens, expected_indices):
     tk = ConveRTTokenizer()
 
-    tokens = tk.tokenize_using_convert(text)
+    tokens = tk.tokenize(text)
 
     assert [t.text for t in tokens] == expected_tokens
     assert [t.start for t in tokens] == [i[0] for i in expected_indices]

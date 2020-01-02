@@ -60,22 +60,18 @@ class ConveRTTokenizer(WhitespaceTokenizer):
                 if example.get(attribute) is not None:
                     example.set(
                         TOKENS_NAMES[attribute],
-                        self.tokenize_using_convert(example.get(attribute), attribute),
+                        self.tokenize(example.get(attribute), attribute),
                     )
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        message.set(
-            TOKENS_NAMES[TEXT_ATTRIBUTE], self.tokenize_using_convert(message.text)
-        )
+        message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], self.tokenize(message.text))
 
     def _tokenize(self, sentence: Text) -> Any:
         return self.session.run(
             self.tokenized, feed_dict={self.text_placeholder: [sentence]}
         )
 
-    def tokenize_using_convert(
-        self, text: Text, attribute: Text = TEXT_ATTRIBUTE
-    ) -> List[Token]:
+    def tokenize(self, text: Text, attribute: Text = TEXT_ATTRIBUTE) -> List[Token]:
         """Tokenize the text using the ConveRT model.
 
         ConveRT adds a special char in front of (some) words and splits words into
@@ -86,7 +82,7 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         """
 
         # perform whitespace tokenization
-        tokens_in = self.tokenize(text, attribute)
+        tokens_in = super().tokenize(text, attribute)
 
         # remove CLS token if present
         if tokens_in[-1].text == CLS_TOKEN:
@@ -114,10 +110,19 @@ class ConveRTTokenizer(WhitespaceTokenizer):
 
     def _clean_tokens(self, tokens: List[bytes]):
         """Encode tokens and remove special char added by ConveRT."""
+
         tokens = [string.decode("utf-8").replace("﹏", "") for string in tokens]
         return [string for string in tokens if string]
 
     def _align_tokens(self, tokens_in: List[Text], token_end: int, token_start: int):
+        """Align sub-tokens of ConveRT with tokens return by the WhitespaceTokenizer.
+
+        As ConveRT might split a single word into multiple tokens, we need to make
+        sure that the start and end value of first and last sub-token matches the
+        start and end value of the token return by the WhitespaceTokenizer as the
+        entities are using those start and end values.
+        """
+
         tokens_out = []
 
         current_token_offset = token_start
