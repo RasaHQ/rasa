@@ -271,7 +271,7 @@ class MessageProcessor:
         else:
             intent_name = reminder_event.intent
             await self.inject_external_user_uttered(
-                intent_name, None, tracker, output_channel
+                intent_name, [], tracker, output_channel
             )
 
     async def inject_external_user_uttered(
