@@ -30,6 +30,7 @@ class Featurizer(Component):
                 "No default value for 'return_sequence' was set. Please, "
                 "add it to the default dict of the featurizer and set it to 'False'."
             )
+            self.return_sequence = False
 
     @staticmethod
     def _combine_with_existing_dense_features(

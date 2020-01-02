@@ -61,6 +61,7 @@ class Tokenizer(Component):
                 "No default value for 'use_cls_token' was set. Please, "
                 "add it to the default dict of the tokenizer and set it to 'False'."
             )
+            self.use_cls_token = False
 
     def add_cls_token(
         self, tokens: List[Token], attribute: Text = TEXT_ATTRIBUTE
