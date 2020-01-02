@@ -265,8 +265,8 @@ class MessageProcessor:
             or not self._is_reminder_still_valid(tracker, reminder_event)
         ):
             logger.debug(
-                "Canceled reminder because it is outdated. "
-                "(event: {} id: {})".format(reminder_event.intent, reminder_event.name)
+                f"Canceled reminder because it is outdated. "
+                f"(event: {reminder_event.intent} id: {reminder_event.name})"
             )
         else:
             intent_name = reminder_event.intent
