@@ -11,6 +11,7 @@ from typing import Any, Callable, List, Optional, Text, Union
 
 from sanic import Sanic, response
 from sanic.request import Request
+from sanic.response import HTTPResponse
 from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
