@@ -49,7 +49,6 @@ from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
-
 MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
 
 DEFAULT_INTENTS = [
@@ -344,8 +343,12 @@ class MessageProcessor:
         output_channel: OutputChannel,
     ) -> None:
         """
-        Trigger an external message (like a user message,
-        but invisible; used, e.g., by a Reminder)
+        Trigger an external message (like a user message, but invisible;
+        used, e.g., by a reminder or the trigger_intent endpoint).
+        :param intent_name: Name of the intent to be triggered
+        :param entities: List of entities to be passed on
+        :param tracker: The tracker to which the event should be added
+        :param output_channel: The output channel
         """
         if isinstance(entities, list):
             entity_list = entities
