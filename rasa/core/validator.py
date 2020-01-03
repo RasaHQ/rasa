@@ -10,7 +10,7 @@ from rasa.core.training.structures import StoryGraph
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
 from rasa.core.constants import UTTER_PREFIX
-from rasa.core.story_conflict import StoryConflict
+from rasa.core.story_conflict import find_story_conflicts
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +204,7 @@ class Validator:
         ).generate()
 
         # Create a list of `StoryConflict` objects
-        conflicts = StoryConflict.find_conflicts(trackers, self.domain, max_history)
+        conflicts = find_story_conflicts(trackers, self.domain, max_history)
 
         if len(conflicts) == 0:
             logger.info("No story structure conflicts found")
