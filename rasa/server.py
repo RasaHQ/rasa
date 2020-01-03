@@ -636,7 +636,7 @@ def create_app(
                         "ValueError",
                         f"The intent {trigger_intent} does not exist in the domain.",
                     )
-                await app.agent.inject_intent(
+                await app.agent.trigger_intent(
                     intent_name=intent_to_trigger,
                     entities=entities,
                     output_channel=output_channel,

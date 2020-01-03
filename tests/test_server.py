@@ -836,9 +836,9 @@ def test_execute_with_not_existing_action(rasa_app: SanicTestClient):
     assert response.status == 500
 
 
-def test_inject_intent(rasa_app: SanicTestClient):
+def test_trigger_intent(rasa_app: SanicTestClient):
     data = {"name": "greet"}
-    _, response = rasa_app.post("/conversations/test_inject/inject-intent", json=data)
+    _, response = rasa_app.post("/conversations/test_trigger/trigger_intent", json=data)
 
     assert response.status == 200
 

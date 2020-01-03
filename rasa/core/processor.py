@@ -286,7 +286,7 @@ class MessageProcessor:
         Trigger an external message (like a user message,
         but invisible; used, e.g., by a Reminder)
         """
-        if isinstance(type, list):
+        if isinstance(entities, list):
             entity_list = entities
         else:
             # Allow for a short-hand notation {"ent1": "val1", "ent2": "val2", ...}.
