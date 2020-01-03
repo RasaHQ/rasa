@@ -164,7 +164,7 @@ class UnsupportedLanguageError(Exception):
         super().__init__(component, language)
 
     def __str__(self) -> Text:
-        return f"component {self.component} does not support language {self.language}"
+        return f"component '{self.component}' does not support language '{self.language}'."
 
 
 class ComponentMetaclass(type):
