@@ -173,7 +173,7 @@ def validate_stories(args):
 
     # Check if a valid setting for `max_history` was given
     if not isinstance(args.max_history, int) or args.max_history < 1:
-        raise argparse.ArgumentError("You have to provide a positive integer for --max-history.")
+        raise argparse.ArgumentError(args.max_history, "You have to provide a positive integer for --max-history.")
 
     # Prepare story and domain file import
     loop = asyncio.get_event_loop()
