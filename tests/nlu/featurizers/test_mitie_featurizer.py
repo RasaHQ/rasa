@@ -18,7 +18,9 @@ def test_mitie_featurizer(mitie_feature_extractor):
     featurizer = MitieFeaturizer.create({}, RasaNLUModelConfig())
 
     sentence = "Hey how are you today"
-    tokens = MitieTokenizer().tokenize(sentence)
+    message = Message(sentence)
+    MitieTokenizer().process(message)
+    tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
 
     vecs = featurizer.features_for_tokens(tokens, mitie_feature_extractor)
 
@@ -40,9 +42,7 @@ def test_mitie_featurizer_train(mitie_feature_extractor):
     message = Message(sentence)
     message.set(RESPONSE_ATTRIBUTE, sentence)
     message.set(INTENT_ATTRIBUTE, "intent")
-    tokens = MitieTokenizer().tokenize(sentence)
-    message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
-    message.set(TOKENS_NAMES[RESPONSE_ATTRIBUTE], tokens)
+    MitieTokenizer().train(TrainingData([message]))
 
     featurizer.train(
         TrainingData([message]),
@@ -57,13 +57,13 @@ def test_mitie_featurizer_train(mitie_feature_extractor):
 
     vecs = message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
 
-    assert len(tokens) == len(vecs)
+    assert len(message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])) == len(vecs)
     assert np.allclose(vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
     vecs = message.get(DENSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE])
 
-    assert len(tokens) == len(vecs)
+    assert len(message.get(TOKENS_NAMES[RESPONSE_ATTRIBUTE])) == len(vecs)
     assert np.allclose(vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 

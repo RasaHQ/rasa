@@ -1,6 +1,6 @@
 import pytest
 
-from nlu.training_data import TrainingData
+from rasa.nlu.training_data import TrainingData
 from rasa.nlu.training_data import Message
 from rasa.nlu.constants import (
     CLS_TOKEN,
@@ -10,7 +10,6 @@ from rasa.nlu.constants import (
     RESPONSE_ATTRIBUTE,
     TOKENS_NAMES,
 )
-from rasa.nlu import training_data
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 
 

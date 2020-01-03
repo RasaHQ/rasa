@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.constants import (
@@ -11,7 +12,6 @@ from rasa.nlu.constants import (
     INTENT_ATTRIBUTE,
 )
 from rasa.nlu.training_data import Message
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
 
@@ -21,7 +21,8 @@ def test_convert_featurizer_process():
 
     sentence = "Hey how are you today ?"
     message = Message(sentence)
-    tokens = ConveRTTokenizer().tokenize(sentence)
+    tokens = ConveRTTokenizer().tokenize(message, attribute=TEXT_ATTRIBUTE)
+    tokens = Tokenizer.add_cls_token(tokens, attribute=TEXT_ATTRIBUTE)
     message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
 
     featurizer.process(message)
@@ -44,7 +45,8 @@ def test_convert_featurizer_train():
     sentence = "Hey how are you today ?"
     message = Message(sentence)
     message.set(RESPONSE_ATTRIBUTE, sentence)
-    tokens = ConveRTTokenizer().tokenize(sentence)
+    tokens = ConveRTTokenizer().tokenize(message, attribute=TEXT_ATTRIBUTE)
+    tokens = Tokenizer.add_cls_token(tokens, attribute=TEXT_ATTRIBUTE)
     message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
     message.set(TOKENS_NAMES[RESPONSE_ATTRIBUTE], tokens)
 
@@ -83,9 +85,7 @@ def test_convert_featurizer_train():
     ],
 )
 def test_convert_featurizer_tokens_to_text(sentence, expected_text):
-    tokens = ConveRTTokenizer().tokenize(sentence)
-    # remove cls token
-    tokens = tokens[:-1]
+    tokens = ConveRTTokenizer().tokenize(Message(sentence), attribute=TEXT_ATTRIBUTE)
 
     actual_text = ConveRTFeaturizer._tokens_to_text([tokens])[0]
 

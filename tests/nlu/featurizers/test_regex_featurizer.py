@@ -199,9 +199,7 @@ def test_regex_featurizer_train():
     message = Message(sentence)
     message.set(RESPONSE_ATTRIBUTE, sentence)
     message.set(INTENT_ATTRIBUTE, "intent")
-    tokens = WhitespaceTokenizer().tokenize(sentence)
-    message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
-    message.set(TOKENS_NAMES[RESPONSE_ATTRIBUTE], tokens)
+    WhitespaceTokenizer().train(TrainingData([message]))
 
     featurizer.train(
         TrainingData([message], regex_features=patterns), RasaNLUModelConfig()

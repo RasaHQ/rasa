@@ -35,9 +35,8 @@ def test_count_vector_featurizer(sentence, expected, expected_cls):
     train_message = Message(sentence)
     test_message = Message(sentence)
 
-    tokens = WhitespaceTokenizer().tokenize(sentence)
-    train_message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
-    test_message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
+    WhitespaceTokenizer().process(train_message)
+    WhitespaceTokenizer().process(test_message)
 
     ftr.train(TrainingData([train_message]))
 
@@ -74,7 +73,7 @@ def test_count_vector_featurizer_attribute_featurization(
 
     data = TrainingData([train_message])
 
-    tk.train(data, None)
+    tk.train(data)
     ftr.train(data)
 
     if intent_features:
@@ -122,7 +121,7 @@ def test_count_vector_featurizer_shared_vocab(
     train_message.set(RESPONSE_ATTRIBUTE, response)
 
     data = TrainingData([train_message])
-    tk.train(data, None)
+    tk.train(data)
     ftr.train(data)
 
     assert np.all(
@@ -153,8 +152,7 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
         {"token_pattern": r"(?u)\b\w+\b", "OOV_token": "__oov__"}
     )
     train_message = Message(sentence)
-    tokens = WhitespaceTokenizer().tokenize(sentence)
-    train_message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
+    WhitespaceTokenizer().process(train_message)
 
     data = TrainingData([train_message])
     ftr.train(data)
@@ -186,8 +184,7 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
         }
     )
     train_message = Message(sentence)
-    tokens = WhitespaceTokenizer().tokenize(sentence)
-    train_message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
+    WhitespaceTokenizer().process(train_message)
 
     data = TrainingData([train_message])
     ftr.train(data)
@@ -251,14 +248,13 @@ def test_count_vector_featurizer_char(sentence, expected):
     ftr = CountVectorsFeaturizer({"min_ngram": 1, "max_ngram": 2, "analyzer": "char"})
 
     train_message = Message(sentence)
-    tokens = WhitespaceTokenizer().tokenize(sentence)
-    train_message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
+    WhitespaceTokenizer().process(train_message)
 
     data = TrainingData([train_message])
     ftr.train(data)
 
     test_message = Message(sentence)
-    test_message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
+    WhitespaceTokenizer().process(test_message)
     ftr.process(test_message)
 
     assert np.all(
@@ -340,9 +336,7 @@ def test_count_vectors_featurizer_train():
     message = Message(sentence)
     message.set(RESPONSE_ATTRIBUTE, sentence)
     message.set(INTENT_ATTRIBUTE, "intent")
-    tokens = WhitespaceTokenizer().tokenize(sentence)
-    message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
-    message.set(TOKENS_NAMES[RESPONSE_ATTRIBUTE], tokens)
+    WhitespaceTokenizer().train(TrainingData([message]))
 
     featurizer.train(TrainingData([message]), RasaNLUModelConfig())
 

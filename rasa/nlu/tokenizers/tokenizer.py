@@ -93,7 +93,8 @@ class Tokenizer(Component):
         tokens = self.add_cls_token(tokens, TEXT_ATTRIBUTE)
         message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
 
-    def add_cls_token(self, tokens: List[Token], attribute: Text) -> List[Token]:
+    @staticmethod
+    def add_cls_token(tokens: List[Token], attribute: Text) -> List[Token]:
         if attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE] and tokens:
             # +1 to have a space between the last token and the __cls__ token
             idx = tokens[-1].end + 1

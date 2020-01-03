@@ -1,14 +1,13 @@
 import pytest
 
-from nlu.constants import (
+from rasa.nlu.constants import (
     CLS_TOKEN,
     TEXT_ATTRIBUTE,
     INTENT_ATTRIBUTE,
     RESPONSE_ATTRIBUTE,
     TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
 )
-from nlu.training_data import Message, TrainingData
+from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
