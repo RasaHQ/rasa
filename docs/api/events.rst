@@ -88,7 +88,7 @@ Reset all Slots
 Schedule a reminder
 ~~~~~~~~~~~~~~~~~~~
 
-:Short: Schedule an intent to be injected in the future.
+:Short: Schedule an intent to be triggered in the future.
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
       :lines: 1-
@@ -100,7 +100,8 @@ Schedule a reminder
 
 :Effect:
     When added to a tracker, core will schedule the intent to be
-    injected in the future.
+    triggered in the future, in place of a user input. You can link
+    this intent to an action of your choice using the :ref:`mapping-policy`.
 
 Pause a conversation
 ~~~~~~~~~~~~~~~~~~~~
