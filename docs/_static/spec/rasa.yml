@@ -302,7 +302,7 @@ paths:
       security:
         - TokenAuth: []
         - JWT: []
-      operationId: injectConversationIntent
+      operationId: triggerConversationIntent
       tags:
         - Tracker
       summary: Inject an intent into a conversation
