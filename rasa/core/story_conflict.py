@@ -13,9 +13,11 @@ class StoryConflict:
         self, sliced_states: List[Optional[Dict[Text, float]]],
     ):
         self.sliced_states = sliced_states
-        self.hash = hash(str(list(sliced_states)))
         self._conflicting_actions = {}  # {"action": ["story_1", ...], ...}
         self.correct_response = None
+
+    def __hash__(self):
+        return hash(str(list(self.sliced_states)))
 
     @staticmethod
     def find_conflicts(
