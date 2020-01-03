@@ -466,7 +466,30 @@ def create_app(
             "to the state of a conversation.",
         )
 
+        verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
+
+        try:
+            async with app.agent.lock_store.lock(conversation_id):
+                tracker = await get_tracker(
+                    app.agent.create_processor(), conversation_id
+                )
+
+                events = _get_events_from_request_body(request)
+
+                for event in events:
+                    tracker.update(event, app.agent.domain)
+                app.agent.tracker_store.save(tracker)
+
+            return response.json(tracker.current_state(verbosity))
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
+            )
+
+    def _get_events_from_request_body(request: Request) -> List[Event]:
         events = request.json
+
         if not isinstance(events, list):
             events = [events]
 
@@ -485,23 +508,7 @@ def create_app(
                 {"parameter": "", "in": "body"},
             )
 
-        verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
-
-        try:
-            async with app.agent.lock_store.lock(conversation_id):
-                tracker = await get_tracker(
-                    app.agent.create_processor(), conversation_id
-                )
-                for event in events:
-                    tracker.update(event, app.agent.domain)
-                app.agent.tracker_store.save(tracker)
-
-            return response.json(tracker.current_state(verbosity))
-        except Exception as e:
-            logger.debug(traceback.format_exc())
-            raise ErrorResponse(
-                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
-            )
+        return events
 
     @app.put("/conversations/<conversation_id>/tracker/events")
     @requires_auth(app, auth_token)
