@@ -64,8 +64,8 @@ def validate_arguments(
         raise ValueError(
             "Can not train an empty pipeline. "
             "Make sure to specify a proper pipeline in "
-            "the configuration using the `pipeline` key. "
-            "The `backend` configuration key is "
+            "the configuration using the 'pipeline' key. "
+            "The 'backend' configuration key is "
             "NOT supported anymore."
         )
 
@@ -164,7 +164,9 @@ class UnsupportedLanguageError(Exception):
         super().__init__(component, language)
 
     def __str__(self) -> Text:
-        return f"component '{self.component}' does not support language '{self.language}'."
+        return (
+            f"component '{self.component}' does not support language '{self.language}'."
+        )
 
 
 class ComponentMetaclass(type):
@@ -495,7 +497,7 @@ class ComponentBuilder:
             return component
         except MissingArgumentError as e:  # pragma: no cover
             raise Exception(
-                f"Failed to load component from file `{component_meta.get('file')}`. "
+                f"Failed to load component from file '{component_meta.get('file')}'. "
                 f"Error: {e}"
             )
 
@@ -517,6 +519,6 @@ class ComponentBuilder:
             return component
         except MissingArgumentError as e:  # pragma: no cover
             raise Exception(
-                f"Failed to create component `{component_config['name']}`. "
+                f"Failed to create component '{component_config['name']}'. "
                 f"Error: {e}"
             )
