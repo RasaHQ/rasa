@@ -635,7 +635,9 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = get_tracker(app.agent, conversation_id)
+                tracker = await get_tracker(
+                    app.agent.create_processor(), conversation_id
+                )
                 output_channel = _get_output_channel(request, tracker)
                 if intent_to_trigger not in app.agent.domain.intents:
                     raise ErrorResponse(
@@ -657,7 +659,7 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-        tracker = get_tracker(app.agent, conversation_id)
+        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
         state = tracker.current_state(verbosity)
 
         response_body = {"tracker": state}
