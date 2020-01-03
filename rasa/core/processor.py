@@ -567,7 +567,7 @@ class MessageProcessor:
     async def _cancel_reminders(
         events: List[Event], tracker: DialogueStateTracker
     ) -> None:
-        """Cancel reminders by action_name"""
+        """Cancel reminders by intent name"""
 
         # All Reminders with the same action name will be cancelled
         for e in events:
