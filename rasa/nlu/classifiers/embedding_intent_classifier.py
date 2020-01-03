@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import warnings
 
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
-from rasa.nlu.components import Component, one_of
+from rasa.nlu.components import Component, any_of
 from rasa.utils import train_utils
 from rasa.utils.train_utils import SessionDataType
 from rasa.nlu.constants import (
@@ -55,7 +55,7 @@ class EmbeddingIntentClassifier(Component):
     provides = ["intent", "intent_ranking"]
 
     requires = [
-        one_of(
+        any_of(
             DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE], SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
         )
     ]

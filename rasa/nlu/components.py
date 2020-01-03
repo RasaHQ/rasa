@@ -74,7 +74,7 @@ def validate_arguments(
     for component in pipeline:
         for r in component.requires:
             if isinstance(r, Tuple):
-                validate_requires_one_of(r, provided_properties, str(component.name))
+                validate_requires_any_of(r, provided_properties, str(component.name))
             else:
                 if r not in provided_properties:
                     raise Exception(
@@ -85,7 +85,7 @@ def validate_arguments(
         provided_properties.update(component.provides)
 
 
-def one_of(*args):
+def any_of(*args):
     """Helper function to define that one of the given arguments is required
     by a component.
 
@@ -93,7 +93,7 @@ def one_of(*args):
     return args
 
 
-def validate_requires_one_of(
+def validate_requires_any_of(
     required_properties: Tuple[Text], provided_properties: Set[Text], component_name: Text
 ):
     """Validates that at least one of the given properties is present in
@@ -101,7 +101,7 @@ def validate_requires_one_of(
 
     property_present = False
 
-    for property in properties:
+    for property in required_properties:
         if property in provided_properties:
             property_present = True
             break
@@ -110,7 +110,7 @@ def validate_requires_one_of(
         raise Exception(
             f"Failed to validate component {component_name}. "
             f"Missing one of the following properties: "
-            f"{properties}."
+            f"{required_properties}."
         )
 
 
@@ -217,7 +217,7 @@ class Component(metaclass=ComponentMetaclass):
     # component. E.g. if requires contains "tokens", than a
     # previous component in the pipeline needs to have "tokens"
     # within the above described `provides` property.
-    # Use `one_of("option_1", "option_2")` to define that either
+    # Use `any_of("option_1", "option_2")` to define that either
     # "option_1" or "option_2" needs to be present in the
     # provided properties from the previous components.
     requires = []
