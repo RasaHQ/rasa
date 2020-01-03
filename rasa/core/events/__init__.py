@@ -590,8 +590,8 @@ class ReminderScheduled(Event):
     def __init__(
         self,
         intent: Text,
-        entities: Optional[List[Dict]],
         trigger_date_time: datetime,
+        entities: Optional[List[Dict]] = None,
         name: Optional[Text] = None,
         kill_on_user_message: bool = True,
         timestamp: Optional[int] = None,
@@ -636,15 +636,15 @@ class ReminderScheduled(Event):
 
     def __str__(self) -> str:
         return (
-            f"ReminderScheduled(intent: {self.intent}, entities: {self.entities}, "
-            f"trigger_date: {self.trigger_date_time}, name: {self.name})"
+            f"ReminderScheduled(intent: {self.intent}, trigger_date: {self.trigger_date_time}, "
+            f"entities: {self.entities}, name: {self.name})"
         )
 
     def _data_obj(self) -> Dict[Text, Any]:
         return {
             "intent": self.intent,
-            "entities": self.entities,
             "date_time": self.trigger_date_time.isoformat(),
+            "entities": self.entities,
             "name": self.name,
             "kill_on_user_msg": self.kill_on_user_message,
         }
@@ -666,8 +666,8 @@ class ReminderScheduled(Event):
         return [
             ReminderScheduled(
                 parameters.get("intent"),
-                parameters.get("entities"),
                 trigger_date_time,
+                parameters.get("entities"),
                 name=parameters.get("name"),
                 kill_on_user_message=parameters.get("kill_on_user_msg", True),
                 timestamp=parameters.get("timestamp"),
