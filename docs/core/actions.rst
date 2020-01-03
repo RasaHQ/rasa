@@ -109,8 +109,8 @@ You may want to proactively reach out to the user,
 for example to display the output of a long running background operation
 or notify the user of an external event.
 
-To do so, you can ``POST`` an intent to this
-`endpoint <../../api/http-api/#operation/triggerConversationIntent>`_.
+To do so, you can ``POST`` an intent to the
+`trigger_intent endpoint <../../api/http-api/#operation/triggerConversationIntent>`_.
 The intent, let's call it ``EXT_sensor``, will be treated as if the user had sent a message with this intent.
 You can even provide entities as parameters, e.g. ``{"temperature": "high"}``.
 For your bot to respond, we recommend you use the :ref:`mapping-policy` to connect the sent intent ``EXT_sensor``
@@ -119,17 +119,13 @@ You can also use a custom action here, of course.
 
 Use the ``output_channel`` query parameter to specify which output
 channel should be used to communicate the assistant's responses back to the user.
-Any messages which are dispatched in the custom action will be forwarded to the specified output channel.
-
-Proactively reaching out to the user is dependent on the abilities of a channel and
-hence not supported by every channel. If your channel does not support it, consider
-using the :ref:`callbackInput` channel to send messages to a webhook.
+Any messages that are dispatched in the custom action will be forwarded to the specified output channel.
 
 .. note::
 
    Proactively reaching out to the user is dependent on the abilities of a channel and
-    hence not supported by every channel. If your channel does not support it, consider
-    using the :ref:`callbackInput` channel to send messages to a webhook.
+   hence not supported by every channel. If your channel does not support it, consider
+   using the :ref:`callbackInput` channel to send messages to a webhook.
 
 .. _default-actions:
 
