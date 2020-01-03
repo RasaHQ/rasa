@@ -100,7 +100,7 @@ after ``inform_happy``, as there is nothing that would distinguish the dialogue 
 stories and the subsequent actions are different in Story 1 and Story 2.
 
 This conflict can now be automatically identified with our new story structure tool.
-Just use `rasa data validate` in the command line, as follows:
+Just use ``rasa data validate`` in the command line, as follows:
 
 .. code-block:: bash
 
