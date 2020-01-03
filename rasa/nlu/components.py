@@ -98,7 +98,7 @@ def validate_requires_any_of(
     provided_properties: Set[Text],
     component_name: Text,
 ):
-    """Validates that at least one of the given properties is present in
+    """Validates that at least one of the given required properties is present in
     the provided properties."""
 
     property_present = False
