@@ -580,10 +580,8 @@ class AllSlotsReset(Event):
 
 # noinspection PyProtectedMember
 class ReminderScheduled(Event):
-    """ Allows asynchronous scheduling of intent / entity triggering.
-
-    As a side effect the message processor will schedule an intent
-    to be run at the trigger date."""
+    """ Schedules the asynchronous triggering of a user intent
+    (with entities if needed) at a given time."""
 
     type_name = "reminder"
 
