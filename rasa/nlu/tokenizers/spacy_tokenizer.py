@@ -1,36 +1,31 @@
 import typing
-from typing import Any
+from typing import Any, Text, List
 
-from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.tokenizers import Token, Tokenizer
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 from rasa.nlu.constants import (
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_INTENT_ATTRIBUTE,
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-    MESSAGE_SPACY_FEATURES_NAMES,
-    MESSAGE_VECTOR_FEATURE_NAMES,
-    SPACY_FEATURIZABLE_ATTRIBUTES,
+    TEXT_ATTRIBUTE,
+    TOKENS_NAMES,
+    SPACY_DOCS,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
 )
 
 if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc  # pytype: disable=import-error
 
 
-class SpacyTokenizer(Tokenizer, Component):
+class SpacyTokenizer(Tokenizer):
 
-    provides = [
-        MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
-    ]
+    provides = [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
 
-    requires = [
-        MESSAGE_SPACY_FEATURES_NAMES[attribute]
-        for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
-    ]
+    requires = [SPACY_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
+
+    defaults = {
+        # add __CLS__ token to the end of the list of tokens
+        "use_cls_token": False
+    }
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
@@ -38,26 +33,25 @@ class SpacyTokenizer(Tokenizer, Component):
 
         for example in training_data.training_examples:
 
-            for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
+            for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
                 attribute_doc = self.get_doc(example, attribute)
 
                 if attribute_doc is not None:
                     example.set(
-                        MESSAGE_TOKENS_NAMES[attribute], self.tokenize(attribute_doc)
+                        TOKENS_NAMES[attribute], self.tokenize(attribute_doc, attribute)
                     )
 
-    def get_doc(self, message, attribute) -> Any:
-
-        return message.get(MESSAGE_SPACY_FEATURES_NAMES[attribute])
+    def get_doc(self, message: Message, attribute: Text) -> "Doc":
+        return message.get(SPACY_DOCS[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
-
         message.set(
-            MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE],
-            self.tokenize(self.get_doc(message, MESSAGE_TEXT_ATTRIBUTE)),
+            TOKENS_NAMES[TEXT_ATTRIBUTE],
+            self.tokenize(self.get_doc(message, TEXT_ATTRIBUTE), TEXT_ATTRIBUTE),
         )
 
-    def tokenize(self, doc: "Doc") -> typing.List[Token]:
-
-        return [Token(t.text, t.idx) for t in doc]
+    def tokenize(self, doc: "Doc", attribute: Text = TEXT_ATTRIBUTE) -> List[Token]:
+        tokens = [Token(t.text, t.idx, lemma=t.lemma_) for t in doc]
+        self.add_cls_token(tokens, attribute)
+        return tokens

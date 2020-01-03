@@ -271,3 +271,25 @@ Log an executed action
     .. literalinclude:: ../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: ActionExecuted.apply_to
+
+Start a new conversation session
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Short: Marks the beginning of a new conversation session. Resets the tracker and
+        triggers an ``ActionSessionStart`` which by default applies the existing
+        ``SlotSet`` events to the new session.
+
+:JSON:
+    .. literalinclude:: ../../tests/core/test_events.py
+      :start-after: # DOCS MARKER SessionStarted
+      :dedent: 4
+      :end-before: # DOCS END
+:Class:
+    .. autoclass:: rasa.core.events.SessionStarted
+
+:Effect:
+    When added to a tracker, this is the code used to update the tracker:
+
+    .. literalinclude:: ../../rasa/core/events/__init__.py
+      :dedent: 4
+      :pyobject: SessionStarted.apply_to

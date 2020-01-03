@@ -538,11 +538,19 @@ def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
     assert content["events"] == [
         {
             "event": "action",
+            "name": "action_session_start",
+            "policy": None,
+            "confidence": None,
+            "timestamp": 1514764800,
+        },
+        {"event": "session_started", "timestamp": 1514764800},
+        {
+            "event": "action",
             "name": "action_listen",
             "policy": None,
             "confidence": None,
             "timestamp": 1514764800,
-        }
+        },
     ]
     assert content["latest_message"] == {
         "text": None,
@@ -569,9 +577,10 @@ def test_pushing_event(rasa_app, event):
     _, tracker_response = rasa_app.get(f"/conversations/{cid}/tracker")
     tracker = tracker_response.json
     assert tracker is not None
-    assert len(tracker.get("events")) == 2
 
-    evt = tracker.get("events")[1]
+    assert len(tracker.get("events")) == 4
+
+    evt = tracker.get("events")[3]
     assert Event.from_parameters(evt) == event
 
 
@@ -593,8 +602,8 @@ def test_push_multiple_events(rasa_app: SanicTestClient):
     assert tracker is not None
 
     # there is also an `ACTION_LISTEN` event at the start
-    assert len(tracker.get("events")) == len(test_events) + 1
-    assert tracker.get("events")[1:] == events
+    assert len(tracker.get("events")) == len(test_events) + 3
+    assert tracker.get("events")[3:] == events
 
 
 def test_put_tracker(rasa_app: SanicTestClient):

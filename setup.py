@@ -24,6 +24,7 @@ tests_requires = [
     "aioresponses~=0.6.0",
     "moto~=1.3.8",
     "fakeredis~=1.0",
+    "mongomock~=3.18",
 ]
 
 install_requires = [
@@ -67,7 +68,7 @@ install_requires = [
     "gevent~=1.4",
     "pytz~=2019.1",
     "python-dateutil~=2.8",
-    "rasa-sdk~=1.5.0",
+    "rasa-sdk~=1.6.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
     "sanic~=19.9",

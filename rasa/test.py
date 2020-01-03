@@ -202,7 +202,9 @@ def perform_nlu_cross_validation(
     data = rasa.nlu.training_data.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=folds)
     kwargs = utils.minimal_kwargs(kwargs, cross_validate)
-    results, entity_results = cross_validate(data, folds, nlu_config, output, **kwargs)
+    results, entity_results, response_selection_results = cross_validate(
+        data, folds, nlu_config, output, **kwargs
+    )
     logger.info(f"CV evaluation (n={folds})")
 
     if any(results):
@@ -213,3 +215,7 @@ def perform_nlu_cross_validation(
         logger.info("Entity evaluation results")
         return_entity_results(entity_results.train, "train")
         return_entity_results(entity_results.test, "test")
+    if any(response_selection_results):
+        logger.info("Response Selection evaluation results")
+        return_results(response_selection_results.train, "train")
+        return_results(response_selection_results.test, "test")
