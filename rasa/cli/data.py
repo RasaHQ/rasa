@@ -190,4 +190,6 @@ def validate_stories(args):
         not args.fail_on_warnings, max_history=args.max_history
     )
 
-    sys.exit(0) if everything_is_alright else sys.exit(1)
+    if not everything_is_alright:
+        print_error("Story validation completed with errors.")
+        sys.exit(1)
