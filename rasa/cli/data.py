@@ -6,7 +6,7 @@ from typing import List
 
 from rasa import data
 from rasa.cli.arguments import data as arguments
-from rasa.cli.utils import get_validated_path
+from rasa.cli.utils import get_validated_path, print_error
 from rasa.constants import DEFAULT_DATA_PATH
 from typing import NoReturn
 
