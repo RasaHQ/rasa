@@ -847,12 +847,12 @@ def test_trigger_intent(rasa_app: SanicTestClient):
     assert parsed_content["messages"]
 
 
-def test_inject_intent_with_missing_action_name(rasa_app: SanicTestClient):
-    test_sender = "test_inject_intent_with_missing_action_name"
+def test_trigger_intent_with_missing_action_name(rasa_app: SanicTestClient):
+    test_sender = "test_trigger_intent_with_missing_action_name"
 
     data = {"wrong-key": "greet"}
     _, response = rasa_app.post(
-        f"/conversations/{test_sender}/inject-intent", json=data
+        f"/conversations/{test_sender}/trigger_intent", json=data
     )
 
     assert response.status == 400
