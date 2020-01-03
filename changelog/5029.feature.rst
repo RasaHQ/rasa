@@ -1,4 +1,4 @@
-Add ``any_of`` to component. Should be used inside ``requires``.
+Add ``any_of`` function to the ``Component`` class. Should be used inside ``requires``.
 
 ``any_of`` allows you to define multiple attributes of a message for a component.
 At least one of those attributes needs to be present.
