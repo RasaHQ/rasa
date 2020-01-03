@@ -961,12 +961,13 @@ components:
           type: string
           example: utter_greet
         policy:
-          description: Name of the policy that predicted the action (optional).
+          description: Name of the policy that predicted the action.
           type: string
+          nullable: true
         confidence:
-          description: >-
-            Confidence of the prediction (optional).
+          description: Confidence of the prediction.
           type: number
+          nullable: true
           example: 0.987232
       required: ["name"]
 
