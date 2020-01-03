@@ -370,7 +370,10 @@ methods that you should implement:</p>
 82
 83
 84
-85</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa.nlu.components</span> <span class="kn">import</span> <span class="n">Component</span>
+85
+86
+87
+88</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa.nlu.components</span> <span class="kn">import</span> <span class="n">Component</span>
 <span class="kn">import</span> <span class="nn">typing</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Text</span><span class="p">,</span> <span class="n">Dict</span>
 
@@ -389,9 +392,12 @@ methods that you should implement:</p>
     <span class="n">provides</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="c1"># Which attributes on a message are required by this</span>
-    <span class="c1"># component. e.g. if requires contains &quot;tokens&quot;, than a</span>
+    <span class="c1"># component. E.g. if requires contains &quot;tokens&quot;, than a</span>
     <span class="c1"># previous component in the pipeline needs to have &quot;tokens&quot;</span>
     <span class="c1"># within the above described `provides` property.</span>
+    <span class="c1"># Use `any_of(&quot;option_1&quot;, &quot;option_2&quot;)` to define that either</span>
+    <span class="c1"># &quot;option_1&quot; or &quot;option_2&quot; needs to be present in the</span>
+    <span class="c1"># provided properties from the previous components.</span>
     <span class="n">requires</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="c1"># Defines the default configuration parameters of a component</span>
