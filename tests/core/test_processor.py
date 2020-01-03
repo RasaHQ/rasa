@@ -1,5 +1,4 @@
 import asyncio
-import logging
 
 import datetime
 import pytest
@@ -33,12 +32,9 @@ from rasa.core.processor import MessageProcessor, DEFAULT_INTENTS
 from rasa.core.slots import Slot
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
-from tests.utilities import json_of_latest_request, latest_request
+from tests.utilities import latest_request
 
 from rasa.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL
-
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
-from rasa.core.domain import Domain
 
 import logging
 
