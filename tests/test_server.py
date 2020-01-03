@@ -858,13 +858,13 @@ def test_trigger_intent_with_missing_action_name(rasa_app: SanicTestClient):
     assert response.status == 400
 
 
-def test_inject_intent_with_not_existing_intent(rasa_app: SanicTestClient):
-    test_sender = "test_inject_intent_with_not_existing_intent"
+def test_trigger_intent_with_not_existing_intent(rasa_app: SanicTestClient):
+    test_sender = "test_trigger_intent_with_not_existing_intent"
     _create_tracker_for_sender(rasa_app, test_sender)
 
     data = {"name": "ka[pa[opi[opj[oj[oija"}
     _, response = rasa_app.post(
-        f"/conversations/{test_sender}/inject-intent", json=data
+        f"/conversations/{test_sender}/trigger_intent", json=data
     )
 
     assert response.status == 500
