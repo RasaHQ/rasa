@@ -1,0 +1,1 @@
+Pin sanic patch version instead of minor version. Fixes sanic ``_run_request_middleware()`` error.
