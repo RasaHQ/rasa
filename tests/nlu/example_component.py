@@ -20,7 +20,7 @@ class MyComponent(Component):
     # component. E.g. if requires contains "tokens", than a
     # previous component in the pipeline needs to have "tokens"
     # within the above described `provides` property.
-    # Use `one_of("option_1", "option_2")` to define that either
+    # Use `any_of("option_1", "option_2")` to define that either
     # "option_1" or "option_2" needs to be present in the
     # provided properties from the previous components.
     requires = []
