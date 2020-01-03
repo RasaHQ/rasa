@@ -2,7 +2,7 @@ import pytest
 import tempfile
 from jsonschema import ValidationError
 
-from nlu.constants import TEXT_ATTRIBUTE
+from rasa.nlu.constants import TEXT_ATTRIBUTE
 from rasa.nlu import training_data
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
