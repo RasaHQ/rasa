@@ -85,7 +85,7 @@ def validate_arguments(
         provided_properties.update(component.provides)
 
 
-def any_of(*args):
+def any_of(*args) -> Tuple[Any]:
     """Helper function to define that one of the given arguments is required
     by a component.
 
@@ -101,12 +101,9 @@ def validate_requires_any_of(
     """Validates that at least one of the given required properties is present in
     the provided properties."""
 
-    property_present = False
-
-    for property in required_properties:
-        if property in provided_properties:
-            property_present = True
-            break
+    property_present = any(
+        [property in provided_properties for property in required_properties]
+    )
 
     if not property_present:
         raise Exception(

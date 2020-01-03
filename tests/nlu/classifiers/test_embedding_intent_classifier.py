@@ -121,10 +121,15 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
         }
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception) as e:
         await train(
             _config,
             path=tmpdir.strpath,
             data=DEFAULT_DATA_PATH,
             component_builder=component_builder,
         )
+
+    assert (
+        "Failed to validate component 'EmbeddingIntentClassifier'. Missing one of "
+        "the following properties: " in str(e.value)
+    )
