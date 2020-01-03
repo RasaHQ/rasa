@@ -322,7 +322,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IntentInjectionRequest'
+              $ref: '#/components/schemas/IntentTriggerRequest'
       responses:
         200:
           description: Success
@@ -971,7 +971,7 @@ components:
           example: 0.987232
       required: ["name"]
 
-    IntentInjectionRequest:
+    IntentTriggerRequest:
       type: object
       properties:
         name:
@@ -979,15 +979,10 @@ components:
           type: string
           example: greet
         entities:
-          description: >-
-            Entities to be passed on (optional).
+          description: Entities to be passed on.
           type: object
-          example: {"reason": "joke"}
-        confidence:
-          description: >-
-            Confidence of the prediction (optional).
-          type: number
-          example: 0.987232
+          nullable: true
+          example: {"temperature": "high"}
       required: ["name"]
 
     Message:
