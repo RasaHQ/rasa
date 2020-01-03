@@ -85,6 +85,10 @@ def test_combine_with_existing_sparse_features_shape_mismatch():
         (None, None),
         ([[1, 0, 2, 3], [2, 0, 0, 1]], [[2, 0, 0, 1]]),
         (
+            scipy.sparse.coo_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]),
+            scipy.sparse.coo_matrix([2, 0, 0, 1]),
+        ),
+        (
             scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]),
             scipy.sparse.csr_matrix([2, 0, 0, 1]),
         ),

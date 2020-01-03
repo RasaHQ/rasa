@@ -104,7 +104,7 @@ class SklearnIntentClassifier(Component):
                 ]
             )
             # reduce dimensionality
-            X = np.squeeze(X, axis=1)
+            X = np.reshape(X, (len(X), -1))
 
             self.clf = self._create_classifier(num_threads, y)
 
