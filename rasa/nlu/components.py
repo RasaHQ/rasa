@@ -94,7 +94,7 @@ def one_of(*args):
 
 
 def validate_requires_one_of(
-    properties: Tuple[Text], provided_properties: Set[Text], component_name: Text
+    required_properties: Tuple[Text], provided_properties: Set[Text], component_name: Text
 ):
     """Validates that at least one of the given properties is present in
     the provided properties."""
