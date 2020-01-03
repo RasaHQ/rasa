@@ -10,7 +10,7 @@ from rasa.core.training.structures import StoryGraph
 from rasa.core.training.dsl import UserUttered
 from rasa.core.training.dsl import ActionExecuted
 from rasa.core.constants import UTTER_PREFIX
-from rasa.core.story_conflict import find_story_conflicts
+from rasa.core.training.story_conflict import find_story_conflicts
 
 logger = logging.getLogger(__name__)
 

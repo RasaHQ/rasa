@@ -1,4 +1,4 @@
-from rasa.core.story_conflict import StoryConflict
+from rasa.core.training.story_conflict import StoryConflict
 from rasa.core.training.generator import TrainingDataGenerator
 from rasa.core.validator import Validator
 from rasa.importers.rasa import RasaFileImporter
