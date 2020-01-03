@@ -73,25 +73,45 @@ def validate_arguments(
 
     for component in pipeline:
         for r in component.requires:
-            if r not in provided_properties:
-                raise Exception(
-                    f"Failed to validate component {component.name}. "
-                    f"Missing property: '{r}'"
-                )
-
-        if component.requires_one_of:
-            attribute_present = False
-            for r in component.requires_one_of:
-                if r in provided_properties:
-                    attribute_present = True
-            if not attribute_present:
-                raise Exception(
-                    f"Failed to validate component {component.name}. "
-                    f"Missing one of the following properties: "
-                    f"{component.requires_one_of}."
-                )
+            if isinstance(r, Tuple):
+                validate_requires_one_of(r, provided_properties, str(component.name))
+            else:
+                if r not in provided_properties:
+                    raise Exception(
+                        f"Failed to validate component {component.name}. "
+                        f"Missing property: '{r}'"
+                    )
 
         provided_properties.update(component.provides)
+
+
+def one_of(*args):
+    """Helper function to define that one of the given arguments is required
+    by a component.
+
+    Should be used inside `requires`."""
+    return args
+
+
+def validate_requires_one_of(
+    properties: Tuple[Text], provided_properties: Set[Text], component_name: Text
+):
+    """Validates that at least one of the given properties is present in
+    the provided properties."""
+
+    property_present = False
+
+    for property in properties:
+        if property in provided_properties:
+            property_present = True
+            break
+
+    if not property_present:
+        raise Exception(
+            f"Failed to validate component {component_name}. "
+            f"Missing one of the following properties: "
+            f"{properties}."
+        )
 
 
 def validate_required_components_from_data(
@@ -194,17 +214,13 @@ class Component(metaclass=ComponentMetaclass):
     provides = []
 
     # Which attributes on a message are required by this
-    # component. e.g. if requires contains "tokens", than a
+    # component. E.g. if requires contains "tokens", than a
     # previous component in the pipeline needs to have "tokens"
     # within the above described `provides` property.
+    # Use `one_of("option_1", "option_2")` to define that either
+    # "option_1" or "option_2" needs to be present in the
+    # provided properties from the previous components.
     requires = []
-
-    # At least one of the attributes on a message is required by this
-    # component. E.g. if requires_one_of contains "text_dense_features" and
-    # "text_sparse_features", than a previous component in the pipeline needs
-    # to have "text_dense_features" or "text_sparse_features"
-    # within the above described `provides` property.
-    requires_one_of = []
 
     # Defines the default configuration parameters of a component
     # these values can be overwritten in the pipeline configuration
