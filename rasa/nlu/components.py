@@ -97,7 +97,7 @@ def validate_requires_any_of(
     required_properties: Tuple[Text],
     provided_properties: Set[Text],
     component_name: Text,
-):
+) -> None:
     """Validates that at least one of the given required properties is present in
     the provided properties."""
 
