@@ -110,7 +110,7 @@ def validate_requires_any_of(
 
     if not property_present:
         raise Exception(
-            f"Failed to validate component {component_name}. "
+            f"Failed to validate component '{component_name}'. "
             f"Missing one of the following properties: "
             f"{required_properties}."
         )
