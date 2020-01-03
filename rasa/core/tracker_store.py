@@ -33,7 +33,7 @@ from rasa.utils.endpoints import EndpointConfig
 if typing.TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine.base import Engine
-    from sqlalchemy.orm import Session
+    from sqlalchemy.orm import Session, Query
     import boto3.resources.factory.dynamodb.Table
 
 logger = logging.getLogger(__name__)
@@ -97,7 +97,7 @@ class TrackerStore:
         self.max_event_history = max_event_history
         if tracker is None:
             tracker = self.create_tracker(
-                sender_id, append_action_listen=append_action_listen,
+                sender_id, append_action_listen=append_action_listen
             )
         return tracker
 
@@ -110,7 +110,7 @@ class TrackerStore:
         )
 
     def create_tracker(
-        self, sender_id: Text, append_action_listen: bool = True,
+        self, sender_id: Text, append_action_listen: bool = True
     ) -> DialogueStateTracker:
         """Creates a new tracker for `sender_id`.
 
@@ -466,10 +466,14 @@ class MongoTrackerStore(TrackerStore):
 
         """
 
-        stored = self.conversations.find_one({"sender_id": tracker.sender_id})
-        n_events = len(stored.get("events", [])) if stored else 0
+        stored = self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
+        number_events_since_last_session = len(
+            self._events_since_last_session_start(stored)
+        )
 
-        return itertools.islice(tracker.events, n_events, len(tracker.events))
+        return itertools.islice(
+            tracker.events, number_events_since_last_session, len(tracker.events)
+        )
 
     @staticmethod
     def _events_since_last_session_start(serialised_tracker: Dict) -> List[Dict]:
@@ -722,35 +726,10 @@ class SQLTrackerStore(TrackerStore):
         from rasa.core.events import SessionStarted
 
         with self.session_scope() as session:
-            # Subquery to find the timestamp of the latest `SessionStarted` event
-            session_start_sub_query = (
-                session.query(
-                    sa.func.max(self.SQLEvent.timestamp).label("session_start")
-                )
-                .filter(
-                    self.SQLEvent.sender_id == sender_id,
-                    self.SQLEvent.type_name == SessionStarted.type_name,
-                )
-                .subquery()
-            )
 
-            results = (
-                session.query(self.SQLEvent)
-                .filter(
-                    self.SQLEvent.sender_id == sender_id,
-                    # Find events after the latest `SessionStarted` event or return all
-                    # events
-                    sa.or_(
-                        self.SQLEvent.timestamp
-                        >= session_start_sub_query.c.session_start,
-                        session_start_sub_query.c.session_start.is_(None),
-                    ),
-                )
-                .order_by(self.SQLEvent.timestamp)
-                .all()
-            )
+            serialised_events = self._event_query(session, sender_id).all()
 
-            events = [json.loads(event.data) for event in results]
+            events = [json.loads(event.data) for event in serialised_events]
 
             if self.domain and len(events) > 0:
                 logger.debug(f"Recreating tracker from sender id '{sender_id}'")
@@ -764,6 +743,33 @@ class SQLTrackerStore(TrackerStore):
                     f"Returning `None` instead."
                 )
                 return None
+
+    def _event_query(self, session: "Session", sender_id: Text) -> "Query":
+        import sqlalchemy as sa
+
+        # Subquery to find the timestamp of the latest `SessionStarted` event
+        session_start_sub_query = (
+            session.query(sa.func.max(self.SQLEvent.timestamp).label("session_start"))
+            .filter(
+                self.SQLEvent.sender_id == sender_id,
+                self.SQLEvent.type_name == SessionStarted.type_name,
+            )
+            .subquery()
+        )
+
+        return (
+            session.query(self.SQLEvent)
+            .filter(
+                self.SQLEvent.sender_id == sender_id,
+                # Find events after the latest `SessionStarted` event or return all
+                # events
+                sa.or_(
+                    self.SQLEvent.timestamp >= session_start_sub_query.c.session_start,
+                    session_start_sub_query.c.session_start.is_(None),
+                ),
+            )
+            .order_by(self.SQLEvent.timestamp)
+        )
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""
@@ -801,14 +807,12 @@ class SQLTrackerStore(TrackerStore):
     ) -> Iterator:
         """Return events from the tracker which aren't currently stored."""
 
-        n_events = (
-            session.query(self.SQLEvent.sender_id)
-            .filter_by(sender_id=tracker.sender_id)
-            .count()
-            or 0
+        number_of_events_since_last_session = self._event_query(
+            session, tracker.sender_id
+        ).count()
+        return itertools.islice(
+            tracker.events, number_of_events_since_last_session, len(tracker.events)
         )
-
-        return itertools.islice(tracker.events, n_events, len(tracker.events))
 
 
 class FailSafeTrackerStore(TrackerStore):
@@ -934,7 +938,7 @@ def _create_from_endpoint_config(
 
 
 def _load_from_module_string(
-    domain: Domain, store: EndpointConfig, event_broker: Optional[EventBroker] = None,
+    domain: Domain, store: EndpointConfig, event_broker: Optional[EventBroker] = None
 ) -> "TrackerStore":
     """Initializes a custom tracker.
 
