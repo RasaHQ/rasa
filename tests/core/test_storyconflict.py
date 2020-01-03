@@ -1,4 +1,4 @@
-from rasa.core.training.story_conflict import StoryConflict
+from rasa.core.training.story_conflict import StoryConflict, find_story_conflicts
 from rasa.core.training.generator import TrainingDataGenerator
 from rasa.core.validator import Validator
 from rasa.importers.rasa import RasaFileImporter
@@ -20,7 +20,7 @@ async def test_find_no_conflicts():
     ).generate()
 
     # Create a list of `StoryConflict` objects
-    conflicts = StoryConflict.find_conflicts(trackers, validator.domain, 5)
+    conflicts = find_story_conflicts(trackers, validator.domain, 5)
 
     assert conflicts == []
 
@@ -40,11 +40,11 @@ async def test_find_conflicts_in_short_history():
     ).generate()
 
     # `max_history = 3` is too small, so a conflict must arise
-    conflicts = StoryConflict.find_conflicts(trackers, validator.domain, 3)
+    conflicts = find_story_conflicts(trackers, validator.domain, 3)
     assert len(conflicts) == 1
 
     # With `max_history = 4` the conflict should disappear
-    conflicts = StoryConflict.find_conflicts(trackers, validator.domain, 4)
+    conflicts = find_story_conflicts(trackers, validator.domain, 4)
     assert len(conflicts) == 0
 
 
@@ -63,7 +63,7 @@ async def test_find_conflicts_checkpoints():
     ).generate()
 
     # Create a list of `StoryConflict` objects
-    conflicts = StoryConflict.find_conflicts(trackers, validator.domain, 5)
+    conflicts = find_story_conflicts(trackers, validator.domain, 5)
 
     assert len(conflicts) == 1
     assert conflicts[0].conflicting_actions == ["utter_goodbye", "utter_default"]
