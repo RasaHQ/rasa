@@ -1,5 +1,5 @@
-Add ``requires_one_of`` to component.
+Add ``one_of`` to component. Should be used inside ``requires``.
 
-``requires_one_of`` allows you to define multiple attributes of a message for a component.
+``one_of`` allows you to define multiple attributes of a message for a component.
 At least one of those attributes needs to be present.
 Otherwise, the component cannot be trained and an error is raised.
