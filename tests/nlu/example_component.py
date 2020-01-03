@@ -17,17 +17,13 @@ class MyComponent(Component):
     provides = []
 
     # Which attributes on a message are required by this
-    # component. e.g. if requires contains "tokens", than a
+    # component. E.g. if requires contains "tokens", than a
     # previous component in the pipeline needs to have "tokens"
     # within the above described `provides` property.
+    # Use `one_of("option_1", "option_2")` to define that either
+    # "option_1" or "option_2" needs to be present in the
+    # provided properties from the previous components.
     requires = []
-
-    # At least one of the attributes on a message is required by this
-    # component. E.g. if requires_one_of contains "text_dense_features" and
-    # "text_sparse_features", than a previous component in the pipeline needs
-    # to have "text_dense_features" or "text_sparse_features"
-    # within the above described `provides` property.
-    requires_one_of = []
 
     # Defines the default configuration parameters of a component
     # these values can be overwritten in the pipeline configuration
