@@ -22,8 +22,6 @@ from rasa.core.constants import (
     USER_INTENT_BACK,
     USER_INTENT_OUT_OF_SCOPE,
     USER_INTENT_SESSION_START,
-    IS_EXTERNAL,
-    EXTERNAL_MESSAGE_PREFIX,
 )
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -359,14 +357,7 @@ class MessageProcessor:
             entity_list = [
                 {"entity": ent, "value": val} for ent, val in entities.items()
             ]
-        tracker.update(
-            UserUttered(
-                text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
-                intent={"name": intent_name},
-                metadata={IS_EXTERNAL: True},
-                entities=entity_list,
-            )
-        )
+        tracker.update(UserUttered.create_external(intent_name, entity_list))
         await self._predict_and_execute_next_action(output_channel, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)

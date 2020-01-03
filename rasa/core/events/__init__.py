@@ -13,6 +13,11 @@ from typing import List, Dict, Text, Any, Type, Optional
 from rasa.core import utils
 from typing import Union
 
+from rasa.core.constants import (
+    IS_EXTERNAL,
+    EXTERNAL_MESSAGE_PREFIX,
+)
+
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
 
@@ -331,6 +336,15 @@ class UserUttered(Event):
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         tracker.latest_message = self
         tracker.clear_followup_action()
+
+    @staticmethod
+    def create_external(intent_name, entity_list):
+        return UserUttered(
+            text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
+            intent={"name": intent_name},
+            metadata={IS_EXTERNAL: True},
+            entities=entity_list,
+        )
 
 
 # noinspection PyProtectedMember
