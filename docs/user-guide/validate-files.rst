@@ -75,8 +75,8 @@ In particular, you can test if your stories are inconsistent, i.e. if different 
 Here is a more detailed explanation.
 
 The purpose of Rasa Core is to predict the correct next bot action, given the dialogue state, that is the history of intents, entities, slots, and actions.
-Crucially, Rasa Core assumes that for any given dialogue state, exactly one next action is the correct one.
-If your stories don’t reflect that, Rasa Core cannot learn the correct behaviour.
+Crucially, Rasa assumes that for any given dialogue state, exactly one next action is the correct one.
+If your stories don’t reflect that, Rasa cannot learn the correct behaviour.
 
 Take, for example, the following two stories:
 
@@ -95,10 +95,12 @@ Take, for example, the following two stories:
   * inform_happy
     - utter_goodbye
 
-These two stories are inconsistent, because Rasa Core cannot know if it should predict `utter_happy` or `utter_goodbye` after `inform_happy`, as there is nothing that would distinguish the dialogue states at `inform_happy` in the two stories and the subsequent actions are different in Story 1 and Story 2.
+These two stories are inconsistent, because Rasa cannot know if it should predict ``utter_happy`` or ``utter_goodbye`` 
+after ``inform_happy``, as there is nothing that would distinguish the dialogue states at ``inform_happy`` in the two 
+stories and the subsequent actions are different in Story 1 and Story 2.
 
 This conflict can now be automatically identified with our new story structure tool.
-Just use `rasa data validate` in the command line, as follows:
+Just use ``rasa data validate`` in the command line, as follows:
 
 .. code-block:: bash
 
