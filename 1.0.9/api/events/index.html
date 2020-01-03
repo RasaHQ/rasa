@@ -410,10 +410,10 @@ values.</p>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.ReminderScheduled">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ReminderScheduled</code><span class="sig-paren">(</span><em>intent</em>, <em>trigger_date_time</em>, <em>entities=None</em>, <em>name=None</em>, <em>kill_on_user_message=True</em>, <em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ReminderScheduled" title="Permalink to this definition">¶</a></dt>
-<dd><p>Allows asynchronous scheduling of intent / entity triggering.</p>
-<p>As a side effect the message processor will schedule an intent
-to be run at the trigger date.</p>
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ReminderScheduled</code><span class="sig-paren">(</span><em>action_name</em>, <em>trigger_date_time</em>, <em>name=None</em>, <em>kill_on_user_message=True</em>, <em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ReminderScheduled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allows asynchronous scheduling of action execution.</p>
+<p>As a side effect the message processor will schedule an action to be run
+at the trigger date.</p>
 </dd></dl>
 
 </td>
