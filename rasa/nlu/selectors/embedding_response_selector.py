@@ -2,11 +2,15 @@ import logging
 import typing
 from typing import Any, Dict, Text
 
+from rasa.nlu.components import any_of
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.constants import (
     RESPONSE_ATTRIBUTE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     DEFAULT_OPEN_UTTERANCE_TYPE,
+    DENSE_FEATURE_NAMES,
+    TEXT_ATTRIBUTE,
+    SPARSE_FEATURE_NAMES,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,9 +43,17 @@ class ResponseSelector(EmbeddingIntentClassifier):
     and additional hidden layers are added together with dropout.
     """
 
-    provides = ["response", "response_ranking"]
+    provides = [RESPONSE_ATTRIBUTE, "response_ranking"]
 
-    requires = []
+    requires = [
+        any_of(
+            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE], SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
+        ),
+        any_of(
+            DENSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE],
+            SPARSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE],
+        ),
+    ]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {

@@ -3,8 +3,8 @@ import pytest
 import scipy.sparse
 
 from rasa.nlu import train
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
@@ -133,3 +133,30 @@ async def test_train(component_builder, tmpdir):
     assert loaded.pipeline
     assert loaded.parse("hello") is not None
     assert loaded.parse("Hello today is Monday, again!") is not None
+
+
+async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
+    from rasa.nlu import train
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "EmbeddingIntentClassifier"},
+            ],
+            "language": "en",
+        }
+    )
+
+    with pytest.raises(Exception) as e:
+        await train(
+            _config,
+            path=tmpdir.strpath,
+            data=DEFAULT_DATA_PATH,
+            component_builder=component_builder,
+        )
+
+    assert (
+        "Failed to validate component 'EmbeddingIntentClassifier'. Missing one of "
+        "the following properties: " in str(e.value)
+    )
