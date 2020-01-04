@@ -235,12 +235,12 @@ class CountVectorsFeaturizer(Featurizer):
         if attribute == INTENT_ATTRIBUTE:
             # Don't do any processing for intent attribute. Treat them as whole labels
             return tokens
-        
+
         # apply token_pattern to ensure OOV-tokens are recognized correctly
         p = re.compile(self.token_pattern)
         p_list = [p.findall(token) for token in tokens]
         p_tokens = [item for token_list in p_list for item in token_list]
-        
+
         # replace all digits with NUMBER token
         tokens = [re.sub(r"\b[0-9]+\b", "__NUMBER__", text) for text in p_tokens]
 
