@@ -141,6 +141,8 @@ class CountVectorsFeaturizer(Featurizer):
     def _check_attribute_vocabulary(self, attribute: Text) -> bool:
         """Check if trained vocabulary exists in attribute's count vectorizer"""
         try:
+            if not hasattr(self.vectorizers[attribute], "vocabulary_"):
+                self.vectorizers[attribute]._validate_vocabulary()
             return hasattr(self.vectorizers[attribute], "vocabulary_")
         except (AttributeError, TypeError):
             return False
@@ -233,9 +235,14 @@ class CountVectorsFeaturizer(Featurizer):
         if attribute == INTENT_ATTRIBUTE:
             # Don't do any processing for intent attribute. Treat them as whole labels
             return tokens
-
+        
+        # apply token_pattern to ensure OOV-tokens are recognized correctly
+        p = re.compile(self.token_pattern)
+        p_list = [p.findall(token) for token in tokens]
+        p_tokens = [item for token_list in p_list for item in token_list]
+        
         # replace all digits with NUMBER token
-        tokens = [re.sub(r"\b[0-9]+\b", "__NUMBER__", text) for text in tokens]
+        tokens = [re.sub(r"\b[0-9]+\b", "__NUMBER__", text) for text in p_tokens]
 
         # convert to lowercase if necessary
         if self.lowercase:
