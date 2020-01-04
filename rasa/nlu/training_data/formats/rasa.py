@@ -1,8 +1,9 @@
 from collections import defaultdict
 
 import logging
+import warnings
 import typing
-from typing import Any, Dict, Text
+from typing import Any, Dict, Text, Tuple
 
 from rasa.constants import DOCS_BASE_URL
 from rasa.nlu.training_data.formats.readerwriter import (
@@ -11,6 +12,12 @@ from rasa.nlu.training_data.formats.readerwriter import (
 )
 from rasa.nlu.training_data.util import transform_entity_synonyms
 from rasa.nlu.utils import json_to_string
+from rasa.nlu.constants import (
+    INTENT_ATTRIBUTE,
+    RESPONSE_KEY_ATTRIBUTE,
+    RESPONSE_ATTRIBUTE,
+    RESPONSE_IDENTIFIER_DELIMITER,
+)
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
@@ -19,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class RasaReader(JsonTrainingDataReader):
-    def read_from_json(self, js, **kwargs):
+    def read_from_json(self, js, **kwargs) -> "TrainingData":
         """Loads training data stored in the rasa NLU data format."""
         from rasa.nlu.training_data import Message, TrainingData
 
@@ -36,13 +43,14 @@ class RasaReader(JsonTrainingDataReader):
         entity_synonyms = transform_entity_synonyms(entity_synonyms)
 
         if intent_examples or entity_examples:
-            logger.warning(
-                "DEPRECATION warning: your rasa data "
+            warnings.warn(
+                "Your rasa data "
                 "contains 'intent_examples' "
                 "or 'entity_examples' which will be "
                 "removed in the future. Consider "
                 "putting all your examples "
-                "into the 'common_examples' section."
+                "into the 'common_examples' section.",
+                FutureWarning,
             )
 
         all_examples = common_examples + intent_examples + entity_examples
@@ -71,7 +79,7 @@ class RasaWriter(TrainingDataWriter):
         ]
 
         formatted_examples = [
-            example.as_dict() for example in training_data.training_examples
+            example.as_dict_nlu() for example in training_data.training_examples
         ]
 
         return json_to_string(
@@ -83,7 +91,7 @@ class RasaWriter(TrainingDataWriter):
                     "entity_synonyms": formatted_synonyms,
                 }
             },
-            **kwargs
+            **kwargs,
         )
 
 
@@ -98,14 +106,14 @@ def validate_rasa_nlu_data(data: Dict[Text, Any]) -> None:
         validate(data, _rasa_nlu_data_schema())
     except ValidationError as e:
         e.message += (
-            ". Failed to validate training data, make sure your data "
-            "is valid. For more information about the format visit "
-            "{}/nlu/training-data-format/".format(DOCS_BASE_URL)
+            f". Failed to validate training data, make sure your data "
+            f"is valid. For more information about the format visit "
+            f"{DOCS_BASE_URL}/nlu/training-data-format/"
         )
         raise e
 
 
-def _rasa_nlu_data_schema():
+def _rasa_nlu_data_schema() -> Dict[Text, Any]:
     training_example_schema = {
         "type": "object",
         "properties": {

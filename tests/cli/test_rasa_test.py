@@ -2,32 +2,54 @@ import os
 from shutil import copyfile
 from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
 from rasa.utils.io import list_files, write_yaml_file
+from typing import Callable
+from _pytest.pytester import RunResult
 
 
-def test_test_core(run_in_default_project):
+def test_test_core(run_in_default_project: Callable[..., RunResult]):
     run_in_default_project("test", "core", "--stories", "data")
 
     assert os.path.exists("results")
 
 
-def test_test(run_in_default_project):
-    run_in_default_project("test", "--report", "report")
+def test_test_core_no_plot(run_in_default_project: Callable[..., RunResult]):
+    run_in_default_project("test", "core", "--no-plot")
 
-    assert os.path.exists("results/report")
+    assert not os.path.exists("results/story_confmat.pdf")
+
+
+def test_test(run_in_default_project: Callable[..., RunResult]):
+    run_in_default_project("test")
+
     assert os.path.exists("results")
     assert os.path.exists("results/hist.png")
     assert os.path.exists("results/confmat.png")
 
 
-def test_test_nlu(run_in_default_project):
-    run_in_default_project("test", "nlu", "--nlu", "data", "--success", "success.json")
+def test_test_no_plot(run_in_default_project: Callable[..., RunResult]):
+    run_in_default_project("test", "--no-plot")
+
+    assert not os.path.exists("results/hist.png")
+    assert not os.path.exists("results/confmat.png")
+    assert not os.path.exists("results/story_confmat.pdf")
+
+
+def test_test_nlu(run_in_default_project: Callable[..., RunResult]):
+    run_in_default_project("test", "nlu", "--nlu", "data", "--successes")
 
     assert os.path.exists("results/hist.png")
     assert os.path.exists("results/confmat.png")
-    assert os.path.exists("results/success.json")
+    assert os.path.exists("results/intent_successes.json")
 
 
-def test_test_nlu_cross_validation(run_in_default_project):
+def test_test_nlu_no_plot(run_in_default_project: Callable[..., RunResult]):
+    run_in_default_project("test", "nlu", "--no-plot")
+
+    assert not os.path.exists("results/confmat.png")
+    assert not os.path.exists("results/hist.png")
+
+
+def test_test_nlu_cross_validation(run_in_default_project: Callable[..., RunResult]):
     run_in_default_project(
         "test", "nlu", "--cross-validation", "-c", "config.yml", "-f", "2"
     )
@@ -36,7 +58,7 @@ def test_test_nlu_cross_validation(run_in_default_project):
     assert os.path.exists("results/confmat.png")
 
 
-def test_test_nlu_comparison(run_in_default_project):
+def test_test_nlu_comparison(run_in_default_project: Callable[..., RunResult]):
     copyfile("config.yml", "nlu-config.yml")
 
     run_in_default_project(
@@ -47,7 +69,7 @@ def test_test_nlu_comparison(run_in_default_project):
     assert os.path.exists("results/run_2")
 
 
-def test_test_core_comparison(run_in_default_project):
+def test_test_core_comparison(run_in_default_project: Callable[..., RunResult]):
     files = list_files("models")
     copyfile(files[0], "models/copy-model.tar.gz")
 
@@ -64,7 +86,9 @@ def test_test_core_comparison(run_in_default_project):
     assert os.path.exists(os.path.join(DEFAULT_RESULTS_PATH, RESULTS_FILE))
 
 
-def test_test_core_comparison_after_train(run_in_default_project):
+def test_test_core_comparison_after_train(
+    run_in_default_project: Callable[..., RunResult]
+):
     write_yaml_file(
         {
             "language": "en",
@@ -121,17 +145,17 @@ def test_test_core_comparison_after_train(run_in_default_project):
     )
 
 
-def test_test_help(run):
+def test_test_help(run: Callable[..., RunResult]):
     output = run("test", "--help")
 
     help_text = """usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
                  [--max-stories MAX_STORIES] [--e2e] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
                  [--evaluate-model-directory] [-u NLU] [--out OUT]
-                 [--report [REPORT]] [--successes [SUCCESSES]]
-                 [--errors ERRORS] [--histogram HISTOGRAM] [--confmat CONFMAT]
-                 [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
-                 [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
+                 [--successes] [--no-errors] [--histogram HISTOGRAM]
+                 [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
+                 [--cross-validation] [-f FOLDS] [-r RUNS]
+                 [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
                  {core,nlu} ..."""
 
     lines = help_text.split("\n")
@@ -140,15 +164,14 @@ def test_test_help(run):
         assert output.outlines[i] == line
 
 
-def test_test_nlu_help(run):
+def test_test_nlu_help(run: Callable[..., RunResult]):
     output = run("test", "nlu", "--help")
 
     help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
-                     [--report [REPORT]] [--successes [SUCCESSES]]
-                     [--errors ERRORS] [--histogram HISTOGRAM]
+                     [--successes] [--no-errors] [--histogram HISTOGRAM]
                      [--confmat CONFMAT] [-c CONFIG [CONFIG ...]]
                      [--cross-validation] [-f FOLDS] [-r RUNS]
-                     [-p PERCENTAGES [PERCENTAGES ...]]"""
+                     [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]"""
 
     lines = help_text.split("\n")
 
@@ -156,14 +179,14 @@ def test_test_nlu_help(run):
         assert output.outlines[i] == line
 
 
-def test_test_core_help(run):
+def test_test_core_help(run: Callable[..., RunResult]):
     output = run("test", "core", "--help")
 
     help_text = """usage: rasa test core [-h] [-v] [-vv] [--quiet] [-m MODEL [MODEL ...]]
                       [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
                       [--e2e] [--endpoints ENDPOINTS]
                       [--fail-on-prediction-errors] [--url URL]
-                      [--evaluate-model-directory]"""
+                      [--evaluate-model-directory] [--no-plot]"""
 
     lines = help_text.split("\n")
 

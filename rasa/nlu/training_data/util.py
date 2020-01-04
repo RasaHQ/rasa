@@ -1,15 +1,16 @@
-# -*- coding: utf-8 -*-
-
 import logging
 import os
-from typing import Text
+import warnings
+from typing import Any, Dict, Optional, Text
 
 import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
 
 
-def transform_entity_synonyms(synonyms, known_synonyms=None):
+def transform_entity_synonyms(
+    synonyms, known_synonyms: Optional[Dict[Text, Any]] = None
+) -> Dict[Text, Any]:
     """Transforms the entity synonyms into a text->value dictionary"""
     entity_synonyms = known_synonyms if known_synonyms else {}
     for s in synonyms:
@@ -19,13 +20,14 @@ def transform_entity_synonyms(synonyms, known_synonyms=None):
     return entity_synonyms
 
 
-def check_duplicate_synonym(entity_synonyms, text, syn, context_str=""):
+def check_duplicate_synonym(
+    entity_synonyms: Dict[Text, Any], text: Text, syn: Text, context_str: Text = ""
+) -> None:
     if text in entity_synonyms and entity_synonyms[text] != syn:
-        logger.warning(
-            "Found inconsistent entity synonyms while {0}, "
-            "overwriting {1}->{2} "
-            "with {1}->{3} during merge"
-            "".format(context_str, text, entity_synonyms[text], syn)
+        warnings.warn(
+            f"Found inconsistent entity synonyms while {context_str}, "
+            f"overwriting {text}->{entity_synonyms[text]} "
+            f"with {text}->{syn} during merge."
         )
 
 
@@ -33,7 +35,7 @@ def get_file_format(resource_name: Text) -> Text:
     from rasa.nlu.training_data import loading
 
     if resource_name is None or not os.path.exists(resource_name):
-        raise AttributeError("Resource '{}' does not exist.".format(resource_name))
+        raise AttributeError(f"Resource '{resource_name}' does not exist.")
 
     files = io_utils.list_files(resource_name)
 

@@ -6,6 +6,7 @@ import uuid
 import re
 from typing import Tuple, List, Text, Set, Union, Optional
 from rasa.nlu.training_data import loading
+from rasa.utils.io import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +65,6 @@ def get_core_nlu_files(
 
     Args:
         paths: List of paths to training files or folders containing them.
-        skill_imports: `SkillSelector` instance which determines which files
-                        should be loaded.
 
     Returns:
         Tuple of paths to story and NLU files.
@@ -104,7 +103,8 @@ def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[
     nlu_data_files = set()
 
     for root, _, files in os.walk(directory):
-        for f in files:
+        # we sort the files here to ensure consistent order for repeatable training results
+        for f in sorted(files):
             full_path = os.path.join(root, f)
 
             if not _is_valid_filetype(full_path):
@@ -149,7 +149,7 @@ def is_story_file(file_path: Text) -> bool:
     _is_story_file = False
 
     if file_path.endswith(".md"):
-        with open(file_path, encoding="utf-8") as f:
+        with open(file_path, encoding=DEFAULT_ENCODING) as f:
             _is_story_file = any(_contains_story_pattern(l) for l in f)
 
     return _is_story_file

@@ -7,7 +7,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 # Avoids IDE errors, but actual version is read from version.py
 __version__ = None
 with open("rasa/version.py") as f:
-    exec (f.read())
+    exec(f.read())
 
 # Get the long description from the README file
 with open(os.path.join(here, "README.md"), encoding="utf-8") as f:
@@ -23,24 +23,32 @@ tests_requires = [
     "nbsphinx>=0.3",
     "aioresponses~=0.6.0",
     "moto~=1.3.8",
+    "fakeredis~=1.0",
+    "mongomock~=3.18",
 ]
 
 install_requires = [
-    "requests~=2.22",
+    "requests>=2.20",
     "boto3~=1.9",
     "matplotlib~=3.0",
-    "simplejson~=3.16",
     "attrs>=18",
     "jsonpickle~=1.1",
     "redis~=3.3.5",
-    "fakeredis~=1.0",
-    "pymongo~=3.8",
+    "pymongo[tls,srv]~=3.8",
     "numpy~=1.16",
     "scipy~=1.2",
-    "tensorflow~=1.13.0",
+    "tensorflow~=1.15.0",
+    # absl is a tensorflow dependency, but produces double logging before 0.8
+    # should be removed once tensorflow requires absl > 0.8 on its own
+    "absl-py>=0.8.0",
+    # setuptools comes from tensorboard requirement:
+    # https://github.com/tensorflow/tensorboard/blob/1.14/tensorboard/pip_package/setup.py#L33
+    "setuptools >= 41.0.0",
+    "tensorflow-probability~=0.7.0",
+    "tensor2tensor~=1.14.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
-    "networkx~=2.3",
+    "networkx~=2.3.0",
     "fbmessenger~=6.0",
     "pykwalify~=1.7.0",
     "coloredlogs~=10.0",
@@ -55,32 +63,41 @@ install_requires = [
     "rocketchat_API~=0.6.0",
     "colorhash~=1.0",
     "pika~=1.0.0",
-    "jsonschema~=2.6",
+    "jsonschema~=3.0",
     "packaging~=19.0",
     "gevent~=1.4",
     "pytz~=2019.1",
     "python-dateutil~=2.8",
-    "rasa-sdk~=1.1.0",
+    "rasa-sdk~=1.6.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
-    "sanic~=19.3.1",
-    "sanic-cors~=0.9.0",
+    "sanic~=19.9",
+    "sanic-cors==0.9.9.post1",
     "sanic-jwt~=1.3",
+    # needed because of https://github.com/huge-success/sanic/issues/1729
+    "multidict==4.6.1",
     "aiohttp~=3.5",
     "questionary>=1.1.0",
-    "python-socketio~=4.0",
+    "python-socketio>=4.3.1",
+    # the below can be unpinned when python-socketio pins >=3.9.3
+    "python-engineio>=3.9.3",
     "pydot~=1.4",
     "async_generator~=1.10",
     "SQLAlchemy~=1.3.0",
-    "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
+    "PyJWT~=1.7",
+    # remove when tensorflow@1.15.x or a pre-release patch is released
+    # https://github.com/tensorflow/tensorflow/issues/32319
+    "gast==0.2.2",
 ]
 
 extras_requires = {
     "test": tests_requires,
     "spacy": ["spacy>=2.1,<2.2"],
+    "convert": ["tensorflow_text~=1.15.1", "tensorflow_hub~=0.6.0"],
     "mitie": ["mitie"],
     "sql": ["psycopg2~=2.8.2", "SQLAlchemy~=1.3"],
+    "kafka": ["kafka-python~=1.4"],
 }
 
 setup(
@@ -91,11 +108,11 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         # supported python versions
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Topic :: Software Development :: Libraries",
     ],
+    python_requires=">=3.6",
     packages=find_packages(exclude=["tests", "tools", "docs", "contrib"]),
     entry_points={"console_scripts": ["rasa=rasa.__main__:main"]},
     version=__version__,
@@ -125,8 +142,8 @@ setup(
     },
 )
 
-print ("\nWelcome to Rasa!")
-print (
+print("\nWelcome to Rasa!")
+print(
     "If you have any questions, please visit our documentation page: https://rasa.com/docs/"
 )
-print ("or join the community discussions on https://forum.rasa.com/")
+print("or join the community discussions on https://forum.rasa.com/")

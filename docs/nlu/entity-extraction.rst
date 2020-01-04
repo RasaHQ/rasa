@@ -127,7 +127,7 @@ objects that you can use, e.g.
    => {"value":"2018-05-31T20:00:00.000+01:00"}
 
 
-The list of supported langauges can be found `here 
+The list of supported languages can be found `here
 <https://github.com/facebook/duckling/tree/master/Duckling/Dimensions>`_.
 Duckling can also handle durations like "two hours",
 amounts of money, distances, and ordinals.
@@ -149,3 +149,19 @@ associate that with a location entity.
 
 If you just want to match regular expressions exactly, you can do this in your code,
 as a postprocessing step after receiving the response from Rasa NLU.
+
+
+.. _entity-extraction-custom-features:
+
+Passing Custom Features to ``CRFEntityExtractor``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you want to pass custom features, such as pre-trained word embeddings, to ``CRFEntityExtractor``, you can
+add any dense featurizer (except ``ConveRTFeaturizer``) to the pipeline before the ``CRFEntityExtractor``.
+Make sure to set ``"return_sequence"`` to ``True`` for the corresponding dense featurizer.
+``CRFEntityExtractor`` automatically finds the additional dense features and checks if the dense features are an
+iterable of ``len(tokens)``, where each entry is a vector.
+A warning will be shown in case the check fails.
+However, ``CRFEntityExtractor`` will continue to train just without the additional custom features.
+In case dense features are present, ``CRFEntityExtractor`` will pass the dense features to ``sklearn_crfsuite``
+and use them for training.

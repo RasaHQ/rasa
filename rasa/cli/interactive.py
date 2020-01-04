@@ -1,20 +1,19 @@
 import argparse
+import asyncio
+import logging
 import os
-from typing import List, Text
+from typing import List, Optional, Text
 
+from rasa.cli import utils
 import rasa.cli.train as train
 from rasa.cli.arguments import interactive as arguments
-from rasa import data, model
-
+from rasa import model
 
 # noinspection PyProtectedMember
-from rasa.cli.utils import get_validated_path, print_error
-from rasa.constants import (
-    DEFAULT_DATA_PATH,
-    DEFAULT_MODELS_PATH,
-    DEFAULT_ENDPOINTS_PATH,
-)
-from rasa.model import get_latest_model
+from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_ENDPOINTS_PATH
+from rasa.importers.importer import TrainingDataImporter
+
+logger = logging.getLogger(__name__)
 
 
 def add_subparser(
@@ -28,7 +27,12 @@ def add_subparser(
         help="Starts an interactive learning session to create new training data for a "
         "Rasa model by chatting.",
     )
-    interactive_parser.set_defaults(func=interactive)
+    interactive_parser.set_defaults(func=interactive, core_only=False)
+    interactive_parser.add_argument(
+        "--e2e",
+        action="store_true",
+        help="Save story files in e2e format. In this format user messages will be included in the stories.",
+    )
 
     interactive_subparsers = interactive_parser.add_subparsers()
     interactive_core_parser = interactive_subparsers.add_parser(
@@ -40,77 +44,76 @@ def add_subparser(
         "for a Rasa Core model by chatting. Uses the 'RegexInterpreter', i.e. "
         "`/<intent>` input format.",
     )
-    interactive_core_parser.set_defaults(func=interactive_core)
+    interactive_core_parser.set_defaults(func=interactive, core_only=True)
 
     arguments.set_interactive_arguments(interactive_parser)
     arguments.set_interactive_core_arguments(interactive_core_parser)
 
 
-def interactive(args: argparse.Namespace):
-    args.fixed_model_name = None
-    args.store_uncompressed = False
+def interactive(args: argparse.Namespace) -> None:
+    _set_not_required_args(args)
+    file_importer = TrainingDataImporter.load_from_config(
+        args.config, args.domain, args.data
+    )
 
     if args.model is None:
-        check_training_data(args)
-        zipped_model = train.train(args)
-    else:
-        zipped_model = get_provided_model(args.model)
-
-    perform_interactive_learning(args, zipped_model)
-
-
-def interactive_core(args: argparse.Namespace):
-    args.fixed_model_name = None
-    args.store_uncompressed = False
-
-    if args.model is None:
-        zipped_model = train.train_core(args)
-    else:
-        zipped_model = get_provided_model(args.model)
-
-    perform_interactive_learning(args, zipped_model)
-
-
-def perform_interactive_learning(args, zipped_model):
-    from rasa.core.train import do_interactive_learning
-
-    if zipped_model and os.path.exists(zipped_model):
-        args.model = zipped_model
-
-        with model.unpack_model(zipped_model) as model_path:
-            args.core, args.nlu = model.get_model_subdirectories(model_path)
-            stories_directory = data.get_core_directory(args.data)
-
-            args.endpoints = get_validated_path(
-                args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
+        loop = asyncio.get_event_loop()
+        story_graph = loop.run_until_complete(file_importer.get_stories())
+        if not story_graph or story_graph.is_empty():
+            utils.print_error_and_exit(
+                "Could not run interactive learning without either core data or a model containing core data."
             )
 
-            do_interactive_learning(args, stories_directory)
+        zipped_model = train.train_core(args) if args.core_only else train.train(args)
+        if not zipped_model:
+            utils.print_error_and_exit(
+                "Could not train an initial model. Either pass paths "
+                "to the relevant training files (`--data`, `--config`, `--domain`), "
+                "or use 'rasa train' to train a model."
+            )
     else:
-        print_error(
-            "Interactive learning process cannot be started as no initial model was "
-            "found.  Use 'rasa train' to train a model."
+        zipped_model = get_provided_model(args.model)
+        if not (zipped_model and os.path.exists(zipped_model)):
+            utils.print_error_and_exit(
+                f"Interactive learning process cannot be started as no initial model was "
+                f"found at path '{args.model}'.  Use 'rasa train' to train a model."
+            )
+        if not args.skip_visualization:
+            logger.info(f"Loading visualization data from {args.data}.")
+
+    perform_interactive_learning(args, zipped_model, file_importer)
+
+
+def _set_not_required_args(args: argparse.Namespace) -> None:
+    args.fixed_model_name = None
+    args.store_uncompressed = False
+
+
+def perform_interactive_learning(
+    args: argparse.Namespace, zipped_model: Text, file_importer: TrainingDataImporter
+) -> None:
+    from rasa.core.train import do_interactive_learning
+
+    args.model = zipped_model
+
+    with model.unpack_model(zipped_model) as model_path:
+        args.core, args.nlu = model.get_model_subdirectories(model_path)
+        if args.core is None:
+            utils.print_error_and_exit(
+                "Can not run interactive learning on an NLU-only model."
+            )
+
+        args.endpoints = utils.get_validated_path(
+            args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
         )
 
+        do_interactive_learning(args, file_importer)
 
-def get_provided_model(arg_model: Text):
-    model_path = get_validated_path(arg_model, "model", DEFAULT_MODELS_PATH)
+
+def get_provided_model(arg_model: Text) -> Optional[Text]:
+    model_path = utils.get_validated_path(arg_model, "model", DEFAULT_MODELS_PATH)
 
     if os.path.isdir(model_path):
-        model_path = get_latest_model(model_path)
+        model_path = model.get_latest_model(model_path)
 
     return model_path
-
-
-def check_training_data(args):
-    training_files = [
-        get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)
-        for f in args.data
-    ]
-    story_files, nlu_files = data.get_core_nlu_files(training_files)
-    if not story_files or not nlu_files:
-        print_error(
-            "Cannot train initial Rasa model. Please provide NLU and Core data "
-            "using the '--data' argument."
-        )
-        exit(1)

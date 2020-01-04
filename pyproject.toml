@@ -1,15 +1,54 @@
 [tool.black]
-line-length = 88
-target-version = ['py27', 'py35', 'py36', 'py37']
-exclude = '''
-(
-  /(
-      \.eggs
-    | \.git
-    | \.pytype
-    | \.pytest_cache
-    | build
-    | dist
-  )/
-)
-'''
+    line-length = 88
+    target-version = ['py36', 'py37']
+    exclude = '''
+    (
+      /(
+          \.eggs
+        | \.git
+        | \.pytype
+        | \.pytest_cache
+        | build
+        | dist
+      )/
+    )
+    '''
+
+[tool.towncrier]
+    package = "rasa"
+    package_dir = "rasa"
+    filename = "CHANGELOG.rst"
+    directory = "./changelog"
+    underlines = "^-_"
+    title_format = "[{version}] - {project_date}"
+    template = "./changelog/_template.jinja2"
+
+    [[tool.towncrier.type]]
+        directory = "removal"
+        name = "Deprecations and Removals"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "feature"
+        name = "Features"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "improvement"
+        name = "Improvements"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "bugfix"
+        name = "Bugfixes"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "doc"
+        name = "Improved Documentation"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "misc"
+        name = "Miscellaneous internal changes"
+        showcontent = false

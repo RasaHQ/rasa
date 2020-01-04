@@ -1,22 +1,26 @@
 import importlib
+import warnings
 import json
 import logging
 import os
 import sys
 from collections import defaultdict
 from datetime import datetime
-from typing import Text, Optional, Any, List, Dict, Tuple
-
-import numpy as np
+from typing import Text, Optional, Any, List, Dict, Tuple, Set
 
 import rasa.core
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL
 
 from rasa.core import utils, training
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
+from rasa.core.actions.action import (
+    ACTION_LISTEN_NAME,
+    ACTION_BACK_NAME,
+    ACTION_RESTART_NAME,
+)
 from rasa.core.domain import Domain
-from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected
+from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected, Event
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
@@ -29,7 +33,7 @@ from rasa.utils.common import class_from_module_path
 logger = logging.getLogger(__name__)
 
 
-class PolicyEnsemble(object):
+class PolicyEnsemble:
     versioned_packages = ["rasa", "tensorflow", "sklearn"]
 
     def __init__(
@@ -45,9 +49,25 @@ class PolicyEnsemble(object):
             self.action_fingerprints = {}
 
         self._check_priorities()
+        self._check_for_important_policies()
+
+    def _check_for_important_policies(self) -> None:
+        from rasa.core.policies.mapping_policy import MappingPolicy
+
+        if not any(isinstance(policy, MappingPolicy) for policy in self.policies):
+            logger.info(
+                "MappingPolicy not included in policy ensemble. Default intents "
+                "'{} and {} will not trigger actions '{}' and '{}'."
+                "".format(
+                    USER_INTENT_RESTART,
+                    USER_INTENT_BACK,
+                    ACTION_RESTART_NAME,
+                    ACTION_BACK_NAME,
+                )
+            )
 
     @staticmethod
-    def _training_events_from_trackers(training_trackers):
+    def _training_events_from_trackers(training_trackers) -> Dict[Text, Set[Event]]:
         events_metadata = defaultdict(set)
 
         for t in training_trackers:
@@ -60,6 +80,24 @@ class PolicyEnsemble(object):
 
         return events_metadata
 
+    @staticmethod
+    def check_domain_ensemble_compatibility(
+        ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
+    ) -> None:
+        """Check for elements that only work with certain policy/domain combinations."""
+
+        from rasa.core.policies.form_policy import FormPolicy
+        from rasa.core.policies.mapping_policy import MappingPolicy
+        from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
+
+        policies_needing_validation = [
+            FormPolicy,
+            MappingPolicy,
+            TwoStageFallbackPolicy,
+        ]
+        for policy in policies_needing_validation:
+            policy.validate_against_domain(ensemble, domain)
+
     def _check_priorities(self) -> None:
         """Checks for duplicate policy priorities within PolicyEnsemble."""
 
@@ -69,21 +107,19 @@ class PolicyEnsemble(object):
 
         for k, v in priority_dict.items():
             if len(v) > 1:
-                logger.warning(
-                    (
-                        "Found policies {} with same priority {} "
-                        "in PolicyEnsemble. When personalizing "
-                        "priorities, be sure to give all policies "
-                        "different priorities. More information: "
-                        "{}/core/policies/"
-                    ).format(v, k, DOCS_BASE_URL)
+                warnings.warn(
+                    f"Found policies {v} with same priority {k} "
+                    "in PolicyEnsemble. When personalizing "
+                    "priorities, be sure to give all policies "
+                    "different priorities. More information: "
+                    f"{DOCS_BASE_URL}/core/policies/"
                 )
 
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         if training_trackers:
             for policy in self.policies:
@@ -110,7 +146,9 @@ class PolicyEnsemble(object):
         return max_histories
 
     @staticmethod
-    def _create_action_fingerprints(training_events):
+    def _create_action_fingerprints(
+        training_events: Dict[Text, Set[Event]]
+    ) -> Optional[Dict[Any, Dict[Text, List]]]:
         """Fingerprint each action using the events it created during train.
 
         This allows us to emit warnings when the model is used
@@ -162,7 +200,7 @@ class PolicyEnsemble(object):
 
         self._add_package_version_info(metadata)
 
-        utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
+        rasa.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
         # if there are lots of stories, saving flattened stories takes a long
         # time, so this is turned off by default
@@ -180,13 +218,13 @@ class PolicyEnsemble(object):
             policy.persist(policy_path)
 
     @classmethod
-    def load_metadata(cls, path):
+    def load_metadata(cls, path) -> Any:
         metadata_path = os.path.join(path, "metadata.json")
         metadata = json.loads(rasa.utils.io.read_file(os.path.abspath(metadata_path)))
         return metadata
 
     @staticmethod
-    def ensure_model_compatibility(metadata, version_to_check=None):
+    def ensure_model_compatibility(metadata, version_to_check=None) -> None:
         from packaging import version
 
         if version_to_check is None:
@@ -195,9 +233,9 @@ class PolicyEnsemble(object):
         model_version = metadata.get("rasa", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedDialogueModelError(
-                "The model version is to old to be "
+                "The model version is too old to be "
                 "loaded by this Rasa Core instance. "
-                "Either retrain the model, or run with"
+                "Either retrain the model, or run with "
                 "an older version. "
                 "Model version: {} Instance version: {} "
                 "Minimal compatible version: {}"
@@ -208,9 +246,7 @@ class PolicyEnsemble(object):
     @classmethod
     def _ensure_loaded_policy(cls, policy, policy_cls, policy_name: Text):
         if policy is None:
-            raise Exception(
-                "Failed to load policy {}: load returned None".format(policy_name)
-            )
+            raise Exception(f"Failed to load policy {policy_name}: load returned None")
         elif not isinstance(policy, policy_cls):
             raise Exception(
                 "Failed to load policy {}: "
@@ -227,7 +263,7 @@ class PolicyEnsemble(object):
         policies = []
         for i, policy_name in enumerate(metadata["policy_names"]):
             policy_cls = registry.policy_from_module_path(policy_name)
-            dir_name = "policy_{}_{}".format(i, policy_cls.__name__)
+            dir_name = f"policy_{i}_{policy_cls.__name__}"
             policy_path = os.path.join(path, dir_name)
             policy = policy_cls.load(policy_path)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
@@ -238,8 +274,12 @@ class PolicyEnsemble(object):
         return ensemble
 
     @classmethod
-    def from_dict(cls, dictionary: Dict[Text, Any]) -> List[Policy]:
-        policies = dictionary.get("policies") or dictionary.get("policy")
+    def from_dict(cls, policy_configuration: Dict[Text, Any]) -> List[Policy]:
+        import copy
+
+        policies = policy_configuration.get("policies") or policy_configuration.get(
+            "policy"
+        )
         if policies is None:
             raise InvalidPolicyConfig(
                 "You didn't define any policies. "
@@ -251,10 +291,10 @@ class PolicyEnsemble(object):
                 "The policy configuration file has to include at least one policy."
             )
 
+        policies = copy.deepcopy(policies)  # don't manipulate passed `Dict`
         parsed_policies = []
 
         for policy in policies:
-
             policy_name = policy.pop("name")
             if policy.get("featurizer"):
                 featurizer_func, featurizer_config = cls.get_featurizer_from_dict(
@@ -262,9 +302,10 @@ class PolicyEnsemble(object):
                 )
 
                 if featurizer_config.get("state_featurizer"):
-                    state_featurizer_func, state_featurizer_config = cls.get_state_featurizer_from_dict(
-                        featurizer_config
-                    )
+                    (
+                        state_featurizer_func,
+                        state_featurizer_config,
+                    ) = cls.get_state_featurizer_from_dict(featurizer_config)
 
                     # override featurizer's state_featurizer
                     # with real state_featurizer class
@@ -277,7 +318,10 @@ class PolicyEnsemble(object):
 
             try:
                 constr_func = registry.policy_from_module_path(policy_name)
-                policy_object = constr_func(**policy)
+                try:
+                    policy_object = constr_func(**policy)
+                except TypeError as e:
+                    raise Exception(f"Could not initialize {policy_name}. {e}")
                 parsed_policies.append(policy_object)
             except (ImportError, AttributeError):
                 raise InvalidPolicyConfig(
@@ -290,7 +334,7 @@ class PolicyEnsemble(object):
         return parsed_policies
 
     @classmethod
-    def get_featurizer_from_dict(cls, policy):
+    def get_featurizer_from_dict(cls, policy) -> Tuple[Any, Any]:
         # policy can have only 1 featurizer
         if len(policy["featurizer"]) > 1:
             raise InvalidPolicyConfig("policy can have only 1 featurizer")
@@ -301,7 +345,7 @@ class PolicyEnsemble(object):
         return featurizer_func, featurizer_config
 
     @classmethod
-    def get_state_featurizer_from_dict(cls, featurizer_config):
+    def get_state_featurizer_from_dict(cls, featurizer_config) -> Tuple[Any, Any]:
         # featurizer can have only 1 state featurizer
         if len(featurizer_config["state_featurizer"]) > 1:
             raise InvalidPolicyConfig("featurizer can have only 1 state featurizer")
@@ -324,7 +368,7 @@ class PolicyEnsemble(object):
 
 class SimplePolicyEnsemble(PolicyEnsemble):
     @staticmethod
-    def is_not_memo_policy(best_policy_name):
+    def is_not_memo_policy(best_policy_name) -> bool:
         is_memo = best_policy_name.endswith("_" + MemoizationPolicy.__name__)
         is_augmented = best_policy_name.endswith(
             "_" + AugmentedMemoizationPolicy.__name__
@@ -334,6 +378,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
     def probabilities_using_best_policy(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
+        import numpy as np
+
         result = None
         max_confidence = -1
         best_policy_name = None
@@ -391,7 +437,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                     fallback_idx, type(fallback_policy).__name__
                 )
 
-        logger.debug("Predicted next action using {}".format(best_policy_name))
+        logger.debug(f"Predicted next action using {best_policy_name}")
         return result, best_policy_name
 
 

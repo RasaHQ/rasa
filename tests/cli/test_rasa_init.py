@@ -1,7 +1,9 @@
 import os
+from typing import Callable
+from _pytest.pytester import RunResult
 
 
-def test_init(run):
+def test_init(run: Callable[..., RunResult]):
     run("init", "--no-prompt", "--quiet")
 
     assert os.path.exists("actions.py")
@@ -14,9 +16,14 @@ def test_init(run):
     assert os.path.exists("data/stories.md")
 
 
-def test_init_help(run):
+def test_init_help(run: Callable[..., RunResult]):
     output = run("init", "--help")
 
     assert (
         output.outlines[0] == "usage: rasa init [-h] [-v] [-vv] [--quiet] [--no-prompt]"
     )
+
+
+def test_user_asked_to_train_model(run_with_stdin: Callable[..., RunResult]):
+    run_with_stdin("init", stdin=b"\nYN")
+    assert not os.path.exists("models")

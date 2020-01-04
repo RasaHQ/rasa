@@ -9,13 +9,13 @@ from typing import Optional, Any, Dict, List, Text
 
 import rasa.utils.io
 
-from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.common import is_logging_disabled
+from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,9 @@ class MemoizationPolicy(Policy):
     USE_NLU_CONFIDENCE_AS_SCORE = False
 
     @staticmethod
-    def _standard_featurizer(max_history=None):
+    def _standard_featurizer(
+        max_history: Optional[int] = None,
+    ) -> MaxHistoryTrackerFeaturizer:
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
         return MaxHistoryTrackerFeaturizer(
@@ -60,7 +62,7 @@ class MemoizationPolicy(Policy):
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = 2,
+        priority: int = MEMOIZATION_POLICY_PRIORITY,
         max_history: Optional[int] = None,
         lookup: Optional[Dict] = None,
     ) -> None:
@@ -68,7 +70,7 @@ class MemoizationPolicy(Policy):
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
-        super(MemoizationPolicy, self).__init__(featurizer, priority)
+        super().__init__(featurizer, priority)
 
         self.max_history = self.featurizer.max_history
         self.lookup = lookup if lookup is not None else {}
@@ -79,7 +81,7 @@ class MemoizationPolicy(Policy):
 
     def _add_states_to_lookup(
         self, trackers_as_states, trackers_as_actions, domain, online=False
-    ):
+    ) -> None:
         """Add states to lookup dict"""
         if not trackers_as_states:
             return
@@ -130,11 +132,13 @@ class MemoizationPolicy(Policy):
                     self.lookup[feature_key] = feature_item
             pbar.set_postfix({"# examples": "{:d}".format(len(self.lookup))})
 
-    def _create_feature_key(self, states):
+    def _create_feature_key(self, states: List[Dict]) -> Text:
+        from rasa.utils import io
+
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
         if self.ENABLE_FEATURE_STRING_COMPRESSION:
-            compressed = zlib.compress(bytes(feature_str, "utf-8"))
-            return base64.b64encode(compressed).decode("utf-8")
+            compressed = zlib.compress(bytes(feature_str, io.DEFAULT_ENCODING))
+            return base64.b64encode(compressed).decode(io.DEFAULT_ENCODING)
         else:
             return feature_str
 
@@ -142,7 +146,7 @@ class MemoizationPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers."""
         self.lookup = {}
@@ -163,7 +167,7 @@ class MemoizationPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
 
         # add only the last tracker, because it is the only new one
@@ -202,10 +206,10 @@ class MemoizationPolicy(Policy):
 
         tracker_as_states = self.featurizer.prediction_states([tracker], domain)
         states = tracker_as_states[0]
-        logger.debug("Current tracker state {}".format(states))
+        logger.debug(f"Current tracker state {states}")
         recalled = self.recall(states, tracker, domain)
         if recalled is not None:
-            logger.debug("There is a memorised next action '{}'".format(recalled))
+            logger.debug(f"There is a memorised next action '{recalled}'")
 
             if self.USE_NLU_CONFIDENCE_AS_SCORE:
                 # the memoization will use the confidence of NLU on the latest
@@ -231,7 +235,7 @@ class MemoizationPolicy(Policy):
             "lookup": self.lookup,
         }
         rasa.utils.io.create_directory_for_file(memorized_file)
-        utils.dump_obj_as_json_to_file(memorized_file, data)
+        rasa.utils.io.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod
     def load(cls, path: Text) -> "MemoizationPolicy":
@@ -270,7 +274,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
     """
 
     @staticmethod
-    def _back_to_the_future_again(tracker):
+    def _back_to_the_future_again(tracker) -> Optional[DialogueStateTracker]:
         """Send Marty to the past to get
             the new featurization for the future"""
 
@@ -300,7 +304,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         return mcfly_tracker
 
-    def _recall_using_delorean(self, old_states, tracker, domain):
+    def _recall_using_delorean(self, old_states, tracker, domain) -> Optional[int]:
         """Recursively go to the past to correctly forget slots,
             and then back to the future to recall."""
 
@@ -316,7 +320,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 # check if we like new futures
                 memorised = self._recall_states(states)
                 if memorised is not None:
-                    logger.debug("Current tracker state {}".format(states))
+                    logger.debug(f"Current tracker state {states}")
                     return memorised
                 old_states = states
 
@@ -324,7 +328,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             mcfly_tracker = self._back_to_the_future_again(mcfly_tracker)
 
         # No match found
-        logger.debug("Current tracker state {}".format(old_states))
+        logger.debug(f"Current tracker state {old_states}")
         return None
 
     def recall(

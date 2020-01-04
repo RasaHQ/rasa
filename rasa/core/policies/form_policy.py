@@ -1,12 +1,18 @@
 import logging
-from typing import List, Optional, Dict, Text
+import typing
+from typing import List, Dict, Text, Optional
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain
+from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain, InvalidDomain
 from rasa.core.events import FormValidation
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.constants import FORM_POLICY_PRIORITY
+
+if typing.TYPE_CHECKING:
+    from rasa.core.policies.ensemble import PolicyEnsemble
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,18 +25,36 @@ class FormPolicy(MemoizationPolicy):
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = 5,
+        priority: int = FORM_POLICY_PRIORITY,
         lookup: Optional[Dict] = None,
     ) -> None:
 
         # max history is set to 2 in order to capture
         # previous meaningful action before action listen
-        super(FormPolicy, self).__init__(
+        super().__init__(
             featurizer=featurizer, priority=priority, max_history=2, lookup=lookup
         )
 
+    @classmethod
+    def validate_against_domain(
+        cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
+    ) -> None:
+        if not domain:
+            return
+
+        has_form_policy = ensemble is not None and any(
+            isinstance(p, cls) for p in ensemble.policies
+        )
+        if domain.form_names and not has_form_policy:
+            raise InvalidDomain(
+                "You have defined a form action, but haven't added the "
+                "FormPolicy to your policy ensemble. Either remove all "
+                "forms from your domain or exclude the FormPolicy from your "
+                "policy configuration."
+            )
+
     @staticmethod
-    def _get_active_form_name(state):
+    def _get_active_form_name(state: Dict[Text, float]) -> Optional[Text]:
         found_forms = [
             state_name[len(ACTIVE_FORM_PREFIX) :]
             for state_name, prob in state.items()
@@ -40,14 +64,16 @@ class FormPolicy(MemoizationPolicy):
         return found_forms[0] if found_forms else None
 
     @staticmethod
-    def _prev_action_listen_in_state(state):
+    def _prev_action_listen_in_state(state: Dict[Text, float]) -> bool:
         return any(
             PREV_PREFIX + ACTION_LISTEN_NAME in state_name and prob > 0
             for state_name, prob in state.items()
         )
 
     @staticmethod
-    def _modified_states(states):
+    def _modified_states(
+        states: List[Dict[Text, float]]
+    ) -> List[Optional[Dict[Text, float]]]:
         """Modify the states to
             - capture previous meaningful action before action_listen
             - ignore previous intent
@@ -87,7 +113,7 @@ class FormPolicy(MemoizationPolicy):
         # modify the states
         return self._recall_states(self._modified_states(states))
 
-    def state_is_unhappy(self, tracker, domain):
+    def state_is_unhappy(self, tracker: DialogueStateTracker, domain: Domain) -> bool:
         # since it is assumed that training stories contain
         # only unhappy paths, notify the form that
         # it should not be validated if predicted by other policy

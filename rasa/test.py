@@ -45,7 +45,7 @@ def test(
     if kwargs is None:
         kwargs = {}
 
-    test_core(model, stories, endpoints, output, **kwargs)
+    test_core(model, stories, endpoints, output, kwargs)
     test_nlu(model, nlu_data, output, kwargs)
 
 
@@ -92,7 +92,7 @@ def test_core(
     _interpreter = RegexInterpreter()
     if use_e2e:
         if nlu_path:
-            _interpreter = NaturalLanguageInterpreter.create(nlu_path, _endpoints.nlu)
+            _interpreter = NaturalLanguageInterpreter.create(_endpoints.nlu or nlu_path)
         else:
             print_warning(
                 "No NLU model found. Using default 'RegexInterpreter' for end-to-end "
@@ -112,7 +112,7 @@ def test_core(
 def test_nlu(
     model: Optional[Text],
     nlu_data: Optional[Text],
-    output: Text = DEFAULT_RESULTS_PATH,
+    output_directory: Text = DEFAULT_RESULTS_PATH,
     kwargs: Optional[Dict] = None,
 ):
     from rasa.nlu.test import run_evaluation
@@ -127,13 +127,13 @@ def test_nlu(
         )
         return
 
-    io_utils.create_directory(output)
+    io_utils.create_directory(output_directory)
 
     nlu_model = os.path.join(unpacked_model, "nlu")
 
     if os.path.exists(nlu_model):
         kwargs = utils.minimal_kwargs(kwargs, run_evaluation, ["data_path", "model"])
-        run_evaluation(nlu_data, nlu_model, out_directory=output, **kwargs)
+        run_evaluation(nlu_data, nlu_model, output_directory=output_directory, **kwargs)
     else:
         print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "
@@ -202,8 +202,10 @@ def perform_nlu_cross_validation(
     data = rasa.nlu.training_data.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=folds)
     kwargs = utils.minimal_kwargs(kwargs, cross_validate)
-    results, entity_results = cross_validate(data, folds, nlu_config, output, **kwargs)
-    logger.info("CV evaluation (n={})".format(folds))
+    results, entity_results, response_selection_results = cross_validate(
+        data, folds, nlu_config, output, **kwargs
+    )
+    logger.info(f"CV evaluation (n={folds})")
 
     if any(results):
         logger.info("Intent evaluation results")
@@ -213,3 +215,7 @@ def perform_nlu_cross_validation(
         logger.info("Entity evaluation results")
         return_entity_results(entity_results.train, "train")
         return_entity_results(entity_results.test, "test")
+    if any(response_selection_results):
+        logger.info("Response Selection evaluation results")
+        return_results(response_selection_results.train, "train")
+        return_results(response_selection_results.test, "test")

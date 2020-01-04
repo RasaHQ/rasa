@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os
 import pytest
 
@@ -34,18 +32,19 @@ def pipelines_for_tests():
                 "SpacyTokenizer",
                 "MitieFeaturizer",
                 "SpacyFeaturizer",
-                "NGramFeaturizer",
                 "RegexFeaturizer",
                 "CountVectorsFeaturizer",
+                "ConveRTFeaturizer",
                 "MitieEntityExtractor",
                 "CRFEntityExtractor",
                 "SpacyEntityExtractor",
                 "DucklingHTTPExtractor",
                 "EntitySynonymMapper",
-                "KeywordIntentClassifier",
                 "SklearnIntentClassifier",
                 "MitieIntentClassifier",
                 "EmbeddingIntentClassifier",
+                "KeywordIntentClassifier",
+                "ResponseSelector",
             ),
         ),
         (
@@ -56,6 +55,7 @@ def pipelines_for_tests():
                 "MitieFeaturizer",
                 "MitieEntityExtractor",
                 "SklearnIntentClassifier",
+                "KeywordIntentClassifier",
             ),
         ),
     ]
@@ -73,7 +73,6 @@ def test_all_components_are_in_at_least_one_test_pipeline():
         ), "`all_components` template is missing component."
 
 
-@utilities.slowtest
 @pytest.mark.parametrize(
     "pipeline_template", list(registry.registered_pipeline_templates.keys())
 )
@@ -92,13 +91,12 @@ async def test_train_model(pipeline_template, component_builder, tmpdir):
     assert loaded.parse("Hello today is Monday, again!") is not None
 
 
-@utilities.slowtest
 async def test_random_seed(component_builder, tmpdir):
     """test if train result is the same for two runs of tf embedding"""
 
     _config = utilities.base_test_conf("supervised_embeddings")
-    # set fixed random seed to 1
-    _config.set_component_attr(5, random_seed=1)
+    # set fixed random seed of the embedding intent classifier to 1
+    _config.set_component_attr(6, random_seed=1)
     # first run
     (trained_a, _, persisted_path_a) = await train(
         _config,
@@ -120,7 +118,6 @@ async def test_random_seed(component_builder, tmpdir):
     assert result_a == result_b
 
 
-@utilities.slowtest
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 async def test_train_model_on_test_pipelines(
     language, pipeline, component_builder, tmpdir
@@ -139,7 +136,6 @@ async def test_train_model_on_test_pipelines(
     assert loaded.parse("Hello today is Monday, again!") is not None
 
 
-@utilities.slowtest
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 async def test_train_model_no_events(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
@@ -186,7 +182,7 @@ async def test_handles_pipeline_with_non_existing_component(component_builder):
         await train(
             _config, data=DEFAULT_DATA_PATH, component_builder=component_builder
         )
-    assert "Failed to find component" in str(execinfo.value)
+    assert "Cannot find class" in str(execinfo.value)
 
 
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
@@ -212,3 +208,33 @@ def test_train_with_empty_data(language, pipeline, component_builder, tmpdir):
     assert loaded.pipeline
     assert loaded.parse("hello") is not None
     assert loaded.parse("Hello today is Monday, again!") is not None
+
+
+async def test_train_model_no_training_data_persisted(component_builder, tmpdir):
+    _config = utilities.base_test_conf("keyword")
+    (trained, _, persisted_path) = await train(
+        _config,
+        path=tmpdir.strpath,
+        data=DEFAULT_DATA_PATH,
+        component_builder=component_builder,
+        persist_nlu_training_data=False,
+    )
+    assert trained.pipeline
+    loaded = Interpreter.load(persisted_path, component_builder)
+    assert loaded.pipeline
+    assert loaded.model_metadata.get("training_data") is None
+
+
+async def test_train_model_training_data_persisted(component_builder, tmpdir):
+    _config = utilities.base_test_conf("keyword")
+    (trained, _, persisted_path) = await train(
+        _config,
+        path=tmpdir.strpath,
+        data=DEFAULT_DATA_PATH,
+        component_builder=component_builder,
+        persist_nlu_training_data=True,
+    )
+    assert trained.pipeline
+    loaded = Interpreter.load(persisted_path, component_builder)
+    assert loaded.pipeline
+    assert loaded.model_metadata.get("training_data") is not None

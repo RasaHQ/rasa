@@ -2,7 +2,18 @@ import copy
 import logging
 from collections import deque
 from enum import Enum
-from typing import Dict, Text, Any, Optional, Iterator, Generator, Type, List
+from typing import (
+    Dict,
+    Text,
+    Any,
+    Optional,
+    Iterator,
+    Generator,
+    Type,
+    List,
+    Deque,
+    Iterable,
+)
 
 from rasa.core import events  # pytype: disable=pyi-error
 from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
@@ -17,6 +28,7 @@ from rasa.core.events import (  # pytype: disable=pyi-error
     UserUtteranceReverted,
     BotUttered,
     Form,
+    SessionStarted,
 )
 from rasa.core.domain import Domain  # pytype: disable=pyi-error
 from rasa.core.slots import Slot
@@ -49,15 +61,15 @@ class AnySlotDict(dict):
     This only uses the generic slot type! This means certain functionality wont work,
     e.g. properly featurizing the slot."""
 
-    def __missing__(self, key):
+    def __missing__(self, key) -> Slot:
         value = self[key] = Slot(key)
         return value
 
-    def __contains__(self, key):
+    def __contains__(self, key) -> bool:
         return True
 
 
-class DialogueStateTracker(object):
+class DialogueStateTracker:
     """Maintains the state of a conversation.
 
     The field max_event_history will only give you these last events,
@@ -92,7 +104,12 @@ class DialogueStateTracker(object):
             tracker.update(e)
         return tracker
 
-    def __init__(self, sender_id, slots, max_event_history=None):
+    def __init__(
+        self,
+        sender_id: Text,
+        slots: Optional[Iterable[Slot]],
+        max_event_history: Optional[int] = None,
+    ) -> None:
         """Initialize the tracker.
 
         A set of events can be stored externally, and we will run through all
@@ -165,7 +182,7 @@ class DialogueStateTracker(object):
         """Generate the past states of this tracker based on the history."""
 
         generated_states = domain.states_for_tracker_history(self)
-        return deque((frozenset(s.items()) for s in generated_states))
+        return deque(frozenset(s.items()) for s in generated_states)
 
     def change_form_to(self, form_name: Text) -> None:
         """Activate or deactivate a form"""
@@ -210,7 +227,7 @@ class DialogueStateTracker(object):
         if key in self.slots:
             return self.slots[key].value
         else:
-            logger.info("Tried to access non existent slot '{}'".format(key))
+            logger.info(f"Tried to access non existent slot '{key}'")
             return None
 
     def get_latest_entity_values(self, entity_type: Text) -> Iterator[Text]:
@@ -262,12 +279,11 @@ class DialogueStateTracker(object):
         )
 
     def generate_all_prior_trackers(
-        self
+        self,
     ) -> Generator["DialogueStateTracker", None, None]:
         """Returns a generator of the previous trackers of this tracker.
 
-        The resulting array is representing
-        the trackers before each action."""
+        The resulting array is representing the trackers before each action."""
 
         tracker = self.init_copy()
 
@@ -291,8 +307,7 @@ class DialogueStateTracker(object):
                     yield tracker
 
                 elif tracker.active_form.get("rejected"):
-                    for tr in ignored_trackers:
-                        yield tr
+                    yield from ignored_trackers
                     ignored_trackers = []
 
                     if not tracker.active_form.get(
@@ -328,8 +343,7 @@ class DialogueStateTracker(object):
         if tracker.active_form.get("name") is None:
             yield tracker
         elif tracker.active_form.get("rejected"):
-            for tr in ignored_trackers:
-                yield tr
+            yield from ignored_trackers
             yield tracker
 
     def applied_events(self) -> List[Event]:
@@ -346,7 +360,7 @@ class DialogueStateTracker(object):
 
         applied_events = []
         for event in self.events:
-            if isinstance(event, Restarted):
+            if isinstance(event, (Restarted, SessionStarted)):
                 applied_events = []
             elif isinstance(event, ActionReverted):
                 undo_till_previous(ActionExecuted, applied_events)
@@ -359,6 +373,7 @@ class DialogueStateTracker(object):
                 undo_till_previous(ActionExecuted, applied_events)
             else:
                 applied_events.append(event)
+
         return applied_events
 
     def replay_events(self) -> None:
@@ -377,7 +392,7 @@ class DialogueStateTracker(object):
 
         if not isinstance(dialogue, Dialogue):
             raise ValueError(
-                "story {0} is not of type Dialogue. "
+                "story {} is not of type Dialogue. "
                 "Have you deserialized it?".format(dialogue)
             )
 
@@ -385,7 +400,7 @@ class DialogueStateTracker(object):
         self.events.extend(dialogue.events)
         self.replay_events()
 
-    def copy(self):
+    def copy(self) -> "DialogueStateTracker":
         """Creates a duplicate of this tracker"""
         return self.travel_back_in_time(float("inf"))
 
@@ -427,7 +442,7 @@ class DialogueStateTracker(object):
             for e in domain.slots_for_entities(event.parse_data["entities"]):
                 self.update(e)
 
-    def export_stories(self, e2e=False) -> Text:
+    def export_stories(self, e2e: bool = False) -> Text:
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns the dumped tracker as a string."""
@@ -438,9 +453,11 @@ class DialogueStateTracker(object):
 
     def export_stories_to_file(self, export_path: Text = "debug.md") -> None:
         """Dump the tracker as a story to a file."""
+        import rasa.utils.io
 
-        with open(export_path, "a", encoding="utf-8") as f:
-            f.write(self.export_stories() + "\n")
+        rasa.utils.io.write_text_file(
+            self.export_stories() + "\n", export_path, append=True
+        )
 
     def get_last_event_for(
         self,
@@ -466,10 +483,10 @@ class DialogueStateTracker(object):
         def filter_function(e: Event):
             has_instance = isinstance(e, event_type)
             excluded = isinstance(e, ActionExecuted) and e.action_name in to_exclude
-
             return has_instance and not excluded
 
         filtered = filter(filter_function, reversed(self.applied_events()))
+
         for i in range(skip):
             next(filtered, None)
 
@@ -486,7 +503,7 @@ class DialogueStateTracker(object):
             `True` if last executed action had name `name`, otherwise `False`.
         """
 
-        last = self.get_last_event_for(
+        last: Optional[ActionExecuted] = self.get_last_event_for(
             ActionExecuted, action_names_to_exclude=[ACTION_LISTEN_NAME], skip=skip
         )
         return last is not None and last.action_name == name
@@ -525,19 +542,19 @@ class DialogueStateTracker(object):
                 "".format(key)
             )
 
-    def _create_events(self, evts: List[Event]) -> deque:
+    def _create_events(self, evts: List[Event]) -> Deque[Event]:
 
         if evts and not isinstance(evts[0], Event):  # pragma: no cover
             raise ValueError("events, if given, must be a list of events")
         return deque(evts, self._max_event_history)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(self, type(other)):
             return other.events == self.events and self.sender_id == other.sender_id
         else:
             return False
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
     def trigger_followup_action(self, action: Text) -> None:

@@ -1,5 +1,6 @@
 import pytest
 
+from typing import Tuple
 from rasa.nlu import registry
 from rasa.nlu.components import find_unavailable_packages
 from rasa.nlu.config import RasaNLUModelConfig
@@ -15,7 +16,7 @@ def test_no_components_with_same_name(component_class):
     names = [cls.name for cls in registry.component_classes]
     assert (
         names.count(component_class.name) == 1
-    ), "There is more than one component named {}".format(component_class.name)
+    ), f"There is more than one component named {component_class.name}"
 
 
 @pytest.mark.parametrize("pipeline_template", registry.registered_pipeline_templates)
@@ -27,7 +28,7 @@ def test_all_components_in_model_templates_exist(pipeline_template):
     components = registry.registered_pipeline_templates[pipeline_template]
     for component in components:
         assert (
-            component in registry.registered_components
+            component["name"] in registry.registered_components
         ), "Model template contains unknown component."
 
 
@@ -44,7 +45,15 @@ def test_all_arguments_can_be_satisfied(component_class):
     }
 
     for req in component_class.requires:
-        assert req in provided_properties, "No component provides required property."
+        if isinstance(req, Tuple):
+            for r in req:
+                assert (
+                    r in provided_properties
+                ), "No component provides required property."
+        else:
+            assert (
+                req in provided_properties
+            ), "No component provides required property."
 
 
 def test_find_unavailable_packages():
@@ -54,27 +63,41 @@ def test_find_unavailable_packages():
     assert unavailable == {"my_made_up_package_name", "foo_bar"}
 
 
-def test_builder_create_unknown(component_builder, default_config):
-    with pytest.raises(Exception) as excinfo:
-        component_config = {"name": "my_made_up_componment"}
-        component_builder.create_component(component_config, default_config)
-    assert "Unknown component name" in str(excinfo.value)
-
-
 def test_builder_create_by_module_path(component_builder, default_config):
-    from rasa.nlu.featurizers.regex_featurizer import RegexFeaturizer
+    from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 
-    path = "rasa.nlu.featurizers.regex_featurizer.RegexFeaturizer"
+    path = "rasa.nlu.featurizers.sparse_featurizer.regex_featurizer.RegexFeaturizer"
     component_config = {"name": path}
     component = component_builder.create_component(component_config, default_config)
     assert type(component) == RegexFeaturizer
+
+
+@pytest.mark.parametrize(
+    "test_input, expected_output, error",
+    [
+        ("my_made_up_component", "Cannot find class", Exception),
+        (
+            "rasa.nlu.featurizers.regex_featurizer.MadeUpClass",
+            "Failed to find class",
+            Exception,
+        ),
+        ("made.up.path.RegexFeaturizer", "No module named", ModuleNotFoundError),
+    ],
+)
+def test_create_component_exception_messages(
+    component_builder, default_config, test_input, expected_output, error
+):
+
+    with pytest.raises(error):
+        component_config = {"name": test_input}
+        component_builder.create_component(component_config, default_config)
 
 
 def test_builder_load_unknown(component_builder):
     with pytest.raises(Exception) as excinfo:
         component_meta = {"name": "my_made_up_componment"}
         component_builder.load_component(component_meta, "", Metadata({}, None))
-    assert "Unknown component name" in str(excinfo.value)
+    assert "Cannot find class" in str(excinfo.value)
 
 
 async def test_example_component(component_builder, tmpdir_factory):

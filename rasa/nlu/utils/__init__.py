@@ -1,9 +1,9 @@
-import errno
-import io
 import json
 import os
 import re
-from typing import Any, Callable, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text
+
+import rasa.utils.io as io_utils
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
@@ -17,24 +17,6 @@ def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
         return os.path.normpath(os.path.relpath(f, path))
     else:
         return None
-
-
-def lazyproperty(fn: Callable) -> Any:
-    """Allows to avoid recomputing a property over and over.
-
-    The result gets stored in a local var. Computation of the property
-    will happen once, on the first call of the property. All
-    succeeding calls will use the value stored in the private property."""
-
-    attr_name = "_lazy_" + fn.__name__
-
-    @property
-    def _lazyprop(self):
-        if not hasattr(self, attr_name):
-            setattr(self, attr_name, fn(self))
-        return getattr(self, attr_name)
-
-    return _lazyprop
 
 
 def list_to_str(l: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
@@ -67,11 +49,10 @@ def write_json_to_file(filename: Text, obj: Any, **kwargs: Any) -> None:
     write_to_file(filename, json_to_string(obj, **kwargs))
 
 
-def write_to_file(filename: Text, text: Text) -> None:
+def write_to_file(filename: Text, text: Any) -> None:
     """Write a text to a file."""
 
-    with io.open(filename, "w", encoding="utf-8") as f:
-        f.write(str(text))
+    io_utils.write_text_file(str(text), filename)
 
 
 def build_entity(
@@ -132,8 +113,8 @@ def json_unpickle(file_name: Text) -> Any:
 
     jsonpickle_numpy.register_handlers()
 
-    with open(file_name, "r", encoding="utf-8") as f:
-        return jsonpickle.loads(f.read())
+    file_content = io_utils.read_file(file_name)
+    return jsonpickle.loads(file_content)
 
 
 def json_pickle(file_name: Text, obj: Any) -> None:
@@ -143,5 +124,4 @@ def json_pickle(file_name: Text, obj: Any) -> None:
 
     jsonpickle_numpy.register_handlers()
 
-    with open(file_name, "w", encoding="utf-8") as f:
-        f.write(jsonpickle.dumps(obj))
+    io_utils.write_text_file(jsonpickle.dumps(obj), file_name)

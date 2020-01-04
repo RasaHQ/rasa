@@ -1,32 +1,36 @@
-import io
 import logging
+
 import numpy as np
 import os
 import pickle
+import scipy.sparse
 import typing
-from tqdm import tqdm
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
+import warnings
 
-from rasa.nlu.classifiers import INTENT_RANKING_LENGTH
-from rasa.nlu.components import Component
-from rasa.utils.common import is_logging_disabled
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
+from rasa.nlu.components import Component, any_of
+from rasa.utils import train_utils
+from rasa.utils.train_utils import SessionDataType
+from rasa.nlu.constants import (
+    INTENT_ATTRIBUTE,
+    TEXT_ATTRIBUTE,
+    SPARSE_FEATURE_NAMES,
+    DENSE_FEATURE_NAMES,
+)
+
+import tensorflow as tf
+
+# avoid warning println on contrib import - remove for tf 2
+tf.contrib._warning = None
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from tensorflow import Graph, Session, Tensor
     from rasa.nlu.config import RasaNLUModelConfig
     from rasa.nlu.training_data import TrainingData
     from rasa.nlu.model import Metadata
     from rasa.nlu.training_data import Message
-
-try:
-    import tensorflow as tf
-
-    # avoid warning println on contrib import - remove for tf 2
-    tf.contrib._warning = None
-except ImportError:
-    tf = None
 
 
 class EmbeddingIntentClassifier(Component):
@@ -50,8 +54,13 @@ class EmbeddingIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = ["text_features"]
+    requires = [
+        any_of(
+            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE], SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
+        )
+    ]
 
+    # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
         # sizes of hidden layers before the embedding layer for input words
@@ -60,134 +69,134 @@ class EmbeddingIntentClassifier(Component):
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
         "hidden_layers_sizes_b": [],
+        # Whether to share the hidden layer weights between input words and labels
+        "share_hidden_layers": False,
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
         "batch_size": [64, 256],
+        # how to create batches
+        "batch_strategy": "balanced",  # string 'sequence' or 'balanced'
         # number of epochs
         "epochs": 300,
+        # set random seed to any int to get reproducible results
+        "random_seed": None,
         # embedding parameters
+        # default dense dimension used if no dense features are present
+        "dense_dim": {"text": 512, "label": 20},
         # dimension size of embedding vectors
         "embed_dim": 20,
-        # how similar the algorithm should try
-        # to make embedding vectors for correct intent labels
-        "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
-        # maximum negative similarity for incorrect intent labels
-        "mu_neg": -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
         # the type of the similarity
-        "similarity_type": "cosine",  # string 'cosine' or 'inner'
-        # the number of incorrect intents, the algorithm will minimize
-        # their similarity to the input words during training
         "num_neg": 20,
-        # flag: if true, only minimize the maximum similarity for
-        # incorrect intent labels
+        # flag if minimize only maximum similarity over incorrect actions
+        "similarity_type": "auto",  # string 'auto' or 'cosine' or 'inner'
+        # the type of the loss function
+        "loss_type": "softmax",  # string 'softmax' or 'margin'
+        # how similar the algorithm should try
+        # to make embedding vectors for correct labels
+        "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
+        # maximum negative similarity for incorrect labels
+        "mu_neg": -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
+        # flag: if true, only minimize the maximum similarity for incorrect labels
         "use_max_sim_neg": True,
-        # set random seed to any int to get reproducible results
-        # try to change to another int if you are not getting good results
-        "random_seed": None,
+        # scale loss inverse proportionally to confidence of correct prediction
+        "scale_loss": True,
         # regularization parameters
         # the scale of L2 regularization
         "C2": 0.002,
         # the scale of how critical the algorithm should be of minimizing the
-        # maximum similarity between embeddings of different intent labels
+        # maximum similarity between embeddings of different labels
         "C_emb": 0.8,
         # dropout rate for rnn
         "droprate": 0.2,
-        # flag: if true, the algorithm will split the intent labels into tokens
-        #       and use bag-of-words representations for them
-        "intent_tokenization_flag": False,
-        # delimiter string to split the intent labels
-        "intent_split_symbol": "_",
         # visualization of accuracy
         # how often to calculate training accuracy
-        "evaluate_every_num_epochs": 10,  # small values may hurt performance
+        "evaluate_every_num_epochs": 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
-        "evaluate_on_num_examples": 1000,  # large values may hurt performance
+        "evaluate_on_num_examples": 0,  # large values may hurt performance
     }
+    # end default properties (DOC MARKER - don't remove)
 
-    def __init__(
-        self,
-        component_config: Optional[Dict[Text, Any]] = None,
-        inv_intent_dict: Optional[Dict[int, Text]] = None,
-        encoded_all_intents: Optional[np.ndarray] = None,
-        session: Optional["Session"] = None,
-        graph: Optional["Graph"] = None,
-        message_placeholder: Optional["Tensor"] = None,
-        intent_placeholder: Optional["Tensor"] = None,
-        similarity_op: Optional["Tensor"] = None,
-        word_embed: Optional["Tensor"] = None,
-        intent_embed: Optional["Tensor"] = None,
-    ) -> None:
-        """Declare instant variables with default values"""
+    @staticmethod
+    def _check_old_config_variables(config: Dict[Text, Any]) -> None:
+        """Config migration warning"""
 
-        self._check_tensorflow()
-        super(EmbeddingIntentClassifier, self).__init__(component_config)
-
-        self._load_params()
-
-        # transform numbers to intents
-        self.inv_intent_dict = inv_intent_dict
-        # encode all intents with numbers
-        self.encoded_all_intents = encoded_all_intents
-
-        # tf related instances
-        self.session = session
-        self.graph = graph
-        self.a_in = message_placeholder
-        self.b_in = intent_placeholder
-        self.sim_op = similarity_op
-
-        # persisted embeddings
-        self.word_embed = word_embed
-        self.intent_embed = intent_embed
+        removed_tokenization_params = [
+            "intent_tokenization_flag",
+            "intent_split_symbol",
+        ]
+        for removed_param in removed_tokenization_params:
+            if removed_param in config:
+                warnings.warn(
+                    f"Intent tokenization has been moved to Tokenizer components. "
+                    f"Your config still mentions '{removed_param}'. "
+                    f"Tokenization may fail if you specify the parameter here. "
+                    f"Please specify the parameter 'intent_tokenization_flag' "
+                    f"and 'intent_split_symbol' in the "
+                    f"tokenizer of your NLU pipeline",
+                    FutureWarning,
+                )
 
     # init helpers
     def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
         self.hidden_layer_sizes = {
-            "a": config["hidden_layers_sizes_a"],
-            "b": config["hidden_layers_sizes_b"],
+            "text": config["hidden_layers_sizes_a"],
+            "label": config["hidden_layers_sizes_b"],
         }
+        self.share_hidden_layers = config["share_hidden_layers"]
+        if (
+            self.share_hidden_layers
+            and self.hidden_layer_sizes["text"] != self.hidden_layer_sizes["label"]
+        ):
+            raise ValueError(
+                "If hidden layer weights are shared,"
+                "hidden_layer_sizes for a and b must coincide."
+            )
 
-        self.batch_size = config["batch_size"]
+        self.batch_in_size = config["batch_size"]
+        self.batch_in_strategy = config["batch_strategy"]
+
         self.epochs = config["epochs"]
+
+        self.random_seed = self.component_config["random_seed"]
 
     def _load_embedding_params(self, config: Dict[Text, Any]) -> None:
         self.embed_dim = config["embed_dim"]
+        self.num_neg = config["num_neg"]
+        self.dense_dim = config["dense_dim"]
+
+        self.similarity_type = config["similarity_type"]
+        self.loss_type = config["loss_type"]
+        if self.similarity_type == "auto":
+            if self.loss_type == "softmax":
+                self.similarity_type = "inner"
+            elif self.loss_type == "margin":
+                self.similarity_type = "cosine"
+
         self.mu_pos = config["mu_pos"]
         self.mu_neg = config["mu_neg"]
-        self.similarity_type = config["similarity_type"]
-        self.num_neg = config["num_neg"]
         self.use_max_sim_neg = config["use_max_sim_neg"]
-        self.random_seed = self.component_config["random_seed"]
+
+        self.scale_loss = config["scale_loss"]
 
     def _load_regularization_params(self, config: Dict[Text, Any]) -> None:
         self.C2 = config["C2"]
         self.C_emb = config["C_emb"]
         self.droprate = config["droprate"]
 
-    def _load_flag_if_tokenize_intents(self, config: Dict[Text, Any]) -> None:
-        self.intent_tokenization_flag = config["intent_tokenization_flag"]
-        self.intent_split_symbol = config["intent_split_symbol"]
-        if self.intent_tokenization_flag and not self.intent_split_symbol:
-            logger.warning(
-                "intent_split_symbol was not specified, "
-                "so intent tokenization will be ignored"
-            )
-            self.intent_tokenization_flag = False
-
     def _load_visual_params(self, config: Dict[Text, Any]) -> None:
         self.evaluate_every_num_epochs = config["evaluate_every_num_epochs"]
         if self.evaluate_every_num_epochs < 1:
             self.evaluate_every_num_epochs = self.epochs
-
         self.evaluate_on_num_examples = config["evaluate_on_num_examples"]
 
     def _load_params(self) -> None:
 
+        self._check_old_config_variables(self.component_config)
+        self._tf_config = train_utils.load_tf_config(self.component_config)
         self._load_nn_architecture_params(self.component_config)
         self._load_embedding_params(self.component_config)
         self._load_regularization_params(self.component_config)
-        self._load_flag_if_tokenize_intents(self.component_config)
         self._load_visual_params(self.component_config)
 
     # package safety checks
@@ -195,440 +204,650 @@ class EmbeddingIntentClassifier(Component):
     def required_packages(cls) -> List[Text]:
         return ["tensorflow"]
 
-    @staticmethod
-    def _check_tensorflow():
-        if tf is None:
-            raise ImportError(
-                "Failed to import `tensorflow`. "
-                "Please install `tensorflow`. "
-                "For example with `pip install tensorflow`."
-            )
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        inverted_label_dict: Optional[Dict[int, Text]] = None,
+        session: Optional["tf.Session"] = None,
+        graph: Optional["tf.Graph"] = None,
+        batch_placeholder: Optional["tf.Tensor"] = None,
+        similarity_all: Optional["tf.Tensor"] = None,
+        pred_confidence: Optional["tf.Tensor"] = None,
+        similarity: Optional["tf.Tensor"] = None,
+        message_embed: Optional["tf.Tensor"] = None,
+        label_embed: Optional["tf.Tensor"] = None,
+        all_labels_embed: Optional["tf.Tensor"] = None,
+        batch_tuple_sizes: Optional[Dict] = None,
+    ) -> None:
+        """Declare instance variables with default values"""
+
+        super().__init__(component_config)
+
+        self._load_params()
+
+        # transform numbers to labels
+        self.inverted_label_dict = inverted_label_dict
+        # encode all label_ids with numbers
+        self._label_data = None
+
+        # tf related instances
+        self.session = session
+        self.graph = graph
+        self.batch_in = batch_placeholder
+        self.sim_all = similarity_all
+        self.pred_confidence = pred_confidence
+        self.sim = similarity
+
+        # persisted embeddings
+        self.message_embed = message_embed
+        self.label_embed = label_embed
+        self.all_labels_embed = all_labels_embed
+
+        # keep the input tuple sizes in self.batch_in
+        self.batch_tuple_sizes = batch_tuple_sizes
+
+        # internal tf instances
+        self._iterator = None
+        self._train_op = None
+        self._is_training = None
 
     # training data helpers:
     @staticmethod
-    def _create_intent_dict(training_data: "TrainingData") -> Dict[Text, int]:
-        """Create intent dictionary"""
+    def _create_label_id_dict(
+        training_data: "TrainingData", attribute: Text
+    ) -> Dict[Text, int]:
+        """Create label_id dictionary"""
 
-        distinct_intents = set(
-            [example.get("intent") for example in training_data.intent_examples]
-        )
-        return {intent: idx for idx, intent in enumerate(sorted(distinct_intents))}
+        distinct_label_ids = {
+            example.get(attribute) for example in training_data.intent_examples
+        } - {None}
+        return {
+            label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
+        }
 
     @staticmethod
-    def _create_intent_token_dict(
-        intents: List[Text], intent_split_symbol: Text
-    ) -> Dict[Text, int]:
-        """Create intent token dictionary"""
+    def _find_example_for_label(
+        label: Text, examples: List["Message"], attribute: Text
+    ) -> Optional["Message"]:
+        for ex in examples:
+            if ex.get(attribute) == label:
+                return ex
+        return None
 
-        distinct_tokens = set(
-            [token for intent in intents for token in intent.split(intent_split_symbol)]
-        )
-        return {token: idx for idx, token in enumerate(sorted(distinct_tokens))}
+    @staticmethod
+    def _check_labels_features_exist(
+        labels_example: List["Message"], attribute: Text
+    ) -> bool:
+        """Check if all labels have features set"""
 
-    def _create_encoded_intents(self, intent_dict: Dict[Text, int]) -> np.ndarray:
-        """Create matrix with intents encoded in rows as bag of words.
+        for label_example in labels_example:
+            if (
+                label_example.get(SPARSE_FEATURE_NAMES[attribute]) is None
+                and label_example.get(DENSE_FEATURE_NAMES[attribute]) is None
+            ):
+                return False
+        return True
 
-        If intent_tokenization_flag is off, returns identity matrix.
-        """
+    @staticmethod
+    def _extract_and_add_features(
+        message: "Message", attribute: Text
+    ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
+        sparse_features = None
+        dense_features = None
 
-        if self.intent_tokenization_flag:
-            intent_token_dict = self._create_intent_token_dict(
-                list(intent_dict.keys()), self.intent_split_symbol
+        if message.get(SPARSE_FEATURE_NAMES[attribute]) is not None:
+            sparse_features = message.get(SPARSE_FEATURE_NAMES[attribute])
+
+        if message.get(DENSE_FEATURE_NAMES[attribute]) is not None:
+            dense_features = message.get(DENSE_FEATURE_NAMES[attribute])
+
+        if sparse_features is not None and dense_features is not None:
+            if sparse_features.shape[0] != dense_features.shape[0]:
+                raise ValueError(
+                    f"Sequence dimensions for sparse and dense features "
+                    f"don't coincide in '{message.text}' for attribute '{attribute}'."
+                )
+
+        return sparse_features, dense_features
+
+    def _extract_labels_precomputed_features(
+        self, label_examples: List["Message"], attribute: Text = INTENT_ATTRIBUTE
+    ) -> List[np.ndarray]:
+        """Collect precomputed encodings"""
+
+        sparse_features = []
+        dense_features = []
+
+        for e in label_examples:
+            _sparse, _dense = self._extract_and_add_features(e, attribute)
+            if _sparse is not None:
+                sparse_features.append(_sparse)
+            if _dense is not None:
+                dense_features.append(_dense)
+
+        sparse_features = np.array(sparse_features)
+        dense_features = np.array(dense_features)
+
+        return [sparse_features, dense_features]
+
+    @staticmethod
+    def _compute_default_label_features(
+        labels_example: List["Message"],
+    ) -> List[np.ndarray]:
+        """Compute one-hot representation for the labels"""
+
+        return [
+            np.array(
+                [
+                    np.expand_dims(a, 0)
+                    for a in np.eye(len(labels_example), dtype=np.float32)
+                ]
             )
+        ]
 
-            encoded_all_intents = np.zeros((len(intent_dict), len(intent_token_dict)))
-            for key, idx in intent_dict.items():
-                for t in key.split(self.intent_split_symbol):
-                    encoded_all_intents[idx, intent_token_dict[t]] = 1
+    def _create_label_data(
+        self,
+        training_data: "TrainingData",
+        label_id_dict: Dict[Text, int],
+        attribute: Text,
+    ) -> "SessionDataType":
+        """Create matrix with label_ids encoded in rows as bag of words.
 
-            return encoded_all_intents
-        else:
-            return np.eye(len(intent_dict))
-
-    # noinspection PyPep8Naming
-    def _create_all_Y(self, size: int) -> np.ndarray:
-        """Stack encoded_all_intents on top of each other
-
-        to create candidates for training examples and
-        to calculate training accuracy
+        Find a training example for each label and get the encoded features
+        from the corresponding Message object.
+        If the features are already computed, fetch them from the message object
+        else compute a one hot encoding for the label as the feature vector.
         """
 
-        return np.stack([self.encoded_all_intents] * size)
+        # Collect one example for each label
+        labels_idx_example = []
+        for label_name, idx in label_id_dict.items():
+            label_example = self._find_example_for_label(
+                label_name, training_data.intent_examples, attribute
+            )
+            labels_idx_example.append((idx, label_example))
+
+        # Sort the list of tuples based on label_idx
+        labels_idx_example = sorted(labels_idx_example, key=lambda x: x[0])
+        labels_example = [example for (_, example) in labels_idx_example]
+
+        # Collect features, precomputed if they exist, else compute on the fly
+        if self._check_labels_features_exist(labels_example, attribute):
+            features = self._extract_labels_precomputed_features(
+                labels_example, attribute
+            )
+        else:
+            features = self._compute_default_label_features(labels_example)
+
+        label_data = {}
+        self._add_to_session_data(label_data, "label_features", features)
+        self._add_mask_to_session_data(label_data, "label_mask", "label_features")
+
+        return label_data
+
+    def _use_default_label_features(self, label_ids: np.ndarray) -> List[np.ndarray]:
+        return [
+            np.array(
+                [
+                    self._label_data["label_features"][0][label_id]
+                    for label_id in label_ids
+                ]
+            )
+        ]
 
     # noinspection PyPep8Naming
-    def _prepare_data_for_training(
-        self, training_data: "TrainingData", intent_dict: Dict[Text, int]
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Prepare data for training"""
+    def _create_session_data(
+        self,
+        training_data: List["Message"],
+        label_id_dict: Optional[Dict[Text, int]] = None,
+        label_attribute: Optional[Text] = INTENT_ATTRIBUTE,
+    ) -> "SessionDataType":
+        """Prepare data for training and create a SessionDataType object"""
 
-        X = np.stack([e.get("text_features") for e in training_data.intent_examples])
+        X_sparse = []
+        X_dense = []
+        Y_sparse = []
+        Y_dense = []
+        label_ids = []
 
-        intents_for_X = np.array(
-            [intent_dict[e.get("intent")] for e in training_data.intent_examples]
+        for e in training_data:
+            if e.get(label_attribute):
+                _sparse, _dense = self._extract_and_add_features(e, TEXT_ATTRIBUTE)
+                if _sparse is not None:
+                    X_sparse.append(_sparse)
+                if _dense is not None:
+                    X_dense.append(_dense)
+
+                _sparse, _dense = self._extract_and_add_features(e, label_attribute)
+                if _sparse is not None:
+                    Y_sparse.append(_sparse)
+                if _dense is not None:
+                    Y_dense.append(_dense)
+
+                if label_id_dict:
+                    label_ids.append(label_id_dict[e.get(label_attribute)])
+
+        X_sparse = np.array(X_sparse)
+        X_dense = np.array(X_dense)
+        Y_sparse = np.array(Y_sparse)
+        Y_dense = np.array(Y_dense)
+        label_ids = np.array(label_ids)
+
+        session_data = {}
+        self._add_to_session_data(session_data, "text_features", [X_sparse, X_dense])
+        self._add_to_session_data(session_data, "label_features", [Y_sparse, Y_dense])
+        # explicitly add last dimension to label_ids
+        # to track correctly dynamic sequences
+        self._add_to_session_data(
+            session_data, "label_ids", [np.expand_dims(label_ids, -1)]
         )
 
-        Y = np.stack(
-            [self.encoded_all_intents[intent_idx] for intent_idx in intents_for_X]
-        )
+        if label_id_dict and (
+            "label_features" not in session_data or not session_data["label_features"]
+        ):
+            # no label features are present, get default features from _label_data
+            session_data["label_features"] = self._use_default_label_features(label_ids)
 
-        return X, Y, intents_for_X
+        self._add_mask_to_session_data(session_data, "text_mask", "text_features")
+        self._add_mask_to_session_data(session_data, "label_mask", "label_features")
+
+        return session_data
+
+    @staticmethod
+    def _add_to_session_data(
+        session_data: SessionDataType, key: Text, features: List[np.ndarray]
+    ):
+        if not features:
+            return
+
+        session_data[key] = []
+
+        for data in features:
+            if data.size > 0:
+                session_data[key].append(data)
+
+    @staticmethod
+    def _add_mask_to_session_data(
+        session_data: SessionDataType, key: Text, from_key: Text
+    ):
+
+        session_data[key] = []
+
+        for data in session_data[from_key]:
+            if data.size > 0:
+                # explicitly add last dimension to mask
+                # to track correctly dynamic sequences
+                mask = np.array([np.ones((x.shape[0], 1)) for x in data])
+                session_data[key].append(mask)
+                break
 
     # tf helpers:
-    def _create_tf_embed_nn(
-        self, x_in: "Tensor", is_training: "Tensor", layer_sizes: List[int], name: Text
-    ) -> "Tensor":
+    def _create_tf_embed_fnn(
+        self,
+        x_in: "tf.Tensor",
+        layer_sizes: List[int],
+        fnn_name: Text,
+        embed_name: Text,
+    ) -> "tf.Tensor":
         """Create nn with hidden layers and name"""
 
-        reg = tf.contrib.layers.l2_regularizer(self.C2)
-        x = x_in
-        for i, layer_size in enumerate(layer_sizes):
-            x = tf.layers.dense(
-                inputs=x,
-                units=layer_size,
-                activation=tf.nn.relu,
-                kernel_regularizer=reg,
-                name="hidden_layer_{}_{}".format(name, i),
-            )
-            x = tf.layers.dropout(x, rate=self.droprate, training=is_training)
-
-        x = tf.layers.dense(
-            inputs=x,
-            units=self.embed_dim,
-            kernel_regularizer=reg,
-            name="embed_layer_{}".format(name),
+        x = train_utils.create_tf_fnn(
+            x_in,
+            layer_sizes,
+            self.droprate,
+            self.C2,
+            self._is_training,
+            layer_name_suffix=fnn_name,
         )
-        return x
-
-    def _create_tf_embed(
-        self, a_in: "Tensor", b_in: "Tensor", is_training: "Tensor"
-    ) -> Tuple["Tensor", "Tensor"]:
-        """Create tf graph for training"""
-
-        emb_a = self._create_tf_embed_nn(
-            a_in, is_training, self.hidden_layer_sizes["a"], name="a"
+        return train_utils.create_tf_embed(
+            x,
+            self.embed_dim,
+            self.C2,
+            self.similarity_type,
+            layer_name_suffix=embed_name,
         )
-        emb_b = self._create_tf_embed_nn(
-            b_in, is_training, self.hidden_layer_sizes["b"], name="b"
-        )
-        return emb_a, emb_b
 
-    def _tf_sim(self, a: "Tensor", b: "Tensor") -> Tuple["Tensor", "Tensor"]:
-        """Define similarity
-
-        in two cases:
-            sim: between embedded words and embedded intent labels
-            sim_emb: between individual embedded intent labels only
-        """
-
-        if self.similarity_type == "cosine":
-            # normalize embedding vectors for cosine similarity
-            a = tf.nn.l2_normalize(a, -1)
-            b = tf.nn.l2_normalize(b, -1)
-
-        if self.similarity_type in {"cosine", "inner"}:
-            sim = tf.reduce_sum(tf.expand_dims(a, 1) * b, -1)
-            sim_emb = tf.reduce_sum(b[:, 0:1, :] * b[:, 1:, :], -1)
-
-            return sim, sim_emb
-
-        else:
-            raise ValueError(
-                "Wrong similarity type {}, "
-                "should be 'cosine' or 'inner'"
-                "".format(self.similarity_type)
-            )
-
-    def _tf_loss(self, sim: "Tensor", sim_emb: "Tensor") -> "Tensor":
-        """Define loss"""
-
-        # loss for maximizing similarity with correct action
-        loss = tf.maximum(0.0, self.mu_pos - sim[:, 0])
-
-        if self.use_max_sim_neg:
-            # minimize only maximum similarity over incorrect actions
-            max_sim_neg = tf.reduce_max(sim[:, 1:], -1)
-            loss += tf.maximum(0.0, self.mu_neg + max_sim_neg)
-        else:
-            # minimize all similarities with incorrect actions
-            max_margin = tf.maximum(0.0, self.mu_neg + sim[:, 1:])
-            loss += tf.reduce_sum(max_margin, -1)
-
-        # penalize max similarity between intent embeddings
-        max_sim_emb = tf.maximum(0.0, tf.reduce_max(sim_emb, -1))
-        loss += max_sim_emb * self.C_emb
-
-        # average the loss over the batch and add regularization losses
-        loss = tf.reduce_mean(loss) + tf.losses.get_regularization_loss()
-        return loss
-
-    # training helpers:
-    def _create_batch_b(
-        self, batch_pos_b: np.ndarray, intent_ids: np.ndarray
-    ) -> np.ndarray:
-        """Create batch of intents.
-
-        Where the first is correct intent
-        and the rest are wrong intents sampled randomly
-        """
-
-        batch_pos_b = batch_pos_b[:, np.newaxis, :]
-
-        # sample negatives
-        batch_neg_b = np.zeros(
-            (batch_pos_b.shape[0], self.num_neg, batch_pos_b.shape[-1])
-        )
-        for b in range(batch_pos_b.shape[0]):
-            # create negative indexes out of possible ones
-            # except for correct index of b
-            negative_indexes = [
-                i
-                for i in range(self.encoded_all_intents.shape[0])
-                if i != intent_ids[b]
-            ]
-            negs = np.random.choice(negative_indexes, size=self.num_neg)
-
-            batch_neg_b[b] = self.encoded_all_intents[negs]
-
-        return np.concatenate([batch_pos_b, batch_neg_b], 1)
-
-    def _linearly_increasing_batch_size(self, epoch: int) -> int:
-        """Linearly increase batch size with every epoch.
-
-        The idea comes from https://arxiv.org/abs/1711.00489
-        """
-
-        if not isinstance(self.batch_size, list):
-            return int(self.batch_size)
-
-        if self.epochs > 1:
-            return int(
-                self.batch_size[0]
-                + epoch * (self.batch_size[1] - self.batch_size[0]) / (self.epochs - 1)
-            )
-        else:
-            return int(self.batch_size[0])
-
-    # noinspection PyPep8Naming
-    def _train_tf(
+    def _combine_sparse_dense_features(
         self,
-        X: np.ndarray,
-        Y: np.ndarray,
-        intents_for_X: np.ndarray,
-        loss: "Tensor",
-        is_training: "Tensor",
-        train_op: "Tensor",
-    ) -> None:
-        """Train tf graph"""
+        features: List[Union[tf.Tensor, tf.SparseTensor]],
+        mask: tf.Tensor,
+        name: Text,
+    ) -> tf.Tensor:
+        dense_features = []
 
-        self.session.run(tf.global_variables_initializer())
+        dense_dim = self.dense_dim[name]
+        # if dense features are present use the feature dimension of the dense features
+        for f in features:
+            if not isinstance(f, tf.SparseTensor):
+                dense_dim = f.shape[-1]
+                break
 
-        if self.evaluate_on_num_examples:
-            logger.info(
-                "Accuracy is updated every {} epochs"
-                "".format(self.evaluate_every_num_epochs)
-            )
-
-        pbar = tqdm(range(self.epochs), desc="Epochs", disable=is_logging_disabled())
-        train_acc = 0
-        last_loss = 0
-        for ep in pbar:
-            indices = np.random.permutation(len(X))
-
-            batch_size = self._linearly_increasing_batch_size(ep)
-            batches_per_epoch = len(X) // batch_size + int(len(X) % batch_size > 0)
-
-            ep_loss = 0
-            for i in range(batches_per_epoch):
-                end_idx = (i + 1) * batch_size
-                start_idx = i * batch_size
-                batch_a = X[indices[start_idx:end_idx]]
-                batch_pos_b = Y[indices[start_idx:end_idx]]
-                intents_for_b = intents_for_X[indices[start_idx:end_idx]]
-                # add negatives
-                batch_b = self._create_batch_b(batch_pos_b, intents_for_b)
-
-                sess_out = self.session.run(
-                    {"loss": loss, "train_op": train_op},
-                    feed_dict={
-                        self.a_in: batch_a,
-                        self.b_in: batch_b,
-                        is_training: True,
-                    },
-                )
-                ep_loss += sess_out.get("loss") / batches_per_epoch
-
-            if self.evaluate_on_num_examples:
-                if (
-                    ep == 0
-                    or (ep + 1) % self.evaluate_every_num_epochs == 0
-                    or (ep + 1) == self.epochs
-                ):
-                    train_acc = self._output_training_stat(
-                        X, intents_for_X, is_training
-                    )
-                    last_loss = ep_loss
-
-                pbar.set_postfix(
-                    {
-                        "loss": "{:.3f}".format(ep_loss),
-                        "acc": "{:.3f}".format(train_acc),
-                    }
+        for f in features:
+            if isinstance(f, tf.SparseTensor):
+                dense_features.append(
+                    train_utils.tf_dense_layer_for_sparse(f, dense_dim, name, self.C2)
                 )
             else:
-                pbar.set_postfix({"loss": "{:.3f}".format(ep_loss)})
+                dense_features.append(f)
 
-        if self.evaluate_on_num_examples:
-            logger.info(
-                "Finished training embedding classifier, "
-                "loss={:.3f}, train accuracy={:.3f}"
-                "".format(last_loss, train_acc)
-            )
+        output = tf.concat(dense_features, axis=-1) * mask
+        # apply mean to convert sequence to sentence features
+        output = tf.reduce_sum(output, axis=1) / tf.reduce_sum(mask, axis=1)
+        return output
 
-    # noinspection PyPep8Naming
-    def _output_training_stat(
-        self, X: np.ndarray, intents_for_X: np.ndarray, is_training: "Tensor"
-    ) -> np.ndarray:
-        """Output training statistics"""
+    def _build_tf_train_graph(
+        self, session_data: SessionDataType
+    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
 
-        n = self.evaluate_on_num_examples
-        ids = np.random.permutation(len(X))[:n]
-        all_Y = self._create_all_Y(X[ids].shape[0])
+        # get in tensors from generator
+        self.batch_in = self._iterator.get_next()
+        # convert encoded all labels into the batch format
+        label_batch = train_utils.prepare_batch(self._label_data)
 
-        train_sim = self.session.run(
-            self.sim_op,
-            feed_dict={self.a_in: X[ids], self.b_in: all_Y, is_training: False},
+        # convert batch format into sparse and dense tensors
+        batch_data, _ = train_utils.batch_to_session_data(self.batch_in, session_data)
+        label_data, _ = train_utils.batch_to_session_data(label_batch, self._label_data)
+
+        a = self._combine_sparse_dense_features(
+            batch_data["text_features"], batch_data["text_mask"][0], "text"
+        )
+        b = self._combine_sparse_dense_features(
+            batch_data["label_features"], batch_data["label_mask"][0], "label"
+        )
+        all_bs = self._combine_sparse_dense_features(
+            label_data["label_features"], label_data["label_mask"][0], "label"
         )
 
-        train_acc = np.mean(np.argmax(train_sim, -1) == intents_for_X[ids])
-        return train_acc
+        self.message_embed = self._create_tf_embed_fnn(
+            a,
+            self.hidden_layer_sizes["text"],
+            fnn_name="text_label" if self.share_hidden_layers else "text",
+            embed_name="text",
+        )
+        self.label_embed = self._create_tf_embed_fnn(
+            b,
+            self.hidden_layer_sizes["label"],
+            fnn_name="text_label" if self.share_hidden_layers else "label",
+            embed_name="label",
+        )
+        self.all_labels_embed = self._create_tf_embed_fnn(
+            all_bs,
+            self.hidden_layer_sizes["label"],
+            fnn_name="text_label" if self.share_hidden_layers else "label",
+            embed_name="label",
+        )
+
+        return train_utils.calculate_loss_acc(
+            self.message_embed,
+            self.label_embed,
+            b,
+            self.all_labels_embed,
+            all_bs,
+            self.num_neg,
+            None,
+            self.loss_type,
+            self.mu_pos,
+            self.mu_neg,
+            self.use_max_sim_neg,
+            self.C_emb,
+            self.scale_loss,
+        )
+
+    def _build_tf_pred_graph(self, session_data: "SessionDataType") -> "tf.Tensor":
+
+        shapes, types = train_utils.get_shapes_types(session_data)
+
+        batch_placeholder = []
+        for s, t in zip(shapes, types):
+            batch_placeholder.append(tf.placeholder(t, s))
+
+        self.batch_in = tf.tuple(batch_placeholder)
+
+        batch_data, self.batch_tuple_sizes = train_utils.batch_to_session_data(
+            self.batch_in, session_data
+        )
+
+        a = self._combine_sparse_dense_features(
+            batch_data["text_features"], batch_data["text_mask"][0], "text"
+        )
+        b = self._combine_sparse_dense_features(
+            batch_data["label_features"], batch_data["label_mask"][0], "label"
+        )
+
+        self.all_labels_embed = tf.constant(self.session.run(self.all_labels_embed))
+
+        self.message_embed = self._create_tf_embed_fnn(
+            a,
+            self.hidden_layer_sizes["text"],
+            fnn_name="text_label" if self.share_hidden_layers else "text",
+            embed_name="text",
+        )
+
+        self.sim_all = train_utils.tf_raw_sim(
+            self.message_embed[:, tf.newaxis, :],
+            self.all_labels_embed[tf.newaxis, :, :],
+            None,
+        )
+
+        self.label_embed = self._create_tf_embed_fnn(
+            b,
+            self.hidden_layer_sizes["label"],
+            fnn_name="text_label" if self.share_hidden_layers else "label",
+            embed_name="label",
+        )
+
+        self.sim = train_utils.tf_raw_sim(
+            self.message_embed[:, tf.newaxis, :], self.label_embed, None
+        )
+
+        return train_utils.confidence_from_sim(self.sim_all, self.similarity_type)
+
+    @staticmethod
+    def _get_num_of_features(session_data: "SessionDataType", key: Text) -> int:
+        num_features = 0
+        for data in session_data[key]:
+            if data.size > 0:
+                num_features += data[0].shape[-1]
+        return num_features
+
+    def check_input_dimension_consistency(self, session_data: "SessionDataType"):
+        """Check if text features and intent features have the same dimension."""
+
+        if self.share_hidden_layers:
+            num_text_features = self._get_num_of_features(session_data, "text_features")
+            num_intent_features = self._get_num_of_features(
+                session_data, "label_features"
+            )
+
+            if num_text_features != num_intent_features:
+                raise ValueError(
+                    "If embeddings are shared, "
+                    "text features and label features "
+                    "must coincide. Check the output dimensions of previous components."
+                )
+
+    def preprocess_train_data(self, training_data: "TrainingData"):
+        """Prepares data for training.
+
+        Performs sanity checks on training data, extracts encodings for labels.
+        """
+
+        label_id_dict = self._create_label_id_dict(
+            training_data, attribute=INTENT_ATTRIBUTE
+        )
+
+        self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
+
+        self._label_data = self._create_label_data(
+            training_data, label_id_dict, attribute=INTENT_ATTRIBUTE
+        )
+
+        session_data = self._create_session_data(
+            training_data.intent_examples,
+            label_id_dict,
+            label_attribute=INTENT_ATTRIBUTE,
+        )
+
+        self.check_input_dimension_consistency(session_data)
+
+        return session_data
+
+    @staticmethod
+    def _check_enough_labels(session_data: "SessionDataType") -> bool:
+        return len(np.unique(session_data["label_ids"])) >= 2
 
     def train(
         self,
         training_data: "TrainingData",
         cfg: Optional["RasaNLUModelConfig"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Train the embedding intent classifier on a data set."""
 
-        intent_dict = self._create_intent_dict(training_data)
-        if len(intent_dict) < 2:
+        logger.debug("Started training embedding classifier.")
+
+        # set numpy random seed
+        np.random.seed(self.random_seed)
+
+        session_data = self.preprocess_train_data(training_data)
+
+        possible_to_train = self._check_enough_labels(session_data)
+
+        if not possible_to_train:
             logger.error(
-                "Can not train an intent classifier. "
+                "Can not train a classifier. "
                 "Need at least 2 different classes. "
-                "Skipping training of intent classifier."
+                "Skipping training of classifier."
             )
             return
 
-        self.inv_intent_dict = {v: k for k, v in intent_dict.items()}
-        self.encoded_all_intents = self._create_encoded_intents(intent_dict)
-
-        # noinspection PyPep8Naming
-        X, Y, intents_for_X = self._prepare_data_for_training(
-            training_data, intent_dict
-        )
-
-        # check if number of negatives is less than number of intents
-        logger.debug(
-            "Check if num_neg {} is smaller than "
-            "number of intents {}, "
-            "else set num_neg to the number of intents - 1"
-            "".format(self.num_neg, self.encoded_all_intents.shape[0])
-        )
-        self.num_neg = min(self.num_neg, self.encoded_all_intents.shape[0] - 1)
+        if self.evaluate_on_num_examples:
+            session_data, eval_session_data = train_utils.train_val_split(
+                session_data,
+                self.evaluate_on_num_examples,
+                self.random_seed,
+                label_key="label_ids",
+            )
+        else:
+            eval_session_data = None
 
         self.graph = tf.Graph()
         with self.graph.as_default():
             # set random seed
-            np.random.seed(self.random_seed)
             tf.set_random_seed(self.random_seed)
 
-            self.a_in = tf.placeholder(tf.float32, (None, X.shape[-1]), name="a")
-            self.b_in = tf.placeholder(tf.float32, (None, None, Y.shape[-1]), name="b")
+            # allows increasing batch size
+            batch_size_in = tf.placeholder(tf.int64)
 
-            is_training = tf.placeholder_with_default(False, shape=())
-
-            (self.word_embed, self.intent_embed) = self._create_tf_embed(
-                self.a_in, self.b_in, is_training
+            (
+                self._iterator,
+                train_init_op,
+                eval_init_op,
+            ) = train_utils.create_iterator_init_datasets(
+                session_data,
+                eval_session_data,
+                batch_size_in,
+                self.batch_in_strategy,
+                label_key="label_ids",
             )
 
-            self.sim_op, sim_emb = self._tf_sim(self.word_embed, self.intent_embed)
-            loss = self._tf_loss(self.sim_op, sim_emb)
+            self._is_training = tf.placeholder_with_default(False, shape=())
 
-            train_op = tf.train.AdamOptimizer().minimize(loss)
+            loss, acc = self._build_tf_train_graph(session_data)
+
+            # define which optimizer to use
+            self._train_op = tf.train.AdamOptimizer().minimize(loss)
 
             # train tensorflow graph
-            self.session = tf.Session()
+            self.session = tf.Session(config=self._tf_config)
+            train_utils.train_tf_dataset(
+                train_init_op,
+                eval_init_op,
+                batch_size_in,
+                loss,
+                acc,
+                self._train_op,
+                self.session,
+                self._is_training,
+                self.epochs,
+                self.batch_in_size,
+                self.evaluate_on_num_examples,
+                self.evaluate_every_num_epochs,
+            )
 
-            self._train_tf(X, Y, intents_for_X, loss, is_training, train_op)
+            # rebuild the graph for prediction
+            self.pred_confidence = self._build_tf_pred_graph(session_data)
 
     # process helpers
     # noinspection PyPep8Naming
     def _calculate_message_sim(
-        self, X: np.ndarray, all_Y: np.ndarray
+        self, batch: Tuple[np.ndarray]
     ) -> Tuple[np.ndarray, List[float]]:
-        """Load tf graph and calculate message similarities"""
+        """Calculate message similarities"""
 
         message_sim = self.session.run(
-            self.sim_op, feed_dict={self.a_in: X, self.b_in: all_Y}
+            self.pred_confidence,
+            feed_dict={
+                _x_in: _x for _x_in, _x in zip(self.batch_in, batch) if _x is not None
+            },
         )
+
         message_sim = message_sim.flatten()  # sim is a matrix
 
-        intent_ids = message_sim.argsort()[::-1]
+        label_ids = message_sim.argsort()[::-1]
         message_sim[::-1].sort()
 
-        if self.similarity_type == "cosine":
-            # clip negative values to zero
-            message_sim[message_sim < 0] = 0
-        elif self.similarity_type == "inner":
-            # normalize result to [0, 1] with softmax
-            message_sim = np.exp(message_sim)
-            message_sim /= np.sum(message_sim)
-
         # transform sim to python list for JSON serializing
-        return intent_ids, message_sim.tolist()
+        return label_ids, message_sim.tolist()
 
-    def process(self, message: "Message", **kwargs: Any) -> None:
-        """Return the most likely intent and its similarity to the input."""
+    def predict_label(
+        self, message: "Message"
+    ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
+        """Predicts the intent of the provided message."""
 
-        intent = {"name": None, "confidence": 0.0}
-        intent_ranking = []
+        label = {"name": None, "confidence": 0.0}
+        label_ranking = []
 
         if self.session is None:
             logger.error(
                 "There is no trained tf.session: "
                 "component is either not trained or "
-                "didn't receive enough training data"
+                "didn't receive enough training data."
             )
+            return label, label_ranking
 
-        else:
-            # get features (bag of words) for a message
-            # noinspection PyPep8Naming
-            X = message.get("text_features").reshape(1, -1)
+        # create session data from message and convert it into a batch of 1
+        session_data = self._create_session_data([message])
+        batch = train_utils.prepare_batch(
+            session_data, tuple_sizes=self.batch_tuple_sizes
+        )
 
-            # stack encoded_all_intents on top of each other
-            # to create candidates for test examples
-            # noinspection PyPep8Naming
-            all_Y = self._create_all_Y(X.shape[0])
+        # load tf graph and session
+        label_ids, message_sim = self._calculate_message_sim(batch)
 
-            # load tf graph and session
-            intent_ids, message_sim = self._calculate_message_sim(X, all_Y)
+        # if X contains all zeros do not predict some label
+        if label_ids.size > 0:
+            label = {
+                "name": self.inverted_label_dict[label_ids[0]],
+                "confidence": message_sim[0],
+            }
 
-            # if X contains all zeros do not predict some label
-            if X.any() and intent_ids.size > 0:
-                intent = {
-                    "name": self.inv_intent_dict[intent_ids[0]],
-                    "confidence": message_sim[0],
-                }
+            ranking = list(zip(list(label_ids), message_sim))
+            ranking = ranking[:LABEL_RANKING_LENGTH]
+            label_ranking = [
+                {"name": self.inverted_label_dict[label_idx], "confidence": score}
+                for label_idx, score in ranking
+            ]
 
-                ranking = list(zip(list(intent_ids), message_sim))
-                ranking = ranking[:INTENT_RANKING_LENGTH]
-                intent_ranking = [
-                    {"name": self.inv_intent_dict[intent_idx], "confidence": score}
-                    for intent_idx, score in ranking
-                ]
+        return label, label_ranking
 
-        message.set("intent", intent, add_to_output=True)
-        message.set("intent_ranking", intent_ranking, add_to_output=True)
+    def process(self, message: "Message", **kwargs: Any) -> None:
+        """Return the most likely label and its similarity to the input."""
+
+        label, label_ranking = self.predict_label(message)
+
+        message.set("intent", label, add_to_output=True)
+        message.set("intent_ranking", label_ranking, add_to_output=True)
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
@@ -650,31 +869,35 @@ class EmbeddingIntentClassifier(Component):
             if e.errno != errno.EEXIST:
                 raise
         with self.graph.as_default():
-            self.graph.clear_collection("message_placeholder")
-            self.graph.add_to_collection("message_placeholder", self.a_in)
+            train_utils.persist_tensor("batch_placeholder", self.batch_in, self.graph)
 
-            self.graph.clear_collection("intent_placeholder")
-            self.graph.add_to_collection("intent_placeholder", self.b_in)
+            train_utils.persist_tensor("similarity_all", self.sim_all, self.graph)
+            train_utils.persist_tensor(
+                "pred_confidence", self.pred_confidence, self.graph
+            )
+            train_utils.persist_tensor("similarity", self.sim, self.graph)
 
-            self.graph.clear_collection("similarity_op")
-            self.graph.add_to_collection("similarity_op", self.sim_op)
-
-            self.graph.clear_collection("word_embed")
-            self.graph.add_to_collection("word_embed", self.word_embed)
-            self.graph.clear_collection("intent_embed")
-            self.graph.add_to_collection("intent_embed", self.intent_embed)
+            train_utils.persist_tensor("message_embed", self.message_embed, self.graph)
+            train_utils.persist_tensor("label_embed", self.label_embed, self.graph)
+            train_utils.persist_tensor(
+                "all_labels_embed", self.all_labels_embed, self.graph
+            )
 
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
 
-        with io.open(
-            os.path.join(model_dir, file_name + "_inv_intent_dict.pkl"), "wb"
+        with open(
+            os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "wb"
         ) as f:
-            pickle.dump(self.inv_intent_dict, f)
-        with io.open(
-            os.path.join(model_dir, file_name + "_encoded_all_intents.pkl"), "wb"
+            pickle.dump(self.inverted_label_dict, f)
+
+        with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "wb") as f:
+            pickle.dump(self._tf_config, f)
+
+        with open(
+            os.path.join(model_dir, file_name + ".batch_tuple_sizes.pkl"), "wb"
         ) as f:
-            pickle.dump(self.encoded_all_intents, f)
+            pickle.dump(self.batch_tuple_sizes, f)
 
         return {"file": file_name}
 
@@ -685,53 +908,62 @@ class EmbeddingIntentClassifier(Component):
         model_dir: Text = None,
         model_metadata: "Metadata" = None,
         cached_component: Optional["EmbeddingIntentClassifier"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "EmbeddingIntentClassifier":
+        """Loads the trained model from the provided directory."""
 
         if model_dir and meta.get("file"):
             file_name = meta.get("file")
             checkpoint = os.path.join(model_dir, file_name + ".ckpt")
+
+            with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "rb") as f:
+                _tf_config = pickle.load(f)
+
             graph = tf.Graph()
             with graph.as_default():
-                sess = tf.Session()
-                saver = tf.train.import_meta_graph(checkpoint + ".meta")
+                session = tf.compat.v1.Session(config=_tf_config)
+                saver = tf.compat.v1.train.import_meta_graph(checkpoint + ".meta")
 
-                saver.restore(sess, checkpoint)
+                saver.restore(session, checkpoint)
 
-                a_in = tf.get_collection("message_placeholder")[0]
-                b_in = tf.get_collection("intent_placeholder")[0]
+                batch_in = train_utils.load_tensor("batch_placeholder")
 
-                sim_op = tf.get_collection("similarity_op")[0]
+                sim_all = train_utils.load_tensor("similarity_all")
+                pred_confidence = train_utils.load_tensor("pred_confidence")
+                sim = train_utils.load_tensor("similarity")
 
-                word_embed = tf.get_collection("word_embed")[0]
-                intent_embed = tf.get_collection("intent_embed")[0]
+                message_embed = train_utils.load_tensor("message_embed")
+                label_embed = train_utils.load_tensor("label_embed")
+                all_labels_embed = train_utils.load_tensor("all_labels_embed")
 
-            with io.open(
-                os.path.join(model_dir, file_name + "_inv_intent_dict.pkl"), "rb"
+            with open(
+                os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "rb"
             ) as f:
-                inv_intent_dict = pickle.load(f)
-            with io.open(
-                os.path.join(model_dir, file_name + "_encoded_all_intents.pkl"), "rb"
+                inv_label_dict = pickle.load(f)
+
+            with open(
+                os.path.join(model_dir, file_name + ".batch_tuple_sizes.pkl"), "rb"
             ) as f:
-                encoded_all_intents = pickle.load(f)
+                batch_tuple_sizes = pickle.load(f)
 
             return cls(
                 component_config=meta,
-                inv_intent_dict=inv_intent_dict,
-                encoded_all_intents=encoded_all_intents,
-                session=sess,
+                inverted_label_dict=inv_label_dict,
+                session=session,
                 graph=graph,
-                message_placeholder=a_in,
-                intent_placeholder=b_in,
-                similarity_op=sim_op,
-                word_embed=word_embed,
-                intent_embed=intent_embed,
+                batch_placeholder=batch_in,
+                similarity_all=sim_all,
+                pred_confidence=pred_confidence,
+                similarity=sim,
+                message_embed=message_embed,
+                label_embed=label_embed,
+                all_labels_embed=all_labels_embed,
+                batch_tuple_sizes=batch_tuple_sizes,
             )
 
         else:
-            logger.warning(
-                "Failed to load nlu model. Maybe path {} "
-                "doesn't exist"
-                "".format(os.path.abspath(model_dir))
+            warnings.warn(
+                f"Failed to load nlu model. "
+                f"Maybe path '{os.path.abspath(model_dir)}' doesn't exist."
             )
             return cls(component_config=meta)

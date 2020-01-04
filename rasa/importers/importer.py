@@ -148,19 +148,19 @@ class TrainingDataImporter:
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
     ) -> Optional["TrainingDataImporter"]:
-        from rasa.importers.skill import SkillSelector
+        from rasa.importers.multi_project import MultiProjectImporter
         from rasa.importers.rasa import RasaFileImporter
 
         module_path = importer_config.pop("name", None)
         if module_path == RasaFileImporter.__name__:
             importer_class = RasaFileImporter
-        elif module_path == SkillSelector.__name__:
-            importer_class = SkillSelector
+        elif module_path == MultiProjectImporter.__name__:
+            importer_class = MultiProjectImporter
         else:
             try:
                 importer_class = common_utils.class_from_module_path(module_path)
             except (AttributeError, ImportError):
-                logging.warning("Importer '{}' not found.".format(module_path))
+                logging.warning(f"Importer '{module_path}' not found.")
                 return None
 
         constructor_arguments = common_utils.minimal_kwargs(

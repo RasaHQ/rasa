@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import pytest
 import tempfile
 from jsonschema import ValidationError
@@ -50,7 +48,7 @@ def test_validation_is_throwing_exceptions(invalid_data):
 
 
 def test_luis_data():
-    td = training_data.load_data("data/examples/luis/demo-restaurants.json")
+    td = training_data.load_data("data/examples/luis/demo-restaurants_v5.json")
 
     assert not td.is_empty()
     assert len(td.entity_examples) == 8
@@ -131,15 +129,30 @@ def test_lookup_table_md():
 
 
 @pytest.mark.parametrize(
-    "filename", ["data/examples/rasa/demo-rasa.json", "data/examples/rasa/demo-rasa.md"]
+    "files",
+    [
+        [
+            "data/examples/rasa/demo-rasa.json",
+            "data/examples/rasa/demo-rasa-responses.md",
+        ],
+        [
+            "data/examples/rasa/demo-rasa.md",
+            "data/examples/rasa/demo-rasa-responses.md",
+        ],
+    ],
 )
-def test_demo_data(filename):
-    td = training_data.load_data(filename)
-    assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye"}
+def test_demo_data(files):
+    from rasa.importers.utils import training_data_from_paths
+
+    td = training_data_from_paths(files, language="en")
+    assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
-    assert len(td.training_examples) == 42
-    assert len(td.intent_examples) == 42
+    assert td.responses == {"I am Mr. Bot", "It's sunny where I live"}
+    assert len(td.training_examples) == 46
+    assert len(td.intent_examples) == 46
+    assert len(td.response_examples) == 4
     assert len(td.entity_examples) == 11
+    assert len(td.nlg_stories) == 2
 
     assert td.entity_synonyms == {
         "Chines": "chinese",
@@ -155,18 +168,44 @@ def test_demo_data(filename):
     ]
 
 
-@pytest.mark.parametrize("filename", ["data/examples/rasa/demo-rasa.md"])
-def test_train_test_split(filename):
-    td = training_data.load_data(filename)
-    assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye"}
+@pytest.mark.parametrize(
+    "filepaths",
+    [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
+)
+def test_train_test_split(filepaths):
+    from rasa.importers.utils import training_data_from_paths
+
+    td = training_data_from_paths(filepaths, language="en")
+    assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye", "chitchat"}
     assert td.entities == {"location", "cuisine"}
-    assert len(td.training_examples) == 42
-    assert len(td.intent_examples) == 42
+    assert len(td.training_examples) == 46
+    assert len(td.intent_examples) == 46
 
     td_train, td_test = td.train_test_split(train_frac=0.8)
 
-    assert len(td_train.training_examples) == 32
-    assert len(td_test.training_examples) == 10
+    assert len(td_train.training_examples) == 35
+    assert len(td_test.training_examples) == 11
+
+
+@pytest.mark.parametrize(
+    "filepaths",
+    [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
+)
+def test_train_test_split_with_random_seed(filepaths):
+    from rasa.importers.utils import training_data_from_paths
+
+    td = training_data_from_paths(filepaths, language="en")
+
+    td_train_1, td_test_1 = td.train_test_split(train_frac=0.8, random_seed=1)
+    td_train_2, td_test_2 = td.train_test_split(train_frac=0.8, random_seed=1)
+    train_1_intent_examples = [e.text for e in td_train_1.intent_examples]
+    train_2_intent_examples = [e.text for e in td_train_2.intent_examples]
+
+    test_1_intent_examples = [e.text for e in td_test_1.intent_examples]
+    test_2_intent_examples = [e.text for e in td_test_2.intent_examples]
+
+    assert train_1_intent_examples == train_2_intent_examples
+    assert test_1_intent_examples == test_2_intent_examples
 
 
 @pytest.mark.parametrize(
@@ -174,6 +213,7 @@ def test_train_test_split(filename):
     [
         ("data/examples/rasa/demo-rasa.json", "data/test/multiple_files_json"),
         ("data/examples/rasa/demo-rasa.md", "data/test/multiple_files_markdown"),
+        ("data/examples/rasa/demo-rasa.md", "data/test/duplicate_intents_markdown"),
     ],
 )
 def test_data_merging(files):
@@ -271,7 +311,7 @@ def test_multiword_entities():
 def test_nonascii_entities():
     data = """
 {
-  "luis_schema_version": "2.0",
+  "luis_schema_version": "5.0",
   "utterances" : [
     {
       "text": "I am looking for a ßäæ ?€ö) item",
@@ -361,7 +401,7 @@ def cmp_dict_list(firsts, seconds):
                 break
         else:
             others = ", ".join([e.text for e in seconds])
-            assert False, "Failed to find message {} in {}".format(a.text, others)
+            assert False, f"Failed to find message {a.text} in {others}"
     return not seconds
 
 
@@ -375,7 +415,7 @@ def cmp_dict_list(firsts, seconds):
             None,
         ),
         (
-            "data/examples/luis/demo-restaurants.json",
+            "data/examples/luis/demo-restaurants_v5.json",
             "data/test/luis_converted_to_rasa.json",
             "json",
             None,
@@ -520,7 +560,7 @@ def test_markdown_entity_regex():
 
 
 def test_get_file_format():
-    fformat = get_file_format("data/examples/luis/demo-restaurants.json")
+    fformat = get_file_format("data/examples/luis/demo-restaurants_v5.json")
 
     assert fformat == "json"
 
@@ -550,3 +590,73 @@ def test_load_data_from_non_existing_file():
 
 def test_is_empty():
     assert TrainingData().is_empty()
+
+
+def test_markdown_empty_section():
+    data = training_data.load_data(
+        "data/test/markdown_single_sections/empty_section.md"
+    )
+    assert data.regex_features == [{"name": "greet", "pattern": r"hey[^\s]*"}]
+
+    assert not data.entity_synonyms
+    assert len(data.lookup_tables) == 1
+    assert data.lookup_tables[0]["name"] == "chinese"
+    assert "Chinese" in data.lookup_tables[0]["elements"]
+    assert "Chines" in data.lookup_tables[0]["elements"]
+
+
+def test_markdown_not_existing_section():
+    with pytest.raises(ValueError):
+        training_data.load_data(
+            "data/test/markdown_single_sections/not_existing_section.md"
+        )
+
+
+def test_section_value_with_delimiter():
+    td_section_with_delimiter = training_data.load_data(
+        "data/test/markdown_single_sections/section_with_delimiter.md"
+    )
+    assert td_section_with_delimiter.entity_synonyms == {"10:00 am": "10:00"}
+
+
+def test_markdown_order():
+    r = MarkdownReader()
+
+    md = """## intent:z
+- i'm looking for a place to eat
+- i'm looking for a place in the [north](loc-direction) of town
+
+## intent:a
+- intent a
+- also very important
+"""
+
+    training_data = r.reads(md)
+    assert training_data.nlu_as_markdown() == md
+
+
+def test_dump_nlu_with_responses():
+    md = """## intent:greet
+- hey
+- howdy
+- hey there
+- hello
+- hi
+- good morning
+- good evening
+- dear sir
+
+## intent:chitchat/ask_name
+- What's your name?
+- What can I call you?
+
+## intent:chitchat/ask_weather
+- How's the weather?
+- Is it too hot outside?
+"""
+
+    r = MarkdownReader()
+    nlu_data = r.reads(md)
+
+    dumped = nlu_data.nlu_as_markdown()
+    assert dumped == md

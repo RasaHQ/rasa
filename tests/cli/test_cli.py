@@ -1,20 +1,31 @@
 import pytest
+from typing import Callable
+from _pytest.pytester import RunResult
 
 
-@pytest.mark.repeat(3)
-def test_cli_start(run):
+def test_cli_start(run: Callable[..., RunResult]):
+    """
+    Measures an average startup time and checks that it
+    does not deviate more than x seconds from 5.
+    """
     import time
 
-    start = time.time()
-    run("--help")
-    end = time.time()
+    durations = []
 
-    duration = end - start
+    for i in range(5):
+        start = time.time()
+        run("--help")
+        end = time.time()
 
-    assert duration < 3  # startup of cli should not take longer than 3 seconds
+        durations.append(end - start)
+
+    avg_duration = sum(durations) / len(durations)
+
+    # When run in parallel, it takes a little longer
+    assert avg_duration - 5 <= 2
 
 
-def test_data_convert_help(run):
+def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("--help")
 
     help_text = """usage: rasa [-h] [--version]

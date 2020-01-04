@@ -17,9 +17,12 @@ class MyComponent(Component):
     provides = []
 
     # Which attributes on a message are required by this
-    # component. e.g. if requires contains "tokens", than a
+    # component. E.g. if requires contains "tokens", than a
     # previous component in the pipeline needs to have "tokens"
     # within the above described `provides` property.
+    # Use `any_of("option_1", "option_2")` to define that either
+    # "option_1" or "option_2" needs to be present in the
+    # provided properties from the previous components.
     requires = []
 
     # Defines the default configuration parameters of a component
@@ -35,7 +38,7 @@ class MyComponent(Component):
     language_list = None
 
     def __init__(self, component_config=None):
-        super(MyComponent, self).__init__(component_config)
+        super().__init__(component_config)
 
     def train(self, training_data, cfg, **kwargs):
         """Train this component.
@@ -75,7 +78,7 @@ class MyComponent(Component):
         model_dir: Optional[Text] = None,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional["Component"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "Component":
         """Load this component from file."""
 

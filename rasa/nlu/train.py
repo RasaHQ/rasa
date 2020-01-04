@@ -25,12 +25,18 @@ class TrainingException(Exception):
           message -- explanation of why the request is invalid
       """
 
-    def __init__(self, failed_target_project=None, exception=None):
+    def __init__(
+        self,
+        failed_target_project: Optional[Text] = None,
+        exception: Optional[Exception] = None,
+    ) -> None:
         self.failed_target_project = failed_target_project
         if exception:
             self.message = exception.args[0]
+        else:
+            self.message = ""
 
-    def __str__(self):
+    def __str__(self) -> Text:
         return self.message
 
 
@@ -53,7 +59,8 @@ async def train(
     storage: Optional[Text] = None,
     component_builder: Optional[ComponentBuilder] = None,
     training_data_endpoint: Optional[EndpointConfig] = None,
-    **kwargs: Any
+    persist_nlu_training_data: bool = False,
+    **kwargs: Any,
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
     from rasa.importers.importer import TrainingDataImporter
@@ -79,7 +86,9 @@ async def train(
     interpreter = trainer.train(training_data, **kwargs)
 
     if path:
-        persisted_path = trainer.persist(path, persistor, fixed_model_name)
+        persisted_path = trainer.persist(
+            path, persistor, fixed_model_name, persist_nlu_training_data
+        )
     else:
         persisted_path = None
 

@@ -1,3 +1,5 @@
+from typing import List
+
 import pytest
 from aioresponses import aioresponses
 
@@ -12,6 +14,7 @@ from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
+    ACTION_SESSION_START_NAME,
     ActionBack,
     ActionDefaultAskAffirmation,
     ActionDefaultAskRephrase,
@@ -20,11 +23,25 @@ from rasa.core.actions.action import (
     ActionListen,
     ActionRestart,
     ActionUtterTemplate,
+    ActionRetrieveResponse,
     RemoteAction,
+    ActionSessionStart,
 )
-from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.events import Restarted, SlotSet, UserUtteranceReverted, BotUttered
+from rasa.core.channels import CollectingOutputChannel
+from rasa.core.domain import Domain, SessionConfig
+from rasa.core.events import (
+    Restarted,
+    SlotSet,
+    UserUtteranceReverted,
+    BotUttered,
+    Form,
+    SessionStarted,
+    ActionExecuted,
+    Event,
+    UserUttered,
+)
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
+from rasa.core.constants import USER_INTENT_SESSION_START
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
@@ -61,18 +78,27 @@ def test_text_format():
         "{}".format(ActionUtterTemplate("my_action_name"))
         == "ActionUtterTemplate('my_action_name')"
     )
+    assert (
+        "{}".format(ActionRetrieveResponse("respond_test"))
+        == "ActionRetrieveResponse('respond_test')"
+    )
 
 
 def test_action_instantiation_from_names():
     instantiated_actions = action.actions_from_names(
-        ["random_name", "utter_test"], None, ["random_name", "utter_test"]
+        ["random_name", "utter_test", "respond_test"],
+        None,
+        ["random_name", "utter_test"],
     )
-    assert len(instantiated_actions) == 2
+    assert len(instantiated_actions) == 3
     assert isinstance(instantiated_actions[0], RemoteAction)
     assert instantiated_actions[0].name() == "random_name"
 
     assert isinstance(instantiated_actions[1], ActionUtterTemplate)
     assert instantiated_actions[1].name() == "utter_test"
+
+    assert isinstance(instantiated_actions[2], ActionRetrieveResponse)
+    assert instantiated_actions[2].name() == "respond_test"
 
 
 def test_domain_action_instantiation():
@@ -81,23 +107,25 @@ def test_domain_action_instantiation():
         entities=[],
         slots=[],
         templates={},
-        action_names=["my_module.ActionTest", "utter_test"],
+        action_names=["my_module.ActionTest", "utter_test", "respond_test"],
         form_names=[],
     )
 
     instantiated_actions = domain.actions(None)
 
-    assert len(instantiated_actions) == 10
+    assert len(instantiated_actions) == 12
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
-    assert instantiated_actions[2].name() == ACTION_DEFAULT_FALLBACK_NAME
-    assert instantiated_actions[3].name() == ACTION_DEACTIVATE_FORM_NAME
-    assert instantiated_actions[4].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
-    assert instantiated_actions[5].name() == (ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
-    assert instantiated_actions[6].name() == (ACTION_DEFAULT_ASK_REPHRASE_NAME)
-    assert instantiated_actions[7].name() == ACTION_BACK_NAME
-    assert instantiated_actions[8].name() == "my_module.ActionTest"
-    assert instantiated_actions[9].name() == "utter_test"
+    assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
+    assert instantiated_actions[3].name() == ACTION_DEFAULT_FALLBACK_NAME
+    assert instantiated_actions[4].name() == ACTION_DEACTIVATE_FORM_NAME
+    assert instantiated_actions[5].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
+    assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
+    assert instantiated_actions[7].name() == ACTION_DEFAULT_ASK_REPHRASE_NAME
+    assert instantiated_actions[8].name() == ACTION_BACK_NAME
+    assert instantiated_actions[9].name() == "my_module.ActionTest"
+    assert instantiated_actions[10].name() == "utter_test"
+    assert instantiated_actions[11].name() == "respond_test"
 
 
 async def test_remote_action_runs(
@@ -132,7 +160,7 @@ async def test_remote_action_runs(
                     "intent": {},
                     "text": None,
                     "message_id": None,
-                    "metadata": None,
+                    "metadata": {},
                 },
                 "active_form": {},
                 "latest_action_name": None,
@@ -156,7 +184,11 @@ async def test_remote_action_logs_events(
     response = {
         "events": [{"event": "slot", "value": "rasa", "name": "name"}],
         "responses": [
-            {"text": "test text", "buttons": [{"title": "cheap", "payload": "cheap"}]},
+            {
+                "text": "test text",
+                "template": None,
+                "buttons": [{"title": "cheap", "payload": "cheap"}],
+            },
             {"template": "utter_greet"},
         ],
     }
@@ -182,7 +214,7 @@ async def test_remote_action_logs_events(
                     "intent": {},
                     "text": None,
                     "message_id": None,
-                    "metadata": None,
+                    "metadata": {},
                 },
                 "active_form": {},
                 "latest_action_name": None,
@@ -202,6 +234,52 @@ async def test_remote_action_logs_events(
     )
     assert events[1] == BotUttered("hey there None!")
     assert events[2] == SlotSet("name", "rasa")
+
+
+async def test_remote_action_utterances_with_none_values(
+    default_channel, default_tracker, default_domain
+):
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+
+    response = {
+        "events": [
+            {"event": "form", "name": "restaurant_form", "timestamp": None},
+            {
+                "event": "slot",
+                "timestamp": None,
+                "name": "requested_slot",
+                "value": "cuisine",
+            },
+        ],
+        "responses": [
+            {
+                "text": None,
+                "buttons": None,
+                "elements": [],
+                "custom": None,
+                "template": "utter_ask_cuisine",
+                "image": None,
+                "attachment": None,
+            }
+        ],
+    }
+
+    nlg = TemplatedNaturalLanguageGenerator(
+        {"utter_ask_cuisine": [{"text": "what dou want to eat?"}]}
+    )
+    with aioresponses() as mocked:
+        mocked.post("https://example.com/webhooks/actions", payload=response)
+
+        events = await remote_action.run(
+            default_channel, nlg, default_tracker, default_domain
+        )
+
+    assert events == [
+        BotUttered("what dou want to eat?"),
+        Form("restaurant_form"),
+        SlotSet("requested_slot", "cuisine"),
+    ]
 
 
 async def test_remote_action_without_endpoint(
@@ -265,6 +343,67 @@ async def test_remote_action_endpoint_responds_400(
 
     assert execinfo.type == ActionExecutionRejection
     assert "Custom action 'my_action' rejected to run" in str(execinfo.value)
+
+
+async def test_action_utter_retrieved_response(
+    default_channel, default_nlg, default_tracker, default_domain
+):
+    from rasa.core.channels.channel import UserMessage
+
+    action_name = "respond_chitchat"
+    default_tracker.latest_message = UserMessage(
+        "Who are you?",
+        parse_data={
+            "response_selector": {"chitchat": {"response": {"name": "I am a bot."}}}
+        },
+    )
+    events = await ActionRetrieveResponse(action_name).run(
+        default_channel, default_nlg, default_tracker, default_domain
+    )
+
+    assert events[0].as_dict().get("text") == BotUttered("I am a bot.").as_dict().get(
+        "text"
+    )
+
+
+async def test_action_utter_default_retrieved_response(
+    default_channel, default_nlg, default_tracker, default_domain
+):
+    from rasa.core.channels.channel import UserMessage
+
+    action_name = "respond_chitchat"
+    default_tracker.latest_message = UserMessage(
+        "Who are you?",
+        parse_data={
+            "response_selector": {"default": {"response": {"name": "I am a bot."}}}
+        },
+    )
+    events = await ActionRetrieveResponse(action_name).run(
+        default_channel, default_nlg, default_tracker, default_domain
+    )
+
+    assert events[0].as_dict().get("text") == BotUttered("I am a bot.").as_dict().get(
+        "text"
+    )
+
+
+async def test_action_utter_retrieved_empty_response(
+    default_channel, default_nlg, default_tracker, default_domain
+):
+    from rasa.core.channels.channel import UserMessage
+
+    action_name = "respond_chitchat"
+    default_tracker.latest_message = UserMessage(
+        "Who are you?",
+        parse_data={
+            "response_selector": {"dummy": {"response": {"name": "I am a bot."}}}
+        },
+    )
+    events = await ActionRetrieveResponse(action_name).run(
+        default_channel, default_nlg, default_tracker, default_domain
+    )
+
+    assert events == []
 
 
 async def test_action_utter_template(
@@ -357,6 +496,88 @@ async def test_action_restart(
     )
 
     assert events == [BotUttered("congrats, you've restarted me!"), Restarted()]
+
+
+async def test_action_session_start_without_slots(
+    default_channel: CollectingOutputChannel,
+    template_nlg: TemplatedNaturalLanguageGenerator,
+    template_sender_tracker: DialogueStateTracker,
+    default_domain: Domain,
+):
+    events = await ActionSessionStart().run(
+        default_channel, template_nlg, template_sender_tracker, default_domain
+    )
+    assert events == [SessionStarted(), ActionExecuted(ACTION_LISTEN_NAME)]
+
+
+@pytest.mark.parametrize(
+    "session_config, expected_events",
+    [
+        (
+            SessionConfig(123, True),
+            [
+                SessionStarted(),
+                SlotSet("my_slot", "value"),
+                SlotSet("another-slot", "value2"),
+                ActionExecuted(action_name=ACTION_LISTEN_NAME),
+            ],
+        ),
+        (
+            SessionConfig(123, False),
+            [SessionStarted(), ActionExecuted(action_name=ACTION_LISTEN_NAME)],
+        ),
+    ],
+)
+async def test_action_session_start_with_slots(
+    default_channel: CollectingOutputChannel,
+    template_nlg: TemplatedNaturalLanguageGenerator,
+    template_sender_tracker: DialogueStateTracker,
+    default_domain: Domain,
+    session_config: SessionConfig,
+    expected_events: List[Event],
+):
+    # set a few slots on tracker
+    slot_set_event_1 = SlotSet("my_slot", "value")
+    slot_set_event_2 = SlotSet("another-slot", "value2")
+    for event in [slot_set_event_1, slot_set_event_2]:
+        template_sender_tracker.update(event)
+
+    default_domain.session_config = session_config
+
+    events = await ActionSessionStart().run(
+        default_channel, template_nlg, template_sender_tracker, default_domain
+    )
+
+    assert events == expected_events
+
+    # make sure that the list of events has ascending timestamps
+    assert sorted(events, key=lambda x: x.timestamp) == events
+
+
+async def test_applied_events_after_action_session_start(
+    default_channel: CollectingOutputChannel,
+    template_nlg: TemplatedNaturalLanguageGenerator,
+):
+    slot_set = SlotSet("my_slot", "value")
+    events = [
+        slot_set,
+        ActionExecuted(ACTION_LISTEN_NAME),
+        # User triggers a restart manually by triggering the intent
+        UserUttered(
+            text=f"/{USER_INTENT_SESSION_START}",
+            intent={"name": USER_INTENT_SESSION_START},
+        ),
+    ]
+    tracker = DialogueStateTracker.from_events("🕵️‍♀️", events)
+
+    # Mapping Policy kicks in and runs the session restart action
+    events = await ActionSessionStart().run(
+        default_channel, template_nlg, tracker, Domain.empty()
+    )
+    for event in events:
+        tracker.update(event)
+
+    assert tracker.applied_events() == [slot_set, ActionExecuted(ACTION_LISTEN_NAME)]
 
 
 async def test_action_default_fallback(

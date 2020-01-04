@@ -7,8 +7,6 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter
 from rasa.nlu.train import train
 
-slowtest = pytest.mark.slowtest
-
 
 def base_test_conf(pipeline_template):
     # 'response_log': temp_log_file_dir(),
@@ -40,7 +38,7 @@ def temp_log_file_dir():
     return tempfile.mkdtemp(suffix="_rasa_nlu_logs")
 
 
-class ResponseTest(object):
+class ResponseTest:
     def __init__(self, endpoint, expected_response, payload=None):
         self.endpoint = endpoint
         self.expected_response = expected_response

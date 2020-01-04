@@ -18,6 +18,13 @@ you have a couple of options:
   uses websockets.
 - `Chatroom <https://github.com/scalableminds/chatroom>`_, which
   uses regular HTTP requests.
+- `rasa-bot <https://github.com/assister-ai/assister/tree/master/packages/rasa>`_, a
+  Web Component which uses regular HTTP requests.
+  
+.. note::
+
+    These projects are developed by external developers, if there are any issues with
+    them, please open tickets in the respective repositories.
 
 Websocket Channel
 ~~~~~~~~~~~~~~~~~

@@ -45,10 +45,12 @@ SQLTrackerStore
             tracker_store:
                 type: SQL
                 dialect: "sqlite"  # the dialect used to interact with the db
-                url: "localhost"  # (optional) host of the sql db
+                url: ""  # (optional) host of the sql db, e.g. "localhost"
                 db: "rasa.db"  # path to your db
                 username:  # username used for authentication
                 password:  # password used for authentication
+                query: # optional dictionary to be added as a query string to the connection URL
+                  driver: my-driver
 
     3. To start the Rasa Core server using your SQL backend,
        add the ``--endpoints`` flag, e.g.:
@@ -57,13 +59,16 @@ SQLTrackerStore
 
             rasa run -m models --endpoints endpoints.yml
 :Parameters:
-    - ``dialect`` (default: ``sqlite``): The dialect used to communicate with your SQL backend.  Consult the `SQLAlchemy docs <https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls>`_ for available dialects. 
-    - ``url`` (default: ``None``): URL of your SQL database
+    - ``domain`` (default: ``None``): Domain object associated with this tracker store
+    - ``dialect`` (default: ``sqlite``): The dialect used to communicate with your SQL backend.  Consult the `SQLAlchemy docs <https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls>`_ for available dialects.
+    - ``url`` (default: ``None``): URL of your SQL server
+    - ``port`` (default: ``None``): Port of your SQL server
     - ``db`` (default: ``rasa.db``): The path to the database to be used
     - ``username`` (default: ``None``): The username which is used for authentication
     - ``password`` (default: ``None``): The password which is used for authentication
-    - ``collection`` (default: ``conversations``): The collection name which is
-      used to store the conversations
+    - ``event_broker`` (default: ``None``): Event broker to publish events to
+    - ``login_db`` (default: ``None``): Alternative database name to which initially  connect, and create the database specified by `db` (PostgreSQL only)
+    - ``query`` (default: ``None``): Dictionary of options to be passed to the dialect and/or the DBAPI upon connect
 
 RedisTrackerStore
 ~~~~~~~~~~~~~~~~~~
@@ -86,6 +91,7 @@ RedisTrackerStore
                 port: <port of your redis instance, usually 6379>
                 db: <number of your database within redis, e.g. 0>
                 password: <password used for authentication>
+                use_ssl: <whether or not the communication is encrypted, default `false`>
 
     3. To start the Rasa Core server using your configured Redis instance,
        add the :code:`--endpoints` flag, e.g.:
@@ -100,6 +106,7 @@ RedisTrackerStore
     - ``password`` (default: ``None``): Password used for authentication
       (``None`` equals no authentication)
     - ``record_exp`` (default: ``None``): Record expiry in seconds
+    - ``use_ssl`` (default: ``False``): whether or not to use SSL for transit encryption
 
 MongoTrackerStore
 ~~~~~~~~~~~~~~~~~
@@ -136,9 +143,9 @@ MongoTrackerStore
     - ``db`` (default: ``rasa``): The database name which should be used
     - ``username`` (default: ``0``): The username which is used for authentication
     - ``password`` (default: ``None``): The password which is used for authentication
+    - ``auth_source`` (default: ``admin``): database name associated with the user’s credentials.
     - ``collection`` (default: ``conversations``): The collection name which is
       used to store the conversations
-    - ``auth_source`` (default: ``admin``): database name associated with the user’s credentials.
 
 Custom Tracker Store
 ~~~~~~~~~~~~~~~~~~~~

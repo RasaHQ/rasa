@@ -19,7 +19,7 @@ async def parse(text: Text, model_path: Text):
 
     response = await agent.handle_text(text)
 
-    logger.info("Text: '{}'".format(text))
+    logger.info(f"Text: '{text}'")
     logger.info("Response:")
     logger.info(response)
 
@@ -37,11 +37,11 @@ async def train_core(
         policies=[
             MemoizationPolicy(max_history=3),
             MappingPolicy(),
-            RestaurantPolicy(batch_size=100, epochs=400, validation_split=0.2),
+            RestaurantPolicy(batch_size=100, epochs=100, validation_split=0.2),
         ],
     )
 
-    training_data = await agent.load_data(training_data_file)
+    training_data = await agent.load_data(training_data_file, augmentation_factor=10)
     agent.train(training_data)
 
     # Attention: agent.persist stores the model and all meta data into a folder.
@@ -49,7 +49,7 @@ async def train_core(
     model_path = os.path.join(model_directory, model_name, "core")
     agent.persist(model_path)
 
-    logger.info("Model trained. Stored in '{}'.".format(model_path))
+    logger.info(f"Model trained. Stored in '{model_path}'.")
 
     return model_path
 
@@ -73,7 +73,7 @@ def train_nlu(
     model_path = os.path.join(model_directory, model_name)
     model_directory = trainer.persist(model_path, fixed_model_name="nlu")
 
-    logger.info("Model trained. Stored in '{}'.".format(model_directory))
+    logger.info(f"Model trained. Stored in '{model_directory}'.")
 
     return model_directory
 

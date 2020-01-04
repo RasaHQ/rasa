@@ -5,6 +5,8 @@ import numpy as np
 import os
 import pickle
 import warnings
+
+from rasa.core.training.data import DialogueTrainingData
 from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
@@ -12,14 +14,14 @@ from sklearn.preprocessing import LabelEncoder
 
 # noinspection PyProtectedMember
 from sklearn.utils import shuffle as sklearn_shuffle
-from typing import Optional, Any, List, Text, Dict, Callable
+from typing import Optional, Any, List, Text, Dict, Callable, Tuple
 
 import rasa.utils.io
-from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 logger = logging.getLogger(__name__)
 
@@ -33,14 +35,14 @@ class SklearnPolicy(Policy):
     def __init__(
         self,
         featurizer: Optional[MaxHistoryTrackerFeaturizer] = None,
-        priority: int = 1,
+        priority: int = DEFAULT_POLICY_PRIORITY,
         model: Optional["sklearn.base.BaseEstimator"] = None,
         param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
         cv: Optional[int] = None,
         scoring: Optional[Text or List or Dict or Callable] = "accuracy",
         label_encoder: LabelEncoder = LabelEncoder(),
         shuffle: bool = True,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Create a new sklearn policy.
 
@@ -67,7 +69,7 @@ class SklearnPolicy(Policy):
                     "MaxHistoryTrackerFeaturizer."
                     "".format(type(featurizer).__name__)
                 )
-        super(SklearnPolicy, self).__init__(featurizer, priority)
+        super().__init__(featurizer, priority)
 
         self.model = model or self._default_model()
         self.cv = cv
@@ -81,46 +83,43 @@ class SklearnPolicy(Policy):
         self._train_params = kwargs
 
     @staticmethod
-    def _default_model():
+    def _default_model() -> Any:
         return LogisticRegression(solver="liblinear", multi_class="auto")
 
     @property
     def _state(self):
         return {attr: getattr(self, attr) for attr in self._pickle_params}
 
-    def model_architecture(self, **kwargs):
+    def model_architecture(self, **kwargs) -> Any:
         # filter out kwargs that cannot be passed to model
         train_params = self._get_valid_params(self.model.__init__, **kwargs)
         return self.model.set_params(**train_params)
 
-    def _extract_training_data(self, training_data):
+    def _extract_training_data(
+        self, training_data: DialogueTrainingData
+    ) -> Tuple[np.ndarray, np.ndarray]:
         # transform y from one-hot to num_classes
         X, y = training_data.X, training_data.y.argmax(axis=-1)
         if self.shuffle:
             X, y = sklearn_shuffle(X, y)
         return X, y
 
-    def _preprocess_data(self, X, y=None):
-        Xt = X.reshape(X.shape[0], -1)
-        if y is None:
-            return Xt
-        else:
-            yt = self.label_encoder.transform(y)
-            return Xt, yt
+    def _preprocess_data(self, X) -> np.ndarray:
+        return X.reshape(X.shape[0], -1)
 
-    def _search_and_score(self, model, X, y, param_grid):
+    def _search_and_score(self, model, X, y, param_grid) -> Tuple[Any, Any]:
         search = GridSearchCV(
             model, param_grid=param_grid, cv=self.cv, scoring="accuracy", verbose=1
         )
         search.fit(X, y)
-        print ("Best params:", search.best_params_)
+        print("Best params:", search.best_params_)
         return search.best_estimator_, search.best_score_
 
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
 
         training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
@@ -132,7 +131,8 @@ class SklearnPolicy(Policy):
         # Note: clone is called throughout to avoid mutating default
         # arguments.
         self.label_encoder = clone(self.label_encoder).fit(y)
-        Xt, yt = self._preprocess_data(X, y)
+        Xt = self._preprocess_data(X)
+        yt = self.label_encoder.transform(y)
 
         if self.cv is None:
             model = clone(model).fit(Xt, yt)
@@ -143,9 +143,9 @@ class SklearnPolicy(Policy):
         self.model = model
         logger.info("Done fitting sklearn policy model")
         if score is not None:
-            logger.info("Cross validation score: {:.5f}".format(score))
+            logger.info(f"Cross validation score: {score:.5f}")
 
-    def _postprocess_prediction(self, y_proba, domain):
+    def _postprocess_prediction(self, y_proba, domain) -> List[float]:
         yp = y_proba[0].tolist()
 
         # Some classes might not be part of the training labels. Since
@@ -174,7 +174,7 @@ class SklearnPolicy(Policy):
             meta = {"priority": self.priority}
 
             meta_file = os.path.join(path, "sklearn_policy.json")
-            utils.dump_obj_as_json_to_file(meta_file, meta)
+            rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
             filename = os.path.join(path, "sklearn_model.pkl")
             with open(filename, "wb") as f:

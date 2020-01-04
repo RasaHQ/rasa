@@ -7,4 +7,6 @@ def training_data_from_paths(paths: Iterable[Text], language: Text) -> TrainingD
     from rasa.nlu.training_data import loading
 
     training_datas = [loading.load_data(nlu_file, language) for nlu_file in paths]
-    return TrainingData().merge(*training_datas)
+    merged_training_data = TrainingData().merge(*training_datas)
+    merged_training_data.fill_response_phrases()
+    return merged_training_data

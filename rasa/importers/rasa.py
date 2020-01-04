@@ -1,4 +1,5 @@
 import logging
+import warnings
 import os
 from typing import Optional, Text, Union, List, Dict
 
@@ -64,11 +65,10 @@ class RasaFileImporter(TrainingDataImporter):
         try:
             domain = Domain.load(self._domain_path)
             domain.check_missing_templates()
-        except InvalidDomain:
-            logger.debug(
-                "Loading domain from '{}' failed. Using empty domain.".format(
-                    self._domain_path
-                )
+        except InvalidDomain as e:
+            warnings.warn(
+                f"Loading domain from '{self._domain_path}' failed. Using "
+                f"empty domain. Error: '{e.message}'"
             )
 
         return domain

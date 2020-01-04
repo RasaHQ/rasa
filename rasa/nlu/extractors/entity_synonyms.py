@@ -2,7 +2,7 @@ import os
 import warnings
 from typing import Any, Dict, Optional, Text
 
-from rasa.nlu import utils
+from rasa.nlu.constants import ENTITIES_ATTRIBUTE
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
@@ -13,15 +13,15 @@ import rasa.utils.io
 
 class EntitySynonymMapper(EntityExtractor):
 
-    provides = ["entities"]
+    provides = [ENTITIES_ATTRIBUTE]
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Text]] = None,
+        component_config: Optional[Dict[Text, Any]] = None,
         synonyms: Optional[Dict[Text, Any]] = None,
     ) -> None:
 
-        super(EntitySynonymMapper, self).__init__(component_config)
+        super().__init__(component_config)
 
         self.synonyms = synonyms if synonyms else {}
 
@@ -33,15 +33,15 @@ class EntitySynonymMapper(EntityExtractor):
             self.add_entities_if_synonyms(key, value)
 
         for example in training_data.entity_examples:
-            for entity in example.get("entities", []):
+            for entity in example.get(ENTITIES_ATTRIBUTE, []):
                 entity_val = example.text[entity["start"] : entity["end"]]
                 self.add_entities_if_synonyms(entity_val, str(entity.get("value")))
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
-        updated_entities = message.get("entities", [])[:]
+        updated_entities = message.get(ENTITIES_ATTRIBUTE, [])[:]
         self.replace_synonyms(updated_entities)
-        message.set("entities", updated_entities, add_to_output=True)
+        message.set(ENTITIES_ATTRIBUTE, updated_entities, add_to_output=True)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
 
@@ -62,7 +62,7 @@ class EntitySynonymMapper(EntityExtractor):
         model_dir: Optional[Text] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["EntitySynonymMapper"] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> "EntitySynonymMapper":
 
         file_name = meta.get("file")
@@ -76,11 +76,11 @@ class EntitySynonymMapper(EntityExtractor):
         else:
             synonyms = None
             warnings.warn(
-                "Failed to load synonyms file from '{}'".format(entity_synonyms_file)
+                f"Failed to load synonyms file from '{entity_synonyms_file}'."
             )
         return cls(meta, synonyms)
 
-    def replace_synonyms(self, entities):
+    def replace_synonyms(self, entities) -> None:
         for entity in entities:
             # need to wrap in `str` to handle e.g. entity values of type int
             entity_value = str(entity["value"])
@@ -88,7 +88,7 @@ class EntitySynonymMapper(EntityExtractor):
                 entity["value"] = self.synonyms[entity_value.lower()]
                 self.add_processor_name(entity)
 
-    def add_entities_if_synonyms(self, entity_a, entity_b):
+    def add_entities_if_synonyms(self, entity_a, entity_b) -> None:
         if entity_b is not None:
             original = str(entity_a)
             replacement = str(entity_b)
@@ -98,15 +98,12 @@ class EntitySynonymMapper(EntityExtractor):
                 if original in self.synonyms and self.synonyms[original] != replacement:
                     warnings.warn(
                         "Found conflicting synonym definitions "
-                        "for {}. Overwriting target {} with {}. "
+                        f"for {repr(original)}. Overwriting target "
+                        f"{repr(self.synonyms[original])} with "
+                        f"{repr(replacement)}. "
                         "Check your training data and remove "
                         "conflicting synonym definitions to "
                         "prevent this from happening."
-                        "".format(
-                            repr(original),
-                            repr(self.synonyms[original]),
-                            repr(replacement),
-                        )
                     )
 
                 self.synonyms[original] = replacement

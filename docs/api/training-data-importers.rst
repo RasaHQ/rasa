@@ -8,6 +8,9 @@ Training Data Importers
 
 .. edit-link::
 
+.. contents::
+   :local:
+
 By default, you can use command line arguments to specify where Rasa should look
 for training data on your disk. Rasa then loads any potential training files and uses
 them to train your assistant.
@@ -50,6 +53,89 @@ configuration file:
 
    importers:
    - name: "RasaFileImporter"
+
+MultiProjectImporter (experimental)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. warning::
+
+    This feature is currently experimental and might change or be removed in the future.
+    Please share your feedback on it in the `forum <https://forum.rasa.com>`_ to help
+    us making this feature ready for production.
+
+With this importer you can build a contextual AI assistant by combining multiple
+reusable Rasa projects.
+You might, for example, handle chitchat with one project and greet your users with
+another. These projects can be developed in isolation, and then combined at train time
+to create your assistant.
+
+An example directory structure could look like this:
+
+.. code-block:: bash
+
+    .
+    ├── config.yml
+    └── projects
+        ├── GreetBot
+        │   ├── data
+        │   │   ├── nlu.md
+        │   │   └── stories.md
+        │   └── domain.yml
+        └── ChitchatBot
+            ├── config.yml
+            ├── data
+            │   ├── nlu.md
+            │   └── stories.md
+            └── domain.yml
+
+In this example the contextual AI assistant imports the ``ChitchatBot`` project which in turn
+imports the ``GreetBot`` project. Project imports are defined in the configuration files of
+each project.
+To instruct Rasa to use the ``MultiProjectImporter`` module, put this section in the config
+file of your root project:
+
+.. code-block:: yaml
+
+    importers:
+    - name: MultiProjectImporter
+
+
+Then specify which projects you want to import.
+In our example, the ``config.yml`` in the root project would look like this:
+
+.. code-block:: yaml
+
+    imports:
+    - projects/ChitchatBot
+
+The configuration file of the ``ChitchatBot`` in turn references the ``GreetBot``:
+
+.. code-block:: yaml
+
+    imports:
+    - ../GreetBot
+
+The ``GreetBot`` project does not specify further projects so the ``config.yml`` can be
+omitted.
+
+Rasa uses relative paths from the referencing configuration file to import projects.
+These can be anywhere on your file system as long as the file access is permitted.
+
+During the training process Rasa will import all required training files, combine
+them, and train a unified AI assistant. The merging of the training data happens during
+runtime, so no additional files with training data are created or visible.
+
+.. note::
+
+    Rasa will use the policy and NLU pipeline configuration of the root project
+    directory during training. **Policy or NLU configurations of imported projects
+    will be ignored.**
+
+.. note::
+
+    Equal intents, entities, slots, templates, actions and forms will be merged,
+    e.g. if two projects have training data for an intent ``greet``,
+    their training data will be combined.
 
 Writing a Custom Importer
 ~~~~~~~~~~~~~~~~~~~~~~~~~

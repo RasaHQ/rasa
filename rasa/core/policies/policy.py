@@ -1,6 +1,5 @@
 import copy
 import logging
-import tensorflow as tf
 from typing import Any, List, Optional, Text, Dict, Callable
 
 import rasa.utils.common
@@ -12,37 +11,30 @@ from rasa.core.featurizers import (
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 
 logger = logging.getLogger(__name__)
 
 
-class Policy(object):
+class Policy:
     SUPPORTS_ONLINE_TRAINING = False
 
     @staticmethod
-    def _standard_featurizer():
+    def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer())
 
     @classmethod
-    def _create_featurizer(cls, featurizer=None):
+    def _create_featurizer(cls, featurizer=None) -> TrackerFeaturizer:
         if featurizer:
             return copy.deepcopy(featurizer)
         else:
             return cls._standard_featurizer()
 
-    @staticmethod
-    def _load_tf_config(config: Dict[Text, Any]) -> Optional[tf.ConfigProto]:
-        """Prepare tf.ConfigProto for training"""
-        if config.get("tf_config") is not None:
-            return tf.ConfigProto(**config.pop("tf_config"))
-        else:
-            return None
-
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: Optional[int] = 1,
+        priority: int = DEFAULT_POLICY_PRIORITY,
     ) -> None:
         self.__featurizer = self._create_featurizer(featurizer)
         self.priority = priority
@@ -60,16 +52,14 @@ class Policy(object):
         ignored_params = {
             key: kwargs.get(key) for key in kwargs.keys() if not params.get(key)
         }
-        logger.debug(
-            "Parameters ignored by `model.fit(...)`: {}".format(ignored_params)
-        )
+        logger.debug(f"Parameters ignored by `model.fit(...)`: {ignored_params}")
         return params
 
     def featurize_for_training(
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> DialogueTrainingData:
         """Transform training trackers into a vector representation.
         The trackers, consisting of multiple turns, will be transformed
@@ -91,7 +81,7 @@ class Policy(object):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers."""
 
@@ -124,7 +114,7 @@ class Policy(object):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Continues training an already trained policy.
 
@@ -155,7 +145,7 @@ class Policy(object):
         raise NotImplementedError("Policy must have the capacity to load itself.")
 
 
-def confidence_scores_for(action_name, value, domain):
+def confidence_scores_for(action_name, value, domain) -> List[float]:
     """Returns confidence scores if a single action is predicted.
 
     Args:

@@ -23,12 +23,19 @@ the script:
 
 .. program-output:: rasa data validate --help
 
+By default the validator searches only for errors in the data (e.g. the same
+example being listed as an example for two intents), but does not report other
+minor issues (such as unused intents, utterances that are not listed as
+actions). To also report the later use the ``-debug`` flag.
+
 You can also run these validations through the Python API by importing the `Validator` class,
 which has the following methods:
 
 **from_files():** Creates the instance from string paths to the necessary files.
 
 **verify_intents():** Checks if intents listed in domain file are consistent with the NLU data.
+
+**verify_example_repetition_in_intents():** Checks if there is no duplicated data among distinct intents at NLU data.
 
 **verify_intents_in_stories():** Verification for intents in the stories, to check if they are valid.
 
@@ -38,6 +45,8 @@ actions.
 **verify_utterances_in_stories():** Verification for utterances in stories, to check if they are valid.
 
 **verify_all():** Runs all verifications above.
+
+**verify_domain_validity():** Check if domain is valid.
 
 To use these functions it is necessary to create a `Validator` object and initialize the logger. See the following code:
 
