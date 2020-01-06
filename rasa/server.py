@@ -474,6 +474,8 @@ def create_app(
                     app.agent.create_processor(), conversation_id
                 )
 
+                # Get events after tracker initialization to ensure that generated
+                # timestamps are after potential session events.
                 events = _get_events_from_request_body(request)
 
                 for event in events:
