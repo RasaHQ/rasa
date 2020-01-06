@@ -17,10 +17,16 @@ Getting Credentials
 
   1. To create the app go to: https://api.slack.com/apps and click
      on *"Create New App"*.
-  2. Activate the following features: interactive components, event
-     subscriptions, bot users, permissions (for basic functionality
-     you should subscribe to the ``message.channel``,
-     ``message.groups``, ``message.im`` and ``message.mpim`` events)
+  2. Activate the following features: 
+    1. interactive components
+    2. event subscriptions
+    3. bot users
+    4. permissions (for basic functionality you should subscribe to the 
+       following events
+       ``message.channel``,
+       ``message.groups``, 
+       ``message.im`` 
+       and ``message.mpim``)
   3. The ``slack_channel`` is the target your bot posts to.
      This can be a channel or an individual person. You can leave out
      the argument to post DMs to the bot.
@@ -41,6 +47,13 @@ script, e.g. using:
 .. code-block:: bash
 
   rasa run
+  
+Do not forget to handle the actions if this is required by your bot, 
+e.g. using:
+
+.. code-block:: bash
+
+  rasa run actions
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -56,4 +69,5 @@ you need to supply a ``credentials.yml`` with the following content:
 The endpoint for receiving slack messages is
 ``http://localhost:5005/webhooks/slack/webhook``, replacing
 the host and port with the appropriate values. This is the URL
-you should add in the OAuth & Permissions section.
+you should add in the "OAuth & Permissions" section as well as
+the "Event Subscriptions".
