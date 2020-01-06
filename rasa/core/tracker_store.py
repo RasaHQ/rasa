@@ -745,6 +745,15 @@ class SQLTrackerStore(TrackerStore):
                 return None
 
     def _event_query(self, session: "Session", sender_id: Text) -> "Query":
+        """Provide the query to retrieve the conversation events for a specific sender.
+
+        Args:
+            session: Current database session.
+            sender_id: Sender id whose conversation events should be retrieved.
+
+        Returns:
+            Query to get the conversation events.
+        """
         import sqlalchemy as sa
 
         # Subquery to find the timestamp of the latest `SessionStarted` event
