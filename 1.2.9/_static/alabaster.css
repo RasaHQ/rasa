@@ -1373,75 +1373,50 @@ div .copyable {
 }
 
 #webchat {
-  font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif;
+  font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif !important;
 }
- #webchat .widget-container {
-  margin: 0 24px 24px 0;
-}
- #webchat .conversation-container {
-  box-shadow: 0 1px 8px 0 rgba(122, 107, 107, 0.22);
-  -webkit-box-shadow: 0 1px 8px 0 rgba(122, 107, 107, 0.22);
-}
- #webchat p {
-  font-size: 14px;
-}
- #webchat .response {
-  background-color: #f4f7f9;
-  color: #617287;
-  border-radius: 10px;
-  padding: 15px;
-  max-width: 215px;
-}
- #webchat .conversation-container .header {
-  background-color: #574ae2;
-  color: #fff;
-  padding: 16px 0 16px;
-}
- #webchat .launcher {
+
+#webchat .launcher {
   background-color: #574ae2;
   box-shadow: 0 1px 8px 0 rgba(40, 40, 40, 0.5);
   -webkit-box-shadow: 0 1px 8px 0 rgba(40, 40, 40, 0.5);
-  height: 60px;
-  margin-top: 10px;
-  width: 60px;
 }
- #webchat .conversation-container .title {
+
+#webchat .conversation-container {
+  box-shadow: 0 1px 8px 0 rgba(122, 107, 107, 0.22);
+  -webkit-box-shadow: 0 1px 8px 0 rgba(122, 107, 107, 0.22);
+}
+
+#webchat .conversation-container .header {
+  background-color: #574ae2;
   color: #fff;
-  font-size: 24px;
-  margin: 0;
-  padding: 15px 0;
 }
- #webchat .message-text {
-  font-size: 14px;
+
+.conversation-container .header.with-subtitle span.with-avatar {
+  font-size: 0.8em;
 }
- #webchat .new-message {
-  font-size: 1.1em;
-  width: 100%;
-  border: 0;
+
+.conversation-container .avatar {
+    width: 30px !important;
+    height: 30px !important;
+}
+
+#webchat .new-message {
   background-color: #f4f7f9;
-  height: 30px;
-  padding-left: 15px;
 }
- #webchat .client {
+
+#webchat .response {
+  background-color: #f4f7f9;
+  color: #617287;
+}
+
+#webchat .client {
   background-color: #0084FF;
   color: #fff;
-  border-radius: 10px;
-  padding: 8px 16px;
-  max-width: 215px;
 }
- #webchat .client>.message-text p {
-  color: #fff;
-}
- @media screen and (max-width: 800px) {
-  #webchat .conversation-container .close-button {
-    background-color: #574ae2;
-    border: 0;
-    display: block;
-    position: absolute;
-    right: 10px;
-    top: 20px;
-    width: 40px;
-  }
+
+.group-message.from-response .message:not(:first-child):not(:only-child).with-avatar {
+    margin-left: 45px !important;
 }
 
 /* =================== Progress Bar - Getting Started Steps */

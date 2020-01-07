@@ -211,12 +211,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.6.0
+          viewing: 1.6.1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../.././1.6.1/user-guide/connectors/mattermost/">1.6.1</a>
               <a href="../../.././1.6.0/user-guide/connectors/mattermost/">1.6.0</a>
               <a href="../../.././1.5.3/user-guide/connectors/mattermost/">1.5.3</a>
               <a href="../../.././1.5.2/user-guide/connectors/mattermost/">1.5.2</a>
@@ -275,6 +276,7 @@ team site and go to <strong>Main Menu &gt; Integrations &gt; Outgoing Webhooks</
 You will need to ensure the <strong>trigger words</strong> section is set up
 with <code class="docutils literal notranslate"><span class="pre">&#64;yourbotname</span></code> so that the bot doesn’t trigger on everything
 that is said.</li>
+<li>The <strong>Content Type</strong> must be set to <code class="docutils literal notranslate"><span class="pre">application/json</span></code>.</li>
 <li>Make sure <strong>trigger when</strong> is set to value
 <strong>first word matches a trigger word exactly</strong>.</li>
 <li>The callback url needs to be either your localhost address for Rasa, or your ngrok url where you
