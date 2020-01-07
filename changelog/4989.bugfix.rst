@@ -1,2 +1,0 @@
-Use an empty domain in case a model is loaded which has no domain
-(avoids errors when accessing ``agent.doman.<some attribute>``).
