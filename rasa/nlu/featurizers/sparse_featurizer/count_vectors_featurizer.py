@@ -217,6 +217,9 @@ class CountVectorsFeaturizer(Featurizer):
         # declare class instance for CountVectorizer
         self.vectorizers = vectorizers
 
+        # pre-compile token pattern for processing
+        self.token_pattern_compiled = re.compile(self.token_pattern)
+
     @staticmethod
     def _get_message_tokens_by_attribute(
         message: "Message", attribute: Text
@@ -237,8 +240,7 @@ class CountVectorsFeaturizer(Featurizer):
             return tokens
 
         # apply token_pattern to ensure OOV-tokens are recognized correctly
-        p = re.compile(self.token_pattern)
-        p_list = [p.findall(token) for token in tokens]
+        p_list = [self.token_pattern_compiled.findall(token) for token in tokens]
         p_tokens = [item for token_list in p_list for item in token_list]
 
         # replace all digits with NUMBER token
