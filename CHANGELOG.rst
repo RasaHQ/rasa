@@ -28,8 +28,7 @@ Bugfixes
 - `#5019 <https://github.com/rasahq/rasa/issues/5019>`_: Pin sanic patch version instead of minor version. Fixes sanic ``_run_request_middleware()`` error.
 - `#5032 <https://github.com/rasahq/rasa/issues/5032>`_: Fix wrong calculation of additional conversation events when saving the conversation.
   This led to conversation events not being saved.
-
-  Fix wrong order of conversation events when pushing events to conversations via
+- `#5032 <https://github.com/rasahq/rasa/issues/5032>`_: Fix wrong order of conversation events when pushing events to conversations via
   ``POST /conversations/<conversation_id>/tracker/events``.
 
 
