@@ -17,6 +17,22 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.6.1] - 2020-01-07
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#4989 <https://github.com/rasahq/rasa/issues/4989>`_: Use an empty domain in case a model is loaded which has no domain
+  (avoids errors when accessing ``agent.doman.<some attribute>``).
+- `#4995 <https://github.com/rasahq/rasa/issues/4995>`_: Replace error message with warning in tokenizers and featurizers if default parameter not set.
+- `#5019 <https://github.com/rasahq/rasa/issues/5019>`_: Pin sanic patch version instead of minor version. Fixes sanic ``_run_request_middleware()`` error.
+- `#5032 <https://github.com/rasahq/rasa/issues/5032>`_: Fix wrong calculation of additional conversation events when saving the conversation.
+  This led to conversation events not being saved.
+
+  Fix wrong order of conversation events when pushing events to conversations via
+  ``POST /conversations/<conversation_id>/tracker/events``.
+
+
 [1.6.0] - 2019-12-18
 ^^^^^^^^^^^^^^^^^^^^
 
