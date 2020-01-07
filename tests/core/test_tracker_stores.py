@@ -10,7 +10,11 @@ from typing import Tuple, Text, Type, Dict, List
 from unittest.mock import Mock
 
 import rasa.core.tracker_store
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.actions.action import (
+    ACTION_LISTEN_NAME,
+    ActionSessionStart,
+    ACTION_SESSION_START_NAME,
+)
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -430,15 +434,29 @@ def create_tracker_with_partially_saved_events(
     tracker_store.save(tracker)
 
     # add more events to the tracker, do not yet save it
-    events = [
-        ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("123"),
-        BotUttered("yes"),
-    ]
+    events = [ActionExecuted(ACTION_LISTEN_NAME), UserUttered("123"), BotUttered("yes")]
     for event in events:
         tracker.update(event)
 
     return events, tracker
+
+
+def _saved_tracker_with_multiple_session_starts(
+    tracker_store: TrackerStore, sender_id: Text
+) -> DialogueStateTracker:
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("hi"),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+        ],
+    )
+
+    tracker_store.save(tracker)
+    return tracker_store.retrieve(sender_id)
 
 
 def test_mongo_additional_events(default_domain: Domain):
@@ -448,6 +466,20 @@ def test_mongo_additional_events(default_domain: Domain):
     # make sure only new events are returned
     # noinspection PyProtectedMember
     assert list(tracker_store._additional_events(tracker)) == events
+
+
+def test_mongo_additional_events_with_session_start(default_domain: Domain):
+    sender = "test_mongo_additional_events_with_session_start"
+    tracker_store = MockedMongoTrackerStore(default_domain)
+    tracker = _saved_tracker_with_multiple_session_starts(tracker_store, sender)
+
+    tracker.update(UserUttered("hi2"))
+
+    # noinspection PyProtectedMember
+    additional_events = list(tracker_store._additional_events(tracker))
+
+    assert len(additional_events) == 1
+    assert isinstance(additional_events[0], UserUttered)
 
 
 # we cannot parametrise over this and the previous test due to the different ways of
@@ -465,6 +497,21 @@ def test_sql_additional_events(default_domain: Domain):
             list(tracker_store._additional_events(session, tracker))
             == additional_events
         )
+
+
+def test_sql_additional_events_with_session_start(default_domain: Domain):
+    sender = "test_sql_additional_events_with_session_start"
+    tracker_store = SQLTrackerStore(default_domain)
+    tracker = _saved_tracker_with_multiple_session_starts(tracker_store, sender)
+
+    tracker.update(UserUttered("hi2"), default_domain)
+
+    # make sure only new events are returned
+    with tracker_store.session_scope() as session:
+        # noinspection PyProtectedMember
+        additional_events = list(tracker_store._additional_events(session, tracker))
+        assert len(additional_events) == 1
+        assert isinstance(additional_events[0], UserUttered)
 
 
 @pytest.mark.parametrize(
