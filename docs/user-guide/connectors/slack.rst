@@ -18,7 +18,7 @@ Getting Credentials
   1. To create the app go to: https://api.slack.com/apps and click
      on *"Create New App"*.
   2. Activate the following features: 
-    1. interactive components
+    1. [interactive components](https://api.slack.com/reference/block-kit/interactive-components) (if your bot uses any, e.g. buttons)
     2. event subscriptions
     3. bot users
     4. permissions (for basic functionality you should subscribe to the 
