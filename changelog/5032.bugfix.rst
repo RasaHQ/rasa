@@ -1,0 +1,5 @@
+Fix wrong calculation of additional conversation events when saving the conversation.
+This led to conversation events not being saved.
+
+Fix wrong order of conversation events when pushing events to conversations via
+``POST /conversations/<conversation_id>/tracker/events``.
