@@ -1,5 +1,6 @@
 import pytest
 
+from typing import Tuple
 from rasa.nlu import registry
 from rasa.nlu.components import find_unavailable_packages
 from rasa.nlu.config import RasaNLUModelConfig
@@ -44,7 +45,15 @@ def test_all_arguments_can_be_satisfied(component_class):
     }
 
     for req in component_class.requires:
-        assert req in provided_properties, "No component provides required property."
+        if isinstance(req, Tuple):
+            for r in req:
+                assert (
+                    r in provided_properties
+                ), "No component provides required property."
+        else:
+            assert (
+                req in provided_properties
+            ), "No component provides required property."
 
 
 def test_find_unavailable_packages():
