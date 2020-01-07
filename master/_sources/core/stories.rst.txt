@@ -105,7 +105,7 @@ returned by a custom action separately, when that custom action is already
 part of a story might seem redundant. However, since Rasa cannot
 determine this fact during training, this step is necessary.
 
-You can read more about events :ref:`here <end_to_end_evaluation>`.
+You can read more about events :ref:`here <events>`.
 
 Slot Events
 ***********
