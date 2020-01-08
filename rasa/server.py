@@ -2427,7 +2427,7 @@ def create_app(
                     entityArray.append(data)
                 else:
                     pass
-        elif intent == "eventsearchintent":
+        elif intent == "eventintent":
             for data in entMap:
                 if data["name"] == "person":
                     if "present" in utterence and "organize" in utterence:
@@ -2470,6 +2470,13 @@ def create_app(
                 elif data["name"] == "ORG":
                     data["name"] = "libname"
                     entityArray.append(data)
+                elif data["name"] == "subject":
+                    if 'on' in utterence:
+                        data["name"] = 'title'
+                        entityArray.append(data)
+                    else:
+                        data["name"] = 'program'
+                        entityArray.append(data)
                 elif data["name"] == 'timeline':
                     pass
                 else:
@@ -2617,12 +2624,10 @@ def _get_output_channel(
         request: Request, tracker: Optional[DialogueStateTracker]
 ) -> OutputChannel:
     """Returns the `OutputChannel` which should be used for the bot's responses.
-
     Args:
         request: HTTP request whose query parameters can specify which `OutputChannel`
                  should be used.
         tracker: Tracker for the conversation. Used to get the latest input channel.
-
     Returns:
         `OutputChannel` which should be used to return the bot's responses to.
     """
@@ -2659,12 +2664,10 @@ def _get_output_channel(
         request: Request, tracker: Optional[DialogueStateTracker]
 ) -> OutputChannel:
     """Returns the `OutputChannel` which should be used for the bot's responses.
-
     Args:
         request: HTTP request whose query parameters can specify which `OutputChannel`
                  should be used.
         tracker: Tracker for the conversation. Used to get the latest input channel.
-
     Returns:
         `OutputChannel` which should be used to return the bot's responses to.
     """
