@@ -48,7 +48,7 @@ script, e.g. using:
 
   rasa run
   
-Do not forget to handle the actions if this is required by your bot, 
+Do not forget to run the action server if this is required by your bot, 
 e.g. using:
 
 .. code-block:: bash
