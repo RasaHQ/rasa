@@ -4,7 +4,8 @@ import tempfile
 import traceback
 from functools import wraps, reduce
 from inspect import isawaitable
-from typing import Any, Callable, List, Optional, Text, Union
+from typing import Any, Callable, List, Optional, Text, Union 
+import json
 
 from sanic import Sanic, response
 from sanic.request import Request
@@ -844,7 +845,8 @@ def create_app(
                 response_data['intent']['name'] = 'AMAZON.FallbackIntent'
             del [response_data['intent_ranking']]
             del [response_data['entities']]
-            response_data['intent'] = response_data['intent']['name'] if response_data['intent']['name'] != "SeriesIntent" else "SearchIntent"
+            response_data['intent'] = response_data['intent']['name'] if response_data['intent'][
+                                                                             'name'] != "SeriesIntent" else "SearchIntent"
             response_data['reqtype'] = respFinder(response_data['intent'])
             return response.json(response_data)
 
@@ -962,7 +964,10 @@ def create_app(
             for data in entMap:
                 if data["name"] == "WORK_OF_ART":
                     data["name"] = "sseries"
-                    data["value"] = data["value"].lower().replace("search for a book", "").replace("search for the book", "").replace("serach for title", "").replace("search for a title","").replace("serach for the title", "")
+                    data["value"] = data["value"].lower().replace("search for a book", "").replace(
+                        "search for the book", "").replace("serach for title", "").replace("search for a title",
+                                                                                           "").replace(
+                        "serach for the title", "")
                     if data["value"] != "":
                         entityArray.append(data)
                         conditionMap["sseries"] = data["value"]
@@ -994,12 +999,13 @@ def create_app(
                         entityArray.append(data)
                 elif data["name"] == "sauthor":
                     entityArray.append(data)
-                elif data["name"] == 'type' or data["name"] == 'timeline' or data["name"] == 'mtype' or data["name"] == 'renew' or data["name"] == 'renewAll' or data["name"] == "cancelhold":
+                elif data["name"] == 'type' or data["name"] == 'timeline' or data["name"] == 'mtype' or data[
+                    "name"] == 'renew' or data["name"] == 'renewAll' or data["name"] == "cancelhold":
                     data["name"] = data["name"].lower()
                     entityArray.append(data)
                 elif data["name"] == "pubyear":
                     if conditionMap.__contains__("pubyear"):
-                       pass
+                        pass
                     else:
                         conditionMap['pubyear'] = data['value']
                         entityArray.append(data)
@@ -1201,6 +1207,8 @@ def create_app(
                 "Make sure you've set the appropriate Accept "
                 "header.",
             )
+
+
 import logging
 import os
 import tempfile
@@ -2047,7 +2055,14 @@ def create_app(
                 response_data['intent']['name'] = 'AMAZON.FallbackIntent'
             del [response_data['intent_ranking']]
             del [response_data['entities']]
-            response_data['intent'] = response_data['intent']['name'] if response_data['intent']['name'] != "SeriesIntent" and response_data['intent']['name'] != "search_title" and response_data['intent']['name'] != "search_subject" and response_data['intent']['name'] != "search_author" else "SearchIntent"
+            response_data['intent'] = response_data['intent']['name'] if response_data['intent'][
+                                                                             'name'] != "SeriesIntent" and \
+                                                                         response_data['intent'][
+                                                                             'name'] != "search_title" and \
+                                                                         response_data['intent'][
+                                                                             'name'] != "search_subject" and \
+                                                                         response_data['intent'][
+                                                                             'name'] != "search_author" else "SearchIntent"
             response_data['reqtype'] = respFinder(response_data['intent'])
             return response.json(response_data)
 
@@ -2091,7 +2106,10 @@ def create_app(
             for data in entMap:
                 if data["name"] == "WORK_OF_ART":
                     data["name"] = "stitle"
-                    data["value"] = data["value"].lower().replace("search for a book", "").replace("search for the book", "").replace("serach for title", "").replace("search for a title","").replace("serach for the title", "")
+                    data["value"] = data["value"].lower().replace("search for a book", "").replace(
+                        "search for the book", "").replace("serach for title", "").replace("search for a title",
+                                                                                           "").replace(
+                        "serach for the title", "")
                     if data["value"] != "":
                         if 'filterphrase' in contentMap and contentMap['WORK_OF_ART'] == contentMap['filterphrase']:
                             pass
@@ -2128,8 +2146,8 @@ def create_app(
                         print(entityArray)
                         entityArray.pop(0)
                         conditionMap["stitle"] = data["value"].lower()
-                        data["value"]=data["value"].lower()
-                        data["name"]="stitle"
+                        data["value"] = data["value"].lower()
+                        data["name"] = "stitle"
                         entityArray.append(data)
                         print(entityArray)
                 elif data["name"] == "subject":
@@ -2176,7 +2194,10 @@ def create_app(
             for data in entMap:
                 if data["name"] == "WORK_OF_ART":
                     data["name"] = "sseries"
-                    data["value"] = data["value"].lower().replace("search for a book", "").replace("search for the book", "").replace("serach for title", "").replace("search for a title","").replace("serach for the title", "")
+                    data["value"] = data["value"].lower().replace("search for a book", "").replace(
+                        "search for the book", "").replace("serach for title", "").replace("search for a title",
+                                                                                           "").replace(
+                        "serach for the title", "")
                     if data["value"] != "":
                         entityArray.append(data)
                         conditionMap["sseries"] = data["value"]
@@ -2197,8 +2218,8 @@ def create_app(
                     else:
                         entityArray.pop(0)
                         conditionMap["sseries"] = data["value"].lower()
-                        data["value"]=data["value"].lower()
-                        data["name"]="sseries"
+                        data["value"] = data["value"].lower()
+                        data["name"] = "sseries"
                         entityArray.append(data)
                 elif data["name"] == "sbook" or data["name"] == "sBook":
                     if "sseries" not in conditionMap:
@@ -2225,12 +2246,13 @@ def create_app(
                         entityArray.append(data)
                 elif data["name"] == "sauthor":
                     entityArray.append(data)
-                elif data["name"] == 'type' or data["name"] == 'timeline' or data["name"] == 'mtype' or data["name"] == 'renew' or data["name"] == 'renewAll' or data["name"] == "cancelhold":
+                elif data["name"] == 'type' or data["name"] == 'timeline' or data["name"] == 'mtype' or data[
+                    "name"] == 'renew' or data["name"] == 'renewAll' or data["name"] == "cancelhold":
                     data["name"] = data["name"].lower()
                     entityArray.append(data)
                 elif data["name"] == "pubyear":
                     if conditionMap.__contains__("pubyear"):
-                       pass
+                        pass
                     else:
                         conditionMap['pubyear'] = data['value']
                         entityArray.append(data)
@@ -2431,12 +2453,23 @@ def create_app(
             for data in entMap:
                 if data["name"] == "person":
                     if "present" in utterence and "organize" in utterence:
+                        orgsplit = utterence.split("organize")
+                        presplit = utterence.split("present")
+                        secondkey = ""
                         if count == 0:
-                            data["name"] = 'presenter'
+                            if len(orgsplit[0]) < len(presplit[0]):
+                                data["name"] = 'organizer'
+                                secondkey = 'presenter'
+                            else:
+                                data["name"] = 'presenter'
+                                secondkey = 'organizer'
                             entityArray.append(data)
                             count = count + 1
                         elif count == 1:
-                            data["name"] = 'organizer'
+                            if len(orgsplit[0]) < len(presplit[0]):
+                                data["name"] = 'presenter'
+                            else:
+                                data["name"] = 'organizer'
                             entityArray.append(data)
                             count = 0
                     elif "present" in utterence:
@@ -2446,18 +2479,40 @@ def create_app(
                         data["name"] = "organizer"
                         entityArray.append(data)
                 elif data["name"] == "time":
-                    if data['value'] is dict:
+                    if 'from' in data['value']:
+                        print("*********************************************************")
+                        data['value']= data['value'].replace("\'","\"",-1)
+                        datamap = json.loads(data['value'])
                         tempMap = {}
                         tempMap['entity'] = 'from'
-                        tempMap['value'] = data['value']['from']
+                        fromDate = datamap['from'].split("T")
+                        tempMap['value'] = fromDate[0]
                         entityArray.append(tempMap)
                         tempMap = {}
                         tempMap['entity'] = 'to'
-                        tempMap['value'] = data['value']['to']
+                        todate = datamap['to'].split("T")
+                        tempMap['value'] = todate[0]
                         entityArray.append(tempMap)
                     else:
+                        date = data["value"].split("T")
+                        print(type(data["value"]))
+                        print(date)
                         data["name"] = 'edate'
+                        data["value"] = date[0]
                         entityArray.append(data)
+                        tempMap = {}
+                        if 'week' in utterence:
+                            tempMap['name'] = 'dateFilter'
+                            tempMap['value'] = 'week'
+                            entityArray.append(tempMap)
+                        elif 'month' in utterence:
+                            tempMap['name'] = 'dateFilter'
+                            tempMap['value'] = 'month'
+                            entityArray.append(tempMap)
+                        elif 'year' in utterence:
+                            tempMap['name'] = 'dateFilter'
+                            tempMap['value'] = 'year'
+                            entityArray.append(tempMap)
                     conditionMap["edate"] = data["value"]
                 elif data["name"].lower() == 'date':
                     data["name"] = 'date'
