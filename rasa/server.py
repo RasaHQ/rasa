@@ -1,4 +1,5 @@
 import logging
+import json
 import os
 import tempfile
 import traceback
@@ -1248,10 +1249,9 @@ def create_app(
                         if count == 0:
                             if len(orgsplit[0]) < len(presplit[0]):
                                 data["name"] = 'organizer'
-                                secondkey = 'presenter'
                             else:
                                 data["name"] = 'presenter'
-                                secondkey = 'organizer'
+                            data["value"] = data["value"].replace(" in", "", -1).replace(" at", "", -1)
                             entityArray.append(data)
                             count = count + 1
                         elif count == 1:
@@ -1259,13 +1259,16 @@ def create_app(
                                 data["name"] = 'presenter'
                             else:
                                 data["name"] = 'organizer'
+                            data["value"] = data["value"].replace(" in", "", -1).replace(" at", "", -1)
                             entityArray.append(data)
                             count = 0
                     elif "present" in utterence:
                         data["name"] = "presenter"
+                        data["value"] = data["value"].replace(" in","",-1).replace(" at","",-1)
                         entityArray.append(data)
                     elif "organize" in utterence:
                         data["name"] = "organizer"
+                        data["value"] = data["value"].replace(" in", "", -1).replace(" at", "", -1)
                         entityArray.append(data)
                 elif data["name"] == "time":
                     if 'from' in data['value']:
@@ -1308,14 +1311,13 @@ def create_app(
                 elif data["name"] == "edate":
                     if "edate" not in conditionMap:
                         entityArray.append(data)
-                elif data["name"] == 'sBook':
-                    data["name"] = 'title'
-                    entityArray.append(data)
+                elif data["name"] == 'sBook' or data["name"] == 'sbook' or data["name"] == 'options':
+                    pass
                 elif data["name"] == "ORG":
                     data["name"] = "libname"
                     entityArray.append(data)
-                elif data["name"] == "subject":
-                    if len(entMap) > 1 :
+                elif data["name"] == "subject" or data["name"] == "title" or data["name"] == "program":
+                    if len(entMap) > 1:
                         pass
                     else:
                         if 'on' in utterence:
