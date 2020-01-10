@@ -56,7 +56,7 @@ def _add_data_convert_parsers(data_subparsers, parents: List[argparse.ArgumentPa
     arguments.set_convert_arguments(convert_nlu_parser)
 
 
-def _add_data_split_parsers(data_subparsers, parents: List[argparse.ArgumentParser]):
+def _add_data_split_parsers(data_subparsers, parents: List[argparse.ArgumentParser]) -> None:
     split_parser = data_subparsers.add_parser(
         "split",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
