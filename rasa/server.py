@@ -1329,7 +1329,7 @@ def create_app(
                 elif data["name"] == 'timeline':
                     pass
                 else:
-                    entityArray.append(data)
+                    pass
         # elif intent == "hoursintent":
         #     for data in entMap:
         #         if data["name"] == "ORG":
