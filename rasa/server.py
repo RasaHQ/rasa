@@ -1276,12 +1276,12 @@ def create_app(
                         data['value']= data['value'].replace("\'","\"",-1)
                         datamap = json.loads(data['value'])
                         tempMap = {}
-                        tempMap['entity'] = 'from'
+                        tempMap['name'] = 'from'
                         fromDate = datamap['from'].split("T")
                         tempMap['value'] = fromDate[0]
                         entityArray.append(tempMap)
                         tempMap = {}
-                        tempMap['entity'] = 'to'
+                        tempMap['name'] = 'to'
                         todate = datamap['to'].split("T")
                         tempMap['value'] = todate[0]
                         entityArray.append(tempMap)
