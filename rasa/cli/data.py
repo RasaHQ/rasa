@@ -33,7 +33,7 @@ def add_subparser(
     _add_data_validate_parsers(data_subparsers, parents)
 
 
-def _add_data_convert_parsers(data_subparsers, parents: List[argparse.ArgumentParser]):
+def _add_data_convert_parsers(data_subparsers, parents: List[argparse.ArgumentParser]) -> None:
     import rasa.nlu.convert as convert
 
     convert_parser = data_subparsers.add_parser(
