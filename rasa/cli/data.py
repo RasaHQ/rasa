@@ -153,7 +153,7 @@ def validate_files(args) -> NoReturn:
     if not args.max_history:
         logger.info(
             "Will not test for inconsistencies in stories since "
-            "you did not provide --max-history."
+            "you did not provide a value for `--max-history`."
         )
     if args.max_history:
         # Only run story structure validation if everything else is fine
