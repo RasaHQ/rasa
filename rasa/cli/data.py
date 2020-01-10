@@ -78,7 +78,7 @@ def _add_data_split_parsers(data_subparsers, parents: List[argparse.ArgumentPars
     arguments.set_split_arguments(nlu_split_parser)
 
 
-def _add_data_validate_parsers(data_subparsers, parents: List[argparse.ArgumentParser]):
+def _add_data_validate_parsers(data_subparsers, parents: List[argparse.ArgumentParser]) -> None:
     validate_parser = data_subparsers.add_parser(
         "validate",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
