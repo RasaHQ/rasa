@@ -187,9 +187,13 @@ def unpack_model(
         working_directory = tempfile.mkdtemp()
 
     # All files are in a subdirectory.
-    with tarfile.open(model_file, mode="r:gz") as tar:
-        tar.extractall(working_directory)
-    logger.debug(f"Extracted model to '{working_directory}'.")
+    try:
+        with tarfile.open(model_file, mode="r:gz") as tar:
+            tar.extractall(working_directory)
+            logger.debug(f"Extracted model to '{working_directory}'.")
+    except Exception as e:
+        logger.error(f"Failed to extract model at {model_file}. Error: {e}")
+        raise
 
     return TempDirectoryPath(working_directory)
 

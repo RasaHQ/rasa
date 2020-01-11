@@ -1,12 +1,12 @@
-import time
-from typing import Type
-
-import pytz
-from datetime import datetime
 import copy
 
 import pytest
+import pytz
+import time
+from datetime import datetime
 from dateutil import parser
+from typing import Type
+
 from rasa.core import utils
 from rasa.core.events import (
     Event,
@@ -24,6 +24,7 @@ from rasa.core.events import (
     FollowupAction,
     UserUtteranceReverted,
     AgentUttered,
+    SessionStarted,
 )
 
 
@@ -42,6 +43,7 @@ from rasa.core.events import (
         (StoryExported(), None),
         (ActionReverted(), None),
         (UserUtteranceReverted(), None),
+        (SessionStarted(), None),
         (ActionExecuted("my_action"), ActionExecuted("my_other_action")),
         (FollowupAction("my_action"), FollowupAction("my_other_action")),
         (
@@ -93,6 +95,7 @@ def test_event_has_proper_implementation(one_event, another_event):
         StoryExported(),
         ActionReverted(),
         UserUtteranceReverted(),
+        SessionStarted(),
         ActionExecuted("my_action"),
         ActionExecuted("my_action", "policy_1_KerasPolicy", 0.8),
         FollowupAction("my_action"),
@@ -122,6 +125,13 @@ def test_json_parse_restarted():
     assert Event.from_parameters(evt) == Restarted()
 
 
+def test_json_parse_session_started():
+    # DOCS MARKER SessionStarted
+    evt = {"event": "session_started"}
+    # DOCS END
+    assert Event.from_parameters(evt) == SessionStarted()
+
+
 def test_json_parse_reset():
     # DOCS MARKER AllSlotsReset
     evt = {"event": "reset_slots"}
@@ -132,18 +142,18 @@ def test_json_parse_reset():
 def test_json_parse_user():
     # fmt: off
     # DOCS MARKER UserUttered
-    evt={
-          "event": "user",
-          "text": "Hey",
-          "parse_data": {
+    evt = {
+        "event": "user",
+        "text": "Hey",
+        "parse_data": {
             "intent": {
-              "name": "greet",
-              "confidence": 0.9
+                "name": "greet",
+                "confidence": 0.9
             },
             "entities": []
-          },
-          "metadata": {},
-        }
+        },
+        "metadata": {},
+    }
     # DOCS END
     # fmt: on
     assert Event.from_parameters(evt) == UserUttered(
@@ -172,13 +182,13 @@ def test_json_parse_rewind():
 def test_json_parse_reminder():
     # fmt: off
     # DOCS MARKER ReminderScheduled
-    evt={
-          "event": "reminder",
-          "action": "my_action",
-          "date_time": "2018-09-03T11:41:10.128172",
-          "name": "my_reminder",
-          "kill_on_user_msg": True,
-        }
+    evt = {
+        "event": "reminder",
+        "action": "my_action",
+        "date_time": "2018-09-03T11:41:10.128172",
+        "name": "my_reminder",
+        "kill_on_user_msg": True,
+    }
     # DOCS END
     # fmt: on
     assert Event.from_parameters(evt) == ReminderScheduled(
@@ -290,7 +300,6 @@ def test_event_metadata_dict(event_class: Type[Event]):
 
 @pytest.mark.parametrize("event_class", utils.all_subclasses(Event))
 def test_event_default_metadata(event_class: Type[Event]):
-
     # Create an event without metadata. When converting the `Event` to a
     # `dict`, it should not include a `metadata` property - unless it's a
     # `UserUttered` or a `BotUttered` event (or subclasses of them), in which
