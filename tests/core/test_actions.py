@@ -232,9 +232,7 @@ async def test_remote_action_logs_events(
     assert events[0] == BotUttered(
         "test text", {"buttons": [{"title": "cheap", "payload": "cheap"}]}
     )
-    assert events[1] == BotUttered(
-        "hey there None!", metadata={"template_name": "utter_greet"}
-    )
+    assert events[1] == BotUttered("hey there None!", template_id="utter_greet")
     assert events[2] == SlotSet("name", "rasa")
 
 
@@ -278,9 +276,7 @@ async def test_remote_action_utterances_with_none_values(
         )
 
     assert events == [
-        BotUttered(
-            "what dou want to eat?", metadata={"template_name": "utter_ask_cuisine"}
-        ),
+        BotUttered("what dou want to eat?", template_id="utter_ask_cuisine"),
         Form("restaurant_form"),
         SlotSet("requested_slot", "cuisine"),
     ]
@@ -368,7 +364,7 @@ async def test_action_utter_retrieved_response(
     assert events[0].as_dict().get("text") == BotUttered("I am a bot.").as_dict().get(
         "text"
     )
-    assert events[0].as_dict().get("metadata").get("template_name") == action_name
+    assert events[0].as_dict().get("template_id") == action_name
 
 
 async def test_action_utter_default_retrieved_response(
@@ -419,9 +415,7 @@ async def test_action_utter_template(
     )
 
     assert events == [
-        BotUttered(
-            "this is a default channel", metadata={"template_name": "utter_channel"}
-        )
+        BotUttered("this is a default channel", template_id="utter_channel")
     ]
 
 
@@ -451,7 +445,7 @@ async def test_action_utter_template_with_buttons(
                     {"payload": "button2", "title": "button2"},
                 ]
             },
-            metadata={"template_name": "utter_buttons"},
+            template_id="utter_buttons",
         )
     ]
 
@@ -482,7 +476,8 @@ async def test_action_utter_template_channel_specific(
     assert events == [
         BotUttered(
             "you're talking to me on slack!",
-            metadata={"channel": "slack", "template_name": "utter_channel"},
+            metadata={"channel": "slack"},
+            template_id="utter_channel",
         )
     ]
 
@@ -495,7 +490,7 @@ async def test_action_back(
     )
 
     assert events == [
-        BotUttered("backing up...", metadata={"template_name": "utter_back"}),
+        BotUttered("backing up...", template_id="utter_back"),
         UserUtteranceReverted(),
         UserUtteranceReverted(),
     ]
@@ -509,10 +504,7 @@ async def test_action_restart(
     )
 
     assert events == [
-        BotUttered(
-            "congrats, you've restarted me!",
-            metadata={"template_name": "utter_restart"},
-        ),
+        BotUttered("congrats, you've restarted me!", template_id="utter_restart",),
         Restarted(),
     ]
 
@@ -609,7 +601,7 @@ async def test_action_default_fallback(
     assert events == [
         BotUttered(
             "sorry, I didn't get that, can you rephrase it?",
-            metadata={"template_name": "utter_default"},
+            template_id="utter_default",
         ),
         UserUtteranceReverted(),
     ]
@@ -631,7 +623,7 @@ async def test_action_default_ask_affirmation(
                     {"title": "No", "payload": "/out_of_scope"},
                 ]
             },
-            {"template_name": "action_default_ask_affirmation"},
+            template_id="action_default_ask_affirmation",
         )
     ]
 
@@ -644,7 +636,5 @@ async def test_action_default_ask_rephrase(
     )
 
     assert events == [
-        BotUttered(
-            "can you rephrase that?", metadata={"template_name": "utter_ask_rephrase"}
-        )
+        BotUttered("can you rephrase that?", template_id="utter_ask_rephrase")
     ]
