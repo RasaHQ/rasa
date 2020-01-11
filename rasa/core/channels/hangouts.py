@@ -6,7 +6,7 @@ import uuid
 from asyncio import Queue, CancelledError
 from sanic import Sanic, Blueprint, response
 from sanic.request import Request
-from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable
+from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable, Union
 
 import rasa.utils.endpoints
 from rasa.cli import utils as cli_utils
@@ -92,7 +92,7 @@ class HangoutsOutput(OutputChannel):
     async def _persist_message(self, message: Dict) -> None:
         """Google Hangouts only accepts single dict with single key 'text'
         for simple text messages. All other responses must be sent as cards.
-        
+
         In case the bot sends multiple messages, all are transformed to either
         cards or text output"""
 
@@ -124,7 +124,7 @@ class HangoutsOutput(OutputChannel):
             new_messages = self._combine_cards(self.messages, message)
 
         elif msg_state == "cards" and msg_new == "text":
-            ## if any message is card, turn text message into TextParagraph card and combine cards
+            # if any message is card, turn text message into TextParagraph card and combine cards
             text_card = self._text_card(message)
             new_messages = self._combine_cards(self.messages, text_card)
 
@@ -173,7 +173,7 @@ class HangoutsOutput(OutputChannel):
         await self._persist_message(json_message)
 
 
-## Google Hangouts input channel
+# Google Hangouts input channel
 class HangoutsInput(InputChannel):
     """
     Channel that uses Google Hangouts Chat API to communicate.
@@ -215,22 +215,25 @@ class HangoutsInput(InputChannel):
     def _extract_message(self, req: Request) -> Text:
 
         if req.json["type"] == "MESSAGE":
-            return req.json["message"]["text"]
+            message = req.json["message"]["text"]
 
         elif req.json["type"] == "CARD_CLICKED":
-            return req.json["action"]["actionMethodName"]
+            message = req.json["action"]["actionMethodName"]
 
         elif req.json["type"] == "ADDED_TO_SPACE":
             if self._extract_room(req) and self.room_added_intent:
-                return self.room_added_intent
-            elif self.user_added_intent:
-                return self.user_added_intent
+                message = self.room_added_intent
+            elif not self._extract_room(req) and self.user_added_intent:
+                message = self.user_added_intent
 
-        elif req.json["type"] == "REMOVED_FROM_SPACE":
-            if self.removed_intent:
-                return self.removed_intent
+        elif req.json["type"] == "REMOVED_FROM_SPACE" and self.removed_intent:
+            message = self.removed_intent
+        else:
+            message = ""
 
-    def _extract_room(self, req: Request) -> Text:
+        return message
+
+    def _extract_room(self, req: Request) -> Union[Text, None]:
 
         if req.json["space"]["type"] == "ROOM":
             return req.json["space"]["displayName"]
