@@ -66,6 +66,7 @@
         "elements": null
       },
       "text": "hey there Peter!",
+      "template_id": "utter_greet",
       "timestamp": 1551953040.60779
     }
   ]

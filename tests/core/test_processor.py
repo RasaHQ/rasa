@@ -180,7 +180,7 @@ async def test_reminder_scheduled(
             "image": None,
             "custom": None,
         },
-        metadata={"template_name": "utter_greet"},
+        template_id="utter_greet",
     )
     assert t.events[-1] == ActionExecuted("action_listen")
 
@@ -452,7 +452,7 @@ async def test_handle_message_with_session_start(
         ),
         SlotSet(entity, slot_1[entity]),
         ActionExecuted("utter_greet"),
-        BotUttered("hey there Core!"),
+        BotUttered("hey there Core!", template_id="utter_greet"),
         ActionExecuted(ACTION_LISTEN_NAME),
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),

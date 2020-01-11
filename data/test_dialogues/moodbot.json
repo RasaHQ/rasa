@@ -85,6 +85,7 @@
         "elements":null
       },
       "text":"Hey! How are you?",
+      "template_id":"utter_greet",
       "timestamp":1551883975.645656
     },
     {
@@ -161,6 +162,7 @@
         "elements":null
       },
       "text":"Here is something to cheer you up:",
+      "template_id":"utter_cheer_up",
       "timestamp":1551883985.0316749
     },
     {
@@ -179,6 +181,7 @@
         "elements":null
       },
       "text":"Did that help you?",
+      "template_id":"utter_did_that_help",
       "timestamp":1551883985.940421
     },
     {
@@ -255,6 +258,7 @@
         "elements":null
       },
       "text":"Bye",
+      "template_id":"utter_goodbye",
       "timestamp":1551883991.061471
     }
   ]
