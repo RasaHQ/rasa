@@ -33,7 +33,9 @@ def add_subparser(
     _add_data_validate_parsers(data_subparsers, parents)
 
 
-def _add_data_convert_parsers(data_subparsers, parents: List[argparse.ArgumentParser]) -> None:
+def _add_data_convert_parsers(
+    data_subparsers, parents: List[argparse.ArgumentParser]
+) -> None:
     import rasa.nlu.convert as convert
 
     convert_parser = data_subparsers.add_parser(
@@ -56,7 +58,9 @@ def _add_data_convert_parsers(data_subparsers, parents: List[argparse.ArgumentPa
     arguments.set_convert_arguments(convert_nlu_parser)
 
 
-def _add_data_split_parsers(data_subparsers, parents: List[argparse.ArgumentParser]) -> None:
+def _add_data_split_parsers(
+    data_subparsers, parents: List[argparse.ArgumentParser]
+) -> None:
     split_parser = data_subparsers.add_parser(
         "split",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -78,7 +82,9 @@ def _add_data_split_parsers(data_subparsers, parents: List[argparse.ArgumentPars
     arguments.set_split_arguments(nlu_split_parser)
 
 
-def _add_data_validate_parsers(data_subparsers, parents: List[argparse.ArgumentParser]) -> None:
+def _add_data_validate_parsers(
+    data_subparsers, parents: List[argparse.ArgumentParser]
+) -> None:
     validate_parser = data_subparsers.add_parser(
         "validate",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -173,7 +179,10 @@ def validate_stories(args: "argparse.Namespace") -> NoReturn:
 
     # Check if a valid setting for `max_history` was given
     if not isinstance(args.max_history, int) or args.max_history < 1:
-        raise argparse.ArgumentError(args.max_history, "You have to provide a positive integer for --max-history.")
+        raise argparse.ArgumentError(
+            args.max_history,
+            "You have to provide a positive integer for --max-history.",
+        )
 
     # Prepare story and domain file import
     loop = asyncio.get_event_loop()

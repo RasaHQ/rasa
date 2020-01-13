@@ -18,7 +18,9 @@ logger = logging.getLogger(__name__)
 class Validator:
     """A class used to verify usage of intents and utterances."""
 
-    def __init__(self, domain: Domain, intents: TrainingData, story_graph: StoryGraph) -> None:
+    def __init__(
+        self, domain: Domain, intents: TrainingData, story_graph: StoryGraph
+    ) -> None:
         """Initializes the Validator object. """
 
         self.domain = domain

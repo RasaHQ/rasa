@@ -10,11 +10,11 @@ from rasa.core.training.generator import TrackerWithCachedStates
 
 
 class StoryConflict:
-    def __init__(
-        self, sliced_states: List[Optional[Dict[Text, float]]],
-    ) -> None:
+    def __init__(self, sliced_states: List[Optional[Dict[Text, float]]],) -> None:
         self.sliced_states = sliced_states
-        self._conflicting_actions = defaultdict(list)  # {"action": ["story_1", ...], ...}
+        self._conflicting_actions = defaultdict(
+            list
+        )  # {"action": ["story_1", ...], ...}
         self.correct_response = None
 
     def __hash__(self) -> int:
@@ -52,7 +52,9 @@ class StoryConflict:
         # Describe where the conflict occurs in the stories
         last_event_type, last_event_name = _get_previous_event(self.sliced_states[-1])
         if last_event_type:
-            conflict_message = f"CONFLICT after {last_event_type} '{last_event_name}':\n"
+            conflict_message = (
+                f"CONFLICT after {last_event_type} '{last_event_name}':\n"
+            )
         else:
             conflict_message = f"CONFLICT at the beginning of stories:\n"
 
@@ -61,20 +63,24 @@ class StoryConflict:
             # Summarize if necessary
             if len(stories) > 3:
                 # Four or more stories are present
-                conflict_description = f"'{stories[0]}' and {len(stories) - 1} other trackers"
+                conflict_description = (
+                    f"'{stories[0]}' and {len(stories) - 1} other trackers"
+                )
             else:
-                conflict_description = {
-                    1: "'{}'",
-                    2: "'{}' and '{}'",
-                    3: "'{}', '{}', and '{}'",
-                }.get(len(stories)).format(*stories)
+                conflict_description = (
+                    {1: "'{}'", 2: "'{}' and '{}'", 3: "'{}', '{}', and '{}'",}
+                    .get(len(stories))
+                    .format(*stories)
+                )
 
             conflict_message += f"  {action} predicted in {conflict_description}\n"
 
         return conflict_message
 
 
-TrackerEventStateTuple = namedtuple("TrackerEventStateTuple", "tracker event sliced_states")
+TrackerEventStateTuple = namedtuple(
+    "TrackerEventStateTuple", "tracker event sliced_states"
+)
 
 
 def find_story_conflicts(
@@ -98,7 +104,9 @@ def find_story_conflicts(
 
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
-    conflicts = _build_conflicts_from_states(trackers, domain, max_history, state_action_dict)
+    conflicts = _build_conflicts_from_states(
+        trackers, domain, max_history, state_action_dict
+    )
 
     return conflicts
 
@@ -139,11 +147,16 @@ def _build_conflicts_from_states(
 
         if hashed_state in rules:
             conflicts[hashed_state].add_conflicting_action(
-                action=element.event.as_story_string(), story_name=element.tracker.sender_id
+                action=element.event.as_story_string(),
+                story_name=element.tracker.sender_id,
             )
 
     # Remove conflicts that arise from unpredictable actions
-    return [conflict for (hashed_state, conflict) in conflicts.items() if conflict.has_prior_events]
+    return [
+        conflict
+        for (hashed_state, conflict) in conflicts.items()
+        if conflict.has_prior_events
+    ]
 
 
 def _sliced_states_iterator(
