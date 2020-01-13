@@ -52,27 +52,26 @@ class StoryConflict:
         # Describe where the conflict occurs in the stories
         last_event_type, last_event_name = _get_previous_event(self.sliced_states[-1])
         if last_event_type:
-            conflict_string = f"CONFLICT after {last_event_type} '{last_event_name}':\n"
+            conflict_message = f"CONFLICT after {last_event_type} '{last_event_name}':\n"
         else:
-            conflict_string = f"CONFLICT at the beginning of stories:\n"
+            conflict_message = f"CONFLICT at the beginning of stories:\n"
 
         # List which stories are in conflict with one another
         for action, stories in self._conflicting_actions.items():
             # Summarize if necessary
-            story_desc = {
-                1: "'{}'",
-                2: "'{}' and '{}'",
-                3: "'{}', '{}', and '{}'",
-            }.get(len(stories))
-            if story_desc:
-                story_desc = story_desc.format(*stories)
-            else:
+            if len(stories) > 3:
                 # Four or more stories are present
-                story_desc = f"'{stories[0]}' and {len(stories) - 1} other trackers"
+                conflict_description = f"'{stories[0]}' and {len(stories) - 1} other trackers"
+            else:
+                conflict_description = {
+                    1: "'{}'",
+                    2: "'{}' and '{}'",
+                    3: "'{}', '{}', and '{}'",
+                }.get(len(stories)).format(*stories)
 
-            conflict_string += f"  {action} predicted in {story_desc}\n"
+            conflict_message += f"  {action} predicted in {conflict_description}\n"
 
-        return conflict_string
+        return conflict_message
 
 
 TrackerEventStateTuple = namedtuple("TrackerEventStateTuple", "tracker event sliced_states")
