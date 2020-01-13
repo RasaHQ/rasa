@@ -1,6 +1,6 @@
 import logging
 import warnings
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.featurizers.featurizer import Featurizer
@@ -63,8 +63,13 @@ class ConveRTFeaturizer(Featurizer):
 
         sentence_encodings = self._compute_sentence_encodings(batch_examples, attribute)
 
-        return self._compute_sequence_encodings(
-            batch_examples, sentence_encodings, attribute
+        (
+            sequence_encodings,
+            number_of_tokens_in_sentence,
+        ) = self._compute_sequence_encodings(batch_examples, attribute)
+
+        return self._combine_encodings(
+            sentence_encodings, sequence_encodings, number_of_tokens_in_sentence
         )
 
     def _compute_sentence_encodings(
@@ -78,11 +83,8 @@ class ConveRTFeaturizer(Featurizer):
         return np.reshape(sentence_encodings, (len(batch_examples), 1, -1))
 
     def _compute_sequence_encodings(
-        self,
-        batch_examples: List[Message],
-        sentence_encodings: np.ndarray,
-        attribute: Text = TEXT_ATTRIBUTE,
-    ) -> np.ndarray:
+        self, batch_examples: List[Message], attribute: Text = TEXT_ATTRIBUTE
+    ) -> Tuple[np.ndarray, List[int]]:
         list_of_tokens = [
             example.get(TOKENS_NAMES[attribute]) for example in batch_examples
         ]
@@ -97,10 +99,26 @@ class ConveRTFeaturizer(Featurizer):
         # join the tokens to get a clean text to ensure the sequence length of
         # the returned embeddings from ConveRT matches the length of the tokens
         tokenized_texts = self._tokens_to_text(list_of_tokens)
-        sequence_encodings = self._sequence_encoding_of_text(tokenized_texts)
+
+        return (
+            self._sequence_encoding_of_text(tokenized_texts),
+            number_of_tokens_in_sentence,
+        )
+
+    def _combine_encodings(
+        self,
+        sentence_encodings: np.ndarray,
+        sequence_encodings: np.ndarray,
+        number_of_tokens_in_sentence: List[int],
+    ) -> np.ndarray:
+        """Combine the sequence encodings with the sentence encodings.
+
+        Append the sentence encoding to the end of the sequence encodings (position
+        of CLS token)."""
 
         final_embeddings = []
-        for index in range(len(batch_examples)):
+
+        for index in range(len(number_of_tokens_in_sentence)):
             sequence_length = number_of_tokens_in_sentence[index]
             sequence_encoding = sequence_encodings[index][:sequence_length]
             sentence_encoding = sentence_encodings[index]
