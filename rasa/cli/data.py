@@ -132,7 +132,7 @@ def split_nlu_data(args) -> None:
     test.persist(args.out, filename=f"test_data.{fformat}")
 
 
-def validate_files(args: "argparse.Namespace") -> NoReturn:
+def validate_files(args: "argparse.Namespace") -> None:
     """Validate all files needed for training a model.
 
     Fails with a non-zero exit code if there are any errors in the data."""
@@ -161,10 +161,13 @@ def validate_files(args: "argparse.Namespace") -> NoReturn:
         everything_is_alright = validator.verify_story_structure(
             not args.fail_on_warnings, max_history=args.max_history
         )
-    sys.exit(0) if everything_is_alright else sys.exit(1)
+
+    if not everything_is_alright:
+        print_error("Project validation completed with errors.")
+        sys.exit(1)
 
 
-def validate_stories(args: "argparse.Namespace") -> NoReturn:
+def validate_stories(args: "argparse.Namespace") -> None:
     """Validate all files needed for training a model.
 
         Fails with a non-zero exit code if there are any errors in the data."""
