@@ -11,6 +11,13 @@ class MitieTokenizer(Tokenizer):
 
     provides = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
+    defaults = {
+        # Flag to check whether to split intents
+        "intent_tokenization_flag": False,
+        # Symbol on which intent should be split
+        "intent_split_symbol": "_",
+    }
+
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["mitie"]

@@ -9,7 +9,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message
 
-from rasa.nlu.constants import INTENT_ATTRIBUTE, TOKENS_NAMES, MESSAGE_ATTRIBUTES
+from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
 
 logger = logging.getLogger(__name__)
 
@@ -40,14 +40,6 @@ class JiebaTokenizer(Tokenizer):
         # path to dictionary file or None
         self.dictionary_path = self.component_config.get("dictionary_path")
 
-        # flag to check whether to split intents
-        self.intent_tokenization_flag = self.component_config.get(
-            "intent_tokenization_flag"
-        )
-
-        # symbol to split intents on
-        self.intent_split_symbol = self.component_config.get("intent_split_symbol")
-
         # load dictionary
         if self.dictionary_path is not None:
             self.load_custom_dictionary(self.dictionary_path)
@@ -76,18 +68,10 @@ class JiebaTokenizer(Tokenizer):
 
         text = message.get(attribute)
 
-        text = self.preprocess_text(text, attribute)
         tokenized = jieba.tokenize(text)
         tokens = [Token(word, start) for (word, start, end) in tokenized]
 
         return tokens
-
-    def preprocess_text(self, text: Text, attribute: Text) -> Text:
-
-        if attribute == INTENT_ATTRIBUTE and self.intent_tokenization_flag:
-            return " ".join(text.split(self.intent_split_symbol))
-        else:
-            return text
 
     @classmethod
     def load(

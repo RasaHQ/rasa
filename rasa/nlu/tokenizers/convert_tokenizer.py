@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Text
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import Message
-from rasa.nlu.constants import MESSAGE_ATTRIBUTES, TOKENS_NAMES, INTENT_ATTRIBUTE
+from rasa.nlu.constants import MESSAGE_ATTRIBUTES, TOKENS_NAMES
 import tensorflow as tf
 
 
@@ -63,9 +63,6 @@ class ConveRTTokenizer(WhitespaceTokenizer):
 
         # perform whitespace tokenization
         tokens_in = super().tokenize(message, attribute)
-
-        if attribute == INTENT_ATTRIBUTE:
-            return tokens_in
 
         tokens_out = []
 

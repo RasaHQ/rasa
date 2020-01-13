@@ -12,6 +12,7 @@ from rasa.nlu.constants import (
     CLS_TOKEN,
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
+    INTENT_ATTRIBUTE,
 )
 
 logger = logging.getLogger(__name__)
@@ -61,11 +62,17 @@ class Token(object):
 
 
 class Tokenizer(Component):
-    def train_attributes(self) -> List[Text]:
-        """Returns the attributes of a message that indicate what kind of texts should
-        be tokenized."""
+    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
+        """Construct a new tokenizer using the WhitespaceTokenizer framework."""
 
-        return MESSAGE_ATTRIBUTES
+        super().__init__(component_config)
+
+        # flag to check whether to split intents
+        self.intent_tokenization_flag = self.component_config.get(
+            "intent_tokenization_flag", False
+        )
+        # split symbol for intents
+        self.intent_split_symbol = self.component_config.get("intent_split_symbol", "_")
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         """Tokenizes the text of the provided attribute of the incoming message."""
@@ -81,10 +88,13 @@ class Tokenizer(Component):
         """Tokenize all training data."""
 
         for example in training_data.training_examples:
-            for attribute in self.train_attributes():
+            for attribute in MESSAGE_ATTRIBUTES:
                 if example.get(attribute) is not None:
-                    tokens = self.tokenize(example, attribute)
-                    tokens = self.add_cls_token(tokens, attribute)
+                    if attribute == INTENT_ATTRIBUTE:
+                        tokens = self._split_intent(example)
+                    else:
+                        tokens = self.tokenize(example, attribute)
+                        tokens = self.add_cls_token(tokens, attribute)
                     example.set(TOKENS_NAMES[attribute], tokens)
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -93,6 +103,30 @@ class Tokenizer(Component):
         tokens = self.tokenize(message, TEXT_ATTRIBUTE)
         tokens = self.add_cls_token(tokens, TEXT_ATTRIBUTE)
         message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
+
+    def _split_intent(self, message: Message):
+        text = message.get(INTENT_ATTRIBUTE)
+
+        words = (
+            text.split(self.intent_split_symbol)
+            if self.intent_tokenization_flag
+            else [text]
+        )
+
+        return self._convert_words_to_tokens(words, text)
+
+    @staticmethod
+    def _convert_words_to_tokens(words: List[Text], text: Text) -> List[Token]:
+        running_offset = 0
+        tokens = []
+
+        for word in words:
+            word_offset = text.index(word, running_offset)
+            word_len = len(word)
+            running_offset = word_offset + word_len
+            tokens.append(Token(word, word_offset))
+
+        return tokens
 
     @staticmethod
     def add_cls_token(tokens: List[Token], attribute: Text) -> List[Token]:

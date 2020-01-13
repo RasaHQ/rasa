@@ -1,6 +1,6 @@
 import pytest
 
-from rasa.nlu.constants import CLS_TOKEN, TEXT_ATTRIBUTE, INTENT_ATTRIBUTE
+from rasa.nlu.constants import TOKENS_NAMES, TEXT_ATTRIBUTE, INTENT_ATTRIBUTE
 from rasa.nlu.training_data import TrainingData, Message
 from tests.nlu import utilities
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -48,7 +48,7 @@ def test_whitespace(text, expected_tokens, expected_indices):
         ("Forecast for LUNCH", ["Forecast for LUNCH"]),
     ],
 )
-def test_whitespace_custom_intent_symbol(text, expected_tokens):
+def test_custom_intent_symbol(text, expected_tokens):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
     tk = WhitespaceTokenizer(component_config)
@@ -56,8 +56,10 @@ def test_whitespace_custom_intent_symbol(text, expected_tokens):
     message = Message(text)
     message.set(INTENT_ATTRIBUTE, text)
 
+    tk.train(TrainingData([message]))
+
     assert [
-        t.text for t in tk.tokenize(message, attribute=INTENT_ATTRIBUTE)
+        t.text for t in message.get(TOKENS_NAMES[INTENT_ATTRIBUTE])
     ] == expected_tokens
 
 

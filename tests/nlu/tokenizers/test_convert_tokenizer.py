@@ -1,7 +1,7 @@
 import pytest
 
-from rasa.nlu.training_data import Message
-from rasa.nlu.constants import TEXT_ATTRIBUTE, INTENT_ATTRIBUTE
+from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.constants import TEXT_ATTRIBUTE, INTENT_ATTRIBUTE, TOKENS_NAMES
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 
 
@@ -41,7 +41,7 @@ def test_convert_tokenizer_edge_cases(text, expected_tokens, expected_indices):
         ("Forecast for LUNCH", ["Forecast for LUNCH"]),
     ],
 )
-def test_convert_tokenizer_custom_intent_symbol(text, expected_tokens):
+def test_custom_intent_symbol(text, expected_tokens):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
     tk = ConveRTTokenizer(component_config)
@@ -49,6 +49,8 @@ def test_convert_tokenizer_custom_intent_symbol(text, expected_tokens):
     message = Message(text)
     message.set(INTENT_ATTRIBUTE, text)
 
+    tk.train(TrainingData([message]))
+
     assert [
-        t.text for t in tk.tokenize(message, attribute=INTENT_ATTRIBUTE)
+        t.text for t in message.get(TOKENS_NAMES[INTENT_ATTRIBUTE])
     ] == expected_tokens

@@ -83,3 +83,21 @@ def test_process_tokenizer(text, expected_tokens, expected_indices):
     assert [t.text for t in tokens] == expected_tokens
     assert [t.start for t in tokens] == [i[0] for i in expected_indices]
     assert [t.end for t in tokens] == [i[1] for i in expected_indices]
+
+
+@pytest.mark.parametrize(
+    "text, expected_tokens",
+    [
+        ("Forecast_for_LUNCH", ["Forecast_for_LUNCH"]),
+        ("Forecast for LUNCH", ["Forecast for LUNCH"]),
+    ],
+)
+def test_split_intent(text, expected_tokens):
+    component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
+
+    tk = WhitespaceTokenizer(component_config)
+
+    message = Message(text)
+    message.set(INTENT_ATTRIBUTE, text)
+
+    assert [t.text for t in tk._split_intent(message)] == expected_tokens

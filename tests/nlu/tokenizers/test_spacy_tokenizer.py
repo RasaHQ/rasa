@@ -58,7 +58,6 @@ def test_train_tokenizer(text, expected_tokens, expected_indices, spacy_nlp):
     message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(text))
     message.set(RESPONSE_ATTRIBUTE, text)
     message.set(SPACY_DOCS[RESPONSE_ATTRIBUTE], spacy_nlp(text))
-    message.set(INTENT_ATTRIBUTE, text)
 
     training_data = TrainingData()
     training_data.training_examples = [message]
@@ -72,6 +71,25 @@ def test_train_tokenizer(text, expected_tokens, expected_indices, spacy_nlp):
         assert [t.start for t in tokens] == [i[0] for i in expected_indices]
         assert [t.end for t in tokens] == [i[1] for i in expected_indices]
 
-    # no intent tokens set
-    tokens = training_data.training_examples[0].get(TOKENS_NAMES[INTENT_ATTRIBUTE])
-    assert tokens is None
+
+@pytest.mark.parametrize(
+    "text, expected_tokens",
+    [
+        ("Forecast_for_LUNCH", ["Forecast_for_LUNCH"]),
+        ("Forecast for LUNCH", ["Forecast for LUNCH"]),
+    ],
+)
+def test_custom_intent_symbol(text, expected_tokens, spacy_nlp):
+    component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
+
+    tk = SpacyTokenizer(component_config)
+
+    message = Message(text)
+    message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(text))
+    message.set(INTENT_ATTRIBUTE, text)
+
+    tk.train(TrainingData([message]))
+
+    assert [
+        t.text for t in message.get(TOKENS_NAMES[INTENT_ATTRIBUTE])
+    ] == expected_tokens

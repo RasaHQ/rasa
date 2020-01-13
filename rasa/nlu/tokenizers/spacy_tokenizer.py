@@ -16,8 +16,12 @@ class SpacyTokenizer(Tokenizer):
 
     requires = [SPACY_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
 
-    def train_attributes(self) -> List[Text]:
-        return DENSE_FEATURIZABLE_ATTRIBUTES
+    defaults = {
+        # Flag to check whether to split intents
+        "intent_tokenization_flag": False,
+        # Symbol on which intent should be split
+        "intent_split_symbol": "_",
+    }
 
     def get_doc(self, message: Message, attribute: Text) -> "Doc":
         return message.get(SPACY_DOCS[attribute])
