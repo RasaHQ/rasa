@@ -26,7 +26,7 @@ Getting Credentials
      the argument to post DMs to the bot.
   4. Use the entry for ``Bot User OAuth Access Token`` in the
      "OAuth & Permissions" tab as your ``slack_token``. It should start
-     with ``xoxob``.
+     with ``xoxb``.
 
 
 For more detailed steps, visit the
