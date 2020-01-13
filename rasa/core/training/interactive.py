@@ -1549,7 +1549,6 @@ async def train_agent_on_start(
         model_directory,
         _interpreter,
         endpoints,
-        args.get("dump_stories"),
         args.get("config")[0],
         None,
         additional_arguments,

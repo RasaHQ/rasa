@@ -26,10 +26,9 @@ async def train(
     output_path: Text,
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
     endpoints: "AvailableEndpoints" = None,
-    dump_stories: bool = False,
     policy_config: Optional[Union[Text, Dict]] = None,
     exclusion_percentage: int = None,
-    kwargs: Optional[Dict] = None,
+    additional_arguments: Optional[Dict] = None,
 ):
     from rasa.core.agent import Agent
     from rasa.core import config, utils
@@ -38,8 +37,8 @@ async def train(
     if not endpoints:
         endpoints = AvailableEndpoints()
 
-    if not kwargs:
-        kwargs = {}
+    if not additional_arguments:
+        additional_arguments = {}
 
     policies = config.load(policy_config)
 
@@ -51,8 +50,8 @@ async def train(
         policies=policies,
     )
 
-    data_load_args, kwargs = utils.extract_args(
-        kwargs,
+    data_load_args, additional_arguments = utils.extract_args(
+        additional_arguments,
         {
             "use_story_concatenation",
             "unique_last_num_states",
@@ -64,8 +63,8 @@ async def train(
     training_data = await agent.load_data(
         training_resource, exclusion_percentage=exclusion_percentage, **data_load_args
     )
-    agent.train(training_data, **kwargs)
-    agent.persist(output_path, dump_stories)
+    agent.train(training_data, **additional_arguments)
+    agent.persist(output_path, additional_arguments["dump_stories"])
 
     return agent
 
@@ -77,8 +76,7 @@ async def train_comparison_models(
     exclusion_percentages: Optional[List] = None,
     policy_configs: Optional[List] = None,
     runs: int = 1,
-    dump_stories: bool = False,
-    kwargs: Optional[Dict] = None,
+    additional_arguments: Optional[Dict] = None,
 ):
     """Train multiple models for comparison of policies"""
     from rasa import model
@@ -114,8 +112,7 @@ async def train_comparison_models(
                             train_path,
                             policy_config=policy_config,
                             exclusion_percentage=percentage,
-                            kwargs=kwargs,
-                            dump_stories=dump_stories,
+                            additional_arguments=additional_arguments,
                         ),
                         model.model_fingerprint(file_importer),
                     )
@@ -148,14 +145,13 @@ async def do_compare_training(
 ):
     _, no_stories = await asyncio.gather(
         train_comparison_models(
-            story_file,
-            args.domain,
-            args.out,
-            args.percentages,
-            args.config,
-            args.runs,
-            args.dump_stories,
-            additional_arguments,
+            story_file=story_file,
+            domain=args.domain,
+            output_path=args.out,
+            exclusion_percentages=args.percentages,
+            policy_configs=args.config,
+            runs=args.runs,
+            additional_arguments=additional_arguments,
         ),
         get_no_of_stories(args.stories, args.domain),
     )
