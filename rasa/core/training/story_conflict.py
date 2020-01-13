@@ -11,15 +11,15 @@ from rasa.core.training.generator import TrackerWithCachedStates
 class StoryConflict:
     def __init__(
         self, sliced_states: List[Optional[Dict[Text, float]]],
-    ):
+    ) -> None:
         self.sliced_states = sliced_states
         self._conflicting_actions = {}  # {"action": ["story_1", ...], ...}
         self.correct_response = None
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(str(list(self.sliced_states)))
 
-    def add_conflicting_action(self, action: Text, story_name: Text):
+    def add_conflicting_action(self, action: Text, story_name: Text) -> None:
         """
         Add another action that follows from the same state
         :param action: Name of the action
@@ -46,7 +46,7 @@ class StoryConflict:
         """
         return _get_prev_event(self.sliced_states[-1])[0] is not None
 
-    def __str__(self):
+    def __str__(self) -> Text:
         # Describe where the conflict occurs in the stories
         last_event_type, last_event_name = _get_prev_event(self.sliced_states[-1])
         if last_event_type:
@@ -127,7 +127,7 @@ def _build_conflicts_from_states(
     domain: Domain,
     max_history: int,
     rules: Dict[int, Optional[List[Text]]],
-):
+) -> List["StoryConflict"]:
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
     conflicts = {}
