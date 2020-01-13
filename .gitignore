@@ -85,3 +85,4 @@ events.db
 env
 .dir-locals.el
 .history
+rasadev.code-workspace

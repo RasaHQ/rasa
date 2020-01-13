@@ -181,7 +181,7 @@ def test_custom_slot_type(tmpdir: Path):
          custom:
            type: tests.core.conftest.CustomSlot
 
-       templates:
+       responses:
          utter_greet:
            - text: hey there!
 
@@ -200,7 +200,7 @@ def test_custom_slot_type(tmpdir: Path):
         custom:
          type: tests.core.conftest.Unknown
 
-    templates:
+    responses:
         utter_greet:
          - text: hey there!
 
@@ -211,7 +211,7 @@ def test_custom_slot_type(tmpdir: Path):
         custom:
          type: blubblubblub
 
-    templates:
+    responses:
         utter_greet:
          - text: hey there!
 
@@ -234,19 +234,56 @@ config:
 entities: []
 forms: []
 intents: []
+responses:
+  utter_greet:
+  - text: hey there!
 session_config:
   carry_over_slots_to_new_session: true
   session_expiration_time: 60
-slots: {}
-templates:
-  utter_greet:
-  - text: hey there!"""
+slots: {}"""
 
     domain = Domain.from_yaml(test_yaml)
     # python 3 and 2 are different here, python 3 will have a leading set
     # of --- at the beginning of the yml
     assert domain.as_yaml().strip().endswith(test_yaml.strip())
     assert Domain.from_yaml(domain.as_yaml()) is not None
+
+def test_domain_to_yaml_deprecated_templates():
+    test_yaml = """actions:
+- utter_greet
+config:
+  store_entities_as_slots: true
+entities: []
+forms: []
+intents: []
+templates:
+  utter_greet:
+  - text: hey there!
+session_config:
+  carry_over_slots_to_new_session: true
+  session_expiration_time: 60
+slots: {}"""
+
+    target_yaml = """actions:
+- utter_greet
+config:
+  store_entities_as_slots: true
+entities: []
+forms: []
+intents: []
+responses:
+  utter_greet:
+  - text: hey there!
+session_config:
+  carry_over_slots_to_new_session: true
+  session_expiration_time: 60
+slots: {}"""
+
+    domain = Domain.from_yaml(test_yaml)
+    # python 3 and 2 are different here, python 3 will have a leading set
+    # of --- at the beginning of the yml
+    assert domain.as_yaml().strip().endswith(target_yaml.strip())
+    assert Domain.from_yaml(domain.as_yaml()) is not None 
 
 
 def test_merge_yaml_domains():
@@ -257,7 +294,7 @@ config:
 entities: []
 intents: []
 slots: {}
-templates:
+responses:
   utter_greet:
   - text: hey there!"""
 
@@ -276,7 +313,7 @@ intents:
 slots:
   cuisine:
     type: text
-templates:
+responses:
   utter_greet:
   - text: hey you!"""
 
@@ -559,7 +596,7 @@ def test_clean_domain():
             "pure_intent",
         ],
         "entities": ["name", "other", "unrelated_recognized_entity"],
-        "templates": {
+        "responses": {
             "utter_greet": [{"text": "hey there!"}],
             "utter_goodbye": [{"text": "goodbye :("}],
             "utter_default": [{"text": "default message"}],
@@ -572,6 +609,33 @@ def test_clean_domain():
 
     assert hash(actual) == hash(expected)
 
+def test_clean_domain_deprecated_templates():
+    domain_path = "data/test_domains/default_deprecated_templates.yml"
+    cleaned = Domain.load(domain_path).cleaned_domain()
+
+    expected = {
+        "intents": [
+            {"greet": {"use_entities": ["name"]}},
+            {"default": {"ignore_entities": ["unrelated_recognized_entity"]}},
+            {"goodbye": {"use_entities": []}},
+            {"thank": {"use_entities": []}},
+            "ask",
+            {"why": {"use_entities": []}},
+            "pure_intent",
+        ],
+        "entities": ["name", "other", "unrelated_recognized_entity"],
+        "responses": {
+            "utter_greet": [{"text": "hey there!"}],
+            "utter_goodbye": [{"text": "goodbye :("}],
+            "utter_default": [{"text": "default message"}],
+        },
+        "actions": ["utter_default", "utter_goodbye", "utter_greet"],
+    }
+
+    expected = Domain.from_dict(expected)
+    actual = Domain.from_dict(cleaned)
+
+    assert hash(actual) == hash(expected)
 
 def test_add_knowledge_base_slots(default_domain):
     import copy

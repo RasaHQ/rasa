@@ -123,7 +123,14 @@ class Domain:
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
-        utter_templates = cls.collect_templates(data.get("templates", {}))
+        utter_templates = cls.collect_templates(data.get("responses", {}))
+        if "templates" in data:
+            warnings.warn(
+                "'templates' in the domain should be renamed to 'responses'",
+                FutureWarning,
+            ) 
+            utter_templates = cls.collect_templates(data.get("templates", {}))
+
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
@@ -226,7 +233,7 @@ class Domain:
         for key in ["entities", "actions", "forms"]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
-        for key in ["templates", "slots"]:
+        for key in ["responses", "slots"]:
             combined[key] = merge_dicts(combined[key], domain_dict[key], override)
 
         return self.__class__.from_dict(combined)
@@ -706,7 +713,7 @@ class Domain:
             "intents": [{k: v} for k, v in self.intent_properties.items()],
             "entities": self.entities,
             "slots": self._slot_definitions(),
-            "templates": self.templates,
+            "responses": self.templates,
             "actions": self.user_actions,  # class names of the actions
             "forms": self.form_names,
         }

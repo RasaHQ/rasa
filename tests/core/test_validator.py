@@ -45,7 +45,7 @@ async def test_fail_on_invalid_utterances(tmpdir):
     invalid_domain = str(tmpdir / "invalid_domain.yml")
     io_utils.write_yaml_file(
         {
-            "templates": {"utter_greet": {"text": "hello"}},
+            "responses": {"utter_greet": {"text": "hello"}},
             "actions": [
                 "utter_greet",
                 "utter_non_existent",  # error: utter template odes not exist

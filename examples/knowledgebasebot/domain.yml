@@ -36,7 +36,7 @@ actions:
 - utter_iamabot
 - action_query_knowledge_base
 
-templates:
+responses:
   utter_greet:
   - text: "Hey!"
   - text: "Hello! How can I help you?"
