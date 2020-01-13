@@ -537,7 +537,7 @@ class EmbeddingIntentClassifier(Component):
                 dense_features.append(f)
 
         output = tf.concat(dense_features, axis=-1) * mask
-        output = tf.reduce_sum(output, axis=1)
+        output = tf.squeeze(output, axis=1)
 
         return output
 

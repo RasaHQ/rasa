@@ -10,12 +10,11 @@ from rasa.nlu.constants import SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, TEXT_A
 def sequence_to_sentence_features(
     features: Union[np.ndarray, scipy.sparse.spmatrix]
 ) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
-    """
-    Extract the CLS token vector as sentence features.
+    """Extract the CLS token vector as sentence features.
 
     Features is a sequence. The last token is the CLS token. The feature vector of
-    this token contains the sentence features.
-    """
+    this token contains the sentence features."""
+
     if features is None:
         return None
 

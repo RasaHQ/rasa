@@ -24,6 +24,8 @@ class ConveRTFeaturizer(Featurizer):
         DENSE_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ]
 
+    requires = [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
+
     def _load_model(self) -> None:
 
         # needed in order to load model
