@@ -5,10 +5,9 @@ from rasa.importers.rasa import RasaFileImporter
 from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
-async def test_find_no_conflicts():
+async def _setup_trackers_for_testing(domain_path, training_data_file):
     importer = RasaFileImporter(
-        domain_path=DEFAULT_DOMAIN_PATH_WITH_SLOTS,
-        training_data_paths=[DEFAULT_STORIES_FILE],
+        domain_path=domain_path, training_data_paths=[training_data_file],
     )
     validator = await Validator.from_importer(importer)
 
@@ -19,137 +18,90 @@ async def test_find_no_conflicts():
         augmentation_factor=0,
     ).generate()
 
+    return trackers, validator.domain
+
+
+async def test_find_no_conflicts():
+    trackers, domain = await _setup_trackers_for_testing(
+        DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
+    )
+
     # Create a list of `StoryConflict` objects
-    conflicts = find_story_conflicts(trackers, validator.domain, 5)
+    conflicts = find_story_conflicts(trackers, domain, 5)
 
     assert conflicts == []
 
 
 async def test_find_conflicts_in_short_history():
-    importer = RasaFileImporter(
-        domain_path="data/test_domains/default.yml",
-        training_data_paths=["data/test_stories/stories_conflicting_1.md"],
+    trackers, domain = await _setup_trackers_for_testing(
+        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_1.md"
     )
-    validator = await Validator.from_importer(importer)
-
-    trackers = TrainingDataGenerator(
-        validator.story_graph,
-        domain=validator.domain,
-        remove_duplicates=False,
-        augmentation_factor=0,
-    ).generate()
 
     # `max_history = 3` is too small, so a conflict must arise
-    conflicts = find_story_conflicts(trackers, validator.domain, 3)
+    conflicts = find_story_conflicts(trackers, domain, 3)
     assert len(conflicts) == 1
 
     # With `max_history = 4` the conflict should disappear
-    conflicts = find_story_conflicts(trackers, validator.domain, 4)
+    conflicts = find_story_conflicts(trackers, domain, 4)
     assert len(conflicts) == 0
 
 
 async def test_find_conflicts_checkpoints():
-    importer = RasaFileImporter(
-        domain_path="data/test_domains/default.yml",
-        training_data_paths=["data/test_stories/stories_conflicting_2.md"],
+    trackers, domain = await _setup_trackers_for_testing(
+        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_2.md"
     )
-    validator = await Validator.from_importer(importer)
-
-    trackers = TrainingDataGenerator(
-        validator.story_graph,
-        domain=validator.domain,
-        remove_duplicates=False,
-        augmentation_factor=0,
-    ).generate()
 
     # Create a list of `StoryConflict` objects
-    conflicts = find_story_conflicts(trackers, validator.domain, 5)
+    conflicts = find_story_conflicts(trackers, domain, 5)
 
     assert len(conflicts) == 1
     assert conflicts[0].conflicting_actions == ["utter_goodbye", "utter_default"]
 
 
 async def test_find_conflicts_or():
-    importer = RasaFileImporter(
-        domain_path="data/test_domains/default.yml",
-        training_data_paths=["data/test_stories/stories_conflicting_3.md"],
+    trackers, domain = await _setup_trackers_for_testing(
+        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_3.md"
     )
-    validator = await Validator.from_importer(importer)
-
-    trackers = TrainingDataGenerator(
-        validator.story_graph,
-        domain=validator.domain,
-        remove_duplicates=False,
-        augmentation_factor=0,
-    ).generate()
 
     # Create a list of `StoryConflict` objects
-    conflicts = find_story_conflicts(trackers, validator.domain, 5)
+    conflicts = find_story_conflicts(trackers, domain, 5)
 
     assert len(conflicts) == 1
     assert conflicts[0].conflicting_actions == ["utter_default", "utter_goodbye"]
 
 
 async def test_find_conflicts_slots():
-    importer = RasaFileImporter(
-        domain_path="data/test_domains/default.yml",
-        training_data_paths=["data/test_stories/stories_conflicting_4.md"],
+    trackers, domain = await _setup_trackers_for_testing(
+        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_4.md"
     )
-    validator = await Validator.from_importer(importer)
-
-    trackers = TrainingDataGenerator(
-        validator.story_graph,
-        domain=validator.domain,
-        remove_duplicates=False,
-        augmentation_factor=0,
-    ).generate()
 
     # Create a list of `StoryConflict` objects
-    conflicts = find_story_conflicts(trackers, validator.domain, 5)
+    conflicts = find_story_conflicts(trackers, domain, 5)
 
     assert len(conflicts) == 1
     assert conflicts[0].conflicting_actions == ["utter_default", "utter_greet"]
 
 
 async def test_find_conflicts_slots_2():
-    importer = RasaFileImporter(
-        domain_path="data/test_domains/default.yml",
-        training_data_paths=["data/test_stories/stories_conflicting_5.md"],
+    trackers, domain = await _setup_trackers_for_testing(
+        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_5.md"
     )
-    validator = await Validator.from_importer(importer)
-
-    trackers = TrainingDataGenerator(
-        validator.story_graph,
-        domain=validator.domain,
-        remove_duplicates=False,
-        augmentation_factor=0,
-    ).generate()
 
     # Create a list of `StoryConflict` objects
-    conflicts = find_story_conflicts(trackers, validator.domain, 5)
+    conflicts = find_story_conflicts(trackers, domain, 5)
 
     assert len(conflicts) == 0
 
 
 async def test_find_conflicts_multiple_stories():
-    importer = RasaFileImporter(
-        domain_path="data/test_domains/default.yml",
-        training_data_paths=["data/test_stories/stories_conflicting_6.md"],
+    trackers, domain = await _setup_trackers_for_testing(
+        "data/test_domains/default.yml", "data/test_stories/stories_conflicting_6.md"
     )
-    validator = await Validator.from_importer(importer)
-
-    trackers = TrainingDataGenerator(
-        validator.story_graph,
-        domain=validator.domain,
-        remove_duplicates=False,
-        augmentation_factor=0,
-    ).generate()
 
     # Create a list of `StoryConflict` objects
-    conflicts = find_story_conflicts(trackers, validator.domain, 5)
+    conflicts = find_story_conflicts(trackers, domain, 5)
 
     assert len(conflicts) == 1
-    print(conflicts[0])
     assert "and 3 other trackers" in str(conflicts[0])
 
 
