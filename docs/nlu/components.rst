@@ -613,9 +613,16 @@ Response Selector
 Tokenizers
 ----------
 
+If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
+modeling hierarchical intent structure, use these flags with any tokenizer:
+
+- ``intent_tokenization_flag`` indicates whether to tokenize intent labels or not. By default this flag is set to
+  ``False``, intent will not be tokenized.
+- ``intent_split_symbol`` sets the delimiter string to split the intent labels, default is underscore
+  (``_``).
+
     .. note:: All tokenizer add an additional token ``__CLS__`` to the end of the list of tokens when tokenizing
               text and responses.
-
 
 WhitespaceTokenizer
 ~~~~~~~~~~~~~~~~~~~
@@ -627,13 +634,6 @@ WhitespaceTokenizer
     Creates a token for every whitespace separated character sequence. Can be used to define tokens for the MITIE entity
     extractor.
 :Configuration:
-
-    If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
-    modeling hierarchical intent structure, use these flags:
-
-    - tokenization of intent and response labels:
-        - ``intent_split_symbol`` sets the delimiter string to split the intent and response labels, default is whitespace.
-
     Make the tokenizer not case sensitive by adding the ``case_sensitive: false`` option. Default being ``case_sensitive: true``.
 
     .. code-block:: yaml
