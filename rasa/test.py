@@ -101,7 +101,9 @@ def test_core(
 
     _agent = Agent.load(unpacked_model, interpreter=_interpreter)
 
-    kwargs = utils.minimal_kwargs(additional_arguments, rasa.core.test, ["stories", "agent"])
+    kwargs = utils.minimal_kwargs(
+        additional_arguments, rasa.core.test, ["stories", "agent"]
+    )
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
@@ -132,7 +134,9 @@ def test_nlu(
     nlu_model = os.path.join(unpacked_model, "nlu")
 
     if os.path.exists(nlu_model):
-        kwargs = utils.minimal_kwargs(additional_arguments, run_evaluation, ["data_path", "model"])
+        kwargs = utils.minimal_kwargs(
+            additional_arguments, run_evaluation, ["data_path", "model"]
+        )
         run_evaluation(nlu_data, nlu_model, output_directory=output_directory, **kwargs)
     else:
         print_error(
@@ -186,7 +190,10 @@ def compare_nlu_models(
 
 
 def perform_nlu_cross_validation(
-    config: Text, nlu: Text, output: Text, additional_arguments: Optional[Dict[Text, Any]]
+    config: Text,
+    nlu: Text,
+    output: Text,
+    additional_arguments: Optional[Dict[Text, Any]],
 ):
     import rasa.nlu.config
     from rasa.nlu.test import (

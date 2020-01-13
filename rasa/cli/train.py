@@ -114,7 +114,9 @@ def train_core(
     else:
         from rasa.core.train import do_compare_training
 
-        loop.run_until_complete(do_compare_training(args, story_file, additional_arguments))
+        loop.run_until_complete(
+            do_compare_training(args, story_file, additional_arguments)
+        )
 
 
 def train_nlu(
