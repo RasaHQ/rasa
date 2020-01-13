@@ -84,11 +84,11 @@ def find_story_conflicts(
     """Generates a list of StoryConflict objects, describing conflicts in the given trackers.
 
     Args:
-        trackers: Trackers in which to search for conflicts
-        domain: The domain
-        max_history: The maximum history length to be taken into account
+        trackers: Trackers in which to search for conflicts.
+        domain: The domain.
+        max_history: The maximum history length to be taken into account.
     Returns:
-        List of conflicts
+        List of conflicts.
     """
 
     # We do this in two steps, to reduce memory consumption:
@@ -156,12 +156,12 @@ def _sliced_states_iterator(
     where the slicing is based on `max_history`.
 
     Args:
-        trackers: List of trackers
-        domain: Domain (used for tracker.past_states)
-        max_history: Assumed `max_history` value for slicing
+        trackers: List of trackers.
+        domain: Domain (used for tracker.past_states).
+        max_history: Assumed `max_history` value for slicing.
 
     Yields:
-        A (tracker, event, sliced_states) triplet
+        A (tracker, event, sliced_states) triplet.
     """
     for tracker in trackers:
         states = tracker.past_states(domain)
