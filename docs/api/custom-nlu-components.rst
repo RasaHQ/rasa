@@ -43,7 +43,7 @@ methods that you should implement:
 
 .. note::
     If you create a custom featurizer you should return a sequence of features.
-    E.g. your featurizer should return a matrix of size (token-size x feature-dimension).
+    E.g. your featurizer should return a matrix of size (number-of-tokens x feature-dimension).
     The feature vector of the ``__CLS__`` token should contain features for the complete message.
 
 Component
