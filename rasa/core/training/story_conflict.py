@@ -44,7 +44,10 @@ class StoryConflict:
         Returns a list of strings, describing what action
         occurs how often
         """
-        return [f"{a} [{len(s)}x]" for (a, s) in self._conflicting_actions.items()]
+        return [
+            f"{action} [{len(stories)}x]"
+            for (action, stories) in self._conflicting_actions.items()
+        ]
 
     @property
     def incorrect_stories(self) -> List[Text]:
@@ -141,9 +144,7 @@ def find_story_conflicts(
 
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
-    conflicts = _build_conflicts_from_states(
-        trackers, domain, max_history, rules
-    )
+    conflicts = _build_conflicts_from_states(trackers, domain, max_history, rules)
 
     return conflicts
 
@@ -210,9 +211,7 @@ def _sliced_states_iterator(
     """
     for tracker in trackers:
         states = tracker.past_states(domain)
-        states = [
-            dict(state) for state in states
-        ]  # From rasa/core/featurizers.py:318
+        states = [dict(state) for state in states]  # From rasa/core/featurizers.py:318
 
         idx = 0
         for event in tracker.events:
@@ -240,10 +239,7 @@ def _get_prev_event(
         return prev_event_type, prev_event_name
 
     for k in state:
-        if (
-            k.startswith(PREV_PREFIX)
-            and k[len(PREV_PREFIX) :] != ACTION_LISTEN_NAME
-        ):
+        if k.startswith(PREV_PREFIX) and k[len(PREV_PREFIX) :] != ACTION_LISTEN_NAME:
             prev_event_type = "action"
             prev_event_name = k[len(PREV_PREFIX) :]
 
