@@ -46,11 +46,11 @@ class StoryConflict:
         Returns:
             True if anything has happened before this conflict, otherwise False.
         """
-        return _get_prev_event(self.sliced_states[-1])[0] is not None
+        return _get_previous_event(self.sliced_states[-1])[0] is not None
 
     def __str__(self) -> Text:
         # Describe where the conflict occurs in the stories
-        last_event_type, last_event_name = _get_prev_event(self.sliced_states[-1])
+        last_event_type, last_event_name = _get_previous_event(self.sliced_states[-1])
         if last_event_type:
             conflict_string = f"CONFLICT after {last_event_type} '{last_event_name}':\n"
         else:
@@ -177,7 +177,7 @@ def _sliced_states_iterator(
                 idx += 1
 
 
-def _get_prev_event(
+def _get_previous_event(
     state: Optional[Dict[Text, float]]
 ) -> [Optional[Text], Optional[Text]]:
     """Returns previous event type and name.
