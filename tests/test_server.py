@@ -15,6 +15,7 @@ from mock import MagicMock
 import rasa
 import rasa.constants
 from rasa.core import events, utils
+from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel, RestInput, SlackInput
 from rasa.core.channels.slack import SlackBot
 from rasa.core.events import Event, UserUttered, SlotSet, BotUttered
@@ -563,25 +564,31 @@ def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
 
 @pytest.mark.parametrize("event", test_events)
 def test_pushing_event(rasa_app, event):
-    cid = str(uuid.uuid1())
-    conversation = f"/conversations/{cid}"
+    sender_id = str(uuid.uuid1())
+    conversation = f"/conversations/{sender_id}"
+
+    serialized_event = event.as_dict()
+    # Remove timestamp so that a new one is assigned on the server
+    serialized_event.pop("timestamp")
 
     _, response = rasa_app.post(
         f"{conversation}/tracker/events",
-        json=event.as_dict(),
+        json=serialized_event,
         headers={"Content-Type": "application/json"},
     )
     assert response.json is not None
     assert response.status == 200
 
-    _, tracker_response = rasa_app.get(f"/conversations/{cid}/tracker")
+    _, tracker_response = rasa_app.get(f"/conversations/{sender_id}/tracker")
     tracker = tracker_response.json
     assert tracker is not None
 
     assert len(tracker.get("events")) == 4
 
     evt = tracker.get("events")[3]
-    assert Event.from_parameters(evt) == event
+    deserialised_event = Event.from_parameters(evt)
+    assert deserialised_event == event
+    assert deserialised_event.timestamp > tracker.get("events")[2]["timestamp"]
 
 
 def test_push_multiple_events(rasa_app: SanicTestClient):
@@ -684,7 +691,7 @@ def test_get_tracker_with_jwt(rasa_secured_app):
     assert response.status == 200
 
 
-def test_list_routes(default_agent):
+def test_list_routes(default_agent: Agent):
     from rasa import server
 
     app = server.create_app(default_agent, auth_token=None)

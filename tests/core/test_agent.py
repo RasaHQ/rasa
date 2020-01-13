@@ -250,13 +250,10 @@ def test_two_stage_fallback_without_deny_suggestion(domain, policy_config):
 async def test_agent_update_model_none_domain(trained_model: Text):
     agent = await load_agent(model_path=trained_model)
     agent.update_model(
-        Domain.empty(),
-        None,
-        agent.fingerprint,
-        agent.interpreter,
-        agent.model_directory,
+        None, None, agent.fingerprint, agent.interpreter, agent.model_directory
     )
 
+    assert agent.domain is not None
     sender_id = "test_sender_id"
     message = UserMessage("hello", sender_id=sender_id)
     await agent.handle_message(message)
