@@ -1,50 +1,37 @@
-from unittest.mock import patch
-
-from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
-
 import pytest
 
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import TEXT_ATTRIBUTE, INTENT_ATTRIBUTE, TOKENS_NAMES
+from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 
 
 @pytest.mark.parametrize(
     "text, expected_tokens, expected_indices",
     [
         (
-            "我想去吃兰州拉面",
-            ["我", "想", "去", "吃", "兰州", "拉面"],
-            [(0, 1), (1, 2), (2, 3), (3, 4), (4, 6), (6, 8)],
+            "Forecast for lunch",
+            ["forecast", "for", "lunch"],
+            [(0, 8), (9, 12), (13, 18)],
         ),
+        ("hello", ["hello"], [(0, 5)]),
+        ("you're", ["you", "re"], [(0, 3), (4, 6)]),
+        ("r. n. b.", ["r", "n", "b"], [(0, 1), (3, 4), (6, 7)]),
+        ("rock & roll", ["rock", "&", "roll"], [(0, 4), (5, 6), (7, 11)]),
         (
-            "Micheal你好吗？",
-            ["Micheal", "你好", "吗", "？"],
-            [(0, 7), (7, 9), (9, 10), (10, 11)],
+            "ńöñàśçií",
+            ["ń", "ö", "ñ", "à", "ś", "ç", "i", "í"],
+            [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8)],
         ),
     ],
 )
-def test_jieba(text, expected_tokens, expected_indices):
-    tk = JiebaTokenizer()
+def test_convert_tokenizer_edge_cases(text, expected_tokens, expected_indices):
+    tk = ConveRTTokenizer()
 
     tokens = tk.tokenize(Message(text), attribute=TEXT_ATTRIBUTE)
 
     assert [t.text for t in tokens] == expected_tokens
     assert [t.start for t in tokens] == [i[0] for i in expected_indices]
     assert [t.end for t in tokens] == [i[1] for i in expected_indices]
-
-
-def test_jieba_load_dictionary(tmpdir_factory):
-    dictionary_path = tmpdir_factory.mktemp("jieba_custom_dictionary").strpath
-
-    component_config = {"dictionary_path": dictionary_path}
-
-    with patch.object(
-        JiebaTokenizer, "load_custom_dictionary", return_value=None
-    ) as mock_method:
-        tk = JiebaTokenizer(component_config)
-        tk.tokenize(Message(""), attribute=TEXT_ATTRIBUTE)
-
-    mock_method.assert_called_once_with(dictionary_path)
 
 
 @pytest.mark.parametrize(
@@ -57,7 +44,7 @@ def test_jieba_load_dictionary(tmpdir_factory):
 def test_custom_intent_symbol(text, expected_tokens):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
-    tk = JiebaTokenizer(component_config)
+    tk = ConveRTTokenizer(component_config)
 
     message = Message(text)
     message.set(INTENT_ATTRIBUTE, text)

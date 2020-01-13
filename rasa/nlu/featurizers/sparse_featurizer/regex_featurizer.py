@@ -18,6 +18,7 @@ from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     RESPONSE_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
+    CLS_TOKEN,
 )
 from rasa.constants import DOCS_BASE_URL
 
@@ -33,13 +34,6 @@ class RegexFeaturizer(Featurizer):
 
     requires = [TOKENS_NAMES[TEXT_ATTRIBUTE]]
 
-    defaults = {
-        # if True return a sequence of features (return vector has size
-        # token-size x feature-dimension)
-        # if False token-size will be equal to 1
-        "return_sequence": False
-    }
-
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
@@ -52,8 +46,6 @@ class RegexFeaturizer(Featurizer):
         self.known_patterns = known_patterns if known_patterns else []
         lookup_tables = lookup_tables or []
         self._add_lookup_table_regexes(lookup_tables)
-
-        self.return_sequence = self.component_config["return_sequence"]
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
@@ -96,11 +88,7 @@ class RegexFeaturizer(Featurizer):
         message is tokenized, the function will mark all tokens with a dict
         relating the name of the regex to whether it was matched."""
         tokens = message.get(TOKENS_NAMES[attribute], [])
-
-        if self.return_sequence:
-            seq_length = len(tokens)
-        else:
-            seq_length = 1
+        seq_length = len(tokens)
 
         vec = np.zeros([seq_length, len(self.known_patterns)])
 
@@ -112,15 +100,19 @@ class RegexFeaturizer(Featurizer):
                 patterns = t.get("pattern", default={})
                 patterns[pattern["name"]] = False
 
-                if self.return_sequence:
-                    seq_index = token_index
-                else:
-                    seq_index = 0
+                if t.text == CLS_TOKEN:
+                    # make sure to set all patterns for the CLS token to False
+                    # the attribute patterns is needed later on and in the tests
+                    t.set("pattern", patterns)
+                    continue
 
                 for match in matches:
-                    if t.offset < match.end() and t.end > match.start():
+                    if t.start < match.end() and t.end > match.start():
                         patterns[pattern["name"]] = True
-                        vec[seq_index][pattern_index] = 1.0
+                        vec[token_index][pattern_index] = 1.0
+                        if attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE]:
+                            # CLS token vector should contain all patterns
+                            vec[-1][pattern_index] = 1.0
 
                 t.set("pattern", patterns)
 
