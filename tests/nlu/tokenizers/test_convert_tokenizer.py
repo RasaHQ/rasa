@@ -16,7 +16,7 @@ from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
         ("hello", ["hello"], [(0, 5)]),
         ("you're", ["you", "re"], [(0, 3), (4, 6)]),
         ("r. n. b.", ["r", "n", "b"], [(0, 1), (3, 4), (6, 7)]),
-        ("rock & roll", ["rock", "roll"], [(0, 4), (7, 11)]),
+        ("rock & roll", ["rock", "&", "roll"], [(0, 4), (5, 6), (7, 11)]),
         (
             "ńöñàśçií",
             ["ń", "ö", "ñ", "à", "ś", "ç", "i", "í"],

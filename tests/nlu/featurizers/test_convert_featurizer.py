@@ -80,7 +80,7 @@ def test_convert_featurizer_train():
         ("hello", "hello"),
         ("you're", "you re"),
         ("r. n. b.", "r n b"),
-        ("rock & roll", "rock roll"),
+        ("rock & roll", "rock & roll"),
         ("ńöñàśçií", "ńöñàśçií"),
     ],
 )
