@@ -70,7 +70,6 @@ async def test_find_conflicts_checkpoints():
 
 
 async def test_add_conflicting_action():
-
     sliced_states = [
         None,
         {},
@@ -85,7 +84,6 @@ async def test_add_conflicting_action():
 
 
 async def test_has_prior_events():
-
     sliced_states = [
         None,
         {},
@@ -97,7 +95,6 @@ async def test_has_prior_events():
 
 
 async def test_has_no_prior_events():
-
     sliced_states = [None]
     conflict = StoryConflict(sliced_states)
     assert not conflict.has_prior_events
