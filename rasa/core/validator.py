@@ -196,7 +196,9 @@ class Validator:
         """Verifies that bot behaviour in stories is deterministic."""
 
         logger.info("Story structure validation...")
-        logger.info(f"Assuming max_history = {max_history}")
+        logger.info(
+            f" Considering the preceding {max_history} turns for conflict analysis."
+        )
 
         trackers = TrainingDataGenerator(
             self.story_graph,
