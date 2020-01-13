@@ -91,7 +91,7 @@ As those feature vectors would normally take up a lot of memory, we store them a
 Sparse features only store the values that are non zero and their positions in the vector.
 Thus, we save a lot of memroy and are able to train on larger datasets.
 
-By default all featurizers will return a matrix of length (token-length x feature-dimension).
+By default all featurizers will return a matrix of length (number-of-tokens x feature-dimension).
 So, the returned matrix will have a feature vector for every token.
 This allows us to train sequence models.
 However, the additional token at the end (e.g. ``__CLS__``) contains features for the complete utterance.
