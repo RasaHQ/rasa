@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import List, Optional, Dict, Text
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -13,7 +14,7 @@ class StoryConflict:
         self, sliced_states: List[Optional[Dict[Text, float]]],
     ) -> None:
         self.sliced_states = sliced_states
-        self._conflicting_actions = {}  # {"action": ["story_1", ...], ...}
+        self._conflicting_actions = defaultdict(list)  # {"action": ["story_1", ...], ...}
         self.correct_response = None
 
     def __hash__(self) -> int:
@@ -26,10 +27,7 @@ class StoryConflict:
             action: Name of the action.
             story_name: Name of the story where this action is chosen.
         """
-        if action not in self._conflicting_actions:
-            self._conflicting_actions[action] = [story_name]
-        else:
-            self._conflicting_actions[action] += [story_name]
+        self._conflicting_actions[action] += [story_name]
 
     @property
     def conflicting_actions(self) -> List[Text]:
@@ -108,14 +106,12 @@ def _find_conflicting_states(
 ) -> Dict[int, Optional[List[Text]]]:
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
-    state_action_dict = {}
+    state_action_dict = defaultdict(list)
     for tracker, event, sliced_states in _sliced_states_iterator(
         trackers, domain, max_history
     ):
         hashed_state = hash(str(list(sliced_states)))
-        if hashed_state not in state_action_dict:
-            state_action_dict[hashed_state] = [event.as_story_string()]
-        elif hashed_state in state_action_dict and event.as_story_string() not in state_action_dict[hashed_state]:
+        if event.as_story_string() not in state_action_dict[hashed_state]:
             state_action_dict[hashed_state] += [event.as_story_string()]
 
     # Keep only conflicting `state_action_dict`s
