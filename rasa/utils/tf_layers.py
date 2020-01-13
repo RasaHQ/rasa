@@ -13,7 +13,9 @@ from typing import (
     NamedTuple,
 )
 import tensorflow as tf
+import tensorflow_addons as tfa
 import numpy as np
+from rasa.utils import train_utils
 
 if typing.TYPE_CHECKING:
     from tensor2tensor.utils.hparam import HParams
@@ -84,9 +86,9 @@ class ReluFfn(tf.keras.layers.Layer):
         super(ReluFfn, self).__init__(name=f"ffnn_{layer_name_suffix}")
 
         l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
-        self._layers = []
+        self._ffn_layers = []
         for i, layer_size in enumerate(layer_sizes):
-            self._layers.append(
+            self._ffn_layers.append(
                 tf.keras.layers.Dense(
                     units=layer_size,
                     activation="relu",
@@ -94,10 +96,10 @@ class ReluFfn(tf.keras.layers.Layer):
                     name=f"hidden_layer_{layer_name_suffix}_{i}",
                 )
             )
-            self._layers.append(tf.keras.layers.Dropout(rate=droprate))
+            self._ffn_layers.append(tf.keras.layers.Dropout(rate=droprate))
 
     def call(self, x, training):
-        for layer in self._layers:
+        for layer in self._ffn_layers:
             x = layer(x, training=training)
 
         return x
@@ -373,3 +375,82 @@ class TransformerEncoder(tf.keras.layers.Layer):
         # on the output, since the output can grow very large, being the sum of
         # a whole stack of unnormalized layer outputs.
         return self._layernorm(x)  # (batch_size, seq_len, d_model)
+
+
+class InputMask(tf.keras.layers.Layer):
+
+    def build(self, input_shape):
+        initializer = tf.keras.initializers.GlorotUniform()
+        self.mask_vector = self.add_weight(
+            shape=(1, 1, input_shape[-1]),
+            initializer=initializer,
+            trainable=True,
+            name="mask_vector",
+        )
+        self.built = True
+
+    def call(self, x, mask, training):
+        """Randomly mask input sequences."""
+
+        # do not substitute with cls token
+        pad_mask_up_to_last = tf.math.cumprod(
+            1 - mask, axis=1, exclusive=True, reverse=True
+        )
+        mask_up_to_last = 1 - pad_mask_up_to_last
+
+        x_random_pad = (
+            tf.random.uniform(tf.shape(x), tf.reduce_min(x), tf.reduce_max(x), x.dtype)
+            * pad_mask_up_to_last
+        )
+        # shuffle over batch dim
+        x_shuffle = tf.random.shuffle(x * mask_up_to_last + x_random_pad)
+
+        # shuffle over sequence dim
+        x_shuffle = tf.transpose(x_shuffle, [1, 0, 2])
+        x_shuffle = tf.random.shuffle(x_shuffle)
+        x_shuffle = tf.transpose(x_shuffle, [1, 0, 2])
+
+        # shuffle doesn't support backprop
+        x_shuffle = tf.stop_gradient(x_shuffle)
+
+        mask_vector = tf.tile(self.mask_vector, (tf.shape(x)[0], tf.shape(x)[1], 1))
+
+        other_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype)
+        other_prob = tf.tile(other_prob, (1, 1, x.shape[-1]))
+        x_other = tf.where(
+            other_prob < 0.70, mask_vector, tf.where(other_prob < 0.80, x_shuffle, x)
+        )
+
+        lm_mask_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype) * mask
+        lm_mask_bool = tf.greater_equal(lm_mask_prob, 0.85)
+        x_masked = tf.where(tf.tile(lm_mask_bool, (1, 1, x.shape[-1])), x_other, x)
+
+        x_masked = tf.cond(training, lambda: x_masked, lambda: x)
+
+        return x_masked, lm_mask_bool
+
+
+class CRF(tf.keras.layers.Layer):
+
+    def __init__(self, num_tags, name=None):
+        super().__init__(name=name)
+
+        initializer = tf.keras.initializers.GlorotUniform()
+        self.transition_params = self.add_weight(
+            shape=(num_tags, num_tags),
+            initializer=initializer,
+            trainable=True,
+            name="transitions",
+        )
+
+    def call(self, logits, sequence_lengths):
+        pred_ids, _ = tfa.text.crf.crf_decode(
+            logits, self.transition_params, sequence_lengths
+        )
+        return pred_ids
+
+    def loss(self, logits, tag_indices, sequence_lengths):
+        log_likelihood, _ = tfa.text.crf.crf_log_likelihood(
+            logits, tag_indices, sequence_lengths, self.transition_params
+        )
+        return tf.reduce_mean(-log_likelihood)

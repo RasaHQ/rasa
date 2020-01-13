@@ -1219,6 +1219,7 @@ class DIET(tf.keras.layers.Layer):
         self.train_metrics = {"t_loss": tf.keras.metrics.Mean(name="t_loss")}
         self.eval_metrics = {"val_t_loss": tf.keras.metrics.Mean(name="val_t_loss")}
         if self._masked_lm_loss:
+            self._input_mask = tf_layers.InputMask()
             self._embed["text_mask"] = tf_layers.Embed(
                 embed_dim, reg_lambda, "text_mask", similarity_type
             )
@@ -1229,6 +1230,8 @@ class DIET(tf.keras.layers.Layer):
             self.train_metrics["m_acc"] = tf.keras.metrics.Mean(name="m_acc")
             self.eval_metrics["val_m_loss"] = tf.keras.metrics.Mean(name="val_m_loss")
             self.eval_metrics["val_m_acc"] = tf.keras.metrics.Mean(name="val_m_acc")
+        else:
+            self._input_mask = None
 
         if self._intent_classification:
             self._embed["text"] = tf_layers.Embed(
@@ -1246,29 +1249,16 @@ class DIET(tf.keras.layers.Layer):
             self._embed["logits"] = tf_layers.Embed(
                 self._num_tags, reg_lambda, "logits"
             )
+            self._crf = tf_layers.CRF(self._num_tags)
             self.train_metrics["e_loss"] = tf.keras.metrics.Mean(name="e_loss")
             self.train_metrics["e_f1"] = tf.keras.metrics.Mean(name="e_f1")
             self.eval_metrics["val_e_loss"] = tf.keras.metrics.Mean(name="val_e_loss")
             self.eval_metrics["val_e_f1"] = tf.keras.metrics.Mean(name="val_e_f1")
+        else:
+            self._crf = None
 
         # tf tensors
         self.training = tf.ones((), tf.bool)
-        initializer = tf.keras.initializers.GlorotUniform()
-        text_input_dim = self._input_dim(session_data["text_features"], dense_dim)
-        self._mask_vector = self.add_weight(
-            shape=(1, 1, text_input_dim),
-            initializer=initializer,
-            trainable=True,
-            name="mask_vector",
-        )
-        l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
-        self._crf_params = self.add_weight(
-            shape=(self._num_tags, self._num_tags),
-            initializer=initializer,
-            regularizer=l2_regularizer,
-            trainable=True,
-            name="crf_params",
-        )
 
         # tf training
         self._optimizer = tf.keras.optimizers.Adam(learning_rate)
@@ -1320,48 +1310,6 @@ class DIET(tf.keras.layers.Layer):
         x = self._combine_sparse_dense_features(features, mask, name)
         return self._ffnn[name](tf.reduce_sum(x, 1), self.training)
 
-    def _mask_input(
-        self, a: "tf.Tensor", mask: "tf.Tensor"
-    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
-        """Randomly mask input sequences."""
-
-        # do not substitute with cls token
-        pad_mask_up_to_last = tf.math.cumprod(
-            1 - mask, axis=1, exclusive=True, reverse=True
-        )
-        mask_up_to_last = 1 - pad_mask_up_to_last
-
-        a_random_pad = (
-            tf.random.uniform(tf.shape(a), tf.reduce_min(a), tf.reduce_max(a), a.dtype)
-            * pad_mask_up_to_last
-        )
-        # shuffle over batch dim
-        a_shuffle = tf.random.shuffle(a * mask_up_to_last + a_random_pad)
-
-        # shuffle over sequence dim
-        a_shuffle = tf.transpose(a_shuffle, [1, 0, 2])
-        a_shuffle = tf.random.shuffle(a_shuffle)
-        a_shuffle = tf.transpose(a_shuffle, [1, 0, 2])
-
-        # shuffle doesn't support backprop
-        a_shuffle = tf.stop_gradient(a_shuffle)
-
-        a_mask = tf.tile(self._mask_vector, (tf.shape(a)[0], tf.shape(a)[1], 1))
-
-        other_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype)
-        other_prob = tf.tile(other_prob, (1, 1, a.shape[-1]))
-        a_other = tf.where(
-            other_prob < 0.70, a_mask, tf.where(other_prob < 0.80, a_shuffle, a)
-        )
-
-        lm_mask_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype) * mask
-        lm_mask_bool = tf.greater_equal(lm_mask_prob, 0.85)
-        a_pre = tf.where(tf.tile(lm_mask_bool, (1, 1, a.shape[-1])), a_other, a)
-
-        a_pre = tf.cond(self.training, lambda: a_pre, lambda: a)
-
-        return a_pre, lm_mask_bool
-
     def _create_sequence(
         self,
         features: List[Union["tf.Tensor", "tf.SparseTensor"]],
@@ -1374,7 +1322,7 @@ class DIET(tf.keras.layers.Layer):
         )
 
         if masked_lm_loss:
-            pre, lm_mask_bool = self._mask_input(x, mask)
+            pre, lm_mask_bool = self._input_mask(x, mask, self.training)
         else:
             pre, lm_mask_bool = (x, None)
 
@@ -1463,15 +1411,10 @@ class DIET(tf.keras.layers.Layer):
         # c: (batch-size, max-seq-len)
 
         # CRF Loss
-        log_likelihood, _ = tfa.text.crf.crf_log_likelihood(
-            logits, c, sequence_lengths, self._crf_params
-        )
-        loss = tf.reduce_mean(-log_likelihood)
+        loss = self._crf.loss(logits, c, sequence_lengths)
 
         # CRF preds
-        pred_ids, _ = tfa.text.crf.crf_decode(
-            logits, self._crf_params, sequence_lengths
-        )
+        pred_ids = self._crf(logits, sequence_lengths)
 
         # calculate f1 score for train predictions
         mask_bool = tf.cast(mask[:, :, 0], tf.bool)
@@ -1581,14 +1524,14 @@ class DIET(tf.keras.layers.Layer):
         self.all_labels_embed = tf.constant(all_labels_embed.numpy())
 
     def predict(self, batch_in):
-        tf_batch_data, _ = train_utils.batch_to_session_data(
+        tf_batch_data = train_utils.batch_to_session_data(
             batch_in, self.session_data
         )
 
         mask_text = tf_batch_data["text_mask"][0]
         sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
 
-        text_transformed, text_in, lm_mask_bool_text = self._create_sequence(
+        text_transformed, _, _ = self._create_sequence(
             tf_batch_data["text_features"], mask_text, "text"
         )
 
@@ -1625,9 +1568,7 @@ class DIET(tf.keras.layers.Layer):
         if self.named_entity_recognition:
             sequence_lengths = sequence_lengths - 1
             logits = self._embed["logits"](text_transformed)
-            pred_ids, _ = tfa.text.crf.crf_decode(
-                logits, self._crf_params, sequence_lengths
-            )
+            pred_ids = self._crf(logits, sequence_lengths)
             out["e_ids"] = pred_ids
 
         return out
