@@ -1,4 +1,5 @@
 import logging
+import warnings
 
 from typing import Text, List, Optional, Dict, Any
 
@@ -56,10 +57,11 @@ class Tokenizer(Component):
         try:
             self.use_cls_token = self.component_config["use_cls_token"]
         except KeyError:
-            raise KeyError(
+            warnings.warn(
                 "No default value for 'use_cls_token' was set. Please, "
-                "add it to the default dict of the tokenizer."
+                "add it to the default dict of the tokenizer and set it to 'False'."
             )
+            self.use_cls_token = False
 
     def add_cls_token(
         self, tokens: List[Token], attribute: Text = TEXT_ATTRIBUTE
