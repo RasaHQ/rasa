@@ -95,7 +95,7 @@ def _add_data_validate_parsers(
         "--max-history",
         type=int,
         default=None,
-        help="Assume this max_history setting for story structure validation.",
+        help="Number of turns taken into account for story structure validation.",
     )
     validate_parser.set_defaults(func=validate_files)
     arguments.set_validator_arguments(validate_parser)
@@ -110,13 +110,7 @@ def _add_data_validate_parsers(
     story_structure_parser.add_argument(
         "--max-history",
         type=int,
-        help="Assume this max_history setting for validation.",
-    )
-    story_structure_parser.add_argument(
-        "--prompt",
-        action="store_true",
-        default=False,
-        help="Ask how conflicts should be fixed",
+        help="Number of turns taken into account for story structure validation.",
     )
     story_structure_parser.set_defaults(func=validate_stories)
     arguments.set_validator_arguments(story_structure_parser)
