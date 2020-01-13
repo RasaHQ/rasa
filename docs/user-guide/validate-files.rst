@@ -108,7 +108,7 @@ Just use ``rasa data validate`` in the command line, as follows:
   >   utter_happy predicted in 'Story 1'
 
 Here we specify a `max-history` value of 3.
-This means, that 3 events (user / bot actions) are taken into account for action prediction, but the particular setting does not matter for this example, because regardless of how long of a history you take into account, the conflict always exists.
+This means, that 3 events (user / bot actions) are taken into account for action predictions, but the particular setting does not matter for this example, because regardless of how long of a history you take into account, the conflict always exists.
 
 .. warning::
     The `rasa data validate stories` script assumes that all your **story names are unique**.
