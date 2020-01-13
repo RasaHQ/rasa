@@ -39,62 +39,12 @@ class StoryConflict:
         return list(self._conflicting_actions.keys())
 
     @property
-    def conflicting_actions_with_counts(self) -> List[Text]:
-        """
-        Returns a list of strings, describing what action
-        occurs how often
-        """
-        return [
-            f"{action} [{len(stories)}x]"
-            for (action, stories) in self._conflicting_actions.items()
-        ]
-
-    @property
-    def incorrect_stories(self) -> List[Text]:
-        """
-        Returns a list of story names that have not yet been
-        corrected.
-        """
-        if not self.correct_response:
-            # Return all stories
-            return [v[0] for v in self._conflicting_actions.values()]
-
-        incorrect_stories = []
-        story_lists_with_uncorrected_responses = [
-            s
-            for (a, s) in self._conflicting_actions.items()
-            if a != self.correct_response
-        ]
-        for stories in story_lists_with_uncorrected_responses:
-            for story in stories:
-                incorrect_stories.append(story)
-        return incorrect_stories
-
-    @property
     def has_prior_events(self) -> bool:
         """
         Returns True iff anything has happened before this
         conflict.
         """
         return _get_prev_event(self.sliced_states[-1])[0] is not None
-
-    def story_prior_to_conflict(self) -> Text:
-        """
-        Generates a story string, describing the events that
-        lead up to the conflict.
-        """
-        result = ""
-        for state in self.sliced_states:
-            if not state:
-                continue
-
-            event_type, event_name = _get_prev_event(state)
-            if event_type == "intent":
-                result += f"* {event_name}\n"
-            else:
-                result += f"  - {event_name}\n"
-
-        return result
 
     def __str__(self):
         # Describe where the conflict occurs in the stories
