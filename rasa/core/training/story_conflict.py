@@ -20,11 +20,11 @@ class StoryConflict:
         return hash(str(list(self.sliced_states)))
 
     def add_conflicting_action(self, action: Text, story_name: Text) -> None:
-        """
-        Add another action that follows from the same state
-        :param action: Name of the action
-        :param story_name: Name of the story where this action
-        is chosen
+        """Adds another action that follows from the same state.
+
+        Args:
+            action: Name of the action.
+            story_name: Name of the story where this action is chosen.
         """
         if action not in self._conflicting_actions:
             self._conflicting_actions[action] = [story_name]
@@ -33,16 +33,20 @@ class StoryConflict:
 
     @property
     def conflicting_actions(self) -> List[Text]:
-        """
-        Returns the list of conflicting actions
+        """List of conflicting actions.
+
+        Returns:
+            List of conflicting actions.
+
         """
         return list(self._conflicting_actions.keys())
 
     @property
     def has_prior_events(self) -> bool:
-        """
-        Returns True iff anything has happened before this
-        conflict.
+        """Checks if prior events exist.
+
+        Returns:
+            True if anything has happened before this conflict, otherwise False.
         """
         return _get_prev_event(self.sliced_states[-1])[0] is not None
 
@@ -76,14 +80,14 @@ class StoryConflict:
 def find_story_conflicts(
     trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
 ) -> List[StoryConflict]:
-    """
-    Generate a list of StoryConflict objects, describing
-    conflicts in the given trackers.
-    :param trackers: Trackers in which to search for conflicts
-    :param domain: The domain
-    :param max_history: The maximum history length to be
-    taken into account
-    :return: List of conflicts
+    """Generates a list of StoryConflict objects, describing conflicts in the given trackers.
+
+    Args:
+        trackers: Trackers in which to search for conflicts
+        domain: The domain
+        max_history: The maximum history length to be taken into account
+    Returns:
+        List of conflicts
     """
 
     # We do this in two steps, to reduce memory consumption:
@@ -151,13 +155,18 @@ def _build_conflicts_from_states(
 def _sliced_states_iterator(
     trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
 ) -> (TrackerWithCachedStates, Event, List[Dict[Text, float]]):
-    """
-    Iterate over all given trackers and all sliced states within
-    each tracker, where the slicing is based on `max_history`
-    :param trackers: List of trackers
-    :param domain: Domain (used for tracker.past_states)
-    :param max_history: Assumed `max_history` value for slicing
-    :return: Yields (tracker, event, sliced_states) triplet
+    """Creates an iterator over sliced states.
+
+    Iterate over all given trackers and all sliced states within each tracker,
+    where the slicing is based on `max_history`.
+
+    Args:
+        trackers: List of trackers
+        domain: Domain (used for tracker.past_states)
+        max_history: Assumed `max_history` value for slicing
+
+    Yields:
+        A (tracker, event, sliced_states) triplet
     """
     for tracker in trackers:
         states = tracker.past_states(domain)
@@ -176,11 +185,16 @@ def _sliced_states_iterator(
 def _get_prev_event(
     state: Optional[Dict[Text, float]]
 ) -> [Optional[Text], Optional[Text]]:
-    """
+    """Returns previous event type and name.
+
     Returns the type and name of the event (action or intent) previous to the
-    given state
-    :param state: Element of sliced states
-    :return: (type, name) strings of the prior event
+    given state.
+
+    Args:
+        state: Element of sliced states.
+
+    Returns:
+        Tuple of (type, name) strings of the prior event.
     """
     prev_event_type = None
     prev_event_name = None
