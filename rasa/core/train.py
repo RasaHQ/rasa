@@ -64,7 +64,7 @@ async def train(
         training_resource, exclusion_percentage=exclusion_percentage, **data_load_args
     )
     agent.train(training_data, **additional_arguments)
-    agent.persist(output_path, additional_arguments["dump_stories"])
+    agent.persist(output_path, additional_arguments.get("dump_stories", False))
 
     return agent
 

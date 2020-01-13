@@ -51,7 +51,7 @@ async def test_training_script(tmpdir):
         tmpdir.strpath,
         policy_config="data/test_config/max_hist_config.yml",
         interpreter=RegexInterpreter(),
-        kwargs={},
+        additional_arguments={},
     )
     assert True
 
@@ -63,7 +63,7 @@ async def test_training_script_without_max_history_set(tmpdir):
         tmpdir.strpath,
         interpreter=RegexInterpreter(),
         policy_config="data/test_config/no_max_hist_config.yml",
-        kwargs={},
+        additional_arguments={},
     )
 
     agent = Agent.load(tmpdir.strpath)
@@ -85,7 +85,7 @@ async def test_training_script_with_max_history_set(tmpdir):
         tmpdir.strpath,
         interpreter=RegexInterpreter(),
         policy_config="data/test_config/max_hist_config.yml",
-        kwargs={},
+        additional_arguments={},
     )
     agent = Agent.load(tmpdir.strpath)
     for policy in agent.policy_ensemble.policies:
@@ -103,7 +103,7 @@ async def test_training_script_with_restart_stories(tmpdir):
         tmpdir.strpath,
         interpreter=RegexInterpreter(),
         policy_config="data/test_config/max_hist_config.yml",
-        kwargs={},
+        additional_arguments={},
     )
     assert True
 
@@ -126,7 +126,7 @@ async def test_random_seed(tmpdir, config_file):
         tmpdir.strpath + "1",
         interpreter=RegexInterpreter(),
         policy_config=config_file,
-        kwargs={},
+        additional_arguments={},
     )
 
     agent_2 = await train(
@@ -135,7 +135,7 @@ async def test_random_seed(tmpdir, config_file):
         tmpdir.strpath + "2",
         interpreter=RegexInterpreter(),
         policy_config=config_file,
-        kwargs={},
+        additional_arguments={},
     )
 
     processor_1 = agent_1.create_processor()
