@@ -69,6 +69,90 @@ async def test_find_conflicts_checkpoints():
     assert conflicts[0].conflicting_actions == ["utter_goodbye", "utter_default"]
 
 
+async def test_find_conflicts_or():
+    importer = RasaFileImporter(
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=["data/test_stories/stories_conflicting_3.md"],
+    )
+    validator = await Validator.from_importer(importer)
+
+    trackers = TrainingDataGenerator(
+        validator.story_graph,
+        domain=validator.domain,
+        remove_duplicates=False,
+        augmentation_factor=0,
+    ).generate()
+
+    # Create a list of `StoryConflict` objects
+    conflicts = find_story_conflicts(trackers, validator.domain, 5)
+
+    assert len(conflicts) == 1
+    assert conflicts[0].conflicting_actions == ["utter_default", "utter_goodbye"]
+
+
+async def test_find_conflicts_slots():
+    importer = RasaFileImporter(
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=["data/test_stories/stories_conflicting_4.md"],
+    )
+    validator = await Validator.from_importer(importer)
+
+    trackers = TrainingDataGenerator(
+        validator.story_graph,
+        domain=validator.domain,
+        remove_duplicates=False,
+        augmentation_factor=0,
+    ).generate()
+
+    # Create a list of `StoryConflict` objects
+    conflicts = find_story_conflicts(trackers, validator.domain, 5)
+
+    assert len(conflicts) == 1
+    assert conflicts[0].conflicting_actions == ["utter_default", "utter_greet"]
+
+
+async def test_find_conflicts_slots_2():
+    importer = RasaFileImporter(
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=["data/test_stories/stories_conflicting_5.md"],
+    )
+    validator = await Validator.from_importer(importer)
+
+    trackers = TrainingDataGenerator(
+        validator.story_graph,
+        domain=validator.domain,
+        remove_duplicates=False,
+        augmentation_factor=0,
+    ).generate()
+
+    # Create a list of `StoryConflict` objects
+    conflicts = find_story_conflicts(trackers, validator.domain, 5)
+
+    assert len(conflicts) == 0
+
+
+async def test_find_conflicts_multiple_stories():
+    importer = RasaFileImporter(
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=["data/test_stories/stories_conflicting_6.md"],
+    )
+    validator = await Validator.from_importer(importer)
+
+    trackers = TrainingDataGenerator(
+        validator.story_graph,
+        domain=validator.domain,
+        remove_duplicates=False,
+        augmentation_factor=0,
+    ).generate()
+
+    # Create a list of `StoryConflict` objects
+    conflicts = find_story_conflicts(trackers, validator.domain, 5)
+
+    assert len(conflicts) == 1
+    print(conflicts[0])
+    assert "and 3 other trackers" in str(conflicts[0])
+
+
 async def test_add_conflicting_action():
     sliced_states = [
         None,
