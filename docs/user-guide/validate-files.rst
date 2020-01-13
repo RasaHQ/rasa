@@ -70,12 +70,8 @@ Test Story Files for Conflicts
 ------------------------------
 
 In addition to the default tests described above, you can also do a more in-depth structural test of your stories.
-In particular, you can test if your stories are inconsistent, i.e. if different bot actions follow after the same dialogue history.
-Here is a more detailed explanation.
-
-The purpose of Rasa Core is to predict the correct next bot action, given the dialogue state, that is the history of intents, entities, slots, and actions.
-Crucially, Rasa assumes that for any given dialogue state, exactly one next action is the correct one.
-If your stories don’t reflect that, Rasa cannot learn the correct behaviour.
+In particular, you can test if your stories are inconsistent, i.e. if different bot actions follow from the same dialogue history.
+If this is not the case, then Rasa cannot learn the correct behaviour.
 
 Take, for example, the following two stories:
 
