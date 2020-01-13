@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from typing import List, Optional, Dict, Text
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -75,6 +75,9 @@ class StoryConflict:
         return conflict_string
 
 
+TrackerEventStateTuple = namedtuple("TrackerEventStateTuple", "tracker event sliced_states")
+
+
 def find_story_conflicts(
     trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
 ) -> List[StoryConflict]:
@@ -107,12 +110,10 @@ def _find_conflicting_states(
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
     state_action_dict = defaultdict(list)
-    for tracker, event, sliced_states in _sliced_states_iterator(
-        trackers, domain, max_history
-    ):
-        hashed_state = hash(str(list(sliced_states)))
-        if event.as_story_string() not in state_action_dict[hashed_state]:
-            state_action_dict[hashed_state] += [event.as_story_string()]
+    for element in _sliced_states_iterator(trackers, domain, max_history):
+        hashed_state = hash(str(list(element.sliced_states)))
+        if element.event.as_story_string() not in state_action_dict[hashed_state]:
+            state_action_dict[hashed_state] += [element.event.as_story_string()]
 
     # Keep only conflicting `state_action_dict`s
     return {
@@ -131,17 +132,15 @@ def _build_conflicts_from_states(
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
     conflicts = {}
-    for tracker, event, sliced_states in _sliced_states_iterator(
-        trackers, domain, max_history
-    ):
-        hashed_state = hash(str(list(sliced_states)))
+    for element in _sliced_states_iterator(trackers, domain, max_history):
+        hashed_state = hash(str(list(element.sliced_states)))
 
         if hashed_state in rules and hashed_state not in conflicts:
-            conflicts[hashed_state] = StoryConflict(sliced_states)
+            conflicts[hashed_state] = StoryConflict(element.sliced_states)
 
         if hashed_state in rules:
             conflicts[hashed_state].add_conflicting_action(
-                action=event.as_story_string(), story_name=tracker.sender_id
+                action=element.event.as_story_string(), story_name=element.tracker.sender_id
             )
 
     # Remove conflicts that arise from unpredictable actions
@@ -150,7 +149,7 @@ def _build_conflicts_from_states(
 
 def _sliced_states_iterator(
     trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
-) -> (TrackerWithCachedStates, Event, List[Dict[Text, float]]):
+) -> TrackerEventStateTuple:
     """Creates an iterator over sliced states.
 
     Iterate over all given trackers and all sliced states within each tracker,
@@ -174,7 +173,7 @@ def _sliced_states_iterator(
                 sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
                     states[: idx + 1], max_history
                 )
-                yield tracker, event, sliced_states
+                yield TrackerEventStateTuple(tracker, event, sliced_states)
                 idx += 1
 
 
