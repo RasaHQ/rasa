@@ -120,6 +120,39 @@ def ask_version() -> Text:
         sys.exit(1)
 
 
+def get_rasa_sdk_version() -> Text:
+    """Find out what the referenced version of the Rasa SDK is."""
+
+    env_file = project_root() / "requirements.txt"
+
+    with env_file.open() as f:
+        for line in f.readlines():
+            if "rasa-sdk" in line:
+                version = line.split("=")[-1]
+                return version.strip()
+        else:
+            raise Exception("Failed to find Rasa SDK version in requirements.txt")
+
+
+def validate_code_is_release_ready(version: Text) -> None:
+    """Make sure the code base is valid (e.g. rasa sdk is up to date)."""
+
+    sdk = get_rasa_sdk_version()
+    sdk_version = (Version.coerce(sdk).major, Version.coerce(sdk).minor)
+    rasa_version = (Version.coerce(version).major, Version.coerce(version).minor)
+
+    if sdk_version != rasa_version:
+        print()
+        print(
+            f"\033[91m There is a mismatch between the Rasa SDK version ({sdk}) "
+            f"and the version you want to release ({version}). Before you can "
+            f"release Rasa OSS, you need to release the SDK and update "
+            f"the dependency. \033[0m"
+        )
+        print()
+        sys.exit(-1)
+
+
 def git_existing_tags() -> Set[Text]:
     """Return all existing tags in the local git repo."""
 
@@ -212,6 +245,8 @@ def main(args: argparse.Namespace) -> None:
     ensure_clean_git()
     version = next_version(args)
     confirm_version(version)
+
+    validate_code_is_release_ready(version)
 
     write_version_file(version)
 
