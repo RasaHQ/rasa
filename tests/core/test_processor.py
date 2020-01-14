@@ -307,49 +307,29 @@ async def test_reminder_cancelled_2(
         tracker.events, tracker, default_channel, default_processor.nlg
     )
 
+    async def cancel(reminder_canceled_event, num_jobs_before, num_jobs_after):
+        # cancel the sixth reminder
+        tracker.update(reminder_canceled_event)
+
+        # check that the jobs were added
+        assert len((await jobs.scheduler()).get_jobs()) == num_jobs_before
+
+        await default_processor._cancel_reminders(tracker.events, tracker)
+
+        # check that only one job was removed
+        assert len((await jobs.scheduler()).get_jobs()) == num_jobs_after
+
     # cancel the sixth reminder
-    tracker.update(ReminderCancelled("special"))
-
-    # check that the jobs were added
-    assert len((await jobs.scheduler()).get_jobs()) == 6
-
-    await default_processor._cancel_reminders(tracker.events, tracker)
-
-    # check that only one job was removed
-    assert len((await jobs.scheduler()).get_jobs()) == 5
+    await cancel(ReminderCancelled("special"), 6, 5)
 
     # cancel the fourth reminder
-    tracker.update(ReminderCancelled(entities=[{"entity": "name", "value": "Bruce Wayne"}]))
-
-    # check that the jobs were added
-    assert len((await jobs.scheduler()).get_jobs()) == 5
-
-    await default_processor._cancel_reminders(tracker.events, tracker)
-
-    # check that only one job was removed
-    assert len((await jobs.scheduler()).get_jobs()) == 4
+    await cancel(ReminderCancelled(entities=[{"entity": "name", "value": "Bruce Wayne"}]), 5, 4)
 
     # cancel the third and fifth reminder
-    tracker.update(ReminderCancelled(intent="default"))
-
-    # check that the jobs were added
-    assert len((await jobs.scheduler()).get_jobs()) == 4
-
-    await default_processor._cancel_reminders(tracker.events, tracker)
-
-    # check that only one job was removed
-    assert len((await jobs.scheduler()).get_jobs()) == 2
+    await cancel(ReminderCancelled(intent="default"), 4, 2)
 
     # cancel all remaining reminders
-    tracker.update(ReminderCancelled())
-
-    # check that the jobs were added
-    assert len((await jobs.scheduler()).get_jobs()) == 2
-
-    await default_processor._cancel_reminders(tracker.events, tracker)
-
-    # check that only one job was removed
-    assert len((await jobs.scheduler()).get_jobs()) == 0
+    await cancel(ReminderCancelled(), 2, 0)
 
 
 async def test_reminder_restart(
