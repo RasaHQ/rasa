@@ -612,15 +612,17 @@ class ReminderScheduled(Event):
         """Creates the reminder
 
         Args:
-            intent: name of the intent to be triggered
-            trigger_date_time: date at which the execution of the action
-                should be triggered (either utc or with tz)
-            name: id of the reminder. if there are multiple reminders with
-                 the same id only the last will be run
+            intent: Name of the intent to be triggered.
+            trigger_date_time: Date at which the execution of the action
+                should be triggered (either utc or with tz).
+            name: ID of the reminder. If there are multiple reminders with
+                 the same id only the last will be run.
+            entities: Entities that should be supplied together with the
+                 triggered intent.
             kill_on_user_message: ``True`` means a user message before the
-                 trigger date will abort the reminder
-            timestamp: creation date of the event
-            metadata: optional event metadata
+                 trigger date will abort the reminder.
+            timestamp: Creation date of the event.
+            metadata: Optional event metadata.
         """
         self.intent = intent
         self.entities = entities
@@ -740,7 +742,7 @@ class ReminderCancelled(Event):
 
     def matches_job_string(self, job_string: Text, sender_id: Text) -> bool:
         match = re.match(
-            r"^\[([^,]*),([^,]*),([^,]*)\](" + ACTION_NAME_SENDER_ID_CONNECTOR_STR + sender_id + ")",
+            r"^\[([^,]*),([^,]*),(.*)\](" + ACTION_NAME_SENDER_ID_CONNECTOR_STR + sender_id + ")",
             job_string
         )
         if not match:

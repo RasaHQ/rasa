@@ -205,7 +205,7 @@ async def test_reminder_aborted(
     assert len(t.events) == 3  # nothing should have been executed
 
 
-async def test_reminder_cancelled(
+async def test_reminder_cancelled_1(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     sender_ids = [uuid.uuid4().hex, uuid.uuid4().hex]
@@ -260,6 +260,96 @@ async def test_reminder_cancelled(
         )
         in tracker_1.events
     )
+
+
+async def test_reminder_cancelled_2(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    """Here we create several reminders and cancel them by intent, entities or name."""
+    reminders = [
+        ReminderScheduled(
+            "greet", datetime.datetime.now(), kill_on_user_message=False
+        ),
+        ReminderScheduled(
+            intent="greet",
+            entities=[{"entity": "name", "value": "Jane Doe"}],
+            trigger_date_time=datetime.datetime.now(),
+            kill_on_user_message=False
+        ),
+        ReminderScheduled(
+            intent="default",
+            entities=[{"entity": "name", "value": "Jane Doe"}],
+            trigger_date_time=datetime.datetime.now(),
+            kill_on_user_message=False
+        ),
+        ReminderScheduled(
+            intent="greet",
+            entities=[{"entity": "name", "value": "Bruce Wayne"}],
+            trigger_date_time=datetime.datetime.now(),
+            kill_on_user_message=False
+        ),
+        ReminderScheduled(
+            "default", datetime.datetime.now(), kill_on_user_message=False
+        ),
+        ReminderScheduled(
+            "default", datetime.datetime.now(), kill_on_user_message=False, name="special"
+        ),
+    ]
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    for reminder in reminders:
+        tracker.update(UserUttered("test"))
+        tracker.update(ActionExecuted("action_reminder_reminder"))
+        tracker.update(reminder)
+
+    default_processor.tracker_store.save(tracker)
+    await default_processor._schedule_reminders(
+        tracker.events, tracker, default_channel, default_processor.nlg
+    )
+
+    # cancel the sixth reminder
+    tracker.update(ReminderCancelled("special"))
+
+    # check that the jobs were added
+    assert len((await jobs.scheduler()).get_jobs()) == 6
+
+    await default_processor._cancel_reminders(tracker.events, tracker)
+
+    # check that only one job was removed
+    assert len((await jobs.scheduler()).get_jobs()) == 5
+
+    # cancel the fourth reminder
+    tracker.update(ReminderCancelled(entities=[{"entity": "name", "value": "Bruce Wayne"}]))
+
+    # check that the jobs were added
+    assert len((await jobs.scheduler()).get_jobs()) == 5
+
+    await default_processor._cancel_reminders(tracker.events, tracker)
+
+    # check that only one job was removed
+    assert len((await jobs.scheduler()).get_jobs()) == 4
+
+    # cancel the third and fifth reminder
+    tracker.update(ReminderCancelled(intent="default"))
+
+    # check that the jobs were added
+    assert len((await jobs.scheduler()).get_jobs()) == 4
+
+    await default_processor._cancel_reminders(tracker.events, tracker)
+
+    # check that only one job was removed
+    assert len((await jobs.scheduler()).get_jobs()) == 2
+
+    # cancel all remaining reminders
+    tracker.update(ReminderCancelled())
+
+    # check that the jobs were added
+    assert len((await jobs.scheduler()).get_jobs()) == 2
+
+    await default_processor._cancel_reminders(tracker.events, tracker)
+
+    # check that only one job was removed
+    assert len((await jobs.scheduler()).get_jobs()) == 0
 
 
 async def test_reminder_restart(
