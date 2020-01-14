@@ -222,8 +222,8 @@ async def test_reminder_cancelled(
         )
         trackers.append(tracker)
 
-    # cancel reminder for the first user
-    trackers[0].update(ReminderCancelled("greet"))
+    # cancel all reminders (one) for the first user
+    trackers[0].update(ReminderCancelled())
 
     for tracker in trackers:
         default_processor.tracker_store.save(tracker)

@@ -1,6 +1,6 @@
 import json
 import logging
-import warnings
+import re
 
 import jsonpickle
 import time
@@ -16,7 +16,7 @@ from typing import Union
 from rasa.core.constants import (
     IS_EXTERNAL,
     EXTERNAL_MESSAGE_PREFIX,
-)
+    ACTION_NAME_SENDER_ID_CONNECTOR_STR)
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -646,11 +646,14 @@ class ReminderScheduled(Event):
         else:
             return self.name == other.name
 
-    def __str__(self) -> str:
+    def __str__(self) -> Text:
         return (
             f"ReminderScheduled(intent: {self.intent}, trigger_date: {self.trigger_date_time}, "
             f"entities: {self.entities}, name: {self.name})"
         )
+
+    def job_string(self) -> Text:
+        return f"[{self.name},{self.intent},{self.entities}]"
 
     def _data_obj(self) -> Dict[Text, Any]:
         return {
@@ -690,43 +693,74 @@ class ReminderScheduled(Event):
 
 # noinspection PyProtectedMember
 class ReminderCancelled(Event):
-    """Cancel all jobs with a specific name."""
+    """Cancel certain jobs."""
 
     type_name = "cancel_reminder"
 
     def __init__(
         self,
-        intent: Text,
+        name: Optional[Text] = None,
+        intent: Optional[Text] = None,
+        entities: Optional[List[Dict]] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
     ):
-        """
+        """Creates a ReminderCancelled event.
+
+        All arguments are optional and used to refine the set of reminders that
+        are to be cancelled. If no arguments are supplied, this will cancel all reminders.
+
         Args:
-            intent: name of the scheduled event to be cancelled
-            metadata: optional event metadata
+            name: Name of the reminder to be cancelled.
+            intent: Intent name that is to be used to identify the reminders to be cancelled.
+            entities: Entities that are to be used to identify the reminders to be cancelled.
+            timestamp: Optional timestamp.
+            metadata: Optional event metadata.
         """
 
+        self.name = name
         self.intent = intent
+        self.entities = entities
         super().__init__(timestamp, metadata)
 
     def __hash__(self) -> int:
-        return hash(self.intent)
+        return hash(
+            (
+                self.name,
+                self.intent,
+                self.entities,
+            )
+        )
 
     def __eq__(self, other) -> bool:
         return isinstance(other, ReminderCancelled)
 
     def __str__(self) -> Text:
-        return f"ReminderCancelled(intent: {self.intent})"
+        return f"ReminderCancelled(name: {self.name}, intent: {self.intent}, entities: {self.entities})"
+
+    def matches_job_string(self, job_string: Text, sender_id: Text) -> bool:
+        match = re.match(
+            r"^\[([^,]*),([^,]*),([^,]*)\](" + ACTION_NAME_SENDER_ID_CONNECTOR_STR + sender_id + ")",
+            job_string
+        )
+        if not match:
+            return False
+        name, intent, entities = match.group(1, 2, 3)
+        return ((not self.name) or self.name == name) and \
+               ((not self.intent) or str(self.intent) == intent) and \
+               ((not self.entities) or str(self.entities) == entities)
 
     def as_story_string(self) -> Text:
-        props = json.dumps({"intent": self.intent})
+        props = json.dumps({"name": self.name, "intent": self.intent, "entities": self.entities})
         return f"{self.type_name}{props}"
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
         return [
             ReminderCancelled(
+                parameters.get("name"),
                 parameters.get("intent"),
+                parameters.get("entities"),
                 timestamp=parameters.get("timestamp"),
                 metadata=parameters.get("metadata"),
             )

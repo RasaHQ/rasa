@@ -324,7 +324,7 @@ class MessageProcessor:
         ):
             logger.debug(
                 f"Canceled reminder because it is outdated. "
-                f"(event: {reminder_event.intent} id: {reminder_event.name})"
+                f"({str(reminder_event)})"
             )
         else:
             intent = reminder_event.intent
@@ -551,7 +551,7 @@ class MessageProcessor:
                 id=e.name,
                 replace_existing=True,
                 name=(
-                    str(e.intent)
+                    e.job_string()
                     + ACTION_NAME_SENDER_ID_CONNECTOR_STR
                     + tracker.sender_id
                 ),
@@ -561,19 +561,14 @@ class MessageProcessor:
     async def _cancel_reminders(
         events: List[Event], tracker: DialogueStateTracker
     ) -> None:
-        """Cancel reminders by intent name"""
+        """Cancel reminders that match the ReminderCancelled event"""
 
         # All Reminders with the same action name will be cancelled
         for e in events:
             if isinstance(e, ReminderCancelled):
-                name_to_check = (
-                    str(e.intent)
-                    + ACTION_NAME_SENDER_ID_CONNECTOR_STR
-                    + tracker.sender_id
-                )
                 scheduler = await jobs.scheduler()
                 for j in scheduler.get_jobs():
-                    if j.name == name_to_check:
+                    if e.matches_job_string(j.name, tracker.sender_id):
                         scheduler.remove_job(j.id)
 
     async def _run_action(
