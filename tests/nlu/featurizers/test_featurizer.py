@@ -82,12 +82,16 @@ def test_combine_with_existing_sparse_features_shape_mismatch():
 @pytest.mark.parametrize(
     "features, expected",
     [
-        ([[1, 0, 2, 3], [2, 0, 0, 1]], [1.5, 0, 1, 2]),
+        (None, None),
+        ([[1, 0, 2, 3], [2, 0, 0, 1]], [[2, 0, 0, 1]]),
+        (
+            scipy.sparse.coo_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]),
+            scipy.sparse.coo_matrix([2, 0, 0, 1]),
+        ),
         (
             scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]]),
-            scipy.sparse.csr_matrix([3, 0, 2, 4]),
+            scipy.sparse.csr_matrix([2, 0, 0, 1]),
         ),
-        (None, None),
     ],
 )
 def test_sequence_to_sentence_features(features, expected):

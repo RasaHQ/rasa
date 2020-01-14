@@ -36,7 +36,7 @@ class EntityExtractor(Component):
 
     @staticmethod
     def find_entity(ent, text, tokens) -> Tuple[int, int]:
-        offsets = [token.offset for token in tokens]
+        offsets = [token.start for token in tokens]
         ends = [token.end for token in tokens]
 
         if ent["start"] not in offsets:
