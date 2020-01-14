@@ -178,6 +178,7 @@ You can also use a custom action here, of course.
 Use the ``output_channel`` query parameter to specify which output
 channel should be used to communicate the assistant's responses back to the user.
 Any messages that are dispatched in the custom action will be forwarded to the specified output channel.
+Set this parameter to ``"latest"`` if you want to use the latest input channel that the user has used.
 
 .. note::
 
