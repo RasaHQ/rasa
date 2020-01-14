@@ -193,18 +193,16 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         self._depth = d_model // self.num_heads
 
-        l1_regularizer = tf.keras.regularizers.l1(reg_lambda)
+        l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
         self._wq = tf.keras.layers.Dense(
-            d_model, use_bias=False, kernel_regularizer=l1_regularizer
+            d_model, use_bias=False, kernel_regularizer=l2_regularizer
         )
         self._wk = tf.keras.layers.Dense(
-            d_model, use_bias=False, kernel_regularizer=l1_regularizer
+            d_model, use_bias=False, kernel_regularizer=l2_regularizer
         )
         self._wv = tf.keras.layers.Dense(
-            d_model, use_bias=False, kernel_regularizer=l1_regularizer
+            d_model, use_bias=False, kernel_regularizer=l2_regularizer
         )
-
-        l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
         self._dense = tf.keras.layers.Dense(d_model, kernel_regularizer=l2_regularizer)
 
     def _split_heads(self, x):
@@ -432,13 +430,15 @@ class InputMask(tf.keras.layers.Layer):
 
 class CRF(tf.keras.layers.Layer):
 
-    def __init__(self, num_tags, name=None):
+    def __init__(self, num_tags, reg_lambda, name=None):
         super().__init__(name=name)
 
         initializer = tf.keras.initializers.GlorotUniform()
+        l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
         self.transition_params = self.add_weight(
             shape=(num_tags, num_tags),
             initializer=initializer,
+            regularizer=l2_regularizer,
             trainable=True,
             name="transitions",
         )

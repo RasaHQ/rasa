@@ -189,8 +189,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 "hidden_layer_sizes for a and b must coincide"
             )
 
-        self.batch_in_size = config["batch_size"]
-        self.batch_in_strategy = config["batch_strategy"]
+        self.batch_size = config["batch_size"]
+        self.batch_strategy = config["batch_strategy"]
 
         self.optimizer = config["optimizer"]
         self.normalize_loss = config["normalize_loss"]
@@ -262,16 +262,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         component_config: Optional[Dict[Text, Any]] = None,
         inverted_label_dict: Optional[Dict[int, Text]] = None,
         inverted_tag_dict: Optional[Dict[int, Text]] = None,
-        session: Optional["tf.Session"] = None,
-        graph: Optional["tf.Graph"] = None,
-        batch_placeholder: Optional["tf.Tensor"] = None,
-        similarity_all: Optional["tf.Tensor"] = None,
-        intent_prediction: Optional["tf.Tensor"] = None,
-        entity_prediction: Optional["tf.Tensor"] = None,
-        similarity: Optional["tf.Tensor"] = None,
-        cls_embed: Optional["tf.Tensor"] = None,
-        label_embed: Optional["tf.Tensor"] = None,
-        all_labels_embed: Optional["tf.Tensor"] = None,
+        model=None,
+        predict_func=None,
         batch_tuple_sizes: Optional[Dict] = None,
         attention_weights: Optional["tf.Tensor"] = None,
     ) -> None:
@@ -284,22 +276,12 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # transform numbers to labels
         self.inverted_label_dict = inverted_label_dict
         self.inverted_tag_dict = inverted_tag_dict
+
+        self.model = model
+        self.predict_func = predict_func
+
         # encode all label_ids with numbers
         self._label_data = None
-
-        # tf related instances
-        self.session = session
-        self.graph = graph
-        self.batch_in = batch_placeholder
-        self.sim_all = similarity_all
-        self.intent_prediction = intent_prediction
-        self.entity_prediction = entity_prediction
-        self.sim = similarity
-
-        # persisted embeddings
-        self.cls_embed = cls_embed
-        self.label_embed = label_embed
-        self.all_labels_embed = all_labels_embed
 
         # keep the input tuple sizes in self.batch_in
         self.batch_tuple_sizes = batch_tuple_sizes
@@ -460,10 +442,16 @@ class EmbeddingIntentClassifier(EntityExtractor):
             if data.size > 0:
                 session_data[key].append(data)
 
+        if not session_data[key]:
+            del session_data[key]
+
     @staticmethod
     def _add_mask_to_session_data(
         session_data: SessionDataType, key: Text, from_key: Text
     ):
+
+        if not session_data.get(from_key):
+            return
 
         session_data[key] = []
 
@@ -708,137 +696,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
             example.set(MESSAGE_BILOU_ENTITIES_ATTRIBUTE, output)
 
-    # process helpers
-    def predict_label(
-        self, message: "Message"
-    ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
-
-        label = {"name": None, "confidence": 0.0}
-        label_ranking = []
-
-        if self.session is None:
-            logger.error(
-                "There is no trained tf.session: "
-                "component is either not trained or "
-                "didn't receive enough training data"
-            )
-            return label, label_ranking
-
-        # create session data from message and convert it into a batch of 1
-        session_data = self._create_session_data([message])
-        batch = train_utils.prepare_batch(
-            session_data, tuple_sizes=self.batch_tuple_sizes
-        )
-
-        # load tf graph and session
-        label_ids, message_sim = self._calculate_message_sim(batch)
-
-        # if X contains all zeros do not predict some label
-        if label_ids.size > 0:
-            label = {
-                "name": self.inverted_label_dict[label_ids[0]],
-                "confidence": message_sim[0],
-            }
-
-            ranking = list(zip(list(label_ids), message_sim))
-            ranking = ranking[:LABEL_RANKING_LENGTH]
-            label_ranking = [
-                {"name": self.inverted_label_dict[label_idx], "confidence": score}
-                for label_idx, score in ranking
-            ]
-
-        return label, label_ranking
-
-    def _calculate_message_sim(
-        self, batch: Tuple[np.ndarray]
-    ) -> Tuple[np.ndarray, List[float]]:
-        """Calculate message similarities"""
-
-        message_sim = self.session.run(
-            self.intent_prediction,
-            feed_dict={
-                _x_in: _x for _x_in, _x in zip(self.batch_in, batch) if _x is not None
-            },
-        )
-
-        message_sim = message_sim.flatten()  # sim is a matrix
-
-        label_ids = message_sim.argsort()[::-1]
-        message_sim[::-1].sort()
-
-        # transform sim to python list for JSON serializing
-        return label_ids, message_sim.tolist()
-
-    def predict_entities(self, message: "Message") -> List[Dict]:
-        if self.session is None:
-            logger.error(
-                "There is no trained tf.session: "
-                "component is either not trained or "
-                "didn't receive enough training data"
-            )
-            return []
-
-        # create session data from message and convert it into a batch of 1
-        self.num_tags = len(self.inverted_tag_dict)
-        session_data = self._create_session_data([message])
-        batch = train_utils.prepare_batch(
-            session_data, tuple_sizes=self.batch_tuple_sizes
-        )
-
-        # load tf graph and session
-        predictions = self.session.run(
-            self.entity_prediction,
-            feed_dict={
-                _x_in: _x for _x_in, _x in zip(self.batch_in, batch) if _x is not None
-            },
-        )
-
-        tags = [self.inverted_tag_dict[p] for p in predictions[0]]
-
-        if self.bilou_flag:
-            tags = [t[2:] if t[:2] in ["B-", "I-", "U-", "L-"] else t for t in tags]
-
-        entities = self._convert_tags_to_entities(
-            message.text, message.get("tokens", []), tags
-        )
-
-        extracted = self.add_extractor_name(entities)
-        entities = message.get("entities", []) + extracted
-
-        return entities
-
-    def _convert_tags_to_entities(
-        self, text: str, tokens: List[Token], tags: List[Text]
-    ) -> List[Dict[Text, Any]]:
-        entities = []
-        last_tag = "O"
-        for token, tag in zip(tokens, tags):
-            if tag == "O":
-                last_tag = tag
-                continue
-
-            # new tag found
-            if last_tag != tag:
-                entity = {
-                    "entity": tag,
-                    "start": token.offset,
-                    "end": token.end,
-                    "extractor": "flair",
-                }
-                entities.append(entity)
-
-            # belongs to last entity
-            elif last_tag == tag:
-                entities[-1]["end"] = token.end
-
-            last_tag = tag
-
-        for entity in entities:
-            entity["value"] = text[entity["start"] : entity["end"]]
-
-        return entities
-
-    # methods to overwrite
     def train(
         self,
         training_data: "TrainingData",
@@ -907,34 +764,146 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.named_entity_recognition,
             self.inverted_tag_dict,
             self.learning_rate,
-            self.batch_in_strategy,
+            self.batch_strategy,
         )
 
         train_utils.train_tf_dataset(
             self.model,
             self.epochs,
-            self.batch_in_size,
+            self.batch_size,
             self.evaluate_on_num_examples,
             self.evaluate_every_num_epochs,
             output_file=self.training_log_file,
         )
 
         # rebuild the graph for prediction
-        self.model.build_for_predict()
+        # self.model.build_for_predict()
 
         # self.attention_weights = train_utils.extract_attention(self.attention_weights)
+
+        # process helpers
+
+    def _predict(self, message: "Message"):
+        if self.model is None or self.predict_func is None:
+            return
+
+        # create session data from message and convert it into a batch of 1
+        session_data = self._create_session_data([message])
+        self.model.session_data = session_data
+        predict_dataset = self.model.predict_dataset()
+        batch_in = next(iter(predict_dataset))
+
+        return self.predict_func(batch_in)
+
+    def _predict_label(
+            self, out
+    ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
+
+        label = {"name": None, "confidence": 0.0}
+        label_ranking = []
+
+        if self.model is None:
+            logger.error(
+                "There is no trained tf.session: "
+                "component is either not trained or "
+                "didn't receive enough training data"
+            )
+            return label, label_ranking
+
+        message_sim = out["i_scores"].numpy()
+
+        message_sim = message_sim.flatten()  # sim is a matrix
+
+        label_ids = message_sim.argsort()[::-1]
+        message_sim[::-1].sort()
+        message_sim = message_sim.tolist()
+
+        # if X contains all zeros do not predict some label
+        if label_ids.size > 0:
+            label = {
+                "name": self.inverted_label_dict[label_ids[0]],
+                "confidence": message_sim[0],
+            }
+
+            ranking = list(zip(list(label_ids), message_sim))
+            ranking = ranking[:LABEL_RANKING_LENGTH]
+            label_ranking = [
+                {"name": self.inverted_label_dict[label_idx], "confidence": score}
+                for label_idx, score in ranking
+            ]
+
+        return label, label_ranking
+
+    def _predict_entities(self, out, message: "Message") -> List[Dict]:
+        if self.model is None:
+            logger.error(
+                "There is no trained tf.session: "
+                "component is either not trained or "
+                "didn't receive enough training data"
+            )
+            return []
+
+        # load tf graph and session
+        predictions = out["e_ids"].numpy()
+
+        tags = [self.inverted_tag_dict[p] for p in predictions[0]]
+
+        if self.bilou_flag:
+            tags = [t[2:] if t[:2] in ["B-", "I-", "U-", "L-"] else t for t in tags]
+
+        entities = self._convert_tags_to_entities(
+            message.text, message.get("tokens", []), tags
+        )
+
+        extracted = self.add_extractor_name(entities)
+        entities = message.get("entities", []) + extracted
+
+        return entities
+
+    def _convert_tags_to_entities(
+            self, text: str, tokens: List[Token], tags: List[Text]
+    ) -> List[Dict[Text, Any]]:
+        entities = []
+        last_tag = "O"
+        for token, tag in zip(tokens, tags):
+            if tag == "O":
+                last_tag = tag
+                continue
+
+            # new tag found
+            if last_tag != tag:
+                entity = {
+                    "entity": tag,
+                    "start": token.offset,
+                    "end": token.end,
+                    "extractor": "flair",
+                }
+                entities.append(entity)
+
+            # belongs to last entity
+            elif last_tag == tag:
+                entities[-1]["end"] = token.end
+
+            last_tag = tag
+
+        for entity in entities:
+            entity["value"] = text[entity["start"]: entity["end"]]
+
+        return entities
 
     def process(self, message: "Message", **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""
 
+        out = self._predict(message)
+
         if self.intent_classification:
-            label, label_ranking = self.predict_label(message)
+            label, label_ranking = self._predict_label(out)
 
             message.set("intent", label, add_to_output=True)
             message.set("intent_ranking", label_ranking, add_to_output=True)
 
         if self.named_entity_recognition:
-            entities = self.predict_entities(message)
+            entities = self._predict_entities(out, message)
 
             message.set("entities", entities, add_to_output=True)
 
@@ -944,49 +913,42 @@ class EmbeddingIntentClassifier(EntityExtractor):
         Return the metadata necessary to load the model again.
         """
 
-        if self.session is None:
+        if self.model is None:
             return {"file": None}
 
-        checkpoint = os.path.join(model_dir, file_name + ".ckpt")
+        model_file = os.path.join(model_dir, file_name +".tf_model")
 
-        # plot training curves
-        plotter = Plotter()
-        plotter.plot_training_curves(self.training_log_file, model_dir)
-        # copy trainig log file
-        copyfile(self.training_log_file, os.path.join(model_dir, "training-log.tsv"))
+        # # plot training curves
+        # plotter = Plotter()
+        # plotter.plot_training_curves(self.training_log_file, model_dir)
+        # # copy trainig log file
+        # copyfile(self.training_log_file, os.path.join(model_dir, "training-log.tsv"))
 
         try:
-            os.makedirs(os.path.dirname(checkpoint))
+            os.makedirs(os.path.dirname(model_file))
         except OSError as e:
             # be happy if someone already created the path
             import errno
 
             if e.errno != errno.EEXIST:
                 raise
-        with self.graph.as_default():
-            train_utils.persist_tensor("batch_placeholder", self.batch_in, self.graph)
 
-            train_utils.persist_tensor("similarity_all", self.sim_all, self.graph)
-            train_utils.persist_tensor(
-                "intent_prediction", self.intent_prediction, self.graph
-            )
-            train_utils.persist_tensor(
-                "entity_prediction", self.entity_prediction, self.graph
-            )
-            train_utils.persist_tensor("similarity", self.sim, self.graph)
+        self.model.save_weights(model_file, save_format='tf')
 
-            train_utils.persist_tensor("cls_embed", self.cls_embed, self.graph)
-            train_utils.persist_tensor("label_embed", self.label_embed, self.graph)
-            train_utils.persist_tensor(
-                "all_labels_embed", self.all_labels_embed, self.graph
-            )
+        dummy_session_data = {
+            k: [v[:1] for v in vs]
+            for k, vs in self.model.session_data.items()
+        }
 
-            train_utils.persist_tensor(
-                "attention_weights", self.attention_weights, self.graph
-            )
+        with open(
+            os.path.join(model_dir, file_name + ".dummy_session_data.pkl"), "wb"
+        ) as f:
+            pickle.dump(dummy_session_data, f)
 
-            saver = tf.train.Saver()
-            saver.save(self.session, checkpoint)
+        with open(
+            os.path.join(model_dir, file_name + ".label_data.pkl"), "wb"
+        ) as f:
+            pickle.dump(self._label_data, f)
 
         with open(
             os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "wb"
@@ -1018,31 +980,20 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         if model_dir and meta.get("file"):
             file_name = meta.get("file")
-            checkpoint = os.path.join(model_dir, file_name + ".ckpt")
+            model_file = os.path.join(model_dir, file_name + ".tf_model")
 
             with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "rb") as f:
                 _tf_config = pickle.load(f)
 
-            graph = tf.Graph()
-            with graph.as_default():
-                session = tf.compat.v1.Session(config=_tf_config)
-                saver = tf.compat.v1.train.import_meta_graph(checkpoint + ".meta")
+            with open(
+                os.path.join(model_dir, file_name + ".dummy_session_data.pkl"), "rb"
+            ) as f:
+                dummy_session_data = pickle.load(f)
 
-                saver.restore(session, checkpoint)
-
-                batch_in = train_utils.load_tensor("batch_placeholder")
-
-                sim_all = train_utils.load_tensor("similarity_all")
-                cls_embed = train_utils.load_tensor("cls_embed")
-                intent_prediction = train_utils.load_tensor("intent_prediction")
-                entity_prediction = train_utils.load_tensor("entity_prediction")
-                sim = train_utils.load_tensor("similarity")
-
-                message_embed = train_utils.load_tensor("message_embed")
-                label_embed = train_utils.load_tensor("label_embed")
-                all_labels_embed = train_utils.load_tensor("all_labels_embed")
-
-                attention_weights = train_utils.load_tensor("attention_weights")
+            with open(
+                os.path.join(model_dir, file_name + ".label_data.pkl"), "rb"
+            ) as f:
+                label_data = pickle.load(f)
 
             with open(
                 os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "rb"
@@ -1059,21 +1010,79 @@ class EmbeddingIntentClassifier(EntityExtractor):
             ) as f:
                 batch_tuple_sizes = pickle.load(f)
 
+            hidden_layer_sizes = {
+                "text": meta["hidden_layers_sizes_a"],
+                "intent": meta["hidden_layers_sizes_b"],
+                "tag": meta["hidden_layers_sizes_c"],
+            }
+            similarity_type = meta["similarity_type"]
+            if similarity_type == "auto":
+                if meta["loss_type"] == "softmax":
+                    similarity_type = "inner"
+                elif meta["loss_type"] == "margin":
+                    similarity_type = "cosine"
+
+            model = DIET(
+                dummy_session_data,
+                None,
+                label_data,
+                meta["dense_dim"],
+                meta["embed_dim"],
+                hidden_layer_sizes,
+                meta["share_hidden_layers"],
+                meta["num_transformer_layers"],
+                meta["transformer_size"],
+                meta["num_heads"],
+                meta["max_seq_length"],
+                meta["unidirectional_encoder"],
+                meta["C2"],
+                meta["droprate"],
+                meta["sparse_input_dropout"],
+                meta["num_neg"],
+                meta["loss_type"],
+                meta["mu_pos"],
+                meta["mu_neg"],
+                meta["use_max_sim_neg"],
+                meta["C_emb"],
+                meta["scale_loss"],
+                similarity_type,
+                meta["masked_lm_loss"],
+                meta["intent_classification"],
+                meta["named_entity_recognition"],
+                inv_tag_dict,
+                meta["learning_rate"],
+                meta["batch_strategy"],
+            )
+
+            train_utils.train_tf_dataset(
+                model,
+                1,
+                1,
+                0,
+                0,
+            )
+
+            model.load_weights(model_file)
+
+            # build the graph for prediction
+            model.session_data = {
+                k: vs
+                for k, vs in model.session_data.items()
+                if "text" in k
+            }
+            model.build_for_predict()
+            predict_dataset = model.predict_dataset()
+            predict_func = tf.function(
+                model.predict, input_signature=[predict_dataset.element_spec]
+            )
+            batch_in = next(iter(predict_dataset))
+            predict_func(batch_in)
             return cls(
                 component_config=meta,
                 inverted_label_dict=inv_label_dict,
                 inverted_tag_dict=inv_tag_dict,
-                session=session,
-                graph=graph,
-                batch_placeholder=batch_in,
-                similarity_all=sim_all,
-                intent_prediction=intent_prediction,
-                entity_prediction=entity_prediction,
-                similarity=sim,
-                cls_embed=cls_embed,
-                label_embed=label_embed,
-                all_labels_embed=all_labels_embed,
-                attention_weights=attention_weights,
+                model=model,
+                predict_func=predict_func,
                 batch_tuple_sizes=batch_tuple_sizes,
             )
 
@@ -1085,7 +1094,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             return cls(component_config=meta)
 
 
-class DIET(tf.keras.layers.Layer):
+class DIET(tf.keras.models.Model):
     @staticmethod
     def _create_sparse_dense_layer(values, name, reg_lambda, dense_dim):
 
@@ -1249,7 +1258,7 @@ class DIET(tf.keras.layers.Layer):
             self._embed["logits"] = tf_layers.Embed(
                 self._num_tags, reg_lambda, "logits"
             )
-            self._crf = tf_layers.CRF(self._num_tags)
+            self._crf = tf_layers.CRF(self._num_tags, reg_lambda)
             self.train_metrics["e_loss"] = tf.keras.metrics.Mean(name="e_loss")
             self.train_metrics["e_f1"] = tf.keras.metrics.Mean(name="e_f1")
             self.eval_metrics["val_e_loss"] = tf.keras.metrics.Mean(name="val_e_loss")
@@ -1550,25 +1559,32 @@ class DIET(tf.keras.layers.Layer):
                 self.all_labels_embed[tf.newaxis, :, :],
                 None,
             )
-            label = self._create_bow(
-                tf_batch_data["intent_features"],
-                tf_batch_data["intent_mask"][0],
-                "intent",
-            )
-            label_embed = self._embed["intent"](label)
-            sim = train_utils.tf_raw_sim(
-                cls_embed[:, tf.newaxis, :], label_embed, None
-            )
+            # label = self._create_bow(
+            #     tf_batch_data["intent_features"],
+            #     tf_batch_data["intent_mask"][0],
+            #     "intent",
+            # )
+            # label_embed = self._embed["intent"](label)
+            # sim = train_utils.tf_raw_sim(
+            #     cls_embed[:, tf.newaxis, :], label_embed, None
+            # )
 
             scores = train_utils.confidence_from_sim(
                 sim_all, self._similarity_type
             )
             out["i_scores"] = scores
 
-        if self.named_entity_recognition:
+        if self._named_entity_recognition:
             sequence_lengths = sequence_lengths - 1
             logits = self._embed["logits"](text_transformed)
             pred_ids = self._crf(logits, sequence_lengths)
             out["e_ids"] = pred_ids
 
         return out
+
+    def predict_dataset(self):
+        return train_utils.create_tf_dataset(
+            self.session_data,
+            1,
+            label_key="intent_ids",
+        )
