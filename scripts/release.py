@@ -109,7 +109,7 @@ def ask_version() -> Text:
 
     version = questionary.text(
         "What is the version number you want to release "
-        "('major', 'minor', 'patch' or valid version number]?",
+        "('major', 'minor', 'patch' or valid version number)?",
         validate=is_valid_version_number,
     ).ask()
 
@@ -150,7 +150,7 @@ def validate_code_is_release_ready(version: Text) -> None:
             f"the dependency. \033[0m"
         )
         print()
-        sys.exit(-1)
+        sys.exit(1)
 
 
 def git_existing_tags() -> Set[Text]:
