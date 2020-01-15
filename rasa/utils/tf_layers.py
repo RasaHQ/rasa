@@ -15,18 +15,12 @@ from typing import (
 import tensorflow as tf
 import tensorflow_addons as tfa
 import numpy as np
-from rasa.utils import train_utils
-
-if typing.TYPE_CHECKING:
-    from tensor2tensor.utils.hparam import HParams
 
 logger = logging.getLogger(__name__)
 
 
 class SparseDropout(tf.keras.layers.Dropout):
     def call(self, inputs, training):
-        if training is None:
-            training = tf.keras.backend.learning_phase()
 
         to_retain_prob = tf.random.uniform(
             tf.shape(inputs.values), 0, 1, inputs.values.dtype

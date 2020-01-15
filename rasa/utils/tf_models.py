@@ -94,6 +94,9 @@ class RasaModel(tf.keras.models.Model):
             for batch_in in train_dataset_func(ep_batch_size):
                 train_on_batch_func(batch_in)
 
+            # print(self.metrics)
+            # exit()
+
             # Get the metric results
             postfix_dict = {k: v.result().numpy() for k, v in self.train_metrics.items()}
 

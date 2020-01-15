@@ -1090,6 +1090,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             model.load_weights(tf_model_file)
 
             # build the graph for prediction
+            model.set_training_phase(False)
             model.session_data = {
                 k: vs
                 for k, vs in model.session_data.items()
@@ -1519,7 +1520,8 @@ class DIET(tf_models.RasaModel):
         with tf.GradientTape() as tape:
             losses, scores = self._train_losses_scores(batch_in)
             regularization_loss = tf.math.add_n(self.losses)
-            total_loss = tf.math.add_n(list(losses.values())) + regularization_loss
+            pred_loss = tf.math.add_n(list(losses.values()))
+            total_loss = pred_loss + regularization_loss
 
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
