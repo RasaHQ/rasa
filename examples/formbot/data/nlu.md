@@ -278,6 +278,18 @@
 - What's the weather forecast?
 - Is it quite breezy outside?
 
+## intent:restart
+- restart
+- start again
+- start over please
+- let's start over
+- lets start fresh
+- back to the beginning
+- let's go back to the start
+- start over
+- can we start again please
+- start
+
 ## intent:stop
 - ok then you cant help me
 - that was shit, you're not helping

@@ -1,8 +1,9 @@
 from typing import Dict, Text, Any, List, Union, Optional
 
-from rasa_sdk import Tracker
+from rasa_sdk import Tracker, Action
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.forms import FormAction
+from rasa_sdk.events import Restarted
 
 
 class RestaurantForm(FormAction):
@@ -73,11 +74,11 @@ class RestaurantForm(FormAction):
 
     # USED FOR DOCS: do not rename without updating in docs
     def validate_cuisine(
-        self,
-        value: Text,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
+            self,
+            value: Text,
+            dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any],
     ) -> Dict[Text, Any]:
         """Validate cuisine value."""
 
@@ -91,11 +92,11 @@ class RestaurantForm(FormAction):
             return {"cuisine": None}
 
     def validate_num_people(
-        self,
-        value: Text,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
+            self,
+            value: Text,
+            dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any],
     ) -> Dict[Text, Any]:
         """Validate num_people value."""
 
@@ -107,11 +108,11 @@ class RestaurantForm(FormAction):
             return {"num_people": None}
 
     def validate_outdoor_seating(
-        self,
-        value: Text,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
+            self,
+            value: Text,
+            dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any],
     ) -> Dict[Text, Any]:
         """Validate outdoor_seating value."""
 
@@ -132,10 +133,10 @@ class RestaurantForm(FormAction):
             return {"outdoor_seating": value}
 
     def submit(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
+            self,
+            dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any],
     ) -> List[Dict]:
         """Define what the form has to do
             after all required slots are filled"""
@@ -143,3 +144,22 @@ class RestaurantForm(FormAction):
         # utter submit template
         dispatcher.utter_message(template="utter_submit")
         return []
+
+
+class ActionRestart(Action):
+    """Restarts conversation."""
+
+    def name(self):  # type: () -> Text
+        return "action_restart"
+
+    def __init__(self):
+        pass
+
+    def run(
+            self,
+            dispatcher,  # type: CollectingDispatcher
+            tracker,  # type: Tracker
+            domain,  # type:  Dict[Text, Any]
+    ):  # type: (...) -> List[Dict[Text, Any]]
+        dispatcher.utter_message("Let's start over and over again.")
+        return [Restarted()]

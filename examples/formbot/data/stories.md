@@ -8,6 +8,8 @@
     - utter_slots_values
 * thankyou
     - utter_noworries
+* thankyou
+    - action_restart
 
 ## unhappy path
 * greet
@@ -22,6 +24,8 @@
     - utter_slots_values
 * thankyou
     - utter_noworries
+* thankyou
+    - action_restart
 
 ## very unhappy path
 * greet

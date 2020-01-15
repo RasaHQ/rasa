@@ -10,6 +10,8 @@ intents:
   - thankyou
   - greet
   - bot_challenge
+  - restart:
+      triggers: action_restart
 
 entities:
   - cuisine
@@ -83,6 +85,7 @@ actions:
   - utter_ask_continue
   - utter_greet
   - utter_iamabot
+  - action_restart
 
 forms:
   - restaurant_form
