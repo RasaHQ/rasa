@@ -808,7 +808,7 @@ class EmbeddingIntentClassifier(Component):
 
         # normalise scores if turned on
         if self.loss_type == "softmax" and self.ranking_length > 0:
-            train_utils.normalize_confidence(message_sim, self.ranking_length)
+            train_utils.normalize(message_sim, self.ranking_length)
 
         message_sim[::-1].sort()
 

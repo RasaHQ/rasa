@@ -3,7 +3,6 @@ import pytest
 import scipy.sparse
 
 from rasa.nlu import train
-from rasa.nlu.model import Interpreter
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
@@ -12,7 +11,6 @@ from rasa.nlu.constants import (
     INTENT_ATTRIBUTE,
 )
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
-from tests.nlu.conftest import DEFAULT_DATA_PATH
 from rasa.nlu.model import Interpreter
 from rasa.nlu.training_data import Message
 from tests.nlu.conftest import DEFAULT_DATA_PATH
