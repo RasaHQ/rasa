@@ -1,5 +1,3 @@
 Change dependency Networkx from featurizers ``setup.py`` and ``requirements.txt``.
 
 There is an imcompatibility between Rasa dependecy requests 2.22.0 and the own depedency from Rasa for networkx raising errors upon pip install. There is also a bug corrected in ``requirements.txt`` which used ``~=`` instead of ``==``. All of these are fixed using networkx 2.4.0.
-
-To make the ``visualization.py`` continue working, graph now uses ``nodes`` instead of ``node``.
