@@ -1425,6 +1425,7 @@ class DIET(tf_models.RasaModel):
         # CRF preds
         pred_ids = self._crf(logits, sequence_lengths)
 
+        # TODO check that f1 calculation is correct
         # calculate f1 score for train predictions
         mask_bool = tf.cast(mask[:, :, 0], tf.bool)
         c_masked = tf.boolean_mask(c, mask_bool)

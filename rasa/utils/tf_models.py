@@ -58,7 +58,7 @@ class RasaModel(tf.keras.models.Model):
         eval_dataset_func = tf.function(self.eval_dataset)
 
         tf_batch_size = tf.ones((), tf.int32)
-        train_func = tf.function(
+        train_on_batch_func = tf.function(
             self.train_on_batch, input_signature=[train_dataset_func(tf_batch_size).element_spec]
         )
         if evaluate_on_num_examples > 0:
@@ -80,7 +80,7 @@ class RasaModel(tf.keras.models.Model):
             # Train on batches
             self.set_training_phase(True)
             for batch_in in train_dataset_func(ep_batch_size):
-                train_func(batch_in)
+                train_on_batch_func(batch_in)
 
             # Get the metric results
             postfix_dict = {k: v.result().numpy() for k, v in self.train_metrics.items()}
