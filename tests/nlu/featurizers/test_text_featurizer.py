@@ -6,7 +6,7 @@ import scipy.sparse
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.featurizers.sparse_featurizer.text_featurizer import TextFeaturizer
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.constants import TEXT_ATTRIBUTE, SPARSE_FEATURE_NAMES
+from rasa.nlu.constants import TEXT_ATTRIBUTE, SPARSE_FEATURE_NAMES, SPACY_DOCS
 from rasa.nlu.training_data import Message
 
 
@@ -56,7 +56,7 @@ def test_text_featurizer(sentence, expected, expected_cls):
         (
             "hello 123 hello 123 hello",
             [[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0]],
-            [[2.0, 2.0, 3.0, 2.0, 3.0, 2.0, 2.0, 2.0, 1.0]],
+            [[2.0, 2.0, 3.0, 2.0, 3.0, 2.0, 2.0, 1.0, 1.0]],
         )
     ],
 )
@@ -83,3 +83,56 @@ def test_text_featurizer_window_size(sentence, expected, expected_cls):
 
     assert np.all(actual[0] == expected)
     assert np.all(actual[-1] == expected_cls)
+
+
+def test_text_featurizer_missing_spacy_nlp():
+    featurizer = TextFeaturizer({"features": [["pos", "pos2"]]})
+
+    train_message = Message("Missing spacy.")
+
+    WhitespaceTokenizer().process(train_message)
+
+    with pytest.raises(ValueError) as excpetions:
+        featurizer.train(TrainingData([train_message]))
+
+    assert "Make sure to add 'SpacyNLP' to your pipeline." in str(excpetions.value)
+
+
+@pytest.mark.parametrize(
+    "sentence, expected",
+    [
+        (
+            "The sun is shining",
+            [
+                [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0],
+            ],
+        )
+    ],
+)
+def test_text_featurizer_using_pos(sentence, expected, spacy_nlp):
+    featurizer = TextFeaturizer({"features": [["pos", "pos2"]]})
+
+    train_message = Message(sentence)
+    test_message = Message(sentence)
+
+    WhitespaceTokenizer().process(train_message)
+    WhitespaceTokenizer().process(test_message)
+
+    train_message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(sentence))
+    test_message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(sentence))
+
+    featurizer.train(TrainingData([train_message]))
+
+    featurizer.process(test_message)
+
+    assert isinstance(
+        test_message.get(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]), scipy.sparse.coo_matrix
+    )
+
+    actual = test_message.get(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]).toarray()
+
+    assert np.all(actual == expected)

@@ -87,7 +87,11 @@ class TextFeaturizer(Featurizer):
     ):
         super().__init__(component_config)
 
-        self.feature_to_idx_dict = feature_to_idx_dict
+        if feature_to_idx_dict is None:
+            self.feature_to_idx_dict = {}
+        else:
+            self.feature_to_idx_dict = feature_to_idx_dict
+
         self._check_pos_features_and_spacy()
 
     def _check_pos_features_and_spacy(self):
@@ -225,21 +229,28 @@ class TextFeaturizer(Featurizer):
             word_features = {}
 
             for pointer_position in window_range:
-                if word_idx + pointer_position >= len(words):
+                current_idx = word_idx + pointer_position
+
+                # skip, if current_idx is pointing to a non-existing word
+                if current_idx < 0 or current_idx >= len(words):
+                    continue
+
+                # check if we are at the start or at the end
+                if word_idx == len(words) - 1 and pointer_position == 0:
                     word_features["EOS"] = True
-                elif word_idx + pointer_position < 0:
+                elif word_idx == 0 and pointer_position == 0:
                     word_features["BOS"] = True
-                else:
-                    word = words[word_idx + pointer_position]
 
-                    current_feature_idx = pointer_position + half_window_size
-                    prefix = prefixes[current_feature_idx]
-                    features = configured_features[current_feature_idx]
+                word = words[word_idx + pointer_position]
 
-                    for feature in features:
-                        # append each feature to a feature vector
-                        value = self.function_dict[feature](word)
-                        word_features[prefix + ":" + feature] = value
+                current_feature_idx = pointer_position + half_window_size
+                prefix = prefixes[current_feature_idx]
+                features = configured_features[current_feature_idx]
+
+                for feature in features:
+                    # append each feature to a feature vector
+                    value = self.function_dict[feature](word)
+                    word_features[prefix + ":" + feature] = value
 
             words_features.append(word_features)
 
@@ -251,6 +262,11 @@ class TextFeaturizer(Featurizer):
         words = []
         if self.pos_features:
             tokens = message.get(SPACY_DOCS[TEXT_ATTRIBUTE])
+            if not tokens:
+                raise ValueError(
+                    f"Missing '{SPACY_DOCS[TEXT_ATTRIBUTE]}'. "
+                    f"Make sure to add 'SpacyNLP' to your pipeline."
+                )
         else:
             tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
             # remove CLS token
