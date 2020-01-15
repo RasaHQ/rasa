@@ -26,6 +26,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_PROPERTY_NAME,
     OPEN_UTTERANCE_PREDICTION_KEY,
     EXTRACTOR_ATTRIBUTE,
+    PRETRAINED_EXTRACTORS,
 )
 from rasa.model import get_model
 from rasa.nlu import config, training_data, utils
@@ -35,11 +36,8 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.core.constants import RESPOND_PREFIX
 
 logger = logging.getLogger(__name__)
-
-PRETRAINED_EXTRACTORS = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
 
 ENTITY_PROCESSORS = {"EntitySynonymMapper"}
 
