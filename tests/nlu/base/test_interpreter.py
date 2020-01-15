@@ -15,7 +15,6 @@ from rasa.utils.endpoints import EndpointConfig
 from tests.nlu import utilities
 
 
-@utilities.slowtest
 @pytest.mark.parametrize(
     "pipeline_template", list(registry.registered_pipeline_templates.keys())
 )
@@ -89,7 +88,6 @@ def test_model_is_compatible(metadata):
         },
         {"obj": "trained_nlu_model", "endpoint": None, "type": RasaNLUInterpreter},
         {"obj": "not-existing", "endpoint": None, "type": RegexInterpreter},
-        {"obj": ["list-object"], "endpoint": None, "type": RegexInterpreter},
     ],
 )
 def test_create_interpreter(parameters, trained_nlu_model):
@@ -97,6 +95,6 @@ def test_create_interpreter(parameters, trained_nlu_model):
     if obj == "trained_nlu_model":
         _, obj = get_model_subdirectories(get_model(trained_nlu_model))
 
-    interpreter = NaturalLanguageInterpreter.create(obj, parameters["endpoint"])
+    interpreter = NaturalLanguageInterpreter.create(parameters["endpoint"] or obj)
 
     assert isinstance(interpreter, parameters["type"])

@@ -24,6 +24,7 @@ tests_requires = [
     "aioresponses~=0.6.0",
     "moto~=1.3.8",
     "fakeredis~=1.0",
+    "mongomock~=3.18",
 ]
 
 install_requires = [
@@ -62,12 +63,14 @@ install_requires = [
     "gevent~=1.4",
     "pytz~=2019.1",
     "python-dateutil~=2.8",
-    "rasa-sdk~=1.5.0",
+    "rasa-sdk~=1.6.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
-    "sanic~=19.9",
+    "sanic~=19.9.0",
     "sanic-cors==0.9.9.post1",
     "sanic-jwt~=1.3",
+    # needed because of https://github.com/huge-success/sanic/issues/1729
+    "multidict==4.6.1",
     "aiohttp~=3.5",
     "questionary>=1.1.0",
     "python-socketio>=4.3.1",
@@ -76,7 +79,6 @@ install_requires = [
     "pydot~=1.4",
     "async_generator~=1.10",
     "SQLAlchemy~=1.3.0",
-    "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
     "PyJWT~=1.7",
 ]
@@ -88,6 +90,7 @@ extras_requires = {
     # "convert": ["tensorflow_text~=1.15.1", "tensorflow_hub~=0.6.0"],
     "mitie": ["mitie"],
     "sql": ["psycopg2~=2.8.2", "SQLAlchemy~=1.3"],
+    "kafka": ["kafka-python~=1.4"],
 }
 
 setup(

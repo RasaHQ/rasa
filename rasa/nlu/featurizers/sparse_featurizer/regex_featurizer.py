@@ -1,23 +1,26 @@
-import io
 import logging
+import warnings
+
 import numpy as np
 import os
 import re
 import typing
 import scipy.sparse
-from typing import Any, Dict, Optional, Text, List, Union
+from typing import Any, Dict, Optional, Text, Union, List
 
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers.featurzier import Featurizer
+from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
 import rasa.utils.io
 from rasa.nlu.constants import (
-    MESSAGE_TOKENS_NAMES,
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
+    TOKENS_NAMES,
+    TEXT_ATTRIBUTE,
+    RESPONSE_ATTRIBUTE,
+    SPARSE_FEATURE_NAMES,
+    CLS_TOKEN,
 )
+from rasa.constants import DOCS_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -27,16 +30,16 @@ if typing.TYPE_CHECKING:
 
 class RegexFeaturizer(Featurizer):
 
-    provides = [MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    provides = [SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]]
 
-    requires = [MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = [TOKENS_NAMES[TEXT_ATTRIBUTE]]
 
     def __init__(
         self,
-        component_config: Dict[Text, Any] = None,
-        known_patterns: List[Dict[Text, Text]] = None,
-        lookup_tables: List[Dict[Text, Union[Text, List]]] = None,
-    ):
+        component_config: Optional[Dict[Text, Any]] = None,
+        known_patterns: Optional[List[Dict[Text, Text]]] = None,
+        lookup_tables: Optional[List[Dict[Text, Union[Text, List]]]] = None,
+    ) -> None:
 
         super().__init__(component_config)
 
@@ -52,21 +55,19 @@ class RegexFeaturizer(Featurizer):
         self._add_lookup_table_regexes(training_data.lookup_tables)
 
         for example in training_data.training_examples:
-            for attribute in [MESSAGE_TEXT_ATTRIBUTE, MESSAGE_RESPONSE_ATTRIBUTE]:
+            for attribute in [TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE]:
                 self._text_features_with_regex(example, attribute)
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        self._text_features_with_regex(message, MESSAGE_TEXT_ATTRIBUTE)
+        self._text_features_with_regex(message, TEXT_ATTRIBUTE)
 
     def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
         if self.known_patterns:
             extras = self._features_for_patterns(message, attribute)
             features = self._combine_with_existing_sparse_features(
-                message,
-                extras,
-                feature_name=MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute],
+                message, extras, feature_name=SPARSE_FEATURE_NAMES[attribute]
             )
-            message.set(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute], features)
+            message.set(SPARSE_FEATURE_NAMES[attribute], features)
 
     def _add_lookup_table_regexes(
         self, lookup_tables: List[Dict[Text, Union[Text, List]]]
@@ -86,9 +87,10 @@ class RegexFeaturizer(Featurizer):
         regexes did match. Furthermore, if the
         message is tokenized, the function will mark all tokens with a dict
         relating the name of the regex to whether it was matched."""
-        tokens = message.get(MESSAGE_TOKENS_NAMES[attribute], [])
+        tokens = message.get(TOKENS_NAMES[attribute], [])
+        seq_length = len(tokens)
 
-        vec = np.zeros([len(tokens), len(self.known_patterns)])
+        vec = np.zeros([seq_length, len(self.known_patterns)])
 
         for pattern_index, pattern in enumerate(self.known_patterns):
             matches = re.finditer(pattern["pattern"], message.text)
@@ -98,17 +100,26 @@ class RegexFeaturizer(Featurizer):
                 patterns = t.get("pattern", default={})
                 patterns[pattern["name"]] = False
 
+                if t.text == CLS_TOKEN:
+                    # make sure to set all patterns for the CLS token to False
+                    # the attribute patterns is needed later on and in the tests
+                    t.set("pattern", patterns)
+                    continue
+
                 for match in matches:
-                    if t.offset < match.end() and t.end > match.start():
+                    if t.start < match.end() and t.end > match.start():
                         patterns[pattern["name"]] = True
                         vec[token_index][pattern_index] = 1.0
+                        if attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE]:
+                            # CLS token vector should contain all patterns
+                            vec[-1][pattern_index] = 1.0
 
                 t.set("pattern", patterns)
 
         return scipy.sparse.coo_matrix(vec)
 
     def _generate_lookup_regex(
-        self, lookup_table: Dict[Text, Union[Text, List]]
+        self, lookup_table: Dict[Text, Union[Text, List[Text]]]
     ) -> Text:
         """creates a regex out of the contents of a lookup table file"""
         lookup_elements = lookup_table["elements"]
@@ -117,6 +128,12 @@ class RegexFeaturizer(Featurizer):
         # if it's a list, it should be the elements directly
         if isinstance(lookup_elements, list):
             elements_to_regex = lookup_elements
+            warnings.warn(
+                f"Directly including lookup tables as a list is deprecated since Rasa "
+                f"1.6. See {DOCS_BASE_URL}/nlu/training-data-format/#lookup-tables "
+                f"how to do so.",
+                FutureWarning,
+            )
 
         # otherwise it's a file path.
         else:

@@ -63,14 +63,17 @@ def create_label_ids(label_ids: "np.ndarray") -> "np.ndarray":
 
     if label_ids.ndim == 1:
         return label_ids
-    elif label_ids.ndim == 2 and label_ids.shape[-1] == 1:
+
+    if label_ids.ndim == 2 and label_ids.shape[-1] == 1:
         return label_ids[:, 0]
-    elif label_ids.ndim == 2:
+
+    if label_ids.ndim == 2:
         return np.array([" ".join(row.astype("str")) for row in label_ids])
-    elif label_ids.ndim == 3 and label_ids.shape[-1] == 1:
+
+    if label_ids.ndim == 3 and label_ids.shape[-1] == 1:
         return np.array([" ".join(row.astype("str")) for row in label_ids[:, :, 0]])
-    else:
-        raise ValueError("Unsupported label_ids dimensions")
+
+    raise ValueError("Unsupported label_ids dimensions")
 
 
 # noinspection PyPep8Naming
@@ -93,19 +96,9 @@ def train_val_split(
 
     counts = np.array([label_counts[label] for label in label_ids])
 
-    multi_values = []
-    [
-        multi_values.append(v[counts > 1])
-        for values in session_data.values()
-        for v in values
-    ]
+    multi_values = [v[counts > 1] for values in session_data.values() for v in values]
 
-    solo_values = []
-    [
-        solo_values.append(v[counts == 1])
-        for values in session_data.values()
-        for v in values
-    ]
+    solo_values = [v[counts == 1] for values in session_data.values() for v in values]
 
     output_values = train_test_split(
         *multi_values,
@@ -126,6 +119,8 @@ def check_train_test_sizes(
     label_counts: Dict[Any, int],
     session_data: SessionDataType,
 ):
+    """Check whether the evaluation data set is too large or too small."""
+
     num_examples = get_number_of_examples(session_data)
 
     if evaluate_on_num_examples >= num_examples - len(label_counts):
@@ -143,7 +138,10 @@ def check_train_test_sizes(
 
 def convert_train_test_split(
     output_values: List[Any], session_data: SessionDataType, solo_values: List[Any]
-):
+) -> Tuple[SessionDataType, SessionDataType]:
+    """Convert the output of sklearn.model_selection.train_test_split into train and
+    eval session data."""
+
     session_data_train = defaultdict(list)
     session_data_val = defaultdict(list)
 
@@ -293,7 +291,7 @@ def balance_session_data(
     return final_session_data
 
 
-def get_number_of_examples(session_data: SessionDataType):
+def get_number_of_examples(session_data: SessionDataType) -> int:
     """Obtain number of examples in session data.
 
     Raise a ValueError if number of examples differ for different data in session data.
@@ -342,7 +340,7 @@ def prepare_batch(
     session_data: SessionDataType,
     start: Optional[int] = None,
     end: Optional[int] = None,
-    tuple_sizes: Dict[Text, int] = None,
+    tuple_sizes: Optional[Dict[Text, int]] = None,
 ) -> Tuple[Optional[np.ndarray]]:
     """Slices session data into batch using given start and end value."""
 

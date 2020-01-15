@@ -64,13 +64,13 @@ Here is how you add it using Python code:
 
 .. code-block:: python
 
-    from rasa.core.event_brokers.pika_producer import PikaProducer
+    from rasa.core.brokers.pika import PikaEventBroker
     from rasa_platform.core.tracker_store import InMemoryTrackerStore
 
-    pika_broker = PikaProducer('localhost',
-                                'username',
-                                'password',
-                                queue='rasa_core_events')
+    pika_broker = PikaEventBroker('localhost',
+                                  'username',
+                                  'password',
+                                  queue='rasa_core_events')
 
     tracker_store = InMemoryTrackerStore(db=db, event_broker=pika_broker)
 
@@ -114,9 +114,19 @@ example:
 Kafka Event Broker
 ------------------
 
-It is possible to use `Kafka <https://kafka.apache.org/>`_ as main broker for your events. In this example
-we are going to use the `python-kafka <https://kafka-python.readthedocs.io/en/master/usage.html>`_
-library, a Kafka client written in Python.
+It is possible to use `Kafka <https://kafka.apache.org/>`_ as main broker for your
+events. In this example we are going to use the `python-kafka <https://kafka-python
+.readthedocs.io/en/master/usage.html>`_ library, a Kafka client written in Python.
+
+.. note::
+
+  In order to use the Kafka event broker, ``rasa`` has to be installed with the
+  ``kafka`` option:
+
+  .. code-block:: bash
+
+    $ pip install rasa[kafka]
+
 
 Adding a Kafka Event Broker Using the Endpoint Configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -147,11 +157,11 @@ The code below shows an example on how to instantiate a Kafka producer in you sc
 
 .. code-block:: python
 
-    from rasa.core.event_brokers.kafka_producer import KafkaProducer
+    from rasa.core.brokers.kafka import KafkaEventBroker
     from rasa.core.tracker_store import InMemoryTrackerStore
 
-    kafka_broker = KafkaProducer(host='localhost:9092',
-                                 topic='rasa_core_events')
+    kafka_broker = KafkaEventBroker(host='localhost:9092',
+                                    topic='rasa_core_events')
 
     tracker_store = InMemoryTrackerStore(event_broker=kafka_broker)
 
@@ -167,10 +177,10 @@ list of strings. e.g.:
 
 .. code-block:: python
 
-    kafka_broker = KafkaProducer(host=['kafka_broker_1:9092',
-                                       'kafka_broker_2:2030',
-                                       'kafka_broker_3:9092'],
-                                 topic='rasa_core_events')
+    kafka_broker = KafkaEventBroker(host=['kafka_broker_1:9092',
+                                          'kafka_broker_2:2030',
+                                          'kafka_broker_3:9092'],
+                                    topic='rasa_core_events')
 
 Authentication and authorization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -187,11 +197,11 @@ previously configured in the broker server.
 
 .. code-block:: python
 
-    kafka_broker = KafkaProducer(host='kafka_broker:9092',
-                                 sasl_plain_username='kafka_username',
-                                 sasl_plain_password='kafka_password',
-                                 security_protocol='SASL_PLAINTEXT',
-                                 topic='rasa_core_events')
+    kafka_broker = KafkaEventBroker(host='kafka_broker:9092',
+                                    sasl_plain_username='kafka_username',
+                                    sasl_plain_password='kafka_password',
+                                    security_protocol='SASL_PLAINTEXT',
+                                    topic='rasa_core_events')
 
 
 If the clients or the brokers in the kafka cluster are located in different
@@ -202,13 +212,13 @@ be provided as arguments, as well as the CA's root certificate.
 
 .. code-block:: python
 
-    kafka_broker = KafkaProducer(host='kafka_broker:9092',
-                                 ssl_cafile='CARoot.pem',
-                                 ssl_certfile='certificate.pem',
-                                 ssl_keyfile='key.pem',
-                                 ssl_check_hostname=True,
-                                 security_protocol='SSL',
-                                 topic='rasa_core_events')
+    kafka_broker = KafkaEventBroker(host='kafka_broker:9092',
+                                    ssl_cafile='CARoot.pem',
+                                    ssl_certfile='certificate.pem',
+                                    ssl_keyfile='key.pem',
+                                    ssl_check_hostname=True,
+                                    security_protocol='SSL',
+                                    topic='rasa_core_events')
 
 If the ``ssl_check_hostname`` parameter is enabled, the clients will verify
 if the broker's hostname matches the certificate. It's used on client's connections

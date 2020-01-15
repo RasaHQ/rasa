@@ -17,18 +17,21 @@ from rasa.utils.plotter import Plotter
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
+from rasa.nlu.components import Component, any_of
+
 from rasa.utils import train_utils
 from rasa.utils import tf_layers
 from rasa.utils import tf_models
 from rasa.utils.train_utils import SessionDataType, TrainingMetrics
 from rasa.nlu.constants import (
-    MESSAGE_INTENT_ATTRIBUTE,
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
-    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
-    MESSAGE_TOKENS_NAMES,
-    MESSAGE_ENTITIES_ATTRIBUTE,
+    INTENT_ATTRIBUTE,
+    TEXT_ATTRIBUTE,
+    ENTITIES_ATTRIBUTE,
+    SPARSE_FEATURE_NAMES,
+    DENSE_FEATURE_NAMES,
+    TOKENS_NAMES,
 )
 
 import tensorflow as tf
@@ -48,7 +51,7 @@ shapes, types = None, None
 
 
 class EmbeddingIntentClassifier(EntityExtractor):
-    """Intent classifier using supervised embeddings.
+    """label classifier using supervised embeddings.
 
     The embedding intent classifier embeds user inputs
     and intent labels into the same space.
@@ -66,9 +69,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
     and additional hidden layers are added together with dropout.
     """
 
-    provides = ["intent", "intent_ranking", "entities"]
+    provides = ["label", "label_ranking", "entities"]
 
-    requires = []
+    requires = [
+        any_of(
+            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE], SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
+        )
+    ]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -110,7 +117,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         "normalize_loss": False,
         # embedding parameters
         # default dense dimension used if no dense features are present
-        "dense_dim": 512,
+        "dense_dim": {"text": 512, "label": 20},
         # dimension size of embedding vectors
         "embed_dim": 20,
         # the type of the similarity
@@ -159,35 +166,36 @@ class EmbeddingIntentClassifier(EntityExtractor):
         """Config migration warning"""
 
         removed_tokenization_params = [
-            "intent_tokenization_flag",
-            "intent_split_symbol",
+            "label_tokenization_flag",
+            "label_split_symbol",
         ]
         for removed_param in removed_tokenization_params:
             if removed_param in config:
                 warnings.warn(
-                    f"Intent tokenization has been moved to Tokenizer components. "
-                    f"Your config still mentions '{removed_param}'. Tokenization may "
-                    f"fail if you specify the parameter here. Please specify the "
-                    f"parameter 'intent_tokenization_flag' and 'intent_split_symbol' "
-                    f"in the tokenizer of your NLU pipeline.",
-                    DeprecationWarning,
+                    f"label tokenization has been moved to Tokenizer components. "
+                    f"Your config still mentions '{removed_param}'. "
+                    f"Tokenization may fail if you specify the parameter here. "
+                    f"Please specify the parameter 'intent_tokenization_flag' "
+                    f"and 'intent_split_symbol' in the "
+                    f"tokenizer of your NLU pipeline",
+                    FutureWarning,
                 )
 
     # init helpers
     def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
         self.hidden_layer_sizes = {
             "text": config["hidden_layers_sizes_a"],
-            "intent": config["hidden_layers_sizes_b"],
+            "label": config["hidden_layers_sizes_b"],
             "tag": config["hidden_layers_sizes_c"],
         }
         self.share_hidden_layers = config["share_hidden_layers"]
         if (
             self.share_hidden_layers
-            and self.hidden_layer_sizes["text"] != self.hidden_layer_sizes["intent"]
+            and self.hidden_layer_sizes["text"] != self.hidden_layer_sizes["label"]
         ):
             raise ValueError(
                 "If hidden layer weights are shared,"
-                "hidden_layer_sizes for a and b must coincide"
+                "hidden_layer_sizes for a and b must coincide."
             )
 
         self.batch_size = config["batch_size"]
@@ -268,7 +276,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         batch_tuple_sizes: Optional[Dict] = None,
         attention_weights: Optional["tf.Tensor"] = None,
     ) -> None:
-        """Declare instant variables with default values"""
+        """Declare instance variables with default values"""
 
         super().__init__(component_config)
 
@@ -345,7 +353,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             [
                 e["entity"]
                 for example in training_data.entity_examples
-                for e in example.get(MESSAGE_ENTITIES_ATTRIBUTE)
+                for e in example.get(ENTITIES_ATTRIBUTE)
             ]
         ) - {None}
 
@@ -381,10 +389,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         for label_example in labels_example:
             if (
-                label_example.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute])
-                is None
-                and label_example.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute])
-                is None
+                label_example.get(SPARSE_FEATURE_NAMES[attribute]) is None
+                and label_example.get(DENSE_FEATURE_NAMES[attribute]) is None
             ):
                 return False
         return True
@@ -396,39 +402,25 @@ class EmbeddingIntentClassifier(EntityExtractor):
         sparse_features = None
         dense_features = None
 
-        if message.get(MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]) is not None:
-            sparse_features = message.get(
-                MESSAGE_VECTOR_SPARSE_FEATURE_NAMES[attribute]
-            )
+        if message.get(SPARSE_FEATURE_NAMES[attribute]) is not None:
+            sparse_features = message.get(SPARSE_FEATURE_NAMES[attribute])
 
-        if message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute]) is not None:
-            dense_features = message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[attribute])
+        if message.get(DENSE_FEATURE_NAMES[attribute]) is not None:
+            dense_features = message.get(DENSE_FEATURE_NAMES[attribute])
 
         if sparse_features is not None and dense_features is not None:
             if sparse_features.shape[0] != dense_features.shape[0]:
                 raise ValueError(
                     f"Sequence dimensions for sparse and dense features "
-                    f"don't coincide in '{message.text}'"
+                    f"don't coincide in '{message.text}' for attribute '{attribute}'."
                 )
 
+        # if attribute != INTENT_ATTRIBUTE:
+        #     # Use only the CLS token vector as features
+        #     sparse_features = sequence_to_sentence_features(sparse_features)
+        #     dense_features = sequence_to_sentence_features(dense_features)
+
         return sparse_features, dense_features
-
-    @staticmethod
-    def _compute_default_label_features(
-        labels_example: List["Message"],
-    ) -> List[np.ndarray]:
-        """Compute one-hot representation for the labels"""
-
-        return [
-            np.array(
-                [
-                    scipy.sparse.coo_matrix(
-                        ([1], ([0], [idx])), shape=(1, len(labels_example))
-                    )
-                    for idx in range(len(labels_example))
-                ]
-            )
-        ]
 
     @staticmethod
     def _add_to_session_data(
@@ -472,15 +464,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 num_features += data[0].shape[-1]
         return num_features
 
-    @staticmethod
-    def _check_enough_labels(session_data: "SessionDataType") -> bool:
-        return len(np.unique(session_data["intent_ids"])) >= 2
-
     def check_input_dimension_consistency(self, session_data: "SessionDataType"):
         if self.share_hidden_layers:
             num_text_features = self._get_num_of_features(session_data, "text_features")
             num_intent_features = self._get_num_of_features(
-                session_data, "intent_features"
+                session_data, "label_features"
             )
 
             if num_text_features != num_intent_features:
@@ -491,7 +479,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 )
 
     def _extract_labels_precomputed_features(
-        self, label_examples: List["Message"]
+        self, label_examples: List["Message"], attribute: Text = INTENT_ATTRIBUTE
     ) -> List[np.ndarray]:
         """Collect precomputed encodings"""
 
@@ -499,9 +487,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         dense_features = []
 
         for e in label_examples:
-            _sparse, _dense = self._extract_and_add_features(
-                e, MESSAGE_INTENT_ATTRIBUTE
-            )
+            _sparse, _dense = self._extract_and_add_features(e, attribute)
             if _sparse is not None:
                 sparse_features.append(_sparse)
             if _dense is not None:
@@ -511,6 +497,38 @@ class EmbeddingIntentClassifier(EntityExtractor):
         dense_features = np.array(dense_features)
 
         return [sparse_features, dense_features]
+
+    # @staticmethod
+    # def _compute_default_label_features(
+    #     labels_example: List["Message"],
+    # ) -> List[np.ndarray]:
+    #     """Compute one-hot representation for the labels"""
+    # 
+    #     return [
+    #         np.array(
+    #             [
+    #                 scipy.sparse.coo_matrix(
+    #                     ([1], ([0], [idx])), shape=(1, len(labels_example))
+    #                 )
+    #                 for idx in range(len(labels_example))
+    #             ]
+    #         )
+    #     ]
+
+    @staticmethod
+    def _compute_default_label_features(
+        labels_example: List["Message"],
+    ) -> List[np.ndarray]:
+        """Compute one-hot representation for the labels"""
+
+        return [
+            np.array(
+                [
+                    np.expand_dims(a, 0)
+                    for a in np.eye(len(labels_example), dtype=np.float32)
+                ]
+            )
+        ]
 
     def _create_label_data(
         self,
@@ -540,21 +558,23 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         # Collect features, precomputed if they exist, else compute on the fly
         if self._check_labels_features_exist(labels_example, attribute):
-            features = self._extract_labels_precomputed_features(labels_example)
+            features = self._extract_labels_precomputed_features(
+                labels_example, attribute
+            )
         else:
             features = self._compute_default_label_features(labels_example)
 
         label_data = {}
-        self._add_to_session_data(label_data, "intent_features", features)
-        self._add_mask_to_session_data(label_data, "intent_mask", "intent_features")
+        self._add_to_session_data(label_data, "label_features", features)
+        self._add_mask_to_session_data(label_data, "label_mask", "label_features")
 
         return label_data
 
-    def use_default_label_features(self, label_ids: np.ndarray) -> List[np.ndarray]:
+    def _use_default_label_features(self, label_ids: np.ndarray) -> List[np.ndarray]:
         return [
             np.array(
                 [
-                    self._label_data["intent_features"][0][label_id]
+                    self._label_data["label_features"][0][label_id]
                     for label_id in label_ids
                 ]
             )
@@ -577,22 +597,21 @@ class EmbeddingIntentClassifier(EntityExtractor):
         tag_ids = []
 
         for e in training_data:
-            _sparse, _dense = self._extract_and_add_features(e, MESSAGE_TEXT_ATTRIBUTE)
+            _sparse, _dense = self._extract_and_add_features(e, TEXT_ATTRIBUTE)
             if _sparse is not None:
                 X_sparse.append(_sparse)
             if _dense is not None:
                 X_dense.append(_dense)
 
-            _sparse, _dense = self._extract_and_add_features(
-                e, MESSAGE_INTENT_ATTRIBUTE
-            )
-            if _sparse is not None:
-                Y_sparse.append(_sparse)
-            if _dense is not None:
-                Y_dense.append(_dense)
+            if e.get(label_attribute):
+                _sparse, _dense = self._extract_and_add_features(e, label_attribute)
+                if _sparse is not None:
+                    Y_sparse.append(_sparse)
+                if _dense is not None:
+                    Y_dense.append(_dense)
 
-            if label_attribute and e.get(label_attribute):
-                label_ids.append(label_id_dict[e.get(label_attribute)])
+                if label_id_dict:
+                    label_ids.append(label_id_dict[e.get(label_attribute)])
 
             if self.named_entity_recognition and tag_id_dict:
                 if self.bilou_flag:
@@ -606,13 +625,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
                     else:
                         _tags = [
                             tag_id_dict["O"]
-                            for _ in e.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+                            for _ in e.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
                         ]
                 else:
                     _tags = []
-                    for t in e.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]):
+                    for t in e.get(TOKENS_NAMES[TEXT_ATTRIBUTE]):
                         _tag = determine_token_labels(
-                            t, e.get(MESSAGE_ENTITIES_ATTRIBUTE), None
+                            t, e.get(ENTITIES_ATTRIBUTE), None
                         )
                         _tags.append(tag_id_dict[_tag])
                 # transpose to have seq_len x 1
@@ -627,41 +646,58 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         session_data = {}
         self._add_to_session_data(session_data, "text_features", [X_sparse, X_dense])
-        self._add_to_session_data(session_data, "intent_features", [Y_sparse, Y_dense])
+        self._add_to_session_data(session_data, "label_features", [Y_sparse, Y_dense])
         if label_attribute and (
-            "intent_features" not in session_data or not session_data["intent_features"]
+            "label_features" not in session_data or not session_data["label_features"]
         ):
             # no label features are present, get default features from _label_data
-            session_data["intent_features"] = self.use_default_label_features(label_ids)
+            session_data["label_features"] = self._use_default_label_features(label_ids)
 
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         self._add_to_session_data(
-            session_data, "intent_ids", [np.expand_dims(label_ids, -1)]
+            session_data, "label_ids", [np.expand_dims(label_ids, -1)]
         )
         self._add_to_session_data(session_data, "tag_ids", [tag_ids])
 
         self._add_mask_to_session_data(session_data, "text_mask", "text_features")
-        self._add_mask_to_session_data(session_data, "intent_mask", "intent_features")
+        self._add_mask_to_session_data(session_data, "label_mask", "label_features")
 
         return session_data
 
     # train helpers
+    def _apply_bilou_schema(self, training_data: "TrainingData"):
+        if not self.named_entity_recognition:
+            return
+
+        for example in training_data.training_examples:
+            entities = example.get(ENTITIES_ATTRIBUTE)
+
+            if not entities:
+                continue
+
+            entities = CRFEntityExtractor._convert_example(example)
+            output = CRFEntityExtractor._bilou_tags_from_offsets(
+                example.get(TOKENS_NAMES[TEXT_ATTRIBUTE]), entities
+            )
+
+            example.set(MESSAGE_BILOU_ENTITIES_ATTRIBUTE, output)
+
     def preprocess_train_data(self, training_data: "TrainingData"):
         """Prepares data for training.
 
         Performs sanity checks on training data, extracts encodings for labels.
         """
         if self.bilou_flag:
-            self.apply_bilou_schema(training_data)
+            self._apply_bilou_schema(training_data)
 
         label_id_dict = self._create_label_id_dict(
-            training_data, attribute=MESSAGE_INTENT_ATTRIBUTE
+            training_data, attribute=INTENT_ATTRIBUTE
         )
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
 
         self._label_data = self._create_label_data(
-            training_data, label_id_dict, attribute=MESSAGE_INTENT_ATTRIBUTE
+            training_data, label_id_dict, attribute=INTENT_ATTRIBUTE
         )
 
         tag_id_dict = self._create_tag_id_dict(training_data, self.bilou_flag)
@@ -671,7 +707,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             training_data.training_examples,
             label_id_dict,
             tag_id_dict,
-            label_attribute=MESSAGE_INTENT_ATTRIBUTE,
+            label_attribute=INTENT_ATTRIBUTE,
         )
 
         self.num_tags = len(self.inverted_tag_dict)
@@ -680,22 +716,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return session_data
 
-    def apply_bilou_schema(self, training_data: "TrainingData"):
-        if not self.named_entity_recognition:
-            return
-
-        for example in training_data.training_examples:
-            entities = example.get(MESSAGE_ENTITIES_ATTRIBUTE)
-
-            if not entities:
-                continue
-
-            entities = CRFEntityExtractor._convert_example(example)
-            output = CRFEntityExtractor._bilou_tags_from_offsets(
-                example.get(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE]), entities
-            )
-
-            example.set(MESSAGE_BILOU_ENTITIES_ATTRIBUTE, output)
+    @staticmethod
+    def _check_enough_labels(session_data: "SessionDataType") -> bool:
+        return len(np.unique(session_data["label_ids"])) >= 2
 
     def train(
         self,
@@ -703,7 +726,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         cfg: Optional["RasaNLUModelConfig"] = None,
         **kwargs: Any,
     ) -> None:
-        """Train the embedding label classifier on a data set."""
+        """Train the embedding intent classifier on a data set."""
 
         logger.debug("Started training embedding classifier.")
 
@@ -728,11 +751,12 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 session_data,
                 self.evaluate_on_num_examples,
                 self.random_seed,
-                label_key="intent_ids",
+                label_key="label_ids",
             )
         else:
             eval_session_data = None
 
+        # TODO set it in the model
         # set random seed
         tf.random.set_seed(self.random_seed)
 
@@ -781,8 +805,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         # self.attention_weights = train_utils.extract_attention(self.attention_weights)
 
-        # process helpers
-
+    # process helpers
     def _predict(self, message: "Message"):
         if self.model is None or self.predict_func is None:
             return
@@ -798,6 +821,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
     def _predict_label(
             self, out
     ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
+        """Predicts the intent of the provided message."""
 
         label = {"name": None, "confidence": 0.0}
         label_ranking = []
@@ -806,7 +830,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             logger.error(
                 "There is no trained tf.session: "
                 "component is either not trained or "
-                "didn't receive enough training data"
+                "didn't receive enough training data."
             )
             return label, label_ranking
 
@@ -874,9 +898,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
             if last_tag != tag:
                 entity = {
                     "entity": tag,
-                    "start": token.offset,
+                    "start": token.start,
                     "end": token.end,
-                    "extractor": "flair",
+                    "extractor": "DIET",
                 }
                 entities.append(entity)
 
@@ -899,8 +923,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         if self.intent_classification:
             label, label_ranking = self._predict_label(out)
 
-            message.set("intent", label, add_to_output=True)
-            message.set("intent_ranking", label_ranking, add_to_output=True)
+            message.set("label", label, add_to_output=True)
+            message.set("label_ranking", label_ranking, add_to_output=True)
 
         if self.named_entity_recognition:
             entities = self._predict_entities(out, message)
@@ -916,7 +940,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         if self.model is None:
             return {"file": None}
 
-        model_file = os.path.join(model_dir, file_name +".tf_model")
+        tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
         # # plot training curves
         # plotter = Plotter()
@@ -925,7 +949,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # copyfile(self.training_log_file, os.path.join(model_dir, "training-log.tsv"))
 
         try:
-            os.makedirs(os.path.dirname(model_file))
+            os.makedirs(os.path.dirname(tf_model_file))
         except OSError as e:
             # be happy if someone already created the path
             import errno
@@ -933,7 +957,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             if e.errno != errno.EEXIST:
                 raise
 
-        self.model.save_weights(model_file, save_format='tf')
+        self.model.save_weights(tf_model_file, save_format='tf')
 
         dummy_session_data = {
             k: [v[:1] for v in vs]
@@ -977,10 +1001,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
         cached_component: Optional["EmbeddingIntentClassifier"] = None,
         **kwargs: Any,
     ) -> "EmbeddingIntentClassifier":
+        """Loads the trained model from the provided directory."""
 
         if model_dir and meta.get("file"):
             file_name = meta.get("file")
-            model_file = os.path.join(model_dir, file_name + ".tf_model")
+            tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
             with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "rb") as f:
                 _tf_config = pickle.load(f)
@@ -1012,7 +1037,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
             hidden_layer_sizes = {
                 "text": meta["hidden_layers_sizes_a"],
-                "intent": meta["hidden_layers_sizes_b"],
+                "label": meta["hidden_layers_sizes_b"],
                 "tag": meta["hidden_layers_sizes_c"],
             }
             similarity_type = meta["similarity_type"]
@@ -1053,16 +1078,16 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 meta["learning_rate"],
                 meta["batch_strategy"],
             )
-
+            logger.debug("Loading the model ...")
             model.fit(
                 1,
                 1,
                 0,
                 0,
                 silent=True,
+                eager=True,
             )
-
-            model.load_weights(model_file)
+            model.load_weights(tf_model_file)
 
             # build the graph for prediction
             model.session_data = {
@@ -1077,6 +1102,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
             )
             batch_in = next(iter(predict_dataset))
             predict_func(batch_in)
+            logger.debug("Finished loading the model.")
+
             return cls(
                 component_config=meta,
                 inverted_label_dict=inv_label_dict,
@@ -1088,8 +1115,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         else:
             warnings.warn(
-                f"Failed to load nlu model. Maybe path '{os.path.abspath(model_dir)}' "
-                "doesn't exist."
+                f"Failed to load nlu model. "
+                f"Maybe path '{os.path.abspath(model_dir)}' doesn't exist."
             )
             return cls(component_config=meta)
 
@@ -1187,10 +1214,10 @@ class DIET(tf_models.RasaModel):
         self._sparse_dropout = tf_layers.SparseDropout(rate=droprate)
         self._sparse_to_dense = {
             "text": self._create_sparse_dense_layer(
-                session_data["text_features"], "text", reg_lambda, dense_dim
+                session_data["text_features"], "text", reg_lambda, dense_dim["text"]
             ),
-            "intent": self._create_sparse_dense_layer(
-                session_data["intent_features"], "intent", reg_lambda, dense_dim
+            "label": self._create_sparse_dense_layer(
+                session_data["label_features"], "label", reg_lambda, dense_dim["label"]
             ),
         }
 
@@ -1201,11 +1228,11 @@ class DIET(tf_models.RasaModel):
                 reg_lambda,
                 "text_intent" if share_hidden_layers else "text",
             ),
-            "intent": tf_layers.ReluFfn(
-                hidden_layer_sizes["intent"],
+            "label": tf_layers.ReluFfn(
+                hidden_layer_sizes["label"],
                 droprate,
                 reg_lambda,
-                "text_intent" if share_hidden_layers else "intent",
+                "text_intent" if share_hidden_layers else "label",
             ),
         }
 
@@ -1246,8 +1273,8 @@ class DIET(tf_models.RasaModel):
             self._embed["text"] = tf_layers.Embed(
                 embed_dim, reg_lambda, "text", similarity_type
             )
-            self._embed["intent"] = tf_layers.Embed(
-                embed_dim, reg_lambda, "intent", similarity_type
+            self._embed["label"] = tf_layers.Embed(
+                embed_dim, reg_lambda, "label", similarity_type
             )
             self.train_metrics["i_loss"] = tf.keras.metrics.Mean(name="i_loss")
             self.train_metrics["i_acc"] = tf.keras.metrics.Mean(name="i_acc")
@@ -1375,11 +1402,11 @@ class DIET(tf_models.RasaModel):
 
     def _build_all_b(self):
         all_labels = self._create_bow(
-            self.tf_label_data["intent_features"],
-            self.tf_label_data["intent_mask"][0],
-            "intent",
+            self.tf_label_data["label_features"],
+            self.tf_label_data["label_mask"][0],
+            "label",
         )
-        all_labels_embed = self._embed["intent"](all_labels)
+        all_labels_embed = self._embed["label"](all_labels)
 
         return all_labels_embed, all_labels
 
@@ -1387,7 +1414,7 @@ class DIET(tf_models.RasaModel):
         all_labels_embed, all_labels = self._build_all_b()
 
         a_embed = self._embed["text"](a)
-        b_embed = self._embed["intent"](b)
+        b_embed = self._embed["label"](b)
 
         return train_utils.calculate_loss_acc(
             a_embed,
@@ -1469,9 +1496,9 @@ class DIET(tf_models.RasaModel):
             cls = tf.gather_nd(text_transformed, idxs)
 
             label = self._create_bow(
-                tf_batch_data["intent_features"],
-                tf_batch_data["intent_mask"][0],
-                "intent",
+                tf_batch_data["label_features"],
+                tf_batch_data["label_mask"][0],
+                "label",
             )
             loss, acc = self._intent_loss(cls, label)
             losses["i_loss"] = loss
@@ -1506,7 +1533,7 @@ class DIET(tf_models.RasaModel):
         return train_utils.create_tf_dataset(
             self.session_data,
             batch_size,
-            label_key="intent_ids",
+            label_key="label_ids",
             batch_strategy=self._batch_in_strategy,
             shuffle=True,
         )
@@ -1524,7 +1551,7 @@ class DIET(tf_models.RasaModel):
     def eval_dataset(self, batch_size):
         if self.eval_session_data is not None:
             return train_utils.create_tf_dataset(
-                self.eval_session_data, batch_size, label_key="intent_ids"
+                self.eval_session_data, batch_size, label_key="label_ids"
             )
 
     def build_for_predict(self):
@@ -1561,11 +1588,11 @@ class DIET(tf_models.RasaModel):
                 None,
             )
             # label = self._create_bow(
-            #     tf_batch_data["intent_features"],
-            #     tf_batch_data["intent_mask"][0],
-            #     "intent",
+            #     tf_batch_data["label_features"],
+            #     tf_batch_data["label_mask"][0],
+            #     "label",
             # )
-            # label_embed = self._embed["intent"](label)
+            # label_embed = self._embed["label"](label)
             # sim = train_utils.tf_raw_sim(
             #     cls_embed[:, tf.newaxis, :], label_embed, None
             # )
@@ -1587,5 +1614,5 @@ class DIET(tf_models.RasaModel):
         return train_utils.create_tf_dataset(
             self.session_data,
             1,
-            label_key="intent_ids",
+            label_key="label_ids",
         )

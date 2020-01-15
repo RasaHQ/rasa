@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import logging
 import os
 import tempfile
@@ -8,12 +9,12 @@ from typing import Dict, Optional, Text, Union, List
 import rasa.utils.io
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, PERCENTAGE_KEY
 from rasa.core.domain import Domain
+from rasa.importers.importer import TrainingDataImporter
 from rasa.utils.common import TempDirectoryPath
 
 if typing.TYPE_CHECKING:
     from rasa.core.interpreter import NaturalLanguageInterpreter
     from rasa.core.utils import AvailableEndpoints
-    from rasa.importers.importer import TrainingDataImporter
 
 
 logger = logging.getLogger(__name__)
@@ -106,17 +107,18 @@ async def train_comparison_models(
                 )
 
                 with TempDirectoryPath(tempfile.mkdtemp()) as train_path:
-                    await train(
-                        domain,
-                        file_importer,
-                        train_path,
-                        policy_config=policy_config,
-                        exclusion_percentage=percentage,
-                        kwargs=kwargs,
-                        dump_stories=dump_stories,
+                    _, new_fingerprint = await asyncio.gather(
+                        train(
+                            domain,
+                            file_importer,
+                            train_path,
+                            policy_config=policy_config,
+                            exclusion_percentage=percentage,
+                            kwargs=kwargs,
+                            dump_stories=dump_stories,
+                        ),
+                        model.model_fingerprint(file_importer),
                     )
-
-                    new_fingerprint = await model.model_fingerprint(file_importer)
 
                     output_dir = os.path.join(output_path, "run_" + str(r + 1))
                     model_name = config_name + PERCENTAGE_KEY + str(percentage)
@@ -144,20 +146,19 @@ async def do_compare_training(
     story_file: Text,
     additional_arguments: Optional[Dict] = None,
 ):
-    from rasa.core import utils
-
-    await train_comparison_models(
-        story_file,
-        args.domain,
-        args.out,
-        args.percentages,
-        args.config,
-        args.runs,
-        args.dump_stories,
-        additional_arguments,
+    _, no_stories = await asyncio.gather(
+        train_comparison_models(
+            story_file,
+            args.domain,
+            args.out,
+            args.percentages,
+            args.config,
+            args.runs,
+            args.dump_stories,
+            additional_arguments,
+        ),
+        get_no_of_stories(args.stories, args.domain),
     )
-
-    no_stories = await get_no_of_stories(args.stories, args.domain)
 
     # store the list of the number of stories present at each exclusion
     # percentage
@@ -172,17 +173,14 @@ async def do_compare_training(
 
 
 def do_interactive_learning(
-    args: argparse.Namespace,
-    stories: Optional[Text] = None,
-    additional_arguments: Dict[Text, typing.Any] = None,
+    args: argparse.Namespace, file_importer: TrainingDataImporter,
 ):
     from rasa.core.training import interactive
 
     interactive.run_interactive_learning(
-        stories,
+        file_importer=file_importer,
         skip_visualization=args.skip_visualization,
         server_args=args.__dict__,
-        additional_arguments=additional_arguments,
     )
 
 

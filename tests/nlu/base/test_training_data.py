@@ -2,6 +2,7 @@ import pytest
 import tempfile
 from jsonschema import ValidationError
 
+from rasa.nlu.constants import TEXT_ATTRIBUTE
 from rasa.nlu import training_data
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -48,7 +49,7 @@ def test_validation_is_throwing_exceptions(invalid_data):
 
 
 def test_luis_data():
-    td = training_data.load_data("data/examples/luis/demo-restaurants.json")
+    td = training_data.load_data("data/examples/luis/demo-restaurants_v5.json")
 
     assert not td.is_empty()
     assert len(td.entity_examples) == 8
@@ -188,6 +189,27 @@ def test_train_test_split(filepaths):
 
 
 @pytest.mark.parametrize(
+    "filepaths",
+    [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
+)
+def test_train_test_split_with_random_seed(filepaths):
+    from rasa.importers.utils import training_data_from_paths
+
+    td = training_data_from_paths(filepaths, language="en")
+
+    td_train_1, td_test_1 = td.train_test_split(train_frac=0.8, random_seed=1)
+    td_train_2, td_test_2 = td.train_test_split(train_frac=0.8, random_seed=1)
+    train_1_intent_examples = [e.text for e in td_train_1.intent_examples]
+    train_2_intent_examples = [e.text for e in td_train_2.intent_examples]
+
+    test_1_intent_examples = [e.text for e in td_test_1.intent_examples]
+    test_2_intent_examples = [e.text for e in td_test_2.intent_examples]
+
+    assert train_1_intent_examples == train_2_intent_examples
+    assert test_1_intent_examples == test_2_intent_examples
+
+
+@pytest.mark.parametrize(
     "files",
     [
         ("data/examples/rasa/demo-rasa.json", "data/test/multiple_files_json"),
@@ -247,7 +269,7 @@ def test_repeated_entities():
         example = td.entity_examples[0]
         entities = example.get("entities")
         assert len(entities) == 1
-        tokens = WhitespaceTokenizer().tokenize(example.text)
+        tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT_ATTRIBUTE)
         start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
         assert start == 9
         assert end == 10
@@ -281,7 +303,7 @@ def test_multiword_entities():
         example = td.entity_examples[0]
         entities = example.get("entities")
         assert len(entities) == 1
-        tokens = WhitespaceTokenizer().tokenize(example.text)
+        tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT_ATTRIBUTE)
         start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
         assert start == 4
         assert end == 7
@@ -290,7 +312,7 @@ def test_multiword_entities():
 def test_nonascii_entities():
     data = """
 {
-  "luis_schema_version": "2.0",
+  "luis_schema_version": "5.0",
   "utterances" : [
     {
       "text": "I am looking for a ßäæ ?€ö) item",
@@ -394,7 +416,7 @@ def cmp_dict_list(firsts, seconds):
             None,
         ),
         (
-            "data/examples/luis/demo-restaurants.json",
+            "data/examples/luis/demo-restaurants_v5.json",
             "data/test/luis_converted_to_rasa.json",
             "json",
             None,
@@ -539,7 +561,7 @@ def test_markdown_entity_regex():
 
 
 def test_get_file_format():
-    fformat = get_file_format("data/examples/luis/demo-restaurants.json")
+    fformat = get_file_format("data/examples/luis/demo-restaurants_v5.json")
 
     assert fformat == "json"
 
@@ -596,3 +618,46 @@ def test_section_value_with_delimiter():
         "data/test/markdown_single_sections/section_with_delimiter.md"
     )
     assert td_section_with_delimiter.entity_synonyms == {"10:00 am": "10:00"}
+
+
+def test_markdown_order():
+    r = MarkdownReader()
+
+    md = """## intent:z
+- i'm looking for a place to eat
+- i'm looking for a place in the [north](loc-direction) of town
+
+## intent:a
+- intent a
+- also very important
+"""
+
+    training_data = r.reads(md)
+    assert training_data.nlu_as_markdown() == md
+
+
+def test_dump_nlu_with_responses():
+    md = """## intent:greet
+- hey
+- howdy
+- hey there
+- hello
+- hi
+- good morning
+- good evening
+- dear sir
+
+## intent:chitchat/ask_name
+- What's your name?
+- What can I call you?
+
+## intent:chitchat/ask_weather
+- How's the weather?
+- Is it too hot outside?
+"""
+
+    r = MarkdownReader()
+    nlu_data = r.reads(md)
+
+    dumped = nlu_data.nlu_as_markdown()
+    assert dumped == md

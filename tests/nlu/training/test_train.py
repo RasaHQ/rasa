@@ -28,6 +28,7 @@ def pipelines_for_tests():
                 "SpacyNLP",
                 "MitieNLP",
                 "WhitespaceTokenizer",
+                "ConveRTTokenizer",
                 "MitieTokenizer",
                 "SpacyTokenizer",
                 "MitieFeaturizer",
@@ -76,7 +77,6 @@ def test_all_components_are_in_at_least_one_test_pipeline():
         ), "`all_components` template is missing component."
 
 
-@utilities.slowtest
 @pytest.mark.parametrize(
     "pipeline_template", list(registry.registered_pipeline_templates.keys())
 )
@@ -95,7 +95,6 @@ async def test_train_model(pipeline_template, component_builder, tmpdir):
     assert loaded.parse("Hello today is Monday, again!") is not None
 
 
-@utilities.slowtest
 async def test_random_seed(component_builder, tmpdir):
     """test if train result is the same for two runs of tf embedding"""
 
@@ -123,7 +122,6 @@ async def test_random_seed(component_builder, tmpdir):
     assert result_a == result_b
 
 
-@utilities.slowtest
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 async def test_train_model_on_test_pipelines(
     language, pipeline, component_builder, tmpdir
@@ -142,7 +140,6 @@ async def test_train_model_on_test_pipelines(
     assert loaded.parse("Hello today is Monday, again!") is not None
 
 
-@utilities.slowtest
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 async def test_train_model_no_events(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})

@@ -3,7 +3,6 @@ language: en
 pipeline:
   - name: "SpacyNLP"
   - name: "SpacyTokenizer"
-    use_cls_token: False
   - name: "SpacyFeaturizer"
   - name: "SklearnIntentClassifier"
   - name: "CRFEntityExtractor"

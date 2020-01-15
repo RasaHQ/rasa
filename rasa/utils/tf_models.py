@@ -41,6 +41,7 @@ class RasaModel(tf.keras.models.Model):
             evaluate_on_num_examples: int,
             evaluate_every_num_epochs: int,
             silent: bool = False,
+            eager: bool = False,
             output_file: Optional[Text] = None,
     ) -> None:
         """Train tf graph"""
@@ -53,14 +54,22 @@ class RasaModel(tf.keras.models.Model):
         disable = silent or is_logging_disabled()
         pbar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
-        # allows increasing batch size
-        train_dataset_func = tf.function(self.train_dataset)
-        eval_dataset_func = tf.function(self.eval_dataset)
-
         tf_batch_size = tf.ones((), tf.int32)
-        train_on_batch_func = tf.function(
-            self.train_on_batch, input_signature=[train_dataset_func(tf_batch_size).element_spec]
-        )
+        if eager:
+            # allows increasing batch size
+            train_dataset_func = self.train_dataset
+            eval_dataset_func = self.eval_dataset
+
+            train_on_batch_func = self.train_on_batch
+        else:
+            # allows increasing batch size
+            train_dataset_func = tf.function(self.train_dataset)
+            eval_dataset_func = tf.function(self.eval_dataset)
+
+            train_on_batch_func = tf.function(
+                self.train_on_batch, input_signature=[train_dataset_func(tf_batch_size).element_spec]
+            )
+
         if evaluate_on_num_examples > 0:
             eval_func = tf.function(
                 self.eval, input_signature=[eval_dataset_func(tf_batch_size).element_spec]

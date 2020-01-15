@@ -5,18 +5,14 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-from rasa.nlu.featurizers.featurzier import sequence_to_sentence_features
+from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu import utils
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import (
-    MESSAGE_VECTOR_DENSE_FEATURE_NAMES,
-    MESSAGE_VECTOR_SPARSE_FEATURE_NAMES,
-    MESSAGE_TEXT_ATTRIBUTE,
-)
+from rasa.nlu.constants import DENSE_FEATURE_NAMES, TEXT_ATTRIBUTE
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +25,7 @@ class SklearnIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = [MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = [DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]]
 
     defaults = {
         # C parameter of the svm - cross validation will select the best value
@@ -49,7 +45,7 @@ class SklearnIntentClassifier(Component):
 
     def __init__(
         self,
-        component_config: Dict[Text, Any] = None,
+        component_config: Optional[Dict[Text, Any]] = None,
         clf: "sklearn.model_selection.GridSearchCV" = None,
         le: Optional["sklearn.preprocessing.LabelEncoder"] = None,
     ) -> None:
@@ -102,23 +98,25 @@ class SklearnIntentClassifier(Component):
             X = np.stack(
                 [
                     sequence_to_sentence_features(
-                        example.get(
-                            MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]
-                        )
+                        example.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
                     )
                     for example in training_data.intent_examples
                 ]
             )
+            # reduce dimensionality
+            X = np.reshape(X, (len(X), -1))
 
             self.clf = self._create_classifier(num_threads, y)
 
             self.clf.fit(X, y)
 
-    def _num_cv_splits(self, y):
+    def _num_cv_splits(self, y) -> int:
         folds = self.component_config["max_cross_validation_folds"]
         return max(2, min(folds, np.min(np.bincount(y)) // 5))
 
-    def _create_classifier(self, num_threads, y):
+    def _create_classifier(
+        self, num_threads: int, y
+    ) -> "sklearn.model_selection.GridSearchCV":
         from sklearn.model_selection import GridSearchCV
         from sklearn.svm import SVC
 
@@ -154,7 +152,7 @@ class SklearnIntentClassifier(Component):
             intent_ranking = []
         else:
             X = sequence_to_sentence_features(
-                message.get(MESSAGE_VECTOR_DENSE_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE])
+                message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
             ).reshape(1, -1)
             intent_ids, probabilities = self.predict(X)
             intents = self.transform_labels_num2str(np.ravel(intent_ids))

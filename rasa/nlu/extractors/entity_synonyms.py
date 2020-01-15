@@ -2,7 +2,7 @@ import os
 import warnings
 from typing import Any, Dict, Optional, Text
 
-from rasa.nlu.constants import MESSAGE_ENTITIES_ATTRIBUTE
+from rasa.nlu.constants import ENTITIES_ATTRIBUTE
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
@@ -13,11 +13,11 @@ import rasa.utils.io
 
 class EntitySynonymMapper(EntityExtractor):
 
-    provides = [MESSAGE_ENTITIES_ATTRIBUTE]
+    provides = [ENTITIES_ATTRIBUTE]
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Text]] = None,
+        component_config: Optional[Dict[Text, Any]] = None,
         synonyms: Optional[Dict[Text, Any]] = None,
     ) -> None:
 
@@ -33,15 +33,15 @@ class EntitySynonymMapper(EntityExtractor):
             self.add_entities_if_synonyms(key, value)
 
         for example in training_data.entity_examples:
-            for entity in example.get(MESSAGE_ENTITIES_ATTRIBUTE, []):
+            for entity in example.get(ENTITIES_ATTRIBUTE, []):
                 entity_val = example.text[entity["start"] : entity["end"]]
                 self.add_entities_if_synonyms(entity_val, str(entity.get("value")))
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
-        updated_entities = message.get(MESSAGE_ENTITIES_ATTRIBUTE, [])[:]
+        updated_entities = message.get(ENTITIES_ATTRIBUTE, [])[:]
         self.replace_synonyms(updated_entities)
-        message.set(MESSAGE_ENTITIES_ATTRIBUTE, updated_entities, add_to_output=True)
+        message.set(ENTITIES_ATTRIBUTE, updated_entities, add_to_output=True)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
 
@@ -80,7 +80,7 @@ class EntitySynonymMapper(EntityExtractor):
             )
         return cls(meta, synonyms)
 
-    def replace_synonyms(self, entities):
+    def replace_synonyms(self, entities) -> None:
         for entity in entities:
             # need to wrap in `str` to handle e.g. entity values of type int
             entity_value = str(entity["value"])
@@ -88,7 +88,7 @@ class EntitySynonymMapper(EntityExtractor):
                 entity["value"] = self.synonyms[entity_value.lower()]
                 self.add_processor_name(entity)
 
-    def add_entities_if_synonyms(self, entity_a, entity_b):
+    def add_entities_if_synonyms(self, entity_a, entity_b) -> None:
         if entity_b is not None:
             original = str(entity_a)
             replacement = str(entity_b)

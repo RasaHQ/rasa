@@ -1,34 +1,37 @@
-from typing import Any, Dict, Optional, Text
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.tokenizers.tokenizer import Tokenizer, Token
-from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import (
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
-    SPACY_FEATURIZABLE_ATTRIBUTES,
-)
-from transformers import *
+from typing import Any, Dict, List, Text
+
+from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.training_data import Message
+from rasa.nlu.constants import MESSAGE_ATTRIBUTES, TOKENS_NAMES
 import tensorflow as tf
-import tensorflow_hub as tfhub
-
-# needed to load convert model
-import tensorflow_text
-
-logger = logging.getLogger(__name__)
 
 
-class ConvertTokenizer(Tokenizer):
+class ConveRTTokenizer(WhitespaceTokenizer):
 
-    provides = [
-        MESSAGE_TOKENS_NAMES[attribute] for attribute in SPACY_FEATURIZABLE_ATTRIBUTES
-    ]
+    provides = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     defaults = {
-        # model key identified by HF Transformers
-        "use_cls_token": True
+        # Flag to check whether to split intents
+        "intent_tokenization_flag": False,
+        # Symbol on which intent should be split
+        "intent_split_symbol": "_",
+        # Text will be tokenized with case sensitive as default
+        "case_sensitive": True,
     }
 
+    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
+        """Construct a new tokenizer using the WhitespaceTokenizer framework."""
+
+        super().__init__(component_config)
+
+        self._load_tokenizer_params()
+
     def _load_tokenizer_params(self):
+
+        # needed to load the ConveRT model
+        import tensorflow_text
+        import tensorflow_hub as tfhub
 
         self.graph = tf.Graph()
         model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
@@ -43,89 +46,79 @@ class ConvertTokenizer(Tokenizer):
             self.session.run(tf.tables_initializer())
             self.session.run(tf.global_variables_initializer())
 
-    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
-
-        super(ConvertTokenizer, self).__init__(component_config)
-
-        self._load_tokenizer_params()
-
-    def train(
-        self,
-        training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig],
-        **kwargs: Any,
-    ) -> None:
-
-        for example in training_data.intent_examples:
-            for attribute in SPACY_FEATURIZABLE_ATTRIBUTES:
-                example.set(
-                    MESSAGE_TOKENS_NAMES[attribute],
-                    self._get_lm_tokens(example, attribute),
-                )
-
-    def _tokenize(self, sentence):
-
+    def _tokenize(self, sentence: Text) -> Any:
         return self.session.run(
             self.tokenized, feed_dict={self.text_placeholder: [sentence]}
         )
 
-    def _get_lm_tokens(self, example, attribute=MESSAGE_TEXT_ATTRIBUTE):
+    def tokenize(self, message: Message, attribute: Text) -> List[Token]:
+        """Tokenize the text using the ConveRT model.
 
-        message_attribute_text = example.get(attribute)
-        if message_attribute_text:
+        ConveRT adds a special char in front of (some) words and splits words into
+        sub-words. To ensure the entity start and end values matches the token values,
+        tokenize the text first using the whitespace tokenizer. If individual tokens
+        are split up into multiple tokens, we make sure that the start end end value
+        of the first and last respective tokens stay the same.
+        """
 
-            expanded_tokens_list = []
+        # perform whitespace tokenization
+        tokens_in = super().tokenize(message, attribute)
 
-            # We assume that whitespace tokenizer was used before this and hence tokens attribute is set.
-            space_tokens_list = example.get(MESSAGE_TOKENS_NAMES[attribute])
+        tokens_out = []
 
-            for token in space_tokens_list:
+        for token in tokens_in:
+            token_start, token_end, token_text = token.start, token.end, token.text
 
-                token_start, token_end, token_text = token.offset, token.end, token.text
+            # use ConveRT model to tokenize the text
+            split_token_strings = self._tokenize(token_text)[0]
 
-                # Encode text
+            # clean tokens (remove special chars and empty tokens)
+            split_token_strings = self._clean_tokens(split_token_strings)
 
-                split_token_strings = self._tokenize(token_text)[0]
+            _aligned_tokens = self._align_tokens(
+                split_token_strings, token_end, token_start
+            )
+            tokens_out += _aligned_tokens
 
-                # print(split_token_strings)
+        return tokens_out
 
-                split_token_strings = [
-                    string.decode("utf-8") for string in split_token_strings
-                ]
+    def _clean_tokens(self, tokens: List[bytes]):
+        """Encode tokens and remove special char added by ConveRT."""
 
-                # print(token_text, split_token_strings)
+        tokens = [string.decode("utf-8").replace("﹏", "") for string in tokens]
+        return [string for string in tokens if string]
 
-                current_token_offset = token_start
-                for index, string in enumerate(split_token_strings):
-                    if index == 0:
-                        if index == len(split_token_strings) - 1:
-                            s_token_end = token_end
-                        else:
-                            s_token_end = current_token_offset + len(string)
-                        expanded_tokens_list.append(
-                            Token(string, token_start, end=s_token_end)
-                        )
-                    elif index == len(split_token_strings) - 1:
-                        expanded_tokens_list.append(
-                            Token(string, current_token_offset, end=token_end)
-                        )
-                    else:
-                        expanded_tokens_list.append(
-                            Token(
-                                string,
-                                current_token_offset,
-                                end=current_token_offset + len(string),
-                            )
-                        )
-                    current_token_offset += len(string)
+    def _align_tokens(self, tokens_in: List[Text], token_end: int, token_start: int):
+        """Align sub-tokens of ConveRT with tokens return by the WhitespaceTokenizer.
 
-            expanded_tokens_list = self.add_cls_token(expanded_tokens_list, attribute)
+        As ConveRT might split a single word into multiple tokens, we need to make
+        sure that the start and end value of first and last sub-token matches the
+        start and end value of the token return by the WhitespaceTokenizer as the
+        entities are using those start and end values.
+        """
 
-            # print(message_attribute_text, len(space_tokens_list), len(expanded_tokens_list))
+        tokens_out = []
 
-            return expanded_tokens_list
+        current_token_offset = token_start
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+        for index, string in enumerate(tokens_in):
+            if index == 0:
+                if index == len(tokens_in) - 1:
+                    s_token_end = token_end
+                else:
+                    s_token_end = current_token_offset + len(string)
+                tokens_out.append(Token(string, token_start, end=s_token_end))
+            elif index == len(tokens_in) - 1:
+                tokens_out.append(Token(string, current_token_offset, end=token_end))
+            else:
+                tokens_out.append(
+                    Token(
+                        string,
+                        current_token_offset,
+                        end=current_token_offset + len(string),
+                    )
+                )
 
-        tokens = self._get_lm_tokens(message)
-        message.set(MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], tokens)
+            current_token_offset += len(string)
+
+        return tokens_out
