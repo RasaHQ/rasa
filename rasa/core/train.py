@@ -26,6 +26,7 @@ async def train(
     output_path: Text,
     interpreter: Optional["NaturalLanguageInterpreter"] = None,
     endpoints: "AvailableEndpoints" = None,
+    dump_stories: bool = False,
     policy_config: Optional[Union[Text, Dict]] = None,
     exclusion_percentage: int = None,
     additional_arguments: Optional[Dict] = None,
@@ -64,7 +65,7 @@ async def train(
         training_resource, exclusion_percentage=exclusion_percentage, **data_load_args
     )
     agent.train(training_data, **additional_arguments)
-    agent.persist(output_path, additional_arguments.get("dump_stories", False))
+    agent.persist(output_path, dump_stories)
 
     return agent
 
@@ -76,6 +77,7 @@ async def train_comparison_models(
     exclusion_percentages: Optional[List] = None,
     policy_configs: Optional[List] = None,
     runs: int = 1,
+    dump_stories: bool = False,
     additional_arguments: Optional[Dict] = None,
 ):
     """Train multiple models for comparison of policies"""
@@ -113,6 +115,7 @@ async def train_comparison_models(
                             policy_config=policy_config,
                             exclusion_percentage=percentage,
                             additional_arguments=additional_arguments,
+                            dump_stories=dump_stories,
                         ),
                         model.model_fingerprint(file_importer),
                     )
@@ -151,6 +154,7 @@ async def do_compare_training(
             exclusion_percentages=args.percentages,
             policy_configs=args.config,
             runs=args.runs,
+            dump_stories=args.dump_stories,
             additional_arguments=additional_arguments,
         ),
         get_no_of_stories(args.stories, args.domain),

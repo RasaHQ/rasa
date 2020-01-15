@@ -1,3 +1,2 @@
 Rename ``kwargs`` to ``additional_arguments`` in ``rasa.train`` and ``rasa.core.train`` to make the name of the
-argument less confusing. ``rasa.core.train`` also never used ``dump_stories`` as an individual parameter, so it was
-removed in favour of being used as a part of ``additional_parameters`` dict.
+argument less confusing.
