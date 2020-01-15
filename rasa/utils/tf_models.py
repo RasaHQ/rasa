@@ -71,9 +71,12 @@ class RasaModel(tf.keras.models.Model):
             )
 
         if evaluate_on_num_examples > 0:
-            eval_func = tf.function(
-                self.eval, input_signature=[eval_dataset_func(tf_batch_size).element_spec]
-            )
+            if eager:
+                eval_func = self.eval
+            else:
+                eval_func = tf.function(
+                    self.eval, input_signature=[eval_dataset_func(tf_batch_size).element_spec]
+                )
         else:
             eval_func = None
 
