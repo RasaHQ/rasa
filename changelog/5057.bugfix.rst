@@ -1,1 +1,1 @@
-Addressing ISSUE-2760 to resolve compatibility issues with Microsoft Bot Framework Emulator.
+Fixed compatibility issue with Microsoft Bot Framework Emulator if ``service_url`` lacked a trailing ``/``.
