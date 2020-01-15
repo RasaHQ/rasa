@@ -678,7 +678,7 @@ def test_dump_nlu_with_responses():
         (CRFEntityExtractor.__name__, "- [test](word:random)"),
         (DucklingHTTPExtractor.__name__, "- test"),
         (SpacyEntityExtractor.__name__, "- test"),
-        (MitieEntityExtractor.__name__, "- test"),
+        (MitieEntityExtractor.__name__, "- [test](word:random)"),
     ],
 )
 def test_dump_trainable_entities(

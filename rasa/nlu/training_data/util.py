@@ -57,20 +57,18 @@ def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:
     """Remove untrainable entities from serialised training example `example`.
 
     Entities with an untrainable extractor will be removed. Untrainable extractors
-    are `DucklingHTTPExtractor`, `MitieEntityExtractor` and `SpacyEntityExtractor`.
+    are `DucklingHTTPExtractor` and `SpacyEntityExtractor`.
 
     Args:
         example: Serialised training example to inspect.
     """
 
     from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
-    from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
     from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 
     untrainable_entity_extractors = [
         DucklingHTTPExtractor.__name__,
         SpacyEntityExtractor.__name__,
-        MitieEntityExtractor.__name__,
     ]
 
     example_entities = example.get(ENTITIES_ATTRIBUTE)
