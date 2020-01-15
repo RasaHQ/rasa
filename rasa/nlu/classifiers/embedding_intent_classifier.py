@@ -805,6 +805,11 @@ class EmbeddingIntentClassifier(Component):
         message_sim = message_sim.flatten()  # sim is a matrix
 
         label_ids = message_sim.argsort()[::-1]
+
+        # normalise scores if turned on
+        if self.loss_type == "softmax" and self.ranking_length > 0:
+            train_utils.normalize_confidence(message_sim, self.ranking_length)
+
         message_sim[::-1].sort()
 
         # transform sim to python list for JSON serializing
@@ -838,16 +843,13 @@ class EmbeddingIntentClassifier(Component):
         # if X contains all zeros do not predict some label
         if label_ids.size > 0:
 
-            # normalise scores if turned on
-            if self.loss_type == "softmax" and self.ranking_length > 0:
-                ranking_length = self.ranking_length
-                label_ids = label_ids[:ranking_length]
-                message_sim = message_sim[:ranking_length] / (
-                    np.sum(message_sim[:ranking_length])
-                )
+            if self.ranking_length and 0 < self.ranking_length < LABEL_RANKING_LENGTH:
+                output_length = self.ranking_length
+            else:
+                output_length = LABEL_RANKING_LENGTH
 
-            message_sim = message_sim[:LABEL_RANKING_LENGTH]
-            label_ids = label_ids[:LABEL_RANKING_LENGTH]
+            message_sim = message_sim[:output_length]
+            label_ids = label_ids[:output_length]
             ranking = list(zip(list(label_ids), message_sim))
             label_ranking = [
                 {"name": self.inverted_label_dict[label_idx], "confidence": score}

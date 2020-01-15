@@ -575,9 +575,7 @@ class EmbeddingPolicy(Policy):
 
         # normalise scores if turned on
         if self.loss_type == "softmax" and self.ranking_length > 0:
-            confidence = train_utils.normalize_confidence(
-                confidence, self.ranking_length
-            )
+            train_utils.normalize_confidence(confidence, self.ranking_length)
 
         return confidence.tolist()
 

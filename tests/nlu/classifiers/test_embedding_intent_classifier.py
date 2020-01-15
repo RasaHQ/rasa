@@ -209,8 +209,10 @@ async def test_softmax_normalization(
     assert len(intent_ranking) == output_length
 
     # check whether normalization had the expected effect
-    output_sums_to_1 = sum([intent.get("confidence") for intent in intent_ranking]) == 1
+    output_sums_to_1 = sum(
+        [intent.get("confidence") for intent in intent_ranking]
+    ) == pytest.approx(1)
     assert output_sums_to_1 == output_should_sum_to_1
 
-    # check whether the normalization of intent_rankings is reflected in intent prediction
+    # check whether the normalization of rankings is reflected in intent prediction
     assert parse_data.get("intent") == intent_ranking[0]
