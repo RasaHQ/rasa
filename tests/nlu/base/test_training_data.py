@@ -2,6 +2,7 @@ import pytest
 import tempfile
 from jsonschema import ValidationError
 
+from rasa.nlu.constants import TEXT_ATTRIBUTE
 from rasa.nlu import training_data
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -268,7 +269,7 @@ def test_repeated_entities():
         example = td.entity_examples[0]
         entities = example.get("entities")
         assert len(entities) == 1
-        tokens = WhitespaceTokenizer().tokenize(example.text)
+        tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT_ATTRIBUTE)
         start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
         assert start == 9
         assert end == 10
@@ -302,7 +303,7 @@ def test_multiword_entities():
         example = td.entity_examples[0]
         entities = example.get("entities")
         assert len(entities) == 1
-        tokens = WhitespaceTokenizer().tokenize(example.text)
+        tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT_ATTRIBUTE)
         start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
         assert start == 4
         assert end == 7

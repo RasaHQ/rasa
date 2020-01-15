@@ -1,6 +1,6 @@
 import numpy as np
 import typing
-from typing import Any, List, Text, Dict, Optional
+from typing import Any, List, Text
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurizer import Featurizer
@@ -15,7 +15,7 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     DENSE_FEATURE_NAMES,
-    CLS_TOKEN,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
 )
 
 
@@ -26,19 +26,6 @@ class MitieFeaturizer(Featurizer):
     requires = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES] + [
         "mitie_feature_extractor"
     ]
-
-    defaults = {
-        # if True return a sequence of features (return vector has size
-        # token-size x feature-dimension)
-        # if False token-size will be equal to 1
-        "return_sequence": False
-    }
-
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
-
-        super().__init__(component_config)
-
-        self.return_sequence = self.component_config["return_sequence"]
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -57,7 +44,7 @@ class MitieFeaturizer(Featurizer):
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         for example in training_data.intent_examples:
-            for attribute in MESSAGE_ATTRIBUTES:
+            for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self.process_training_example(
                     example, attribute, mitie_feature_extractor
                 )
@@ -107,11 +94,9 @@ class MitieFeaturizer(Featurizer):
         tokens: List[Token],
         feature_extractor: "mitie.total_word_feature_extractor",
     ) -> np.ndarray:
-        cls_token_used = tokens[-1].text == CLS_TOKEN if tokens else False
 
-        tokens_without_cls = tokens
-        if cls_token_used:
-            tokens_without_cls = tokens[:-1]
+        # remove CLS token from tokens
+        tokens_without_cls = tokens[:-1]
 
         # calculate features
         features = []
@@ -119,12 +104,7 @@ class MitieFeaturizer(Featurizer):
             features.append(feature_extractor.get_feature_vector(token.text))
         features = np.array(features)
 
-        if cls_token_used and self.return_sequence:
-            # cls token is used, need to append a vector
-            cls_token_vec = np.mean(features, axis=0, keepdims=True)
-            features = np.concatenate([features, cls_token_vec])
-
-        if not self.return_sequence:
-            features = np.mean(features, axis=0, keepdims=True)
+        cls_token_vec = np.mean(features, axis=0, keepdims=True)
+        features = np.concatenate([features, cls_token_vec])
 
         return features

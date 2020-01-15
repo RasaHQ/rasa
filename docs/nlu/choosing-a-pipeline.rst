@@ -322,7 +322,7 @@ To use the components and configure them separately:
     language: "en"
 
     pipeline:
-    - name: "WhitespaceTokenizer"
+    - name: "ConveRTTokenizer"
     - name: "ConveRTFeaturizer"
     - name: "EmbeddingIntentClassifier"
 
