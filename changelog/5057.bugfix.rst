@@ -1,0 +1,1 @@
+Addressing ISSUE-2760 to resolve compatibility issues with Microsoft Bot Framework Emulator.
