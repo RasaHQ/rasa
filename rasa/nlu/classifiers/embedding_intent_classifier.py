@@ -20,6 +20,7 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils import tf_layers
+from rasa.utils import tf_models
 from rasa.utils.train_utils import SessionDataType, TrainingMetrics
 from rasa.nlu.constants import (
     MESSAGE_INTENT_ATTRIBUTE,
@@ -767,8 +768,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.batch_strategy,
         )
 
-        train_utils.train_tf_dataset(
-            self.model,
+        self.model.fit(
             self.epochs,
             self.batch_size,
             self.evaluate_on_num_examples,
@@ -1054,12 +1054,12 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 meta["batch_strategy"],
             )
 
-            train_utils.train_tf_dataset(
-                model,
+            model.fit(
                 1,
                 1,
                 0,
                 0,
+                silent=True,
             )
 
             model.load_weights(model_file)
@@ -1094,7 +1094,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             return cls(component_config=meta)
 
 
-class DIET(tf.keras.models.Model):
+class DIET(tf_models.RasaModel):
     @staticmethod
     def _create_sparse_dense_layer(values, name, reg_lambda, dense_dim):
 
@@ -1487,7 +1487,7 @@ class DIET(tf.keras.models.Model):
 
         return losses, scores
 
-    def train(self, batch_in):
+    def train_on_batch(self, batch_in):
         with tf.GradientTape() as tape:
             losses, scores = self._train_losses_scores(batch_in)
             total_loss = tf.math.add_n(list(losses.values())) + self.losses
