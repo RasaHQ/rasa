@@ -71,7 +71,7 @@ install_requires = [
     "rasa-sdk~=1.6.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
-    "sanic~=19.9",
+    "sanic~=19.9.0",
     "sanic-cors==0.9.9.post1",
     "sanic-jwt~=1.3",
     # needed because of https://github.com/huge-success/sanic/issues/1729
