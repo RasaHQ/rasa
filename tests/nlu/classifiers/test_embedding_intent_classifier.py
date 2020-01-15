@@ -173,7 +173,7 @@ def as_pipeline(*components):
 @pytest.mark.parametrize(
     "classifier_params, output_length, output_should_sum_to_1",
     [
-        ({"random_seed": 42}, LABEL_RANKING_LENGTH, True),  # default config
+        ({"random_seed": 42}, 10, True),  # default config
         (
             {"random_seed": 42, "ranking_length": 0},
             LABEL_RANKING_LENGTH,
