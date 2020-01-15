@@ -6,16 +6,10 @@ import typing
 from typing import Any, Dict, List, Optional, Text
 
 from rasa.nlu.components import Component
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.training_data import Message
 
-from rasa.nlu.constants import (
-    INTENT_ATTRIBUTE,
-    TEXT_ATTRIBUTE,
-    TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-)
+from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +30,6 @@ class JiebaTokenizer(Tokenizer):
         "intent_tokenization_flag": False,
         # Symbol on which intent should be split
         "intent_split_symbol": "_",
-        # add __CLS__ token to the end of the list of tokens
-        "use_cls_token": False,
     }  # default don't load custom dictionary
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
@@ -47,14 +39,6 @@ class JiebaTokenizer(Tokenizer):
 
         # path to dictionary file or None
         self.dictionary_path = self.component_config.get("dictionary_path")
-
-        # flag to check whether to split intents
-        self.intent_tokenization_flag = self.component_config.get(
-            "intent_tokenization_flag"
-        )
-
-        # symbol to split intents on
-        self.intent_split_symbol = self.component_config.get("intent_split_symbol")
 
         # load dictionary
         if self.dictionary_path is not None:
@@ -79,41 +63,13 @@ class JiebaTokenizer(Tokenizer):
             logger.info(f"Loading Jieba User Dictionary at {jieba_userdict}")
             jieba.load_userdict(jieba_userdict)
 
-    def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
-    ) -> None:
-
-        for example in training_data.training_examples:
-
-            for attribute in MESSAGE_ATTRIBUTES:
-
-                if example.get(attribute) is not None:
-                    example.set(
-                        TOKENS_NAMES[attribute],
-                        self.tokenize(example.get(attribute), attribute),
-                    )
-
-    def process(self, message: Message, **kwargs: Any) -> None:
-
-        message.set(
-            TOKENS_NAMES[TEXT_ATTRIBUTE], self.tokenize(message.text, TEXT_ATTRIBUTE)
-        )
-
-    def preprocess_text(self, text: Text, attribute: Text) -> Text:
-
-        if attribute == INTENT_ATTRIBUTE and self.intent_tokenization_flag:
-            return " ".join(text.split(self.intent_split_symbol))
-        else:
-            return text
-
-    def tokenize(self, text: Text, attribute: Text = TEXT_ATTRIBUTE) -> List[Token]:
+    def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         import jieba
 
-        text = self.preprocess_text(text, attribute)
+        text = message.get(attribute)
+
         tokenized = jieba.tokenize(text)
         tokens = [Token(word, start) for (word, start, end) in tokenized]
-
-        self.add_cls_token(tokens, attribute)
 
         return tokens
 

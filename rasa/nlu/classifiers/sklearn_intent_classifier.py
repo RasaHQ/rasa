@@ -12,7 +12,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import DENSE_FEATURE_NAMES, SPARSE_FEATURE_NAMES, TEXT_ATTRIBUTE
+from rasa.nlu.constants import DENSE_FEATURE_NAMES, TEXT_ATTRIBUTE
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +103,8 @@ class SklearnIntentClassifier(Component):
                     for example in training_data.intent_examples
                 ]
             )
+            # reduce dimensionality
+            X = np.reshape(X, (len(X), -1))
 
             self.clf = self._create_classifier(num_threads, y)
 

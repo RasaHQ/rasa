@@ -8,8 +8,9 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import warnings
 
+from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
-from rasa.nlu.components import Component
+from rasa.nlu.components import Component, any_of
 from rasa.utils import train_utils
 from rasa.utils.train_utils import SessionDataType
 from rasa.nlu.constants import (
@@ -54,7 +55,11 @@ class EmbeddingIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = []
+    requires = [
+        any_of(
+            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE], SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
+        )
+    ]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -308,6 +313,11 @@ class EmbeddingIntentClassifier(Component):
                     f"don't coincide in '{message.text}' for attribute '{attribute}'."
                 )
 
+        if attribute != INTENT_ATTRIBUTE:
+            # Use only the CLS token vector as features
+            sparse_features = sequence_to_sentence_features(sparse_features)
+            dense_features = sequence_to_sentence_features(dense_features)
+
         return sparse_features, dense_features
 
     def _extract_labels_precomputed_features(
@@ -531,8 +541,8 @@ class EmbeddingIntentClassifier(Component):
                 dense_features.append(f)
 
         output = tf.concat(dense_features, axis=-1) * mask
-        # apply mean to convert sequence to sentence features
-        output = tf.reduce_sum(output, axis=1) / tf.reduce_sum(mask, axis=1)
+        output = tf.squeeze(output, axis=1)
+
         return output
 
     def _build_tf_train_graph(

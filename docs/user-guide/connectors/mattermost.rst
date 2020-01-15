@@ -22,9 +22,10 @@ Getting Credentials
       You will need to ensure the **trigger words** section is set up
       with ``@yourbotname`` so that the bot doesn't trigger on everything
       that is said.
-   4. Make sure **trigger when** is set to value
+   4. The **Content Type** must be set to ``application/json``.
+   5. Make sure **trigger when** is set to value
       **first word matches a trigger word exactly**.
-   5. The callback url needs to be either your localhost address for Rasa, or your ngrok url where you
+   6. The callback url needs to be either your localhost address for Rasa, or your ngrok url where you
       have your webhook running in Core or your public address, e.g.
       ``http://test.example.com/webhooks/mattermost/webhook`` or ``http://localhost:5005/webhooks/mattermost/webhook``.
 

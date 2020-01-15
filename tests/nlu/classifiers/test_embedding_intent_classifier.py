@@ -3,6 +3,7 @@ import pytest
 import scipy.sparse
 
 from rasa.nlu import train
+from rasa.nlu.model import Interpreter
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
@@ -14,6 +15,7 @@ from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClas
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 from rasa.nlu.model import Interpreter
 from rasa.nlu.training_data import Message
+from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
 def test_compute_default_label_features():
@@ -107,6 +109,58 @@ def test_check_labels_features_exist(messages, expected):
     assert (
         EmbeddingIntentClassifier._check_labels_features_exist(messages, attribute)
         == expected
+    )
+
+
+async def test_train(component_builder, tmpdir):
+    pipeline = [
+        {"name": "ConveRTTokenizer"},
+        {"name": "CountVectorsFeaturizer"},
+        {"name": "ConveRTFeaturizer"},
+        {"name": "EmbeddingIntentClassifier"},
+    ]
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
+
+    (trained, _, persisted_path) = await train(
+        _config,
+        path=tmpdir.strpath,
+        data=DEFAULT_DATA_PATH,
+        component_builder=component_builder,
+    )
+
+    assert trained.pipeline
+
+    loaded = Interpreter.load(persisted_path, component_builder)
+    assert loaded.pipeline
+    assert loaded.parse("hello") is not None
+    assert loaded.parse("Hello today is Monday, again!") is not None
+
+
+async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
+    from rasa.nlu import train
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "EmbeddingIntentClassifier"},
+            ],
+            "language": "en",
+        }
+    )
+
+    with pytest.raises(Exception) as e:
+        await train(
+            _config,
+            path=tmpdir.strpath,
+            data=DEFAULT_DATA_PATH,
+            component_builder=component_builder,
+        )
+
+    assert (
+        "Failed to validate component 'EmbeddingIntentClassifier'. Missing one of "
+        "the following properties: " in str(e.value)
     )
 
 
