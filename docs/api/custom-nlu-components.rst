@@ -36,25 +36,15 @@ methods that you should implement:
     :linenos:
 
 .. note::
-    If you create a custom tokenizer you should have the following entry in your default dict.
-
-    .. code-block:: none
-
-        # add __CLS__ token to the end of the list of tokens
-        "use_cls_token": False,
-
-    To add the __CLS__ token you can use the function `add_cls_token()
-    <https://github.com/RasaHQ/rasa/blob/master/rasa/nlu/tokenizers/tokenizer.py#L64/>`_.
+    If you create a custom tokenizer you should implement the methods of ``rasa.nlu.tokenizers.tokenizer.Tokenizer``.
+    The ``train`` and ``process`` methods are already implemented and you simply need to overwrite the ``tokenize``
+    method. ``train`` and ``process`` will automatically add a special token ``__CLS__`` to the end of list of tokens,
+    which is needed further down the pipeline.
 
 .. note::
-    If you create a custom featurizer you should have the following entry in your default dict.
-
-    .. code-block:: none
-
-        # if True return a sequence of features (return vector has size
-        # token-size x feature-dimension)
-        # if False token-size will be equal to 1
-        "return_sequence": False,
+    If you create a custom featurizer you should return a sequence of features.
+    E.g. your featurizer should return a matrix of size (number-of-tokens x feature-dimension).
+    The feature vector of the ``__CLS__`` token should contain features for the complete message.
 
 Component
 ^^^^^^^^^
