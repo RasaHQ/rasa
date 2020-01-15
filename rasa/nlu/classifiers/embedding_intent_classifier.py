@@ -1518,7 +1518,8 @@ class DIET(tf_models.RasaModel):
     def train_on_batch(self, batch_in):
         with tf.GradientTape() as tape:
             losses, scores = self._train_losses_scores(batch_in)
-            total_loss = tf.math.add_n(list(losses.values())) + self.losses
+            regularization_loss = tf.math.add_n(self.losses)
+            total_loss = tf.math.add_n(list(losses.values())) + regularization_loss
 
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
