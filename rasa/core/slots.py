@@ -198,7 +198,7 @@ class CategoricalSlot(Slot):
         super().__init__(name, initial_value, value_reset_delay, auto_fill)
         self.values = [str(v).lower() for v in values] if values else []
         if not DEFAULT_CATEGORICAL_SLOT_VALUE in self.values:
-            self.values += [DEFAULT_CATEGORICAL_SLOT_VALUE]
+            self.values.append(DEFAULT_CATEGORICAL_SLOT_VALUE)
 
 
     def persistence_info(self) -> Dict[Text, Any]:
