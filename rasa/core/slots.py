@@ -4,7 +4,7 @@ import warnings
 from rasa.core import utils
 from rasa.utils.common import class_from_module_path
 from typing import Any, Dict, List, NoReturn, Optional, Text, Type
-
+from rasa.core.constants import DEFAULT_CATEGORICAL_SLOT_VALUE
 logger = logging.getLogger(__name__)
 
 
@@ -197,6 +197,9 @@ class CategoricalSlot(Slot):
     ) -> None:
         super().__init__(name, initial_value, value_reset_delay, auto_fill)
         self.values = [str(v).lower() for v in values] if values else []
+        if not DEFAULT_CATEGORICAL_SLOT_VALUE in self.values:
+            self.values += [DEFAULT_CATEGORICAL_SLOT_VALUE]
+
 
     def persistence_info(self) -> Dict[Text, Any]:
         d = super().persistence_info()
@@ -213,15 +216,9 @@ class CategoricalSlot(Slot):
                     break
             else:
                 if self.value is not None:
-                    warnings.warn(
-                        f"Categorical slot '{self.name}' is set to a value "
-                        f"('{self.value}') "
-                        "that is not specified in the domain. "
-                        "Value will be ignored and the slot will "
-                        "behave as if no value is set. "
-                        "Make sure to add all values a categorical "
-                        "slot should store to the domain."
-                    )
+                    i = self.values.index(DEFAULT_CATEGORICAL_SLOT_VALUE)
+                    r[i] = 1.0
+
         except (TypeError, ValueError):
             logger.exception("Failed to featurize categorical slot.")
             return r

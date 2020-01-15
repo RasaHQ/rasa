@@ -1,5 +1,6 @@
 import pytest
 
+from rasa.core.constants import DEFAULT_CATEGORICAL_SLOT_VALUE
 from rasa.core.slots import (
     Slot,
     TextSlot,
@@ -165,11 +166,12 @@ class TestCategoricalSlot(SlotTestCollection):
 
     @pytest.fixture(
         params=[
-            (None, [0, 0, 0, 0, 1]),
-            (1, [1, 0, 0, 0, 0]),
-            ("two", [0, 1, 0, 0, 0]),
-            ("小于", [0, 0, 1, 0, 0]),
-            ({"three": 3}, [0, 0, 0, 1, 0]),
+            (None, [0, 0, 0, 0, 1, 0]),
+            (1, [1, 0, 0, 0, 0, 0]),
+            ("two", [0, 1, 0, 0, 0, 0]),
+            ("小于", [0, 0, 1, 0, 0, 0]),
+            ({"three": 3}, [0, 0, 0, 1, 0, 0]),
+            (DEFAULT_CATEGORICAL_SLOT_VALUE, [0, 0, 0, 0, 0, 1])
         ]
     )
     def value_feature_pair(self, request):
