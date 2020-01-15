@@ -11,7 +11,12 @@ from typing import Any, Dict, Optional, Text, List
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TOKENS_NAMES, TEXT_ATTRIBUTE, SPARSE_FEATURE_NAMES
+from rasa.nlu.constants import (
+    TOKENS_NAMES,
+    TEXT_ATTRIBUTE,
+    SPARSE_FEATURE_NAMES,
+    SPACY_DOCS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +32,6 @@ except ImportError:
 class Word(typing.NamedTuple):
     text: Text
     pos_tag: Text
-    pattern: Dict[Text, Any]
 
 
 class TextFeaturizer(Featurizer):
@@ -55,7 +59,6 @@ class TextFeaturizer(Featurizer):
                 "upper",
                 "title",
                 "digit",
-                "pattern",
             ],
             ["low", "title", "upper"],
         ]
@@ -75,7 +78,6 @@ class TextFeaturizer(Featurizer):
         "bias": lambda word: "bias",
         "upper": lambda word: word.text.isupper(),
         "digit": lambda word: word.text.isdigit(),
-        "pattern": lambda word: word.pattern,
     }
 
     def __init__(
@@ -235,16 +237,9 @@ class TextFeaturizer(Featurizer):
                     features = configured_features[current_feature_idx]
 
                     for feature in features:
-                        if feature == "pattern":
-                            # add all regexes as a feature
-                            regex_patterns = self.function_dict[feature](word)
-                            for p_name, matched in regex_patterns.items():
-                                feature_name = prefix + ":" + feature + ":" + p_name
-                                word_features[feature_name] = matched
-                        else:
-                            # append each feature to a feature vector
-                            value = self.function_dict[feature](word)
-                            word_features[prefix + ":" + feature] = value
+                        # append each feature to a feature vector
+                        value = self.function_dict[feature](word)
+                        word_features[prefix + ":" + feature] = value
 
             words_features.append(word_features)
 
@@ -255,17 +250,16 @@ class TextFeaturizer(Featurizer):
 
         words = []
         if self.pos_features:
-            tokens = message.get(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+            tokens = message.get(SPACY_DOCS[TEXT_ATTRIBUTE])
         else:
             tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
             # remove CLS token
             tokens = tokens[:-1]
 
         for i, token in enumerate(tokens):
-            pattern = token.get("pattern", {})
             pos_tag = self._tag_of_token(token) if self.pos_features else None
 
-            words.append(Word(token.text, pos_tag, pattern))
+            words.append(Word(token.text, pos_tag))
 
         return words
 

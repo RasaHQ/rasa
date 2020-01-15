@@ -305,6 +305,74 @@ CountVectorsFeaturizer
           OOV_words: []  # list of strings
 
 
+TextFeaturizer
+~~~~~~~~~~~~~~~
+
+:Short: Text feature creation to support entity extraction.
+:Outputs:
+   ``text_sparse_features``
+:Requires: ``tokens``
+:Type: Sparse featurizer
+:Description:
+    Creates features for entity extraction.
+    Moves with a sliding window over every token in the user message and creates features according to the configured
+    features (see below).
+    Features could for example be if a token is upper case, if it is a digit, or the prefix of that token (e.g.
+    first two characters).
+:Configuration:
+    You need to configure what kind of text features the featurizer should extract.
+    The following features are available:
+
+    ==============  =============================================================================================
+    Feature Name    Description
+    ==============  =============================================================================================
+    low             Checks if the word is lower case.
+    upper           Checks if the word is upper case.
+    title           Checks if the word starts with an uppercase character and all remaining characters are lowercased.
+    prefix5         Take the first five characters of the word.
+    prefix2         Take the first two characters of the word.
+    suffix5         Take the last five characters of the word.
+    suffix3         Take the last three characters of the word.
+    suffix2         Take the last two characters of the word.
+    suffix1         Take the last character of the word.
+    pos             Take the Part-of-Speech tag of the word (spaCy required).
+    pos2            Take the first two characters of the Part-of-Speech tag of the word (spaCy required).
+    bias            Adds "bias".
+    digit           Checks if the word contains just digits.
+    ==============  =============================================================================================
+
+    As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
+    previous words, the current word in the sliding window, and the next words.
+    You define the features as [before, word, after] array.
+    If you, for example, want to define features for the word before, the current word, and the word after,
+    your features configuration could look like this:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "TextFeaturizer":
+          "features": [
+            ["low", "title", "upper"],
+            [
+              "bias",
+              "low",
+              "prefix5",
+              "prefix2",
+              "suffix5",
+              "suffix3",
+              "suffix2",
+              "upper",
+              "title",
+              "digit",
+            ],
+            ["low", "title", "upper"],
+          ]
+
+    This configuration is also the default configuration.
+
+    .. note:: If you want to make use of ``pos`` or ``pos2`` you need to add ``SpacyNLP`` to your pipeline.
+
+
 Intent Classifiers
 ------------------
 
