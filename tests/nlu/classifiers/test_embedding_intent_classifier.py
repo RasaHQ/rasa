@@ -2,7 +2,10 @@ import numpy as np
 import pytest
 import scipy.sparse
 
+from unittest.mock import Mock
+
 from rasa.nlu import train
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
@@ -13,6 +16,7 @@ from rasa.nlu.constants import (
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.model import Interpreter
 from rasa.nlu.training_data import Message
+from rasa.utils import train_utils
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
@@ -169,8 +173,12 @@ def as_pipeline(*components):
 @pytest.mark.parametrize(
     "classifier_params, output_length, output_should_sum_to_1",
     [
-        ({"random_seed": 42}, 10, True),  # default config
-        ({"random_seed": 42, "ranking_length": 0}, 10, False),  # no normalization
+        ({"random_seed": 42}, LABEL_RANKING_LENGTH, True),  # default config
+        (
+            {"random_seed": 42, "ranking_length": 0},
+            LABEL_RANKING_LENGTH,
+            False,
+        ),  # no normalization
         (
             {"random_seed": 42, "ranking_length": 3},
             3,
@@ -178,7 +186,7 @@ def as_pipeline(*components):
         ),  # lower than default ranking_length
         (
             {"random_seed": 42, "ranking_length": 12},
-            10,
+            LABEL_RANKING_LENGTH,
             False,
         ),  # higher than default ranking_length
     ],
@@ -213,4 +221,42 @@ async def test_softmax_normalization(
     assert output_sums_to_1 == output_should_sum_to_1
 
     # check whether the normalization of rankings is reflected in intent prediction
+    assert parse_data.get("intent") == intent_ranking[0]
+
+
+@pytest.mark.parametrize(
+    "classifier_params, output_length",
+    [({"loss_type": "margin", "random_seed": 42}, LABEL_RANKING_LENGTH)],
+)
+async def test_margin_loss_is_not_normalized(
+    monkeypatch, component_builder, tmpdir, classifier_params, output_length,
+):
+    pipeline = as_pipeline(
+        "WhitespaceTokenizer", "CountVectorsFeaturizer", "EmbeddingIntentClassifier"
+    )
+    assert pipeline[2]["name"] == "EmbeddingIntentClassifier"
+    pipeline[2].update(classifier_params)
+
+    mock = Mock()
+    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
+
+    _config = RasaNLUModelConfig({"pipeline": pipeline})
+    (trained_model, _, persisted_path) = await train(
+        _config,
+        path=tmpdir.strpath,
+        data="data/test/many_intents.md",
+        component_builder=component_builder,
+    )
+    loaded = Interpreter.load(persisted_path, component_builder)
+
+    parse_data = loaded.parse("hello")
+    intent_ranking = parse_data.get("intent_ranking")
+
+    # check that the output was not normalized
+    mock.normalize.assert_not_called()
+
+    # check that the output was correctly truncated
+    assert len(intent_ranking) == output_length
+
+    # make sure top ranking is reflected in intent prediction
     assert parse_data.get("intent") == intent_ranking[0]
