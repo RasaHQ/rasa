@@ -77,7 +77,7 @@ def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:
 
     for entity in example_entities:
         if entity.get(EXTRACTOR_ATTRIBUTE) in PRETRAINED_EXTRACTORS:
-            logger.warning(
+            logger.debug(
                 f"Excluding entity '{json.dumps(entity)}' from training data. "
                 f"Entity examples extracted by the following classes are not "
                 f"dumped to training data in markdown format: "
