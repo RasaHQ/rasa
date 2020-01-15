@@ -1281,6 +1281,7 @@ def normalize(values: "np.ndarray", ranking_length: Optional[int] = None) -> Non
     """Normalizes an array over the top `ranking_length` values, if provided.
 
     Other values will be set to 0. Happens in place."""
+
     if ranking_length:
         ranked = sorted(values, reverse=True)
         values[values < ranked[ranking_length - 1]] = 0

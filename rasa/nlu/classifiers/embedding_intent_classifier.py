@@ -842,23 +842,22 @@ class EmbeddingIntentClassifier(Component):
 
         # if X contains all zeros do not predict some label
         if label_ids.size > 0:
+            label = {
+                "name": self.inverted_label_dict[label_ids[0]],
+                "confidence": message_sim[0],
+            }
 
             if self.ranking_length and 0 < self.ranking_length < LABEL_RANKING_LENGTH:
                 output_length = self.ranking_length
             else:
                 output_length = LABEL_RANKING_LENGTH
 
-            message_sim = message_sim[:output_length]
-            label_ids = label_ids[:output_length]
             ranking = list(zip(list(label_ids), message_sim))
+            ranking = ranking[:output_length]
             label_ranking = [
                 {"name": self.inverted_label_dict[label_idx], "confidence": score}
                 for label_idx, score in ranking
             ]
-            label = {
-                "name": self.inverted_label_dict[label_ids[0]],
-                "confidence": message_sim[0],
-            }
 
         return label, label_ranking
 
