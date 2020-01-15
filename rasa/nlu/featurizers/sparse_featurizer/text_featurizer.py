@@ -206,7 +206,6 @@ class TextFeaturizer(Featurizer):
                 )
             }
             offset += len(feature_values)
-        print(feature_to_idx_dict)
         return feature_to_idx_dict
 
     def _words_to_features(self, words: List[Word]) -> List[Dict[Text, Any]]:
