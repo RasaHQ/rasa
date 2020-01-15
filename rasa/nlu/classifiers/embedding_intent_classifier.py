@@ -806,7 +806,7 @@ class EmbeddingIntentClassifier(Component):
 
         label_ids = message_sim.argsort()[::-1]
 
-        if self.loss_type == "softmax" and self.loss_type > 0:
+        if self.loss_type == "softmax" and self.ranking_length > 0:
             train_utils.normalize(message_sim, self.ranking_length)
 
         message_sim[::-1].sort()
