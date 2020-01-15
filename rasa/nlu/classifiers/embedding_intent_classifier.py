@@ -345,8 +345,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
             }
             tag_id_dict["O"] = 0
 
-            print(tag_id_dict)
-
             return tag_id_dict
 
         distinct_tag_ids = set(
@@ -871,12 +869,14 @@ class EmbeddingIntentClassifier(EntityExtractor):
         predictions = out["e_ids"].numpy()
 
         tags = [self.inverted_tag_dict[p] for p in predictions[0]]
-
+        # print(len(tags))
+        # print(len(message.get("tokens", [])))
+        # exit()
         if self.bilou_flag:
             tags = [t[2:] if t[:2] in ["B-", "I-", "U-", "L-"] else t for t in tags]
 
         entities = self._convert_tags_to_entities(
-            message.text, message.get("tokens", []), tags
+            message.text, message.get("tokens", []), tags,predictions
         )
 
         extracted = self.add_extractor_name(entities)
@@ -884,8 +884,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return entities
 
+    @staticmethod
     def _convert_tags_to_entities(
-            self, text: str, tokens: List[Token], tags: List[Text]
+        text: str, tokens: List[Token], tags: List[Text],predictions
     ) -> List[Dict[Text, Any]]:
         entities = []
         last_tag = "O"
@@ -912,6 +913,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         for entity in entities:
             entity["value"] = text[entity["start"]: entity["end"]]
+
+            if not entity["value"]:
+                print(text)
+                print([t.text for t in tokens])
+                print(tags)
+                print(predictions)
+                exit()
 
         return entities
 
@@ -1456,6 +1464,7 @@ class DIET(tf_models.RasaModel):
         # TODO check that f1 calculation is correct
         # calculate f1 score for train predictions
         mask_bool = tf.cast(mask[:, :, 0], tf.bool)
+        # pick only non padding values and flatten sequences
         c_masked = tf.boolean_mask(c, mask_bool)
         pred_ids_masked = tf.boolean_mask(pred_ids, mask_bool)
         # set `0` prediction to not a prediction

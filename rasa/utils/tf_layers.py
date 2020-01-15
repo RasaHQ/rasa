@@ -441,7 +441,11 @@ class CRF(tf.keras.layers.Layer):
         pred_ids, _ = tfa.text.crf.crf_decode(
             logits, self.transition_params, sequence_lengths
         )
-        return pred_ids
+        # set prediction index for padding to `0`
+        mask = tf.sequence_mask(
+            sequence_lengths, maxlen=tf.shape(pred_ids)[1], dtype=pred_ids.dtype)
+
+        return pred_ids * mask
 
     def loss(self, logits, tag_indices, sequence_lengths):
         log_likelihood, _ = tfa.text.crf.crf_log_likelihood(
