@@ -573,8 +573,7 @@ class EmbeddingPolicy(Policy):
         confidence = self.session.run(self.pred_confidence, feed_dict=tf_feed_dict)
         confidence = confidence[0, -1, :]
 
-        # normalise scores if turned on
-        if self.loss_type == "softmax" and self.ranking_length > 0:
+        if self.loss_type == "softmax":
             train_utils.normalize(confidence, self.ranking_length)
 
         return confidence.tolist()

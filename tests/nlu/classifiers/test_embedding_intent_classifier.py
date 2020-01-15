@@ -171,28 +171,42 @@ def as_pipeline(*components):
 
 
 @pytest.mark.parametrize(
-    "classifier_params, output_length, output_should_sum_to_1",
+    "classifier_params, data_path, output_length, output_should_sum_to_1",
     [
-        ({"random_seed": 42}, 10, True),  # default config
+        ({"random_seed": 42}, "data/test/many_intents.md", 10, True),  # default config
         (
             {"random_seed": 42, "ranking_length": 0},
+            "data/test/many_intents.md",
             LABEL_RANKING_LENGTH,
             False,
         ),  # no normalization
         (
             {"random_seed": 42, "ranking_length": 3},
+            "data/test/many_intents.md",
             3,
             True,
         ),  # lower than default ranking_length
         (
             {"random_seed": 42, "ranking_length": 12},
+            "data/test/many_intents.md",
             LABEL_RANKING_LENGTH,
             False,
         ),  # higher than default ranking_length
+        (
+            {"random_seed": 42},
+            "examples/moodbot/data/nlu.md",
+            7,
+            True,
+        ),  # less intents than default ranking_length
     ],
 )
 async def test_softmax_normalization(
-    component_builder, tmpdir, classifier_params, output_length, output_should_sum_to_1,
+    component_builder,
+    tmpdir,
+    classifier_params,
+    data_path,
+    output_length,
+    output_should_sum_to_1,
 ):
     pipeline = as_pipeline(
         "WhitespaceTokenizer", "CountVectorsFeaturizer", "EmbeddingIntentClassifier"
@@ -204,7 +218,7 @@ async def test_softmax_normalization(
     (trained_model, _, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
-        data="data/test/many_intents.md",
+        data=data_path,
         component_builder=component_builder,
     )
     loaded = Interpreter.load(persisted_path, component_builder)
