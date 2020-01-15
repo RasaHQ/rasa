@@ -36,6 +36,10 @@ class BotFramework(OutputChannel):
         service_url: Text,
     ) -> None:
 
+        service_url = (
+            f"{service_url}/" if not service_url.endswith("/") else service_url
+        )
+
         self.app_id = app_id
         self.app_password = app_password
         self.conversation = conversation
