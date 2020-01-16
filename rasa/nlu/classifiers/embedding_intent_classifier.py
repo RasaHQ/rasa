@@ -1398,16 +1398,14 @@ class DIET(tf_models.RasaModel):
         a_masked = tf.boolean_mask(a, lm_mask_bool)
 
         a_t_masked_embed = self._embed[f"{name}_mask"](a_t_masked)
-        a_embed = self._embed[f"{name}_token"](a)
-
-        a_embed_masked = tf.boolean_mask(a_embed, lm_mask_bool)
+        a_masked_embed = self._embed[f"{name}_token"](a_masked)
 
         return self._loss_mask(
             a_t_masked_embed,
-            a_embed_masked,
+            a_masked_embed,
             a_masked,
-            a_embed,
-            a,
+            a_masked_embed,
+            a_masked,
         )
 
     def _build_all_b(self):
