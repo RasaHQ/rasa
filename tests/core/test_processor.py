@@ -205,7 +205,7 @@ async def test_reminder_aborted(
     assert len(t.events) == 3  # nothing should have been executed
 
 
-async def test_reminder_cancelled_1(
+async def test_reminder_cancelled_multi_user(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     sender_ids = [uuid.uuid4().hex, uuid.uuid4().hex]
@@ -262,7 +262,7 @@ async def test_reminder_cancelled_1(
     )
 
 
-async def test_reminder_cancelled_2(
+async def test_reminder_cancelled_multi_reminder(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     """Here we create several reminders and cancel them by intent, entities or name."""
