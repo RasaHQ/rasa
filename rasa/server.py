@@ -650,8 +650,8 @@ def create_app(
                 output_channel = _get_output_channel(request, tracker)
                 if intent_to_trigger not in app.agent.domain.intents:
                     raise ErrorResponse(
-                        500,
-                        "ValueError",
+                        404,
+                        "NotFound",
                         f"The intent {trigger_intent} does not exist in the domain.",
                     )
                 await app.agent.trigger_intent(

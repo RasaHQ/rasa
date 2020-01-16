@@ -883,7 +883,7 @@ def test_trigger_intent_with_not_existing_intent(rasa_app: SanicTestClient):
         f"/conversations/{test_sender}/trigger_intent", json=data
     )
 
-    assert response.status == 500
+    assert response.status == 404
 
 
 @pytest.mark.parametrize(
