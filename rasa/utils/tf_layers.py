@@ -527,7 +527,7 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         tiled = tf.tile(tf.expand_dims(x, 0), (batch_size, 1, 1))
 
-        return tf.gather(tiled, idxs, batch_dims=-1)
+        return tf.gather(tiled, idxs, batch_dims=1)
 
     def _get_bad_mask(
         self, labels: "tf.Tensor", target_labels: "tf.Tensor", idxs: "tf.Tensor"
