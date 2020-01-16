@@ -203,7 +203,7 @@ class Validator:
         trackers = TrainingDataGenerator(
             self.story_graph,
             domain=self.domain,
-            remove_duplicates=False,  # ToDo: Q&A: Why not remove_duplicates=True?
+            remove_duplicates=False,
             augmentation_factor=0,
         ).generate()
 
