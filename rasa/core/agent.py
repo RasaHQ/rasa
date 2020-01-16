@@ -310,6 +310,7 @@ class Agent:
         if self.domain is not None:
             self.domain.add_requested_slot()
             self.domain.add_knowledge_base_slots()
+            self.domain.add_categorical_slot_default_value()
 
         PolicyEnsemble.check_domain_ensemble_compatibility(
             self.policy_ensemble, self.domain

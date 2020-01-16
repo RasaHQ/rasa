@@ -23,7 +23,7 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT,
 )
 from rasa.core.events import SlotSet, UserUttered
-from rasa.core.slots import Slot, UnfeaturizedSlot
+from rasa.core.slots import Slot, UnfeaturizedSlot, CategoricalSlot
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
 
@@ -371,6 +371,15 @@ class Domain:
         """Number of used input states for the action prediction."""
 
         return len(self.input_states)
+
+    def add_categorical_slot_default_value(self) -> None:
+        """Add a default value to all categorical slots
+
+        All unseen values found for the slot will be mapped to this default value
+        for featurization.
+        """
+        for slot in [s for s in self.slots if type(s) is CategoricalSlot]:
+            slot.add_default_value()
 
     def add_requested_slot(self) -> None:
         """Add a slot called `requested_slot` to the list of slots.
