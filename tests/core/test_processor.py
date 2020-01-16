@@ -265,7 +265,6 @@ async def test_reminder_cancelled_multi_user(
 async def test_reminder_cancelled_multi_reminder(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
-    """Here we create several reminders and cancel them by intent, entities or name."""
     reminders = [
         ReminderScheduled("greet", datetime.datetime.now(), kill_on_user_message=False),
         ReminderScheduled(
