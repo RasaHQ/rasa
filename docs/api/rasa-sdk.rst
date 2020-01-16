@@ -65,7 +65,6 @@ The full list of options for running the action server with either command is:
 
 .. program-output:: rasa run actions --help
 
-
 Actions
 -------
 
