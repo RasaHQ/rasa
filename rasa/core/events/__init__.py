@@ -657,7 +657,7 @@ class ReminderScheduled(Event):
             f"entities: {self.entities}, name: {self.name})"
         )
 
-    def job_name(self, sender_id: Text) -> Text:
+    def scheduled_job_name(self, sender_id: Text) -> Text:
         return (
             f"[{self.name},{self.intent},{self.entities}]"
             + ACTION_NAME_SENDER_ID_CONNECTOR_STR

@@ -558,7 +558,7 @@ class MessageProcessor:
                 args=[e, tracker.sender_id, output_channel, nlg],
                 id=e.name,
                 replace_existing=True,
-                name=e.job_name(tracker.sender_id),
+                name=e.scheduled_job_name(tracker.sender_id),
             )
 
     @staticmethod
