@@ -69,7 +69,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
     and additional hidden layers are added together with dropout.
     """
 
-    provides = ["label", "label_ranking", "entities"]
+    provides = ["intent", "intent_ranking", "entities"]
 
     requires = [
         any_of(
