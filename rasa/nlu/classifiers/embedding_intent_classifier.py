@@ -219,6 +219,7 @@ class EmbeddingIntentClassifier(Component):
         label_embed: Optional["tf.Tensor"] = None,
         all_labels_embed: Optional["tf.Tensor"] = None,
         batch_tuple_sizes: Optional[Dict] = None,
+        response_text_key_dict=None,
     ) -> None:
         """Declare instance variables with default values"""
 
@@ -228,6 +229,10 @@ class EmbeddingIntentClassifier(Component):
 
         # transform numbers to labels
         self.inverted_label_dict = inverted_label_dict
+        if response_text_key_dict:
+            self.response_text_key_dict = response_text_key_dict
+        else:
+            self.response_text_key_dict = {}
         # encode all label_ids with numbers
         self._label_data = None
 
@@ -897,6 +902,11 @@ class EmbeddingIntentClassifier(Component):
         ) as f:
             pickle.dump(self.inverted_label_dict, f)
 
+        with open(
+            os.path.join(model_dir, file_name + ".response_text_key_dict.pkl"), "wb"
+        ) as f:
+            pickle.dump(self.response_text_key_dict, f)
+
         with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "wb") as f:
             pickle.dump(self._tf_config, f)
 
@@ -948,6 +958,11 @@ class EmbeddingIntentClassifier(Component):
                 inv_label_dict = pickle.load(f)
 
             with open(
+                os.path.join(model_dir, file_name + ".response_text_key_dict.pkl"), "rb"
+            ) as f:
+                response_text_key_dict = pickle.load(f)
+
+            with open(
                 os.path.join(model_dir, file_name + ".batch_tuple_sizes.pkl"), "rb"
             ) as f:
                 batch_tuple_sizes = pickle.load(f)
@@ -965,6 +980,7 @@ class EmbeddingIntentClassifier(Component):
                 label_embed=label_embed,
                 all_labels_embed=all_labels_embed,
                 batch_tuple_sizes=batch_tuple_sizes,
+                response_text_key_dict=response_text_key_dict,
             )
 
         else:

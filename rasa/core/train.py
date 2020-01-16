@@ -173,7 +173,7 @@ async def do_compare_training(
 
 
 def do_interactive_learning(
-    args: argparse.Namespace, file_importer: TrainingDataImporter,
+    args: argparse.Namespace, file_importer: TrainingDataImporter
 ):
     from rasa.core.training import interactive
 

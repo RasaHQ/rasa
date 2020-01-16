@@ -12,6 +12,7 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     TEXT_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
+    INTENT_ATTRIBUTE,
 )
 
 logger = logging.getLogger(__name__)
@@ -132,16 +133,16 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     # training data helpers:
     @staticmethod
-    def _create_response_key_dict(
-        training_data: "TrainingData", key: Text, response: Text
-    ) -> Dict[Text, Text]:
+    def _create_response_key_dict(training_data: "TrainingData") -> Dict[Text, Text]:
         """Create response_key dictionary"""
 
-        key_dict = {}
+        response_text_key_dict = {}
         for example in training_data.intent_examples:
-            key_dict[example.get(response)] = f"{example.get(intent)}/{example.get(key)}"
+            response_text_key_dict[
+                example.get(RESPONSE_ATTRIBUTE)
+            ] = f"{example.get(INTENT_ATTRIBUTE)}/{example.get(RESPONSE_ATTRIBUTE)}"
 
-        return key_dict
+        return response_text_key_dict
 
     @staticmethod
     def _set_message_property(
@@ -164,7 +165,6 @@ class ResponseSelector(EmbeddingIntentClassifier):
         ) as f:
             pickle.dump(self.response_key_dict, f)
 
-
     @classmethod
     def load(
         cls,
@@ -181,7 +181,6 @@ class ResponseSelector(EmbeddingIntentClassifier):
         ) as f:
             response_key_dict = pickle.load(f)
 
-
     def preprocess_train_data(self, training_data):
         """Performs sanity checks on training data, extracts encodings for labels
         and prepares data for training"""
@@ -193,10 +192,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
         )
         # prepare suffix date, training_data.intent_examples is a list of messages, see if it contains a response attribute, then it also contains a key which is the suffix that I need
         # create a dict of response keys (RESPONSE_KEY_ATTRIBUTE) mapped to response text (RESPONSE_ATTRIBUTE), self.response_keys = training_data.intent_examples[n].data.response_key & data.response
-        # self.response_keys = 
-        self.text_response_key_dict = self._create_response_key_dict(
-            training_data, key=RESPONSE_KEY_ATTRIBUTE, response=RESPONSE_ATTRIBUTE
-        )
+        # self.response_keys =
+        self.response_text_key_dict = self._create_response_key_dict(training_data)
 
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
         self._label_data = self._create_label_data(
