@@ -267,32 +267,33 @@ async def test_reminder_cancelled_2(
 ):
     """Here we create several reminders and cancel them by intent, entities or name."""
     reminders = [
-        ReminderScheduled(
-            "greet", datetime.datetime.now(), kill_on_user_message=False
-        ),
+        ReminderScheduled("greet", datetime.datetime.now(), kill_on_user_message=False),
         ReminderScheduled(
             intent="greet",
             entities=[{"entity": "name", "value": "Jane Doe"}],
             trigger_date_time=datetime.datetime.now(),
-            kill_on_user_message=False
+            kill_on_user_message=False,
         ),
         ReminderScheduled(
             intent="default",
             entities=[{"entity": "name", "value": "Jane Doe"}],
             trigger_date_time=datetime.datetime.now(),
-            kill_on_user_message=False
+            kill_on_user_message=False,
         ),
         ReminderScheduled(
             intent="greet",
             entities=[{"entity": "name", "value": "Bruce Wayne"}],
             trigger_date_time=datetime.datetime.now(),
-            kill_on_user_message=False
+            kill_on_user_message=False,
         ),
         ReminderScheduled(
             "default", datetime.datetime.now(), kill_on_user_message=False
         ),
         ReminderScheduled(
-            "default", datetime.datetime.now(), kill_on_user_message=False, name="special"
+            "default",
+            datetime.datetime.now(),
+            kill_on_user_message=False,
+            name="special",
         ),
     ]
     sender_id = uuid.uuid4().hex
@@ -323,7 +324,9 @@ async def test_reminder_cancelled_2(
     await cancel(ReminderCancelled("special"), 6, 5)
 
     # cancel the fourth reminder
-    await cancel(ReminderCancelled(entities=[{"entity": "name", "value": "Bruce Wayne"}]), 5, 4)
+    await cancel(
+        ReminderCancelled(entities=[{"entity": "name", "value": "Bruce Wayne"}]), 5, 4
+    )
 
     # cancel the third and fifth reminder
     await cancel(ReminderCancelled(intent="default"), 4, 2)

@@ -16,7 +16,8 @@ from typing import Union
 from rasa.core.constants import (
     IS_EXTERNAL,
     EXTERNAL_MESSAGE_PREFIX,
-    ACTION_NAME_SENDER_ID_CONNECTOR_STR)
+    ACTION_NAME_SENDER_ID_CONNECTOR_STR,
+)
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -726,13 +727,7 @@ class ReminderCancelled(Event):
         super().__init__(timestamp, metadata)
 
     def __hash__(self) -> int:
-        return hash(
-            (
-                self.name,
-                self.intent,
-                self.entities,
-            )
-        )
+        return hash((self.name, self.intent, self.entities,))
 
     def __eq__(self, other) -> bool:
         return isinstance(other, ReminderCancelled)
@@ -742,18 +737,25 @@ class ReminderCancelled(Event):
 
     def matches_job_string(self, job_string: Text, sender_id: Text) -> bool:
         match = re.match(
-            r"^\[([^,]*),([^,]*),(.*)\](" + ACTION_NAME_SENDER_ID_CONNECTOR_STR + sender_id + ")",
-            job_string
+            r"^\[([^,]*),([^,]*),(.*)\]("
+            + ACTION_NAME_SENDER_ID_CONNECTOR_STR
+            + sender_id
+            + ")",
+            job_string,
         )
         if not match:
             return False
         name, intent, entities = match.group(1, 2, 3)
-        return ((not self.name) or self.name == name) and \
-               ((not self.intent) or str(self.intent) == intent) and \
-               ((not self.entities) or str(self.entities) == entities)
+        return (
+            ((not self.name) or self.name == name)
+            and ((not self.intent) or str(self.intent) == intent)
+            and ((not self.entities) or str(self.entities) == entities)
+        )
 
     def as_story_string(self) -> Text:
-        props = json.dumps({"name": self.name, "intent": self.intent, "entities": self.entities})
+        props = json.dumps(
+            {"name": self.name, "intent": self.intent, "entities": self.entities}
+        )
         return f"{self.type_name}{props}"
 
     @classmethod
