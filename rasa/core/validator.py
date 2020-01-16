@@ -197,7 +197,7 @@ class Validator:
 
         logger.info("Story structure validation...")
         logger.info(
-            f" Considering the preceding {max_history} turns for conflict analysis."
+            f"Considering the preceding {max_history} turns for conflict analysis."
         )
 
         trackers = TrainingDataGenerator(
@@ -211,7 +211,7 @@ class Validator:
         conflicts = find_story_conflicts(trackers, self.domain, max_history)
 
         if len(conflicts) == 0:
-            logger.info("No story structure conflicts found")
+            logger.info("No story structure conflicts found.")
         else:
             for conflict in conflicts:
                 logger.warning(conflict)
