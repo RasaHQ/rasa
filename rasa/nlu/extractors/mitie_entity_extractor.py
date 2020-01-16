@@ -4,10 +4,11 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text
 
+from rasa.nlu.constants import ENTITIES_ATTRIBUTE, TOKENS_NAMES, TEXT_ATTRIBUTE
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
-from rasa.nlu.tokenizers import Token
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
@@ -18,9 +19,9 @@ if typing.TYPE_CHECKING:
 
 class MitieEntityExtractor(EntityExtractor):
 
-    provides = ["entities"]
+    provides = [ENTITIES_ATTRIBUTE]
 
-    requires = ["tokens", "mitie_feature_extractor", "mitie_file"]
+    requires = [TOKENS_NAMES[TEXT_ATTRIBUTE], "mitie_feature_extractor", "mitie_file"]
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None, ner=None):
         """Construct a new intent classifier using the sklearn framework."""
@@ -32,6 +33,11 @@ class MitieEntityExtractor(EntityExtractor):
     def required_packages(cls) -> List[Text]:
         return ["mitie"]
 
+    @staticmethod
+    def _tokens_without_cls(message: Message) -> List[Token]:
+        # [:-1] to remove the CLS token from the list of tokens
+        return message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
+
     def extract_entities(
         self, text: Text, tokens: List[Token], feature_extractor
     ) -> List[Dict[Text, Any]]:
@@ -41,7 +47,7 @@ class MitieEntityExtractor(EntityExtractor):
             entities = self.ner.extract_entities(tokens_strs, feature_extractor)
             for e in entities:
                 if len(e[0]):
-                    start = tokens[e[0][0]].offset
+                    start = tokens[e[0][0]].start
                     end = tokens[e[0][-1]].end
 
                     ents.append(
@@ -88,13 +94,13 @@ class MitieEntityExtractor(EntityExtractor):
         if found_one_entity:
             self.ner = trainer.train()
 
-    def _prepare_mitie_sample(self, training_example) -> Any:
+    def _prepare_mitie_sample(self, training_example: Message) -> Any:
         import mitie
 
         text = training_example.text
-        tokens = training_example.get("tokens")
+        tokens = self._tokens_without_cls(training_example)
         sample = mitie.ner_training_instance([t.text for t in tokens])
-        for ent in training_example.get("entities", []):
+        for ent in training_example.get(ENTITIES_ATTRIBUTE, []):
             try:
                 # if the token is not aligned an exception will be raised
                 start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
@@ -124,11 +130,13 @@ class MitieEntityExtractor(EntityExtractor):
             )
 
         ents = self.extract_entities(
-            message.text, message.get("tokens"), mitie_feature_extractor
+            message.text, self._tokens_without_cls(message), mitie_feature_extractor
         )
         extracted = self.add_extractor_name(ents)
         message.set(
-            "entities", message.get("entities", []) + extracted, add_to_output=True
+            ENTITIES_ATTRIBUTE,
+            message.get(ENTITIES_ATTRIBUTE, []) + extracted,
+            add_to_output=True,
         )
 
     @classmethod

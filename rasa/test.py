@@ -40,13 +40,13 @@ def test(
     nlu_data: Text,
     endpoints: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
-    kwargs: Optional[Dict] = None,
+    additional_arguments: Optional[Dict] = None,
 ):
-    if kwargs is None:
-        kwargs = {}
+    if additional_arguments is None:
+        additional_arguments = {}
 
-    test_core(model, stories, endpoints, output, kwargs)
-    test_nlu(model, nlu_data, output, kwargs)
+    test_core(model, stories, endpoints, output, additional_arguments)
+    test_nlu(model, nlu_data, output, additional_arguments)
 
 
 def test_core(
@@ -54,7 +54,7 @@ def test_core(
     stories: Optional[Text] = None,
     endpoints: Optional[Text] = None,
     output: Text = DEFAULT_RESULTS_PATH,
-    kwargs: Optional[Dict] = None,
+    additional_arguments: Optional[Dict] = None,
 ):
     import rasa.core.test
     import rasa.core.utils as core_utils
@@ -64,8 +64,8 @@ def test_core(
 
     _endpoints = core_utils.AvailableEndpoints.read_endpoints(endpoints)
 
-    if kwargs is None:
-        kwargs = {}
+    if additional_arguments is None:
+        additional_arguments = {}
 
     if output:
         io_utils.create_directory(output)
@@ -87,7 +87,7 @@ def test_core(
             "Rasa model and provide it via the '--model' argument."
         )
 
-    use_e2e = kwargs["e2e"] if "e2e" in kwargs else False
+    use_e2e = additional_arguments.get("e2e", False)
 
     _interpreter = RegexInterpreter()
     if use_e2e:
@@ -101,7 +101,9 @@ def test_core(
 
     _agent = Agent.load(unpacked_model, interpreter=_interpreter)
 
-    kwargs = utils.minimal_kwargs(kwargs, rasa.core.test, ["stories", "agent"])
+    kwargs = utils.minimal_kwargs(
+        additional_arguments, rasa.core.test, ["stories", "agent"]
+    )
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
@@ -113,7 +115,7 @@ def test_nlu(
     model: Optional[Text],
     nlu_data: Optional[Text],
     output_directory: Text = DEFAULT_RESULTS_PATH,
-    kwargs: Optional[Dict] = None,
+    additional_arguments: Optional[Dict] = None,
 ):
     from rasa.nlu.test import run_evaluation
     from rasa.model import get_model
@@ -132,7 +134,9 @@ def test_nlu(
     nlu_model = os.path.join(unpacked_model, "nlu")
 
     if os.path.exists(nlu_model):
-        kwargs = utils.minimal_kwargs(kwargs, run_evaluation, ["data_path", "model"])
+        kwargs = utils.minimal_kwargs(
+            additional_arguments, run_evaluation, ["data_path", "model"]
+        )
         run_evaluation(nlu_data, nlu_model, output_directory=output_directory, **kwargs)
     else:
         print_error(
@@ -186,7 +190,10 @@ def compare_nlu_models(
 
 
 def perform_nlu_cross_validation(
-    config: Text, nlu: Text, output: Text, kwargs: Optional[Dict[Text, Any]]
+    config: Text,
+    nlu: Text,
+    output: Text,
+    additional_arguments: Optional[Dict[Text, Any]],
 ):
     import rasa.nlu.config
     from rasa.nlu.test import (
@@ -196,13 +203,15 @@ def perform_nlu_cross_validation(
         return_entity_results,
     )
 
-    kwargs = kwargs or {}
-    folds = int(kwargs.get("folds", 3))
+    additional_arguments = additional_arguments or {}
+    folds = int(additional_arguments.get("folds", 3))
     nlu_config = rasa.nlu.config.load(config)
     data = rasa.nlu.training_data.load_data(nlu)
     data = drop_intents_below_freq(data, cutoff=folds)
-    kwargs = utils.minimal_kwargs(kwargs, cross_validate)
-    results, entity_results = cross_validate(data, folds, nlu_config, output, **kwargs)
+    kwargs = utils.minimal_kwargs(additional_arguments, cross_validate)
+    results, entity_results, response_selection_results = cross_validate(
+        data, folds, nlu_config, output, **kwargs
+    )
     logger.info(f"CV evaluation (n={folds})")
 
     if any(results):
@@ -213,3 +222,7 @@ def perform_nlu_cross_validation(
         logger.info("Entity evaluation results")
         return_entity_results(entity_results.train, "train")
         return_entity_results(entity_results.test, "test")
+    if any(response_selection_results):
+        logger.info("Response Selection evaluation results")
+        return_results(response_selection_results.train, "train")
+        return_results(response_selection_results.test, "test")

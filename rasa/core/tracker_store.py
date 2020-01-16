@@ -1,5 +1,4 @@
 import contextlib
-import warnings
 import json
 import logging
 import os
@@ -7,7 +6,8 @@ import pickle
 import typing
 import warnings
 from datetime import datetime, timezone
-from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable
+
+from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable, List
 
 import itertools
 from boto3.dynamodb.conditions import Key
@@ -18,7 +18,12 @@ from time import sleep
 from rasa.core import utils
 from rasa.utils import common
 from rasa.core.actions.action import ACTION_LISTEN_NAME
+
+from rasa.core.events import SessionStarted
+
+
 from rasa.core.brokers.broker import EventBroker
+
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
@@ -28,7 +33,7 @@ from rasa.utils.endpoints import EndpointConfig
 if typing.TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine.base import Engine
-    from sqlalchemy.orm import Session
+    from sqlalchemy.orm import Session, Query
     import boto3.resources.factory.dynamodb.Table
 
 logger = logging.getLogger(__name__)
@@ -76,13 +81,24 @@ class TrackerStore:
         return TrackerStore.create(store, domain, event_broker)
 
     def get_or_create_tracker(
-        self, sender_id: Text, max_event_history: Optional[int] = None
+        self,
+        sender_id: Text,
+        max_event_history: Optional[int] = None,
+        append_action_listen: bool = True,
     ) -> "DialogueStateTracker":
-        """Returns tracker or creates one if the retrieval returns None"""
+        """Returns tracker or creates one if the retrieval returns None.
+
+        Args:
+            sender_id: Conversation ID associated with the requested tracker.
+            max_event_history: Value to update the tracker store's max event history to.
+            append_action_listen: Whether or not to append an initial `action_listen`.
+        """
         tracker = self.retrieve(sender_id)
         self.max_event_history = max_event_history
         if tracker is None:
-            tracker = self.create_tracker(sender_id)
+            tracker = self.create_tracker(
+                sender_id, append_action_listen=append_action_listen
+            )
         return tracker
 
     def init_tracker(self, sender_id: Text) -> "DialogueStateTracker":
@@ -96,15 +112,27 @@ class TrackerStore:
     def create_tracker(
         self, sender_id: Text, append_action_listen: bool = True
     ) -> DialogueStateTracker:
-        """Creates a new tracker for the sender_id.
+        """Creates a new tracker for `sender_id`.
 
-        The tracker is initially listening."""
+        The tracker begins with a `SessionStarted` event and is initially listening.
+
+        Args:
+            sender_id: Conversation ID associated with the tracker.
+            append_action_listen: Whether or not to append an initial `action_listen`.
+
+        Returns:
+            The newly created tracker for `sender_id`.
+
+        """
 
         tracker = self.init_tracker(sender_id)
+
         if tracker:
             if append_action_listen:
                 tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+
             self.save(tracker)
+
         return tracker
 
     def save(self, tracker):
@@ -400,16 +428,73 @@ class MongoTrackerStore(TrackerStore):
         """Create an index on the sender_id"""
         self.conversations.create_index("sender_id")
 
+    @staticmethod
+    def _current_tracker_state_without_events(tracker: DialogueStateTracker) -> Dict:
+        # get current tracker state and remove `events` key from state
+        # since events are pushed separately in the `update_one()` operation
+        state = tracker.current_state(EventVerbosity.ALL)
+        state.pop("events", None)
+
+        return state
+
     def save(self, tracker, timeout=None):
         """Saves the current conversation state"""
         if self.event_broker:
             self.stream_events(tracker)
 
-        state = tracker.current_state(EventVerbosity.ALL)
+        additional_events = self._additional_events(tracker)
 
         self.conversations.update_one(
-            {"sender_id": tracker.sender_id}, {"$set": state}, upsert=True
+            {"sender_id": tracker.sender_id},
+            {
+                "$set": self._current_tracker_state_without_events(tracker),
+                "$push": {
+                    "events": {"$each": [e.as_dict() for e in additional_events]}
+                },
+            },
+            upsert=True,
         )
+
+    def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
+        """Return events from the tracker which aren't currently stored.
+
+        Args:
+            tracker: Tracker to inspect.
+
+        Returns:
+            List of serialised events that aren't currently stored.
+
+        """
+
+        stored = self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
+        number_events_since_last_session = len(
+            self._events_since_last_session_start(stored)
+        )
+
+        return itertools.islice(
+            tracker.events, number_events_since_last_session, len(tracker.events)
+        )
+
+    @staticmethod
+    def _events_since_last_session_start(serialised_tracker: Dict) -> List[Dict]:
+        """Retrieve events since and including the latest `SessionStart` event.
+
+        Args:
+            serialised_tracker: Serialised tracker to inspect.
+
+        Returns:
+            List of serialised events since and including the latest `SessionStarted`
+            event. Returns all events if no such event is found.
+
+        """
+
+        events = []
+        for event in reversed(serialised_tracker.get("events", [])):
+            events.append(event)
+            if event["event"] == SessionStarted.type_name:
+                break
+
+        return list(reversed(events))
 
     def retrieve(self, sender_id):
         """
@@ -433,9 +518,8 @@ class MongoTrackerStore(TrackerStore):
             )
 
         if stored is not None:
-            return DialogueStateTracker.from_dict(
-                sender_id, stored.get("events"), self.domain.slots
-            )
+            events = self._events_since_last_session_start(stored)
+            return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
         else:
             return None
 
@@ -638,15 +722,14 @@ class SQLTrackerStore(TrackerStore):
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
 
-        with self.session_scope() as session:
-            query = session.query(self.SQLEvent)
-            result = (
-                query.filter_by(sender_id=sender_id)
-                .order_by(self.SQLEvent.timestamp)
-                .all()
-            )
+        import sqlalchemy as sa
+        from rasa.core.events import SessionStarted
 
-            events = [json.loads(event.data) for event in result]
+        with self.session_scope() as session:
+
+            serialised_events = self._event_query(session, sender_id).all()
+
+            events = [json.loads(event.data) for event in serialised_events]
 
             if self.domain and len(events) > 0:
                 logger.debug(f"Recreating tracker from sender id '{sender_id}'")
@@ -661,6 +744,42 @@ class SQLTrackerStore(TrackerStore):
                 )
                 return None
 
+    def _event_query(self, session: "Session", sender_id: Text) -> "Query":
+        """Provide the query to retrieve the conversation events for a specific sender.
+
+        Args:
+            session: Current database session.
+            sender_id: Sender id whose conversation events should be retrieved.
+
+        Returns:
+            Query to get the conversation events.
+        """
+        import sqlalchemy as sa
+
+        # Subquery to find the timestamp of the latest `SessionStarted` event
+        session_start_sub_query = (
+            session.query(sa.func.max(self.SQLEvent.timestamp).label("session_start"))
+            .filter(
+                self.SQLEvent.sender_id == sender_id,
+                self.SQLEvent.type_name == SessionStarted.type_name,
+            )
+            .subquery()
+        )
+
+        return (
+            session.query(self.SQLEvent)
+            .filter(
+                self.SQLEvent.sender_id == sender_id,
+                # Find events after the latest `SessionStarted` event or return all
+                # events
+                sa.or_(
+                    self.SQLEvent.timestamp >= session_start_sub_query.c.session_start,
+                    session_start_sub_query.c.session_start.is_(None),
+                ),
+            )
+            .order_by(self.SQLEvent.timestamp)
+        )
+
     def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""
 
@@ -673,7 +792,6 @@ class SQLTrackerStore(TrackerStore):
 
             for event in events:
                 data = event.as_dict()
-
                 intent = data.get("parse_data", {}).get("intent", {}).get("name")
                 action = data.get("name")
                 timestamp = data.get("timestamp")
@@ -698,14 +816,12 @@ class SQLTrackerStore(TrackerStore):
     ) -> Iterator:
         """Return events from the tracker which aren't currently stored."""
 
-        n_events = (
-            session.query(self.SQLEvent.sender_id)
-            .filter_by(sender_id=tracker.sender_id)
-            .count()
-            or 0
+        number_of_events_since_last_session = self._event_query(
+            session, tracker.sender_id
+        ).count()
+        return itertools.islice(
+            tracker.events, number_of_events_since_last_session, len(tracker.events)
         )
-
-        return itertools.islice(tracker.events, n_events, len(tracker.events))
 
 
 class FailSafeTrackerStore(TrackerStore):
@@ -831,7 +947,7 @@ def _create_from_endpoint_config(
 
 
 def _load_from_module_string(
-    domain: Domain, store: EndpointConfig, event_broker: Optional[EventBroker] = None,
+    domain: Domain, store: EndpointConfig, event_broker: Optional[EventBroker] = None
 ) -> "TrackerStore":
     """Initializes a custom tracker.
 

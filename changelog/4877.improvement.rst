@@ -1,0 +1,3 @@
+Entity examples that have been extracted using an external extractor are excluded
+from Markdown dumping in ``MarkdownWriter.dumps()``. The excluded external extractors
+are ``DucklingHTTPExtractor`` and ``SpacyEntityExtractor``.

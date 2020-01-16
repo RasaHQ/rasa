@@ -1,6 +1,0 @@
-The ``kafka-python`` dependency has become as an "extra" dependency. To use the
-``KafkaEventConsumer``, ``rasa`` has to be installed with the ``[kafka]`` option, i.e.
-
-.. code-block:: bash
-
-  $ pip install rasa[kafka]

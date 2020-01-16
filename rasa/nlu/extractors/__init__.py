@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Text, Tuple
 
 from rasa.nlu.components import Component
+from rasa.nlu.constants import EXTRACTOR_ATTRIBUTE, ENTITIES_ATTRIBUTE
 from rasa.nlu.training_data import Message
 
 
@@ -9,7 +10,7 @@ class EntityExtractor(Component):
         self, entities: List[Dict[Text, Any]]
     ) -> List[Dict[Text, Any]]:
         for entity in entities:
-            entity["extractor"] = self.name
+            entity[EXTRACTOR_ATTRIBUTE] = self.name
         return entities
 
     def add_processor_name(self, entity: Dict[Text, Any]) -> Dict[Text, Any]:
@@ -35,7 +36,7 @@ class EntityExtractor(Component):
 
     @staticmethod
     def find_entity(ent, text, tokens) -> Tuple[int, int]:
-        offsets = [token.offset for token in tokens]
+        offsets = [token.start for token in tokens]
         ends = [token.end for token in tokens]
 
         if ent["start"] not in offsets:
@@ -71,12 +72,12 @@ class EntityExtractor(Component):
         filtered = []
         for message in entity_examples:
             entities = []
-            for ent in message.get("entities", []):
-                extractor = ent.get("extractor")
+            for ent in message.get(ENTITIES_ATTRIBUTE, []):
+                extractor = ent.get(EXTRACTOR_ATTRIBUTE)
                 if not extractor or extractor == self.name:
                     entities.append(ent)
             data = message.data.copy()
-            data["entities"] = entities
+            data[ENTITIES_ATTRIBUTE] = entities
             filtered.append(
                 Message(
                     text=message.text,
