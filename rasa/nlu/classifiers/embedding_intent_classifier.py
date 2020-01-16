@@ -868,7 +868,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             tags = [t[2:] if t[:2] in ["B-", "I-", "U-", "L-"] else t for t in tags]
 
         entities = self._convert_tags_to_entities(
-            message.text, message.get("tokens", []), tags, predictions
+            message.text, message.get("tokens", []), tags
         )
 
         extracted = self.add_extractor_name(entities)
@@ -878,7 +878,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     @staticmethod
     def _convert_tags_to_entities(
-        text: str, tokens: List[Token], tags: List[Text], predictions
+        text: str, tokens: List[Token], tags: List[Text]
     ) -> List[Dict[Text, Any]]:
         entities = []
         last_tag = "O"
