@@ -16,7 +16,6 @@ from rasa.core.channels.channel import (
     OutputChannel,
 )
 from rasa.core.constants import (
-    ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     USER_INTENT_RESTART,
     UTTER_PREFIX,
     USER_INTENT_BACK,
@@ -549,11 +548,7 @@ class MessageProcessor:
                 args=[e, tracker.sender_id, output_channel, nlg],
                 id=e.name,
                 replace_existing=True,
-                name=(
-                    e.job_string()
-                    + ACTION_NAME_SENDER_ID_CONNECTOR_STR
-                    + tracker.sender_id
-                ),
+                name=e.job_name(tracker.sender_id),
             )
 
     @staticmethod
@@ -566,9 +561,9 @@ class MessageProcessor:
         for e in events:
             if isinstance(e, ReminderCancelled):
                 scheduler = await jobs.scheduler()
-                for j in scheduler.get_jobs():
-                    if e.matches_job_string(j.name, tracker.sender_id):
-                        scheduler.remove_job(j.id)
+                for scheduled_job in scheduler.get_jobs():
+                    if e.cancels_job_with_name(scheduled_job.name, tracker.sender_id):
+                        scheduler.remove_job(scheduled_job.id)
 
     async def _run_action(
         self, action, tracker, output_channel, nlg, policy=None, confidence=None

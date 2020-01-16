@@ -657,8 +657,12 @@ class ReminderScheduled(Event):
             f"entities: {self.entities}, name: {self.name})"
         )
 
-    def job_string(self) -> Text:
-        return f"[{self.name},{self.intent},{self.entities}]"
+    def job_name(self, sender_id) -> Text:
+        return (
+            f"[{self.name},{self.intent},{self.entities}]"
+            + ACTION_NAME_SENDER_ID_CONNECTOR_STR
+            + sender_id
+        )
 
     def _data_obj(self) -> Dict[Text, Any]:
         return {
@@ -737,13 +741,13 @@ class ReminderCancelled(Event):
     def __str__(self) -> Text:
         return f"ReminderCancelled(name: {self.name}, intent: {self.intent}, entities: {self.entities})"
 
-    def matches_job_string(self, job_string: Text, sender_id: Text) -> bool:
+    def cancels_job_with_name(self, job_name: Text, sender_id: Text) -> bool:
         match = re.match(
             r"^\[([^,]*),([^,]*),(.*)\]("
             + ACTION_NAME_SENDER_ID_CONNECTOR_STR
             + sender_id
             + ")",
-            job_string,
+            job_name,
         )
         if not match:
             return False
