@@ -742,6 +742,16 @@ class ReminderCancelled(Event):
         return f"ReminderCancelled(name: {self.name}, intent: {self.intent}, entities: {self.entities})"
 
     def cancels_job_with_name(self, job_name: Text, sender_id: Text) -> bool:
+        """Determines if this ReminderCancelled should cancel the job with the given name.
+
+        Args:
+            job_name: Name of the job to be tested.
+            sender_id: The `sender_id` of the tracker.
+
+        Returns:
+            `True`, if this `ReminderCancelled` should cancel the job with the given name,
+            and `False` otherwise.
+        """
         match = re.match(
             r"^\[([^,]*),([^,]*),(.*)\]("
             + ACTION_NAME_SENDER_ID_CONNECTOR_STR
@@ -752,6 +762,9 @@ class ReminderCancelled(Event):
         if not match:
             return False
         name, intent, entities = match.group(1, 2, 3)
+
+        # Cancel everything unless names/intents/entities are given to
+        # narrow it down.
         return (
             ((not self.name) or self.name == name)
             and ((not self.intent) or str(self.intent) == intent)
