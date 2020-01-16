@@ -1031,7 +1031,6 @@ class DIET(tf_models.RasaModel):
         self.train_metrics = {"t_loss": tf.keras.metrics.Mean(name="t_loss")}
         self.eval_metrics = {"val_t_loss": tf.keras.metrics.Mean(name="val_t_loss")}
 
-        self._input_mask = None
         if self.config[MASKED_LM]:
             self._input_mask = tf_layers.InputMask()
             self._embed["text_mask"] = tf_layers.Embed(
@@ -1059,6 +1058,9 @@ class DIET(tf_models.RasaModel):
             self.train_metrics["m_acc"] = tf.keras.metrics.Mean(name="m_acc")
             self.eval_metrics["val_m_loss"] = tf.keras.metrics.Mean(name="val_m_loss")
             self.eval_metrics["val_m_acc"] = tf.keras.metrics.Mean(name="val_m_acc")
+        else:
+            self._input_mask = None
+            self._loss_mask = None
 
         if self.config[INTENT_CLASSIFICATION]:
             self._embed["text"] = tf_layers.Embed(
@@ -1086,6 +1088,8 @@ class DIET(tf_models.RasaModel):
             self.train_metrics["i_acc"] = tf.keras.metrics.Mean(name="i_acc")
             self.eval_metrics["val_i_loss"] = tf.keras.metrics.Mean(name="val_i_loss")
             self.eval_metrics["val_i_acc"] = tf.keras.metrics.Mean(name="val_i_acc")
+        else:
+            self._loss_label = None
 
         self._crf = None
         if self.config[ENTITY_RECOGNITION]:
