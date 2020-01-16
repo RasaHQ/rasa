@@ -96,7 +96,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
     and additional hidden layers are added together with dropout.
     """
 
-    provides = ["label", "label_ranking", "entities"]
+    provides = ["intent", "intent_ranking", "entities"]
 
     requires = [
         any_of(
@@ -723,7 +723,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         tags = [self.inverted_tag_dict[p] for p in predictions[0]]
 
         entities = self._convert_tags_to_entities(
-            message.text, message.get("tokens", []), tags, predictions
+            message.text, message.get("tokens", []), tags
         )
 
         extracted = self.add_extractor_name(entities)
@@ -733,7 +733,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     @staticmethod
     def _convert_tags_to_entities(
-        text: str, tokens: List[Token], tags: List[Text], predictions
+        text: str, tokens: List[Token], tags: List[Text]
     ) -> List[Dict[Text, Any]]:
         entities = []
         last_tag = "O"
@@ -771,8 +771,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         if self.component_config[INTENT_CLASSIFICATION]:
             label, label_ranking = self._predict_label(out)
 
-            message.set("label", label, add_to_output=True)
-            message.set("label_ranking", label_ranking, add_to_output=True)
+            message.set("intent", label, add_to_output=True)
+            message.set("intent_ranking", label_ranking, add_to_output=True)
 
         if self.component_config[ENTITY_RECOGNITION]:
             entities = self._predict_entities(out, message)
@@ -1171,11 +1171,11 @@ class DIET(tf_models.RasaModel):
         a_masked = tf.boolean_mask(a, lm_mask_bool)
 
         a_t_masked_embed = self._embed[f"{name}_mask"](a_t_masked)
-        a_embed = self._embed[f"{name}_token"](a)
+        a_masked_embed = self._embed[f"{name}_token"](a_masked)
 
-        a_embed_masked = tf.boolean_mask(a_embed, lm_mask_bool)
-
-        return self._loss_mask(a_t_masked_embed, a_embed_masked, a_masked, a_embed, a)
+        return self._loss_mask(
+            a_t_masked_embed, a_masked_embed, a_masked, a_masked_embed, a_masked
+        )
 
     def _build_all_b(self):
         all_labels = self._create_bow(
@@ -1229,9 +1229,7 @@ class DIET(tf_models.RasaModel):
 
         return loss, f1
 
-    def _train_losses_scores(
-        self, batch_in: Tuple[np.ndarray]
-    ) -> Tuple[Dict[Text, float], Dict[Text, float]]:
+    def _train_losses_scores(self, batch_in):
         tf_batch_data = train_utils.batch_to_session_data(batch_in, self.session_data)
 
         mask_text = tf_batch_data["text_mask"][0]
@@ -1345,9 +1343,7 @@ class DIET(tf_models.RasaModel):
             cls_embed = self._embed["text"](cls)
 
             sim_all = self._loss_label.sim(
-                cls_embed[:, tf.newaxis, :],
-                self.all_labels_embed[tf.newaxis, :, :],
-                None,
+                cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :]
             )
             # label = self._create_bow(
             #     tf_batch_data["label_features"],
@@ -1365,9 +1361,8 @@ class DIET(tf_models.RasaModel):
             out["i_scores"] = scores
 
         if self.config[ENTITY_RECOGNITION]:
-            sequence_lengths = sequence_lengths - 1
             logits = self._embed["logits"](text_transformed)
-            pred_ids = self._crf(logits, sequence_lengths)
+            pred_ids = self._crf(logits, sequence_lengths - 1)
             out["e_ids"] = pred_ids
 
         return out

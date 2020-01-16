@@ -481,22 +481,14 @@ class DotProductLoss(tf.keras.layers.Layer):
         return tf.reshape(x, (-1, x.shape[-1]))
 
     def _random_indices(self, batch_size: "tf.Tensor", total_candidates: "tf.Tensor"):
-
-        # all_indices = tf.tile(
-        #     tf.expand_dims(tf.range(total_candidates), 0),
-        #     (batch_size, 1),
-        # )
-        # shuffled_indices = tf.transpose(
-        #     tf.random.shuffle(tf.transpose(all_indices, (1, 0))), (1, 0)
-        # )
-        # return shuffled_indices[:, :self.num_neg]
-
         def rand_idxs():
             """Create random tensor of indices"""
             # (1, num_neg)
             return tf.expand_dims(
                 tf.random.shuffle(tf.range(total_candidates))[: self.num_neg], 0
             )
+
+        # return tf.tile(rand_idxs(), (batch_size, 1))
 
         def cond(i, out):
             """Condition for while loop"""
@@ -521,6 +513,7 @@ class DotProductLoss(tf.keras.layers.Layer):
             body,
             loop_vars=[i1, out1],
             shape_invariants=[i1.shape, tf.TensorShape([None, self.num_neg])],
+            parallel_iterations=1000,
             back_prop=False,
         )[1]
 
@@ -532,7 +525,7 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         tiled = tf.tile(tf.expand_dims(x, 0), (batch_size, 1, 1))
 
-        return tf.gather(tiled, idxs, batch_dims=-1)
+        return tf.gather(tiled, idxs, batch_dims=1)
 
     def _get_bad_mask(
         self, labels: "tf.Tensor", target_labels: "tf.Tensor", idxs: "tf.Tensor"
@@ -606,7 +599,9 @@ class DotProductLoss(tf.keras.layers.Layer):
         )
 
     @staticmethod
-    def sim(a: "tf.Tensor", b: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
+    def sim(
+        a: "tf.Tensor", b: "tf.Tensor", mask: Optional["tf.Tensor"] = None
+    ) -> "tf.Tensor":
         """Calculate similarity between given tensors."""
 
         sim = tf.reduce_sum(a * b, -1)
