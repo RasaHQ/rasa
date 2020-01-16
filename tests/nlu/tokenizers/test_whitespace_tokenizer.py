@@ -1,152 +1,90 @@
-from rasa.nlu.constants import CLS_TOKEN
+import pytest
+
+from rasa.nlu.constants import TOKENS_NAMES, TEXT_ATTRIBUTE, INTENT_ATTRIBUTE
 from rasa.nlu.training_data import TrainingData, Message
 from tests.nlu import utilities
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
-def test_whitespace():
-    from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+@pytest.mark.parametrize(
+    "text, expected_tokens, expected_indices",
+    [
+        (
+            "Forecast for lunch",
+            ["Forecast", "for", "lunch"],
+            [(0, 8), (9, 12), (13, 18)],
+        ),
+        (
+            "hey ńöñàśçií how're you?",
+            ["hey", "ńöñàśçií", "how", "re", "you"],
+            [(0, 3), (4, 12), (13, 16), (17, 19), (20, 23)],
+        ),
+        (
+            "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 https://rasa.com/docs/nlu/components/#tokenizer-whitespace",
+            [
+                "https://www.google.com/search?"
+                "client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8",
+                "https://rasa.com/docs/nlu/components/#tokenizer-whitespace",
+            ],
+            [(0, 82), (83, 141)],
+        ),
+    ],
+)
+def test_whitespace(text, expected_tokens, expected_indices):
 
-    component_config = {"use_cls_token": False}
+    tk = WhitespaceTokenizer()
+
+    tokens = tk.tokenize(Message(text), attribute=TEXT_ATTRIBUTE)
+
+    assert [t.text for t in tokens] == expected_tokens
+    assert [t.start for t in tokens] == [i[0] for i in expected_indices]
+    assert [t.end for t in tokens] == [i[1] for i in expected_indices]
+
+
+@pytest.mark.parametrize(
+    "text, expected_tokens",
+    [
+        ("Forecast_for_LUNCH", ["Forecast_for_LUNCH"]),
+        ("Forecast for LUNCH", ["Forecast for LUNCH"]),
+    ],
+)
+def test_custom_intent_symbol(text, expected_tokens):
+    component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
     tk = WhitespaceTokenizer(component_config)
 
-    assert [t.text for t in tk.tokenize("Forecast for lunch")] == [
-        "Forecast",
-        "for",
-        "lunch",
-    ]
-    assert [t.lemma for t in tk.tokenize("Forecast for lunch")] == [
-        "Forecast",
-        "for",
-        "lunch",
-    ]
+    message = Message(text)
+    message.set(INTENT_ATTRIBUTE, text)
 
-    assert [t.offset for t in tk.tokenize("Forecast for lunch")] == [0, 9, 13]
-
-    # we ignore .,!?
-    assert [t.text for t in tk.tokenize("hey ńöñàśçií how're you?")] == [
-        "hey",
-        "ńöñàśçií",
-        "how",
-        "re",
-        "you",
-    ]
-
-    assert [t.offset for t in tk.tokenize("hey ńöñàśçií how're you?")] == [
-        0,
-        4,
-        13,
-        17,
-        20,
-    ]
-
-    assert [t.text for t in tk.tokenize("привет! 10.000, ńöñàśçií. (how're you?)")] == [
-        "привет",
-        "10.000",
-        "ńöñàśçií",
-        "how",
-        "re",
-        "you",
-    ]
+    tk.train(TrainingData([message]))
 
     assert [
-        t.offset for t in tk.tokenize("привет! 10.000, ńöñàśçií. (how're you?)")
-    ] == [0, 8, 16, 27, 31, 34]
-
-    # urls are single token
-    assert [
-        t.text
-        for t in tk.tokenize(
-            "https://www.google.com/search?client="
-            "safari&rls=en&q="
-            "i+like+rasa&ie=UTF-8&oe=UTF-8 "
-            "https://rasa.com/docs/nlu/"
-            "components/#tokenizer-whitespace"
-        )
-    ] == [
-        "https://www.google.com/search?"
-        "client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8",
-        "https://rasa.com/docs/nlu/components/#tokenizer-whitespace",
-    ]
-
-    assert [
-        t.offset
-        for t in tk.tokenize(
-            "https://www.google.com/search?client="
-            "safari&rls=en&q="
-            "i+like+rasa&ie=UTF-8&oe=UTF-8 "
-            "https://rasa.com/docs/nlu/"
-            "components/#tokenizer-whitespace"
-        )
-    ] == [0, 83]
+        t.text for t in message.get(TOKENS_NAMES[INTENT_ATTRIBUTE])
+    ] == expected_tokens
 
 
-def test_whitespace_cls_token():
-    from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-
-    component_config = {"use_cls_token": True}
+@pytest.mark.parametrize(
+    "text, component_config, expected_tokens",
+    [
+        ("Forecast for LUNCH", {}, ["Forecast", "for", "LUNCH"]),
+        ("Forecast for LUNCH", {"case_sensitive": False}, ["forecast", "for", "lunch"]),
+        ("Forecast for LUNCH", {"case_sensitive": True}, ["Forecast", "for", "LUNCH"]),
+    ],
+)
+def test_whitespace_with_case(text, component_config, expected_tokens):
 
     tk = WhitespaceTokenizer(component_config)
 
-    assert [t.text for t in tk.tokenize("Forecast for lunch")] == [
-        "Forecast",
-        "for",
-        "lunch",
-        CLS_TOKEN,
-    ]
-    assert [t.offset for t in tk.tokenize("Forecast for lunch")] == [0, 9, 13, 19]
+    message = Message(text)
+
+    tokens = tk.tokenize(message, attribute=TEXT_ATTRIBUTE)
+
+    assert [t.text for t in tokens] == expected_tokens
 
 
-def test_whitespace_custom_intent_symbol():
-    from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-
-    component_config = {
-        "intent_tokenization_flag": True,
-        "intent_split_symbol": "+",
-        "use_cls_token": False,
-    }
-
-    tk = WhitespaceTokenizer(component_config)
-
-    assert [t.text for t in tk.tokenize("Forecast_for_LUNCH", attribute="intent")] == [
-        "Forecast_for_LUNCH"
-    ]
-
-    assert [t.text for t in tk.tokenize("Forecast+for+LUNCH", attribute="intent")] == [
-        "Forecast",
-        "for",
-        "LUNCH",
-    ]
-
-
-def test_whitespace_with_case():
-    from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-
-    component_config = {"use_cls_token": False}
-    tk = WhitespaceTokenizer(component_config)
-    assert [t.text for t in tk.tokenize("Forecast for LUNCH")] == [
-        "Forecast",
-        "for",
-        "LUNCH",
-    ]
-
-    component_config = {"case_sensitive": False, "use_cls_token": False}
-    tk = WhitespaceTokenizer(component_config)
-    assert [t.text for t in tk.tokenize("Forecast for LUNCH")] == [
-        "forecast",
-        "for",
-        "lunch",
-    ]
-
-    component_config = {"case_sensitive": True, "use_cls_token": False}
-    tk = WhitespaceTokenizer(component_config)
-    assert [t.text for t in tk.tokenize("Forecast for LUNCH")] == [
-        "Forecast",
-        "for",
-        "LUNCH",
-    ]
-
+def test_whitespace_training():
     _config = utilities.base_test_conf("supervised_embeddings")
+
     examples = [
         Message(
             "Any Mexican restaurant will do",
@@ -170,7 +108,9 @@ def test_whitespace_with_case():
 
     component_config = {"case_sensitive": False}
     tk = WhitespaceTokenizer(component_config)
+
     tk.train(TrainingData(training_examples=examples), _config)
+
     assert examples[0].data.get("tokens")[0].text == "any"
     assert examples[0].data.get("tokens")[1].text == "mexican"
     assert examples[0].data.get("tokens")[2].text == "restaurant"

@@ -1,0 +1,7 @@
+Add ``ConveRTTokenizer``.
+
+The tokenizer should be used whenever the ``ConveRTFeaturizer`` is used.
+
+Every tokenizer now supports the following configuration options:
+``intent_tokenization_flag``: Flag to check whether to split intents (default ``False``).
+``intent_split_symbol``: Symbol on which intent should be split (default ``_``)
