@@ -13,7 +13,6 @@ from shutil import copyfile
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 
 import rasa.utils.io as io_utils
-from rasa.utils.plotter import Plotter
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -165,10 +164,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
     def _check_old_config_variables(config: Dict[Text, Any]) -> None:
         """Config migration warning"""
 
-        removed_tokenization_params = [
-            "label_tokenization_flag",
-            "label_split_symbol",
-        ]
+        removed_tokenization_params = ["label_tokenization_flag", "label_split_symbol"]
         for removed_param in removed_tokenization_params:
             if removed_param in config:
                 warnings.warn(
@@ -501,7 +497,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
     #     labels_example: List["Message"],
     # ) -> List[np.ndarray]:
     #     """Compute one-hot representation for the labels"""
-    # 
+    #
     #     return [
     #         np.array(
     #             [
@@ -816,9 +812,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return self.predict_func(batch_in)
 
-    def _predict_label(
-            self, out
-    ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
+    def _predict_label(self, out) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
         """Predicts the intent of the provided message."""
 
         label = {"name": None, "confidence": 0.0}
@@ -874,7 +868,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             tags = [t[2:] if t[:2] in ["B-", "I-", "U-", "L-"] else t for t in tags]
 
         entities = self._convert_tags_to_entities(
-            message.text, message.get("tokens", []), tags,predictions
+            message.text, message.get("tokens", []), tags, predictions
         )
 
         extracted = self.add_extractor_name(entities)
@@ -884,7 +878,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     @staticmethod
     def _convert_tags_to_entities(
-        text: str, tokens: List[Token], tags: List[Text],predictions
+        text: str, tokens: List[Token], tags: List[Text], predictions
     ) -> List[Dict[Text, Any]]:
         entities = []
         last_tag = "O"
@@ -910,7 +904,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             last_tag = tag
 
         for entity in entities:
-            entity["value"] = text[entity["start"]: entity["end"]]
+            entity["value"] = text[entity["start"] : entity["end"]]
 
         return entities
 
@@ -956,11 +950,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
             if e.errno != errno.EEXIST:
                 raise
 
-        self.model.save_weights(tf_model_file, save_format='tf')
+        self.model.save_weights(tf_model_file, save_format="tf")
 
         dummy_session_data = {
-            k: [v[:1] for v in vs]
-            for k, vs in self.model.session_data.items()
+            k: [v[:1] for v in vs] for k, vs in self.model.session_data.items()
         }
 
         with open(
@@ -968,9 +961,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         ) as f:
             pickle.dump(dummy_session_data, f)
 
-        with open(
-            os.path.join(model_dir, file_name + ".label_data.pkl"), "wb"
-        ) as f:
+        with open(os.path.join(model_dir, file_name + ".label_data.pkl"), "wb") as f:
             pickle.dump(self._label_data, f)
 
         with open(
@@ -1078,22 +1069,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 meta["batch_strategy"],
             )
             logger.debug("Loading the model ...")
-            model.fit(
-                1,
-                1,
-                0,
-                0,
-                silent=True,
-                eager=True,
-            )
+            model.fit(1, 1, 0, 0, silent=True, eager=True)
             model.load_weights(tf_model_file)
 
             # build the graph for prediction
             model.set_training_phase(False)
             model.session_data = {
-                k: vs
-                for k, vs in model.session_data.items()
-                if "text" in k
+                k: vs for k, vs in model.session_data.items() if "text" in k
             }
             model.build_for_predict()
             predict_dataset = model.predict_dataset()
@@ -1189,9 +1171,7 @@ class DIET(tf_models.RasaModel):
         self.session_data = session_data
         self.eval_session_data = eval_session_data
         label_batch = train_utils.prepare_batch(label_data)
-        self.tf_label_data = train_utils.batch_to_session_data(
-            label_batch, label_data
-        )
+        self.tf_label_data = train_utils.batch_to_session_data(label_batch, label_data)
 
         # options
         self._sparse_input_dropout = sparse_input_dropout
@@ -1401,11 +1381,7 @@ class DIET(tf_models.RasaModel):
         a_masked_embed = self._embed[f"{name}_token"](a_masked)
 
         return self._loss_mask(
-            a_t_masked_embed,
-            a_masked_embed,
-            a_masked,
-            a_masked_embed,
-            a_masked,
+            a_t_masked_embed, a_masked_embed, a_masked, a_masked_embed, a_masked
         )
 
     def _build_all_b(self):
@@ -1424,13 +1400,7 @@ class DIET(tf_models.RasaModel):
         a_embed = self._embed["text"](a)
         b_embed = self._embed["label"](b)
 
-        return self._loss_label(
-            a_embed,
-            b_embed,
-            b,
-            all_labels_embed,
-            all_labels,
-        )
+        return self._loss_label(a_embed, b_embed, b, all_labels_embed, all_labels)
 
     def _entity_loss(
         self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor", sequence_lengths
@@ -1467,9 +1437,7 @@ class DIET(tf_models.RasaModel):
         return loss, f1
 
     def _train_losses_scores(self, batch_in):
-        tf_batch_data = train_utils.batch_to_session_data(
-            batch_in, self.session_data
-        )
+        tf_batch_data = train_utils.batch_to_session_data(batch_in, self.session_data)
 
         mask_text = tf_batch_data["text_mask"][0]
         sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
@@ -1497,9 +1465,7 @@ class DIET(tf_models.RasaModel):
             cls = tf.gather_nd(text_transformed, idxs)
 
             label = self._create_bow(
-                tf_batch_data["label_features"],
-                tf_batch_data["label_mask"][0],
-                "label",
+                tf_batch_data["label_features"], tf_batch_data["label_mask"][0], "label"
             )
             loss, acc = self._intent_loss(cls, label)
             losses["i_loss"] = loss
@@ -1564,9 +1530,7 @@ class DIET(tf_models.RasaModel):
         self.all_labels_embed = tf.constant(all_labels_embed.numpy())
 
     def predict(self, batch_in):
-        tf_batch_data = train_utils.batch_to_session_data(
-            batch_in, self.session_data
-        )
+        tf_batch_data = train_utils.batch_to_session_data(batch_in, self.session_data)
 
         mask_text = tf_batch_data["text_mask"][0]
         sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
@@ -1586,8 +1550,7 @@ class DIET(tf_models.RasaModel):
             cls_embed = self._embed["text"](cls)
 
             sim_all = self._loss_label.sim(
-                cls_embed[:, tf.newaxis, :],
-                self.all_labels_embed[tf.newaxis, :, :],
+                cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :]
             )
             # label = self._create_bow(
             #     tf_batch_data["label_features"],
@@ -1599,9 +1562,7 @@ class DIET(tf_models.RasaModel):
             #     cls_embed[:, tf.newaxis, :], label_embed, None
             # )
 
-            scores = train_utils.confidence_from_sim(
-                sim_all, self._similarity_type
-            )
+            scores = train_utils.confidence_from_sim(sim_all, self._similarity_type)
             out["i_scores"] = scores
 
         if self._named_entity_recognition:
@@ -1613,7 +1574,5 @@ class DIET(tf_models.RasaModel):
 
     def predict_dataset(self):
         return train_utils.create_tf_dataset(
-            self.session_data,
-            1,
-            label_key="label_ids",
+            self.session_data, 1, label_key="label_ids"
         )
