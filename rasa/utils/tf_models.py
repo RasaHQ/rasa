@@ -21,13 +21,9 @@ logger = logging.getLogger(__name__)
 
 
 class RasaModel(tf.keras.models.Model):
-
-    def compile(self):
-        raise NotImplemented
-
     @staticmethod
     def _update_postfix_dict(
-            postfix_dict: Dict[Text, Text], metrics, prefix: Text = ""
+        postfix_dict: Dict[Text, Text], metrics, prefix: Text = ""
     ) -> Dict[Text, Text]:
         for name, value in metrics.loss.items():
             postfix_dict[f"{prefix}{name}"] = f"{value:.3f}"
@@ -35,14 +31,15 @@ class RasaModel(tf.keras.models.Model):
             postfix_dict[f"{prefix}{name}"] = f"{value:.3f}"
         return postfix_dict
 
-    def fit(self,
-            epochs: int,
-            batch_size: Union[List[int], int],
-            evaluate_on_num_examples: int,
-            evaluate_every_num_epochs: int,
-            silent: bool = False,
-            eager: bool = False,
-            output_file: Optional[Text] = None,
+    def fit(
+        self,
+        epochs: int,
+        batch_size: Union[List[int], int],
+        evaluate_on_num_examples: int,
+        evaluate_every_num_epochs: int,
+        silent: bool = False,
+        eager: bool = False,
+        output_file: Optional[Text] = None,
     ) -> None:
         """Train tf graph"""
 
@@ -63,7 +60,8 @@ class RasaModel(tf.keras.models.Model):
             # allows increasing batch size
             train_dataset_func = tf.function(self.train_dataset)
             train_on_batch_func = tf.function(
-                self.train_on_batch, input_signature=[train_dataset_func(tf_batch_size).element_spec]
+                self.train_on_batch,
+                input_signature=[train_dataset_func(tf_batch_size).element_spec],
             )
 
         if evaluate_on_num_examples > 0:
@@ -73,7 +71,8 @@ class RasaModel(tf.keras.models.Model):
             else:
                 eval_dataset_func = tf.function(self.eval_dataset)
                 eval_func = tf.function(
-                    self.eval, input_signature=[eval_dataset_func(tf_batch_size).element_spec]
+                    self.eval,
+                    input_signature=[eval_dataset_func(tf_batch_size).element_spec],
                 )
         else:
             eval_dataset_func = None
@@ -97,7 +96,9 @@ class RasaModel(tf.keras.models.Model):
             # exit()
 
             # Get the metric results
-            postfix_dict = {k: v.result().numpy() for k, v in self.train_metrics.items()}
+            postfix_dict = {
+                k: v.result().numpy() for k, v in self.train_metrics.items()
+            }
 
             if evaluate_on_num_examples > 0:
                 if (
@@ -125,26 +126,33 @@ class RasaModel(tf.keras.models.Model):
         if not disable:
             logger.info("Finished training.")
 
-    def evaluate(self):
+    def compile(self) -> None:
+        raise NotImplemented
+
+    def evaluate(self) -> None:
         pass
 
-    def predict(self):
+    def predict(
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+    ) -> Dict[Text, tf.Tensor]:
         pass
 
-    def train_on_batch(self, batch_in):
+    def train_on_batch(
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+    ) -> None:
         raise NotImplementedError
 
-    def test_on_batch(self):
+    def test_on_batch(self) -> None:
         raise NotImplemented
 
-    def predict_on_batch(self):
+    def predict_on_batch(self) -> None:
         raise NotImplemented
 
-    def fit_generator(self):
+    def fit_generator(self) -> None:
         raise NotImplemented
 
-    def evaluate_generator(self):
+    def evaluate_generator(self) -> None:
         raise NotImplemented
 
-    def predict_generator(self):
+    def predict_generator(self) -> None:
         raise NotImplemented

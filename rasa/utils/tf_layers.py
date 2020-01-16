@@ -38,14 +38,14 @@ class DenseForSparse(tf.keras.layers.Dense):
     """Dense layer for sparse input tensor"""
 
     # noinspection PyPep8Naming
-    def __init__(self, reg_lambda: float, **kwargs):
+    def __init__(self, reg_lambda: float, **kwargs) -> None:
         l1_regularizer = tf.keras.regularizers.l1(reg_lambda)
 
         super(DenseForSparse, self).__init__(
             kernel_regularizer=l1_regularizer, **kwargs
         )
 
-    def call(self, inputs):
+    def call(self, inputs: tf.SparseTensor) -> tf.Tensor:
         if not isinstance(inputs, tf.SparseTensor):
             raise ValueError("Input tensor should be sparse.")
 
@@ -108,7 +108,7 @@ class Embed(tf.keras.layers.Layer):
         reg_lambda: float,
         layer_name_suffix: Text,
         similarity_type: Optional[Text] = None,
-    ):
+    ) -> None:
         super(Embed, self).__init__(name=f"embed_{layer_name_suffix}")
 
         self.similarity_type = similarity_type
@@ -126,7 +126,7 @@ class Embed(tf.keras.layers.Layer):
             name=f"embed_layer_{layer_name_suffix}",
         )
 
-    def call(self, x):
+    def call(self, x: tf.Tensor) -> tf.Tensor:
         x = self._dense(x)
         if self.similarity_type == "cosine":
             x = tf.nn.l2_normalize(x, -1)
@@ -178,7 +178,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         return output, attention_weights
 
-    def __init__(self, d_model, num_heads, reg_lambda):
+    def __init__(self, d_model, num_heads: int, reg_lambda: float) -> None:
         super(MultiHeadAttention, self).__init__()
         self.num_heads = num_heads
         self.d_model = d_model
@@ -199,7 +199,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         )
         self._dense = tf.keras.layers.Dense(d_model, kernel_regularizer=l2_regularizer)
 
-    def _split_heads(self, x):
+    def _split_heads(self, x: tf.Tensor) -> tf.Tensor:
         """Split the last dimension into (num_heads, depth).
 
         Transpose the result such that the shape is
@@ -209,7 +209,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         x = tf.reshape(x, (tf.shape(x)[0], -1, self.num_heads, self._depth))
         return tf.transpose(x, perm=[0, 2, 1, 3])
 
-    def _combine_heads(self, x):
+    def _combine_heads(self, x: tf.Tensor) -> tf.Tensor:
         """Inverse of split_heads.
 
         Args:
@@ -226,7 +226,13 @@ class MultiHeadAttention(tf.keras.layers.Layer):
             x, (tf.shape(x)[0], -1, self.d_model)
         )  # (batch_size, seq_len_q, d_model)
 
-    def call(self, v, k, q, pad_mask=None):
+    def call(
+        self,
+        v: tf.Tensor,
+        k: tf.Tensor,
+        q: tf.Tensor,
+        pad_mask: Optional[tf.Tensor] = None,
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         q = self._wq(q)  # (batch_size, seq_len_q, d_model)
         k = self._wk(k)  # (batch_size, seq_len_k, d_model)
         v = self._wv(v)  # (batch_size, seq_len_v, d_model)
@@ -248,7 +254,14 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
 
 class TransformerEncoderLayer(tf.keras.layers.Layer):
-    def __init__(self, d_model, num_heads, dff, reg_lambda, rate=0.1):
+    def __init__(
+        self,
+        d_model: tf.Tensor,
+        num_heads: int,
+        dff: tf.Tensor,
+        reg_lambda: float,
+        rate: float = 0.1,
+    ) -> None:
         super(TransformerEncoderLayer, self).__init__()
 
         self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
@@ -268,7 +281,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
             tf.keras.layers.Dropout(rate),
         ]
 
-    def call(self, x, pad_mask, training):
+    def call(self, x: tf.Tensor, pad_mask: tf.Tensor, training: bool) -> tf.Tensor:
 
         x_norm = self._layernorm(x)  # (batch_size, seq_len, d_model)
         attn_out, _ = self._mha(x_norm, x_norm, x_norm, pad_mask)
@@ -285,7 +298,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
 
 class TransformerEncoder(tf.keras.layers.Layer):
     @staticmethod
-    def _look_ahead_pad_mask(seq_len):
+    def _look_ahead_pad_mask(seq_len: int) -> tf.Tensor:
         pad_mask = 1 - tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
         return pad_mask[tf.newaxis, tf.newaxis, :, :]  # (1, 1, seq_len, seq_len)
 
@@ -295,7 +308,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         return pos * angle_rates
 
     @classmethod
-    def _positional_encoding(cls, position, d_model):
+    def _positional_encoding(cls, position, d_model) -> tf.Tensor:
         angle_rads = cls._get_angles(
             np.arange(position)[:, np.newaxis],
             np.arange(d_model)[np.newaxis, :],
@@ -314,16 +327,16 @@ class TransformerEncoder(tf.keras.layers.Layer):
 
     def __init__(
         self,
-        num_layers,
+        num_layers: int,
         d_model,
-        num_heads,
+        num_heads: int,
         dff,
-        max_seq_length,
-        reg_lambda,
-        rate=0.1,
-        unidirectional=False,
-        name=None,
-    ):
+        max_seq_length: int,
+        reg_lambda: float,
+        rate: float = 0.1,
+        unidirectional: bool = False,
+        name: Optional[Text] = None,
+    ) -> None:
         super(TransformerEncoder, self).__init__(name=name)
 
         self.d_model = d_model
@@ -344,7 +357,9 @@ class TransformerEncoder(tf.keras.layers.Layer):
         ]
         self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
-    def call(self, x, pad_mask, training):
+    def call(
+        self, x: "tf.Tensor", pad_mask: "tf.Tensor", training: bool
+    ) -> "tf.Tensor":
 
         # adding embedding and position encoding.
         x = self._embedding(x)  # (batch_size, seq_len, d_model)
@@ -370,7 +385,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
 
 
 class InputMask(tf.keras.layers.Layer):
-    def build(self, input_shape):
+    def build(self, input_shape: List[int]) -> None:
         initializer = tf.keras.initializers.GlorotUniform()
         self.mask_vector = self.add_weight(
             shape=(1, 1, input_shape[-1]),
@@ -380,7 +395,9 @@ class InputMask(tf.keras.layers.Layer):
         )
         self.built = True
 
-    def call(self, x, mask, training):
+    def call(
+        self, x: "tf.Tensor", mask: "tf.Tensor", training: bool
+    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
         """Randomly mask input sequences."""
 
         # do not substitute with cls token
@@ -422,7 +439,7 @@ class InputMask(tf.keras.layers.Layer):
 
 
 class CRF(tf.keras.layers.Layer):
-    def __init__(self, num_tags, reg_lambda, name=None):
+    def __init__(self, num_tags: int, reg_lambda: float, name: Text = None) -> None:
         super().__init__(name=name)
 
         initializer = tf.keras.initializers.GlorotUniform()
@@ -435,7 +452,7 @@ class CRF(tf.keras.layers.Layer):
             name="transitions",
         )
 
-    def call(self, logits, sequence_lengths):
+    def call(self, logits: "tf.Tensor", sequence_lengths: "tf.Tensor") -> "tf.TEnsor":
         pred_ids, _ = tfa.text.crf.crf_decode(
             logits, self.transition_params, sequence_lengths
         )
@@ -446,7 +463,12 @@ class CRF(tf.keras.layers.Layer):
 
         return pred_ids * mask
 
-    def loss(self, logits, tag_indices, sequence_lengths):
+    def loss(
+        self,
+        logits: "tf.Tensor",
+        tag_indices: "tf.Tensor",
+        sequence_lengths: "tf.Tensor",
+    ) -> "tf.Tensor":
         log_likelihood, _ = tfa.text.crf.crf_log_likelihood(
             logits, tag_indices, sequence_lengths, self.transition_params
         )
@@ -463,8 +485,8 @@ class DotProductLoss(tf.keras.layers.Layer):
         use_max_sim_neg: bool,
         neg_lambda: float,
         scale_loss: bool,
-        name=None,
-    ):
+        name: Text = None,
+    ) -> None:
         super().__init__(name=name)
         self.num_neg = num_neg
         self.loss_type = loss_type

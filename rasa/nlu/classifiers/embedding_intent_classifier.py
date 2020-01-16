@@ -214,9 +214,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         inverted_label_dict: Optional[Dict[int, Text]] = None,
         inverted_tag_dict: Optional[Dict[int, Text]] = None,
         model: Optional[tf_models.RasaModel] = None,
-        predict_func: Optional[Callable] = None,
+        predict_func: Optional[tf.Function] = None,
         batch_tuple_sizes: Optional[Dict] = None,
-        attention_weights: Optional["tf.Tensor"] = None,
+        attention_weights: Optional[tf.Tensor] = None,
     ) -> None:
         """Declare instance variables with default values"""
 
@@ -252,7 +252,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
     # training data helpers:
     @staticmethod
     def _create_label_id_dict(
-        training_data: "TrainingData", attribute: Text
+        training_data: TrainingData, attribute: Text
     ) -> Dict[Text, int]:
         """Create label_id dictionary"""
 
@@ -264,7 +264,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         }
 
     @staticmethod
-    def _create_tag_id_dict(training_data: "TrainingData") -> Dict[Text, int]:
+    def _create_tag_id_dict(training_data: TrainingData) -> Dict[Text, int]:
         """Create label_id dictionary"""
 
         distinct_tag_ids = set(
@@ -284,15 +284,17 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     @staticmethod
     def _find_example_for_label(
-        label: Text, examples: List["Message"], attribute: Text
-    ) -> Optional["Message"]:
+        label: Text, examples: List[Message], attribute: Text
+    ) -> Optional[Message]:
         for ex in examples:
             if ex.get(attribute) == label:
                 return ex
         return None
 
     @staticmethod
-    def _find_example_for_tag(tag, examples, attribute):
+    def _find_example_for_tag(
+        tag: Text, examples: List[Message], attribute: Text
+    ) -> Optional[Message]:
         for ex in examples:
             for e in ex.get(attribute):
                 if e["entity"] == tag:
@@ -301,7 +303,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     @staticmethod
     def _check_labels_features_exist(
-        labels_example: List["Message"], attribute: Text
+        labels_example: List[Message], attribute: Text
     ) -> bool:
         """Check if all labels have features set"""
 
@@ -315,7 +317,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     @staticmethod
     def _extract_and_add_features(
-        message: "Message", attribute: Text
+        message: Message, attribute: Text
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
         sparse_features = None
         dense_features = None
@@ -370,14 +372,14 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 break
 
     @staticmethod
-    def _get_num_of_features(session_data: "SessionDataType", key: Text) -> int:
+    def _get_num_of_features(session_data: SessionDataType, key: Text) -> int:
         num_features = 0
         for data in session_data[key]:
             if data.size > 0:
                 num_features += data[0].shape[-1]
         return num_features
 
-    def check_input_dimension_consistency(self, session_data: "SessionDataType"):
+    def check_input_dimension_consistency(self, session_data: SessionDataType):
         if self.component_config[SHARE_HIDDEN_LAYERS]:
             num_text_features = self._get_num_of_features(session_data, "text_features")
             num_intent_features = self._get_num_of_features(
@@ -392,7 +394,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 )
 
     def _extract_labels_precomputed_features(
-        self, label_examples: List["Message"], attribute: Text = INTENT_ATTRIBUTE
+        self, label_examples: List[Message], attribute: Text = INTENT_ATTRIBUTE
     ) -> List[np.ndarray]:
         """Collect precomputed encodings"""
 
@@ -411,26 +413,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return [sparse_features, dense_features]
 
-    # @staticmethod
-    # def _compute_default_label_features(
-    #     labels_example: List["Message"],
-    # ) -> List[np.ndarray]:
-    #     """Compute one-hot representation for the labels"""
-    #
-    #     return [
-    #         np.array(
-    #             [
-    #                 scipy.sparse.coo_matrix(
-    #                     ([1], ([0], [idx])), shape=(1, len(labels_example))
-    #                 )
-    #                 for idx in range(len(labels_example))
-    #             ]
-    #         )
-    #     ]
-
     @staticmethod
     def _compute_default_label_features(
-        labels_example: List["Message"],
+        labels_example: List[Message],
     ) -> List[np.ndarray]:
         """Compute one-hot representation for the labels"""
 
@@ -445,10 +430,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     def _create_label_data(
         self,
-        training_data: "TrainingData",
+        training_data: TrainingData,
         label_id_dict: Dict[Text, int],
         attribute: Text,
-    ) -> "SessionDataType":
+    ) -> SessionDataType:
         """Create matrix with label_ids encoded in rows as bag of words.
 
         Find a training example for each label and get the encoded features
@@ -495,11 +480,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     def _create_session_data(
         self,
-        training_data: List["Message"],
+        training_data: List[Message],
         label_id_dict: Optional[Dict[Text, int]] = None,
         tag_id_dict: Optional[Dict[Text, int]] = None,
         label_attribute: Optional[Text] = None,
-    ) -> "SessionDataType":
+    ) -> SessionDataType:
         """Prepare data for training and create a SessionDataType object"""
 
         X_sparse = []
@@ -563,7 +548,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         return session_data
 
     # train helpers
-    def preprocess_train_data(self, training_data: "TrainingData"):
+    def preprocess_train_data(self, training_data: TrainingData) -> SessionDataType:
         """Prepares data for training.
 
         Performs sanity checks on training data, extracts encodings for labels.
@@ -594,13 +579,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
         return session_data
 
     @staticmethod
-    def _check_enough_labels(session_data: "SessionDataType") -> bool:
+    def _check_enough_labels(session_data: SessionDataType) -> bool:
         return len(np.unique(session_data["label_ids"])) >= 2
 
     def train(
         self,
-        training_data: "TrainingData",
-        cfg: Optional["RasaNLUModelConfig"] = None,
+        training_data: TrainingData,
+        cfg: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
         """Train the embedding intent classifier on a data set."""
@@ -658,7 +643,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # self.attention_weights = train_utils.extract_attention(self.attention_weights)
 
     # process helpers
-    def _predict(self, message: "Message"):
+    def _predict(self, message: Message) -> tf.Function:
         if self.model is None or self.predict_func is None:
             return
 
@@ -670,7 +655,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return self.predict_func(batch_in)
 
-    def _predict_label(self, out) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
+    def _predict_label(
+        self, out: Dict[Text, tf.Tensor]
+    ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
         """Predicts the intent of the provided message."""
 
         label = {"name": None, "confidence": 0.0}
@@ -708,7 +695,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return label, label_ranking
 
-    def _predict_entities(self, out, message: "Message") -> List[Dict]:
+    def _predict_entities(
+        self, out: Dict[Text, tf.Tensor], message: Message
+    ) -> List[Dict]:
         if self.model is None:
             logger.error(
                 "There is no trained tf.session: "
@@ -733,7 +722,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     @staticmethod
     def _convert_tags_to_entities(
-        text: str, tokens: List[Token], tags: List[Text]
+        text: Text, tokens: List[Token], tags: List[Text]
     ) -> List[Dict[Text, Any]]:
         entities = []
         last_tag = "O"
@@ -763,7 +752,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return entities
 
-    def process(self, message: "Message", **kwargs: Any) -> None:
+    def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""
 
         out = self._predict(message)
@@ -949,7 +938,7 @@ class DIET(tf_models.RasaModel):
         label_data: SessionDataType,
         inverted_tag_dict: Dict[int, Text],
         config: Dict[Text, Any],
-    ):
+    ) -> None:
         super(DIET, self).__init__(name="DIET")
 
         # data
@@ -978,7 +967,7 @@ class DIET(tf_models.RasaModel):
         self.all_labels_embed = None
         self.batch_tuple_sizes = None
 
-    def _prepare_layers(self, session_data: SessionDataType):
+    def _prepare_layers(self, session_data: SessionDataType) -> None:
         self._sparse_dropout = tf_layers.SparseDropout(rate=self.config[DROPRATE])
 
         self._sparse_to_dense = {
@@ -1102,7 +1091,7 @@ class DIET(tf_models.RasaModel):
             self.eval_metrics["val_e_loss"] = tf.keras.metrics.Mean(name="val_e_loss")
             self.eval_metrics["val_e_f1"] = tf.keras.metrics.Mean(name="val_e_f1")
 
-    def set_training_phase(self, training: bool):
+    def set_training_phase(self, training: bool) -> None:
         if training:
             self.training = tf.ones((), tf.bool)
         else:
@@ -1110,11 +1099,11 @@ class DIET(tf_models.RasaModel):
 
     def _combine_sparse_dense_features(
         self,
-        features: List[Union["tf.Tensor", "tf.SparseTensor"]],
-        mask: "tf.Tensor",
+        features: List[Union[tf.Tensor, tf.SparseTensor]],
+        mask: tf.Tensor,
         name: Text,
         sparse_dropout: bool = False,
-    ) -> "tf.Tensor":
+    ) -> tf.Tensor:
 
         dense_features = []
 
@@ -1133,18 +1122,18 @@ class DIET(tf_models.RasaModel):
 
     def _create_bow(
         self,
-        features: List[Union["tf.Tensor", "tf.SparseTensor"]],
-        mask: "tf.Tensor",
+        features: List[Union[tf.Tensor, "tf.SparseTensor"]],
+        mask: tf.Tensor,
         name: Text,
-    ):
+    ) -> tf.Tensor:
 
         x = self._combine_sparse_dense_features(features, mask, name)
         return self._ffnn[name](tf.reduce_sum(x, 1), self.training)
 
     def _create_sequence(
         self,
-        features: List[Union["tf.Tensor", "tf.SparseTensor"]],
-        mask: "tf.Tensor",
+        features: List[Union[tf.Tensor, "tf.SparseTensor"]],
+        mask: tf.Tensor,
         name: Text,
         masked_lm_loss: bool = False,
     ):
@@ -1191,7 +1180,7 @@ class DIET(tf_models.RasaModel):
 
         return all_labels_embed, all_labels
 
-    def _intent_loss(self, a: tf.Tensor, b: tf.Tensor):
+    def _intent_loss(self, a: tf.Tensor, b: tf.Tensor) -> tf.Tensor:
         all_labels_embed, all_labels = self._build_all_b()
 
         a_embed = self._embed["text"](a)
@@ -1200,8 +1189,8 @@ class DIET(tf_models.RasaModel):
         return self._loss_label(a_embed, b_embed, b, all_labels_embed, all_labels)
 
     def _entity_loss(
-        self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor", sequence_lengths
-    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+        self, a: tf.Tensor, c: tf.Tensor, mask: tf.Tensor, sequence_lengths
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
 
         # remove cls token
         sequence_lengths = sequence_lengths - 1
@@ -1233,7 +1222,9 @@ class DIET(tf_models.RasaModel):
 
         return loss, f1
 
-    def _train_losses_scores(self, batch_in):
+    def _train_losses_scores(
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+    ) -> Tuple[Dict[Text, float], Dict[Text, float]]:
         tf_batch_data = train_utils.batch_to_session_data(batch_in, self.session_data)
 
         mask_text = tf_batch_data["text_mask"][0]
@@ -1279,7 +1270,9 @@ class DIET(tf_models.RasaModel):
 
         return losses, scores
 
-    def train_on_batch(self, batch_in):
+    def train_on_batch(
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+    ) -> None:
         with tf.GradientTape() as tape:
             losses, scores = self._train_losses_scores(batch_in)
             regularization_loss = tf.math.add_n(self.losses)
@@ -1295,7 +1288,7 @@ class DIET(tf_models.RasaModel):
         for k, v in scores.items():
             self.train_metrics[k].update_state(v)
 
-    def train_dataset(self, batch_size):
+    def train_dataset(self, batch_size: int) -> tf.data.Dataset:
         return train_utils.create_tf_dataset(
             self.session_data,
             batch_size,
@@ -1304,7 +1297,7 @@ class DIET(tf_models.RasaModel):
             shuffle=True,
         )
 
-    def eval(self, batch_in):
+    def eval(self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]):
         losses, scores = self._train_losses_scores(batch_in)
         total_loss = tf.math.add_n(list(losses.values())) + self.losses
 
@@ -1314,19 +1307,21 @@ class DIET(tf_models.RasaModel):
         for k, v in scores.items():
             self.eval_metrics[f"val_{k}"].update_state(v)
 
-    def eval_dataset(self, batch_size):
+    def eval_dataset(self, batch_size: int) -> tf.data.Dataset:
         if self.eval_session_data is not None:
             return train_utils.create_tf_dataset(
                 self.eval_session_data, batch_size, label_key="label_ids"
             )
 
-    def build_for_predict(self):
+    def build_for_predict(self) -> None:
         self.batch_tuple_sizes = train_utils.batch_tuple_sizes(self.session_data)
 
         all_labels_embed, _ = self._build_all_b()
         self.all_labels_embed = tf.constant(all_labels_embed.numpy())
 
-    def predict(self, batch_in):
+    def predict(
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+    ) -> Dict[Text, tf.Tensor]:
         tf_batch_data = train_utils.batch_to_session_data(batch_in, self.session_data)
 
         mask_text = tf_batch_data["text_mask"][0]
@@ -1371,7 +1366,7 @@ class DIET(tf_models.RasaModel):
 
         return out
 
-    def predict_dataset(self):
+    def predict_dataset(self) -> tf.data.Dataset:
         return train_utils.create_tf_dataset(
             self.session_data, 1, label_key="label_ids"
         )
