@@ -14,7 +14,11 @@ from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain, SessionConfig
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.slots import TextSlot, UnfeaturizedSlot
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS, DEFAULT_STORIES_FILE
+from tests.core.conftest import (
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
+    DEFAULT_STORIES_FILE,
+)
 from rasa.utils import io as io_utils
 
 
