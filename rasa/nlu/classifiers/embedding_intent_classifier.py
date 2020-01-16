@@ -248,6 +248,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         self._tf_config = train_utils.load_tf_config(self.component_config)
 
+        self.session_data_example = None
+
     # training data helpers:
     @staticmethod
     def _create_label_id_dict(
@@ -617,6 +619,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
         else:
             eval_session_data = None
 
+        # keep one example for persisting and loading
+        self.session_data_example = {
+            k: [v[:1] for v in vs] for k, vs in session_data.items()
+        }
+
         # TODO set it in the model
         # set random seed
         tf.random.set_seed(self.component_config[RANDOM_SEED])
@@ -661,8 +668,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         # create session data from message and convert it into a batch of 1
         session_data = self._create_session_data([message])
-        self.model.session_data = session_data
-        predict_dataset = self.model.predict_dataset()
+        predict_dataset = self.model.predict_dataset(session_data)
         batch_in = next(iter(predict_dataset))
 
         return self.predict_func(batch_in)
@@ -802,14 +808,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         self.model.save_weights(tf_model_file, save_format="tf")
 
-        dummy_session_data = {
-            k: [v[:1] for v in vs] for k, vs in self.model.session_data.items()
-        }
-
         with open(
-            os.path.join(model_dir, file_name + ".dummy_session_data.pkl"), "wb"
+            os.path.join(model_dir, file_name + ".session_data_example.pkl"), "wb"
         ) as f:
-            pickle.dump(dummy_session_data, f)
+            pickle.dump(self.session_data_example, f)
 
         with open(os.path.join(model_dir, file_name + ".label_data.pkl"), "wb") as f:
             pickle.dump(self._label_data, f)
@@ -857,9 +859,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
             _tf_config = pickle.load(f)
 
         with open(
-            os.path.join(model_dir, file_name + ".dummy_session_data.pkl"), "rb"
+            os.path.join(model_dir, file_name + ".session_data_example.pkl"), "rb"
         ) as f:
-            dummy_session_data = pickle.load(f)
+            session_data_example = pickle.load(f)
 
         with open(os.path.join(model_dir, file_name + ".label_data.pkl"), "rb") as f:
             label_data = pickle.load(f)
@@ -883,19 +885,25 @@ class EmbeddingIntentClassifier(EntityExtractor):
             elif meta[LOSS_TYPE] == "margin":
                 meta[SIMILARITY_TYPE] = "cosine"
 
-        model = DIET(dummy_session_data, None, label_data, inv_tag_dict, meta)
+        model = DIET(
+            EmbeddingIntentClassifier.create_signature(session_data_example),
+            label_data,
+            inv_tag_dict,
+            meta,
+        )
 
         logger.debug("Loading the model ...")
-        model.fit(1, 1, 0, 0, silent=True, eager=True)
+        model.fit(1, 1, session_data_example, None, 0, 0, silent=True, eager=True)
         model.load_weights(tf_model_file)
 
         # build the graph for prediction
         model.set_training_phase(False)
-        model.session_data = {
-            k: vs for k, vs in model.session_data.items() if "text" in k
-        }
-        model.build_for_predict()
-        predict_dataset = model.predict_dataset()
+        session_data = {k: vs for k, vs in session_data_example.items() if "text" in k}
+        model.session_data_signature = EmbeddingIntentClassifier.create_signature(
+            session_data
+        )
+        model.build_for_predict(session_data)
+        predict_dataset = model.predict_dataset(session_data)
         predict_func = tf.function(
             model.predict, input_signature=[predict_dataset.element_spec]
         )
@@ -1336,8 +1344,8 @@ class DIET(tf_models.RasaModel):
                 session_data, batch_size, label_key="label_ids"
             )
 
-    def build_for_predict(self) -> None:
-        self.batch_tuple_sizes = train_utils.batch_tuple_sizes(self.session_data)
+    def build_for_predict(self, session_data: SessionDataType) -> None:
+        self.batch_tuple_sizes = train_utils.batch_tuple_sizes(session_data)
 
         all_labels_embed, _ = self._build_all_b()
         self.all_labels_embed = tf.constant(all_labels_embed.numpy())
