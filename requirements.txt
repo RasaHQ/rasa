@@ -7,7 +7,7 @@ jsonpickle==1.1
 redis==3.3.5
 pymongo[tls,srv]==3.8.0
 numpy==1.16.3
-scipy==1.2.1
+scipy==1.4.1
 #tensorflow==1.15.0
 absl-py>=0.8.0
 # setuptools comes from tensorboard requirement:
@@ -64,6 +64,4 @@ gast==0.2.2
 # for new featurizers
 tensorflow==2.1.0
 tensorflow_hub==0.6.0
-#tensorflow_text[no-deps]==0.1.0
-# to calculate f1 score in new architecture
-git+https://github.com/guillaumegenthial/tf_metrics.git
+tensorflow-addons==0.7.0
