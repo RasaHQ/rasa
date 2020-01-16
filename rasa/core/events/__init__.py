@@ -346,7 +346,7 @@ class UserUttered(Event):
             text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
             intent={"name": intent_name},
             metadata={IS_EXTERNAL: True},
-            entities=entity_list if entity_list else [],
+            entities=entity_list or [],
         )
 
 
