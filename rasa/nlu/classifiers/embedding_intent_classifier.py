@@ -1257,6 +1257,7 @@ class DIET(tf_models.RasaModel):
             self.eval_metrics["val_m_acc"] = tf.keras.metrics.Mean(name="val_m_acc")
         else:
             self._input_mask = None
+            self._loss_mask = None
 
         if self._intent_classification:
             self._embed["text"] = tf_layers.Embed(
@@ -1278,6 +1279,8 @@ class DIET(tf_models.RasaModel):
             self.train_metrics["i_acc"] = tf.keras.metrics.Mean(name="i_acc")
             self.eval_metrics["val_i_loss"] = tf.keras.metrics.Mean(name="val_i_loss")
             self.eval_metrics["val_i_acc"] = tf.keras.metrics.Mean(name="val_i_acc")
+        else:
+            self._loss_label = None
 
         if self._named_entity_recognition:
             self._embed["logits"] = tf_layers.Embed(
