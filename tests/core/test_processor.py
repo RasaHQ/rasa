@@ -262,10 +262,23 @@ async def test_reminder_cancelled_multi_user(
     )
 
 
-async def test_reminder_cancelled_multi_reminder(
-    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+async def cancel_reminder_and_check(
+    tracker, default_processor, reminder_canceled_event, num_jobs_before, num_jobs_after
 ):
-    reminders = [
+    # cancel the sixth reminder
+    tracker.update(reminder_canceled_event)
+
+    # check that the jobs were added
+    assert len((await jobs.scheduler()).get_jobs()) == num_jobs_before
+
+    await default_processor._cancel_reminders(tracker.events, tracker)
+
+    # check that only one job was removed
+    assert len((await jobs.scheduler()).get_jobs()) == num_jobs_after
+
+
+def default_reminder_list():
+    return [
         ReminderScheduled("greet", datetime.datetime.now(), kill_on_user_message=False),
         ReminderScheduled(
             intent="greet",
@@ -295,6 +308,12 @@ async def test_reminder_cancelled_multi_reminder(
             name="special",
         ),
     ]
+
+
+async def test_reminder_cancelled_by_name(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    reminders = default_reminder_list()
     sender_id = uuid.uuid4().hex
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
     for reminder in reminders:
@@ -307,31 +326,80 @@ async def test_reminder_cancelled_multi_reminder(
         tracker.events, tracker, default_channel, default_processor.nlg
     )
 
-    async def cancel(reminder_canceled_event, num_jobs_before, num_jobs_after):
-        # cancel the sixth reminder
-        tracker.update(reminder_canceled_event)
-
-        # check that the jobs were added
-        assert len((await jobs.scheduler()).get_jobs()) == num_jobs_before
-
-        await default_processor._cancel_reminders(tracker.events, tracker)
-
-        # check that only one job was removed
-        assert len((await jobs.scheduler()).get_jobs()) == num_jobs_after
-
     # cancel the sixth reminder
-    await cancel(ReminderCancelled("special"), 6, 5)
-
-    # cancel the fourth reminder
-    await cancel(
-        ReminderCancelled(entities=[{"entity": "name", "value": "Bruce Wayne"}]), 5, 4
+    await cancel_reminder_and_check(
+        tracker, default_processor, ReminderCancelled("special"), 6, 5
     )
 
-    # cancel the third and fifth reminder
-    await cancel(ReminderCancelled(intent="default"), 4, 2)
 
-    # cancel all remaining reminders
-    await cancel(ReminderCancelled(), 2, 0)
+async def test_reminder_cancelled_by_entities(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    reminders = default_reminder_list()
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    for reminder in reminders:
+        tracker.update(UserUttered("test"))
+        tracker.update(ActionExecuted("action_reminder_reminder"))
+        tracker.update(reminder)
+
+    default_processor.tracker_store.save(tracker)
+    await default_processor._schedule_reminders(
+        tracker.events, tracker, default_channel, default_processor.nlg
+    )
+
+    # cancel the fourth reminder
+    await cancel_reminder_and_check(
+        tracker,
+        default_processor,
+        ReminderCancelled(entities=[{"entity": "name", "value": "Bruce Wayne"}]),
+        6,
+        5,
+    )
+
+
+async def test_reminder_cancelled_by_intent(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    reminders = default_reminder_list()
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    for reminder in reminders:
+        tracker.update(UserUttered("test"))
+        tracker.update(ActionExecuted("action_reminder_reminder"))
+        tracker.update(reminder)
+
+    default_processor.tracker_store.save(tracker)
+    await default_processor._schedule_reminders(
+        tracker.events, tracker, default_channel, default_processor.nlg
+    )
+
+    # cancel the third, fifth, and sixth reminder
+    await cancel_reminder_and_check(
+        tracker, default_processor, ReminderCancelled(intent="default"), 6, 3
+    )
+
+
+async def test_reminder_cancelled_all(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    reminders = default_reminder_list()
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    for reminder in reminders:
+        tracker.update(UserUttered("test"))
+        tracker.update(ActionExecuted("action_reminder_reminder"))
+        tracker.update(reminder)
+
+    default_processor.tracker_store.save(tracker)
+    await default_processor._schedule_reminders(
+        tracker.events, tracker, default_channel, default_processor.nlg
+    )
+
+    # cancel all reminders
+    await cancel_reminder_and_check(
+        tracker, default_processor, ReminderCancelled(), 6, 0
+    )
 
 
 async def test_reminder_restart(
