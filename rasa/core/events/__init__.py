@@ -594,7 +594,7 @@ class AllSlotsReset(Event):
 
 # noinspection PyProtectedMember
 class ReminderScheduled(Event):
-    """ Schedules the asynchronous triggering of a user intent
+    """Schedules the asynchronous triggering of a user intent
     (with entities if needed) at a given time."""
 
     type_name = "reminder"
