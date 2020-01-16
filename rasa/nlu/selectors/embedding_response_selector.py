@@ -6,6 +6,7 @@ from rasa.nlu.components import any_of
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.constants import (
     RESPONSE_ATTRIBUTE,
+    RESPONSE_KEY_ATTRIBUTE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     DEFAULT_OPEN_UTTERANCE_TYPE,
     DENSE_FEATURE_NAMES,
@@ -129,6 +130,19 @@ class ResponseSelector(EmbeddingIntentClassifier):
         super()._load_params()
         self._load_selector_params(self.component_config)
 
+    # training data helpers:
+    @staticmethod
+    def _create_response_key_dict(
+        training_data: "TrainingData", key: Text, response: Text
+    ) -> Dict[Text, Text]:
+        """Create response_key dictionary"""
+
+        key_dict = {}
+        for example in training_data.intent_examples:
+            key_dict[example.get(response)] = f"{example.get(intent)}/{example.get(key)}"
+
+        return key_dict
+
     @staticmethod
     def _set_message_property(
         message: "Message", prediction_dict: Dict[Text, Any], selector_key: Text
@@ -142,6 +156,32 @@ class ResponseSelector(EmbeddingIntentClassifier):
             add_to_output=True,
         )
 
+    def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+        super().persist(file_name, model_dir)
+
+        with open(
+            os.path.join(model_dir, file_name + ".response_key_dict.pkl"), "wb"
+        ) as f:
+            pickle.dump(self.response_key_dict, f)
+
+
+    @classmethod
+    def load(
+        cls,
+        meta: Dict[Text, Any],
+        model_dir: Text = None,
+        model_metadata: "Metadata" = None,
+        cached_component: Optional["EmbeddingIntentClassifier"] = None,
+        **kwargs: Any,
+    ) -> "EmbeddingIntentClassifier":
+        super().load(component_meta, model_dir, metadata, cached_component, **kwargs)
+
+        with open(
+            os.path.join(model_dir, file_name + ".response_key_dict.pkl"), "rb"
+        ) as f:
+            response_key_dict = pickle.load(f)
+
+
     def preprocess_train_data(self, training_data):
         """Performs sanity checks on training data, extracts encodings for labels
         and prepares data for training"""
@@ -150,6 +190,12 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=RESPONSE_ATTRIBUTE
+        )
+        # prepare suffix date, training_data.intent_examples is a list of messages, see if it contains a response attribute, then it also contains a key which is the suffix that I need
+        # create a dict of response keys (RESPONSE_KEY_ATTRIBUTE) mapped to response text (RESPONSE_ATTRIBUTE), self.response_keys = training_data.intent_examples[n].data.response_key & data.response
+        # self.response_keys = 
+        self.text_response_key_dict = self._create_response_key_dict(
+            training_data, key=RESPONSE_KEY_ATTRIBUTE, response=RESPONSE_ATTRIBUTE
         )
 
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
@@ -171,6 +217,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
         """Return the most likely response and its similarity to the input."""
 
         label, label_ranking = self.predict_label(message)
+        # add suffix to label here
 
         selector_key = (
             self.retrieval_intent
