@@ -42,6 +42,40 @@ if typing.TYPE_CHECKING:
 
 shapes, types = None, None
 
+# constants
+HIDDEN_LAYERS_SIZES_TEXT = "hidden_layers_sizes_text"
+HIDDEN_LAYERS_SIZES_LABEL = "hidden_layers_sizes_label"
+SHARE_HIDDEN_LAYERS = "share_hidden_layers"
+TRANSFORMER_SIZE = "transformer_size"
+NUM_TRANSFORMER_LAYERS = "number_of_transformer_layers"
+NUM_HEADS = "number_of_attention_heads"
+POS_ENCODING = "positional_encoding"
+MAX_SEQ_LENGTH = "maximum_sequence_length"
+BATCH_SIZES = "batch_sizes"
+BATCH_STRATEGY = "batch_strategy"
+EPOCHS = "epochs"
+RANDOM_SEED = "random_seed"
+LEARNING_RATE = "learning_rate"
+DENSE_DIM = "dense_dimensions"
+EMBED_DIM = "embedding_dimension"
+NUM_NEG = "number_of_negative_examples"
+SIMILARITY_TYPE = "similarity_type"
+LOSS_TYPE = "loss_type"
+MU_POS = "maximum_positive_similarity"
+MU_NEG = "maximum_negative_similarity"
+USE_MAX_SIM_NEG = "use_maximum_negative_similarity"
+SCALE_LOSS = "scale_loss"
+C2 = "l2_regularization"
+C_EMB = "c_emb"
+DROPRATE = "droprate"
+UNIDIRECTIONAL_ENCODER = "unidirectional_encoder"
+EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
+EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"
+INTENT_CLASSIFICATION = "perform_intent_classification"
+ENTITY_RECOGNITION = "perform_entity_recognition"
+MASKED_LM = "use_masked_language_model"
+SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
+
 
 class EmbeddingIntentClassifier(EntityExtractor):
     """label classifier using supervised embeddings.
@@ -75,101 +109,99 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # nn architecture
         # sizes of hidden layers before the embedding layer for input words
         # the number of hidden layers is thus equal to the length of this list
-        "hidden_layers_sizes_text": [],
+        HIDDEN_LAYERS_SIZES_TEXT: [],
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
-        "hidden_layers_sizes_label": [],
+        HIDDEN_LAYERS_SIZES_LABEL: [],
         # Whether to share the hidden layer weights between input words and labels
-        "share_hidden_layers": False,
+        SHARE_HIDDEN_LAYERS: False,
         # number of units in transformer
-        "transformer_size": 256,
+        TRANSFORMER_SIZE: 256,
         # number of transformer layers
-        "num_transformer_layers": 2,
+        NUM_TRANSFORMER_LAYERS: 2,
         # number of attention heads in transformer
-        "num_heads": 4,
+        NUM_HEADS: 4,
         # type of positional encoding in transformer
-        "pos_encoding": "timing",  # string 'timing' or 'emb'
+        POS_ENCODING: "timing",  # string 'timing' or 'emb'
         # max sequence length if pos_encoding='emb'
-        "max_seq_length": 256,
+        MAX_SEQ_LENGTH: 256,
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
-        "batch_size": [64, 256],
+        BATCH_SIZES: [64, 256],
         # how to create batches
-        "batch_strategy": "balanced",  # string 'sequence' or 'balanced'
+        BATCH_STRATEGY: "balanced",  # string 'sequence' or 'balanced'
         # number of epochs
-        "epochs": 300,
+        EPOCHS: 300,
         # set random seed to any int to get reproducible results
-        "random_seed": None,
+        RANDOM_SEED: None,
         # optimizer
-        "learning_rate": 0.001,
+        LEARNING_RATE: 0.001,
         # embedding parameters
         # default dense dimension used if no dense features are present
-        "dense_dim": {"text": 512, "label": 20},
+        DENSE_DIM: {"text": 512, "label": 20},
         # dimension size of embedding vectors
-        "embed_dim": 20,
+        EMBED_DIM: 20,
         # the type of the similarity
-        "num_neg": 20,
+        NUM_NEG: 20,
         # flag if minimize only maximum similarity over incorrect actions
-        "similarity_type": "auto",  # string 'auto' or 'cosine' or 'inner'
+        SIMILARITY_TYPE: "auto",  # string 'auto' or 'cosine' or 'inner'
         # the type of the loss function
-        "loss_type": "softmax",  # string 'softmax' or 'margin'
+        LOSS_TYPE: "softmax",  # string 'softmax' or 'margin'
         # how similar the algorithm should try
         # to make embedding vectors for correct labels
-        "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
+        MU_POS: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
         # maximum negative similarity for incorrect labels
-        "mu_neg": -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
+        MU_NEG: -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
         # flag: if true, only minimize the maximum similarity for incorrect labels
-        "use_max_sim_neg": True,
+        USE_MAX_SIM_NEG: True,
         # scale loss inverse proportionally to confidence of correct prediction
-        "scale_loss": True,
+        SCALE_LOSS: True,
         # regularization parameters
         # the scale of L2 regularization
-        "C2": 0.002,
+        C2: 0.002,
         # the scale of how critical the algorithm should be of minimizing the
         # maximum similarity between embeddings of different labels
-        "C_emb": 0.8,
+        C_EMB: 0.8,
         # dropout rate for rnn
-        "droprate": 0.2,
+        DROPRATE: 0.2,
         # use a unidirectional or bidirectional encoder
-        "unidirectional_encoder": True,
+        UNIDIRECTIONAL_ENCODER: True,
         # visualization of accuracy
         # how often to calculate training accuracy
-        "evaluate_every_num_epochs": 20,  # small values may hurt performance
+        EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
-        "evaluate_on_num_examples": 0,  # large values may hurt performance
+        EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
         # model config
         # if true intent classification is trained and intent predicted
-        "intent_classification": True,
+        INTENT_CLASSIFICATION: True,
         # if true named entity recognition is trained and entities predicted
-        "named_entity_recognition": True,
-        "masked_lm_loss": False,
-        "sparse_input_dropout": False,
+        ENTITY_RECOGNITION: True,
+        MASKED_LM: False,
+        SPARSE_INPUT_DROPOUT: False,
     }
     # end default properties (DOC MARKER - don't remove)
 
     # init helpers
     def _check_config_parameters(self) -> None:
         if (
-            self.component_config["share_hidden_layers"]
-            and self.component_config["hidden_layers_sizes_text"]
-            != self.component_config["hidden_layers_sizes_label"]
+            self.component_config[SHARE_HIDDEN_LAYERS]
+            and self.component_config[HIDDEN_LAYERS_SIZES_TEXT]
+            != self.component_config[HIDDEN_LAYERS_SIZES_LABEL]
         ):
             raise ValueError(
                 "If hidden layer weights are shared,"
                 "hidden_layer_sizes for text and label must coincide."
             )
 
-        if self.component_config["similarity_type"] == "auto":
-            if self.component_config["loss_type"] == "softmax":
-                self.component_config["similarity_type"] = "inner"
-            elif self.component_config["loss_type"] == "margin":
-                self.component_config["similarity_type"] = "cosine"
+        if self.component_config[SIMILARITY_TYPE] == "auto":
+            if self.component_config[LOSS_TYPE] == "softmax":
+                self.component_config[SIMILARITY_TYPE] = "inner"
+            elif self.component_config[LOSS_TYPE] == "margin":
+                self.component_config[SIMILARITY_TYPE] = "cosine"
 
-        if self.component_config["evaluate_every_num_epochs"] < 1:
-            self.component_config["evaluate_every_num_epochs"] = self.component_config[
-                "epochs"
-            ]
+        if self.component_config[EVAL_NUM_EPOCHS] < 1:
+            self.component_config[EVAL_NUM_EPOCHS] = self.component_config[EPOCHS]
 
     # package safety checks
     @classmethod
@@ -346,7 +378,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         return num_features
 
     def check_input_dimension_consistency(self, session_data: "SessionDataType"):
-        if self.component_config["share_hidden_layers"]:
+        if self.component_config[SHARE_HIDDEN_LAYERS]:
             num_text_features = self._get_num_of_features(session_data, "text_features")
             num_intent_features = self._get_num_of_features(
                 session_data, "label_features"
@@ -494,7 +526,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 if label_id_dict:
                     label_ids.append(label_id_dict[e.get(label_attribute)])
 
-            if self.component_config["named_entity_recognition"] and tag_id_dict:
+            if self.component_config[ENTITY_RECOGNITION] and tag_id_dict:
                 _tags = []
                 for t in e.get(TOKENS_NAMES[TEXT_ATTRIBUTE]):
                     _tag = determine_token_labels(t, e.get(ENTITIES_ATTRIBUTE), None)
@@ -576,11 +608,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
         logger.debug("Started training embedding classifier.")
 
         # set numpy random seed
-        np.random.seed(self.component_config["random_seed"])
+        np.random.seed(self.component_config[RANDOM_SEED])
 
         session_data = self.preprocess_train_data(training_data)
 
-        if self.component_config["intent_classification"]:
+        if self.component_config[INTENT_CLASSIFICATION]:
             possible_to_train = self._check_enough_labels(session_data)
 
             if not possible_to_train:
@@ -591,11 +623,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 )
                 return
 
-        if self.component_config["evaluate_on_num_examples"]:
+        if self.component_config[EVAL_NUM_EXAMPLES]:
             session_data, eval_session_data = train_utils.train_val_split(
                 session_data,
-                self.component_config["evaluate_on_num_examples"],
-                self.component_config["random_seed"],
+                self.component_config[EVAL_NUM_EXAMPLES],
+                self.component_config[RANDOM_SEED],
                 label_key="label_ids",
             )
         else:
@@ -603,7 +635,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         # TODO set it in the model
         # set random seed
-        tf.random.set_seed(self.component_config["random_seed"])
+        tf.random.set_seed(self.component_config[RANDOM_SEED])
 
         self.model = DIET(
             session_data,
@@ -614,10 +646,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
         self.model.fit(
-            self.component_config["epochs"],
-            self.component_config["batch_size"],
-            self.component_config["evaluate_on_num_examples"],
-            self.component_config["evaluate_every_num_epochs"],
+            self.component_config[EPOCHS],
+            self.component_config[BATCH_SIZES],
+            self.component_config[EVAL_NUM_EXAMPLES],
+            self.component_config[EVAL_NUM_EPOCHS],
         )
 
         # rebuild the graph for prediction
@@ -743,13 +775,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         out = self._predict(message)
 
-        if self.component_config["intent_classification"]:
+        if self.component_config[INTENT_CLASSIFICATION]:
             label, label_ranking = self._predict_label(out)
 
             message.set("label", label, add_to_output=True)
             message.set("label_ranking", label_ranking, add_to_output=True)
 
-        if self.component_config["named_entity_recognition"]:
+        if self.component_config[ENTITY_RECOGNITION]:
             entities = self._predict_entities(out, message)
 
             message.set("entities", entities, add_to_output=True)
@@ -851,11 +883,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
         ) as f:
             batch_tuple_sizes = pickle.load(f)
 
-        if meta["similarity_type"] == "auto":
-            if meta["loss_type"] == "softmax":
-                meta["similarity_type"] = "inner"
-            elif meta["loss_type"] == "margin":
-                meta["similarity_type"] = "cosine"
+        if meta[SIMILARITY_TYPE] == "auto":
+            if meta[LOSS_TYPE] == "softmax":
+                meta[SIMILARITY_TYPE] = "inner"
+            elif meta[LOSS_TYPE] == "margin":
+                meta[SIMILARITY_TYPE] = "cosine"
 
         model = DIET(dummy_session_data, None, label_data, inv_tag_dict, meta)
 
@@ -943,7 +975,7 @@ class DIET(tf_models.RasaModel):
         self.training = tf.ones((), tf.bool)
 
         # tf training
-        self._optimizer = tf.keras.optimizers.Adam(config["learning_rate"])
+        self._optimizer = tf.keras.optimizers.Adam(config[LEARNING_RATE])
         self.entity_f1 = tfa.metrics.F1Score(
             num_classes=self._num_tags - 1,  # `0` prediction is not a prediction
             average="micro",
@@ -954,48 +986,48 @@ class DIET(tf_models.RasaModel):
         self.batch_tuple_sizes = None
 
     def _prepare_layers(self, session_data: SessionDataType):
-        self._sparse_dropout = tf_layers.SparseDropout(rate=self.config["droprate"])
+        self._sparse_dropout = tf_layers.SparseDropout(rate=self.config[DROPRATE])
 
         self._sparse_to_dense = {
             "text": self._create_sparse_dense_layer(
                 session_data["text_features"],
                 "text",
-                self.config["C2"],
-                self.config["dense_dim"]["text"],
+                self.config[C2],
+                self.config[DENSE_DIM]["text"],
             ),
             "label": self._create_sparse_dense_layer(
                 session_data["label_features"],
                 "label",
-                self.config["C2"],
-                self.config["dense_dim"]["label"],
+                self.config[C2],
+                self.config[DENSE_DIM]["label"],
             ),
         }
 
         self._ffnn = {
             "text": tf_layers.ReluFfn(
-                self.config["hidden_layers_sizes_text"],
-                self.config["droprate"],
-                self.config["C2"],
-                "text_intent" if self.config["share_hidden_layers"] else "text",
+                self.config[HIDDEN_LAYERS_SIZES_TEXT],
+                self.config[DROPRATE],
+                self.config[C2],
+                "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "text",
             ),
             "label": tf_layers.ReluFfn(
-                self.config["hidden_layers_sizes_label"],
-                self.config["droprate"],
-                self.config["C2"],
-                "text_intent" if self.config["share_hidden_layers"] else "label",
+                self.config[HIDDEN_LAYERS_SIZES_LABEL],
+                self.config[DROPRATE],
+                self.config[C2],
+                "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "label",
             ),
         }
 
-        if self.config["num_transformer_layers"] > 0:
+        if self.config[NUM_TRANSFORMER_LAYERS] > 0:
             self._transformer = tf_layers.TransformerEncoder(
-                self.config["num_transformer_layers"],
-                self.config["transformer_size"],
-                self.config["num_heads"],
-                self.config["transformer_size"] * 4,
-                self.config["max_seq_length"],
-                self.config["C2"],
-                self.config["droprate"],
-                self.config["unidirectional_encoder"],
+                self.config[NUM_TRANSFORMER_LAYERS],
+                self.config[TRANSFORMER_SIZE],
+                self.config[NUM_HEADS],
+                self.config[TRANSFORMER_SIZE] * 4,
+                self.config[MAX_SEQ_LENGTH],
+                self.config[C2],
+                self.config[DROPRATE],
+                self.config[UNIDIRECTIONAL_ENCODER],
                 name="text_encoder",
             )
         else:
@@ -1007,37 +1039,37 @@ class DIET(tf_models.RasaModel):
         self.eval_metrics = {"val_t_loss": tf.keras.metrics.Mean(name="val_t_loss")}
 
         self._input_mask = None
-        if self.config["masked_lm_loss"]:
+        if self.config[MASKED_LM]:
             self._input_mask = tf_layers.InputMask()
             self._embed["text_mask"] = tf_layers.Embed(
-                self.config["embed_dim"],
-                self.config["C2"],
+                self.config[EMBED_DIM],
+                self.config[C2],
                 "text_mask",
-                self.config["similarity_type"],
+                self.config[SIMILARITY_TYPE],
             )
             self._embed["text_token"] = tf_layers.Embed(
-                self.config["embed_dim"],
-                self.config["C2"],
+                self.config[EMBED_DIM],
+                self.config[C2],
                 "text_token",
-                self.config["similarity_type"],
+                self.config[SIMILARITY_TYPE],
             )
             self.train_metrics["m_loss"] = tf.keras.metrics.Mean(name="m_loss")
             self.train_metrics["m_acc"] = tf.keras.metrics.Mean(name="m_acc")
             self.eval_metrics["val_m_loss"] = tf.keras.metrics.Mean(name="val_m_loss")
             self.eval_metrics["val_m_acc"] = tf.keras.metrics.Mean(name="val_m_acc")
 
-        if self.config["intent_classification"]:
+        if self.config[INTENT_CLASSIFICATION]:
             self._embed["text"] = tf_layers.Embed(
-                self.config["embed_dim"],
-                self.config["C2"],
+                self.config[EMBED_DIM],
+                self.config[C2],
                 "text",
-                self.config["similarity_type"],
+                self.config[SIMILARITY_TYPE],
             )
             self._embed["label"] = tf_layers.Embed(
-                self.config["embed_dim"],
-                self.config["C2"],
+                self.config[EMBED_DIM],
+                self.config[C2],
                 "label",
-                self.config["similarity_type"],
+                self.config[SIMILARITY_TYPE],
             )
             self.train_metrics["i_loss"] = tf.keras.metrics.Mean(name="i_loss")
             self.train_metrics["i_acc"] = tf.keras.metrics.Mean(name="i_acc")
@@ -1045,11 +1077,11 @@ class DIET(tf_models.RasaModel):
             self.eval_metrics["val_i_acc"] = tf.keras.metrics.Mean(name="val_i_acc")
 
         self._crf = None
-        if self.config["named_entity_recognition"]:
+        if self.config[ENTITY_RECOGNITION]:
             self._embed["logits"] = tf_layers.Embed(
-                self._num_tags, self.config["C2"], "logits"
+                self._num_tags, self.config[C2], "logits"
             )
-            self._crf = tf_layers.CRF(self._num_tags, self.config["C2"])
+            self._crf = tf_layers.CRF(self._num_tags, self.config[C2])
             self.train_metrics["e_loss"] = tf.keras.metrics.Mean(name="e_loss")
             self.train_metrics["e_f1"] = tf.keras.metrics.Mean(name="e_f1")
             self.eval_metrics["val_e_loss"] = tf.keras.metrics.Mean(name="val_e_loss")
@@ -1102,7 +1134,7 @@ class DIET(tf_models.RasaModel):
         masked_lm_loss: bool = False,
     ):
         x = self._combine_sparse_dense_features(
-            features, mask, name, sparse_dropout=self.config["sparse_input_dropout"]
+            features, mask, name, sparse_dropout=self.config[SPARSE_INPUT_DROPOUT]
         )
 
         if masked_lm_loss:
@@ -1138,14 +1170,14 @@ class DIET(tf_models.RasaModel):
             a_masked,
             a_embed,
             a,
-            self.config["num_neg"],
+            self.config[NUM_NEG],
             None,
-            self.config["loss_type"],
-            self.config["mu_pos"],
-            self.config["mu_neg"],
-            self.config["use_max_sim_neg"],
-            self.config["C_emb"],
-            self.config["scale_loss"],
+            self.config[LOSS_TYPE],
+            self.config[MU_POS],
+            self.config[MU_NEG],
+            self.config[USE_MAX_SIM_NEG],
+            self.config[C_EMB],
+            self.config[SCALE_LOSS],
         )
 
     def _build_all_b(self):
@@ -1170,14 +1202,14 @@ class DIET(tf_models.RasaModel):
             b,
             all_labels_embed,
             all_labels,
-            self.config["num_neg"],
+            self.config[NUM_NEG],
             None,
-            self.config["loss_type"],
-            self.config["mu_pos"],
-            self.config["mu_neg"],
-            self.config["use_max_sim_neg"],
-            self.config["C_emb"],
-            self.config["scale_loss"],
+            self.config[LOSS_TYPE],
+            self.config[MU_POS],
+            self.config[MU_NEG],
+            self.config[USE_MAX_SIM_NEG],
+            self.config[C_EMB],
+            self.config[SCALE_LOSS],
         )
 
     def _entity_loss(
@@ -1221,23 +1253,20 @@ class DIET(tf_models.RasaModel):
         sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
 
         text_transformed, text_in, lm_mask_bool_text = self._create_sequence(
-            tf_batch_data["text_features"],
-            mask_text,
-            "text",
-            self.config["masked_lm_loss"],
+            tf_batch_data["text_features"], mask_text, "text", self.config[MASKED_LM]
         )
 
         losses = {}
         scores = {}
 
-        if self.config["masked_lm_loss"]:
+        if self.config[MASKED_LM]:
             loss, acc = self._mask_loss(
                 text_transformed, text_in, lm_mask_bool_text, "text"
             )
             losses["m_loss"] = loss
             scores["m_acc"] = acc
 
-        if self.config["intent_classification"]:
+        if self.config[INTENT_CLASSIFICATION]:
             # get _cls_ vector for intent classification
             last_index = tf.maximum(
                 tf.constant(0, dtype=sequence_lengths.dtype), sequence_lengths - 1
@@ -1252,7 +1281,7 @@ class DIET(tf_models.RasaModel):
             losses["i_loss"] = loss
             scores["i_acc"] = acc
 
-        if self.config["named_entity_recognition"]:
+        if self.config[ENTITY_RECOGNITION]:
             tags = tf_batch_data["tag_ids"][0]
 
             loss, f1 = self._entity_loss(
@@ -1284,7 +1313,7 @@ class DIET(tf_models.RasaModel):
             self.session_data,
             batch_size,
             label_key="label_ids",
-            batch_strategy=self.config["batch_strategy"],
+            batch_strategy=self.config[BATCH_STRATEGY],
             shuffle=True,
         )
 
@@ -1321,7 +1350,7 @@ class DIET(tf_models.RasaModel):
         )
 
         out = {}
-        if self.config["intent_classification"]:
+        if self.config[INTENT_CLASSIFICATION]:
             # get _cls_ vector for intent classification
             last_index = tf.maximum(
                 tf.constant(0, dtype=sequence_lengths.dtype), sequence_lengths - 1
@@ -1346,11 +1375,11 @@ class DIET(tf_models.RasaModel):
             # )
 
             scores = train_utils.confidence_from_sim(
-                sim_all, self.config["similarity_type"]
+                sim_all, self.config[SIMILARITY_TYPE]
             )
             out["i_scores"] = scores
 
-        if self.config["named_entity_recognition"]:
+        if self.config[ENTITY_RECOGNITION]:
             sequence_lengths = sequence_lengths - 1
             logits = self._embed["logits"](text_transformed)
             pred_ids = self._crf(logits, sequence_lengths)
