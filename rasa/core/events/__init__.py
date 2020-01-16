@@ -767,7 +767,7 @@ class ReminderCancelled(Event):
         # narrow it down.
         return (
             ((not self.name) or self.name == name)
-            and ((not self.intent) or str(self.intent) == intent)
+            and ((not self.intent) or self.intent == intent)
             and ((not self.entities) or str(self.entities) == entities)
         )
 
