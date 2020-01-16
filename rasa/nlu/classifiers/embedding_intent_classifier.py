@@ -79,9 +79,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
         "hidden_layers_sizes_label": [],
-        # sizes of hidden layers before the embedding layer for tag labels
-        # the number of hidden layers is thus equal to the length of this list
-        "hidden_layers_sizes_entities": [],
         # Whether to share the hidden layer weights between input words and labels
         "share_hidden_layers": False,
         # number of units in transformer
@@ -217,6 +214,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.num_tags = 0
 
         self.attention_weights = attention_weights
+
+        self._tf_config = train_utils.load_tf_config(self.component_config)
 
     # training data helpers:
     @staticmethod
@@ -577,7 +576,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         logger.debug("Started training embedding classifier.")
 
         # set numpy random seed
-        np.random.seed(self.random_seed)
+        np.random.seed(self.component_config["random_seed"])
 
         session_data = self.preprocess_train_data(training_data)
 
@@ -933,11 +932,12 @@ class DIET(tf_models.RasaModel):
         self.eval_session_data = eval_session_data
         label_batch = train_utils.prepare_batch(label_data)
         self.tf_label_data = train_utils.batch_to_session_data(label_batch, label_data)
+        self._num_tags = len(inverted_tag_dict)
 
         self.config = config
 
         # tf objects
-        self._prepare_layers(config, session_data)
+        self._prepare_layers(session_data)
 
         # tf tensors
         self.training = tf.ones((), tf.bool)
@@ -953,7 +953,7 @@ class DIET(tf_models.RasaModel):
         self.all_labels_embed = None
         self.batch_tuple_sizes = None
 
-    def _prepare_layers(self, session_data):
+    def _prepare_layers(self, session_data: SessionDataType):
         self._sparse_dropout = tf_layers.SparseDropout(rate=self.config["droprate"])
 
         self._sparse_to_dense = {
@@ -1102,7 +1102,7 @@ class DIET(tf_models.RasaModel):
         masked_lm_loss: bool = False,
     ):
         x = self._combine_sparse_dense_features(
-            features, mask, name, sparse_dropout=self._sparse_input_dropout
+            features, mask, name, sparse_dropout=self.config["sparse_input_dropout"]
         )
 
         if masked_lm_loss:
@@ -1138,14 +1138,14 @@ class DIET(tf_models.RasaModel):
             a_masked,
             a_embed,
             a,
-            self._num_neg,
+            self.config["num_neg"],
             None,
-            self._loss_type,
-            self._mu_pos,
-            self._mu_neg,
-            self._use_max_sim_neg,
-            self._C_emb,
-            self._scale_loss,
+            self.config["loss_type"],
+            self.config["mu_pos"],
+            self.config["mu_neg"],
+            self.config["use_max_sim_neg"],
+            self.config["C_emb"],
+            self.config["scale_loss"],
         )
 
     def _build_all_b(self):
@@ -1170,14 +1170,14 @@ class DIET(tf_models.RasaModel):
             b,
             all_labels_embed,
             all_labels,
-            self._num_neg,
+            self.config["num_neg"],
             None,
-            self._loss_type,
-            self._mu_pos,
-            self._mu_neg,
-            self._use_max_sim_neg,
-            self._C_emb,
-            self._scale_loss,
+            self.config["loss_type"],
+            self.config["mu_pos"],
+            self.config["mu_neg"],
+            self.config["use_max_sim_neg"],
+            self.config["C_emb"],
+            self.config["scale_loss"],
         )
 
     def _entity_loss(
@@ -1221,7 +1221,10 @@ class DIET(tf_models.RasaModel):
         sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
 
         text_transformed, text_in, lm_mask_bool_text = self._create_sequence(
-            tf_batch_data["text_features"], mask_text, "text", self._masked_lm_loss
+            tf_batch_data["text_features"],
+            mask_text,
+            "text",
+            self.config["masked_lm_loss"],
         )
 
         losses = {}
@@ -1281,7 +1284,7 @@ class DIET(tf_models.RasaModel):
             self.session_data,
             batch_size,
             label_key="label_ids",
-            batch_strategy=self._batch_in_strategy,
+            batch_strategy=self.config["batch_strategy"],
             shuffle=True,
         )
 
@@ -1342,7 +1345,9 @@ class DIET(tf_models.RasaModel):
             #     cls_embed[:, tf.newaxis, :], label_embed, None
             # )
 
-            scores = train_utils.confidence_from_sim(sim_all, self._similarity_type)
+            scores = train_utils.confidence_from_sim(
+                sim_all, self.config["similarity_type"]
+            )
             out["i_scores"] = scores
 
         if self.config["named_entity_recognition"]:
