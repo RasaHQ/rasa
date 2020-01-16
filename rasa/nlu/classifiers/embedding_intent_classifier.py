@@ -740,7 +740,7 @@ class EmbeddingIntentClassifier(Component):
         self.graph = tf.Graph()
         with self.graph.as_default():
             # set random seed
-            tf.set_random_seed(self.random_seed)
+            tf.random.set_seed(self.random_seed)
 
             # allows increasing batch size
             batch_size_in = tf.placeholder(tf.int64)
