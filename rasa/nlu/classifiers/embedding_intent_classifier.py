@@ -761,13 +761,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         for entity in entities:
             entity["value"] = text[entity["start"] : entity["end"]]
 
-            if not entity["value"]:
-                print(text)
-                print([t.text for t in tokens])
-                print(tags)
-                print(predictions)
-                exit()
-
         return entities
 
     def process(self, message: "Message", **kwargs: Any) -> None:
@@ -1053,6 +1046,15 @@ class DIET(tf_models.RasaModel):
                 "text_token",
                 self.config[SIMILARITY_TYPE],
             )
+            self._loss_mask = tf_layers.DotProductLoss(
+                self.config[NUM_NEG],
+                self.config[LOSS_TYPE],
+                self.config[MU_POS],
+                self.config[MU_NEG],
+                self.config[USE_MAX_SIM_NEG],
+                self.config[C_EMB],
+                self.config[SCALE_LOSS],
+            )
             self.train_metrics["m_loss"] = tf.keras.metrics.Mean(name="m_loss")
             self.train_metrics["m_acc"] = tf.keras.metrics.Mean(name="m_acc")
             self.eval_metrics["val_m_loss"] = tf.keras.metrics.Mean(name="val_m_loss")
@@ -1070,6 +1072,15 @@ class DIET(tf_models.RasaModel):
                 self.config[C2],
                 "label",
                 self.config[SIMILARITY_TYPE],
+            )
+            self._loss_label = tf_layers.DotProductLoss(
+                self.config[NUM_NEG],
+                self.config[LOSS_TYPE],
+                self.config[MU_POS],
+                self.config[MU_NEG],
+                self.config[USE_MAX_SIM_NEG],
+                self.config[C_EMB],
+                self.config[SCALE_LOSS],
             )
             self.train_metrics["i_loss"] = tf.keras.metrics.Mean(name="i_loss")
             self.train_metrics["i_acc"] = tf.keras.metrics.Mean(name="i_acc")
@@ -1164,21 +1175,7 @@ class DIET(tf_models.RasaModel):
 
         a_embed_masked = tf.boolean_mask(a_embed, lm_mask_bool)
 
-        return train_utils.calculate_loss_acc(
-            a_t_masked_embed,
-            a_embed_masked,
-            a_masked,
-            a_embed,
-            a,
-            self.config[NUM_NEG],
-            None,
-            self.config[LOSS_TYPE],
-            self.config[MU_POS],
-            self.config[MU_NEG],
-            self.config[USE_MAX_SIM_NEG],
-            self.config[C_EMB],
-            self.config[SCALE_LOSS],
-        )
+        return self._loss_mask(a_t_masked_embed, a_embed_masked, a_masked, a_embed, a)
 
     def _build_all_b(self):
         all_labels = self._create_bow(
@@ -1196,21 +1193,7 @@ class DIET(tf_models.RasaModel):
         a_embed = self._embed["text"](a)
         b_embed = self._embed["label"](b)
 
-        return train_utils.calculate_loss_acc(
-            a_embed,
-            b_embed,
-            b,
-            all_labels_embed,
-            all_labels,
-            self.config[NUM_NEG],
-            None,
-            self.config[LOSS_TYPE],
-            self.config[MU_POS],
-            self.config[MU_NEG],
-            self.config[USE_MAX_SIM_NEG],
-            self.config[C_EMB],
-            self.config[SCALE_LOSS],
-        )
+        return self._loss_label(a_embed, b_embed, b, all_labels_embed, all_labels)
 
     def _entity_loss(
         self, a: "tf.Tensor", c: "tf.Tensor", mask: "tf.Tensor", sequence_lengths
@@ -1359,7 +1342,7 @@ class DIET(tf_models.RasaModel):
             cls = tf.gather_nd(text_transformed, idxs)
             cls_embed = self._embed["text"](cls)
 
-            sim_all = train_utils.tf_raw_sim(
+            sim_all = self._loss_label.sim(
                 cls_embed[:, tf.newaxis, :],
                 self.all_labels_embed[tf.newaxis, :, :],
                 None,

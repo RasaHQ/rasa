@@ -452,3 +452,355 @@ class CRF(tf.keras.layers.Layer):
             logits, tag_indices, sequence_lengths, self.transition_params
         )
         return tf.reduce_mean(-log_likelihood)
+
+
+class DotProductLoss(tf.keras.layers.Layer):
+
+    def __init__(
+        self,
+        num_neg: int,
+        loss_type: Text,
+        mu_pos: float,
+        mu_neg: float,
+        use_max_sim_neg: bool,
+        neg_lambda: float,
+        scale_loss: bool,
+        name=None
+    ):
+        super().__init__(name=name)
+        self.num_neg = num_neg
+        self.loss_type = loss_type
+        self.mu_pos = mu_pos
+        self.mu_neg = mu_neg
+        self.use_max_sim_neg = use_max_sim_neg
+        self.neg_lambda = neg_lambda
+        self.scale_loss = scale_loss
+
+    @staticmethod
+    def _make_flat(x: "tf.Tensor") -> "tf.Tensor":
+        """Make tensor 2D."""
+
+        return tf.reshape(x, (-1, x.shape[-1]))
+
+    def _random_indices(self, batch_size: "tf.Tensor", total_candidates: "tf.Tensor"):
+
+        # all_indices = tf.tile(
+        #     tf.expand_dims(tf.range(total_candidates), 0),
+        #     (batch_size, 1),
+        # )
+        # shuffled_indices = tf.transpose(
+        #     tf.random.shuffle(tf.transpose(all_indices, (1, 0))), (1, 0)
+        # )
+        # return shuffled_indices[:, :self.num_neg]
+
+        def rand_idxs():
+            """Create random tensor of indices"""
+            # (1, num_neg)
+            return tf.expand_dims(
+                tf.random.shuffle(tf.range(total_candidates))[:self.num_neg], 0)
+
+        def cond(i, out):
+            """Condition for while loop"""
+            return i < batch_size
+
+        def body(i, out):
+            """Body of the while loop"""
+            return [
+                # increment counter
+                i + 1,
+                # add random indices
+                tf.concat([out, rand_idxs()], 0)
+            ]
+
+        # first tensor already created
+        i1 = tf.constant(1)
+        # create first random array of indices
+        out1 = rand_idxs()  # (1, num_neg)
+
+        return tf.while_loop(
+            cond,
+            body,
+            loop_vars=[i1, out1],
+            shape_invariants=[i1.shape, tf.TensorShape([None, self.num_neg])],
+            back_prop=False,
+        )[1]
+
+    @staticmethod
+    def _sample_idxs(
+        batch_size: "tf.Tensor", x: "tf.Tensor", idxs: "tf.Tensor"
+    ) -> "tf.Tensor":
+        """Sample negative examples for given indices"""
+
+        tiled = tf.tile(tf.expand_dims(x, 0), (batch_size, 1, 1))
+
+        return tf.gather(tiled, idxs, batch_dims=-1)
+
+    def _get_bad_mask(
+        self, labels: "tf.Tensor", target_labels: "tf.Tensor", idxs: "tf.Tensor"
+    ) -> "tf.Tensor":
+        """Calculate bad mask for given indices.
+
+        Checks that input features are different for positive negative samples.
+        """
+
+        pos_labels = tf.expand_dims(target_labels, -2)
+        neg_labels = self._sample_idxs(tf.shape(target_labels)[0], labels, idxs)
+
+        return tf.cast(
+            tf.reduce_all(tf.equal(neg_labels, pos_labels), axis=-1), pos_labels.dtype
+        )
+
+    def _get_negs(
+        self, embeds: "tf.Tensor", labels: "tf.Tensor", target_labels: "tf.Tensor"
+    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+        """Get negative examples from given tensor."""
+
+        embeds_flat = self._make_flat(embeds)
+        labels_flat = self._make_flat(labels)
+        target_labels_flat = self._make_flat(target_labels)
+
+        total_candidates = tf.shape(embeds_flat)[0]
+        target_size = tf.shape(target_labels_flat)[0]
+
+        neg_ids = self._random_indices(target_size, total_candidates)
+
+        neg_embeds = self._sample_idxs(target_size, embeds_flat, neg_ids)
+        bad_negs = self._get_bad_mask(labels_flat, target_labels_flat, neg_ids)
+
+        if len(target_labels.shape) == 3:
+            target_shape = tf.shape(target_labels)
+            neg_embeds = tf.reshape(
+                neg_embeds, (target_shape[0], target_shape[1], -1, embeds.shape[-1])
+            )
+            bad_negs = tf.reshape(bad_negs, (target_shape[0], target_shape[1], -1))
+
+        return neg_embeds, bad_negs
+
+    def _sample_negatives(
+        self,
+        inputs_embed: "tf.Tensor",
+        labels_embed: "tf.Tensor",
+        labels: "tf.Tensor",
+        all_labels_embed: "tf.Tensor",
+        all_labels: "tf.Tensor",
+    ) -> Tuple[
+        "tf.Tensor", "tf.Tensor", "tf.Tensor", "tf.Tensor", "tf.Tensor", "tf.Tensor"
+    ]:
+        """Sample negative examples."""
+
+        pos_inputs_embed = tf.expand_dims(inputs_embed, -2)
+        pos_labels_embed = tf.expand_dims(labels_embed, -2)
+
+        # sample negative inputs
+        neg_inputs_embed, inputs_bad_negs = self._get_negs(inputs_embed, labels, labels)
+        # sample negative labels
+        neg_labels_embed, labels_bad_negs = self._get_negs(
+            all_labels_embed, all_labels, labels
+        )
+        return (
+            pos_inputs_embed,
+            pos_labels_embed,
+            neg_inputs_embed,
+            neg_labels_embed,
+            inputs_bad_negs,
+            labels_bad_negs,
+        )
+
+    @staticmethod
+    def sim(
+        a: "tf.Tensor", b: "tf.Tensor", mask: Optional["tf.Tensor"]
+    ) -> "tf.Tensor":
+        """Calculate similarity between given tensors."""
+
+        sim = tf.reduce_sum(a * b, -1)
+        if mask is not None:
+            sim *= tf.expand_dims(mask, 2)
+
+        return sim
+
+    def _train_sim(
+        self,
+        pos_inputs_embed: "tf.Tensor",
+        pos_labels_embed: "tf.Tensor",
+        neg_inputs_embed: "tf.Tensor",
+        neg_labels_embed: "tf.Tensor",
+        inputs_bad_negs: "tf.Tensor",
+        labels_bad_negs: "tf.Tensor",
+        mask: Optional["tf.Tensor"],
+    ) -> Tuple["tf.Tensor", "tf.Tensor", "tf.Tensor", "tf.Tensor", "tf.Tensor"]:
+        """Define similarity."""
+
+        # calculate similarity with several
+        # embedded actions for the loss
+        neg_inf = tf.constant(-1e9)
+
+        sim_pos = self.sim(pos_inputs_embed, pos_labels_embed, mask)
+        sim_neg_il = self.sim(pos_inputs_embed, neg_labels_embed, mask) + neg_inf * labels_bad_negs
+        sim_neg_ll = (
+                self.sim(pos_labels_embed, neg_labels_embed, mask) + neg_inf * labels_bad_negs
+        )
+        sim_neg_ii = (
+                self.sim(pos_inputs_embed, neg_inputs_embed, mask) + neg_inf * inputs_bad_negs
+        )
+        sim_neg_li = (
+                self.sim(pos_labels_embed, neg_inputs_embed, mask) + neg_inf * inputs_bad_negs
+        )
+
+        # output similarities between user input and bot actions
+        # and similarities between bot actions and similarities between user inputs
+        return sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li
+
+    @staticmethod
+    def _calc_accuracy(sim_pos: "tf.Tensor", sim_neg: "tf.Tensor") -> "tf.Tensor":
+        """Calculate accuracy"""
+
+        max_all_sim = tf.reduce_max(tf.concat([sim_pos, sim_neg], -1), -1)
+        return tf.reduce_mean(
+            tf.cast(tf.math.equal(max_all_sim, tf.squeeze(sim_pos, -1)), tf.float32)
+        )
+
+    def _loss_margin(
+        self,
+        sim_pos: "tf.Tensor",
+        sim_neg_il: "tf.Tensor",
+        sim_neg_ll: "tf.Tensor",
+        sim_neg_ii: "tf.Tensor",
+        sim_neg_li: "tf.Tensor",
+        mask: Optional["tf.Tensor"],
+    ) -> "tf.Tensor":
+        """Define max margin loss."""
+
+        # loss for maximizing similarity with correct action
+        loss = tf.maximum(0.0, self.mu_pos - tf.squeeze(sim_pos, -1))
+
+        # loss for minimizing similarity with `num_neg` incorrect actions
+        if self.use_max_sim_neg:
+            # minimize only maximum similarity over incorrect actions
+            max_sim_neg_il = tf.reduce_max(sim_neg_il, -1)
+            loss += tf.maximum(0.0, self.mu_neg + max_sim_neg_il)
+        else:
+            # minimize all similarities with incorrect actions
+            max_margin = tf.maximum(0.0, self.mu_neg + sim_neg_il)
+            loss += tf.reduce_sum(max_margin, -1)
+
+        # penalize max similarity between pos bot and neg bot embeddings
+        max_sim_neg_ll = tf.maximum(0.0, self.mu_neg + tf.reduce_max(sim_neg_ll, -1))
+        loss += max_sim_neg_ll * self.neg_lambda
+
+        # penalize max similarity between pos dial and neg dial embeddings
+        max_sim_neg_ii = tf.maximum(0.0, self.mu_neg + tf.reduce_max(sim_neg_ii, -1))
+        loss += max_sim_neg_ii * self.neg_lambda
+
+        # penalize max similarity between pos bot and neg dial embeddings
+        max_sim_neg_li = tf.maximum(0.0, self.mu_neg + tf.reduce_max(sim_neg_li, -1))
+        loss += max_sim_neg_li * self.neg_lambda
+
+        if mask is not None:
+            # mask loss for different length sequences
+            loss *= mask
+            # average the loss over sequence length
+            loss = tf.reduce_sum(loss, -1) / tf.reduce_sum(mask, 1)
+
+        # average the loss over the batch
+        loss = tf.reduce_mean(loss)
+
+        return loss
+
+    def _loss_softmax(
+        self,
+        sim_pos: "tf.Tensor",
+        sim_neg_il: "tf.Tensor",
+        sim_neg_ll: "tf.Tensor",
+        sim_neg_ii: "tf.Tensor",
+        sim_neg_li: "tf.Tensor",
+        mask: Optional["tf.Tensor"],
+    ) -> "tf.Tensor":
+        """Define softmax loss."""
+
+        logits = tf.concat(
+            [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], -1
+        )
+
+        # create label_ids for softmax
+        label_ids = tf.zeros_like(logits[..., 0], tf.int32)
+
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            labels=label_ids, logits=logits
+        )
+
+        if mask is None:
+            mask = 1.0
+
+        if self.scale_loss:
+            # mask loss by prediction confidence
+            pos_pred = tf.stop_gradient(tf.nn.softmax(logits)[..., 0])
+            scale_mask = mask * tf.pow(tf.minimum(0.5, 1 - pos_pred) / 0.5, 4)
+            # scale loss
+            loss *= scale_mask
+
+        if len(loss.shape) == 2:
+            # average over the sequence
+            loss = tf.reduce_sum(loss, -1) / tf.reduce_sum(mask, -1)
+
+        # average the loss over all examples
+        loss = tf.reduce_mean(loss)
+
+        return loss
+
+    @property
+    def _chosen_loss(self) -> Callable:
+        """Use loss depending on given option."""
+
+        if self.loss_type == "margin":
+            return self._loss_margin
+        elif self.loss_type == "softmax":
+            return self._loss_softmax
+        else:
+            raise ValueError(
+                f"Wrong loss type '{self.loss_type}', " f"should be 'margin' or 'softmax'"
+            )
+
+    def call(
+        self,
+        inputs_embed: "tf.Tensor",
+        labels_embed: "tf.Tensor",
+        labels: "tf.Tensor",
+        all_labels_embed: "tf.Tensor",
+        all_labels: "tf.Tensor",
+        mask: Optional["tf.Tensor"] = None,
+    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+        """Calculate loss and accuracy."""
+
+        (
+            pos_inputs_embed,
+            pos_labels_embed,
+            neg_inputs_embed,
+            neg_labels_embed,
+            inputs_bad_negs,
+            labels_bad_negs,
+        ) = self._sample_negatives(
+            inputs_embed, labels_embed, labels, all_labels_embed, all_labels)
+
+        # calculate similarities
+        sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li = self._train_sim(
+            pos_inputs_embed,
+            pos_labels_embed,
+            neg_inputs_embed,
+            neg_labels_embed,
+            inputs_bad_negs,
+            labels_bad_negs,
+            mask,
+        )
+
+        acc = self._calc_accuracy(sim_pos, sim_neg_il)
+
+        loss = self._chosen_loss(
+            sim_pos,
+            sim_neg_il,
+            sim_neg_ll,
+            sim_neg_ii,
+            sim_neg_li,
+            mask,
+        )
+
+        return loss, acc
