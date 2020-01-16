@@ -1187,7 +1187,7 @@ class DIET(tf_models.RasaModel):
 
         return all_labels_embed, all_labels
 
-    def _intent_loss(self, a, b):
+    def _intent_loss(self, a: tf.Tensor, b: tf.Tensor):
         all_labels_embed, all_labels = self._build_all_b()
 
         a_embed = self._embed["text"](a)
@@ -1229,7 +1229,9 @@ class DIET(tf_models.RasaModel):
 
         return loss, f1
 
-    def _train_losses_scores(self, batch_in):
+    def _train_losses_scores(
+        self, batch_in: Tuple[np.ndarray]
+    ) -> Tuple[Dict[Text, float], Dict[Text, float]]:
         tf_batch_data = train_utils.batch_to_session_data(batch_in, self.session_data)
 
         mask_text = tf_batch_data["text_mask"][0]

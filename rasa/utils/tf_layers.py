@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class SparseDropout(tf.keras.layers.Dropout):
-    def call(self, inputs, training):
+    def call(self, inputs: tf.Tensor, training: bool) -> tf.Tensor:
 
         to_retain_prob = tf.random.uniform(
             tf.shape(inputs.values), 0, 1, inputs.values.dtype
@@ -76,7 +76,7 @@ class ReluFfn(tf.keras.layers.Layer):
         droprate: float,
         reg_lambda: float,
         layer_name_suffix: Text,
-    ):
+    ) -> None:
         super(ReluFfn, self).__init__(name=f"ffnn_{layer_name_suffix}")
 
         l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
@@ -92,7 +92,7 @@ class ReluFfn(tf.keras.layers.Layer):
             )
             self._ffn_layers.append(tf.keras.layers.Dropout(rate=droprate))
 
-    def call(self, x, training):
+    def call(self, x: tf.Tensor, training: bool) -> tf.Tensor:
         for layer in self._ffn_layers:
             x = layer(x, training=training)
 
@@ -370,7 +370,6 @@ class TransformerEncoder(tf.keras.layers.Layer):
 
 
 class InputMask(tf.keras.layers.Layer):
-
     def build(self, input_shape):
         initializer = tf.keras.initializers.GlorotUniform()
         self.mask_vector = self.add_weight(
@@ -423,7 +422,6 @@ class InputMask(tf.keras.layers.Layer):
 
 
 class CRF(tf.keras.layers.Layer):
-
     def __init__(self, num_tags, reg_lambda, name=None):
         super().__init__(name=name)
 
@@ -443,7 +441,8 @@ class CRF(tf.keras.layers.Layer):
         )
         # set prediction index for padding to `0`
         mask = tf.sequence_mask(
-            sequence_lengths, maxlen=tf.shape(pred_ids)[1], dtype=pred_ids.dtype)
+            sequence_lengths, maxlen=tf.shape(pred_ids)[1], dtype=pred_ids.dtype
+        )
 
         return pred_ids * mask
 
@@ -455,7 +454,6 @@ class CRF(tf.keras.layers.Layer):
 
 
 class DotProductLoss(tf.keras.layers.Layer):
-
     def __init__(
         self,
         num_neg: int,
@@ -465,7 +463,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         use_max_sim_neg: bool,
         neg_lambda: float,
         scale_loss: bool,
-        name=None
+        name=None,
     ):
         super().__init__(name=name)
         self.num_neg = num_neg
@@ -497,7 +495,8 @@ class DotProductLoss(tf.keras.layers.Layer):
             """Create random tensor of indices"""
             # (1, num_neg)
             return tf.expand_dims(
-                tf.random.shuffle(tf.range(total_candidates))[:self.num_neg], 0)
+                tf.random.shuffle(tf.range(total_candidates))[: self.num_neg], 0
+            )
 
         def cond(i, out):
             """Condition for while loop"""
@@ -509,7 +508,7 @@ class DotProductLoss(tf.keras.layers.Layer):
                 # increment counter
                 i + 1,
                 # add random indices
-                tf.concat([out, rand_idxs()], 0)
+                tf.concat([out, rand_idxs()], 0),
             ]
 
         # first tensor already created
@@ -607,9 +606,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         )
 
     @staticmethod
-    def sim(
-        a: "tf.Tensor", b: "tf.Tensor", mask: Optional["tf.Tensor"]
-    ) -> "tf.Tensor":
+    def sim(a: "tf.Tensor", b: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
         """Calculate similarity between given tensors."""
 
         sim = tf.reduce_sum(a * b, -1)
@@ -635,15 +632,21 @@ class DotProductLoss(tf.keras.layers.Layer):
         neg_inf = tf.constant(-1e9)
 
         sim_pos = self.sim(pos_inputs_embed, pos_labels_embed, mask)
-        sim_neg_il = self.sim(pos_inputs_embed, neg_labels_embed, mask) + neg_inf * labels_bad_negs
+        sim_neg_il = (
+            self.sim(pos_inputs_embed, neg_labels_embed, mask)
+            + neg_inf * labels_bad_negs
+        )
         sim_neg_ll = (
-                self.sim(pos_labels_embed, neg_labels_embed, mask) + neg_inf * labels_bad_negs
+            self.sim(pos_labels_embed, neg_labels_embed, mask)
+            + neg_inf * labels_bad_negs
         )
         sim_neg_ii = (
-                self.sim(pos_inputs_embed, neg_inputs_embed, mask) + neg_inf * inputs_bad_negs
+            self.sim(pos_inputs_embed, neg_inputs_embed, mask)
+            + neg_inf * inputs_bad_negs
         )
         sim_neg_li = (
-                self.sim(pos_labels_embed, neg_inputs_embed, mask) + neg_inf * inputs_bad_negs
+            self.sim(pos_labels_embed, neg_inputs_embed, mask)
+            + neg_inf * inputs_bad_negs
         )
 
         # output similarities between user input and bot actions
@@ -757,7 +760,8 @@ class DotProductLoss(tf.keras.layers.Layer):
             return self._loss_softmax
         else:
             raise ValueError(
-                f"Wrong loss type '{self.loss_type}', " f"should be 'margin' or 'softmax'"
+                f"Wrong loss type '{self.loss_type}', "
+                f"should be 'margin' or 'softmax'"
             )
 
     def call(
@@ -779,7 +783,8 @@ class DotProductLoss(tf.keras.layers.Layer):
             inputs_bad_negs,
             labels_bad_negs,
         ) = self._sample_negatives(
-            inputs_embed, labels_embed, labels, all_labels_embed, all_labels)
+            inputs_embed, labels_embed, labels, all_labels_embed, all_labels
+        )
 
         # calculate similarities
         sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li = self._train_sim(
@@ -795,12 +800,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         acc = self._calc_accuracy(sim_pos, sim_neg_il)
 
         loss = self._chosen_loss(
-            sim_pos,
-            sim_neg_il,
-            sim_neg_ll,
-            sim_neg_ii,
-            sim_neg_li,
-            mask,
+            sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li, mask
         )
 
         return loss, acc
