@@ -36,6 +36,10 @@ logger = logging.getLogger(__name__)
 
 # type for all tf session related data
 SessionDataType = Dict[Text, List[np.ndarray]]
+# signature for all session related data
+# (boolean indicates whether data are sparse or not)
+# (list values represent the shape)
+SessionDataSignature = Dict[Text, List[Tuple[bool, List[int]]]]
 
 
 # namedtuple for training metrics
@@ -419,7 +423,8 @@ def pad_dense_data(array_of_dense: np.ndarray) -> np.ndarray:
 
 
 def batch_to_session_data(
-    batch: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], session_data: SessionDataType
+    batch: Union[Tuple[np.ndarray], Tuple[tf.Tensor]],
+    session_data_signature: SessionDataSignature,
 ) -> Dict[Text, List[tf.Tensor]]:
     """Convert input batch tensors into batch data format.
 
@@ -432,15 +437,15 @@ def batch_to_session_data(
     batch_data = defaultdict(list)
 
     idx = 0
-    for k, values in session_data.items():
-        for v in values:
-            if isinstance(v[0], scipy.sparse.spmatrix):
+    for k, signature in session_data_signature.items():
+        for is_sparse, shape in signature:
+            if is_sparse:
                 # explicitly substitute last dimension in shape with known static value
                 batch_data[k].append(
                     tf.SparseTensor(
                         batch[idx],
                         batch[idx + 1],
-                        [batch[idx + 2][0], batch[idx + 2][1], v[0].shape[-1]],
+                        [batch[idx + 2][0], batch[idx + 2][1], shape[-1]],
                     )
                 )
                 idx += 3
@@ -451,9 +456,7 @@ def batch_to_session_data(
     return batch_data
 
 
-def batch_tuple_sizes(
-    session_data: SessionDataType
-) -> Dict[Text, int]:
+def batch_tuple_sizes(session_data: SessionDataType) -> Dict[Text, int]:
 
     # save the amount of placeholders attributed to session data keys
     tuple_sizes = defaultdict(int)

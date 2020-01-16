@@ -1,21 +1,12 @@
-import typing
+import numpy as np
 import logging
-from typing import (
-    List,
-    Optional,
-    Text,
-    Dict,
-    Tuple,
-    Union,
-    Generator,
-    Callable,
-    Any,
-    NamedTuple,
-)
+from typing import List, Optional, Text, Dict, Tuple, Union
 from tqdm import tqdm
 from rasa.utils import train_utils
 from rasa.utils.common import is_logging_disabled
 import tensorflow as tf
+
+from rasa.utils.train_utils import SessionDataType
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +26,12 @@ class RasaModel(tf.keras.models.Model):
         self,
         epochs: int,
         batch_size: Union[List[int], int],
+        session_data: SessionDataType,
+        eval_session_data: Optional[SessionDataType],
         evaluate_on_num_examples: int,
         evaluate_every_num_epochs: int,
         silent: bool = False,
-        eager: bool = False,
-        output_file: Optional[Text] = None,
+        eager: bool = True,
     ) -> None:
         """Train tf graph"""
 
@@ -61,7 +53,9 @@ class RasaModel(tf.keras.models.Model):
             train_dataset_func = tf.function(self.train_dataset)
             train_on_batch_func = tf.function(
                 self.train_on_batch,
-                input_signature=[train_dataset_func(tf_batch_size).element_spec],
+                input_signature=[
+                    train_dataset_func(tf_batch_size, session_data).element_spec
+                ],
             )
 
         if evaluate_on_num_examples > 0:
@@ -72,7 +66,9 @@ class RasaModel(tf.keras.models.Model):
                 eval_dataset_func = tf.function(self.eval_dataset)
                 eval_func = tf.function(
                     self.eval,
-                    input_signature=[eval_dataset_func(tf_batch_size).element_spec],
+                    input_signature=[
+                        eval_dataset_func(tf_batch_size, eval_session_data).element_spec
+                    ],
                 )
         else:
             eval_dataset_func = None
@@ -89,7 +85,7 @@ class RasaModel(tf.keras.models.Model):
 
             # Train on batches
             self.set_training_phase(True)
-            for batch_in in train_dataset_func(ep_batch_size):
+            for batch_in in train_dataset_func(ep_batch_size, session_data):
                 train_on_batch_func(batch_in)
 
             # print(self.metrics)
@@ -112,7 +108,7 @@ class RasaModel(tf.keras.models.Model):
 
                     # Eval on batches
                     self.set_training_phase(False)
-                    for batch_in in eval_dataset_func(ep_batch_size):
+                    for batch_in in eval_dataset_func(ep_batch_size, eval_session_data):
                         eval_func(batch_in)
 
                 # Get the metric results

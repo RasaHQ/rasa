@@ -18,7 +18,7 @@ from rasa.nlu.components import any_of
 from rasa.utils import train_utils
 from rasa.utils import tf_layers
 from rasa.utils import tf_models
-from rasa.utils.train_utils import SessionDataType
+from rasa.utils.train_utils import SessionDataType, SessionDataSignature
 from rasa.nlu.constants import (
     INTENT_ATTRIBUTE,
     TEXT_ATTRIBUTE,
@@ -33,11 +33,10 @@ import tensorflow_addons as tfa
 
 logger = logging.getLogger(__name__)
 
-if typing.TYPE_CHECKING:
-    from rasa.nlu.config import RasaNLUModelConfig
-    from rasa.nlu.training_data import TrainingData
-    from rasa.nlu.model import Metadata
-    from rasa.nlu.training_data import Message
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.training_data import TrainingData
+from rasa.nlu.model import Metadata
+from rasa.nlu.training_data import Message
 
 
 shapes, types = None, None
@@ -214,7 +213,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         inverted_label_dict: Optional[Dict[int, Text]] = None,
         inverted_tag_dict: Optional[Dict[int, Text]] = None,
         model: Optional[tf_models.RasaModel] = None,
-        predict_func: Optional[tf.Function] = None,
+        predict_func: Optional[Callable] = None,
         batch_tuple_sizes: Optional[Dict] = None,
         attention_weights: Optional[tf.Tensor] = None,
     ) -> None:
@@ -602,7 +601,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
             if not possible_to_train:
                 logger.error(
-                    "Can not train a classifier. "
+                    "Can not train intent classifier. "
                     "Need at least 2 different classes. "
                     "Skipping training of classifier."
                 )
@@ -622,9 +621,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # set random seed
         tf.random.set_seed(self.component_config[RANDOM_SEED])
 
+        session_data_signature = self.create_signature(session_data)
+
         self.model = DIET(
-            session_data,
-            eval_session_data,
+            session_data_signature,
             self._label_data,
             self.inverted_tag_dict,
             self.component_config,
@@ -633,6 +633,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.model.fit(
             self.component_config[EPOCHS],
             self.component_config[BATCH_SIZES],
+            session_data,
+            eval_session_data,
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[EVAL_NUM_EPOCHS],
         )
@@ -642,8 +644,18 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         # self.attention_weights = train_utils.extract_attention(self.attention_weights)
 
+    @staticmethod
+    def create_signature(session_data: SessionDataType):
+        return {
+            key: [
+                (True if isinstance(v[0], scipy.sparse.spmatrix) else False, v[0].shape)
+                for v in values
+            ]
+            for key, values in session_data.items()
+        }
+
     # process helpers
-    def _predict(self, message: Message) -> tf.Function:
+    def _predict(self, message: Message) -> Optional[Callable]:
         if self.model is None or self.predict_func is None:
             return
 
@@ -903,16 +915,21 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
 class DIET(tf_models.RasaModel):
     @staticmethod
-    def _create_sparse_dense_layer(values, name, reg_lambda, dense_dim):
+    def _create_sparse_dense_layer(
+        data_signature: List[Tuple[bool, List[int]]],
+        name: Text,
+        reg_lambda: float,
+        dense_dim: int,
+    ) -> Optional[tf_layers.DenseForSparse]:
 
         sparse = False
-        for v in values:
-            if isinstance(v[0], scipy.sparse.spmatrix):
-                sparse = True
+        for is_sparse, shape in data_signature:
+            if is_sparse:
+                sparse = is_sparse
             else:
                 # if dense features are present
                 # use the feature dimension of the dense features
-                dense_dim = v[0].shape[-1]
+                dense_dim = shape[-1]
 
         if sparse:
             return tf_layers.DenseForSparse(
@@ -920,21 +937,20 @@ class DIET(tf_models.RasaModel):
             )
 
     @staticmethod
-    def _input_dim(values, dense_dim):
+    def _input_dim(data_signature: List[Tuple[bool, List[int]]], dense_dim: int) -> int:
 
-        for v in values:
-            if not isinstance(v[0], scipy.sparse.spmatrix):
+        for is_sparse, shape in data_signature:
+            if not is_sparse:
                 # if dense features are present
                 # use the feature dimension of the dense features
-                dense_dim = v[0].shape[-1]
+                dense_dim = shape[-1]
                 break
 
-        return dense_dim * len(values)
+        return dense_dim * len(data_signature)
 
     def __init__(
         self,
-        session_data: SessionDataType,
-        eval_session_data: Optional[SessionDataType],
+        session_data_signature: SessionDataSignature,
         label_data: SessionDataType,
         inverted_tag_dict: Dict[int, Text],
         config: Dict[Text, Any],
@@ -942,16 +958,17 @@ class DIET(tf_models.RasaModel):
         super(DIET, self).__init__(name="DIET")
 
         # data
-        self.session_data = session_data
-        self.eval_session_data = eval_session_data
+        self.session_data_signature = session_data_signature
         label_batch = train_utils.prepare_batch(label_data)
-        self.tf_label_data = train_utils.batch_to_session_data(label_batch, label_data)
+        self.tf_label_data = train_utils.batch_to_session_data(
+            label_batch, EmbeddingIntentClassifier.create_signature(label_data)
+        )
         self._num_tags = len(inverted_tag_dict)
 
         self.config = config
 
         # tf objects
-        self._prepare_layers(session_data)
+        self._prepare_layers()
 
         # tf tensors
         self.training = tf.ones((), tf.bool)
@@ -967,18 +984,18 @@ class DIET(tf_models.RasaModel):
         self.all_labels_embed = None
         self.batch_tuple_sizes = None
 
-    def _prepare_layers(self, session_data: SessionDataType) -> None:
+    def _prepare_layers(self) -> None:
         self._sparse_dropout = tf_layers.SparseDropout(rate=self.config[DROPRATE])
 
         self._sparse_to_dense = {
             "text": self._create_sparse_dense_layer(
-                session_data["text_features"],
+                self.session_data_signature["text_features"],
                 "text",
                 self.config[C2],
                 self.config[DENSE_DIM]["text"],
             ),
             "label": self._create_sparse_dense_layer(
-                session_data["label_features"],
+                self.session_data_signature["label_features"],
                 "label",
                 self.config[C2],
                 self.config[DENSE_DIM]["label"],
@@ -1225,7 +1242,9 @@ class DIET(tf_models.RasaModel):
     def _train_losses_scores(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
     ) -> Tuple[Dict[Text, float], Dict[Text, float]]:
-        tf_batch_data = train_utils.batch_to_session_data(batch_in, self.session_data)
+        tf_batch_data = train_utils.batch_to_session_data(
+            batch_in, self.session_data_signature
+        )
 
         mask_text = tf_batch_data["text_mask"][0]
         sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
@@ -1288,9 +1307,11 @@ class DIET(tf_models.RasaModel):
         for k, v in scores.items():
             self.train_metrics[k].update_state(v)
 
-    def train_dataset(self, batch_size: int) -> tf.data.Dataset:
+    def train_dataset(
+        self, batch_size: int, session_data: SessionDataType
+    ) -> tf.data.Dataset:
         return train_utils.create_tf_dataset(
-            self.session_data,
+            session_data,
             batch_size,
             label_key="label_ids",
             batch_strategy=self.config[BATCH_STRATEGY],
@@ -1307,10 +1328,12 @@ class DIET(tf_models.RasaModel):
         for k, v in scores.items():
             self.eval_metrics[f"val_{k}"].update_state(v)
 
-    def eval_dataset(self, batch_size: int) -> tf.data.Dataset:
-        if self.eval_session_data is not None:
+    def eval_dataset(
+        self, batch_size: int, session_data: Optional[SessionDataType]
+    ) -> tf.data.Dataset:
+        if session_data is not None:
             return train_utils.create_tf_dataset(
-                self.eval_session_data, batch_size, label_key="label_ids"
+                session_data, batch_size, label_key="label_ids"
             )
 
     def build_for_predict(self) -> None:
@@ -1322,7 +1345,9 @@ class DIET(tf_models.RasaModel):
     def predict(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
     ) -> Dict[Text, tf.Tensor]:
-        tf_batch_data = train_utils.batch_to_session_data(batch_in, self.session_data)
+        tf_batch_data = train_utils.batch_to_session_data(
+            batch_in, self.session_data_signature
+        )
 
         mask_text = tf_batch_data["text_mask"][0]
         sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
@@ -1366,7 +1391,5 @@ class DIET(tf_models.RasaModel):
 
         return out
 
-    def predict_dataset(self) -> tf.data.Dataset:
-        return train_utils.create_tf_dataset(
-            self.session_data, 1, label_key="label_ids"
-        )
+    def predict_dataset(self, session_data: SessionDataType) -> tf.data.Dataset:
+        return train_utils.create_tf_dataset(session_data, 1, label_key="label_ids")
