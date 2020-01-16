@@ -58,26 +58,25 @@ class RasaModel(tf.keras.models.Model):
         if eager:
             # allows increasing batch size
             train_dataset_func = self.train_dataset
-            eval_dataset_func = self.eval_dataset
-
             train_on_batch_func = self.train_on_batch
         else:
             # allows increasing batch size
             train_dataset_func = tf.function(self.train_dataset)
-            eval_dataset_func = tf.function(self.eval_dataset)
-
             train_on_batch_func = tf.function(
                 self.train_on_batch, input_signature=[train_dataset_func(tf_batch_size).element_spec]
             )
 
         if evaluate_on_num_examples > 0:
             if eager:
+                eval_dataset_func = self.eval_dataset
                 eval_func = self.eval
             else:
+                eval_dataset_func = tf.function(self.eval_dataset)
                 eval_func = tf.function(
                     self.eval, input_signature=[eval_dataset_func(tf_batch_size).element_spec]
                 )
         else:
+            eval_dataset_func = None
             eval_func = None
 
         for ep in pbar:
