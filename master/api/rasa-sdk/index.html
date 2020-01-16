@@ -303,6 +303,14 @@ separate container, you only need to install <code class="docutils literal notra
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m rasa_sdk --actions actions
 </pre></div>
 </div>
+<p>You can verify that the action server is up and running with the command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl http://localhost:5055/health
+</pre></div>
+</div>
+<p>You can get the list of registered custom actions with the command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl http://localhost:5055/actions
+</pre></div>
+</div>
 <p>The file that contains your custom actions should be called <code class="docutils literal notranslate"><span class="pre">actions.py</span></code>.
 Alternatively, you can use a package directory called <code class="docutils literal notranslate"><span class="pre">actions</span></code> or else
 manually specify an actions module or package with the <code class="docutils literal notranslate"><span class="pre">--actions</span></code> flag.</p>
