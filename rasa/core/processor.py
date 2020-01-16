@@ -326,7 +326,7 @@ class MessageProcessor:
             )
         else:
             intent = reminder_event.intent
-            entities = reminder_event.entities if reminder_event.entities else {}
+            entities = reminder_event.entities or {}
             await self.trigger_external_user_uttered(
                 intent, entities, tracker, output_channel
             )
@@ -338,13 +338,16 @@ class MessageProcessor:
         tracker: DialogueStateTracker,
         output_channel: OutputChannel,
     ) -> None:
-        """
-        Trigger an external message (like a user message, but invisible;
+        """Triggers an external message.
+
+        Triggers an external message (like a user message, but invisible;
         used, e.g., by a reminder or the trigger_intent endpoint).
-        :param intent_name: Name of the intent to be triggered
-        :param entities: List of entities to be passed on
-        :param tracker: The tracker to which the event should be added
-        :param output_channel: The output channel
+
+        Args:
+            intent_name: Name of the intent to be triggered.
+            entities: List of entities to be passed on.
+            tracker: The tracker to which the event should be added.
+            output_channel: The output channel.
         """
         if isinstance(entities, list):
             entity_list = entities
