@@ -8,23 +8,20 @@ import typing
 import warnings
 
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
-from shutil import copyfile
 
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 
 import rasa.utils.io as io_utils
-from rasa.utils.plotter import Plotter
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
-from rasa.nlu.components import Component, any_of
+from rasa.nlu.components import any_of
 
 from rasa.utils import train_utils
 from rasa.utils import tf_layers
 from rasa.utils import tf_models
-from rasa.utils.train_utils import SessionDataType, TrainingMetrics
+from rasa.utils.train_utils import SessionDataType
 from rasa.nlu.constants import (
     INTENT_ATTRIBUTE,
     TEXT_ATTRIBUTE,
@@ -46,7 +43,6 @@ if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message
 
 
-MESSAGE_BILOU_ENTITIES_ATTRIBUTE = "BILOU_entities"
 shapes, types = None, None
 
 
@@ -157,7 +153,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         "named_entity_recognition": True,
         "masked_lm_loss": False,
         "sparse_input_dropout": False,
-        "bilou_flag": False,
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -165,10 +160,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
     def _check_old_config_variables(config: Dict[Text, Any]) -> None:
         """Config migration warning"""
 
-        removed_tokenization_params = [
-            "label_tokenization_flag",
-            "label_split_symbol",
-        ]
+        removed_tokenization_params = ["label_tokenization_flag", "label_split_symbol"]
         for removed_param in removed_tokenization_params:
             if removed_param in config:
                 warnings.warn(
@@ -259,7 +251,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         ]
         self.masked_lm_loss = self.component_config["masked_lm_loss"]
         self.sparse_input_dropout = self.component_config["sparse_input_dropout"]
-        self.bilou_flag = self.component_config["bilou_flag"]
 
     # package safety checks
     @classmethod
@@ -322,30 +313,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         }
 
     @staticmethod
-    def _create_tag_id_dict(
-        training_data: "TrainingData", bilou_flag: bool
-    ) -> Dict[Text, int]:
+    def _create_tag_id_dict(training_data: "TrainingData") -> Dict[Text, int]:
         """Create label_id dictionary"""
-
-        if bilou_flag:
-            bilou_prefix = ["B-", "I-", "L-", "U-"]
-            distinct_tag_ids = set(
-                [
-                    e[2:]
-                    for example in training_data.training_examples
-                    if example.get(MESSAGE_BILOU_ENTITIES_ATTRIBUTE)
-                    for e in example.get(MESSAGE_BILOU_ENTITIES_ATTRIBUTE)
-                ]
-            ) - {""}
-
-            tag_id_dict = {
-                f"{prefix}{tag_id}": idx_1 * len(bilou_prefix) + idx_2 + 1
-                for idx_1, tag_id in enumerate(sorted(distinct_tag_ids))
-                for idx_2, prefix in enumerate(bilou_prefix)
-            }
-            tag_id_dict["O"] = 0
-
-            return tag_id_dict
 
         distinct_tag_ids = set(
             [
@@ -501,7 +470,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
     #     labels_example: List["Message"],
     # ) -> List[np.ndarray]:
     #     """Compute one-hot representation for the labels"""
-    # 
+    #
     #     return [
     #         np.array(
     #             [
@@ -612,26 +581,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
                     label_ids.append(label_id_dict[e.get(label_attribute)])
 
             if self.named_entity_recognition and tag_id_dict:
-                if self.bilou_flag:
-                    if e.get(MESSAGE_BILOU_ENTITIES_ATTRIBUTE):
-                        _tags = [
-                            tag_id_dict[_tag]
-                            if _tag in tag_id_dict
-                            else tag_id_dict["O"]
-                            for _tag in e.get(MESSAGE_BILOU_ENTITIES_ATTRIBUTE)
-                        ]
-                    else:
-                        _tags = [
-                            tag_id_dict["O"]
-                            for _ in e.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
-                        ]
-                else:
-                    _tags = []
-                    for t in e.get(TOKENS_NAMES[TEXT_ATTRIBUTE]):
-                        _tag = determine_token_labels(
-                            t, e.get(ENTITIES_ATTRIBUTE), None
-                        )
-                        _tags.append(tag_id_dict[_tag])
+                _tags = []
+                for t in e.get(TOKENS_NAMES[TEXT_ATTRIBUTE]):
+                    _tag = determine_token_labels(t, e.get(ENTITIES_ATTRIBUTE), None)
+                    _tags.append(tag_id_dict[_tag])
                 # transpose to have seq_len x 1
                 tag_ids.append(np.array([_tags]).T)
 
@@ -664,31 +617,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
         return session_data
 
     # train helpers
-    def _apply_bilou_schema(self, training_data: "TrainingData"):
-        if not self.named_entity_recognition:
-            return
-
-        for example in training_data.training_examples:
-            entities = example.get(ENTITIES_ATTRIBUTE)
-
-            if not entities:
-                continue
-
-            entities = CRFEntityExtractor._convert_example(example)
-            output = CRFEntityExtractor._bilou_tags_from_offsets(
-                example.get(TOKENS_NAMES[TEXT_ATTRIBUTE]), entities
-            )
-
-            example.set(MESSAGE_BILOU_ENTITIES_ATTRIBUTE, output)
-
     def preprocess_train_data(self, training_data: "TrainingData"):
         """Prepares data for training.
 
         Performs sanity checks on training data, extracts encodings for labels.
         """
-        if self.bilou_flag:
-            self._apply_bilou_schema(training_data)
-
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=INTENT_ATTRIBUTE
         )
@@ -698,7 +631,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             training_data, label_id_dict, attribute=INTENT_ATTRIBUTE
         )
 
-        tag_id_dict = self._create_tag_id_dict(training_data, self.bilou_flag)
+        tag_id_dict = self._create_tag_id_dict(training_data)
         self.inverted_tag_dict = {v: k for k, v in tag_id_dict.items()}
 
         session_data = self._create_session_data(
@@ -816,9 +749,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         return self.predict_func(batch_in)
 
-    def _predict_label(
-            self, out
-    ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
+    def _predict_label(self, out) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
         """Predicts the intent of the provided message."""
 
         label = {"name": None, "confidence": 0.0}
@@ -869,14 +800,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         predictions = out["e_ids"].numpy()
 
         tags = [self.inverted_tag_dict[p] for p in predictions[0]]
-        # print(len(tags))
-        # print(len(message.get("tokens", [])))
-        # exit()
-        if self.bilou_flag:
-            tags = [t[2:] if t[:2] in ["B-", "I-", "U-", "L-"] else t for t in tags]
 
         entities = self._convert_tags_to_entities(
-            message.text, message.get("tokens", []), tags,predictions
+            message.text, message.get("tokens", []), tags, predictions
         )
 
         extracted = self.add_extractor_name(entities)
@@ -886,7 +812,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     @staticmethod
     def _convert_tags_to_entities(
-        text: str, tokens: List[Token], tags: List[Text],predictions
+        text: str, tokens: List[Token], tags: List[Text], predictions
     ) -> List[Dict[Text, Any]]:
         entities = []
         last_tag = "O"
@@ -912,7 +838,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             last_tag = tag
 
         for entity in entities:
-            entity["value"] = text[entity["start"]: entity["end"]]
+            entity["value"] = text[entity["start"] : entity["end"]]
 
             if not entity["value"]:
                 print(text)
@@ -950,12 +876,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
-        # # plot training curves
-        # plotter = Plotter()
-        # plotter.plot_training_curves(self.training_log_file, model_dir)
-        # # copy trainig log file
-        # copyfile(self.training_log_file, os.path.join(model_dir, "training-log.tsv"))
-
         try:
             os.makedirs(os.path.dirname(tf_model_file))
         except OSError as e:
@@ -965,11 +885,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
             if e.errno != errno.EEXIST:
                 raise
 
-        self.model.save_weights(tf_model_file, save_format='tf')
+        self.model.save_weights(tf_model_file, save_format="tf")
 
         dummy_session_data = {
-            k: [v[:1] for v in vs]
-            for k, vs in self.model.session_data.items()
+            k: [v[:1] for v in vs] for k, vs in self.model.session_data.items()
         }
 
         with open(
@@ -977,9 +896,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         ) as f:
             pickle.dump(dummy_session_data, f)
 
-        with open(
-            os.path.join(model_dir, file_name + ".label_data.pkl"), "wb"
-        ) as f:
+        with open(os.path.join(model_dir, file_name + ".label_data.pkl"), "wb") as f:
             pickle.dump(self._label_data, f)
 
         with open(
@@ -1087,22 +1004,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 meta["batch_strategy"],
             )
             logger.debug("Loading the model ...")
-            model.fit(
-                1,
-                1,
-                0,
-                0,
-                silent=True,
-                eager=True,
-            )
+            model.fit(1, 1, 0, 0, silent=True, eager=True)
             model.load_weights(tf_model_file)
 
             # build the graph for prediction
             model.set_training_phase(False)
             model.session_data = {
-                k: vs
-                for k, vs in model.session_data.items()
-                if "text" in k
+                k: vs for k, vs in model.session_data.items() if "text" in k
             }
             model.build_for_predict()
             predict_dataset = model.predict_dataset()
@@ -1198,9 +1106,7 @@ class DIET(tf_models.RasaModel):
         self.session_data = session_data
         self.eval_session_data = eval_session_data
         label_batch = train_utils.prepare_batch(label_data)
-        self.tf_label_data = train_utils.batch_to_session_data(
-            label_batch, label_data
-        )
+        self.tf_label_data = train_utils.batch_to_session_data(label_batch, label_data)
 
         # options
         self._sparse_input_dropout = sparse_input_dropout
@@ -1476,9 +1382,7 @@ class DIET(tf_models.RasaModel):
         return loss, f1
 
     def _train_losses_scores(self, batch_in):
-        tf_batch_data = train_utils.batch_to_session_data(
-            batch_in, self.session_data
-        )
+        tf_batch_data = train_utils.batch_to_session_data(batch_in, self.session_data)
 
         mask_text = tf_batch_data["text_mask"][0]
         sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
@@ -1506,9 +1410,7 @@ class DIET(tf_models.RasaModel):
             cls = tf.gather_nd(text_transformed, idxs)
 
             label = self._create_bow(
-                tf_batch_data["label_features"],
-                tf_batch_data["label_mask"][0],
-                "label",
+                tf_batch_data["label_features"], tf_batch_data["label_mask"][0], "label"
             )
             loss, acc = self._intent_loss(cls, label)
             losses["i_loss"] = loss
@@ -1573,9 +1475,7 @@ class DIET(tf_models.RasaModel):
         self.all_labels_embed = tf.constant(all_labels_embed.numpy())
 
     def predict(self, batch_in):
-        tf_batch_data = train_utils.batch_to_session_data(
-            batch_in, self.session_data
-        )
+        tf_batch_data = train_utils.batch_to_session_data(batch_in, self.session_data)
 
         mask_text = tf_batch_data["text_mask"][0]
         sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
@@ -1609,9 +1509,7 @@ class DIET(tf_models.RasaModel):
             #     cls_embed[:, tf.newaxis, :], label_embed, None
             # )
 
-            scores = train_utils.confidence_from_sim(
-                sim_all, self._similarity_type
-            )
+            scores = train_utils.confidence_from_sim(sim_all, self._similarity_type)
             out["i_scores"] = scores
 
         if self._named_entity_recognition:
@@ -1624,7 +1522,5 @@ class DIET(tf_models.RasaModel):
 
     def predict_dataset(self):
         return train_utils.create_tf_dataset(
-            self.session_data,
-            1,
-            label_key="label_ids",
+            self.session_data, 1, label_key="label_ids"
         )
