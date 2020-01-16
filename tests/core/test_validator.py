@@ -54,6 +54,15 @@ async def test_verify_bad_story_structure():
     assert not validator.verify_story_structure(ignore_warnings=False)
 
 
+async def test_verify_bad_story_structure_ignore_warnings():
+    importer = RasaFileImporter(
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=["data/test_stories/stories_conflicting_2.md"],
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_story_structure(ignore_warnings=True)
+
+
 async def test_fail_on_invalid_utterances(tmpdir):
     # domain and stories are from different domain and should produce warnings
     invalid_domain = str(tmpdir / "invalid_domain.yml")
