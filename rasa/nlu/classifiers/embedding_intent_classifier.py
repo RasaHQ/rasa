@@ -662,7 +662,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         }
 
     # process helpers
-    def _predict(self, message: Message) -> Optional[Callable]:
+    def _predict(self, message: Message) -> Optional[Dict[Text, tf.Tensor]]:
         if self.model is None or self.predict_func is None:
             return
 
