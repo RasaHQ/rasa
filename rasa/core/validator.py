@@ -216,9 +216,6 @@ class Validator:
             for conflict in conflicts:
                 logger.warning(conflict)
 
-                # For code stub to fix the conflict in the command line,
-                # see commit 3fdc08a030dbd85c15b4f5d7e8b5ad6a254eefb4
-
         return ignore_warnings or len(conflicts) == 0
 
     def verify_all(self, ignore_warnings: bool = True) -> bool:
