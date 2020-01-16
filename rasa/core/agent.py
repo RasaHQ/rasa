@@ -527,14 +527,13 @@ class Agent:
         entities: List[Dict[Text, Any]],
         output_channel: OutputChannel,
         tracker: DialogueStateTracker,
-    ) -> DialogueStateTracker:
+    ) -> None:
         """Trigger a user intent, e.g. triggered by an external event."""
 
         processor = self.create_processor()
         await processor.trigger_external_user_uttered(
             intent_name, entities, tracker, output_channel,
         )
-        return tracker
 
     async def handle_text(
         self,
