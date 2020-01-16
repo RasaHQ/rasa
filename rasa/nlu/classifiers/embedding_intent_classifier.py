@@ -922,8 +922,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         if self.intent_classification:
             label, label_ranking = self._predict_label(out)
 
-            message.set("label", label, add_to_output=True)
-            message.set("label_ranking", label_ranking, add_to_output=True)
+            message.set("intent", label, add_to_output=True)
+            message.set("intent_ranking", label_ranking, add_to_output=True)
 
         if self.named_entity_recognition:
             entities = self._predict_entities(out, message)
@@ -1588,7 +1588,6 @@ class DIET(tf_models.RasaModel):
             sim_all = self._loss_label.sim(
                 cls_embed[:, tf.newaxis, :],
                 self.all_labels_embed[tf.newaxis, :, :],
-                None,
             )
             # label = self._create_bow(
             #     tf_batch_data["label_features"],
@@ -1606,9 +1605,8 @@ class DIET(tf_models.RasaModel):
             out["i_scores"] = scores
 
         if self._named_entity_recognition:
-            sequence_lengths = sequence_lengths - 1
             logits = self._embed["logits"](text_transformed)
-            pred_ids = self._crf(logits, sequence_lengths)
+            pred_ids = self._crf(logits, sequence_lengths - 1)
             out["e_ids"] = pred_ids
 
         return out

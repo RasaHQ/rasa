@@ -602,7 +602,7 @@ class DotProductLoss(tf.keras.layers.Layer):
 
     @staticmethod
     def sim(
-        a: "tf.Tensor", b: "tf.Tensor", mask: Optional["tf.Tensor"]
+        a: "tf.Tensor", b: "tf.Tensor", mask: Optional["tf.Tensor"] = None
     ) -> "tf.Tensor":
         """Calculate similarity between given tensors."""
 
