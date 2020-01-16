@@ -99,7 +99,7 @@ Schedule a reminder
     .. autoclass:: rasa.core.events.ReminderScheduled
 
 :Effect:
-    When added to a tracker, core will schedule the intent to be
+    When added to a tracker, Rasa Core will schedule the intent to be
     triggered in the future, in place of a user input. You can link
     this intent to an action of your choice using the :ref:`mapping-policy`.
 
