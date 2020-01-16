@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union, Set
 import numpy as np
 from aiohttp import ClientError
 from colorclass import Color
+
 from rasa.nlu.training_data.loading import MARKDOWN, RASA
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
@@ -727,35 +728,17 @@ def _split_conversation_at_restarts(
 def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
     """Collect the message text and parsed data from the UserMessage events
     into a list"""
-    from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
-    from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
-    from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+
+    import rasa.nlu.training_data.util as rasa_nlu_training_data_utils
 
     messages = []
 
     for event in events:
         if event.get("event") == UserUttered.type_name:
             data = event.get("parse_data", {})
-
-            for entity in data.get("entities", []):
-
-                excluded_extractors = [
-                    DucklingHTTPExtractor.__name__,
-                    SpacyEntityExtractor.__name__,
-                    MitieEntityExtractor.__name__,
-                ]
-                logger.debug(
-                    f"Exclude entity marking of following extractors "
-                    f"{excluded_extractors} when writing nlu data "
-                    f"to file."
-                )
-
-                if entity.get("extractor") in excluded_extractors:
-                    data["entities"].remove(entity)
-
+            rasa_nlu_training_data_utils.remove_untrainable_entities_from(data)
             msg = Message.build(data["text"], data["intent"]["name"], data["entities"])
             messages.append(msg)
-
         elif event.get("event") == UserUtteranceReverted.type_name and messages:
             messages.pop()  # user corrected the nlu, remove incorrect example
 
