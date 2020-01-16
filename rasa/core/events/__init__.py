@@ -339,12 +339,14 @@ class UserUttered(Event):
         tracker.clear_followup_action()
 
     @staticmethod
-    def create_external(intent_name, entity_list):
+    def create_external(
+        intent_name: Text, entity_list: Optional[List[Dict[Text, Any]]] = None,
+    ) -> "UserUttered":
         return UserUttered(
             text=f"{EXTERNAL_MESSAGE_PREFIX}{intent_name}",
             intent={"name": intent_name},
             metadata={IS_EXTERNAL: True},
-            entities=entity_list,
+            entities=entity_list if entity_list else [],
         )
 
 
