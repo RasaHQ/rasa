@@ -334,7 +334,7 @@ class MessageProcessor:
     async def trigger_external_user_uttered(
         self,
         intent_name: Text,
-        entities: Union[List[Dict[Text, Any]], Dict[Text, Text]],
+        entities: Optional[Union[List[Dict[Text, Any]], Dict[Text, Text]]],
         tracker: DialogueStateTracker,
         output_channel: OutputChannel,
     ) -> None:
