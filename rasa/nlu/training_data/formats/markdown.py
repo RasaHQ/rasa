@@ -11,11 +11,8 @@ from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataWriter,
 )
 from rasa.nlu.utils import build_entity
-from rasa.nlu.constants import (
-    INTENT_ATTRIBUTE,
-    RESPONSE_KEY_ATTRIBUTE,
-    RESPONSE_IDENTIFIER_DELIMITER,
-)
+from rasa.nlu.constants import INTENT_ATTRIBUTE
+
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
@@ -214,10 +211,13 @@ class MarkdownWriter(TrainingDataWriter):
     def _generate_training_examples_md(self, training_data: "TrainingData") -> Text:
         """Generates markdown training examples."""
 
+        import rasa.nlu.training_data.util as rasa_nlu_training_data_utils
+
         training_examples = OrderedDict()
 
         # Sort by intent while keeping basic intent order
         for example in [e.as_dict_nlu() for e in training_data.training_examples]:
+            rasa_nlu_training_data_utils.remove_untrainable_entities_from(example)
             intent = example[INTENT_ATTRIBUTE]
             training_examples.setdefault(intent, [])
             training_examples[intent].append(example)
