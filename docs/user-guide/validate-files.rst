@@ -18,7 +18,8 @@ You can run it with the following command:
 
   rasa data validate
 
-The script above runs most of the validations on your files. Here is the list of options to
+The script above runs all the validations on your files, except for story structure validation,
+which is omitted unless you provide the `--max-history` argument. Here is the list of options to
 the script:
 
 .. program-output:: rasa data validate --help
@@ -94,8 +95,8 @@ These two stories are inconsistent, because Rasa cannot know if it should predic
 after ``inform_happy``, as there is nothing that would distinguish the dialogue states at ``inform_happy`` in the two 
 stories and the subsequent actions are different in Story 1 and Story 2.
 
-This conflict can now be automatically identified with our new story structure tool.
-Just use ``rasa data validate`` in the command line, as follows:
+This conflict can be automatically identified with our story structure validation tool.
+To do this, use ``rasa data validate`` in the command line, as follows:
 
 .. code-block:: bash
 
@@ -108,7 +109,7 @@ Just use ``rasa data validate`` in the command line, as follows:
   >   utter_happy predicted in 'Story 1'
 
 Here we specify a ``max-history`` value of 3.
-This means, that 3 events (user / bot actions) are taken into account for action predictions, but the particular setting does not matter for this example, because regardless of how long of a history you take into account, the conflict always exists.
+This means, that 3 events (user messages / bot actions) are taken into account for action predictions, but the particular setting does not matter for this example, because regardless of how long of a history you take into account, the conflict always exists.
 
 .. warning::
 
