@@ -62,16 +62,8 @@ python-dateutil==2.8.0
 # https://github.com/tensorflow/tensorflow/issues/32319
 gast==0.2.2
 # for new featurizers
-tensorflow==1.14.0
+tensorflow==2.1.0
 tensorflow_hub==0.6.0
 #tensorflow_text[no-deps]==0.1.0
-torch
-torchvision
-transformers
-# for hermit evaluation
-pandas
-progress
-# for plotter
-ipython
 # to calculate f1 score in new architecture
 git+https://github.com/guillaumegenthial/tf_metrics.git

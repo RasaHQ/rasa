@@ -7,11 +7,8 @@ import scipy.sparse
 import typing
 import warnings
 
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, Callable
 
-from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-
-import rasa.utils.io as io_utils
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -78,13 +75,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # nn architecture
         # sizes of hidden layers before the embedding layer for input words
         # the number of hidden layers is thus equal to the length of this list
-        "hidden_layers_sizes_a": [],
+        "hidden_layers_sizes_text": [],
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
-        "hidden_layers_sizes_b": [],
+        "hidden_layers_sizes_label": [],
         # sizes of hidden layers before the embedding layer for tag labels
         # the number of hidden layers is thus equal to the length of this list
-        "hidden_layers_sizes_c": [],
+        "hidden_layers_sizes_entities": [],
         # Whether to share the hidden layer weights between input words and labels
         "share_hidden_layers": False,
         # number of units in transformer
@@ -108,9 +105,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # set random seed to any int to get reproducible results
         "random_seed": None,
         # optimizer
-        "optimizer": "Adam",  # can be either 'Adam' (default) or 'Nadam'
         "learning_rate": 0.001,
-        "normalize_loss": False,
         # embedding parameters
         # default dense dimension used if no dense features are present
         "dense_dim": {"text": 512, "label": 20},
@@ -156,101 +151,28 @@ class EmbeddingIntentClassifier(EntityExtractor):
     }
     # end default properties (DOC MARKER - don't remove)
 
-    @staticmethod
-    def _check_old_config_variables(config: Dict[Text, Any]) -> None:
-        """Config migration warning"""
-
-        removed_tokenization_params = ["label_tokenization_flag", "label_split_symbol"]
-        for removed_param in removed_tokenization_params:
-            if removed_param in config:
-                warnings.warn(
-                    f"label tokenization has been moved to Tokenizer components. "
-                    f"Your config still mentions '{removed_param}'. "
-                    f"Tokenization may fail if you specify the parameter here. "
-                    f"Please specify the parameter 'intent_tokenization_flag' "
-                    f"and 'intent_split_symbol' in the "
-                    f"tokenizer of your NLU pipeline",
-                    FutureWarning,
-                )
-
     # init helpers
-    def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
-        self.hidden_layer_sizes = {
-            "text": config["hidden_layers_sizes_a"],
-            "label": config["hidden_layers_sizes_b"],
-            "tag": config["hidden_layers_sizes_c"],
-        }
-        self.share_hidden_layers = config["share_hidden_layers"]
+    def _check_config_parameters(self) -> None:
         if (
-            self.share_hidden_layers
-            and self.hidden_layer_sizes["text"] != self.hidden_layer_sizes["label"]
+            self.component_config["share_hidden_layers"]
+            and self.component_config["hidden_layers_sizes_text"]
+            != self.component_config["hidden_layers_sizes_label"]
         ):
             raise ValueError(
                 "If hidden layer weights are shared,"
-                "hidden_layer_sizes for a and b must coincide."
+                "hidden_layer_sizes for text and label must coincide."
             )
 
-        self.batch_size = config["batch_size"]
-        self.batch_strategy = config["batch_strategy"]
+        if self.component_config["similarity_type"] == "auto":
+            if self.component_config["loss_type"] == "softmax":
+                self.component_config["similarity_type"] = "inner"
+            elif self.component_config["loss_type"] == "margin":
+                self.component_config["similarity_type"] = "cosine"
 
-        self.optimizer = config["optimizer"]
-        self.normalize_loss = config["normalize_loss"]
-        self.learning_rate = config["learning_rate"]
-        self.epochs = config["epochs"]
-
-        self.random_seed = self.component_config["random_seed"]
-
-        self.transformer_size = self.component_config["transformer_size"]
-        self.num_transformer_layers = self.component_config["num_transformer_layers"]
-        self.num_heads = self.component_config["num_heads"]
-        self.pos_encoding = self.component_config["pos_encoding"]
-        self.max_seq_length = self.component_config["max_seq_length"]
-        self.unidirectional_encoder = self.component_config["unidirectional_encoder"]
-
-    def _load_embedding_params(self, config: Dict[Text, Any]) -> None:
-        self.embed_dim = config["embed_dim"]
-        self.num_neg = config["num_neg"]
-        self.dense_dim = config["dense_dim"]
-
-        self.similarity_type = config["similarity_type"]
-        self.loss_type = config["loss_type"]
-        if self.similarity_type == "auto":
-            if self.loss_type == "softmax":
-                self.similarity_type = "inner"
-            elif self.loss_type == "margin":
-                self.similarity_type = "cosine"
-
-        self.mu_pos = config["mu_pos"]
-        self.mu_neg = config["mu_neg"]
-        self.use_max_sim_neg = config["use_max_sim_neg"]
-
-        self.scale_loss = config["scale_loss"]
-
-    def _load_regularization_params(self, config: Dict[Text, Any]) -> None:
-        self.C2 = config["C2"]
-        self.C_emb = config["C_emb"]
-        self.droprate = config["droprate"]
-
-    def _load_visual_params(self, config: Dict[Text, Any]) -> None:
-        self.evaluate_every_num_epochs = config["evaluate_every_num_epochs"]
-        if self.evaluate_every_num_epochs < 1:
-            self.evaluate_every_num_epochs = self.epochs
-        self.evaluate_on_num_examples = config["evaluate_on_num_examples"]
-
-    def _load_params(self) -> None:
-        self._check_old_config_variables(self.component_config)
-        self._tf_config = train_utils.load_tf_config(self.component_config)
-        self._load_nn_architecture_params(self.component_config)
-        self._load_embedding_params(self.component_config)
-        self._load_regularization_params(self.component_config)
-        self._load_visual_params(self.component_config)
-
-        self.intent_classification = self.component_config["intent_classification"]
-        self.named_entity_recognition = self.component_config[
-            "named_entity_recognition"
-        ]
-        self.masked_lm_loss = self.component_config["masked_lm_loss"]
-        self.sparse_input_dropout = self.component_config["sparse_input_dropout"]
+        if self.component_config["evaluate_every_num_epochs"] < 1:
+            self.component_config["evaluate_every_num_epochs"] = self.component_config[
+                "epochs"
+            ]
 
     # package safety checks
     @classmethod
@@ -262,8 +184,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         component_config: Optional[Dict[Text, Any]] = None,
         inverted_label_dict: Optional[Dict[int, Text]] = None,
         inverted_tag_dict: Optional[Dict[int, Text]] = None,
-        model=None,
-        predict_func=None,
+        model: Optional[tf_models.RasaModel] = None,
+        predict_func: Optional[Callable] = None,
         batch_tuple_sizes: Optional[Dict] = None,
         attention_weights: Optional["tf.Tensor"] = None,
     ) -> None:
@@ -271,7 +193,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         super().__init__(component_config)
 
-        self._load_params()
+        self._check_config_parameters()
 
         # transform numbers to labels
         self.inverted_label_dict = inverted_label_dict
@@ -295,8 +217,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.num_tags = 0
 
         self.attention_weights = attention_weights
-
-        self.training_log_file = io_utils.create_temporary_file("")
 
     # training data helpers:
     @staticmethod
@@ -382,11 +302,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
                     f"don't coincide in '{message.text}' for attribute '{attribute}'."
                 )
 
-        # if attribute != INTENT_ATTRIBUTE:
-        #     # Use only the CLS token vector as features
-        #     sparse_features = sequence_to_sentence_features(sparse_features)
-        #     dense_features = sequence_to_sentence_features(dense_features)
-
         return sparse_features, dense_features
 
     @staticmethod
@@ -432,7 +347,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         return num_features
 
     def check_input_dimension_consistency(self, session_data: "SessionDataType"):
-        if self.share_hidden_layers:
+        if self.component_config["share_hidden_layers"]:
             num_text_features = self._get_num_of_features(session_data, "text_features")
             num_intent_features = self._get_num_of_features(
                 session_data, "label_features"
@@ -580,7 +495,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 if label_id_dict:
                     label_ids.append(label_id_dict[e.get(label_attribute)])
 
-            if self.named_entity_recognition and tag_id_dict:
+            if self.component_config["named_entity_recognition"] and tag_id_dict:
                 _tags = []
                 for t in e.get(TOKENS_NAMES[TEXT_ATTRIBUTE]):
                     _tag = determine_token_labels(t, e.get(ENTITIES_ATTRIBUTE), None)
@@ -666,7 +581,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         session_data = self.preprocess_train_data(training_data)
 
-        if self.intent_classification:
+        if self.component_config["intent_classification"]:
             possible_to_train = self._check_enough_labels(session_data)
 
             if not possible_to_train:
@@ -677,11 +592,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 )
                 return
 
-        if self.evaluate_on_num_examples:
+        if self.component_config["evaluate_on_num_examples"]:
             session_data, eval_session_data = train_utils.train_val_split(
                 session_data,
-                self.evaluate_on_num_examples,
-                self.random_seed,
+                self.component_config["evaluate_on_num_examples"],
+                self.component_config["random_seed"],
                 label_key="label_ids",
             )
         else:
@@ -689,46 +604,21 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         # TODO set it in the model
         # set random seed
-        tf.random.set_seed(self.random_seed)
+        tf.random.set_seed(self.component_config["random_seed"])
 
         self.model = DIET(
             session_data,
             eval_session_data,
             self._label_data,
-            self.dense_dim,
-            self.embed_dim,
-            self.hidden_layer_sizes,
-            self.share_hidden_layers,
-            self.num_transformer_layers,
-            self.transformer_size,
-            self.num_heads,
-            self.max_seq_length,
-            self.unidirectional_encoder,
-            self.C2,
-            self.droprate,
-            self.sparse_input_dropout,
-            self.num_neg,
-            self.loss_type,
-            self.mu_pos,
-            self.mu_neg,
-            self.use_max_sim_neg,
-            self.C_emb,
-            self.scale_loss,
-            self.similarity_type,
-            self.masked_lm_loss,
-            self.intent_classification,
-            self.named_entity_recognition,
             self.inverted_tag_dict,
-            self.learning_rate,
-            self.batch_strategy,
+            self.component_config,
         )
 
         self.model.fit(
-            self.epochs,
-            self.batch_size,
-            self.evaluate_on_num_examples,
-            self.evaluate_every_num_epochs,
-            output_file=self.training_log_file,
+            self.component_config["epochs"],
+            self.component_config["batch_size"],
+            self.component_config["evaluate_on_num_examples"],
+            self.component_config["evaluate_every_num_epochs"],
         )
 
         # rebuild the graph for prediction
@@ -854,13 +744,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         out = self._predict(message)
 
-        if self.intent_classification:
+        if self.component_config["intent_classification"]:
             label, label_ranking = self._predict_label(out)
 
             message.set("label", label, add_to_output=True)
             message.set("label_ranking", label_ranking, add_to_output=True)
 
-        if self.named_entity_recognition:
+        if self.component_config["named_entity_recognition"]:
             entities = self._predict_entities(out, message)
 
             message.set("entities", entities, add_to_output=True)
@@ -928,114 +818,74 @@ class EmbeddingIntentClassifier(EntityExtractor):
     ) -> "EmbeddingIntentClassifier":
         """Loads the trained model from the provided directory."""
 
-        if model_dir and meta.get("file"):
-            file_name = meta.get("file")
-            tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
-
-            with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "rb") as f:
-                _tf_config = pickle.load(f)
-
-            with open(
-                os.path.join(model_dir, file_name + ".dummy_session_data.pkl"), "rb"
-            ) as f:
-                dummy_session_data = pickle.load(f)
-
-            with open(
-                os.path.join(model_dir, file_name + ".label_data.pkl"), "rb"
-            ) as f:
-                label_data = pickle.load(f)
-
-            with open(
-                os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "rb"
-            ) as f:
-                inv_label_dict = pickle.load(f)
-
-            with open(
-                os.path.join(model_dir, file_name + ".inv_tag_dict.pkl"), "rb"
-            ) as f:
-                inv_tag_dict = pickle.load(f)
-
-            with open(
-                os.path.join(model_dir, file_name + ".batch_tuple_sizes.pkl"), "rb"
-            ) as f:
-                batch_tuple_sizes = pickle.load(f)
-
-            hidden_layer_sizes = {
-                "text": meta["hidden_layers_sizes_a"],
-                "label": meta["hidden_layers_sizes_b"],
-                "tag": meta["hidden_layers_sizes_c"],
-            }
-            similarity_type = meta["similarity_type"]
-            if similarity_type == "auto":
-                if meta["loss_type"] == "softmax":
-                    similarity_type = "inner"
-                elif meta["loss_type"] == "margin":
-                    similarity_type = "cosine"
-
-            model = DIET(
-                dummy_session_data,
-                None,
-                label_data,
-                meta["dense_dim"],
-                meta["embed_dim"],
-                hidden_layer_sizes,
-                meta["share_hidden_layers"],
-                meta["num_transformer_layers"],
-                meta["transformer_size"],
-                meta["num_heads"],
-                meta["max_seq_length"],
-                meta["unidirectional_encoder"],
-                meta["C2"],
-                meta["droprate"],
-                meta["sparse_input_dropout"],
-                meta["num_neg"],
-                meta["loss_type"],
-                meta["mu_pos"],
-                meta["mu_neg"],
-                meta["use_max_sim_neg"],
-                meta["C_emb"],
-                meta["scale_loss"],
-                similarity_type,
-                meta["masked_lm_loss"],
-                meta["intent_classification"],
-                meta["named_entity_recognition"],
-                inv_tag_dict,
-                meta["learning_rate"],
-                meta["batch_strategy"],
-            )
-            logger.debug("Loading the model ...")
-            model.fit(1, 1, 0, 0, silent=True, eager=True)
-            model.load_weights(tf_model_file)
-
-            # build the graph for prediction
-            model.set_training_phase(False)
-            model.session_data = {
-                k: vs for k, vs in model.session_data.items() if "text" in k
-            }
-            model.build_for_predict()
-            predict_dataset = model.predict_dataset()
-            predict_func = tf.function(
-                model.predict, input_signature=[predict_dataset.element_spec]
-            )
-            batch_in = next(iter(predict_dataset))
-            predict_func(batch_in)
-            logger.debug("Finished loading the model.")
-
-            return cls(
-                component_config=meta,
-                inverted_label_dict=inv_label_dict,
-                inverted_tag_dict=inv_tag_dict,
-                model=model,
-                predict_func=predict_func,
-                batch_tuple_sizes=batch_tuple_sizes,
-            )
-
-        else:
+        if not model_dir or not meta.get("file"):
             warnings.warn(
                 f"Failed to load nlu model. "
                 f"Maybe path '{os.path.abspath(model_dir)}' doesn't exist."
             )
             return cls(component_config=meta)
+
+        file_name = meta.get("file")
+        tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
+
+        with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "rb") as f:
+            _tf_config = pickle.load(f)
+
+        with open(
+            os.path.join(model_dir, file_name + ".dummy_session_data.pkl"), "rb"
+        ) as f:
+            dummy_session_data = pickle.load(f)
+
+        with open(os.path.join(model_dir, file_name + ".label_data.pkl"), "rb") as f:
+            label_data = pickle.load(f)
+
+        with open(
+            os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "rb"
+        ) as f:
+            inv_label_dict = pickle.load(f)
+
+        with open(os.path.join(model_dir, file_name + ".inv_tag_dict.pkl"), "rb") as f:
+            inv_tag_dict = pickle.load(f)
+
+        with open(
+            os.path.join(model_dir, file_name + ".batch_tuple_sizes.pkl"), "rb"
+        ) as f:
+            batch_tuple_sizes = pickle.load(f)
+
+        if meta["similarity_type"] == "auto":
+            if meta["loss_type"] == "softmax":
+                meta["similarity_type"] = "inner"
+            elif meta["loss_type"] == "margin":
+                meta["similarity_type"] = "cosine"
+
+        model = DIET(dummy_session_data, None, label_data, inv_tag_dict, meta)
+
+        logger.debug("Loading the model ...")
+        model.fit(1, 1, 0, 0, silent=True, eager=True)
+        model.load_weights(tf_model_file)
+
+        # build the graph for prediction
+        model.set_training_phase(False)
+        model.session_data = {
+            k: vs for k, vs in model.session_data.items() if "text" in k
+        }
+        model.build_for_predict()
+        predict_dataset = model.predict_dataset()
+        predict_func = tf.function(
+            model.predict, input_signature=[predict_dataset.element_spec]
+        )
+        batch_in = next(iter(predict_dataset))
+        predict_func(batch_in)
+        logger.debug("Finished loading the model.")
+
+        return cls(
+            component_config=meta,
+            inverted_label_dict=inv_label_dict,
+            inverted_tag_dict=inv_tag_dict,
+            model=model,
+            predict_func=predict_func,
+            batch_tuple_sizes=batch_tuple_sizes,
+        )
 
 
 class DIET(tf_models.RasaModel):
@@ -1070,35 +920,11 @@ class DIET(tf_models.RasaModel):
 
     def __init__(
         self,
-        session_data,
-        eval_session_data,
-        label_data,
-        dense_dim,
-        embed_dim,
-        hidden_layer_sizes,
-        share_hidden_layers,
-        num_transformer_layers,
-        transformer_size,
-        num_heads,
-        max_seq_length,
-        unidirectional_encoder,
-        reg_lambda,
-        droprate,
-        sparse_input_dropout,
-        num_neg,
-        loss_type,
-        mu_pos,
-        mu_neg,
-        use_max_sim_neg,
-        C_emb,
-        scale_loss,
-        similarity_type,
-        masked_lm_loss,
-        intent_classification,
-        named_entity_recognition,
-        inverted_tag_dict,
-        learning_rate,
-        batch_in_strategy,
+        session_data: SessionDataType,
+        eval_session_data: Optional[SessionDataType],
+        label_data: SessionDataType,
+        inverted_tag_dict: Dict[int, Text],
+        config: Dict[Text, Any],
     ):
         super(DIET, self).__init__(name="DIET")
 
@@ -1108,111 +934,16 @@ class DIET(tf_models.RasaModel):
         label_batch = train_utils.prepare_batch(label_data)
         self.tf_label_data = train_utils.batch_to_session_data(label_batch, label_data)
 
-        # options
-        self._sparse_input_dropout = sparse_input_dropout
-        self._num_neg = num_neg
-        self._loss_type = loss_type
-        self._mu_pos = mu_pos
-        self._mu_neg = mu_neg
-        self._use_max_sim_neg = use_max_sim_neg
-        self._C_emb = C_emb
-        self._scale_loss = scale_loss
-        self._similarity_type = similarity_type
-        self._masked_lm_loss = masked_lm_loss
-        self._intent_classification = intent_classification
-        self._named_entity_recognition = named_entity_recognition
-        self._inverted_tag_dict = inverted_tag_dict
-        self._num_tags = len(inverted_tag_dict)
-        self._batch_in_strategy = batch_in_strategy
+        self.config = config
 
         # tf objects
-        self._sparse_dropout = tf_layers.SparseDropout(rate=droprate)
-        self._sparse_to_dense = {
-            "text": self._create_sparse_dense_layer(
-                session_data["text_features"], "text", reg_lambda, dense_dim["text"]
-            ),
-            "label": self._create_sparse_dense_layer(
-                session_data["label_features"], "label", reg_lambda, dense_dim["label"]
-            ),
-        }
-
-        self._ffnn = {
-            "text": tf_layers.ReluFfn(
-                hidden_layer_sizes["text"],
-                droprate,
-                reg_lambda,
-                "text_intent" if share_hidden_layers else "text",
-            ),
-            "label": tf_layers.ReluFfn(
-                hidden_layer_sizes["label"],
-                droprate,
-                reg_lambda,
-                "text_intent" if share_hidden_layers else "label",
-            ),
-        }
-
-        if num_transformer_layers > 0:
-            self._transformer = tf_layers.TransformerEncoder(
-                num_transformer_layers,
-                transformer_size,
-                num_heads,
-                transformer_size * 4,
-                max_seq_length,
-                reg_lambda,
-                droprate,
-                unidirectional_encoder,
-                name="text_encoder",
-            )
-        else:
-            self._transformer = lambda x, mask, training: x
-
-        self._embed = {}
-        self.train_metrics = {"t_loss": tf.keras.metrics.Mean(name="t_loss")}
-        self.eval_metrics = {"val_t_loss": tf.keras.metrics.Mean(name="val_t_loss")}
-        if self._masked_lm_loss:
-            self._input_mask = tf_layers.InputMask()
-            self._embed["text_mask"] = tf_layers.Embed(
-                embed_dim, reg_lambda, "text_mask", similarity_type
-            )
-            self._embed["text_token"] = tf_layers.Embed(
-                embed_dim, reg_lambda, "text_token", similarity_type
-            )
-            self.train_metrics["m_loss"] = tf.keras.metrics.Mean(name="m_loss")
-            self.train_metrics["m_acc"] = tf.keras.metrics.Mean(name="m_acc")
-            self.eval_metrics["val_m_loss"] = tf.keras.metrics.Mean(name="val_m_loss")
-            self.eval_metrics["val_m_acc"] = tf.keras.metrics.Mean(name="val_m_acc")
-        else:
-            self._input_mask = None
-
-        if self._intent_classification:
-            self._embed["text"] = tf_layers.Embed(
-                embed_dim, reg_lambda, "text", similarity_type
-            )
-            self._embed["label"] = tf_layers.Embed(
-                embed_dim, reg_lambda, "label", similarity_type
-            )
-            self.train_metrics["i_loss"] = tf.keras.metrics.Mean(name="i_loss")
-            self.train_metrics["i_acc"] = tf.keras.metrics.Mean(name="i_acc")
-            self.eval_metrics["val_i_loss"] = tf.keras.metrics.Mean(name="val_i_loss")
-            self.eval_metrics["val_i_acc"] = tf.keras.metrics.Mean(name="val_i_acc")
-
-        if self._named_entity_recognition:
-            self._embed["logits"] = tf_layers.Embed(
-                self._num_tags, reg_lambda, "logits"
-            )
-            self._crf = tf_layers.CRF(self._num_tags, reg_lambda)
-            self.train_metrics["e_loss"] = tf.keras.metrics.Mean(name="e_loss")
-            self.train_metrics["e_f1"] = tf.keras.metrics.Mean(name="e_f1")
-            self.eval_metrics["val_e_loss"] = tf.keras.metrics.Mean(name="val_e_loss")
-            self.eval_metrics["val_e_f1"] = tf.keras.metrics.Mean(name="val_e_f1")
-        else:
-            self._crf = None
+        self._prepare_layers(config, session_data)
 
         # tf tensors
         self.training = tf.ones((), tf.bool)
 
         # tf training
-        self._optimizer = tf.keras.optimizers.Adam(learning_rate)
+        self._optimizer = tf.keras.optimizers.Adam(config["learning_rate"])
         self.entity_f1 = tfa.metrics.F1Score(
             num_classes=self._num_tags - 1,  # `0` prediction is not a prediction
             average="micro",
@@ -1221,6 +952,108 @@ class DIET(tf_models.RasaModel):
         # persist
         self.all_labels_embed = None
         self.batch_tuple_sizes = None
+
+    def _prepare_layers(self, session_data):
+        self._sparse_dropout = tf_layers.SparseDropout(rate=self.config["droprate"])
+
+        self._sparse_to_dense = {
+            "text": self._create_sparse_dense_layer(
+                session_data["text_features"],
+                "text",
+                self.config["C2"],
+                self.config["dense_dim"]["text"],
+            ),
+            "label": self._create_sparse_dense_layer(
+                session_data["label_features"],
+                "label",
+                self.config["C2"],
+                self.config["dense_dim"]["label"],
+            ),
+        }
+
+        self._ffnn = {
+            "text": tf_layers.ReluFfn(
+                self.config["hidden_layers_sizes_text"],
+                self.config["droprate"],
+                self.config["C2"],
+                "text_intent" if self.config["share_hidden_layers"] else "text",
+            ),
+            "label": tf_layers.ReluFfn(
+                self.config["hidden_layers_sizes_label"],
+                self.config["droprate"],
+                self.config["C2"],
+                "text_intent" if self.config["share_hidden_layers"] else "label",
+            ),
+        }
+
+        if self.config["num_transformer_layers"] > 0:
+            self._transformer = tf_layers.TransformerEncoder(
+                self.config["num_transformer_layers"],
+                self.config["transformer_size"],
+                self.config["num_heads"],
+                self.config["transformer_size"] * 4,
+                self.config["max_seq_length"],
+                self.config["C2"],
+                self.config["droprate"],
+                self.config["unidirectional_encoder"],
+                name="text_encoder",
+            )
+        else:
+            self._transformer = lambda x, mask, training: x
+
+        self._embed = {}
+
+        self.train_metrics = {"t_loss": tf.keras.metrics.Mean(name="t_loss")}
+        self.eval_metrics = {"val_t_loss": tf.keras.metrics.Mean(name="val_t_loss")}
+
+        self._input_mask = None
+        if self.config["masked_lm_loss"]:
+            self._input_mask = tf_layers.InputMask()
+            self._embed["text_mask"] = tf_layers.Embed(
+                self.config["embed_dim"],
+                self.config["C2"],
+                "text_mask",
+                self.config["similarity_type"],
+            )
+            self._embed["text_token"] = tf_layers.Embed(
+                self.config["embed_dim"],
+                self.config["C2"],
+                "text_token",
+                self.config["similarity_type"],
+            )
+            self.train_metrics["m_loss"] = tf.keras.metrics.Mean(name="m_loss")
+            self.train_metrics["m_acc"] = tf.keras.metrics.Mean(name="m_acc")
+            self.eval_metrics["val_m_loss"] = tf.keras.metrics.Mean(name="val_m_loss")
+            self.eval_metrics["val_m_acc"] = tf.keras.metrics.Mean(name="val_m_acc")
+
+        if self.config["intent_classification"]:
+            self._embed["text"] = tf_layers.Embed(
+                self.config["embed_dim"],
+                self.config["C2"],
+                "text",
+                self.config["similarity_type"],
+            )
+            self._embed["label"] = tf_layers.Embed(
+                self.config["embed_dim"],
+                self.config["C2"],
+                "label",
+                self.config["similarity_type"],
+            )
+            self.train_metrics["i_loss"] = tf.keras.metrics.Mean(name="i_loss")
+            self.train_metrics["i_acc"] = tf.keras.metrics.Mean(name="i_acc")
+            self.eval_metrics["val_i_loss"] = tf.keras.metrics.Mean(name="val_i_loss")
+            self.eval_metrics["val_i_acc"] = tf.keras.metrics.Mean(name="val_i_acc")
+
+        self._crf = None
+        if self.config["named_entity_recognition"]:
+            self._embed["logits"] = tf_layers.Embed(
+                self._num_tags, self.config["C2"], "logits"
+            )
+            self._crf = tf_layers.CRF(self._num_tags, self.config["C2"])
+            self.train_metrics["e_loss"] = tf.keras.metrics.Mean(name="e_loss")
+            self.train_metrics["e_f1"] = tf.keras.metrics.Mean(name="e_f1")
+            self.eval_metrics["val_e_loss"] = tf.keras.metrics.Mean(name="val_e_loss")
+            self.eval_metrics["val_e_f1"] = tf.keras.metrics.Mean(name="val_e_f1")
 
     def set_training_phase(self, training: bool):
         if training:
@@ -1394,14 +1227,14 @@ class DIET(tf_models.RasaModel):
         losses = {}
         scores = {}
 
-        if self._masked_lm_loss:
+        if self.config["masked_lm_loss"]:
             loss, acc = self._mask_loss(
                 text_transformed, text_in, lm_mask_bool_text, "text"
             )
             losses["m_loss"] = loss
             scores["m_acc"] = acc
 
-        if self._intent_classification:
+        if self.config["intent_classification"]:
             # get _cls_ vector for intent classification
             last_index = tf.maximum(
                 tf.constant(0, dtype=sequence_lengths.dtype), sequence_lengths - 1
@@ -1416,7 +1249,7 @@ class DIET(tf_models.RasaModel):
             losses["i_loss"] = loss
             scores["i_acc"] = acc
 
-        if self._named_entity_recognition:
+        if self.config["named_entity_recognition"]:
             tags = tf_batch_data["tag_ids"][0]
 
             loss, f1 = self._entity_loss(
@@ -1485,7 +1318,7 @@ class DIET(tf_models.RasaModel):
         )
 
         out = {}
-        if self._intent_classification:
+        if self.config["intent_classification"]:
             # get _cls_ vector for intent classification
             last_index = tf.maximum(
                 tf.constant(0, dtype=sequence_lengths.dtype), sequence_lengths - 1
@@ -1512,7 +1345,7 @@ class DIET(tf_models.RasaModel):
             scores = train_utils.confidence_from_sim(sim_all, self._similarity_type)
             out["i_scores"] = scores
 
-        if self._named_entity_recognition:
+        if self.config["named_entity_recognition"]:
             sequence_lengths = sequence_lengths - 1
             logits = self._embed["logits"](text_transformed)
             pred_ids = self._crf(logits, sequence_lengths)
