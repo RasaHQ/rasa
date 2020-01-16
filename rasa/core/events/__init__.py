@@ -664,7 +664,7 @@ class ReminderScheduled(Event):
             + sender_id
         )
 
-    def _data_obj(self) -> Dict[Text, Any]:
+    def _properties(self) -> Dict[Text, Any]:
         return {
             "intent": self.intent,
             "date_time": self.trigger_date_time.isoformat(),
@@ -674,12 +674,12 @@ class ReminderScheduled(Event):
         }
 
     def as_story_string(self) -> Text:
-        props = json.dumps(self._data_obj())
+        props = json.dumps(self._properties())
         return f"{self.type_name}{props}"
 
     def as_dict(self) -> Dict[Text, Any]:
         d = super().as_dict()
-        d.update(self._data_obj())
+        d.update(self._properties())
         return d
 
     @classmethod
