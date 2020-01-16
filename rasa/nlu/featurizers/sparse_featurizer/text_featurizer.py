@@ -49,7 +49,6 @@ class TextFeaturizer(Featurizer):
         "features": [
             ["low", "title", "upper"],
             [
-                "bias",
                 "low",
                 "prefix5",
                 "prefix2",
@@ -75,7 +74,6 @@ class TextFeaturizer(Featurizer):
         "suffix1": lambda word: word.text[-1:],
         "pos": lambda word: word.pos_tag,
         "pos2": lambda word: word.pos_tag[:2],
-        "bias": lambda word: "bias",
         "upper": lambda word: word.text.isupper(),
         "digit": lambda word: word.text.isdigit(),
     }

@@ -329,6 +329,7 @@ TextFeaturizer
     low             Checks if the word is lower case.
     upper           Checks if the word is upper case.
     title           Checks if the word starts with an uppercase character and all remaining characters are lowercased.
+    digit           Checks if the word contains just digits.
     prefix5         Take the first five characters of the word.
     prefix2         Take the first two characters of the word.
     suffix5         Take the last five characters of the word.
@@ -337,8 +338,6 @@ TextFeaturizer
     suffix1         Take the last character of the word.
     pos             Take the Part-of-Speech tag of the word (spaCy required).
     pos2            Take the first two characters of the Part-of-Speech tag of the word (spaCy required).
-    bias            Adds "bias".
-    digit           Checks if the word contains just digits.
     ==============  =============================================================================================
 
     As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
@@ -354,7 +353,6 @@ TextFeaturizer
           "features": [
             ["low", "title", "upper"],
             [
-              "bias",
               "low",
               "prefix5",
               "prefix2",
