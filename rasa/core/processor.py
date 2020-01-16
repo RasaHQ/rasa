@@ -361,7 +361,9 @@ class MessageProcessor:
         elif not entities:
             entity_list = []
         else:
-            warnings.warn(f"Invalid entity specification: {entities}. Assuming no entities.")
+            warnings.warn(
+                f"Invalid entity specification: {entities}. Assuming no entities."
+            )
             entity_list = []
         tracker.update(UserUttered.create_external(intent_name, entity_list))
         await self._predict_and_execute_next_action(output_channel, tracker)
