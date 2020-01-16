@@ -348,13 +348,18 @@ class MessageProcessor:
         """
         if isinstance(entities, list):
             entity_list = entities
-        else:
+        elif isinstance(entities, dict):
             # Allow for a short-hand notation {"ent1": "val1", "ent2": "val2", ...}.
             # Useful if properties like 'start', 'end', or 'extractor' are not given,
             # e.g. for external events.
             entity_list = [
                 {"entity": ent, "value": val} for ent, val in entities.items()
             ]
+        elif not entities:
+            entity_list = []
+        else:
+            warnings.warn(f"Invalid entity specification: {entities}. Assuming no entities.")
+            entity_list = []
         tracker.update(UserUttered.create_external(intent_name, entity_list))
         await self._predict_and_execute_next_action(output_channel, tracker)
         # save tracker state to continue conversation from this state
@@ -555,14 +560,16 @@ class MessageProcessor:
     async def _cancel_reminders(
         events: List[Event], tracker: DialogueStateTracker
     ) -> None:
-        """Cancel reminders that match the ReminderCancelled event"""
+        """Cancel reminders that match the ReminderCancelled event."""
 
-        # All Reminders with the same action name will be cancelled
-        for e in events:
-            if isinstance(e, ReminderCancelled):
+        # All Reminders specified by ReminderCancelled events will be cancelled
+        for event in events:
+            if isinstance(event, ReminderCancelled):
                 scheduler = await jobs.scheduler()
                 for scheduled_job in scheduler.get_jobs():
-                    if e.cancels_job_with_name(scheduled_job.name, tracker.sender_id):
+                    if event.cancels_job_with_name(
+                        scheduled_job.name, tracker.sender_id
+                    ):
                         scheduler.remove_job(scheduled_job.id)
 
     async def _run_action(
