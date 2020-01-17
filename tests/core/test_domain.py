@@ -261,6 +261,7 @@ slots: {}"""
     assert domain.as_yaml().strip().endswith(test_yaml.strip())
     assert Domain.from_yaml(domain.as_yaml()) is not None
 
+
 def test_domain_to_yaml_deprecated_templates():
     test_yaml = """actions:
 - utter_greet
@@ -296,7 +297,7 @@ slots: {}"""
     # python 3 and 2 are different here, python 3 will have a leading set
     # of --- at the beginning of the yml
     assert domain.as_yaml().strip().endswith(target_yaml.strip())
-    assert Domain.from_yaml(domain.as_yaml()) is not None 
+    assert Domain.from_yaml(domain.as_yaml()) is not None
 
 
 def test_merge_yaml_domains():
@@ -622,6 +623,7 @@ def test_clean_domain():
 
     assert hash(actual) == hash(expected)
 
+
 def test_clean_domain_deprecated_templates():
     domain_path = "data/test_domains/default_deprecated_templates.yml"
     cleaned = Domain.load(domain_path).cleaned_domain()
@@ -649,6 +651,7 @@ def test_clean_domain_deprecated_templates():
     actual = Domain.from_dict(cleaned)
 
     assert hash(actual) == hash(expected)
+
 
 def test_add_knowledge_base_slots(default_domain):
     import copy

@@ -128,7 +128,7 @@ class Domain:
             warnings.warn(
                 "Your domain file contains the key: 'templates'. This has been deprecated and renamed to 'responses'. The 'templates' key will no longer work in future versions of Rasa. Please replace 'templates' with 'responses'",
                 FutureWarning,
-            ) 
+            )
             utter_templates = cls.collect_templates(data.get("templates", {}))
 
         slots = cls.collect_slots(data.get("slots", {}))
