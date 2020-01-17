@@ -659,7 +659,7 @@ class ReminderScheduled(Event):
 
     def scheduled_job_name(self, sender_id: Text) -> Text:
         return (
-            f"[{self.name},{self.intent},{self.entities}]"
+            f"[{hash(self.name)},{hash(self.intent)},{hash(str(self.entities))}]"
             + ACTION_NAME_SENDER_ID_CONNECTOR_STR
             + sender_id
         )
@@ -753,7 +753,7 @@ class ReminderCancelled(Event):
             and `False` otherwise.
         """
         match = re.match(
-            r"^\[([^,]*),([^,]*),(.*)\]("
+            r"^\[([\d\-]*),([\d\-]*),([\d\-]*)\]("
             + re.escape(ACTION_NAME_SENDER_ID_CONNECTOR_STR)
             + re.escape(sender_id)
             + ")",
@@ -761,14 +761,14 @@ class ReminderCancelled(Event):
         )
         if not match:
             return False
-        name, intent, entities = match.group(1, 2, 3)
+        name_hash, intent_hash, entities_hash = match.group(1, 2, 3)
 
         # Cancel everything unless names/intents/entities are given to
         # narrow it down.
         return (
-            ((not self.name) or self.name == name)
-            and ((not self.intent) or self.intent == intent)
-            and ((not self.entities) or str(self.entities) == entities)
+            ((not self.name) or str(hash(self.name)) == name_hash)
+            and ((not self.intent) or str(hash(self.intent)) == intent_hash)
+            and ((not self.entities) or str(hash(str(self.entities))) == entities_hash)
         )
 
     def as_story_string(self) -> Text:
