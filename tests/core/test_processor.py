@@ -214,6 +214,7 @@ async def wait_for_all_jobs(timeout_after_seconds: Optional[float] = None):
         total_seconds += 0.1
 
     if total_seconds >= timeout_after_seconds:
+        jobs.kill_scheduler()
         raise TimeoutError
 
 
