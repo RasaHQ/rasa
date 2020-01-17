@@ -752,6 +752,7 @@ class ReminderCancelled(Event):
             `True`, if this `ReminderCancelled` should cancel the job with the given name,
             and `False` otherwise.
         """
+
         match = re.match(
             rf"^\[([\d\-]*),([\d\-]*),([\d\-]*)\]"
             + rf"({re.escape(ACTION_NAME_SENDER_ID_CONNECTOR_STR)}{re.escape(sender_id)})",
