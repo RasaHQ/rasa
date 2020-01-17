@@ -205,6 +205,18 @@ async def test_reminder_aborted(
     assert len(t.events) == 3  # nothing should have been executed
 
 
+async def wait_for_all_jobs(timeout_after_seconds: Optional[float] = None):
+    total_seconds = 0.0
+    while len((await jobs.scheduler()).get_jobs()) > 0 and (
+        total_seconds < timeout_after_seconds or not timeout_after_seconds
+    ):
+        await asyncio.sleep(0.1)
+        total_seconds += 0.1
+
+    if total_seconds >= timeout_after_seconds:
+        raise TimeoutError
+
+
 async def test_reminder_cancelled_multi_user(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
@@ -239,7 +251,7 @@ async def test_reminder_cancelled_multi_user(
     assert len((await jobs.scheduler()).get_jobs()) == 1
 
     # execute the jobs
-    await asyncio.sleep(5)
+    await wait_for_all_jobs(timeout_after_seconds=5.0)
 
     tracker_0 = default_processor.tracker_store.retrieve(sender_ids[0])
     # there should be no utter_greet action
