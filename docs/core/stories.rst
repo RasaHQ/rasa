@@ -89,7 +89,7 @@ with. Custom actions, on the other hand, involve custom code being executed.
 All actions (both utterance actions and custom actions) executed by the bot are shown
 as lines starting with ``-`` followed by the name of the action.
 
-All utterance actions must begin with the prefix ``utter_``, and must match the name
+The responses for utterance actions must begin with the prefix ``utter_``, and must match the name
 of the response defined in the domain.
 
 For custom actions, the action name is the string you choose to return from
