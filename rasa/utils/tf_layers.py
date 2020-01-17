@@ -1,17 +1,5 @@
 import logging
-import typing
-from typing import (
-    List,
-    Optional,
-    Text,
-    Dict,
-    Tuple,
-    Union,
-    Generator,
-    Callable,
-    Any,
-    NamedTuple,
-)
+from typing import List, Optional, Text, Tuple, Callable
 import tensorflow as tf
 import tensorflow_addons as tfa
 import numpy as np

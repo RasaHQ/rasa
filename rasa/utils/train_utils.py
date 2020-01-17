@@ -2,34 +2,11 @@ from collections import defaultdict
 import logging
 import scipy.sparse
 import typing
-from typing import (
-    List,
-    Optional,
-    Text,
-    Dict,
-    Tuple,
-    Union,
-    Generator,
-    Callable,
-    Any,
-    NamedTuple,
-)
+from typing import List, Optional, Text, Dict, Tuple, Union, Generator, Any, NamedTuple
 import numpy as np
-from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 
-# from tensor2tensor.models.transformer import (
-#     transformer_base,
-#     transformer_prepare_encoder,
-#     transformer_encoder,
-# )
-# from tensor2tensor.layers.common_attention import large_compatible_negative
-from rasa.utils.common import is_logging_disabled
-
-
-if typing.TYPE_CHECKING:
-    from tensor2tensor.utils.hparam import HParams
 
 logger = logging.getLogger(__name__)
 

@@ -4,7 +4,6 @@ import numpy as np
 import os
 import pickle
 import scipy.sparse
-import typing
 import warnings
 
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Callable
