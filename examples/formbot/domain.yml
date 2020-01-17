@@ -76,13 +76,5 @@ templates:
   utter_iamabot:
     - text: "I am a bot, powered by Rasa."
 
-actions:
-  - utter_slots_values
-  - utter_noworries
-  - utter_chitchat
-  - utter_ask_continue
-  - utter_greet
-  - utter_iamabot
-
 forms:
   - restaurant_form
