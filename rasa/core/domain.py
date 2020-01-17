@@ -126,7 +126,7 @@ class Domain:
         utter_templates = cls.collect_templates(data.get("responses", {}))
         if "templates" in data:
             warnings.warn(
-                "'templates' in the domain should be renamed to 'responses'",
+                "Your domain file contains the key: 'templates'. This has been deprecated and renamed to 'responses'. The 'templates' key will no longer work in future versions of Rasa. Please replace 'templates' with 'responses'",
                 FutureWarning,
             ) 
             utter_templates = cls.collect_templates(data.get("templates", {}))
