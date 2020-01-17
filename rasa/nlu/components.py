@@ -452,7 +452,7 @@ class ComponentBuilder:
 
         if cache_key is not None and self.use_cache:
             self.component_cache[cache_key] = component
-            logger.debug(
+            logger.info(
                 f"Added '{component.name}' to component cache. Key '{cache_key}'."
             )
 
