@@ -14,7 +14,11 @@ from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain, SessionConfig
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.slots import TextSlot, UnfeaturizedSlot
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
+from tests.core.conftest import (
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
+    DEFAULT_STORIES_FILE,
+)
 from rasa.utils import io as io_utils
 
 
@@ -157,7 +161,16 @@ def test_domain_from_template():
 
     assert not domain.is_empty()
     assert len(domain.intents) == 10
-    assert len(domain.action_names) == 12
+    assert len(domain.action_names) == 13
+
+
+def test_avoid_action_repetition():
+    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+    domain_with_no_actions = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS)
+
+    assert not domain.is_empty() and not domain_with_no_actions.is_empty()
+    assert len(domain.intents) == len(domain_with_no_actions.intents)
+    assert len(domain.action_names) == len(domain_with_no_actions.action_names)
 
 
 def test_utter_templates():

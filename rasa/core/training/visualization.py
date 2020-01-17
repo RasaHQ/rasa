@@ -107,7 +107,7 @@ def _fingerprint_node(graph, node, max_history) -> Set[Text]:
         if empty:
             continuations.append(candidate)
     return {
-        " - ".join([graph.node[node]["label"] for node in continuation])
+        " - ".join([graph.nodes[node]["label"] for node in continuation])
         for continuation in continuations
     }
 
@@ -143,7 +143,7 @@ def _outgoing_edges_are_similar(graph, node_a, node_b) -> bool:
 
 def _nodes_are_equivalent(graph, node_a, node_b, max_history) -> bool:
     """Decides if two nodes are equivalent based on their fingerprints."""
-    return graph.node[node_a]["label"] == graph.node[node_b]["label"] and (
+    return graph.nodes[node_a]["label"] == graph.nodes[node_b]["label"] and (
         _outgoing_edges_are_similar(graph, node_a, node_b)
         or _incoming_edges(graph, node_a) == _incoming_edges(graph, node_b)
         or _fingerprint_node(graph, node_a, max_history)
