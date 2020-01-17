@@ -21,6 +21,8 @@ def set_train_arguments(parser: argparse.ArgumentParser):
     add_debug_plots_param(parser)
     add_dump_stories_param(parser)
 
+    add_num_threads_param(parser)
+
     add_model_name_param(parser)
     add_persist_nlu_data_param(parser)
     add_force_param(parser)
@@ -49,6 +51,8 @@ def set_train_nlu_arguments(parser: argparse.ArgumentParser):
     add_out_param(parser, help_text="Directory where your models should be stored.")
 
     add_nlu_data_param(parser, help_text="File or folder containing your NLU data.")
+
+    add_num_threads_param(parser)
 
     add_model_name_param(parser)
     add_persist_nlu_data_param(parser)
@@ -130,6 +134,17 @@ def add_debug_plots_param(
         help="If enabled, will create plots showing checkpoints "
         "and their connections between story blocks in a  "
         "file called `story_blocks_connections.html`.",
+    )
+
+
+def add_num_threads_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+):
+    parser.add_argument(
+        "--num-threads",
+        type=int,
+        default=1,
+        help="Maximum amount of threads to use when training.",
     )
 
 
