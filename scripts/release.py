@@ -126,7 +126,7 @@ def get_rasa_sdk_version() -> Text:
     env_file = project_root() / "requirements.txt"
 
     with env_file.open() as f:
-        for line in f.readlines():
+        for line in f:
             if "rasa-sdk" in line:
                 version = line.split("=")[-1]
                 return version.strip()
