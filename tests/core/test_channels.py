@@ -1,5 +1,6 @@
 import json
 import logging
+import urllib.parse
 from typing import Dict
 from unittest.mock import patch, MagicMock
 
@@ -586,165 +587,179 @@ def test_slackbot_init_two_parameter():
 
 # Use monkeypatch for sending attachments, images and plain text.
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 @responses.activate
 async def test_slackbot_send_attachment_only():
     from rasa.core.channels.slack import SlackBot
 
-    responses.add(
-        responses.POST,
-        "https://slack.com/api/chat.postMessage",
-        body='{"ok":true,"purpose":"Testing bots"}',
-    )
+    with responses.RequestsMock() as rsps:
+        rsps.add(
+            responses.POST,
+            "https://slack.com/api/chat.postMessage",
+            body='{"ok":true,"purpose":"Testing bots"}',
+        )
 
-    bot = SlackBot("DummyToken", "General")
-    attachment = {
-        "fallback": "Financial Advisor Summary",
-        "color": "#36a64f",
-        "author_name": "ABE",
-        "title": "Financial Advisor Summary",
-        "title_link": "http://tenfactorialrocks.com",
-        "image_url": "https://r.com/cancel/r12",
-        "thumb_url": "https://r.com/cancel/r12",
-        "actions": [
-            {
-                "type": "button",
-                "text": "\ud83d\udcc8 Dashboard",
-                "url": "https://r.com/cancel/r12",
-                "style": "primary",
-            },
-            {
-                "type": "button",
-                "text": "\ud83d\udccb Download XL",
-                "url": "https://r.com/cancel/r12",
-                "style": "danger",
-            },
-            {
-                "type": "button",
-                "text": "\ud83d\udce7 E-Mail",
-                "url": "https://r.com/cancel/r12",
-                "style": "danger",
-            },
-        ],
-        "footer": "Powered by 1010rocks",
-        "ts": 1531889719,
-    }
+        bot = SlackBot("DummyToken", "General")
+        attachment = {
+            "fallback": "Financial Advisor Summary",
+            "color": "#36a64f",
+            "author_name": "ABE",
+            "title": "Financial Advisor Summary",
+            "title_link": "http://tenfactorialrocks.com",
+            "image_url": "https://r.com/cancel/r12",
+            "thumb_url": "https://r.com/cancel/r12",
+            "actions": [
+                {
+                    "type": "button",
+                    "text": "\ud83d\udcc8 Dashboard",
+                    "url": "https://r.com/cancel/r12",
+                    "style": "primary",
+                },
+                {
+                    "type": "button",
+                    "text": "\ud83d\udccb Download XL",
+                    "url": "https://r.com/cancel/r12",
+                    "style": "danger",
+                },
+                {
+                    "type": "button",
+                    "text": "\ud83d\udce7 E-Mail",
+                    "url": "https://r.com/cancel/r12",
+                    "style": "danger",
+                },
+            ],
+            "footer": "Powered by 1010rocks",
+            "ts": 1531889719,
+        }
 
-    await bot.send_attachment("ID", attachment)
+        await bot.send_attachment("ID", attachment)
 
-    r = responses.calls[-1]
+        last_call = rsps.calls[-1]
+        request_params = urllib.parse.parse_qs(last_call.request.body)
 
-    assert r.request.body == {
-        "channel": ["General"],
-        "as_user": ["True"],
-        "text": ["Attachment"],
-        "attachments": [json.dumps([attachment])],
-    }
+        assert request_params == {
+            "channel": ["General"],
+            "as_user": ["True"],
+            "attachments": [json.dumps([attachment])],
+        }
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 @responses.activate
-async def test_slackbot_send_attachment_withtext():
+async def test_slackbot_send_attachment_with_text():
     from rasa.core.channels.slack import SlackBot
 
-    responses.add(
-        responses.POST,
-        "https://slack.com/api/chat.postMessage",
-        body='{"ok":true,"purpose":"Testing bots"}',
-    )
+    with responses.RequestsMock() as rsps:
+        rsps.add(
+            responses.POST,
+            "https://slack.com/api/chat.postMessage",
+            body='{"ok":true,"purpose":"Testing bots"}',
+        )
 
-    bot = SlackBot("DummyToken", "General")
-    attachment = {
-        "fallback": "Financial Advisor Summary",
-        "color": "#36a64f",
-        "author_name": "ABE",
-        "title": "Financial Advisor Summary",
-        "title_link": "http://tenfactorialrocks.com",
-        "text": "Here is the summary:",
-        "image_url": "https://r.com/cancel/r12",
-        "thumb_url": "https://r.com/cancel/r12",
-        "actions": [
-            {
-                "type": "button",
-                "text": "\ud83d\udcc8 Dashboard",
-                "url": "https://r.com/cancel/r12",
-                "style": "primary",
-            },
-            {
-                "type": "button",
-                "text": "\ud83d\udccb XL",
-                "url": "https://r.com/cancel/r12",
-                "style": "danger",
-            },
-            {
-                "type": "button",
-                "text": "\ud83d\udce7 E-Mail",
-                "url": "https://r.com/cancel/r123",
-                "style": "danger",
-            },
-        ],
-        "footer": "Powered by 1010rocks",
-        "ts": 1531889719,
-    }
+        bot = SlackBot("DummyToken", "General")
+        attachment = {
+            "fallback": "Financial Advisor Summary",
+            "color": "#36a64f",
+            "author_name": "ABE",
+            "title": "Financial Advisor Summary",
+            "title_link": "http://tenfactorialrocks.com",
+            "text": "Here is the summary:",
+            "image_url": "https://r.com/cancel/r12",
+            "thumb_url": "https://r.com/cancel/r12",
+            "actions": [
+                {
+                    "type": "button",
+                    "text": "\ud83d\udcc8 Dashboard",
+                    "url": "https://r.com/cancel/r12",
+                    "style": "primary",
+                },
+                {
+                    "type": "button",
+                    "text": "\ud83d\udccb XL",
+                    "url": "https://r.com/cancel/r12",
+                    "style": "danger",
+                },
+                {
+                    "type": "button",
+                    "text": "\ud83d\udce7 E-Mail",
+                    "url": "https://r.com/cancel/r123",
+                    "style": "danger",
+                },
+            ],
+            "footer": "Powered by 1010rocks",
+            "ts": 1531889719,
+        }
 
-    await bot.send_attachment("ID", attachment)
+        await bot.send_attachment("ID", attachment)
 
-    r = responses.calls[-1]
+        last_call = rsps.calls[-1]
+        request_params = urllib.parse.parse_qs(last_call.request.body)
 
-    assert r.request.body == {
-        "channel": ["General"],
-        "as_user": ["True"],
-        "text": ["Here is the summary:"],
-        "attachments": [json.dumps([attachment])],
-    }
+        assert request_params == {
+            "channel": ["General"],
+            "as_user": ["True"],
+            "attachments": [json.dumps([attachment])],
+        }
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 @responses.activate
 async def test_slackbot_send_image_url():
     from rasa.core.channels.slack import SlackBot
 
-    responses.add(
-        responses.POST,
-        "https://slack.com/api/chat.postMessage",
-        body='{"ok":true,"purpose":"Testing bots"}',
-    )
+    with responses.RequestsMock() as rsps:
+        rsps.add(
+            responses.POST,
+            "https://slack.com/api/chat.postMessage",
+            json={"ok": True, "purpose": "Testing bots"},
+        )
 
-    bot = SlackBot("DummyToken", "General")
-    url = "http://www.rasa.net"
-    await bot.send_image_url("ID", url)
+        bot = SlackBot("DummyToken", "General")
+        url = "http://www.rasa.net"
+        await bot.send_image_url("ID", url)
 
-    r = responses.calls[-1]
+        assert len(rsps.calls) == 1
 
-    assert r.request.body["as_user"] == ["True"]
-    assert r.request.body["channel"] == ["General"]
-    assert len(r.request.body["blocks"]) == 1
-    assert '"type": "image"' in r.request.body["blocks"][0]
-    assert '"alt_text": "http://www.rasa.net"' in r.request.body["blocks"][0]
-    assert '"image_url": "http://www.rasa.net"' in r.request.body["blocks"][0]
+        last_call = rsps.calls[-1]
+        request_params = urllib.parse.parse_qs(last_call.request.body)
+
+        assert request_params["as_user"] == ["True"]
+        assert request_params["channel"] == ["General"]
+        assert len(request_params["blocks"]) == 1
+        assert '"type": "image"' in request_params["blocks"][0]
+        assert '"alt_text": "http://www.rasa.net"' in request_params["blocks"][0]
+        assert '"image_url": "http://www.rasa.net"' in request_params["blocks"][0]
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
+@pytest.mark.asyncio
 @responses.activate
 async def test_slackbot_send_text():
     from rasa.core.channels.slack import SlackBot
 
-    responses.add(
-        responses.POST,
-        "https://slack.com/api/chat.postMessage",
-        body='{"ok":true,"purpose":"Testing bots"}',
-    )
+    with responses.RequestsMock() as rsps:
+        rsps.add(
+            responses.POST,
+            "https://slack.com/api/chat.postMessage",
+            json={"ok": True, "purpose": "Testing bots"},
+        )
 
-    bot = SlackBot("DummyToken", "General")
-    await bot.send_text_message("ID", "my message")
+        bot = SlackBot("DummyToken", "General")
+        await bot.send_text_message("ID", "my message")
 
-    r = responses.calls[-1]
+        assert len(rsps.calls) == 1
 
-    assert r.parsed_body == {
-        "as_user": ["True"],
-        "channel": ["General"],
-        "text": ["my message"],
-        "type": ["mrkdwn"],
-    }
+        last_call = rsps.calls[-1]
+        request_params = urllib.parse.parse_qs(last_call.request.body)
+
+        assert request_params == {
+            "as_user": ["True"],
+            "channel": ["General"],
+            "text": ["my message"],
+            "type": ["mrkdwn"],
+        }
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
