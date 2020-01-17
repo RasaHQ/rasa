@@ -339,13 +339,14 @@ class Domain:
         self.session_config = session_config
 
         # only includes custom actions and utterance actions
-        self.user_actions = action_names
+        self.user_actions = action.combine_with_templates(action_names, templates)
+
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = (
-            action.combine_user_with_default_actions(action_names) + form_names
+            action.combine_user_with_default_actions(self.user_actions) + form_names
         )
-        self.store_entities_as_slots = store_entities_as_slots
 
+        self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
 
     def __hash__(self) -> int:

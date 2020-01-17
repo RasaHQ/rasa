@@ -1,0 +1,2 @@
+Rename ``kwargs`` to ``additional_arguments`` in ``rasa.train`` and ``rasa.core.train`` to make the name of the
+argument less confusing.
