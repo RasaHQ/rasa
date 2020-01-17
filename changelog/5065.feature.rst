@@ -1,4 +1,5 @@
-Add ``TextFeaturizer`` to sparse featurizers.
+Add ``LexicalSyntacticFeaturizer`` to sparse featurizers.
 
-``TextFeaturizer`` does the same featurization as the ``CRFEntityExtractor``. We extracted the featurization into
-a separate component so that the features can be reused and featurization is independent from the entity extraction.
+``LexicalSyntacticFeaturizer`` does the same featurization as the ``CRFEntityExtractor``. We extracted the
+featurization into a separate component so that the features can be reused and featurization is independent from the
+entity extraction.
