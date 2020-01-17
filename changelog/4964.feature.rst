@@ -1,0 +1,8 @@
+External events and reminders now trigger intents (and entities) instead of actions.
+
+``ReminderCancelled`` can now cancel multiple reminders if no name is given. It still cancels a single
+reminder if the reminder's name is specified.
+
+Add new endpoint ``/conversations/<conversation_id>/trigger_intent``, which lets the user specify an intent and a
+list of entities that is injected into the conversation in place of a user message. The bot then predicts and
+executes a response action.
