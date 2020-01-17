@@ -24,6 +24,8 @@ from rasa.utils import train_utils
 import tensorflow as tf
 
 # avoid warning println on contrib import - remove for tf 2
+from utils.train_utils import TrainingMetrics
+
 tf.contrib._warning = None
 logger = logging.getLogger(__name__)
 
@@ -284,7 +286,7 @@ class EmbeddingPolicy(Policy):
             layer_name_suffix="bot",
         )
         return train_utils.create_tf_embed(
-            b, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix="bot"
+            b, self.embed_dim, self.C2, "bot", self.similarity_type
         )
 
     def _create_tf_dial(self, a_in) -> Tuple["tf.Tensor", "tf.Tensor"]:
@@ -324,7 +326,7 @@ class EmbeddingPolicy(Policy):
             mask = mask[:, -1:]
 
         dial_embed = train_utils.create_tf_embed(
-            a, self.embed_dim, self.C2, self.similarity_type, layer_name_suffix="dial"
+            a, self.embed_dim, self.C2, "dial", self.similarity_type
         )
 
         return dial_embed, mask
@@ -483,8 +485,7 @@ class EmbeddingPolicy(Policy):
                 train_init_op,
                 eval_init_op,
                 batch_size_in,
-                loss,
-                acc,
+                TrainingMetrics(loss={"loss": loss}, score={"acc": acc}),
                 self._train_op,
                 self.session,
                 self._is_training,
