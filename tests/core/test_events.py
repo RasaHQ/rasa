@@ -16,6 +16,7 @@ from rasa.core.events import (
     ActionExecuted,
     AllSlotsReset,
     ReminderScheduled,
+    ReminderCancelled,
     ConversationResumed,
     ConversationPaused,
     StoryExported,
@@ -185,6 +186,7 @@ def test_json_parse_reminder():
     evt = {
       "event": "reminder",
       "intent": "my_intent",
+      "entities": {"entity1": "value1", "entity2": "value2"},
       "date_time": "2018-09-03T11:41:10.128172",
       "name": "my_reminder",
       "kill_on_user_msg": True,
@@ -196,6 +198,32 @@ def test_json_parse_reminder():
         parser.parse("2018-09-03T11:41:10.128172"),
         name="my_reminder",
         kill_on_user_message=True,
+    )
+
+
+def test_json_parse_reminder_cancelled():
+    # fmt: off
+    # DOCS MARKER ReminderCancelled
+    evt = {
+      "event": "cancel_reminder",
+      "name": "my_reminder",
+      "intent": "my_intent",
+      "entities": [
+            {"entity": "entity1", "value": "value1"},
+            {"entity": "entity2", "value": "value2"},
+        ],
+      "date_time": "2018-09-03T11:41:10.128172",
+    }
+    # DOCS END
+    # fmt: on
+    assert Event.from_parameters(evt) == ReminderCancelled(
+        name="my_reminder",
+        intent="my_intent",
+        entities=[
+            {"entity": "entity1", "value": "value1"},
+            {"entity": "entity2", "value": "value2"},
+        ],
+        timestamp=parser.parse("2018-09-03T11:41:10.128172"),
     )
 
 
