@@ -166,12 +166,37 @@ class TestCategoricalSlot(SlotTestCollection):
 
     @pytest.fixture(
         params=[
+            (None, [0, 0, 0, 0, 1]),
+            (1, [1, 0, 0, 0, 0]),
+            ("two", [0, 1, 0, 0, 0]),
+            ("小于", [0, 0, 1, 0, 0]),
+            ({"three": 3}, [0, 0, 0, 1, 0]),
+            (DEFAULT_CATEGORICAL_SLOT_VALUE, [0, 0, 0, 0, 0]),
+        ]
+    )
+    def value_feature_pair(self, request):
+        return request.param
+
+
+class TestCategoricalSlotDefaultValue(SlotTestCollection):
+    def create_slot(self):
+        slot = CategoricalSlot("test", values=[1, "two", "小于", {"three": 3}, None])
+        slot.add_default_value()
+        return slot
+
+    @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴"])
+    def invalid_value(self, request):
+        return request.param
+
+    @pytest.fixture(
+        params=[
             (None, [0, 0, 0, 0, 1, 0]),
             (1, [1, 0, 0, 0, 0, 0]),
             ("two", [0, 1, 0, 0, 0, 0]),
             ("小于", [0, 0, 1, 0, 0, 0]),
             ({"three": 3}, [0, 0, 0, 1, 0, 0]),
             (DEFAULT_CATEGORICAL_SLOT_VALUE, [0, 0, 0, 0, 0, 1]),
+            ("unseen value", [0, 0, 0, 0, 0, 1]),
         ]
     )
     def value_feature_pair(self, request):
