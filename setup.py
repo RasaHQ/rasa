@@ -37,7 +37,7 @@ install_requires = [
     "pymongo[tls,srv]~=3.8",
     "numpy~=1.16",
     "scipy~=1.2",
-    "tensorflow~=2.0",
+    "tensorflow~=2.1",
     # absl is a tensorflow dependency, but produces double logging before 0.8
     # should be removed once tensorflow requires absl > 0.8 on its own
     "absl-py>=0.8.0",
@@ -86,8 +86,7 @@ install_requires = [
 extras_requires = {
     "test": tests_requires,
     "spacy": ["spacy>=2.1,<2.2"],
-    # TODO requirements for convert on tf2.0
-    # "convert": ["tensorflow_text~=1.15.1", "tensorflow_hub~=0.6.0"],
+    "convert": ["tensorflow_text~=1.15.1", "tensorflow_hub~=0.6.0"],
     "mitie": ["mitie"],
     "sql": ["psycopg2~=2.8.2", "SQLAlchemy~=1.3"],
     "kafka": ["kafka-python~=1.4"],
