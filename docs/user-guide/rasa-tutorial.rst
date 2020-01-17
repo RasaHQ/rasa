@@ -194,7 +194,7 @@ So what do the different parts mean?
 **How does this fit together?**
 Rasa Core's job is to choose the right action to execute at each step
 of the conversation. In this case, our actions simply send a message to the user.
-These simple response actions are the ``actions`` in the domain that start
+These simple utterance actions are the ``actions`` in the domain that start
 with ``utter_``. The assistant will respond with a message based on a template
 from the ``templates`` section. See :ref:`custom-actions`
 to build actions that do more than just send a message.
