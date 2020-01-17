@@ -135,7 +135,7 @@ def get_rasa_sdk_version() -> Text:
 
 
 def validate_code_is_release_ready(version: Text) -> None:
-    """Make sure the code base is valid (e.g. rasa sdk is up to date)."""
+    """Make sure the code base is valid (e.g. Rasa SDK is up to date)."""
 
     sdk = get_rasa_sdk_version()
     sdk_version = (Version.coerce(sdk).major, Version.coerce(sdk).minor)
