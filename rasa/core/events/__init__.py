@@ -753,10 +753,8 @@ class ReminderCancelled(Event):
             and `False` otherwise.
         """
         match = re.match(
-            r"^\[([\d\-]*),([\d\-]*),([\d\-]*)\]("
-            + re.escape(ACTION_NAME_SENDER_ID_CONNECTOR_STR)
-            + re.escape(sender_id)
-            + ")",
+            rf"^\[([\d\-]*),([\d\-]*),([\d\-]*)\]"
+            + rf"({re.escape(ACTION_NAME_SENDER_ID_CONNECTOR_STR)}{re.escape(sender_id)})",
             job_name,
         )
         if not match:
