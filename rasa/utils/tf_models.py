@@ -44,31 +44,31 @@ class RasaModel(tf.keras.models.Model):
         pbar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
         tf_batch_size = tf.ones((), tf.int32)
+
         if eager:
             # allows increasing batch size
-            train_dataset_func = self.train_dataset
+            train_dataset_func = lambda x: self.train_dataset(x, session_data)
             train_on_batch_func = self.train_on_batch
         else:
             # allows increasing batch size
-            train_dataset_func = tf.function(self.train_dataset)
+            train_dataset_func = tf.function(
+                func=lambda x: self.train_dataset(x, session_data)
+            )
             train_on_batch_func = tf.function(
                 self.train_on_batch,
-                input_signature=[
-                    train_dataset_func(tf_batch_size, session_data).element_spec
-                ],
+                input_signature=[train_dataset_func(1).element_spec],
             )
 
         if evaluate_on_num_examples > 0:
             if eager:
-                eval_dataset_func = self.eval_dataset
+                eval_dataset_func = lambda x: self.eval_dataset(x, eval_session_data)
                 eval_func = self.eval
             else:
-                eval_dataset_func = tf.function(self.eval_dataset)
+                eval_dataset_func = tf.function(
+                    func=lambda x: self.eval_dataset(x, eval_session_data)
+                )
                 eval_func = tf.function(
-                    self.eval,
-                    input_signature=[
-                        eval_dataset_func(tf_batch_size, eval_session_data).element_spec
-                    ],
+                    self.eval, input_signature=[eval_dataset_func(1).element_spec]
                 )
         else:
             eval_dataset_func = None
@@ -85,7 +85,7 @@ class RasaModel(tf.keras.models.Model):
 
             # Train on batches
             self.set_training_phase(True)
-            for batch_in in train_dataset_func(ep_batch_size, session_data):
+            for batch_in in train_dataset_func(ep_batch_size):
                 train_on_batch_func(batch_in)
 
             # print(self.metrics)

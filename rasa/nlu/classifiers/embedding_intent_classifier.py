@@ -1316,7 +1316,7 @@ class DIET(tf_models.RasaModel):
             self.train_metrics[k].update_state(v)
 
     def train_dataset(
-        self, batch_size: int, session_data: SessionDataType
+        self, batch_size: "tf.Tensor", session_data: SessionDataType
     ) -> tf.data.Dataset:
         return train_utils.create_tf_dataset(
             session_data,
@@ -1337,7 +1337,7 @@ class DIET(tf_models.RasaModel):
             self.eval_metrics[f"val_{k}"].update_state(v)
 
     def eval_dataset(
-        self, batch_size: int, session_data: Optional[SessionDataType]
+        self, batch_size: "tf.Tensor", session_data: Optional[SessionDataType]
     ) -> tf.data.Dataset:
         if session_data is not None:
             return train_utils.create_tf_dataset(
