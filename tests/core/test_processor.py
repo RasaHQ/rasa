@@ -278,7 +278,7 @@ async def test_reminder_cancelled_cancels_job_with_name(
 
 
 async def test_reminder_cancelled_cancels_job_with_name_special_name(
-        default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     sender_id = "][]][xy,,=+2f'[:/;  >]<0d]A[e_,02"
     name = "wkjbgr,34(,*&%^^&*(OP#LKMN V#NF# # #R"
