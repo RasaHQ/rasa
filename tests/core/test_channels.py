@@ -647,7 +647,7 @@ async def test_slackbot_send_attachment_only():
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
 @pytest.mark.asyncio
 @responses.activate
-async def test_slackbot_send_attachment_withtext():
+async def test_slackbot_send_attachment_with_text():
     from rasa.core.channels.slack import SlackBot
 
     with responses.RequestsMock() as rsps:
