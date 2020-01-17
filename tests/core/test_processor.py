@@ -262,6 +262,37 @@ async def test_reminder_cancelled_multi_user(
     )
 
 
+async def test_reminder_cancelled_cancels_job_with_name(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    sender_id = "][]][xy,,=+2f'[:/;>]  <0d]A[e_,02"
+
+    reminder = ReminderScheduled(
+        intent="greet", trigger_date_time=datetime.datetime.now()
+    )
+    job_name = reminder.scheduled_job_name(sender_id)
+    reminder_cancelled = ReminderCancelled()
+
+    assert reminder_cancelled.cancels_job_with_name(job_name, sender_id)
+    assert not reminder_cancelled.cancels_job_with_name(job_name.upper(), sender_id)
+
+
+async def test_reminder_cancelled_cancels_job_with_name_special_name(
+        default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    sender_id = "][]][xy,,=+2f'[:/;  >]<0d]A[e_,02"
+    name = "wkjbgr,34(,*&%^^&*(OP#LKMN V#NF# # #R"
+
+    reminder = ReminderScheduled(
+        intent="greet", trigger_date_time=datetime.datetime.now(), name=name
+    )
+    job_name = reminder.scheduled_job_name(sender_id)
+    reminder_cancelled = ReminderCancelled(name)
+
+    assert reminder_cancelled.cancels_job_with_name(job_name, sender_id)
+    assert not reminder_cancelled.cancels_job_with_name(job_name.upper(), sender_id)
+
+
 async def cancel_reminder_and_check(
     tracker, default_processor, reminder_canceled_event, num_jobs_before, num_jobs_after
 ):
