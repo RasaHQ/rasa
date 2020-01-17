@@ -305,10 +305,10 @@ CountVectorsFeaturizer
           OOV_words: []  # list of strings
 
 
-TextFeaturizer
-~~~~~~~~~~~~~~~
+LexicalSyntacticFeaturizer
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: Text feature creation to support entity extraction.
+:Short: Lexical and syntactic feature creation to support entity extraction.
 :Outputs:
    ``text_sparse_features``
 :Requires: ``tokens``
@@ -320,7 +320,7 @@ TextFeaturizer
     Features could for example be if a token is upper case, if it is a digit, or the prefix of that token (e.g.
     first two characters).
 :Configuration:
-    You need to configure what kind of text features the featurizer should extract.
+    You need to configure what kind of lexical and syntactic features the featurizer should extract.
     The following features are available:
 
     ==============  =============================================================================================
@@ -349,7 +349,7 @@ TextFeaturizer
     .. code-block:: yaml
 
         pipeline:
-        - name: "TextFeaturizer":
+        - name: "LexicalSyntacticFeaturizer":
           "features": [
             ["low", "title", "upper"],
             [

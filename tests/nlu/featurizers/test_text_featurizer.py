@@ -4,7 +4,9 @@ import pytest
 import scipy.sparse
 
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.featurizers.sparse_featurizer.text_featurizer import TextFeaturizer
+from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
+    LexicalSyntacticFeaturizer,
+)
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.constants import TEXT_ATTRIBUTE, SPARSE_FEATURE_NAMES, SPACY_DOCS
 from rasa.nlu.training_data import Message
@@ -26,7 +28,7 @@ from rasa.nlu.training_data import Message
     ],
 )
 def test_text_featurizer(sentence, expected, expected_cls):
-    featurizer = TextFeaturizer(
+    featurizer = LexicalSyntacticFeaturizer(
         {"features": [["upper"], ["prefix2", "suffix2", "digit"], ["low"]]}
     )
 
@@ -61,7 +63,7 @@ def test_text_featurizer(sentence, expected, expected_cls):
     ],
 )
 def test_text_featurizer_window_size(sentence, expected, expected_cls):
-    featurizer = TextFeaturizer(
+    featurizer = LexicalSyntacticFeaturizer(
         {"features": [["upper"], ["digit"], ["low"], ["digit"]]}
     )
 
@@ -86,7 +88,7 @@ def test_text_featurizer_window_size(sentence, expected, expected_cls):
 
 
 def test_text_featurizer_missing_spacy_nlp():
-    featurizer = TextFeaturizer({"features": [["pos", "pos2"]]})
+    featurizer = LexicalSyntacticFeaturizer({"features": [["pos", "pos2"]]})
 
     train_message = Message("Missing spacy.")
 
@@ -114,7 +116,7 @@ def test_text_featurizer_missing_spacy_nlp():
     ],
 )
 def test_text_featurizer_using_pos(sentence, expected, spacy_nlp):
-    featurizer = TextFeaturizer({"features": [["pos", "pos2"]]})
+    featurizer = LexicalSyntacticFeaturizer({"features": [["pos", "pos2"]]})
 
     train_message = Message(sentence)
     test_message = Message(sentence)

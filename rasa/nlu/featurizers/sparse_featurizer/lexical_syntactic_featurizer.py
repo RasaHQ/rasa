@@ -34,7 +34,7 @@ class Word(typing.NamedTuple):
     pos_tag: Text
 
 
-class TextFeaturizer(Featurizer):
+class LexicalSyntacticFeaturizer(Featurizer):
 
     provides = [SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]]
 
@@ -289,9 +289,9 @@ class TextFeaturizer(Featurizer):
         meta: Dict[Text, Any],
         model_dir: Optional[Text] = None,
         model_metadata: Optional["Metadata"] = None,
-        cached_component: Optional["TextFeaturizer"] = None,
+        cached_component: Optional["LexicalSyntacticFeaturizer"] = None,
         **kwargs: Any,
-    ) -> "TextFeaturizer":
+    ) -> "LexicalSyntacticFeaturizer":
 
         file_name = meta.get("file")
 
@@ -300,7 +300,7 @@ class TextFeaturizer(Featurizer):
         ) as f:
             feature_to_idx_dict = pickle.load(f)
 
-        return TextFeaturizer(meta, feature_to_idx_dict=feature_to_idx_dict)
+        return LexicalSyntacticFeaturizer(meta, feature_to_idx_dict=feature_to_idx_dict)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
