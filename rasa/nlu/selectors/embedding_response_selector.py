@@ -3,7 +3,41 @@ import typing
 from typing import Any, Dict, Text
 
 from rasa.nlu.components import any_of
-from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
+from rasa.nlu.classifiers.embedding_intent_classifier import (
+    EmbeddingIntentClassifier,
+    USE_MAX_SIM_NEG,
+    HIDDEN_LAYERS_SIZES_TEXT,
+    HIDDEN_LAYERS_SIZES_LABEL,
+    SHARE_HIDDEN_LAYERS,
+    TRANSFORMER_SIZE,
+    NUM_TRANSFORMER_LAYERS,
+    POS_ENCODING,
+    NUM_HEADS,
+    MAX_SEQ_LENGTH,
+    BATCH_SIZES,
+    BATCH_STRATEGY,
+    EPOCHS,
+    RANDOM_SEED,
+    LEARNING_RATE,
+    DENSE_DIM,
+    EMBED_DIM,
+    NUM_NEG,
+    SIMILARITY_TYPE,
+    LOSS_TYPE,
+    MU_POS,
+    MU_NEG,
+    SCALE_LOSS,
+    C2,
+    C_EMB,
+    DROPRATE,
+    UNIDIRECTIONAL_ENCODER,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    INTENT_CLASSIFICATION,
+    ENTITY_RECOGNITION,
+    MASKED_LM,
+    SPARSE_INPUT_DROPOUT,
+)
 from rasa.nlu.constants import (
     RESPONSE_ATTRIBUTE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -17,11 +51,6 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message
-
-import tensorflow as tf
-
-# avoid warning println on contrib import - remove for tf 2
-tf.contrib._warning = None
 
 
 class ResponseSelector(EmbeddingIntentClassifier):
@@ -60,60 +89,81 @@ class ResponseSelector(EmbeddingIntentClassifier):
         # nn architecture
         # sizes of hidden layers before the embedding layer for input words
         # the number of hidden layers is thus equal to the length of this list
-        "hidden_layers_sizes_a": [256, 128],
+        HIDDEN_LAYERS_SIZES_TEXT: [256, 128],
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
-        "hidden_layers_sizes_b": [256, 128],
+        HIDDEN_LAYERS_SIZES_LABEL: [256, 128],
         # Whether to share the hidden layer weights between input words and intent labels
-        "share_hidden_layers": False,
+        SHARE_HIDDEN_LAYERS: False,
+        # number of units in transformer
+        TRANSFORMER_SIZE: 128,
+        # number of transformer layers
+        NUM_TRANSFORMER_LAYERS: 1,
+        # number of attention heads in transformer
+        NUM_HEADS: 4,
+        # type of positional encoding in transformer
+        POS_ENCODING: "timing",  # string 'timing' or 'emb'
+        # max sequence length if pos_encoding='emb'
+        MAX_SEQ_LENGTH: 256,
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
-        "batch_size": [64, 256],
+        BATCH_SIZES: [64, 256],
         # how to create batches
-        "batch_strategy": "balanced",  # string 'sequence' or 'balanced'
+        BATCH_STRATEGY: "balanced",  # string 'sequence' or 'balanced'
         # number of epochs
-        "epochs": 300,
+        EPOCHS: 300,
         # set random seed to any int to get reproducible results
-        "random_seed": None,
+        RANDOM_SEED: None,
+        # optimizer
+        LEARNING_RATE: 0.001,
         # embedding parameters
         # default dense dimension used if no dense features are present
-        "dense_dim": {"text": 512, "label": 20},
+        DENSE_DIM: {"text": 512, "label": 20},
         # dimension size of embedding vectors
-        "embed_dim": 20,
+        EMBED_DIM: 20,
         # the type of the similarity
-        "num_neg": 20,
+        NUM_NEG: 20,
         # flag if minimize only maximum similarity over incorrect actions
-        "similarity_type": "auto",  # string 'auto' or 'cosine' or 'inner'
+        SIMILARITY_TYPE: "auto",  # string 'auto' or 'cosine' or 'inner'
         # the type of the loss function
-        "loss_type": "softmax",  # string 'softmax' or 'margin'
+        LOSS_TYPE: "softmax",  # string 'softmax' or 'margin'
         # how similar the algorithm should try
         # to make embedding vectors for correct intent labels
-        "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
+        MU_POS: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
         # maximum negative similarity for incorrect intent labels
-        "mu_neg": -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
+        MU_NEG: -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
         # flag: if true, only minimize the maximum similarity for
         # incorrect intent labels
-        "use_max_sim_neg": True,
+        USE_MAX_SIM_NEG: True,
         # scale loss inverse proportionally to confidence of correct prediction
-        "scale_loss": True,
+        SCALE_LOSS: True,
         # regularization parameters
         # the scale of L2 regularization
-        "C2": 0.002,
+        C2: 0.002,
         # the scale of how critical the algorithm should be of minimizing the
         # maximum similarity between embeddings of different intent labels
-        "C_emb": 0.8,
+        C_EMB: 0.8,
         # dropout rate for rnn
-        "droprate": 0.2,
+        DROPRATE: 0.2,
+        # use a unidirectional or bidirectional encoder
+        UNIDIRECTIONAL_ENCODER: True,
         # visualization of accuracy
         # how often to calculate training accuracy
-        "evaluate_every_num_epochs": 20,  # small values may hurt performance
+        EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
-        "evaluate_on_num_examples": 0,  # large values may hurt performance,
+        EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance,
         # selector config
         # name of the intent for which this response selector is to be trained
         "retrieval_intent": None,
+        # if true intent classification is trained and intent predicted
+        INTENT_CLASSIFICATION: True,
+        # if true named entity recognition is trained and entities predicted
+        ENTITY_RECOGNITION: False,
+        MASKED_LM: False,
+        SPARSE_INPUT_DROPOUT: False,
     }
+
     # end default properties (DOC MARKER - don't remove)
 
     def _load_selector_params(self, config: Dict[Text, Any]):

@@ -37,15 +37,10 @@ install_requires = [
     "pymongo[tls,srv]~=3.8",
     "numpy~=1.16",
     "scipy~=1.2",
-    "tensorflow~=1.15.0",
+    "tensorflow~=2.1",
     # absl is a tensorflow dependency, but produces double logging before 0.8
     # should be removed once tensorflow requires absl > 0.8 on its own
     "absl-py>=0.8.0",
-    # setuptools comes from tensorboard requirement:
-    # https://github.com/tensorflow/tensorboard/blob/1.14/tensorboard/pip_package/setup.py#L33
-    "setuptools >= 41.0.0",
-    "tensorflow-probability~=0.7.0",
-    "tensor2tensor~=1.14.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
     "networkx~=2.4.0",
@@ -86,9 +81,6 @@ install_requires = [
     "SQLAlchemy~=1.3.0",
     "sklearn-crfsuite~=0.3.6",
     "PyJWT~=1.7",
-    # remove when tensorflow@1.15.x or a pre-release patch is released
-    # https://github.com/tensorflow/tensorflow/issues/32319
-    "gast==0.2.2",
 ]
 
 extras_requires = {
