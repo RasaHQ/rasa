@@ -26,6 +26,10 @@ from rasa.core.trackers import DialogueStateTracker
 
 DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
 
+DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS = (
+    "data/test_domains/default_with_slots_and_no_actions.yml"
+)
+
 DEFAULT_DOMAIN_PATH_WITH_MAPPING = "data/test_domains/default_with_mapping.yml"
 
 DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
@@ -53,6 +57,7 @@ TEST_DIALOGUES = [
 
 EXAMPLE_DOMAINS = [
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
     "examples/formbot/domain.yml",
     "examples/moodbot/domain.yml",
@@ -82,6 +87,16 @@ class MockedMongoTrackerStore(MongoTrackerStore):
         self.db = MongoClient().rasa
         self.collection = "conversations"
         super(MongoTrackerStore, self).__init__(_domain, None)
+
+
+# https://github.com/pytest-dev/pytest-asyncio/issues/68
+# this event_loop is used by pytest-asyncio, and redefining it
+# is currently the only way of changing the scope of this fixture
+@pytest.yield_fixture(scope="session")
+def event_loop(request):
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope="session")

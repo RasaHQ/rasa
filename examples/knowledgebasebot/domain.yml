@@ -30,10 +30,6 @@ slots:
     type: unfeaturized
 
 actions:
-- utter_greet
-- utter_goodbye
-- utter_ask_rephrase
-- utter_iamabot
 - action_query_knowledge_base
 
 responses:

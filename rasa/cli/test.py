@@ -85,7 +85,7 @@ def test_core(args: argparse.Namespace) -> None:
                 stories=stories,
                 endpoints=endpoints,
                 output=output,
-                kwargs=vars(args),
+                additional_arguments=vars(args),
             )
 
     else:

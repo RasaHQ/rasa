@@ -232,11 +232,11 @@ async def test_generate_training_data_with_cycles(default_domain):
     # deterministic way but should always be 3 or 4
     assert len(training_trackers) == 3 or len(training_trackers) == 4
 
-    # if we have 4 trackers, there is going to be one example more for label 9
-    num_nines = len(training_trackers) - 1
+    # if we have 4 trackers, there is going to be one example more for label 10
+    num_tens = len(training_trackers) - 1
     # if new default actions are added the keys of the actions will be changed
 
-    assert Counter(y) == {0: 6, 10: 3, 9: num_nines, 1: 2, 11: 1}
+    assert Counter(y) == {0: 6, 10: num_tens, 12: 1, 1: 2, 11: 3}
 
 
 async def test_generate_training_data_with_unused_checkpoints(tmpdir, default_domain):
