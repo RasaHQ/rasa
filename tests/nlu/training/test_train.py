@@ -153,27 +153,6 @@ async def test_train_model_no_events(language, pipeline, component_builder, tmpd
     assert loaded.parse("Hello today is Monday, again!") is not None
 
 
-@utilities.slowtest
-async def test_train_model_with_entities(component_builder, tmpdir):
-    _config = utilities.base_test_conf("supervised_embeddings")
-    _config.pipeline.remove({"name": "CRFEntityExtractor"})
-    (trained, _, persisted_path) = await train(
-        _config,
-        path=tmpdir.strpath,
-        data="./data/test/multiple_files_markdown",
-        component_builder=component_builder,
-    )
-    assert trained.pipeline
-    loaded = Interpreter.load(persisted_path, component_builder)
-    assert loaded.pipeline
-    result = loaded.parse("list Italian restaurants")
-    assert result is not None
-    assert result["intent"]["name"] == "restaurant_search"
-    assert len(result["entities"]) == 1
-    assert result["entities"][0]["value"] == "Italian"
-    assert result["entities"][0]["entity"] == "cuisine"
-
-
 async def test_train_model_empty_pipeline(component_builder):
     # Should return an empty pipeline
     _config = utilities.base_test_conf(pipeline_template=None)

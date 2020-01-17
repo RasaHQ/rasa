@@ -573,38 +573,6 @@ def output_validation_stat(
     return ep_val_metrics
 
 
-def _write_training_metrics(
-    output_file: Text,
-    epoch: int,
-    train_metrics: TrainingMetrics,
-    val_metrics: TrainingMetrics,
-):
-    if output_file:
-        import datetime
-
-        # output log file
-        with open(output_file, "a") as f:
-            # make headers on first epoch
-            if epoch == 0:
-                f.write(f"EPOCH\tTIMESTAMP")
-                [f.write(f"\t{key.upper()}") for key in train_metrics.loss.keys()]
-                [f.write(f"\t{key.upper()}") for key in train_metrics.score.keys()]
-                [f.write(f"\tVAL_{key.upper()}") for key in train_metrics.loss.keys()]
-                [f.write(f"\tVAL_{key.upper()}") for key in train_metrics.score.keys()]
-
-            f.write(f"\n{epoch}\t{datetime.datetime.now():%H:%M:%S}")
-            [f.write(f"\t{val:.3f}") for val in train_metrics.loss.values()]
-            [f.write(f"\t{val:.3f}") for val in train_metrics.score.values()]
-            [
-                f.write(f"\t{val:.3f}") if val else f.write("\t0.0")
-                for val in val_metrics.loss.values()
-            ]
-            [
-                f.write(f"\t{val:.3f}") if val else f.write("\t0.0")
-                for val in val_metrics.score.values()
-            ]
-
-
 def extract_attention(attention_weights) -> Optional["tf.Tensor"]:
     """Extract attention probabilities from t2t dict"""
 
