@@ -84,7 +84,7 @@ see :ref:`custom-actions`).
 .. _domain-responses:
 
 Responses
--------------------
+---------
 
 Responses are messages the bot will send back to the user. There are
 two ways to use these responses:
