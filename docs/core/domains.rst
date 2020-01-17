@@ -193,7 +193,7 @@ For each response, you can have multiple **response templates** (see :ref:`varia
 If you have certain response templates that you would like sent only to specific
 channels, you can specify this with the ``channel:`` key. The value should match
 the name defined in the ``name()`` method of the channel's ``OutputChannel``
-class. Channel-specific response templates are especially useful if creating custom
+class. Channel-specific responses are especially useful if creating custom
 output payloads that will only work in certain channels.
 
 
