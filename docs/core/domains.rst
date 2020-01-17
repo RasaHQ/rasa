@@ -187,7 +187,7 @@ can be sent like so:
 
 
 Channel-Specific Responses
----------------------------
+--------------------------
 
 For each response, you can have multiple **response templates** (see :ref:`variations`).
 If you have certain response templates that you would like sent only to specific
