@@ -12,7 +12,7 @@ Actions
 Actions are the things your bot runs in response to user input.
 There are four kinds of actions in Rasa:
 
- 1. **Response actions**: start with ``utter_`` and send a specific message
+ 1. **Utterance actions**: start with ``utter_`` and send a specific message
     to the user
  2. **Retrieval actions**: start with ``respond_`` and send a message selected by a retrieval model
  3. **Custom actions**: run arbitrary code and send any number of messages (or none).
@@ -22,10 +22,10 @@ There are four kinds of actions in Rasa:
 .. contents::
    :local:
 
-Response Actions
+Utterance Actions
 -----------------
 
-To define a response action (``ActionUtterTemplate``), add a response to the domain file
+To define an utterance action (``ActionUtterTemplate``), add a response to the domain file
 that starts with ``utter_``:
 
 .. code-block:: yaml
@@ -34,7 +34,7 @@ that starts with ``utter_``:
       utter_my_message:
         - "this is what I want my action to say!"
 
-It is conventional to start the name of an response action with ``utter_``.
+It is conventional to start the name of an utterance action with ``utter_``.
 If this prefix is missing, you can still use the response in your custom
 actions, but the response can not be directly predicted as its own action.
 See :ref:`responses` for more details.

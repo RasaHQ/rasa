@@ -82,19 +82,19 @@ entities (you can, however, change this behavior using the
 
 Actions
 ~~~~~~~
-While writing stories, you will encounter two types of actions: response actions
-and custom actions. Response actions are hardcoded messages that a bot can respond
+While writing stories, you will encounter two types of actions: utterance actions
+and custom actions. Utterance actions are hardcoded messages that a bot can respond
 with. Custom actions, on the other hand, involve custom code being executed.
 
-All actions (both response actions and custom actions) executed by the bot are shown
+All actions (both utterance actions and custom actions) executed by the bot are shown
 as lines starting with ``-`` followed by the name of the action.
 
-All response actions must begin with the prefix ``utter_``, and must match the name
+All utterance actions must begin with the prefix ``utter_``, and must match the name
 of the response defined in the domain.
 
 For custom actions, the action name is the string you choose to return from
 the ``name`` method of the custom action class. Although there is no restriction
-on naming your custom actions (unlike response actions), the best practice here is to
+on naming your custom actions (unlike utterance actions), the best practice here is to
 prefix the name with ``action_``.
 
 Events
