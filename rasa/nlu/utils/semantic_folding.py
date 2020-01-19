@@ -18,7 +18,9 @@ class SemanticFoldingGenerator:
         self._density = density
         self._som = None
         self._vocab = set()
-        self._snippet_BOWs = []
+        self._snippets = []
+        self._snippet_data = None
+        self.vectorizer = CountVectorizer(lowercase=False)
 
     @staticmethod
     def _words_of_line(line: Text) -> List[Text]:
@@ -43,42 +45,63 @@ class SemanticFoldingGenerator:
                 if file.endswith(file_extension):
                     f(os.path.join(root, file))
 
-    def _add_vocab_from_dir(self, dir_name: Text, file_extension: Text = ""):
-        self.file_system_scan(self._add_vocab_from_file, dir_name, file_extension)
-
-    def _add_vocab_from_file(self, filename: Text) -> None:
+    def _load_snippets_from_file(self, filename: Text) -> None:
         with open(filename, "r", encoding="utf8") as file:
-            for line in file:
-                words = self._words_of_line(line)
-
-                for word in words:
-                    self._vocab.add(word)
-
-    def _create_snippet_bows_from_dir(self, dir_name: Text, file_extension: Text = ""):
-        self.file_system_scan(self._create_snippet_bows_from_file, dir_name, file_extension)
-
-    def _create_snippet_bows_from_file(self, filename: Text, min_snippet_length: int = 10) -> None:
-        with open(filename, "r", encoding="utf8") as file:
-            bow = np.zeros(len(self._vocab))
-            words_in_snippet = 0
+            snippet = ""
             for line in file:
                 if len(line.strip()) > 0:
-                    words = self._words_of_line(line)
-                    for word in words:
-                        words_in_snippet += 1
-                        for i, known_word in enumerate(self._vocab):
-                            if word == known_word:
-                                bow[i] += 1
+                    snippet += line
                 else:
-                    if words_in_snippet > min_snippet_length:
-                        self._snippet_BOWs.append(csr_matrix(bow, dtype=np.float32))
-                    bow = np.zeros(len(self._vocab))
-                    words_in_snippet = 0
+                    if snippet:
+                        self._snippets.append(snippet)
+                    snippet = ""
 
     def _train_som(self, data: csr_matrix, num_iterations: int = 10**6) -> None:
         _, input_dim = data.shape
         self._som = BSom(self.height, self.width, input_dim, topol=topology.HEXA, verbose=1)
-        self._som.train(data, tmax=num_iterations, cool=cooling.LINEAR)
+        self._som.train(data, cool=cooling.LINEAR)
+
+    def train(self):
+        self.vectorizer.fit(self._snippets)
+        self._snippet_data = self.vectorizer.transform(self._snippets)
+        print(self._snippet_data.shape)
+        self._train_som(self._snippet_data)
+
+    def fingerprint(self, word: Text) -> np.ndarray:
+        word_index = self.vectorizer.vocabulary_.get(word)
+        if not word_index:
+            raise ValueError("OOV")
+
+        # Find all snippets (rows) which contain the `word`
+        rows, cols = self._snippet_data.nonzero()
+        row_indices = np.where(cols == word_index)[0]
+        snippet_indices = rows[row_indices]
+
+        fingerprint = np.zeros((self.height, self.width), dtype=np.int)
+
+        # For all these snippets, find their position on the map (best matching unit)
+        for s in snippet_indices:
+            bmus = self._som.bmus(self._snippet_data[s])
+            for bmu in bmus:
+                fingerprint[bmu[0], bmu[1]] += 1
+
+        # Apply threshold
+        max_active = round(self._density * self.width * self.height)
+        max_inactive = self.width * self.height - max_active
+        print(max_active)
+        fingerprint = np.reshape(
+            fingerprint,
+            (self.width * self.height, )
+        )
+        min_indices = np.argpartition(
+            fingerprint,
+            max_inactive
+        )[:max_inactive]
+        fingerprint[min_indices] = 0
+
+        fingerprint = np.reshape(fingerprint, (self.width, self.height))
+
+        return fingerprint
 
     @property
     def width(self):
@@ -90,11 +113,23 @@ class SemanticFoldingGenerator:
 
 
 if __name__ == '__main__':
-    sfg = SemanticFoldingGenerator(12, 12)
+    sfg = SemanticFoldingGenerator(32, 32)
 
     # traverse root directory, and list directories as dirs and files as files
     dir = "/home/jem-mosig/rasa/rasa/docs/"
-    sfg._add_vocab_from_dir(dir, ".rst")
-    sfg._create_snippet_bows_from_dir(dir, ".rst")
+    sfg.file_system_scan(sfg._load_snippets_from_file, dir, ".rst")
+    sfg.train()
 
-    print(len(sfg._snippet_BOWs))
+    np.set_printoptions(threshold=np.inf)
+    import matplotlib.pyplot as plt
+
+
+    # print(sfg.fingerprint("chatbot"))
+    # Display matrix
+
+    query = "chatbot"
+    while query:
+        print(f"Fingerprint of '{query}':")
+        plt.matshow(sfg.fingerprint(query))
+        plt.show()
+        query = input("Term: ")
