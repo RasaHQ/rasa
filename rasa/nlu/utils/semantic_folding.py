@@ -1,10 +1,12 @@
 import os
 import re
+import sys
 from collections import defaultdict
 from typing import Text, List, Any
 
 import numpy as np
-from scipy.sparse import csr_matrix, hstack
+from tqdm import tqdm
+from scipy.sparse import csr_matrix, save_npz, load_npz
 from sparse_som import *
 
 from sklearn.feature_extraction.text import CountVectorizer
@@ -57,9 +59,15 @@ class SemanticFoldingGenerator:
                     snippet = ""
 
     def _train_som(self, data: csr_matrix, num_iterations: int = 10**6) -> None:
+        dump_file_name = "som.npy"
         _, input_dim = data.shape
-        self._som = BSom(self.height, self.width, input_dim, topol=topology.HEXA, verbose=1)
-        self._som.train(data, cool=cooling.LINEAR)
+        self._som = BSom(self.height, self.width, input_dim, topol=topology.HEXA)
+        if os.path.exists(dump_file_name):
+            print("Loading codebook...")
+            self._som.codebook = np.load(dump_file_name)
+        else:
+            self._som.train(data, cool=cooling.LINEAR)
+            np.save(dump_file_name, self._som.codebook)
 
     def train(self):
         self.vectorizer.fit(self._snippets)
@@ -81,14 +89,15 @@ class SemanticFoldingGenerator:
 
         # For all these snippets, find their position on the map (best matching unit)
         for s in snippet_indices:
+            sys.stdout = open(os.devnull, 'w')  # Block 'print'
             bmus = self._som.bmus(self._snippet_data[s])
+            sys.stdout = sys.__stdout__
             for bmu in bmus:
                 fingerprint[bmu[0], bmu[1]] += 1
 
         # Apply threshold
         max_active = round(self._density * self.width * self.height)
         max_inactive = self.width * self.height - max_active
-        print(max_active)
         fingerprint = np.reshape(
             fingerprint,
             (self.width * self.height, )
@@ -99,9 +108,9 @@ class SemanticFoldingGenerator:
         )[:max_inactive]
         fingerprint[min_indices] = 0
 
-        fingerprint = np.reshape(fingerprint, (self.width, self.height))
+        # fingerprint = np.reshape(fingerprint, (self.width, self.height))
 
-        return fingerprint
+        return fingerprint.nonzero()[0]
 
     @property
     def width(self):
@@ -121,15 +130,27 @@ if __name__ == '__main__':
     sfg.train()
 
     np.set_printoptions(threshold=np.inf)
-    import matplotlib.pyplot as plt
+    # import matplotlib.pyplot as plt
 
+    with open("model.txt", "w+", encoding="utf8") as file:
+        for word in sfg.vectorizer.vocabulary_.keys():
+            file.write(f"\"{word}\": {sfg.fingerprint(word).tolist()}\n")
 
-    # print(sfg.fingerprint("chatbot"))
-    # Display matrix
+    # print(sfg.fingerprint("Rasa"))
 
-    query = "chatbot"
-    while query:
-        print(f"Fingerprint of '{query}':")
-        plt.matshow(sfg.fingerprint(query))
-        plt.show()
-        query = input("Term: ")
+    # query = "chatbot"
+    # while query:
+    #     print(f"Fingerprint of '{query}':")
+    #     plt.matshow(sfg.fingerprint(query))
+    #     plt.show()
+    #     query = input("Term: ")
+
+    # plt.matshow(sfg.fingerprint("Rasa"), )
+    # plt.title("Rasa")
+    # plt.matshow(sfg.fingerprint("chatbot"))
+    # plt.title("chatbot")
+    # plt.matshow(sfg.fingerprint("source"))
+    # plt.title("source")
+    # plt.matshow(sfg.fingerprint("help"))
+    # plt.title("help")
+    # plt.show()
