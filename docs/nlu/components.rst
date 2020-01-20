@@ -306,7 +306,7 @@ CountVectorsFeaturizer
 
 
 LexicalSyntacticFeaturizer
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Short: Lexical and syntactic feature creation to support entity extraction.
 :Outputs:
