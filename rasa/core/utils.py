@@ -458,14 +458,17 @@ def create_task_error_logger(error_message: Text = "") -> Callable[[Future], Non
     return handler
 
 
-def replace_floats_with_decimals(obj: Union[List, Dict]) -> Any:
+def replace_floats_with_decimals(
+    obj: Union[List, Dict], round_digits: int = 9
+) -> Any:
     """
     Utility method to recursively walk a dictionary or list converting all `float` to `Decimal` as required by DynamoDb.
 
     Args:
         obj: A `List` or `Dict` object.
+        round_digits: A int value to set the rounding precision of Decimal values.
 
-    Returns: An object with all matching values and `float` type replaced by `Decimal` rounded to 9 decimal places.
+    Returns: An object with all matching values and `float` types replaced by `Decimal`s rounded to 9 decimal places.
 
     """
     if isinstance(obj, list):
@@ -477,7 +480,7 @@ def replace_floats_with_decimals(obj: Union[List, Dict]) -> Any:
             obj[j] = replace_floats_with_decimals(obj[j])
         return obj
     elif isinstance(obj, float):
-        return round(Decimal(obj), 9)
+        return round(Decimal(obj), round_digits)
     else:
         return obj
 
