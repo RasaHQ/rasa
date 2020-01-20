@@ -212,17 +212,17 @@ def _get_previous_event(
     if not state:
         return previous_event_type, previous_event_name
 
-    for k in state:
+    for turn_label in state:
         if (
-            k.startswith(PREV_PREFIX)
-            and k.replace(PREV_PREFIX, "") != ACTION_LISTEN_NAME
+            turn_label.startswith(PREV_PREFIX)
+            and turn_label.replace(PREV_PREFIX, "") != ACTION_LISTEN_NAME
         ):
             previous_event_type = "action"
-            previous_event_name = k.replace(PREV_PREFIX, "")
+            previous_event_name = turn_label.replace(PREV_PREFIX, "")
             break
-        elif k.startswith(INTENT_ATTRIBUTE + "_"):
+        elif turn_label.startswith(INTENT_ATTRIBUTE + "_"):
             previous_event_type = "intent"
-            previous_event_name = k.replace(INTENT_ATTRIBUTE + "_", "")
+            previous_event_name = turn_label.replace(INTENT_ATTRIBUTE + "_", "")
             break
 
     return previous_event_type, previous_event_name
