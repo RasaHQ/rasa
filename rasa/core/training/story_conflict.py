@@ -102,12 +102,12 @@ def find_story_conflicts(
 
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
-    state_action_dict = _find_conflicting_states(trackers, domain, max_history)
+    state_action_mapping = _find_conflicting_states(trackers, domain, max_history)
 
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
     conflicts = _build_conflicts_from_states(
-        trackers, domain, max_history, state_action_dict
+        trackers, domain, max_history, state_action_mapping
     )
 
     return conflicts
@@ -118,16 +118,16 @@ def _find_conflicting_states(
 ) -> Dict[int, Optional[List[Text]]]:
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
-    state_action_dict = defaultdict(list)
+    state_action_mapping = defaultdict(list)
     for element in _sliced_states_iterator(trackers, domain, max_history):
         hashed_state = hash(str(list(element.sliced_states)))
-        if element.event.as_story_string() not in state_action_dict[hashed_state]:
-            state_action_dict[hashed_state] += [element.event.as_story_string()]
+        if element.event.as_story_string() not in state_action_mapping[hashed_state]:
+            state_action_mapping[hashed_state] += [element.event.as_story_string()]
 
-    # Keep only conflicting `state_action_dict`s
+    # Keep only conflicting `state_action_mapping`s
     return {
         state_hash: actions
-        for (state_hash, actions) in state_action_dict.items()
+        for (state_hash, actions) in state_action_mapping.items()
         if len(actions) > 1
     }
 
