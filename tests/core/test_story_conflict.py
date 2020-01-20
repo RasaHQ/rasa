@@ -1,4 +1,4 @@
-from rasa.core.training.story_conflict import StoryConflict, find_story_conflicts
+from rasa.core.training.story_conflict import StoryConflict, find_story_conflicts, _get_previous_event
 from rasa.core.training.generator import TrainingDataGenerator
 from rasa.core.validator import Validator
 from rasa.importers.rasa import RasaFileImporter
@@ -128,6 +128,11 @@ async def test_has_prior_events():
     ]
     conflict = StoryConflict(sliced_states)
     assert conflict.has_prior_events
+
+
+async def test_get_previous_event():
+    assert _get_previous_event({"prev_utter_greet": 1.0, "intent_greet": 1.0}) == ("action", "utter_greet")
+    assert _get_previous_event({"intent_greet": 1.0, "prev_action_listen": 1.0}) == ("intent", "greet")
 
 
 async def test_has_no_prior_events():
