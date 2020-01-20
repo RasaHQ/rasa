@@ -217,8 +217,7 @@ def _get_previous_event(
             prev_event_type = "action"
             prev_event_name = k.replace(PREV_PREFIX, "")
             break
-
-        if k.startswith(INTENT_ATTRIBUTE + "_"):
+        elif k.startswith(INTENT_ATTRIBUTE + "_"):
             prev_event_type = "intent"
             prev_event_name = k.replace(INTENT_ATTRIBUTE + "_", "")
             break
