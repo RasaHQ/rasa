@@ -668,7 +668,6 @@ def create_app(
                 500, "ConversationError", f"An unexpected error occurred. Error: {e}"
             )
 
-        tracker = await get_tracker(app.agent.create_processor(), conversation_id)
         state = tracker.current_state(verbosity)
 
         response_body = {"tracker": state}
