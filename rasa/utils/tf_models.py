@@ -11,7 +11,10 @@ from rasa.utils.train_utils import SessionDataType
 logger = logging.getLogger(__name__)
 
 
+# noinspection PyMethodOverriding
 class RasaModel(tf.keras.models.Model):
+    """Completely override all public methods of keras Model."""
+
     @staticmethod
     def _update_postfix_dict(
         postfix_dict: Dict[Text, Text], metrics, prefix: Text = ""
@@ -62,17 +65,17 @@ class RasaModel(tf.keras.models.Model):
         if evaluate_on_num_examples > 0:
             if eager:
                 eval_dataset_func = lambda x: self.eval_dataset(x, eval_session_data)
-                eval_func = self.eval
+                evaluate_on_batch_func = self.evaluate_on_batch
             else:
                 eval_dataset_func = tf.function(
                     func=lambda x: self.eval_dataset(x, eval_session_data)
                 )
-                eval_func = tf.function(
-                    self.eval, input_signature=[eval_dataset_func(1).element_spec]
+                evaluate_on_batch_func = tf.function(
+                    self.evaluate_on_batch, input_signature=[eval_dataset_func(1).element_spec]
                 )
         else:
             eval_dataset_func = None
-            eval_func = None
+            evaluate_on_batch_func = None
 
         for ep in pbar:
             ep_batch_size = tf_batch_size * train_utils.linearly_increasing_batch_size(
@@ -108,8 +111,8 @@ class RasaModel(tf.keras.models.Model):
 
                     # Eval on batches
                     self.set_training_phase(False)
-                    for batch_in in eval_dataset_func(ep_batch_size, eval_session_data):
-                        eval_func(batch_in)
+                    for batch_in in eval_dataset_func(ep_batch_size):
+                        evaluate_on_batch_func(batch_in)
 
                 # Get the metric results
                 postfix_dict.update(
@@ -136,7 +139,32 @@ class RasaModel(tf.keras.models.Model):
     def train_on_batch(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
     ) -> None:
-        raise NotImplementedError
+        with tf.GradientTape() as tape:
+            losses, scores = self._train_losses_scores(batch_in)
+            regularization_loss = tf.math.add_n(self.losses)
+            pred_loss = tf.math.add_n(list(losses.values()))
+            total_loss = pred_loss + regularization_loss
+
+        gradients = tape.gradient(total_loss, self.trainable_variables)
+        self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+
+        self.train_metrics["t_loss"].update_state(total_loss)
+        for k, v in losses.items():
+            self.train_metrics[k].update_state(v)
+        for k, v in scores.items():
+            self.train_metrics[k].update_state(v)
+
+    def evaluate_on_batch(self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]):
+        losses, scores = self._train_losses_scores(batch_in)
+        regularization_loss = tf.math.add_n(self.losses)
+        pred_loss = tf.math.add_n(list(losses.values()))
+        total_loss = pred_loss + regularization_loss
+
+        self.eval_metrics["val_t_loss"].update_state(total_loss)
+        for k, v in losses.items():
+            self.eval_metrics[f"val_{k}"].update_state(v)
+        for k, v in scores.items():
+            self.eval_metrics[f"val_{k}"].update_state(v)
 
     def test_on_batch(self) -> None:
         raise NotImplemented
