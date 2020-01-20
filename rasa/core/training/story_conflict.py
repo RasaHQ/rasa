@@ -1,5 +1,5 @@
 from collections import defaultdict, namedtuple
-from typing import List, Optional, Dict, Text, Tuple, Generator
+from typing import List, Optional, Dict, Text, Tuple, Generator, NamedTuple
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, Domain
@@ -80,9 +80,12 @@ class StoryConflict:
         return f"{action} predicted in {conflict_description}\n"
 
 
-TrackerEventStateTuple = namedtuple(
-    "TrackerEventStateTuple", "tracker event sliced_states"
-)
+class TrackerEventStateTuple(NamedTuple):
+    """Holds a tracker, an event, and sliced states associated with those."""
+
+    tracker: TrackerWithCachedStates
+    event: Event
+    sliced_states: List[Dict[Text, float]]
 
 
 def find_story_conflicts(
