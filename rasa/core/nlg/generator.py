@@ -40,7 +40,7 @@ class NaturalLanguageGenerator:
 
 
 def _create_from_endpoint_config(
-    endpoint_config: Optional[EndpointConfig] = None, domain: Optional[Domain] = None,
+    endpoint_config: Optional[EndpointConfig] = None, domain: Optional[Domain] = None
 ) -> "NaturalLanguageGenerator":
     """Given an endpoint configuration, create a proper NLG object."""
 

@@ -79,9 +79,7 @@ class ExamplePolicy(Policy):
 class MockedMongoTrackerStore(MongoTrackerStore):
     """In-memory mocked version of `MongoTrackerStore`."""
 
-    def __init__(
-        self, _domain: Domain,
-    ):
+    def __init__(self, _domain: Domain):
         from mongomock import MongoClient
 
         self.db = MongoClient().rasa

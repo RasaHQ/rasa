@@ -1296,26 +1296,8 @@ class DIET(tf_models.RasaModel):
 
         return losses, scores
 
-    def train_on_batch(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
-    ) -> None:
-        with tf.GradientTape() as tape:
-            losses, scores = self._train_losses_scores(batch_in)
-            regularization_loss = tf.math.add_n(self.losses)
-            pred_loss = tf.math.add_n(list(losses.values()))
-            total_loss = pred_loss + regularization_loss
-
-        gradients = tape.gradient(total_loss, self.trainable_variables)
-        self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-
-        self.train_metrics["t_loss"].update_state(total_loss)
-        for k, v in losses.items():
-            self.train_metrics[k].update_state(v)
-        for k, v in scores.items():
-            self.train_metrics[k].update_state(v)
-
     def train_dataset(
-        self, batch_size: "tf.Tensor", session_data: SessionDataType
+        self, batch_size: Union[int, tf.Tensor], session_data: SessionDataType
     ) -> tf.data.Dataset:
         return train_utils.create_tf_dataset(
             session_data,
@@ -1324,16 +1306,6 @@ class DIET(tf_models.RasaModel):
             batch_strategy=self.config[BATCH_STRATEGY],
             shuffle=True,
         )
-
-    def eval(self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]):
-        losses, scores = self._train_losses_scores(batch_in)
-        total_loss = tf.math.add_n(list(losses.values())) + self.losses
-
-        self.eval_metrics["val_t_loss"].update_state(total_loss)
-        for k, v in losses.items():
-            self.eval_metrics[f"val_{k}"].update_state(v)
-        for k, v in scores.items():
-            self.eval_metrics[f"val_{k}"].update_state(v)
 
     def eval_dataset(
         self, batch_size: "tf.Tensor", session_data: Optional[SessionDataType]

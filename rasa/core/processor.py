@@ -143,7 +143,7 @@ class MessageProcessor:
         }
 
     async def _update_tracker_session(
-        self, tracker: DialogueStateTracker, output_channel: OutputChannel,
+        self, tracker: DialogueStateTracker, output_channel: OutputChannel
     ) -> None:
         """Check the current session in `tracker` and update it if expired.
 
@@ -171,7 +171,7 @@ class MessageProcessor:
             self.tracker_store.save(tracker)
 
     async def get_tracker_with_session_start(
-        self, sender_id: Text, output_channel: Optional[OutputChannel] = None,
+        self, sender_id: Text, output_channel: Optional[OutputChannel] = None
     ) -> Optional[DialogueStateTracker]:
         """Get tracker for `sender_id` or create a new tracker for `sender_id`.
 

@@ -282,7 +282,7 @@ async def test_reminder_restart(
         # last user event is way in the past
         (UserUttered(timestamp=1), 60, True),
         # user event are very recent
-        (UserUttered("hello", timestamp=time.time()), 60, False,),
+        (UserUttered("hello", timestamp=time.time()), 60, False),
         # there is user event
         (ActionExecuted(ACTION_LISTEN_NAME, timestamp=time.time()), 60, False),
         # Old event, but sessions are disabled
@@ -375,10 +375,7 @@ async def test_update_tracker_session_with_slots(
     events = list(tracker.events)
 
     # the first three events should be up to the user utterance
-    assert events[:2] == [
-        ActionExecuted(ACTION_LISTEN_NAME),
-        user_event,
-    ]
+    assert events[:2] == [ActionExecuted(ACTION_LISTEN_NAME), user_event]
 
     # next come the five slots
     assert events[2:7] == slot_set_events
@@ -395,7 +392,7 @@ async def test_update_tracker_session_with_slots(
 
 # noinspection PyProtectedMember
 async def test_get_tracker_with_session_start(
-    default_channel: CollectingOutputChannel, default_processor: MessageProcessor,
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     sender_id = uuid.uuid4().hex
     tracker = await default_processor.get_tracker_with_session_start(

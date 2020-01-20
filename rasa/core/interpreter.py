@@ -216,7 +216,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         return result if result is not None else default_return
 
     async def _rasa_http_parse(
-        self, text: Text, message_id: Optional[Text] = None,
+        self, text: Text, message_id: Optional[Text] = None
     ) -> Optional[Dict[Text, Any]]:
         """Send a text message to a running rasa NLU http server.
         Return `None` on failure."""
