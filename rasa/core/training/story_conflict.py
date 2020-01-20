@@ -1,5 +1,5 @@
 from collections import defaultdict, namedtuple
-from typing import List, Optional, Dict, Text, Tuple
+from typing import List, Optional, Dict, Text, Tuple, Generator
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, Domain
@@ -164,7 +164,7 @@ def _build_conflicts_from_states(
 
 def _sliced_states_iterator(
     trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
-) -> TrackerEventStateTuple:
+) -> Generator[TrackerEventStateTuple, None, None]:
     """Creates an iterator over sliced states.
 
     Iterate over all given trackers and all sliced states within each tracker,
