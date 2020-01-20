@@ -5,7 +5,7 @@ from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, Domain
 from rasa.core.events import ActionExecuted, Event
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
-from rasa.nlu.constants import MESSAGE_INTENT_ATTRIBUTE
+from rasa.nlu.constants import INTENT_ATTRIBUTE
 from rasa.core.training.generator import TrackerWithCachedStates
 
 
@@ -214,8 +214,8 @@ def _get_previous_event(
             prev_event_type = "action"
             prev_event_name = k[len(PREV_PREFIX) :]
 
-        if not prev_event_type and k.startswith(MESSAGE_INTENT_ATTRIBUTE + "_"):
+        if not prev_event_type and k.startswith(INTENT_ATTRIBUTE + "_"):
             prev_event_type = "intent"
-            prev_event_name = k[len(MESSAGE_INTENT_ATTRIBUTE + "_") :]
+            prev_event_name = k[len(INTENT_ATTRIBUTE + "_") :]
 
     return prev_event_type, prev_event_name
