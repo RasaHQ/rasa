@@ -154,6 +154,7 @@ def _build_conflicts_from_states(
             )
 
     # Remove conflicts that arise from unpredictable actions
+    # (actions that start the conversation)
     return [
         conflict
         for (hashed_state, conflict) in conflicts.items()
