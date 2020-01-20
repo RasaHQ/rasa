@@ -190,10 +190,10 @@ def validate_stories(args: "argparse.Namespace") -> None:
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
 
     # If names are unique, look for story conflicts
-    everything_is_alright = validator.verify_story_structure(
+    stories_are_consistent = validator.verify_story_structure(
         not args.fail_on_warnings, max_history=args.max_history
     )
 
-    if not everything_is_alright:
+    if not stories_are_consistent:
         rasa.cli.utils.print_error("Story validation completed with errors.")
         sys.exit(1)
