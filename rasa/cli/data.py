@@ -6,7 +6,7 @@ from typing import List
 
 from rasa import data
 from rasa.cli.arguments import data as arguments
-from rasa.cli.utils import get_validated_path, print_error
+import rasa.cli.utils
 from rasa.constants import DEFAULT_DATA_PATH
 from typing import NoReturn
 
@@ -120,7 +120,7 @@ def split_nlu_data(args) -> None:
     from rasa.nlu.training_data.loading import load_data
     from rasa.nlu.training_data.util import get_file_format
 
-    data_path = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
+    data_path = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     data_path = data.get_nlu_directory(data_path)
 
     nlu_data = load_data(data_path)
@@ -163,7 +163,7 @@ def validate_files(args: "argparse.Namespace") -> None:
         )
 
     if not everything_is_alright:
-        print_error("Project validation completed with errors.")
+        rasa.cli.utils.print_error("Project validation completed with errors.")
         sys.exit(1)
 
 
@@ -196,5 +196,5 @@ def validate_stories(args: "argparse.Namespace") -> None:
     )
 
     if not everything_is_alright:
-        print_error("Story validation completed with errors.")
+        rasa.cli.utils.print_error("Story validation completed with errors.")
         sys.exit(1)
