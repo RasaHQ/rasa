@@ -167,7 +167,7 @@ def validate_files(args: argparse.Namespace) -> None:
 
 
 def validate_stories(args: "argparse.Namespace") -> None:
-    """Validate all files needed for training a model.
+    """Validate only the story structure.
 
         Fails with a non-zero exit code if there are any errors in the data."""
     from rasa.core.validator import Validator
