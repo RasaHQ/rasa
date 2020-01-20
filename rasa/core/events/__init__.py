@@ -661,7 +661,7 @@ class ReminderScheduled(Event):
         return (
             f"[{hash(self.name)},{hash(self.intent)},{hash(str(self.entities))}]"
             f"{ACTION_NAME_SENDER_ID_CONNECTOR_STR}"
-            + sender_id
+            f"{sender_id}"
         )
 
     def _properties(self) -> Dict[Text, Any]:
