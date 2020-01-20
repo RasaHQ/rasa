@@ -169,7 +169,7 @@ def validate_files(args: argparse.Namespace) -> None:
 def validate_stories(args: "argparse.Namespace") -> None:
     """Validate only the story structure.
 
-        Fails with a non-zero exit code if there are any errors in the data."""
+    Fails with a non-zero exit code if there are any errors in the data."""
     from rasa.core.validator import Validator
     from rasa.importers.rasa import RasaFileImporter
 

@@ -73,9 +73,9 @@ class StoryConflict:
             )
         else:
             conflict_description = (
-                {1: "'{}'", 2: "'{}' and '{}'", 3: "'{}', '{}', and '{}'", }
-                    .get(len(stories))
-                    .format(*stories)
+                {1: "'{}'", 2: "'{}' and '{}'", 3: "'{}', '{}', and '{}'",}
+                .get(len(stories))
+                .format(*stories)
             )
 
         return f"{action} predicted in {conflict_description}\n"
@@ -213,7 +213,10 @@ def _get_previous_event(
         return prev_event_type, prev_event_name
 
     for k in state:
-        if k.startswith(PREV_PREFIX) and k.replace(PREV_PREFIX, "") != ACTION_LISTEN_NAME:
+        if (
+            k.startswith(PREV_PREFIX)
+            and k.replace(PREV_PREFIX, "") != ACTION_LISTEN_NAME
+        ):
             prev_event_type = "action"
             prev_event_name = k.replace(PREV_PREFIX, "")
             break
