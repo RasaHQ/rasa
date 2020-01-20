@@ -31,7 +31,8 @@ class RasaModel(tf.keras.models.Model):
         evaluate_on_num_examples: int,
         evaluate_every_num_epochs: int,
         silent: bool = False,
-        eager: bool = True,
+        eager: bool = False,
+        **kwargs,
     ) -> None:
         """Train tf graph"""
 
@@ -110,7 +111,7 @@ class RasaModel(tf.keras.models.Model):
 
                     # Eval on batches
                     self.set_training_phase(False)
-                    for batch_in in eval_dataset_func(ep_batch_size, eval_session_data):
+                    for batch_in in eval_dataset_func(ep_batch_size):
                         eval_func(batch_in)
 
                 # Get the metric results
@@ -124,33 +125,33 @@ class RasaModel(tf.keras.models.Model):
         if not disable:
             logger.info("Finished training.")
 
-    def compile(self) -> None:
+    def compile(self, **kwargs) -> None:
         raise NotImplementedError
 
-    def evaluate(self) -> None:
+    def evaluate(self, **kwargs) -> None:
         pass
 
     def predict(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> Dict[Text, tf.Tensor]:
         pass
 
     def train_on_batch(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> None:
         raise NotImplementedError
 
-    def test_on_batch(self) -> None:
+    def test_on_batch(self, **kwargs) -> None:
         raise NotImplementedError
 
-    def predict_on_batch(self) -> None:
+    def predict_on_batch(self, **kwargs) -> None:
         raise NotImplementedError
 
-    def fit_generator(self) -> None:
+    def fit_generator(self, **kwargs) -> None:
         raise NotImplementedError
 
-    def evaluate_generator(self) -> None:
+    def evaluate_generator(self, **kwargs) -> None:
         raise NotImplementedError
 
-    def predict_generator(self) -> None:
+    def predict_generator(self, **kwargs) -> None:
         raise NotImplementedError

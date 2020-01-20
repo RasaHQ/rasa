@@ -1297,7 +1297,7 @@ class DIET(tf_models.RasaModel):
         return losses, scores
 
     def train_on_batch(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> None:
         with tf.GradientTape() as tape:
             losses, scores = self._train_losses_scores(batch_in)
@@ -1350,7 +1350,7 @@ class DIET(tf_models.RasaModel):
         self.all_labels_embed = tf.constant(all_labels_embed.numpy())
 
     def predict(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> Dict[Text, tf.Tensor]:
         tf_batch_data = train_utils.batch_to_session_data(
             batch_in, self.session_data_signature
