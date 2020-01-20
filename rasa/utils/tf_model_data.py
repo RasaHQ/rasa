@@ -314,104 +314,21 @@ class RasaModelData:
         types = []
         shapes = []
 
-        def append_shape(v: np.ndarray):
-            if isinstance(v[0], scipy.sparse.spmatrix):
+        def append_shape(features: np.ndarray):
+            if isinstance(features[0], scipy.sparse.spmatrix):
                 # scipy matrix is converted into indices, data, shape
-                shapes.append((None, v[0].ndim + 1))
+                shapes.append((None, features[0].ndim + 1))
                 shapes.append((None,))
-                shapes.append((v[0].ndim + 1))
-            elif v[0].ndim == 0:
+                shapes.append((features[0].ndim + 1))
+            elif features[0].ndim == 0:
                 shapes.append((None,))
-            elif v[0].ndim == 1:
-                shapes.append((None, v[0].shape[-1]))
+            elif features[0].ndim == 1:
+                shapes.append((None, features[0].shape[-1]))
             else:
-                shapes.append((None, None, v[0].shape[-1]))
+                shapes.append((None, None, features[0].shape[-1]))
 
-        def append_type(v: np.ndarray):
-            if isinstance(v[0], scipy.sparse.spmatrix):
-                # scipy matrix is converted into indices, data, shape
-                types.append(tf.int64)
-                types.append(tf.float32)
-                types.append(tf.int64)
-            else:
-                types.append(tf.float32)
-
-        for values in self.data.values():
-            for v in values:
-                append_shape(v)
-                append_type(v)
-
-        return tuple(shapes), tuple(types)
-
-    def _scipy_matrix_to_values(self, array_of_sparse: np.ndarray) -> List[np.ndarray]:
-        """Convert a scipy matrix into inidces, data, and shape."""
-
-        if not isinstance(array_of_sparse[0], scipy.sparse.coo_matrix):
-            array_of_sparse = [x.tocoo() for x in array_of_sparse]
-
-        max_seq_len = max([x.shape[0] for x in array_of_sparse])
-
-        indices = np.hstack(
-            [
-                np.vstack([i * np.ones_like(x.row), x.row, x.col])
-                for i, x in enumerate(array_of_sparse)
-            ]
-        ).T
-        data = np.hstack([x.data for x in array_of_sparse])
-
-        shape = np.array(
-            (len(array_of_sparse), max_seq_len, array_of_sparse[0].shape[-1])
-        )
-
-        return [
-            indices.astype(np.int64),
-            data.astype(np.float32),
-            shape.astype(np.int64),
-        ]
-
-    def _pad_dense_data(self, array_of_dense: np.ndarray) -> np.ndarray:
-        """Pad data of different lengths.
-
-        Sequential data is padded with zeros. Zeros are added to the end of data.
-        """
-
-        if array_of_dense[0].ndim < 2:
-            # data doesn't contain a sequence
-            return array_of_dense
-
-        data_size = len(array_of_dense)
-        max_seq_len = max([x.shape[0] for x in array_of_dense])
-
-        data_padded = np.zeros(
-            [data_size, max_seq_len, array_of_dense[0].shape[-1]],
-            dtype=array_of_dense[0].dtype,
-        )
-        for i in range(data_size):
-            data_padded[i, : array_of_dense[i].shape[0], :] = array_of_dense[i]
-
-        return data_padded.astype(np.float32)
-
-    def _get_shapes_types(self) -> Tuple:
-        """Extract shapes and types from session data."""
-
-        types = []
-        shapes = []
-
-        def append_shape(v: np.ndarray):
-            if isinstance(v[0], scipy.sparse.spmatrix):
-                # scipy matrix is converted into indices, data, shape
-                shapes.append((None, v[0].ndim + 1))
-                shapes.append((None,))
-                shapes.append((v[0].ndim + 1))
-            elif v[0].ndim == 0:
-                shapes.append((None,))
-            elif v[0].ndim == 1:
-                shapes.append((None, v[0].shape[-1]))
-            else:
-                shapes.append((None, None, v[0].shape[-1]))
-
-        def append_type(v: np.ndarray):
-            if isinstance(v[0], scipy.sparse.spmatrix):
+        def append_type(features: np.ndarray):
+            if isinstance(features[0], scipy.sparse.spmatrix):
                 # scipy matrix is converted into indices, data, shape
                 types.append(tf.int64)
                 types.append(tf.float32)
@@ -563,3 +480,53 @@ class RasaModelData:
             return np.array([" ".join(row.astype("str")) for row in label_ids[:, :, 0]])
 
         raise ValueError("Unsupported label_ids dimensions")
+
+    @staticmethod
+    def _pad_dense_data(array_of_dense: np.ndarray) -> np.ndarray:
+        """Pad data of different lengths.
+
+        Sequential data is padded with zeros. Zeros are added to the end of data.
+        """
+
+        if array_of_dense[0].ndim < 2:
+            # data doesn't contain a sequence
+            return array_of_dense
+
+        data_size = len(array_of_dense)
+        max_seq_len = max([x.shape[0] for x in array_of_dense])
+
+        data_padded = np.zeros(
+            [data_size, max_seq_len, array_of_dense[0].shape[-1]],
+            dtype=array_of_dense[0].dtype,
+        )
+        for i in range(data_size):
+            data_padded[i, : array_of_dense[i].shape[0], :] = array_of_dense[i]
+
+        return data_padded.astype(np.float32)
+
+    @staticmethod
+    def _scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
+        """Convert a scipy matrix into inidces, data, and shape."""
+
+        if not isinstance(array_of_sparse[0], scipy.sparse.coo_matrix):
+            array_of_sparse = [x.tocoo() for x in array_of_sparse]
+
+        max_seq_len = max([x.shape[0] for x in array_of_sparse])
+
+        indices = np.hstack(
+            [
+                np.vstack([i * np.ones_like(x.row), x.row, x.col])
+                for i, x in enumerate(array_of_sparse)
+            ]
+        ).T
+        data = np.hstack([x.data for x in array_of_sparse])
+
+        shape = np.array(
+            (len(array_of_sparse), max_seq_len, array_of_sparse[0].shape[-1])
+        )
+
+        return [
+            indices.astype(np.int64),
+            data.astype(np.float32),
+            shape.astype(np.int64),
+        ]
