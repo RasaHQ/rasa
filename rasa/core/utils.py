@@ -465,7 +465,7 @@ def replace_floats_with_decimals(obj: Union[List, Dict]) -> Any:
     Args:
         obj: A `List` or `Dict` object.
 
-    Returns: An object with all matching values and `float` type replaced by `Decimal`.
+    Returns: An object with all matching values and `float` type replaced by `Decimal` rounded to 9 decimal places.
 
     """
     if isinstance(obj, list):
@@ -477,7 +477,7 @@ def replace_floats_with_decimals(obj: Union[List, Dict]) -> Any:
             obj[j] = replace_floats_with_decimals(obj[j])
         return obj
     elif isinstance(obj, float):
-        return Decimal(obj)
+        return round(Decimal(obj), 9)
     else:
         return obj
 
