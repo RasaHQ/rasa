@@ -252,7 +252,7 @@ async def test_reminder_cancelled_multi_user(
     assert len((await jobs.scheduler()).get_jobs()) == 1
 
     # execute the jobs
-    await wait_for_all_jobs(timeout_after_seconds=5.0)
+    await wait_until_all_jobs_were_executed(timeout_after_seconds=5.0)
 
     tracker_0 = default_processor.tracker_store.retrieve(sender_ids[0])
     # there should be no utter_greet action
