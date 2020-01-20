@@ -45,15 +45,19 @@ class RasaModel(tf.keras.models.Model):
 
         tf_batch_size = tf.ones((), tf.int32)
 
+        def train_dataset_function(x):
+            return self.train_dataset(x, session_data)
+
+        def eval_dataset_function(x):
+            return self.eval_dataset(x, eval_session_data)
+
         if eager:
             # allows increasing batch size
-            train_dataset_func = lambda x: self.train_dataset(x, session_data)
+            train_dataset_func = train_dataset_function
             train_on_batch_func = self.train_on_batch
         else:
             # allows increasing batch size
-            train_dataset_func = tf.function(
-                func=lambda x: self.train_dataset(x, session_data)
-            )
+            train_dataset_func = tf.function(func=train_dataset_function)
             train_on_batch_func = tf.function(
                 self.train_on_batch,
                 input_signature=[train_dataset_func(1).element_spec],
@@ -61,12 +65,10 @@ class RasaModel(tf.keras.models.Model):
 
         if evaluate_on_num_examples > 0:
             if eager:
-                eval_dataset_func = lambda x: self.eval_dataset(x, eval_session_data)
+                eval_dataset_func = eval_dataset_function
                 eval_func = self.eval
             else:
-                eval_dataset_func = tf.function(
-                    func=lambda x: self.eval_dataset(x, eval_session_data)
-                )
+                eval_dataset_func = tf.function(func=eval_dataset_function)
                 eval_func = tf.function(
                     self.eval, input_signature=[eval_dataset_func(1).element_spec]
                 )
@@ -123,7 +125,7 @@ class RasaModel(tf.keras.models.Model):
             logger.info("Finished training.")
 
     def compile(self) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
     def evaluate(self) -> None:
         pass
@@ -139,16 +141,16 @@ class RasaModel(tf.keras.models.Model):
         raise NotImplementedError
 
     def test_on_batch(self) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
     def predict_on_batch(self) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
     def fit_generator(self) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
     def evaluate_generator(self) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
     def predict_generator(self) -> None:
-        raise NotImplemented
+        raise NotImplementedError
