@@ -1,5 +1,5 @@
 from collections import defaultdict, namedtuple
-from typing import List, Optional, Dict, Text
+from typing import List, Optional, Dict, Text, Tuple
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, Domain
@@ -191,7 +191,7 @@ def _sliced_states_iterator(
 
 def _get_previous_event(
     state: Optional[Dict[Text, float]]
-) -> [Optional[Text], Optional[Text]]:
+) -> Tuple[Optional[Text], Optional[Text]]:
     """Returns previous event type and name.
 
     Returns the type and name of the event (action or intent) previous to the
