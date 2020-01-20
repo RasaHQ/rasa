@@ -486,10 +486,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         model_data = RasaModelData()
         model_data.add_features("text_features", [X_sparse, X_dense])
         model_data.add_features("label_features", [Y_sparse, Y_dense])
-        if label_attribute and (
-            "label_features" not in model_data.keys()
-            or not model_data.get("label_features")
-        ):
+        if label_attribute and model_data.feature_not_exists("label_features"):
             # no label features are present, get default features from _label_data
             model_data.set(
                 "label_features", self._use_default_label_features(label_ids)
@@ -592,6 +589,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.component_config[EVAL_NUM_EPOCHS],
             label_key="label_ids",
             batch_strategy=self.component_config[BATCH_STRATEGY],
+            random_seed=self.component_config[RANDOM_SEED],
         )
 
     # process helpers
@@ -909,7 +907,7 @@ class DIET(tf_models.RasaModel):
         # data
         self.data_signature = data_signature
         label_batch = label_data.prepare_batch()
-        self.tf_label_data = train_utils.batch_to_session_data(
+        self.tf_label_data = train_utils.batch_to_model_data_format(
             label_batch, label_data.get_signature()
         )
         self._num_tags = len(inverted_tag_dict)
@@ -1191,7 +1189,9 @@ class DIET(tf_models.RasaModel):
     def _train_losses_scores(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
     ) -> Tuple[Dict[Text, float], Dict[Text, float]]:
-        tf_batch_data = train_utils.batch_to_session_data(batch_in, self.data_signature)
+        tf_batch_data = train_utils.batch_to_model_data_format(
+            batch_in, self.data_signature
+        )
 
         mask_text = tf_batch_data["text_mask"][0]
         sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
@@ -1264,8 +1264,8 @@ class DIET(tf_models.RasaModel):
         for k, v in scores.items():
             self.eval_metrics[f"val_{k}"].update_state(v)
 
-    def build_for_predict(self, session_data: RasaModelData) -> None:
-        self.batch_tuple_sizes = session_data.batch_tuple_sizes()
+    def build_for_predict(self, model_data: RasaModelData) -> None:
+        self.batch_tuple_sizes = model_data.batch_tuple_sizes()
 
         all_labels_embed, _ = self._build_all_b()
         self.all_labels_embed = tf.constant(all_labels_embed.numpy())
@@ -1273,7 +1273,9 @@ class DIET(tf_models.RasaModel):
     def predict(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> Dict[Text, tf.Tensor]:
-        tf_batch_data = train_utils.batch_to_session_data(batch_in, self.data_signature)
+        tf_batch_data = train_utils.batch_to_model_data_format(
+            batch_in, self.data_signature
+        )
 
         mask_text = tf_batch_data["text_mask"][0]
         sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)

@@ -34,6 +34,9 @@ class RasaModelData:
     def keys(self):
         return self.data.keys()
 
+    def feature_not_exists(self, key: Text) -> bool:
+        return key not in self.data or not self.data[key]
+
     def split(
         self, number_of_test_examples: int, random_seed: int, label_key: Text
     ) -> Tuple["RasaModelData", "RasaModelData"]:

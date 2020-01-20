@@ -45,7 +45,7 @@ class RasaModel(tf.keras.models.Model):
             )
 
             model_data, evaluation_model_data = model_data.split(
-                evaluate_on_num_examples, random_seed, label_key="label_ids"
+                evaluate_on_num_examples, random_seed, label_key=label_key
             )
 
         disable = silent or is_logging_disabled()

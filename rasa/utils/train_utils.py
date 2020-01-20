@@ -24,7 +24,7 @@ def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto
         return None
 
 
-def batch_to_session_data(
+def batch_to_model_data_format(
     batch: Union[Tuple[np.ndarray], Tuple[tf.Tensor]],
     data_signature: Dict[Text, List[DataSignature]],
 ) -> Dict[Text, List[tf.Tensor]]:
