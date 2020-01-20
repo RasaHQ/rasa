@@ -565,7 +565,7 @@ class MessageProcessor:
     async def _cancel_reminders(
         events: List[Event], tracker: DialogueStateTracker
     ) -> None:
-        """Cancel reminders that match the ReminderCancelled event."""
+        """Cancel reminders that match the `ReminderCancelled` event."""
 
         # All Reminders specified by ReminderCancelled events will be cancelled
         for event in events:

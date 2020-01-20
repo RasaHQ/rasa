@@ -863,7 +863,7 @@ def test_trigger_intent(rasa_app: SanicTestClient):
     assert parsed_content["messages"]
 
 
-def test_trigger_intent_with_missing_action_name(rasa_app: SanicTestClient):
+def test_trigger_intent_with_missing_intent_name(rasa_app: SanicTestClient):
     test_sender = "test_trigger_intent_with_missing_action_name"
 
     data = {"wrong-key": "greet"}

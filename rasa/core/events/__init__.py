@@ -716,7 +716,7 @@ class ReminderCancelled(Event):
     ):
         """Creates a ReminderCancelled event.
 
-        All arguments are optional and used to refine the set of reminders that
+        If all arguments are `None`, this will cancel all reminders.
         are to be cancelled. If no arguments are supplied, this will cancel all reminders.
 
         Args:
@@ -745,14 +745,14 @@ class ReminderCancelled(Event):
         return f"ReminderCancelled(name: {self.name}, intent: {self.intent}, entities: {self.entities})"
 
     def cancels_job_with_name(self, job_name: Text, sender_id: Text) -> bool:
-        """Determines if this ReminderCancelled should cancel the job with the given name.
+        """Determines if this `ReminderCancelled` event should cancel the job with the given name.
 
         Args:
             job_name: Name of the job to be tested.
             sender_id: The `sender_id` of the tracker.
 
         Returns:
-            `True`, if this `ReminderCancelled` should cancel the job with the given name,
+            `True`, if this `ReminderCancelled` event should cancel the job with the given name,
             and `False` otherwise.
         """
 
