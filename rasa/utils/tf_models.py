@@ -34,7 +34,7 @@ class RasaModel(tf.keras.models.Model):
         evaluate_on_num_examples: int,
         evaluate_every_num_epochs: int,
         silent: bool = False,
-        eager: bool = True,
+        eager: bool = False,
     ) -> None:
         """Train tf graph"""
 
