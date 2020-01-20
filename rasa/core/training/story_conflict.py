@@ -206,23 +206,23 @@ def _get_previous_event(
     Returns:
         Tuple of (type, name) strings of the prior event.
     """
-    prev_event_type = None
-    prev_event_name = None
+    previous_event_type = None
+    previous_event_name = None
 
     if not state:
-        return prev_event_type, prev_event_name
+        return previous_event_type, previous_event_name
 
     for k in state:
         if (
             k.startswith(PREV_PREFIX)
             and k.replace(PREV_PREFIX, "") != ACTION_LISTEN_NAME
         ):
-            prev_event_type = "action"
-            prev_event_name = k.replace(PREV_PREFIX, "")
+            previous_event_type = "action"
+            previous_event_name = k.replace(PREV_PREFIX, "")
             break
         elif k.startswith(INTENT_ATTRIBUTE + "_"):
-            prev_event_type = "intent"
-            prev_event_name = k.replace(INTENT_ATTRIBUTE + "_", "")
+            previous_event_type = "intent"
+            previous_event_name = k.replace(INTENT_ATTRIBUTE + "_", "")
             break
 
-    return prev_event_type, prev_event_name
+    return previous_event_type, previous_event_name
