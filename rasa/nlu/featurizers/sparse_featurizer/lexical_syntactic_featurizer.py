@@ -33,7 +33,7 @@ class LexicalSyntacticFeaturizer(Featurizer):
         # "is the preceding word in title case?"
         # POS features require 'SpacyTokenizer'.
         "features": [
-            ["BOS", "EOS", "low", "title", "upper"],
+            ["low", "title", "upper"],
             [
                 "BOS",
                 "EOS",
@@ -47,7 +47,7 @@ class LexicalSyntacticFeaturizer(Featurizer):
                 "title",
                 "digit",
             ],
-            ["BOS", "EOS", "low", "title", "upper"],
+            ["low", "title", "upper"],
         ]
     }
 
@@ -160,17 +160,18 @@ class LexicalSyntacticFeaturizer(Featurizer):
             features.append(self._tokens_to_features(tokens))
 
         # build vocabulary of features
-        feature_vocabulary = defaultdict(set)
-        for sent_features in features:
-            for word_features in sent_features:
-                for feature_name, feature_value in word_features.items():
-                    feature_vocabulary[feature_name].add(feature_value)
-
-        feature_vocabulary = OrderedDict(sorted(feature_vocabulary.items()))
+        feature_vocabulary = self._build_feature_vocabulary(features)
 
         # assign a unique index to each feature value
+        return self._map_features_to_indices(feature_vocabulary)
+
+    @staticmethod
+    def _map_features_to_indices(
+        feature_vocabulary: Dict[Text, List[Text]]
+    ) -> Dict[Text, Dict[Text:int]]:
         feature_to_idx_dict = {}
         offset = 0
+
         for feature_name, feature_values in feature_vocabulary.items():
             feature_to_idx_dict[feature_name] = {
                 str(feature_value): feature_idx
@@ -179,7 +180,24 @@ class LexicalSyntacticFeaturizer(Featurizer):
                 )
             }
             offset += len(feature_values)
+
         return feature_to_idx_dict
+
+    @staticmethod
+    def _build_feature_vocabulary(
+        features: List[List[Dict[Text, Any]]]
+    ) -> Dict[Text, List[Text]]:
+        feature_vocabulary = defaultdict(set)
+
+        for sent_features in features:
+            for word_features in sent_features:
+                for feature_name, feature_value in word_features.items():
+                    feature_vocabulary[feature_name].add(feature_value)
+
+        # sort items to ensure same order every time (for tests)
+        feature_vocabulary = OrderedDict(sorted(feature_vocabulary.items()))
+
+        return feature_vocabulary
 
     def _tokens_to_features(self, tokens: List[Token]) -> List[Dict[Text, Any]]:
         """Convert words into discrete features."""
@@ -203,7 +221,7 @@ class LexicalSyntacticFeaturizer(Featurizer):
             for pointer_position in window_range:
                 current_idx = token_idx + pointer_position
 
-                # skip, if current_idx is pointing to a non-existing word
+                # skip, if current_idx is pointing to a non-existing token
                 if current_idx < 0 or current_idx >= len(tokens):
                     continue
 
@@ -213,26 +231,35 @@ class LexicalSyntacticFeaturizer(Featurizer):
                 prefix = prefixes[current_feature_idx]
 
                 for feature in configured_features[current_feature_idx]:
-                    # check if we are at the start or at the end
-                    if feature == "EOS" or feature == "BOS":
-                        if token_idx + pointer_position == len(tokens) - 1:
-                            token_features["EOS"] = True
-                        elif token_idx + pointer_position == 0:
-                            token_features["BOS"] = True
-                    else:
-                        # append each feature to a feature vector
-                        value = self.function_dict[feature](token)
-                        if value is None:
-                            logger.debug(
-                                f"Invalid value '{value}' for feature '{feature}'."
-                                f" Feature is ignored."
-                            )
-                            continue
-                        token_features[prefix + ":" + feature] = value
+                    token_features[prefix + ":" + feature] = self._get_feature_value(
+                        feature, token, token_idx, pointer_position, len(tokens)
+                    )
 
             features.append(token_features)
 
         return features
+
+    def _get_feature_value(
+        self,
+        feature: Text,
+        token: Token,
+        token_idx: int,
+        pointer_position: int,
+        token_length: int,
+    ):
+        if feature == "EOS":
+            return token_idx + pointer_position == token_length - 1
+
+        if feature == "BOS":
+            return token_idx + pointer_position == 0
+
+        value = self.function_dict[feature](token)
+        if value is None:
+            logger.debug(
+                f"Invalid value '{value}' for feature '{feature}'."
+                f" Feature is ignored."
+            )
+        return value
 
     @classmethod
     def load(

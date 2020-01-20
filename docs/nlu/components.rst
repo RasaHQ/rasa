@@ -351,7 +351,7 @@ LexicalSyntacticFeaturizer
         pipeline:
         - name: "LexicalSyntacticFeaturizer":
           "features": [
-            ["BOS", "EOS", "low", "title", "upper"],
+            ["low", "title", "upper"],
             [
               "BOS",
               "EOS",
@@ -365,7 +365,7 @@ LexicalSyntacticFeaturizer
               "title",
               "digit",
             ],
-            ["BOS", "EOS", "low", "title", "upper"],
+            ["low", "title", "upper"],
           ]
 
     This configuration is also the default configuration.
