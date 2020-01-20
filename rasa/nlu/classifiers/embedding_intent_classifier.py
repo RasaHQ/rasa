@@ -854,8 +854,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         file_name = meta.get("file")
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
-        with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "rb") as f:
-            _tf_config = pickle.load(f)
+        # with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "rb") as f:
+        #    _tf_config = pickle.load(f)
 
         with open(
             os.path.join(model_dir, file_name + ".session_data_example.pkl"), "rb"
@@ -1322,7 +1322,7 @@ class DIET(tf_models.RasaModel):
         self.all_labels_embed = tf.constant(all_labels_embed.numpy())
 
     def predict(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> Dict[Text, tf.Tensor]:
         tf_batch_data = train_utils.batch_to_session_data(
             batch_in, self.session_data_signature
@@ -1348,15 +1348,6 @@ class DIET(tf_models.RasaModel):
             sim_all = self._loss_label.sim(
                 cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :]
             )
-            # label = self._create_bow(
-            #     tf_batch_data["label_features"],
-            #     tf_batch_data["label_mask"][0],
-            #     "label",
-            # )
-            # label_embed = self._embed["label"](label)
-            # sim = train_utils.tf_raw_sim(
-            #     cls_embed[:, tf.newaxis, :], label_embed, None
-            # )
 
             scores = train_utils.confidence_from_sim(
                 sim_all, self.config[SIMILARITY_TYPE]

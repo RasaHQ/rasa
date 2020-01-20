@@ -35,6 +35,7 @@ class RasaModel(tf.keras.models.Model):
         evaluate_every_num_epochs: int,
         silent: bool = False,
         eager: bool = False,
+        **kwargs,
     ) -> None:
         """Train tf graph"""
 
@@ -48,15 +49,19 @@ class RasaModel(tf.keras.models.Model):
 
         tf_batch_size = tf.ones((), tf.int32)
 
+        def train_dataset_function(x):
+            return self.train_dataset(x, session_data)
+
+        def eval_dataset_function(x):
+            return self.eval_dataset(x, eval_session_data)
+
         if eager:
             # allows increasing batch size
-            train_dataset_func = lambda x: self.train_dataset(x, session_data)
+            train_dataset_func = train_dataset_function
             train_on_batch_func = self.train_on_batch
         else:
             # allows increasing batch size
-            train_dataset_func = tf.function(
-                func=lambda x: self.train_dataset(x, session_data)
-            )
+            train_dataset_func = tf.function(func=train_dataset_function)
             train_on_batch_func = tf.function(
                 self.train_on_batch,
                 input_signature=[train_dataset_func(1).element_spec],
@@ -64,14 +69,13 @@ class RasaModel(tf.keras.models.Model):
 
         if evaluate_on_num_examples > 0:
             if eager:
-                eval_dataset_func = lambda x: self.eval_dataset(x, eval_session_data)
+                eval_dataset_func = eval_dataset_function
                 evaluate_on_batch_func = self.evaluate_on_batch
             else:
-                eval_dataset_func = tf.function(
-                    func=lambda x: self.eval_dataset(x, eval_session_data)
-                )
+                eval_dataset_func = tf.function(func=eval_dataset_function)
                 evaluate_on_batch_func = tf.function(
-                    self.evaluate_on_batch, input_signature=[eval_dataset_func(1).element_spec]
+                    self.evaluate_on_batch,
+                    input_signature=[eval_dataset_func(1).element_spec],
                 )
         else:
             eval_dataset_func = None
@@ -125,19 +129,19 @@ class RasaModel(tf.keras.models.Model):
         if not disable:
             logger.info("Finished training.")
 
-    def compile(self) -> None:
-        raise NotImplemented
+    def compile(self, **kwargs) -> None:
+        raise NotImplementedError
 
-    def evaluate(self) -> None:
+    def evaluate(self, **kwargs) -> None:
         pass
 
     def predict(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> Dict[Text, tf.Tensor]:
         pass
 
     def train_on_batch(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> None:
         with tf.GradientTape() as tape:
             losses, scores = self._train_losses_scores(batch_in)
@@ -154,7 +158,9 @@ class RasaModel(tf.keras.models.Model):
         for k, v in scores.items():
             self.train_metrics[k].update_state(v)
 
-    def evaluate_on_batch(self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]):
+    def evaluate_on_batch(
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+    ) -> None:
         losses, scores = self._train_losses_scores(batch_in)
         regularization_loss = tf.math.add_n(self.losses)
         pred_loss = tf.math.add_n(list(losses.values()))
@@ -166,17 +172,17 @@ class RasaModel(tf.keras.models.Model):
         for k, v in scores.items():
             self.eval_metrics[f"val_{k}"].update_state(v)
 
-    def test_on_batch(self) -> None:
-        raise NotImplemented
+    def test_on_batch(self, **kwargs) -> None:
+        raise NotImplementedError
 
-    def predict_on_batch(self) -> None:
-        raise NotImplemented
+    def predict_on_batch(self, **kwargs) -> None:
+        raise NotImplementedError
 
-    def fit_generator(self) -> None:
-        raise NotImplemented
+    def fit_generator(self, **kwargs) -> None:
+        raise NotImplementedError
 
-    def evaluate_generator(self) -> None:
-        raise NotImplemented
+    def evaluate_generator(self, **kwargs) -> None:
+        raise NotImplementedError
 
-    def predict_generator(self) -> None:
-        raise NotImplemented
+    def predict_generator(self, **kwargs) -> None:
+        raise NotImplementedError

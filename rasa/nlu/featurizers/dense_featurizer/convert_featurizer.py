@@ -32,20 +32,12 @@ class ConveRTFeaturizer(Featurizer):
         import tensorflow_text
         import tensorflow_hub as tfhub
 
-        self.graph = tf.Graph()
         model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
 
-        with self.graph.as_default():
-            self.session = tf.Session()
-            self.module = tfhub.Module(model_url)
+        self.module = tfhub.load(model_url)
 
-            self.text_placeholder = tf.placeholder(dtype=tf.string, shape=[None])
-            self.sentence_encoding_tensor = self.module(self.text_placeholder)
-            self.sequence_encoding_tensor = self.module(
-                self.text_placeholder, signature="encode_sequence", as_dict=True
-            )
-            self.session.run(tf.tables_initializer())
-            self.session.run(tf.global_variables_initializer())
+        self.sentence_encoding_signature = self.module.signatures["default"]
+        self.sequence_encoding_signature = self.module.signatures["encode_sequence"]
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
@@ -157,14 +149,16 @@ class ConveRTFeaturizer(Featurizer):
         return texts
 
     def _sentence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
-        return self.session.run(
-            self.sentence_encoding_tensor, feed_dict={self.text_placeholder: batch}
-        )
+
+        return self.sentence_encoding_signature(tf.convert_to_tensor(batch))[
+            "default"
+        ].numpy()
 
     def _sequence_encoding_of_text(self, batch: List[Text]) -> np.ndarray:
-        return self.session.run(
-            self.sequence_encoding_tensor, feed_dict={self.text_placeholder: batch}
-        )["sequence_encoding"]
+
+        return self.sequence_encoding_signature(tf.convert_to_tensor(batch))[
+            "sequence_encoding"
+        ].numpy()
 
     def train(
         self,

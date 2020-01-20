@@ -33,23 +33,17 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         import tensorflow_text
         import tensorflow_hub as tfhub
 
-        self.graph = tf.Graph()
         model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
 
-        with self.graph.as_default():
-            self.session = tf.Session()
-            self.module = tfhub.Module(model_url)
+        self.module = tfhub.load(model_url)
 
-            self.text_placeholder = tf.placeholder(dtype=tf.string, shape=[None])
-            self.tokenized = self.module(self.text_placeholder, signature="tokenize")
-
-            self.session.run(tf.tables_initializer())
-            self.session.run(tf.global_variables_initializer())
+        self.tokenize_signature = self.module.signatures["tokenize"]
 
     def _tokenize(self, sentence: Text) -> Any:
-        return self.session.run(
-            self.tokenized, feed_dict={self.text_placeholder: [sentence]}
-        )
+
+        return self.tokenize_signature(tf.convert_to_tensor([sentence]))[
+            "default"
+        ].numpy()
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         """Tokenize the text using the ConveRT model.
