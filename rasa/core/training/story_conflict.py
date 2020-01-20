@@ -60,22 +60,25 @@ class StoryConflict:
 
         # List which stories are in conflict with one another
         for action, stories in self._conflicting_actions.items():
-            # Summarize if necessary
-            if len(stories) > 3:
-                # Four or more stories are present
-                conflict_description = (
-                    f"'{stories[0]}' and {len(stories) - 1} other trackers"
-                )
-            else:
-                conflict_description = (
-                    {1: "'{}'", 2: "'{}' and '{}'", 3: "'{}', '{}', and '{}'",}
-                    .get(len(stories))
-                    .format(*stories)
-                )
-
-            conflict_message += f"  {action} predicted in {conflict_description}\n"
+            conflict_message += "  " + self._summarize_conflict(action, stories)
 
         return conflict_message
+
+    @staticmethod
+    def _summarize_conflict(action, stories):
+        if len(stories) > 3:
+            # Four or more stories are present
+            conflict_description = (
+                f"'{stories[0]}' and {len(stories) - 1} other trackers"
+            )
+        else:
+            conflict_description = (
+                {1: "'{}'", 2: "'{}' and '{}'", 3: "'{}', '{}', and '{}'", }
+                    .get(len(stories))
+                    .format(*stories)
+            )
+
+        return f"{action} predicted in {conflict_description}\n"
 
 
 TrackerEventStateTuple = namedtuple(
