@@ -716,7 +716,7 @@ class ReminderCancelled(Event):
     ):
         """Creates a ReminderCancelled event.
 
-        All arguments are optional and used to refine the set of reminders that
+        If all arguments are `None`, this will cancel all reminders.
         are to be cancelled. If no arguments are supplied, this will cancel all reminders.
 
         Args:
