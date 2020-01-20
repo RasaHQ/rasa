@@ -33,8 +33,10 @@ class LexicalSyntacticFeaturizer(Featurizer):
         # "is the preceding word in title case?"
         # POS features require 'SpacyTokenizer'.
         "features": [
-            ["low", "title", "upper"],
+            ["BOS", "EOS", "low", "title", "upper"],
             [
+                "BOS",
+                "EOS",
                 "low",
                 "prefix5",
                 "prefix2",
@@ -45,7 +47,7 @@ class LexicalSyntacticFeaturizer(Featurizer):
                 "title",
                 "digit",
             ],
-            ["low", "title", "upper"],
+            ["BOS", "EOS", "low", "title", "upper"],
         ]
     }
 
@@ -205,27 +207,28 @@ class LexicalSyntacticFeaturizer(Featurizer):
                 if current_idx < 0 or current_idx >= len(tokens):
                     continue
 
-                # check if we are at the start or at the end
-                if token_idx == len(tokens) - 1 and pointer_position == 0:
-                    token_features["EOS"] = True
-                elif token_idx == 0 and pointer_position == 0:
-                    token_features["BOS"] = True
-
                 token = tokens[token_idx + pointer_position]
 
                 current_feature_idx = pointer_position + half_window_size
                 prefix = prefixes[current_feature_idx]
 
                 for feature in configured_features[current_feature_idx]:
-                    # append each feature to a feature vector
-                    value = self.function_dict[feature](token)
-                    if value is None:
-                        logger.debug(
-                            f"Invalid value '{value}' for feature '{feature}'."
-                            f" Feature is ignored."
-                        )
-                        continue
-                    token_features[prefix + ":" + feature] = value
+                    # check if we are at the start or at the end
+                    if feature == "EOS" or feature == "BOS":
+                        if token_idx + pointer_position == len(tokens) - 1:
+                            token_features["EOS"] = True
+                        elif token_idx + pointer_position == 0:
+                            token_features["BOS"] = True
+                    else:
+                        # append each feature to a feature vector
+                        value = self.function_dict[feature](token)
+                        if value is None:
+                            logger.debug(
+                                f"Invalid value '{value}' for feature '{feature}'."
+                                f" Feature is ignored."
+                            )
+                            continue
+                        token_features[prefix + ":" + feature] = value
 
             features.append(token_features)
 

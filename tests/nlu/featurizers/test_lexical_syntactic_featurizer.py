@@ -14,23 +14,37 @@ from rasa.nlu.training_data import Message
 
 
 @pytest.mark.parametrize(
-    "sentence, expected, expected_cls",
+    "sentence, expected_features",
     [
         (
             "hello goodbye hello",
-            [[0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0]],
-            [[2.0, 3.0, 1.0, 2.0, 2.0, 1.0, 2.0, 1.0, 1.0]],
+            [
+                [0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0],
+                [1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
+                [1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0],
+                [2.0, 3.0, 1.0, 2.0, 2.0, 1.0, 2.0, 2.0, 2.0],
+            ],
         ),
         (
             "a 1 2",
-            [[0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0]],
-            [[2.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0]],
+            [
+                [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0],
+                [1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0],
+                [1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
+                [2.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0],
+            ],
         ),
     ],
 )
-def test_text_featurizer(sentence, expected, expected_cls):
+def test_text_featurizer(sentence, expected_features):
     featurizer = LexicalSyntacticFeaturizer(
-        {"features": [["upper"], ["prefix2", "suffix2", "digit"], ["low"]]}
+        {
+            "features": [
+                ["BOS", "EOS", "upper"],
+                ["BOS", "EOS", "prefix2", "suffix2", "digit"],
+                ["BOS", "EOS", "low"],
+            ]
+        }
     )
 
     train_message = Message(sentence)
@@ -49,8 +63,7 @@ def test_text_featurizer(sentence, expected, expected_cls):
 
     actual = test_message.get(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]).toarray()
 
-    assert np.all(actual[0] == expected)
-    assert np.all(actual[-1] == expected_cls)
+    assert np.all(actual == expected_features)
 
 
 @pytest.mark.parametrize(
@@ -58,8 +71,8 @@ def test_text_featurizer(sentence, expected, expected_cls):
     [
         (
             "hello 123 hello 123 hello",
-            [[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0]],
-            [[2.0, 2.0, 3.0, 2.0, 3.0, 2.0, 2.0, 1.0, 1.0]],
+            [[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0]],
+            [[2.0, 2.0, 3.0, 2.0, 3.0, 2.0, 2.0]],
         )
     ],
 )
@@ -94,11 +107,11 @@ def test_text_featurizer_window_size(sentence, expected, expected_cls):
         (
             "The sun is shining",
             [
-                [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0],
-                [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0],
+                [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0],
+                [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0],
             ],
         )
     ],

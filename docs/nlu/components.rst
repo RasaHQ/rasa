@@ -324,24 +324,26 @@ LexicalSyntacticFeaturizer
     ==============  =============================================================================================
     Feature Name    Description
     ==============  =============================================================================================
-    low             Checks if the word is lower case.
-    upper           Checks if the word is upper case.
-    title           Checks if the word starts with an uppercase character and all remaining characters are lowercased.
-    digit           Checks if the word contains just digits.
-    prefix5         Take the first five characters of the word.
-    prefix2         Take the first two characters of the word.
-    suffix5         Take the last five characters of the word.
-    suffix3         Take the last three characters of the word.
-    suffix2         Take the last two characters of the word.
-    suffix1         Take the last character of the word.
-    pos             Take the Part-of-Speech tag of the word.
-    pos2            Take the first two characters of the Part-of-Speech tag of the word.
+    BOS             Checks if the token is at the beginning of the sentence.
+    EOS             Checks if the token is at the end of the sentence.
+    low             Checks if the token is lower case.
+    upper           Checks if the token is upper case.
+    title           Checks if the token starts with an uppercase character and all remaining characters are lowercased.
+    digit           Checks if the token contains just digits.
+    prefix5         Take the first five characters of the token.
+    prefix2         Take the first two characters of the token.
+    suffix5         Take the last five characters of the token.
+    suffix3         Take the last three characters of the token.
+    suffix2         Take the last two characters of the token.
+    suffix1         Take the last character of the token.
+    pos             Take the Part-of-Speech tag of the token (spaCy required).
+    pos2            Take the first two characters of the Part-of-Speech tag of the token (spaCy required).
     ==============  =============================================================================================
 
     As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
     previous words, the current word in the sliding window, and the next words.
-    You define the features as [before, word, after] array.
-    If you, for example, want to define features for the word before, the current word, and the word after,
+    You define the features as [before, token, after] array.
+    If you, for example, want to define features for the token before, the current token, and the token after,
     your features configuration could look like this:
 
     .. code-block:: yaml
@@ -349,8 +351,10 @@ LexicalSyntacticFeaturizer
         pipeline:
         - name: "LexicalSyntacticFeaturizer":
           "features": [
-            ["low", "title", "upper"],
+            ["BOS", "EOS", "low", "title", "upper"],
             [
+              "BOS",
+              "EOS",
               "low",
               "prefix5",
               "prefix2",
@@ -361,7 +365,7 @@ LexicalSyntacticFeaturizer
               "title",
               "digit",
             ],
-            ["low", "title", "upper"],
+            ["BOS", "EOS", "low", "title", "upper"],
           ]
 
     This configuration is also the default configuration.
