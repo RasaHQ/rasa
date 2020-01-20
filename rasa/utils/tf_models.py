@@ -31,7 +31,8 @@ class RasaModel(tf.keras.models.Model):
         evaluate_on_num_examples: int,
         evaluate_every_num_epochs: int,
         silent: bool = False,
-        eager: bool = True,
+        eager: bool = False,
+        **kwargs,
     ) -> None:
         """Train tf graph"""
 
@@ -45,15 +46,19 @@ class RasaModel(tf.keras.models.Model):
 
         tf_batch_size = tf.ones((), tf.int32)
 
+        def train_dataset_function(x):
+            return self.train_dataset(x, session_data)
+
+        def eval_dataset_function(x):
+            return self.eval_dataset(x, eval_session_data)
+
         if eager:
             # allows increasing batch size
-            train_dataset_func = lambda x: self.train_dataset(x, session_data)
+            train_dataset_func = train_dataset_function
             train_on_batch_func = self.train_on_batch
         else:
             # allows increasing batch size
-            train_dataset_func = tf.function(
-                func=lambda x: self.train_dataset(x, session_data)
-            )
+            train_dataset_func = tf.function(func=train_dataset_function)
             train_on_batch_func = tf.function(
                 self.train_on_batch,
                 input_signature=[train_dataset_func(1).element_spec],
@@ -61,12 +66,10 @@ class RasaModel(tf.keras.models.Model):
 
         if evaluate_on_num_examples > 0:
             if eager:
-                eval_dataset_func = lambda x: self.eval_dataset(x, eval_session_data)
+                eval_dataset_func = eval_dataset_function
                 eval_func = self.eval
             else:
-                eval_dataset_func = tf.function(
-                    func=lambda x: self.eval_dataset(x, eval_session_data)
-                )
+                eval_dataset_func = tf.function(func=eval_dataset_function)
                 eval_func = tf.function(
                     self.eval, input_signature=[eval_dataset_func(1).element_spec]
                 )
@@ -108,7 +111,7 @@ class RasaModel(tf.keras.models.Model):
 
                     # Eval on batches
                     self.set_training_phase(False)
-                    for batch_in in eval_dataset_func(ep_batch_size, eval_session_data):
+                    for batch_in in eval_dataset_func(ep_batch_size):
                         eval_func(batch_in)
 
                 # Get the metric results
@@ -122,33 +125,33 @@ class RasaModel(tf.keras.models.Model):
         if not disable:
             logger.info("Finished training.")
 
-    def compile(self) -> None:
-        raise NotImplemented
+    def compile(self, **kwargs) -> None:
+        raise NotImplementedError
 
-    def evaluate(self) -> None:
+    def evaluate(self, **kwargs) -> None:
         pass
 
     def predict(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> Dict[Text, tf.Tensor]:
         pass
 
     def train_on_batch(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> None:
         raise NotImplementedError
 
-    def test_on_batch(self) -> None:
-        raise NotImplemented
+    def test_on_batch(self, **kwargs) -> None:
+        raise NotImplementedError
 
-    def predict_on_batch(self) -> None:
-        raise NotImplemented
+    def predict_on_batch(self, **kwargs) -> None:
+        raise NotImplementedError
 
-    def fit_generator(self) -> None:
-        raise NotImplemented
+    def fit_generator(self, **kwargs) -> None:
+        raise NotImplementedError
 
-    def evaluate_generator(self) -> None:
-        raise NotImplemented
+    def evaluate_generator(self, **kwargs) -> None:
+        raise NotImplementedError
 
-    def predict_generator(self) -> None:
-        raise NotImplemented
+    def predict_generator(self, **kwargs) -> None:
+        raise NotImplementedError
