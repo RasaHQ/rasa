@@ -1,6 +1,6 @@
 import numpy as np
 import logging
-from typing import List, Optional, Text, Dict, Tuple, Union
+from typing import List, Text, Dict, Tuple, Union
 from tqdm import tqdm
 from rasa.utils import train_utils
 from rasa.utils.common import is_logging_disabled
