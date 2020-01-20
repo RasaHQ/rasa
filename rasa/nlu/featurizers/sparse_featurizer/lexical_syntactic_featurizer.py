@@ -168,7 +168,7 @@ class LexicalSyntacticFeaturizer(Featurizer):
     @staticmethod
     def _map_features_to_indices(
         feature_vocabulary: Dict[Text, List[Text]]
-    ) -> Dict[Text, Dict[Text:int]]:
+    ) -> Dict[Text, Dict[Text, int]]:
         feature_to_idx_dict = {}
         offset = 0
 
@@ -180,6 +180,8 @@ class LexicalSyntacticFeaturizer(Featurizer):
                 )
             }
             offset += len(feature_values)
+
+        print(feature_to_idx_dict)
 
         return feature_to_idx_dict
 
