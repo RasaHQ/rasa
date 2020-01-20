@@ -91,11 +91,7 @@ def update_apscheduler_log_level() -> None:
 def update_socketio_log_level() -> None:
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
 
-    socketio_loggers = [
-        "websockets.protocol",
-        "engineio.server",
-        "socketio.server",
-    ]
+    socketio_loggers = ["websockets.protocol", "engineio.server", "socketio.server"]
 
     for logger_name in socketio_loggers:
         logging.getLogger(logger_name).setLevel(log_level)

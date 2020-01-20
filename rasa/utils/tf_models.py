@@ -11,7 +11,10 @@ from rasa.utils.tf_model_data import RasaModelData
 logger = logging.getLogger(__name__)
 
 
+# noinspection PyMethodOverriding
 class RasaModel(tf.keras.models.Model):
+    """Completely override all public methods of keras Model."""
+
     @staticmethod
     def _update_postfix_dict(
         postfix_dict: Dict[Text, Text], metrics, prefix: Text = ""
@@ -76,13 +79,13 @@ class RasaModel(tf.keras.models.Model):
         if evaluate_on_num_examples > 0:
             if eager:
                 tf_evaluation_dataset_function = evaluation_dataset_function
-                tf_evaluation_function = self.eval
+                tf_evaluation_function = self.evaluate_on_batch
             else:
                 tf_evaluation_dataset_function = tf.function(
                     func=evaluation_dataset_function
                 )
                 tf_evaluation_function = tf.function(
-                    self.eval,
+                    self.evaluate_on_batch,
                     input_signature=[tf_evaluation_dataset_function(1).element_spec],
                 )
         else:
@@ -147,7 +150,34 @@ class RasaModel(tf.keras.models.Model):
     def train_on_batch(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> None:
-        raise NotImplementedError
+        with tf.GradientTape() as tape:
+            losses, scores = self._train_losses_scores(batch_in)
+            regularization_loss = tf.math.add_n(self.losses)
+            pred_loss = tf.math.add_n(list(losses.values()))
+            total_loss = pred_loss + regularization_loss
+
+        gradients = tape.gradient(total_loss, self.trainable_variables)
+        self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+
+        self.train_metrics["t_loss"].update_state(total_loss)
+        for k, v in losses.items():
+            self.train_metrics[k].update_state(v)
+        for k, v in scores.items():
+            self.train_metrics[k].update_state(v)
+
+    def evaluate_on_batch(
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
+    ) -> None:
+        losses, scores = self._train_losses_scores(batch_in)
+        regularization_loss = tf.math.add_n(self.losses)
+        pred_loss = tf.math.add_n(list(losses.values()))
+        total_loss = pred_loss + regularization_loss
+
+        self.eval_metrics["val_t_loss"].update_state(total_loss)
+        for k, v in losses.items():
+            self.eval_metrics[f"val_{k}"].update_state(v)
+        for k, v in scores.items():
+            self.eval_metrics[f"val_{k}"].update_state(v)
 
     def test_on_batch(self, **kwargs) -> None:
         raise NotImplementedError

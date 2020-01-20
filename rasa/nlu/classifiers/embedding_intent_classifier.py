@@ -429,7 +429,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         return [
             np.array(
                 [
-                    self._label_data["label_features"][0][label_id]
+                    self._label_data.get("label_features")[0][label_id]
                     for label_id in label_ids
                 ]
             )
@@ -839,7 +839,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
         model.data_signature = model_data.get_signature()
         model.build_for_predict(model_data)
-
         predict_dataset = model_data.as_tf_dataset(
             1, label_key="label_ids", batch_strategy="sequence", shuffle=False
         )
@@ -1235,34 +1234,6 @@ class DIET(tf_models.RasaModel):
             scores["e_f1"] = f1
 
         return losses, scores
-
-    def train_on_batch(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
-    ) -> None:
-        with tf.GradientTape() as tape:
-            losses, scores = self._train_losses_scores(batch_in)
-            regularization_loss = tf.math.add_n(self.losses)
-            pred_loss = tf.math.add_n(list(losses.values()))
-            total_loss = pred_loss + regularization_loss
-
-        gradients = tape.gradient(total_loss, self.trainable_variables)
-        self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-
-        self.train_metrics["t_loss"].update_state(total_loss)
-        for k, v in losses.items():
-            self.train_metrics[k].update_state(v)
-        for k, v in scores.items():
-            self.train_metrics[k].update_state(v)
-
-    def eval(self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]):
-        losses, scores = self._train_losses_scores(batch_in)
-        total_loss = tf.math.add_n(list(losses.values())) + self.losses
-
-        self.eval_metrics["val_t_loss"].update_state(total_loss)
-        for k, v in losses.items():
-            self.eval_metrics[f"val_{k}"].update_state(v)
-        for k, v in scores.items():
-            self.eval_metrics[f"val_{k}"].update_state(v)
 
     def build_for_predict(self, model_data: RasaModelData) -> None:
         self.batch_tuple_sizes = model_data.batch_tuple_sizes()
