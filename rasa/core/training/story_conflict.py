@@ -87,6 +87,10 @@ class TrackerEventStateTuple(NamedTuple):
     event: Event
     sliced_states: List[Dict[Text, float]]
 
+    @property
+    def sliced_states_hash(self):
+        return hash(str(list(self.sliced_states)))
+
 
 def find_story_conflicts(
     trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
@@ -123,7 +127,7 @@ def _find_conflicting_states(
     # represented by its hash
     state_action_mapping = defaultdict(list)
     for element in _sliced_states_iterator(trackers, domain, max_history):
-        hashed_state = hash(str(list(element.sliced_states)))
+        hashed_state = element.sliced_states_hash
         if element.event.as_story_string() not in state_action_mapping[hashed_state]:
             state_action_mapping[hashed_state] += [element.event.as_story_string()]
 
@@ -145,7 +149,7 @@ def _build_conflicts_from_states(
     # for which a conflict occurs
     conflicts = {}
     for element in _sliced_states_iterator(trackers, domain, max_history):
-        hashed_state = hash(str(list(element.sliced_states)))
+        hashed_state = element.sliced_states_hash
 
         if hashed_state in state_action_dict:
             if hashed_state not in conflicts:
