@@ -145,7 +145,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
 5. Once your PR is merged, tag a new release (this SHOULD always happen on master or release branches), e.g. using
     ```bash
     git tag 1.2.0 -m "next release"
-    git push origin 1.2.0 --tags
+    git push origin 1.2.0
     ```
     travis will build this tag and push a package to [pypi](https://pypi.python.org/pypi/rasa)
 6. **If this is a minor release**, a new release branch should be created pointing to the same commit as the tag to allow for future patch releases, e.g.
