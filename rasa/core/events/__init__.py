@@ -660,7 +660,7 @@ class ReminderScheduled(Event):
     def scheduled_job_name(self, sender_id: Text) -> Text:
         return (
             f"[{hash(self.name)},{hash(self.intent)},{hash(str(self.entities))}]"
-            + ACTION_NAME_SENDER_ID_CONNECTOR_STR
+            f"{ACTION_NAME_SENDER_ID_CONNECTOR_STR}"
             + sender_id
         )
 
