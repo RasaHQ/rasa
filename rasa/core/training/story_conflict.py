@@ -15,7 +15,6 @@ class StoryConflict:
         self._conflicting_actions = defaultdict(
             list
         )  # {"action": ["story_1", ...], ...}
-        self.correct_response = None
 
     def __hash__(self) -> int:
         return hash(str(list(self.sliced_states)))
