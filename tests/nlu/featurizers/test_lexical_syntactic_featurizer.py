@@ -3,6 +3,7 @@ import pytest
 
 import scipy.sparse
 
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
     LexicalSyntacticFeaturizer,
@@ -87,19 +88,6 @@ def test_text_featurizer_window_size(sentence, expected, expected_cls):
     assert np.all(actual[-1] == expected_cls)
 
 
-def test_text_featurizer_missing_spacy_nlp():
-    featurizer = LexicalSyntacticFeaturizer({"features": [["pos", "pos2"]]})
-
-    train_message = Message("Missing spacy.")
-
-    WhitespaceTokenizer().process(train_message)
-
-    with pytest.raises(ValueError) as excpetions:
-        featurizer.train(TrainingData([train_message]))
-
-    assert "Make sure to add 'SpacyNLP' to your pipeline." in str(excpetions.value)
-
-
 @pytest.mark.parametrize(
     "sentence, expected",
     [
@@ -121,11 +109,11 @@ def test_text_featurizer_using_pos(sentence, expected, spacy_nlp):
     train_message = Message(sentence)
     test_message = Message(sentence)
 
-    WhitespaceTokenizer().process(train_message)
-    WhitespaceTokenizer().process(test_message)
-
     train_message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(sentence))
     test_message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(sentence))
+
+    SpacyTokenizer().process(train_message)
+    SpacyTokenizer().process(test_message)
 
     featurizer.train(TrainingData([train_message]))
 

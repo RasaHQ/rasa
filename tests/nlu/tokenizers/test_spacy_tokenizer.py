@@ -42,6 +42,24 @@ def test_spacy(text, expected_tokens, expected_indices, spacy_nlp):
 
 
 @pytest.mark.parametrize(
+    "text, expected_pos_tags",
+    [
+        ("Forecast for lunch", ["NN", "IN", "NN"]),
+        ("Hello, how are you?", ["UH", ",", "WRB", "VBP", "PRP", "."]),
+    ],
+)
+def test_spacy_pos_tags(text, expected_pos_tags, spacy_nlp):
+    tk = SpacyTokenizer()
+
+    message = Message(text)
+    message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(text))
+
+    tokens = tk.tokenize(message, attribute=TEXT_ATTRIBUTE)
+
+    assert [t.data.get("pos") for t in tokens] == expected_pos_tags
+
+
+@pytest.mark.parametrize(
     "text, expected_tokens, expected_indices",
     [
         (

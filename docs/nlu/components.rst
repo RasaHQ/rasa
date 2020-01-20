@@ -315,10 +315,8 @@ LexicalSyntacticFeaturizer
 :Type: Sparse featurizer
 :Description:
     Creates features for entity extraction.
-    Moves with a sliding window over every token in the user message and creates features according to the configured
-    features (see below).
-    Features could for example be if a token is upper case, if it is a digit, or the prefix of that token (e.g.
-    first two characters).
+    Moves with a sliding window over every token in the user message and creates features according to the
+    configuration (see below).
 :Configuration:
     You need to configure what kind of lexical and syntactic features the featurizer should extract.
     The following features are available:
@@ -336,8 +334,8 @@ LexicalSyntacticFeaturizer
     suffix3         Take the last three characters of the word.
     suffix2         Take the last two characters of the word.
     suffix1         Take the last character of the word.
-    pos             Take the Part-of-Speech tag of the word (spaCy required).
-    pos2            Take the first two characters of the Part-of-Speech tag of the word (spaCy required).
+    pos             Take the Part-of-Speech tag of the word.
+    pos2            Take the first two characters of the Part-of-Speech tag of the word.
     ==============  =============================================================================================
 
     As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
@@ -368,7 +366,7 @@ LexicalSyntacticFeaturizer
 
     This configuration is also the default configuration.
 
-    .. note:: If you want to make use of ``pos`` or ``pos2`` you need to add ``SpacyNLP`` to your pipeline.
+    .. note:: If you want to make use of ``pos`` or ``pos2`` you need to add ``SpacyTokenizer`` to your pipeline.
 
 
 Intent Classifiers

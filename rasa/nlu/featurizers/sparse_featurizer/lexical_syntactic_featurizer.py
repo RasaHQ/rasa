@@ -8,30 +8,16 @@ import typing
 import scipy.sparse
 from typing import Any, Dict, Optional, Text, List
 
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import (
-    TOKENS_NAMES,
-    TEXT_ATTRIBUTE,
-    SPARSE_FEATURE_NAMES,
-    SPACY_DOCS,
-)
+from rasa.nlu.constants import TOKENS_NAMES, TEXT_ATTRIBUTE, SPARSE_FEATURE_NAMES
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
-
-try:
-    import spacy
-except ImportError:
-    spacy = None
-
-
-class Word(typing.NamedTuple):
-    text: Text
-    pos_tag: Text
 
 
 class LexicalSyntacticFeaturizer(Featurizer):
@@ -45,7 +31,7 @@ class LexicalSyntacticFeaturizer(Featurizer):
         # after holding keys about which features to use for each word,
         # for example, 'title' in array before will have the feature
         # "is the preceding word in title case?"
-        # POS features require spaCy to be installed
+        # POS features require 'SpacyTokenizer'.
         "features": [
             ["low", "title", "upper"],
             [
@@ -64,18 +50,20 @@ class LexicalSyntacticFeaturizer(Featurizer):
     }
 
     function_dict = {
-        "low": lambda word: word.text.islower(),
-        "title": lambda word: word.text.istitle(),
-        "prefix5": lambda word: word.text[:5],
-        "prefix2": lambda word: word.text[:2],
-        "suffix5": lambda word: word.text[-5:],
-        "suffix3": lambda word: word.text[-3:],
-        "suffix2": lambda word: word.text[-2:],
-        "suffix1": lambda word: word.text[-1:],
-        "pos": lambda word: word.pos_tag,
-        "pos2": lambda word: word.pos_tag[:2],
-        "upper": lambda word: word.text.isupper(),
-        "digit": lambda word: word.text.isdigit(),
+        "low": lambda token: token.text.islower(),
+        "title": lambda token: token.text.istitle(),
+        "prefix5": lambda token: token.text[:5],
+        "prefix2": lambda token: token.text[:2],
+        "suffix5": lambda token: token.text[-5:],
+        "suffix3": lambda token: token.text[-3:],
+        "suffix2": lambda token: token.text[-2:],
+        "suffix1": lambda token: token.text[-1:],
+        "pos": lambda token: token.data.get("pos") if "pos" in token.data else None,
+        "pos2": lambda token: token.data.get("pos")[:2]
+        if "pos" in token.data
+        else None,
+        "upper": lambda token: token.text.isupper(),
+        "digit": lambda token: token.text.isdigit(),
     }
 
     def __init__(
@@ -85,26 +73,7 @@ class LexicalSyntacticFeaturizer(Featurizer):
     ):
         super().__init__(component_config)
 
-        if feature_to_idx_dict is None:
-            self.feature_to_idx_dict = {}
-        else:
-            self.feature_to_idx_dict = feature_to_idx_dict
-
-        self._check_pos_features_and_spacy()
-
-    def _check_pos_features_and_spacy(self):
-        import itertools
-
-        features = set(
-            itertools.chain.from_iterable(self.component_config.get("features", []))
-        )
-        self.pos_features = "pos" in features or "pos2" in features
-
-        if self.pos_features and spacy is None:
-            raise ImportError(
-                "Failed to import `spaCy`. `spaCy` is required for POS features. "
-                "See https://spacy.io/usage/ for installation instructions."
-            )
+        self.feature_to_idx_dict = feature_to_idx_dict or {}
 
     def train(
         self,
@@ -124,24 +93,26 @@ class LexicalSyntacticFeaturizer(Featurizer):
         """Convert incoming messages into sparse features using the configured
         features."""
 
-        words = self._convert_to_words(message)
-        word_features = self._words_to_features(words)
-        features = self._features_to_one_hot(word_features)
+        # [:-1] to remove CLS token
+        tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
+
+        features = self._tokens_to_features(tokens)
+        features = self._features_to_one_hot(features)
         features = self._combine_with_existing_sparse_features(
             message, features, feature_name=SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
         )
         message.set(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE], features)
 
     def _features_to_one_hot(
-        self, word_features: List[Dict[Text, Any]]
+        self, features: List[Dict[Text, Any]]
     ) -> scipy.sparse.spmatrix:
         """Convert the word features into a one-hot presentation using the indices
         in the feature-to-idx dictionary."""
 
-        vec = self._initialize_feature_vector(len(word_features))
+        vec = self._initialize_feature_vector(len(features))
 
-        for word_idx, word_features in enumerate(word_features):
-            for feature_key, feature_value in word_features.items():
+        for word_idx, features in enumerate(features):
+            for feature_key, feature_value in features.items():
                 if (
                     feature_key in self.feature_to_idx_dict
                     and str(feature_value) in self.feature_to_idx_dict[feature_key]
@@ -176,13 +147,15 @@ class LexicalSyntacticFeaturizer(Featurizer):
 
         Each feature key, defined in the component configuration, points to
         different feature values and their indices in the overall resulting
-        feature vector."""
+        feature vector.
+        """
 
         # get all possible feature values
         features = []
         for example in training_data.training_examples:
-            words = self._convert_to_words(example)
-            features.append(self._words_to_features(words))
+            # [:-1] to remove CLS token
+            tokens = example.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
+            features.append(self._tokens_to_features(tokens))
 
         # build vocabulary of features
         feature_vocabulary = defaultdict(set)
@@ -206,13 +179,13 @@ class LexicalSyntacticFeaturizer(Featurizer):
             offset += len(feature_values)
         return feature_to_idx_dict
 
-    def _words_to_features(self, words: List[Word]) -> List[Dict[Text, Any]]:
+    def _tokens_to_features(self, tokens: List[Token]) -> List[Dict[Text, Any]]:
         """Convert words into discrete features."""
 
         configured_features = self.component_config["features"]
-        words_features = []
+        features = []
 
-        for word_idx in range(len(words)):
+        for token_idx in range(len(tokens)):
             # get the window size (e.g. before, word, after) of the configured features
             # in case of an even number we will look at one more word before,
             # e.g. window size 4 will result in a window range of
@@ -223,65 +196,40 @@ class LexicalSyntacticFeaturizer(Featurizer):
 
             prefixes = [str(i) for i in window_range]
 
-            word_features = {}
+            token_features = {}
 
             for pointer_position in window_range:
-                current_idx = word_idx + pointer_position
+                current_idx = token_idx + pointer_position
 
                 # skip, if current_idx is pointing to a non-existing word
-                if current_idx < 0 or current_idx >= len(words):
+                if current_idx < 0 or current_idx >= len(tokens):
                     continue
 
                 # check if we are at the start or at the end
-                if word_idx == len(words) - 1 and pointer_position == 0:
-                    word_features["EOS"] = True
-                elif word_idx == 0 and pointer_position == 0:
-                    word_features["BOS"] = True
+                if token_idx == len(tokens) - 1 and pointer_position == 0:
+                    token_features["EOS"] = True
+                elif token_idx == 0 and pointer_position == 0:
+                    token_features["BOS"] = True
 
-                word = words[word_idx + pointer_position]
+                token = tokens[token_idx + pointer_position]
 
                 current_feature_idx = pointer_position + half_window_size
                 prefix = prefixes[current_feature_idx]
-                features = configured_features[current_feature_idx]
 
-                for feature in features:
+                for feature in configured_features[current_feature_idx]:
                     # append each feature to a feature vector
-                    value = self.function_dict[feature](word)
-                    word_features[prefix + ":" + feature] = value
+                    value = self.function_dict[feature](token)
+                    if value is None:
+                        logger.debug(
+                            f"Invalid value '{value}' for feature '{feature}'."
+                            f" Feature is ignored."
+                        )
+                        continue
+                    token_features[prefix + ":" + feature] = value
 
-            words_features.append(word_features)
+            features.append(token_features)
 
-        return words_features
-
-    def _convert_to_words(self, message: Message) -> List[Word]:
-        """Takes a sentence and switches it to crfsuite format."""
-
-        words = []
-        if self.pos_features:
-            tokens = message.get(SPACY_DOCS[TEXT_ATTRIBUTE])
-            if not tokens:
-                raise ValueError(
-                    f"Missing '{SPACY_DOCS[TEXT_ATTRIBUTE]}'. "
-                    f"Make sure to add 'SpacyNLP' to your pipeline."
-                )
-        else:
-            tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
-            # remove CLS token
-            tokens = tokens[:-1]
-
-        for i, token in enumerate(tokens):
-            pos_tag = self._tag_of_token(token) if self.pos_features else None
-
-            words.append(Word(token.text, pos_tag))
-
-        return words
-
-    @staticmethod
-    def _tag_of_token(token):
-        if spacy.about.__version__ > "2" and token._.has("tag"):
-            return token._.get("tag")
-        else:
-            return token.tag_
+        return features
 
     @classmethod
     def load(
