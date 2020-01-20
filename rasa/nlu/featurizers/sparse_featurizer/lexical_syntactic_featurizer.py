@@ -76,6 +76,7 @@ class LexicalSyntacticFeaturizer(Featurizer):
         super().__init__(component_config)
 
         self.feature_to_idx_dict = feature_to_idx_dict or {}
+        self.number_of_features = self._calculate_number_of_features()
 
     def train(
         self,
@@ -84,63 +85,57 @@ class LexicalSyntacticFeaturizer(Featurizer):
         **kwargs: Any,
     ) -> None:
         self.feature_to_idx_dict = self._create_feature_to_idx_dict(training_data)
+        self.number_of_features = self._calculate_number_of_features()
 
         for example in training_data.training_examples:
-            self._create_text_features(example)
+            self._create_sparse_features(example)
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        self._create_text_features(message)
+        self._create_sparse_features(message)
 
-    def _create_text_features(self, message: Message) -> None:
+    def _create_sparse_features(self, message: Message) -> None:
         """Convert incoming messages into sparse features using the configured
         features."""
 
         # [:-1] to remove CLS token
         tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
 
-        features = self._tokens_to_features(tokens)
-        features = self._features_to_one_hot(features)
-        features = self._combine_with_existing_sparse_features(
-            message, features, feature_name=SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
+        sentence_features = self._tokens_to_features(tokens)
+        one_hot_feature_vector = self._features_to_one_hot(sentence_features)
+
+        sparse_features = scipy.sparse.coo_matrix(one_hot_feature_vector)
+
+        sparse_features = self._combine_with_existing_sparse_features(
+            message, sparse_features, feature_name=SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
         )
-        message.set(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE], features)
+        message.set(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE], sparse_features)
 
     def _features_to_one_hot(
-        self, features: List[Dict[Text, Any]]
-    ) -> scipy.sparse.spmatrix:
+        self, sentence_features: List[Dict[Text, Any]]
+    ) -> np.ndarray:
         """Convert the word features into a one-hot presentation using the indices
         in the feature-to-idx dictionary."""
 
-        vec = self._initialize_feature_vector(len(features))
+        # +1 for CLS token
+        one_hot_feature_vector = np.zeros(
+            [len(sentence_features) + 1, self.number_of_features]
+        )
 
-        for word_idx, features in enumerate(features):
-            for feature_key, feature_value in features.items():
+        for token_idx, toke_features in enumerate(sentence_features):
+            for feature_name, feature_value in toke_features.items():
                 if (
-                    feature_key in self.feature_to_idx_dict
-                    and str(feature_value) in self.feature_to_idx_dict[feature_key]
+                    feature_name in self.feature_to_idx_dict
+                    and str(feature_value) in self.feature_to_idx_dict[feature_name]
                 ):
-                    feature_idx = self.feature_to_idx_dict[feature_key][
+                    feature_idx = self.feature_to_idx_dict[feature_name][
                         str(feature_value)
                     ]
-                    vec[word_idx][feature_idx] = 1
+                    one_hot_feature_vector[token_idx][feature_idx] = 1
 
         # set vector of CLS token to sum of everything
-        vec[-1] = np.sum(vec, axis=0)
+        one_hot_feature_vector[-1] = np.sum(one_hot_feature_vector, axis=0)
 
-        return scipy.sparse.coo_matrix(vec)
-
-    def _initialize_feature_vector(self, number_of_tokens: int) -> np.ndarray:
-        """Initialize a feature vector of size number-of-tokens x number-of-features
-        with zeros."""
-
-        number_of_features = sum(
-            [
-                len(feature_values.values())
-                for feature_values in self.feature_to_idx_dict.values()
-            ]
-        )
-        # +1 for the CLS token
-        return np.zeros([number_of_tokens + 1, number_of_features])
+        return one_hot_feature_vector
 
     def _create_feature_to_idx_dict(
         self, training_data: TrainingData
@@ -153,14 +148,14 @@ class LexicalSyntacticFeaturizer(Featurizer):
         """
 
         # get all possible feature values
-        features = []
+        all_features = []
         for example in training_data.training_examples:
             # [:-1] to remove CLS token
             tokens = example.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
-            features.append(self._tokens_to_features(tokens))
+            all_features.append(self._tokens_to_features(tokens))
 
         # build vocabulary of features
-        feature_vocabulary = self._build_feature_vocabulary(features)
+        feature_vocabulary = self._build_feature_vocabulary(all_features)
 
         # assign a unique index to each feature value
         return self._map_features_to_indices(feature_vocabulary)
@@ -181,8 +176,6 @@ class LexicalSyntacticFeaturizer(Featurizer):
             }
             offset += len(feature_values)
 
-        print(feature_to_idx_dict)
-
         return feature_to_idx_dict
 
     @staticmethod
@@ -191,9 +184,9 @@ class LexicalSyntacticFeaturizer(Featurizer):
     ) -> Dict[Text, List[Text]]:
         feature_vocabulary = defaultdict(set)
 
-        for sent_features in features:
-            for word_features in sent_features:
-                for feature_name, feature_value in word_features.items():
+        for sentence_features in features:
+            for token_features in sentence_features:
+                for feature_name, feature_value in token_features.items():
                     feature_vocabulary[feature_name].add(feature_value)
 
         # sort items to ensure same order every time (for tests)
@@ -205,7 +198,7 @@ class LexicalSyntacticFeaturizer(Featurizer):
         """Convert words into discrete features."""
 
         configured_features = self.component_config["features"]
-        features = []
+        sentence_features = []
 
         for token_idx in range(len(tokens)):
             # get the window size (e.g. before, word, after) of the configured features
@@ -237,9 +230,9 @@ class LexicalSyntacticFeaturizer(Featurizer):
                         feature, token, token_idx, pointer_position, len(tokens)
                     )
 
-            features.append(token_features)
+            sentence_features.append(token_features)
 
-        return features
+        return sentence_features
 
     def _get_feature_value(
         self,
@@ -263,6 +256,14 @@ class LexicalSyntacticFeaturizer(Featurizer):
             )
         return value
 
+    def _calculate_number_of_features(self) -> int:
+        return sum(
+            [
+                len(feature_values.values())
+                for feature_values in self.feature_to_idx_dict.values()
+            ]
+        )
+
     @classmethod
     def load(
         cls,
@@ -285,6 +286,7 @@ class LexicalSyntacticFeaturizer(Featurizer):
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
         Return the metadata necessary to load the model again."""
+
         with open(
             os.path.join(model_dir, file_name + ".feature_to_idx_dict.pkl"), "wb"
         ) as f:
