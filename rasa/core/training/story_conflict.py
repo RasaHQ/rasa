@@ -133,7 +133,7 @@ def _find_conflicting_states(
 
 
 def _build_conflicts_from_states(
-    trackers: List["TrackerWithCachedStates"],
+    trackers: List[TrackerWithCachedStates],
     domain: Domain,
     max_history: int,
     state_action_dict: Dict[int, Optional[List[Text]]],
