@@ -131,7 +131,7 @@ def split_nlu_data(args) -> None:
     test.persist(args.out, filename=f"test_data.{fformat}")
 
 
-def validate_files(args: "argparse.Namespace") -> None:
+def validate_files(args: argparse.Namespace) -> None:
     """Validate all files needed for training a model.
 
     Fails with a non-zero exit code if there are any errors in the data."""
