@@ -745,7 +745,7 @@ class ReminderCancelled(Event):
         return f"ReminderCancelled(name: {self.name}, intent: {self.intent}, entities: {self.entities})"
 
     def cancels_job_with_name(self, job_name: Text, sender_id: Text) -> bool:
-        """Determines if this ReminderCancelled should cancel the job with the given name.
+        """Determines if this `ReminderCancelled` event should cancel the job with the given name.
 
         Args:
             job_name: Name of the job to be tested.
