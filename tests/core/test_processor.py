@@ -205,7 +205,9 @@ async def test_reminder_aborted(
     assert len(t.events) == 3  # nothing should have been executed
 
 
-async def wait_until_all_jobs_were_executed(timeout_after_seconds: Optional[float] = None) -> None:
+async def wait_until_all_jobs_were_executed(
+    timeout_after_seconds: Optional[float] = None,
+) -> None:
     total_seconds = 0.0
     while len((await jobs.scheduler()).get_jobs()) > 0 and (
         not timeout_after_seconds or total_seconds < timeout_after_seconds
