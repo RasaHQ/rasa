@@ -3,10 +3,13 @@ import scipy.sparse
 import tensorflow as tf
 
 from sklearn.model_selection import train_test_split
-from typing import Optional, Dict, Text, List, Tuple, Any, Union, Generator
+from typing import Optional, Dict, Text, List, Tuple, Any, Union, Generator, NamedTuple
 from collections import defaultdict
 
-from utils import train_utils
+
+class DataSignature(NamedTuple):
+    is_sparse: bool
+    shape: List[int]
 
 
 class RasaModelData:
@@ -15,6 +18,12 @@ class RasaModelData:
             self.data = {}
         else:
             self.data = data
+
+    def get(self, key: Text) -> List[np.ndarray]:
+        return self.data[key]
+
+    def set(self, key: Text, value: List[np.ndarray]):
+        self.data[key] = value
 
     def items(self):
         return self.data.items()
@@ -84,7 +93,7 @@ class RasaModelData:
                 self.data[key].append(mask)
                 break
 
-    def get_signature(self) -> Dict[Text, Tuple[bool, Tuple[int]]]:
+    def get_signature(self) -> Dict[Text, List[DataSignature]]:
         """Get signature of RasaModelData.
 
         Signature stores the shape and whether features are sparse or not for every
@@ -92,7 +101,10 @@ class RasaModelData:
 
         return {
             key: [
-                (True if isinstance(v[0], scipy.sparse.spmatrix) else False, v[0].shape)
+                DataSignature(
+                    True if isinstance(v[0], scipy.sparse.spmatrix) else False,
+                    v[0].shape,
+                )
                 for v in values
             ]
             for key, values in self.data.items()
@@ -105,7 +117,6 @@ class RasaModelData:
         ids = np.random.permutation(data_points)
         self.data = self._data_for_ids(ids)
 
-    # noinspection PyPep8Naming
     def balance(self, batch_size: int, shuffle: bool, label_key: Text) -> None:
         """Mix session data to account for class imbalance.
 
@@ -222,6 +233,164 @@ class RasaModelData:
             args=([batch_size]),
         )
 
+    def prepare_batch(
+        self,
+        start: Optional[int] = None,
+        end: Optional[int] = None,
+        tuple_sizes: Optional[Dict[Text, int]] = None,
+    ) -> Tuple[Optional[np.ndarray]]:
+        """Slices session data into batch using given start and end value."""
+
+        batch_data = []
+
+        for key, values in self.data.items():
+            # add None for not present values during processing
+            if not values:
+                if tuple_sizes:
+                    batch_data += [None] * tuple_sizes[key]
+                else:
+                    batch_data.append(None)
+                continue
+
+            for v in values:
+                if start is not None and end is not None:
+                    _data = v[start:end]
+                elif start is not None:
+                    _data = v[start:]
+                elif end is not None:
+                    _data = v[:end]
+                else:
+                    _data = v[:]
+
+                if isinstance(_data[0], scipy.sparse.spmatrix):
+                    batch_data.extend(self._scipy_matrix_to_values(_data))
+                else:
+                    batch_data.append(self._pad_dense_data(_data))
+
+        # len of batch_data is equal to the number of keys in session data
+        return tuple(batch_data)
+
+    def batch_tuple_sizes(self) -> Dict[Text, int]:
+
+        # save the amount of placeholders attributed to session data keys
+        tuple_sizes = defaultdict(int)
+
+        idx = 0
+        for k, values in self.data.items():
+            tuple_sizes[k] = 0
+            for v in values:
+                if isinstance(v[0], scipy.sparse.spmatrix):
+                    tuple_sizes[k] += 3
+                    idx += 3
+                else:
+                    tuple_sizes[k] += 1
+                    idx += 1
+
+        return tuple_sizes
+
+    def as_tf_dataset(
+        self,
+        batch_size: Union["tf.Tensor", int],
+        label_key: Text,
+        batch_strategy: Text = "sequence",
+        shuffle: bool = False,
+    ) -> "tf.data.Dataset":
+        """Create tf dataset."""
+
+        shapes, types = self._get_shapes_types()
+
+        return tf.data.Dataset.from_generator(
+            lambda batch_size_: self._gen_batch(
+                batch_size_, label_key, batch_strategy, shuffle
+            ),
+            output_types=types,
+            output_shapes=shapes,
+            args=([batch_size]),
+        )
+
+    def _get_shapes_types(self) -> Tuple:
+        """Extract shapes and types from session data."""
+
+        types = []
+        shapes = []
+
+        def append_shape(v: np.ndarray):
+            if isinstance(v[0], scipy.sparse.spmatrix):
+                # scipy matrix is converted into indices, data, shape
+                shapes.append((None, v[0].ndim + 1))
+                shapes.append((None,))
+                shapes.append((v[0].ndim + 1))
+            elif v[0].ndim == 0:
+                shapes.append((None,))
+            elif v[0].ndim == 1:
+                shapes.append((None, v[0].shape[-1]))
+            else:
+                shapes.append((None, None, v[0].shape[-1]))
+
+        def append_type(v: np.ndarray):
+            if isinstance(v[0], scipy.sparse.spmatrix):
+                # scipy matrix is converted into indices, data, shape
+                types.append(tf.int64)
+                types.append(tf.float32)
+                types.append(tf.int64)
+            else:
+                types.append(tf.float32)
+
+        for values in self.data.values():
+            for v in values:
+                append_shape(v)
+                append_type(v)
+
+        return tuple(shapes), tuple(types)
+
+    def _scipy_matrix_to_values(self, array_of_sparse: np.ndarray) -> List[np.ndarray]:
+        """Convert a scipy matrix into inidces, data, and shape."""
+
+        if not isinstance(array_of_sparse[0], scipy.sparse.coo_matrix):
+            array_of_sparse = [x.tocoo() for x in array_of_sparse]
+
+        max_seq_len = max([x.shape[0] for x in array_of_sparse])
+
+        indices = np.hstack(
+            [
+                np.vstack([i * np.ones_like(x.row), x.row, x.col])
+                for i, x in enumerate(array_of_sparse)
+            ]
+        ).T
+        data = np.hstack([x.data for x in array_of_sparse])
+
+        shape = np.array(
+            (len(array_of_sparse), max_seq_len, array_of_sparse[0].shape[-1])
+        )
+
+        return [
+            indices.astype(np.int64),
+            data.astype(np.float32),
+            shape.astype(np.int64),
+        ]
+
+    def _pad_dense_data(self, array_of_dense: np.ndarray) -> np.ndarray:
+        """Pad data of different lengths.
+
+        Sequential data is padded with zeros. Zeros are added to the end of data.
+        """
+
+        if array_of_dense[0].ndim < 2:
+            # data doesn't contain a sequence
+            return array_of_dense
+
+        data_size = len(array_of_dense)
+        max_seq_len = max([x.shape[0] for x in array_of_dense])
+
+        data_padded = np.zeros(
+            [data_size, max_seq_len, array_of_dense[0].shape[-1]],
+            dtype=array_of_dense[0].dtype,
+        )
+        for i in range(data_size):
+            data_padded[i, : array_of_dense[i].shape[0], :] = array_of_dense[i]
+
+        return data_padded.astype(np.float32)
+
     def _get_shapes_types(self) -> Tuple:
         """Extract shapes and types from session data."""
 
@@ -279,7 +448,7 @@ class RasaModelData:
             start = batch_num * batch_size
             end = start + batch_size
 
-            yield train_utils.prepare_batch(self.data, start, end)
+            yield self.prepare_batch(start, end)
 
     def _check_train_test_sizes(
         self, number_of_test_examples: int, label_counts: Dict[Any, int]
@@ -300,7 +469,7 @@ class RasaModelData:
                 f"be at least equal to number of classes {label_counts}."
             )
 
-    def _data_for_ids(self, ids: np.ndarray):
+    def _data_for_ids(self, ids: np.ndarray) -> Dict[Text, List[np.ndarray]]:
         """Filter session data by ids."""
 
         new_data = defaultdict(list)

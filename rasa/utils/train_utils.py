@@ -7,6 +7,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 
+from rasa.utils.tf_model_data import DataSignature
 
 logger = logging.getLogger(__name__)
 
@@ -401,7 +402,7 @@ def pad_dense_data(array_of_dense: np.ndarray) -> np.ndarray:
 
 def batch_to_session_data(
     batch: Union[Tuple[np.ndarray], Tuple[tf.Tensor]],
-    session_data_signature: SessionDataSignature,
+    data_signature: Dict[Text, List[DataSignature]],
 ) -> Dict[Text, List[tf.Tensor]]:
     """Convert input batch tensors into batch data format.
 
@@ -414,7 +415,7 @@ def batch_to_session_data(
     batch_data = defaultdict(list)
 
     idx = 0
-    for k, signature in session_data_signature.items():
+    for k, signature in data_signature.items():
         for is_sparse, shape in signature:
             if is_sparse:
                 # explicitly substitute last dimension in shape with known static value

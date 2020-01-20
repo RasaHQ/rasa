@@ -15,7 +15,7 @@ from rasa.utils.train_utils import (
 
 
 @pytest.fixture
-async def session_data() -> SessionDataType:
+async def model_data() -> SessionDataType:
     return {
         "text_features": [
             np.array(
@@ -63,15 +63,15 @@ async def session_data() -> SessionDataType:
     }
 
 
-def test_shuffle_session_data(session_data: SessionDataType):
-    shuffeled_session_data = shuffle_session_data(session_data)
+def test_shuffle_session_data(model_data):
+    shuffeled_session_data = shuffle_session_data(model_data)
 
-    assert np.array(shuffeled_session_data.values()) != np.array(session_data.values())
+    assert np.array(shuffeled_session_data.values()) != np.array(model_data.values())
 
 
-def test_split_session_data_by_label(session_data: SessionDataType):
+def test_split_session_data_by_label(model_data):
     split_session_data = split_session_data_by_label_ids(
-        session_data, session_data["intent_ids"][0], np.array([0, 1])
+        model_data, model_data["intent_ids"][0], np.array([0, 1])
     )
 
     assert len(split_session_data) == 2
@@ -79,12 +79,12 @@ def test_split_session_data_by_label(session_data: SessionDataType):
         assert len(set(s["intent_ids"][0])) == 1
 
 
-def test_train_val_split(session_data: SessionDataType):
+def test_train_val_split(model_data):
     train_session_data, val_session_data = train_val_split(
-        session_data, 2, 42, "intent_ids"
+        model_data, 2, 42, "intent_ids"
     )
 
-    for k, values in session_data.items():
+    for k, values in model_data.items():
         assert len(values) == len(train_session_data[k])
         assert len(values) == len(val_session_data[k])
         for i, v in enumerate(values):
@@ -100,43 +100,43 @@ def test_train_val_split(session_data: SessionDataType):
 
 
 @pytest.mark.parametrize("size", [0, 1, 5])
-def test_train_val_split_incorrect_size(session_data: SessionDataType, size):
+def test_train_val_split_incorrect_size(model_data, size):
     with pytest.raises(ValueError):
-        train_val_split(session_data, size, 42, "intent_ids")
+        train_val_split(model_data, size, 42, "intent_ids")
 
 
-def test_session_data_for_ids(session_data: SessionDataType):
-    filtered_session_data = session_data_for_ids(session_data, np.array([0, 1]))
+def test_session_data_for_ids(model_data):
+    filtered_session_data = session_data_for_ids(model_data, np.array([0, 1]))
 
     for values in filtered_session_data.values():
         for v in values:
             assert v.shape[0] == 2
 
-    k = list(session_data.keys())[0]
+    k = list(model_data.keys())[0]
 
     assert np.all(
-        np.array(filtered_session_data[k][0][0]) == np.array(session_data[k][0][0])
+        np.array(filtered_session_data[k][0][0]) == np.array(model_data[k][0][0])
     )
     assert np.all(
-        np.array(filtered_session_data[k][0][1]) == np.array(session_data[k][0][1])
+        np.array(filtered_session_data[k][0][1]) == np.array(model_data[k][0][1])
     )
 
 
-def test_get_number_of_examples(session_data: SessionDataType):
-    num = get_number_of_examples(session_data)
+def test_get_number_of_examples(model_data):
+    num = get_number_of_examples(model_data)
 
     assert num == 5
 
 
-def test_get_number_of_examples_raises_value_error(session_data: SessionDataType):
-    session_data["dense"] = np.random.randint(5, size=(2, 10))
+def test_get_number_of_examples_raises_value_error(model_data):
+    model_data["dense"] = np.random.randint(5, size=(2, 10))
     with pytest.raises(ValueError):
-        get_number_of_examples(session_data)
+        get_number_of_examples(model_data)
 
 
-def test_gen_batch(session_data: SessionDataType):
+def test_gen_batch(model_data):
     iterator = gen_batch(
-        session_data, 2, "intent_ids", shuffle=True, batch_strategy="balanced"
+        model_data, 2, "intent_ids", shuffle=True, batch_strategy="balanced"
     )
 
     batch = next(iterator)
@@ -155,10 +155,10 @@ def test_gen_batch(session_data: SessionDataType):
         next(iterator)
 
 
-def test_balance_session_data(session_data: SessionDataType):
-    balanced_session_data = balance_session_data(session_data, 2, False, "intent_ids")
+def test_balance_session_data(model_data):
+    balanced_session_data = balance_session_data(model_data, 2, False, "intent_ids")
 
-    for k, values in session_data.items():
+    for k, values in model_data.items():
         assert k in balanced_session_data
 
         for i, v in enumerate(values):
