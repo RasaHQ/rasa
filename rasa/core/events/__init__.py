@@ -752,7 +752,7 @@ class ReminderCancelled(Event):
             sender_id: The `sender_id` of the tracker.
 
         Returns:
-            `True`, if this `ReminderCancelled` should cancel the job with the given name,
+            `True`, if this `ReminderCancelled` event should cancel the job with the given name,
             and `False` otherwise.
         """
 
