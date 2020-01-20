@@ -208,7 +208,7 @@ async def test_reminder_aborted(
 async def wait_until_all_jobs_were_executed(timeout_after_seconds: Optional[float] = None) -> None:
     total_seconds = 0.0
     while len((await jobs.scheduler()).get_jobs()) > 0 and (
-        total_seconds < timeout_after_seconds or not timeout_after_seconds
+        not timeout_after_seconds or total_seconds < timeout_after_seconds
     ):
         await asyncio.sleep(0.1)
         total_seconds += 0.1
