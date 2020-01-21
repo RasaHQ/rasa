@@ -7,7 +7,7 @@ from typing import Optional, Dict, Text, List, Tuple, Any, Union, Generator, Nam
 from collections import defaultdict
 
 
-class DataSignature(NamedTuple):
+class FeatureSignature(NamedTuple):
     is_sparse: bool
     shape: List[int]
 
@@ -95,7 +95,7 @@ class RasaModelData:
                 self.data[key].append(mask)
                 break
 
-    def get_signature(self) -> Dict[Text, List[DataSignature]]:
+    def get_signature(self) -> Dict[Text, List[FeatureSignature]]:
         """Get signature of RasaModelData.
 
         Signature stores the shape and whether features are sparse or not for every
@@ -103,7 +103,7 @@ class RasaModelData:
 
         return {
             key: [
-                DataSignature(
+                FeatureSignature(
                     True if isinstance(v[0], scipy.sparse.spmatrix) else False,
                     v[0].shape,
                 )

@@ -25,7 +25,7 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     TOKENS_NAMES,
 )
-from rasa.utils.tf_model_data import RasaModelData, DataSignature
+from rasa.utils.tf_model_data import RasaModelData, FeatureSignature
 
 import tensorflow as tf
 import tensorflow_addons as tfa
@@ -821,7 +821,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
             1,
             0,
             0,
-            label_key="label_ids",
             batch_strategy=meta[BATCH_STRATEGY],
             silent=True,  # don't confuse users with training output
             eager=True,  # no need to build tf graph, eager is faster here
@@ -859,7 +858,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 class DIET(tf_models.RasaModel):
     @staticmethod
     def _create_sparse_dense_layer(
-        data_signature: List[DataSignature],
+        data_signature: List[FeatureSignature],
         name: Text,
         reg_lambda: float,
         dense_dim: int,
@@ -880,7 +879,7 @@ class DIET(tf_models.RasaModel):
             )
 
     @staticmethod
-    def _input_dim(data_signature: List[DataSignature], dense_dim: int) -> int:
+    def _input_dim(data_signature: List[FeatureSignature], dense_dim: int) -> int:
 
         for is_sparse, shape in data_signature:
             if not is_sparse:
@@ -893,7 +892,7 @@ class DIET(tf_models.RasaModel):
 
     def __init__(
         self,
-        data_signature: Dict[Text, List[DataSignature]],
+        data_signature: Dict[Text, List[FeatureSignature]],
         label_data: RasaModelData,
         inverted_tag_dict: Dict[int, Text],
         config: Dict[Text, Any],
@@ -903,7 +902,7 @@ class DIET(tf_models.RasaModel):
         # data
         self.data_signature = data_signature
         label_batch = label_data.prepare_batch()
-        self.tf_label_data = train_utils.batch_to_model_data_format(
+        self.tf_label_data = self.batch_to_model_data_format(
             label_batch, label_data.get_signature()
         )
         self._num_tags = len(inverted_tag_dict)
@@ -1185,9 +1184,7 @@ class DIET(tf_models.RasaModel):
     def _train_losses_scores(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
     ) -> Tuple[Dict[Text, float], Dict[Text, float]]:
-        tf_batch_data = train_utils.batch_to_model_data_format(
-            batch_in, self.data_signature
-        )
+        tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         mask_text = tf_batch_data["text_mask"][0]
         sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
@@ -1241,9 +1238,7 @@ class DIET(tf_models.RasaModel):
     def predict(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> Dict[Text, tf.Tensor]:
-        tf_batch_data = train_utils.batch_to_model_data_format(
-            batch_in, self.data_signature
-        )
+        tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         mask_text = tf_batch_data["text_mask"][0]
         sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
