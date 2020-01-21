@@ -1369,21 +1369,23 @@ def create_app(
         elif intent == "listpickupintent":
             if data["name"] == 'pickup':
                 entityArray.append(data)
-        elif intent == "feeinfointent":
+                elif intent == "feeinfointent":
             if data["name"] == 'fee':
                 entityArray.append(data)
         elif intent == "libraryinfointent":
+            condMap = {}
             for data in entMap:
                 if data['name'] == 'libname':
                     entityArray.append(data)
                 elif data['name'] == 'libinfofilter':
                     entityArray.append(data)
                 elif data['name'] == 'currently':
+                    condMap['currently'] = 'now'
                     entityArray.append(data)
                 elif data["name"] == "time":
                     if 'from' in data['value']:
                         print("*********************************************************")
-                        data['value']= data['value'].replace("\'","\"",-1)
+                        data['value'] = data['value'].replace("\'", "\"", -1)
                         datamap = json.loads(data['value'])
                         tempMap = {}
                         tempMap['entity'] = 'from'
@@ -1401,7 +1403,10 @@ def create_app(
                         print(date)
                         data["name"] = 'hdate'
                         data["value"] = date[0]
-                        entityArray.append(data)
+                        if 'currently' in condMap:
+                            pass
+                        else:
+                            entityArray.append(data)
                     conditionMap["hdate"] = data["value"]
                 elif data["name"].lower() == 'date':
                     data["name"] = 'date'
