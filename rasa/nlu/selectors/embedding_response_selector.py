@@ -3,6 +3,7 @@ import typing
 from typing import Any, Dict, Text, Optional
 import os
 import pickle
+import warnings
 
 from rasa.nlu.components import any_of
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
@@ -176,12 +177,38 @@ class ResponseSelector(EmbeddingIntentClassifier):
         cached_component: Optional["EmbeddingIntentClassifier"] = None,
         **kwargs: Any,
     ) -> "EmbeddingIntentClassifier":
-        super().load(component_meta, model_dir, metadata, cached_component, **kwargs)
+        super().load(meta, model_dir, model_metadata, cached_component, **kwargs)
 
-        with open(
-            os.path.join(model_dir, file_name + ".response_text_key_dict.pkl"), "rb"
-        ) as f:
-            response_text_key_dict = pickle.load(f)
+        if model_dir and meta.get("file"):
+            file_name = meta.get("file")
+
+            with open(
+                os.path.join(model_dir, file_name + ".response_text_key_dict.pkl"), "rb"
+            ) as f:
+                response_text_key_dict = pickle.load(f)
+
+            return cls(
+                component_config=meta,
+                inverted_label_dict=inv_label_dict,
+                session=session,
+                graph=graph,
+                batch_placeholder=batch_in,
+                similarity_all=sim_all,
+                pred_confidence=pred_confidence,
+                similarity=sim,
+                message_embed=message_embed,
+                label_embed=label_embed,
+                all_labels_embed=all_labels_embed,
+                batch_tuple_sizes=batch_tuple_sizes,
+                response_text_key_dict=response_text_key_dict,
+            )
+
+        else:
+            warnings.warn(
+                f"Failed to load nlu model. "
+                f"Maybe path '{os.path.abspath(model_dir)}' doesn't exist."
+            )
+            return cls(component_config=meta)
 
     def preprocess_train_data(self, training_data):
         """Performs sanity checks on training data, extracts encodings for labels
@@ -192,9 +219,6 @@ class ResponseSelector(EmbeddingIntentClassifier):
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=RESPONSE_ATTRIBUTE
         )
-        # prepare suffix date, training_data.intent_examples is a list of messages, see if it contains a response attribute, then it also contains a key which is the suffix that I need
-        # create a dict of response keys (RESPONSE_KEY_ATTRIBUTE) mapped to response text (RESPONSE_ATTRIBUTE), self.response_keys = training_data.intent_examples[n].data.response_key & data.response
-        # self.response_keys =
         self.response_text_key_dict = self._create_response_text_key_dict(training_data)
 
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
