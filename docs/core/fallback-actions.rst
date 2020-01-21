@@ -34,7 +34,7 @@ file as parameters of the ``FallbackPolicy``.
       fallback_action_name: "action_default_fallback"
 
 ``action_default_fallback`` is a default action in Rasa Core which sends the
-``utter_default`` template message to the user. Make sure to specify
+``utter_default`` response to the user. Make sure to specify
 the ``utter_default`` in your domain file. It will also revert back to the
 state of the conversation before the user message that caused the
 fallback, so that it will not influence the prediction of future actions.
@@ -105,8 +105,8 @@ the same manner as the ``FallbackPolicy``).
 Rasa Core provides the default implementations of
 ``action_default_ask_affirmation`` and ``action_default_ask_rephrase``.
 The default implementation of ``action_default_ask_rephrase`` action utters
-the response template ``utter_ask_rephrase``, so be sure to specify this
-template in your domain file.
+the response ``utter_ask_rephrase``, so be sure to specify this
+response in your domain file.
 The implementation of both actions can be overwritten with :ref:`custom actions <custom-actions>`.
 
 You can specify the core fallback action as well as the ultimate NLU

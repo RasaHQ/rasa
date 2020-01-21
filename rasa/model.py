@@ -286,7 +286,7 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     nlu_data = await file_importer.get_nlu_data()
 
     domain_dict = domain.as_dict()
-    templates = domain_dict.pop("templates")
+    templates = domain_dict.pop("responses")
     domain_without_nlg = Domain.from_dict(domain_dict)
 
     return {
