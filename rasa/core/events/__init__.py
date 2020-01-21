@@ -735,7 +735,7 @@ class ReminderCancelled(Event):
     def __hash__(self) -> int:
         return hash((self.name, self.intent, str(self.entities),))
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, ReminderCancelled):
             return False
         else:
