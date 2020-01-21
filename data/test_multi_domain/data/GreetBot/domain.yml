@@ -6,7 +6,7 @@ actions:
 - utter_greet
 - utter_goodbye
 
-templates:
+responses:
   utter_greet:
     - text: "Hey! How are you?"
       buttons:

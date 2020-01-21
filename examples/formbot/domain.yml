@@ -37,7 +37,7 @@ slots:
   requested_slot:
     type: unfeaturized
 
-templates:
+responses:
   utter_ask_cuisine:
     - text: "what cuisine?"
   utter_ask_num_people:
