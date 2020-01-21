@@ -175,7 +175,7 @@ async def test_reminder_scheduled(
     assert t.events[-4] == ActionExecuted("action_schedule_reminder")
     assert isinstance(
         t.events[-3], ReminderScheduled
-    )  # ToDo: Should this really be here?
+    )
     assert t.events[-2] == UserUttered(
         f"{EXTERNAL_MESSAGE_PREFIX}remind", intent={"name": "remind", IS_EXTERNAL: True}
     )
