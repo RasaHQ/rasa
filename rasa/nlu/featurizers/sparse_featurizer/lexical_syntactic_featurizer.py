@@ -78,6 +78,14 @@ class LexicalSyntacticFeaturizer(Featurizer):
         self.feature_to_idx_dict = feature_to_idx_dict or {}
         self.number_of_features = self._calculate_number_of_features()
 
+    def _calculate_number_of_features(self) -> int:
+        return sum(
+            [
+                len(feature_values.values())
+                for feature_values in self.feature_to_idx_dict.values()
+            ]
+        )
+
     def train(
         self,
         training_data: TrainingData,
@@ -92,50 +100,6 @@ class LexicalSyntacticFeaturizer(Featurizer):
 
     def process(self, message: Message, **kwargs: Any) -> None:
         self._create_sparse_features(message)
-
-    def _create_sparse_features(self, message: Message) -> None:
-        """Convert incoming messages into sparse features using the configured
-        features."""
-
-        # [:-1] to remove CLS token
-        tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
-
-        sentence_features = self._tokens_to_features(tokens)
-        one_hot_feature_vector = self._features_to_one_hot(sentence_features)
-
-        sparse_features = scipy.sparse.coo_matrix(one_hot_feature_vector)
-
-        sparse_features = self._combine_with_existing_sparse_features(
-            message, sparse_features, feature_name=SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
-        )
-        message.set(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE], sparse_features)
-
-    def _features_to_one_hot(
-        self, sentence_features: List[Dict[Text, Any]]
-    ) -> np.ndarray:
-        """Convert the word features into a one-hot presentation using the indices
-        in the feature-to-idx dictionary."""
-
-        # +1 for CLS token
-        one_hot_feature_vector = np.zeros(
-            [len(sentence_features) + 1, self.number_of_features]
-        )
-
-        for token_idx, toke_features in enumerate(sentence_features):
-            for feature_name, feature_value in toke_features.items():
-                if (
-                    feature_name in self.feature_to_idx_dict
-                    and str(feature_value) in self.feature_to_idx_dict[feature_name]
-                ):
-                    feature_idx = self.feature_to_idx_dict[feature_name][
-                        str(feature_value)
-                    ]
-                    one_hot_feature_vector[token_idx][feature_idx] = 1
-
-        # set vector of CLS token to sum of everything
-        one_hot_feature_vector[-1] = np.sum(one_hot_feature_vector, axis=0)
-
-        return one_hot_feature_vector
 
     def _create_feature_to_idx_dict(
         self, training_data: TrainingData
@@ -194,6 +158,23 @@ class LexicalSyntacticFeaturizer(Featurizer):
 
         return feature_vocabulary
 
+    def _create_sparse_features(self, message: Message) -> None:
+        """Convert incoming messages into sparse features using the configured
+        features."""
+
+        # [:-1] to remove CLS token
+        tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
+
+        sentence_features = self._tokens_to_features(tokens)
+        one_hot_feature_vector = self._features_to_one_hot(sentence_features)
+
+        sparse_features = scipy.sparse.coo_matrix(one_hot_feature_vector)
+
+        sparse_features = self._combine_with_existing_sparse_features(
+            message, sparse_features, feature_name=SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
+        )
+        message.set(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE], sparse_features)
+
     def _tokens_to_features(self, tokens: List[Token]) -> List[Dict[Text, Any]]:
         """Convert words into discrete features."""
 
@@ -234,6 +215,33 @@ class LexicalSyntacticFeaturizer(Featurizer):
 
         return sentence_features
 
+    def _features_to_one_hot(
+        self, sentence_features: List[Dict[Text, Any]]
+    ) -> np.ndarray:
+        """Convert the word features into a one-hot presentation using the indices
+        in the feature-to-idx dictionary."""
+
+        # +1 for CLS token
+        one_hot_feature_vector = np.zeros(
+            [len(sentence_features) + 1, self.number_of_features]
+        )
+
+        for token_idx, toke_features in enumerate(sentence_features):
+            for feature_name, feature_value in toke_features.items():
+                if (
+                    feature_name in self.feature_to_idx_dict
+                    and str(feature_value) in self.feature_to_idx_dict[feature_name]
+                ):
+                    feature_idx = self.feature_to_idx_dict[feature_name][
+                        str(feature_value)
+                    ]
+                    one_hot_feature_vector[token_idx][feature_idx] = 1
+
+        # set vector of CLS token to sum of everything
+        one_hot_feature_vector[-1] = np.sum(one_hot_feature_vector, axis=0)
+
+        return one_hot_feature_vector
+
     def _get_feature_value(
         self,
         feature: Text,
@@ -255,14 +263,6 @@ class LexicalSyntacticFeaturizer(Featurizer):
                 f" Feature is ignored."
             )
         return value
-
-    def _calculate_number_of_features(self) -> int:
-        return sum(
-            [
-                len(feature_values.values())
-                for feature_values in self.feature_to_idx_dict.values()
-            ]
-        )
 
     @classmethod
     def load(
