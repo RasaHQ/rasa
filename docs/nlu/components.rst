@@ -305,6 +305,74 @@ CountVectorsFeaturizer
           OOV_words: []  # list of strings
 
 
+LexicalSyntacticFeaturizer
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Short: Lexical and syntactic feature creation to support entity extraction.
+:Outputs:
+   ``text_sparse_features``
+:Requires: ``tokens``
+:Type: Sparse featurizer
+:Description:
+    Creates features for entity extraction.
+    Moves with a sliding window over every token in the user message and creates features according to the
+    configuration (see below).
+:Configuration:
+    You need to configure what kind of lexical and syntactic features the featurizer should extract.
+    The following features are available:
+
+    ==============  =============================================================================================
+    Feature Name    Description
+    ==============  =============================================================================================
+    BOS             Checks if the token is at the beginning of the sentence.
+    EOS             Checks if the token is at the end of the sentence.
+    low             Checks if the token is lower case.
+    upper           Checks if the token is upper case.
+    title           Checks if the token starts with an uppercase character and all remaining characters are lowercased.
+    digit           Checks if the token contains just digits.
+    prefix5         Take the first five characters of the token.
+    prefix2         Take the first two characters of the token.
+    suffix5         Take the last five characters of the token.
+    suffix3         Take the last three characters of the token.
+    suffix2         Take the last two characters of the token.
+    suffix1         Take the last character of the token.
+    pos             Take the Part-of-Speech tag of the token (spaCy required).
+    pos2            Take the first two characters of the Part-of-Speech tag of the token (spaCy required).
+    ==============  =============================================================================================
+
+    As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
+    previous words, the current word in the sliding window, and the next words.
+    You define the features as [before, token, after] array.
+    If you, for example, want to define features for the token before, the current token, and the token after,
+    your features configuration could look like this:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "LexicalSyntacticFeaturizer":
+          "features": [
+            ["low", "title", "upper"],
+            [
+              "BOS",
+              "EOS",
+              "low",
+              "prefix5",
+              "prefix2",
+              "suffix5",
+              "suffix3",
+              "suffix2",
+              "upper",
+              "title",
+              "digit",
+            ],
+            ["low", "title", "upper"],
+          ]
+
+    This configuration is also the default configuration.
+
+    .. note:: If you want to make use of ``pos`` or ``pos2`` you need to add ``SpacyTokenizer`` to your pipeline.
+
+
 Intent Classifiers
 ------------------
 

@@ -1,5 +1,5 @@
 import typing
-from typing import Text, List
+from typing import Text, List, Any
 
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.training_data import Message
@@ -8,6 +8,11 @@ from rasa.nlu.constants import TOKENS_NAMES, SPACY_DOCS, DENSE_FEATURIZABLE_ATTR
 
 if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc  # pytype: disable=import-error
+
+try:
+    import spacy
+except ImportError:
+    spacy = None
 
 
 class SpacyTokenizer(Tokenizer):
@@ -29,4 +34,14 @@ class SpacyTokenizer(Tokenizer):
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         doc = self.get_doc(message, attribute)
 
-        return [Token(t.text, t.idx, lemma=t.lemma_) for t in doc]
+        return [
+            Token(t.text, t.idx, lemma=t.lemma_, data={"pos": self._tag_of_token(t)})
+            for t in doc
+        ]
+
+    @staticmethod
+    def _tag_of_token(token: Any) -> Text:
+        if spacy.about.__version__ > "2" and token._.has("tag"):
+            return token._.get("tag")
+        else:
+            return token.tag_
