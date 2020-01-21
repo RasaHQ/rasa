@@ -207,7 +207,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
             training_data, label_id_dict, attribute=RESPONSE_ATTRIBUTE
         )
 
-        session_data = self._create_session_data(
+        session_data = self._create_model_data(
             training_data.intent_examples,
             label_id_dict,
             label_attribute=RESPONSE_ATTRIBUTE,
