@@ -57,6 +57,7 @@ in open source bot framework Rasa." />
   <link rel="stylesheet" href="../../_static/xq-light.css" type="text/css" />
   <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
   <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
   <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
   <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
@@ -84,7 +85,7 @@ in open source bot framework Rasa." />
   <div class="nav-container">
     <ul class="main-nav nav">
       <li>
-    	<a href="/docs" class="brand-link">
+      <a href="/docs/" class="brand-link">
           <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
     	    <span class="logo extension">docs</span>
     	</a>
@@ -378,7 +379,7 @@ The <code class="docutils literal notranslate"><span class="pre">FormPolicy</spa
 See <a class="reference internal" href="#section-unhappy"><span class="std std-ref">Handling unhappy paths</span></a> for how to work with unexpected user input.</p>
 <p>Every time the form action gets called, it will ask the user for the next slot in
 <code class="docutils literal notranslate"><span class="pre">required_slots</span></code> which is not already set.
-It does this by looking for a template called <code class="docutils literal notranslate"><span class="pre">utter_ask_{slot_name}</span></code>,
+It does this by looking for a response called <code class="docutils literal notranslate"><span class="pre">utter_ask_{slot_name}</span></code>,
 so you need to define these in your domain file for each required slot.</p>
 <p>Once all the slots are filled, the <code class="docutils literal notranslate"><span class="pre">submit()</span></code> method is called, where you can
 use the information you’ve collected to do something for the user, for example
@@ -648,7 +649,7 @@ Real user behavior will always surprise you!</p>
             </div>
 
             <div class="copyright small">
-            &copy;2019, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
             
             </div>
 

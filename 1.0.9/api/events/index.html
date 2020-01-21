@@ -55,6 +55,7 @@ like resetting slots, scheduling reminder or pausing a conversation." />
   <link rel="stylesheet" href="../../_static/xq-light.css" type="text/css" />
   <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   <link rel="stylesheet" href="../../_static/fontawesome/css/fontawesome-all.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://rasa.com/assets/css/klaro.css">
   <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro_config.js"></script>
   <script defer type="text/javascript" src="https://rasa.com/assets/js/klaro.js"></script>
   <script type="text/javascript" src="https://storage.googleapis.com/docs-theme/clipboard.min.js"></script>
@@ -82,7 +83,7 @@ like resetting slots, scheduling reminder or pausing a conversation." />
   <div class="nav-container">
     <ul class="main-nav nav">
       <li>
-    	<a href="/docs" class="brand-link">
+      <a href="/docs/" class="brand-link">
           <img src="../../_static/rasa_logo.svg" width="80px" height="40px" title="Rasa logo" alt="Rasa logo">
     	    <span class="logo extension">docs</span>
     	</a>
@@ -408,9 +409,10 @@ values.</p>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.ReminderScheduled">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ReminderScheduled</code><span class="sig-paren">(</span><em>intent</em>, <em>trigger_date_time</em>, <em>entities=None</em>, <em>name=None</em>, <em>kill_on_user_message=True</em>, <em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ReminderScheduled" title="Permalink to this definition">¶</a></dt>
-<dd><p>Schedules the asynchronous triggering of a user intent
-(with entities if needed) at a given time.</p>
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ReminderScheduled</code><span class="sig-paren">(</span><em>action_name</em>, <em>trigger_date_time</em>, <em>name=None</em>, <em>kill_on_user_message=True</em>, <em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ReminderScheduled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allows asynchronous scheduling of action execution.</p>
+<p>As a side effect the message processor will schedule an action to be run
+at the trigger date.</p>
 </dd></dl>
 
 </td>

@@ -1248,43 +1248,6 @@ a.brand-link img {
     border:0;
 }
 
-/* Klaro */
-
-#klaro-manager, .cm-modal {
-  z-index: 9999;
-  position: absolute;
-}
-
-.klaro .cookie-notice .cn-body p, .klaro .cookie-modal p {
-  font-size: 16px;
-}
-
-.klaro .cookie-modal a, .klaro .cookie-notice a {
-  color: #617287 !important;
-  text-decoration: underline !important;
-}
-
-.klaro .cookie-modal a.cm-btn, .klaro .cookie-notice a.cm-btn {
-  color: #fff !important;
-  box-shadow: none;
-  text-decoration: none !important;
-}
-
-@media (min-width:768px) {
-  .klaro .cookie-notice .cn-body p, .klaro .cookie-modal p {
-    color: #617287;
-  }
-  .klaro .cookie-notice {
-    background: #fff !important;
-    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.03) !important;
-    border: 1px solid #EFEFEF;
-  }
-}
-
-#klaro-manager .klaro .cookie-notice strong {
-  color: #617287;
-}
-
 div.redoc-wrap h5 {
   font-size:90%;
 }
