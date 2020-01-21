@@ -768,18 +768,18 @@ class ReminderCancelled(Event):
         # Cancel everything unless names/intents/entities are given to
         # narrow it down.
         return (
-            ((not self.name) or self.matches_name_hash(name_hash))
-            and ((not self.intent) or self.matches_intent_hash(intent_hash))
-            and ((not self.entities) or self.matches_entities_hash(entities_hash))
+            ((not self.name) or self._matches_name_hash(name_hash))
+            and ((not self.intent) or self._matches_intent_hash(intent_hash))
+            and ((not self.entities) or self._matches_entities_hash(entities_hash))
         )
 
-    def matches_name_hash(self, name_hash: Text) -> bool:
+    def _matches_name_hash(self, name_hash: Text) -> bool:
         return str(hash(self.name)) == name_hash
 
-    def matches_intent_hash(self, intent_hash: Text) -> bool:
+    def _matches_intent_hash(self, intent_hash: Text) -> bool:
         return str(hash(self.intent)) == intent_hash
 
-    def matches_entities_hash(self, entities_hash: Text) -> bool:
+    def _matches_entities_hash(self, entities_hash: Text) -> bool:
         return str(hash(str(self.entities))) == entities_hash
 
     def as_story_string(self) -> Text:
