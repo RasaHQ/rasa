@@ -133,7 +133,7 @@ runtime, so no additional files with training data are created or visible.
 
 .. note::
 
-    Equal intents, entities, slots, templates, actions and forms will be merged,
+    Equal intents, entities, slots, responses, actions and forms will be merged,
     e.g. if two projects have training data for an intent ``greet``,
     their training data will be combined.
 

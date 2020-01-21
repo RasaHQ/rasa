@@ -2,7 +2,7 @@ import pytest
 import scipy.sparse
 import numpy as np
 
-from rasa.utils.tf_model_data import RasaModelData
+from rasa.utils.tensorflow.tf_model_data import RasaModelData
 
 
 @pytest.fixture

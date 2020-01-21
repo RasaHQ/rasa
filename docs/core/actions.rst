@@ -25,22 +25,22 @@ There are four kinds of actions in Rasa:
 Utterance Actions
 -----------------
 
-To define an utterance action (``ActionUtterTemplate``), add an utterance template to the domain file
+To define an utterance action (``ActionUtterTemplate``), add a response to the domain file
 that starts with ``utter_``:
 
 .. code-block:: yaml
 
-    templates:
+    responses:
       utter_my_message:
         - "this is what I want my action to say!"
 
 It is conventional to start the name of an utterance action with ``utter_``.
-If this prefix is missing, you can still use the template in your custom
-actions, but the template can not be directly predicted as its own action.
+If this prefix is missing, you can still use the response in your custom
+actions, but the response can not be directly predicted as its own action.
 See :ref:`responses` for more details.
 
 If you use an external NLG service, you don't need to specify the
-templates in the domain, but you still need to add the utterance names
+responses in the domain, but you still need to add the utterance names
 to the actions list of the domain.
 
 
@@ -115,7 +115,7 @@ specifying the action which should be run for a specific user in the request bod
 ``output_channel`` query parameter to specify which output
 channel should be used to communicate the assistant's responses back to the user.
 If your message is static, you can define an ``utter_`` action in your domain file with
-a corresponding template. If you need more control, add a custom action in your
+a corresponding response. If you need more control, add a custom action in your
 domain and implement the required steps in your action server. Any messages which are
 dispatched in the custom action will be forwarded to the specified output channel.
 

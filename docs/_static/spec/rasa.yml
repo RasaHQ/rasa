@@ -1044,7 +1044,7 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/SlotDescription'
-        templates:
+        responses:
           description: Bot response templates
           type: object
           additionalProperties:
@@ -1362,7 +1362,7 @@ components:
           - utter_happy
           - utter_goodbye
 
-        templates:
+        responses:
           utter_greet:
           - text: "Hey! How are you?"
 

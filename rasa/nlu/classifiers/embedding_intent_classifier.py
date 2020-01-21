@@ -15,8 +15,8 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import any_of
 from rasa.utils import train_utils
-from rasa.utils import tf_layers
-from rasa.utils import tf_models
+from rasa.utils.tensorflow import tf_layers, tf_models
+from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
 from rasa.nlu.constants import (
     INTENT_ATTRIBUTE,
     TEXT_ATTRIBUTE,
@@ -25,7 +25,6 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     TOKENS_NAMES,
 )
-from rasa.utils.tf_model_data import RasaModelData, FeatureSignature
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.model import Metadata
