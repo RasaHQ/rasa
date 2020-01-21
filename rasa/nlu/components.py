@@ -314,7 +314,10 @@ class Component(metaclass=ComponentMetaclass):
         pass
 
     def train(
-        self, training_data: TrainingData, cfg: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
         """Train this component.
 
