@@ -57,11 +57,13 @@ class RasaModel(tf.keras.models.Model):
 
         tf_batch_size = tf.ones((), tf.int32)
 
-        def train_dataset_function(x):
-            return model_data.as_tf_dataset(x, batch_strategy, shuffle=True)
+        def train_dataset_function(_batch_size):
+            return model_data.as_tf_dataset(_batch_size, batch_strategy, shuffle=True)
 
-        def evaluation_dataset_function(x):
-            return evaluation_model_data.as_tf_dataset(x, batch_strategy, shuffle=False)
+        def evaluation_dataset_function(_batch_size):
+            return evaluation_model_data.as_tf_dataset(
+                _batch_size, batch_strategy, shuffle=False
+            )
 
         if eager:
             # allows increasing batch size
@@ -78,18 +80,18 @@ class RasaModel(tf.keras.models.Model):
         if evaluate_on_num_examples > 0:
             if eager:
                 tf_evaluation_dataset_function = evaluation_dataset_function
-                tf_evaluation_function = self.evaluate_on_batch
+                tf_evaluation_on_batch_function = self.evaluate_on_batch
             else:
                 tf_evaluation_dataset_function = tf.function(
                     func=evaluation_dataset_function
                 )
-                tf_evaluation_function = tf.function(
+                tf_evaluation_on_batch_function = tf.function(
                     self.evaluate_on_batch,
                     input_signature=[tf_evaluation_dataset_function(1).element_spec],
                 )
         else:
             tf_evaluation_dataset_function = None
-            tf_evaluation_function = None
+            tf_evaluation_on_batch_function = None
 
         for ep in pbar:
             ep_batch_size = tf_batch_size * train_utils.linearly_increasing_batch_size(
@@ -123,7 +125,7 @@ class RasaModel(tf.keras.models.Model):
                     # Eval on batches
                     self.set_training_phase(False)
                     for batch_in in tf_evaluation_dataset_function(ep_batch_size):
-                        tf_evaluation_function(batch_in)
+                        tf_evaluation_on_batch_function(batch_in)
 
                 # Get the metric results
                 postfix_dict.update(

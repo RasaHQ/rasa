@@ -585,7 +585,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.component_config[BATCH_SIZES],
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[EVAL_NUM_EPOCHS],
-            label_key="label_ids",
             batch_strategy=self.component_config[BATCH_STRATEGY],
             random_seed=self.component_config[RANDOM_SEED],
         )
