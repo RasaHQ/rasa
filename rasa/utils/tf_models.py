@@ -4,7 +4,6 @@ import numpy as np
 import logging
 from typing import List, Text, Dict, Tuple, Union
 from tqdm import tqdm
-from rasa.utils import train_utils
 from rasa.utils.common import is_logging_disabled
 import tensorflow as tf
 
@@ -94,7 +93,7 @@ class RasaModel(tf.keras.models.Model):
             tf_evaluation_on_batch_function = None
 
         for ep in pbar:
-            ep_batch_size = tf_batch_size * train_utils.linearly_increasing_batch_size(
+            ep_batch_size = tf_batch_size * self.linearly_increasing_batch_size(
                 ep, batch_size, epochs
             )
 
@@ -229,3 +228,22 @@ class RasaModel(tf.keras.models.Model):
                     idx += 1
 
         return batch_data
+
+    @staticmethod
+    def linearly_increasing_batch_size(
+        epoch: int, batch_size: Union[List[int], int], epochs: int
+    ) -> int:
+        """Linearly increase batch size with every epoch.
+
+        The idea comes from https://arxiv.org/abs/1711.00489.
+        """
+
+        if not isinstance(batch_size, list):
+            return int(batch_size)
+
+        if epochs > 1:
+            return int(
+                batch_size[0] + epoch * (batch_size[1] - batch_size[0]) / (epochs - 1)
+            )
+        else:
+            return int(batch_size[0])

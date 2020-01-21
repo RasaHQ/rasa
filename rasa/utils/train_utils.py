@@ -1,10 +1,7 @@
-from collections import defaultdict
 import logging
 from typing import List, Optional, Text, Dict, Tuple, Union, Any, NamedTuple
-import numpy as np
 import tensorflow as tf
 
-from rasa.utils.tf_model_data import FeatureSignature
 
 logger = logging.getLogger(__name__)
 
@@ -31,25 +28,6 @@ def confidence_from_sim(sim: "tf.Tensor", similarity_type: Text) -> "tf.Tensor":
     else:
         # normalize result to [0, 1] with softmax
         return tf.nn.softmax(sim)
-
-
-def linearly_increasing_batch_size(
-    epoch: int, batch_size: Union[List[int], int], epochs: int
-) -> int:
-    """Linearly increase batch size with every epoch.
-
-    The idea comes from https://arxiv.org/abs/1711.00489.
-    """
-
-    if not isinstance(batch_size, list):
-        return int(batch_size)
-
-    if epochs > 1:
-        return int(
-            batch_size[0] + epoch * (batch_size[1] - batch_size[0]) / (epochs - 1)
-        )
-    else:
-        return int(batch_size[0])
 
 
 def extract_attention(attention_weights) -> Optional["tf.Tensor"]:
