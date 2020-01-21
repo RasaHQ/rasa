@@ -328,7 +328,7 @@ async def cancel_reminder_and_check(
 async def test_reminder_cancelled_by_name(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
-    tracker_with_six_scheduled_reminders,
+    tracker_with_six_scheduled_reminders: DialogueStateTracker,
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
@@ -344,7 +344,7 @@ async def test_reminder_cancelled_by_name(
 async def test_reminder_cancelled_by_entities(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
-    tracker_with_six_scheduled_reminders,
+    tracker_with_six_scheduled_reminders: DialogueStateTracker,
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
@@ -364,7 +364,7 @@ async def test_reminder_cancelled_by_entities(
 async def test_reminder_cancelled_by_intent(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
-    tracker_with_six_scheduled_reminders,
+    tracker_with_six_scheduled_reminders: DialogueStateTracker,
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
@@ -380,7 +380,7 @@ async def test_reminder_cancelled_by_intent(
 async def test_reminder_cancelled_all(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
-    tracker_with_six_scheduled_reminders,
+    tracker_with_six_scheduled_reminders: DialogueStateTracker,
 ):
     tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
