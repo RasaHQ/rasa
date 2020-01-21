@@ -248,7 +248,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         self._tf_config = train_utils.load_tf_config(self.component_config)
 
-        self.model_data_example = None
+        self.data_example = None
 
     # training data helpers:
     @staticmethod
@@ -483,12 +483,12 @@ class EmbeddingIntentClassifier(EntityExtractor):
         label_ids = np.array(label_ids)
         tag_ids = np.array(tag_ids)
 
-        model_data = RasaModelData()
+        model_data = RasaModelData(label_key="label_ids")
         model_data.add_features("text_features", [X_sparse, X_dense])
         model_data.add_features("label_features", [Y_sparse, Y_dense])
         if label_attribute and model_data.feature_not_exists("label_features"):
             # no label features are present, get default features from _label_data
-            model_data.set(
+            model_data.add_features(
                 "label_features", self._use_default_label_features(label_ids)
             )
 
@@ -564,9 +564,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 return
 
         # keep one example for persisting and loading
-        self.model_data_example = {
-            k: [v[:1] for v in vs] for k, vs in model_data.items()
-        }
+        self.data_example = {k: [v[:1] for v in vs] for k, vs in model_data.items()}
 
         # TODO set it in the model
         # set random seed
@@ -599,7 +597,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         # create session data from message and convert it into a batch of 1
         model_data = self._create_model_data([message])
-        predict_dataset = model_data.as_tf_dataset(1, label_key="label_ids")
+        predict_dataset = model_data.as_tf_dataset(1)
         batch_in = next(iter(predict_dataset))
 
         return self.predict_func(batch_in)
@@ -739,10 +737,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         self.model.save_weights(tf_model_file, save_format="tf")
 
-        with open(
-            os.path.join(model_dir, file_name + ".model_data_example.pkl"), "wb"
-        ) as f:
-            pickle.dump(self.model_data_example, f)
+        with open(os.path.join(model_dir, file_name + ".data_example.pkl"), "wb") as f:
+            pickle.dump(self.data_example, f)
 
         with open(os.path.join(model_dir, file_name + ".label_data.pkl"), "wb") as f:
             pickle.dump(self._label_data, f)
@@ -789,10 +785,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "rb") as f:
         #    _tf_config = pickle.load(f)
 
-        with open(
-            os.path.join(model_dir, file_name + ".model_data_example.pkl"), "rb"
-        ) as f:
-            model_data_example = RasaModelData(pickle.load(f))
+        with open(os.path.join(model_dir, file_name + ".data_example.pkl"), "rb") as f:
+            model_data_example = RasaModelData(
+                label_key="label_ids", data=pickle.load(f)
+            )
 
         with open(os.path.join(model_dir, file_name + ".label_data.pkl"), "rb") as f:
             label_data = pickle.load(f)
@@ -827,20 +823,21 @@ class EmbeddingIntentClassifier(EntityExtractor):
             0,
             label_key="label_ids",
             batch_strategy=meta[BATCH_STRATEGY],
-            silent=True,
-            eager=True,
+            silent=True,  # don't confuse users with training output
+            eager=True,  # no need to build tf graph, eager is faster here
         )
         model.load_weights(tf_model_file)
 
         # build the graph for prediction
         model.set_training_phase(False)
         model_data = RasaModelData(
-            {k: vs for k, vs in model_data_example.items() if "text" in k}
+            label_key="label_ids",
+            data={k: vs for k, vs in model_data_example.items() if "text" in k},
         )
         model.data_signature = model_data.get_signature()
         model.build_for_predict(model_data)
         predict_dataset = model_data.as_tf_dataset(
-            1, label_key="label_ids", batch_strategy="sequence", shuffle=False
+            1, batch_strategy="sequence", shuffle=False
         )
         predict_func = tf.function(
             func=model.predict, input_signature=[predict_dataset.element_spec]

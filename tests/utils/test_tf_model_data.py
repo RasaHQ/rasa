@@ -8,7 +8,8 @@ from rasa.utils.tf_model_data import RasaModelData
 @pytest.fixture
 async def model_data() -> RasaModelData:
     return RasaModelData(
-        {
+        label_key="intent_ids",
+        data={
             "text_features": [
                 np.array(
                     [
@@ -52,7 +53,7 @@ async def model_data() -> RasaModelData:
                     ]
                 )
             ],
-        }
+        },
     )
 
 
@@ -75,7 +76,7 @@ def test_split_session_data_by_label(model_data: RasaModelData):
 
 
 def test_train_val_split(model_data: RasaModelData):
-    train_model_data, test_model_data = model_data.split(2, 42, "intent_ids")
+    train_model_data, test_model_data = model_data.split(2, 42)
 
     for k, values in model_data.items():
         assert len(values) == len(train_model_data.get(k))
@@ -95,7 +96,7 @@ def test_train_val_split(model_data: RasaModelData):
 @pytest.mark.parametrize("size", [0, 1, 5])
 def test_train_val_split_incorrect_size(model_data: RasaModelData, size: int):
     with pytest.raises(ValueError):
-        model_data.split(size, 42, "intent_ids")
+        model_data.split(size, 42)
 
 
 def test_session_data_for_ids(model_data: RasaModelData):
@@ -116,15 +117,13 @@ def test_get_number_of_examples(model_data: RasaModelData):
 
 
 def test_get_number_of_examples_raises_value_error(model_data: RasaModelData):
-    model_data.set("dense", [np.random.randint(5, size=(2, 10))])
+    model_data.add_features("dense", [np.random.randint(5, size=(2, 10))])
     with pytest.raises(ValueError):
         model_data.get_number_of_examples()
 
 
 def test_gen_batch(model_data: RasaModelData):
-    iterator = model_data._gen_batch(
-        2, "intent_ids", shuffle=True, batch_strategy="balanced"
-    )
+    iterator = model_data._gen_batch(2, shuffle=True, batch_strategy="balanced")
 
     batch = next(iterator)
     assert len(batch) == 7
@@ -143,6 +142,6 @@ def test_gen_batch(model_data: RasaModelData):
 
 
 def test_balance_session_data(model_data: RasaModelData):
-    model_data.balance(2, False, "intent_ids")
+    model_data.balance(2, False)
 
     assert np.all(model_data.get("intent_ids")[0] == np.array([0, 1, 1, 0, 1]))

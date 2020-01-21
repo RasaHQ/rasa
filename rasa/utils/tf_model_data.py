@@ -13,17 +13,16 @@ class DataSignature(NamedTuple):
 
 
 class RasaModelData:
-    def __init__(self, data: Optional[Dict[Text, List[np.ndarray]]] = None):
-        if data is None:
-            self.data = {}
-        else:
-            self.data = data
+    def __init__(
+        self,
+        label_key: Optional[Text] = None,
+        data: Optional[Dict[Text, List[np.ndarray]]] = None,
+    ):
+        self.data = data or {}
+        self.label_key = label_key or ""
 
     def get(self, key: Text) -> List[np.ndarray]:
         return self.data[key]
-
-    def set(self, key: Text, value: List[np.ndarray]):
-        self.data[key] = value
 
     def items(self):
         return self.data.items()
@@ -38,13 +37,13 @@ class RasaModelData:
         return key not in self.data or not self.data[key]
 
     def split(
-        self, number_of_test_examples: int, random_seed: int, label_key: Text
+        self, number_of_test_examples: int, random_seed: int
     ) -> Tuple["RasaModelData", "RasaModelData"]:
         """Create random hold out test set using stratified split."""
 
-        self._check_label_key(label_key)
+        self._check_label_key(self.label_key)
 
-        label_ids = self._create_label_ids(self.data[label_key][0])
+        label_ids = self._create_label_ids(self.data[self.label_key][0])
         label_counts = dict(zip(*np.unique(label_ids, return_counts=True, axis=0)))
 
         self._check_train_test_sizes(number_of_test_examples, label_counts)
@@ -120,7 +119,7 @@ class RasaModelData:
         ids = np.random.permutation(data_points)
         self.data = self._data_for_ids(ids)
 
-    def balance(self, batch_size: int, shuffle: bool, label_key: Text) -> None:
+    def balance(self, batch_size: int, shuffle: bool) -> None:
         """Mix session data to account for class imbalance.
 
         This batching strategy puts rare classes approximately in every other batch,
@@ -128,10 +127,10 @@ class RasaModelData:
         that more populated classes should appear more often.
         """
 
-        if label_key not in self.data or len(self.data[label_key]) > 1:
-            raise ValueError(f"Key '{label_key}' not in RasaModelData.")
+        if self.label_key not in self.data or len(self.data[self.label_key]) > 1:
+            raise ValueError(f"Key '{self.label_key}' not in RasaModelData.")
 
-        label_ids = self._create_label_ids(self.data[label_key][0])
+        label_ids = self._create_label_ids(self.data[self.label_key][0])
 
         unique_label_ids, counts_label_ids = np.unique(
             label_ids, return_counts=True, axis=0
@@ -217,20 +216,14 @@ class RasaModelData:
         return number_of_features
 
     def convert_to_tf_dataset(
-        self,
-        batch_size: int,
-        label_key: Text,
-        batch_strategy: Text = "sequence",
-        shuffle: bool = False,
+        self, batch_size: int, batch_strategy: Text = "sequence", shuffle: bool = False
     ):
         """Create tf dataset."""
 
         shapes, types = self._get_shapes_types()
 
         return tf.data.Dataset.from_generator(
-            lambda batch_size_: self._gen_batch(
-                batch_size_, label_key, batch_strategy, shuffle
-            ),
+            lambda batch_size_: self._gen_batch(batch_size_, batch_strategy, shuffle),
             output_types=types,
             output_shapes=shapes,
             args=([batch_size]),
@@ -294,7 +287,6 @@ class RasaModelData:
     def as_tf_dataset(
         self,
         batch_size: Union["tf.Tensor", int],
-        label_key: Text,
         batch_strategy: Text = "sequence",
         shuffle: bool = False,
     ) -> "tf.data.Dataset":
@@ -303,9 +295,7 @@ class RasaModelData:
         shapes, types = self._get_shapes_types()
 
         return tf.data.Dataset.from_generator(
-            lambda batch_size_: self._gen_batch(
-                batch_size_, label_key, batch_strategy, shuffle
-            ),
+            lambda batch_size_: self._gen_batch(batch_size_, batch_strategy, shuffle),
             output_types=types,
             output_shapes=shapes,
             args=([batch_size]),
@@ -347,11 +337,7 @@ class RasaModelData:
         return tuple(shapes), tuple(types)
 
     def _gen_batch(
-        self,
-        batch_size: int,
-        label_key: Text,
-        batch_strategy: Text = "sequence",
-        shuffle: bool = False,
+        self, batch_size: int, batch_strategy: Text = "sequence", shuffle: bool = False
     ) -> Generator[Tuple, None, None]:
         """Generate batches."""
 
@@ -359,7 +345,7 @@ class RasaModelData:
             self.shuffle()
 
         if batch_strategy == "balanced":
-            self.balance(batch_size, shuffle, label_key)
+            self.balance(batch_size, shuffle)
 
         num_examples = self.get_number_of_examples()
         num_batches = num_examples // batch_size + int(num_examples % batch_size > 0)
@@ -406,7 +392,7 @@ class RasaModelData:
         label_data = []
         for label_id in unique_label_ids:
             ids = label_ids == label_id
-            label_data.append(RasaModelData(self._data_for_ids(ids)))
+            label_data.append(RasaModelData(self.label_key, self._data_for_ids(ids)))
         return label_data
 
     def _check_label_key(self, label_key: Text):
@@ -441,7 +427,10 @@ class RasaModelData:
                 data_val[key].append(output_values[(index * 2) + 1])
                 index += 1
 
-        return RasaModelData(data_train), RasaModelData(data_val)
+        return (
+            RasaModelData(self.label_key, data_train),
+            RasaModelData(self.label_key, data_val),
+        )
 
     @staticmethod
     def _combine_features(
