@@ -1,10 +1,11 @@
 import logging
-
 import numpy as np
 import os
 import pickle
 import scipy.sparse
 import warnings
+import tensorflow as tf
+import tensorflow_addons as tfa
 
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Callable
 
@@ -13,7 +14,6 @@ from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import any_of
-
 from rasa.utils import train_utils
 from rasa.utils import tf_layers
 from rasa.utils import tf_models
@@ -26,22 +26,16 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
 )
 from rasa.utils.tf_model_data import RasaModelData, FeatureSignature
-
-import tensorflow as tf
-import tensorflow_addons as tfa
-
-
-logger = logging.getLogger(__name__)
-
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message
 
 
-shapes, types = None, None
+logger = logging.getLogger(__name__)
 
-# constants
+
+# constants - configuration parameters
 HIDDEN_LAYERS_SIZES_TEXT = "hidden_layers_sizes_text"
 HIDDEN_LAYERS_SIZES_LABEL = "hidden_layers_sizes_label"
 SHARE_HIDDEN_LAYERS = "share_hidden_layers"

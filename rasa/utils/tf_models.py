@@ -1,12 +1,10 @@
-from collections import defaultdict
-
+import tensorflow as tf
 import numpy as np
 import logging
-from typing import List, Text, Dict, Tuple, Union
+from collections import defaultdict
+from typing import List, Text, Dict, Tuple, Union, Optional
 from tqdm import tqdm
 from rasa.utils.common import is_logging_disabled
-import tensorflow as tf
-
 from rasa.utils.tf_model_data import RasaModelData, FeatureSignature
 
 logger = logging.getLogger(__name__)
