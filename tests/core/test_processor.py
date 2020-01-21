@@ -173,9 +173,7 @@ async def test_reminder_scheduled(
 
     assert t.events[-5] == UserUttered("test")
     assert t.events[-4] == ActionExecuted("action_schedule_reminder")
-    assert isinstance(
-        t.events[-3], ReminderScheduled
-    )
+    assert isinstance(t.events[-3], ReminderScheduled)
     assert t.events[-2] == UserUttered(
         f"{EXTERNAL_MESSAGE_PREFIX}remind", intent={"name": "remind", IS_EXTERNAL: True}
     )
@@ -356,7 +354,9 @@ def default_reminder_list() -> List[ReminderScheduled]:
     ]
 
 
-async def tracker_with_scheduled_reminder(default_processor: MessageProcessor) -> DialogueStateTracker:
+async def tracker_with_scheduled_reminder(
+    default_processor: MessageProcessor,
+) -> DialogueStateTracker:
     reminders = default_reminder_list()
     sender_id = uuid.uuid4().hex
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
