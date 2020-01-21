@@ -37,7 +37,7 @@ class RasaModel(tf.keras.models.Model):
         batch_strategy: Text,
         silent: bool = False,
         eager: bool = False,
-        random_seed: int = 42,
+        random_seed: Optional[int] = None,
         **kwargs,
     ) -> None:
         """Train tf graph"""
