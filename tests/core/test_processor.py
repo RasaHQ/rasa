@@ -307,8 +307,12 @@ async def test_reminder_cancelled_cancels_job_with_name_special_name(
 
 
 async def cancel_reminder_and_check(
-    tracker, default_processor, reminder_canceled_event, num_jobs_before, num_jobs_after
-):
+    tracker: DialogueStateTracker,
+    default_processor: MessageProcessor,
+    reminder_canceled_event: ReminderCancelled,
+    num_jobs_before: int,
+    num_jobs_after: int,
+) -> None:
     # cancel the sixth reminder
     tracker.update(reminder_canceled_event)
 
