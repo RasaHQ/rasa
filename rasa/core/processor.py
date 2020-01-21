@@ -322,7 +322,7 @@ class MessageProcessor:
             or not self._is_reminder_still_valid(tracker, reminder_event)
         ):
             logger.debug(
-                f"Canceled reminder because it is outdated. " f"({str(reminder_event)})"
+                f"Canceled reminder because it is outdated. " f"({reminder_event})"
             )
         else:
             intent = reminder_event.intent
@@ -345,7 +345,7 @@ class MessageProcessor:
 
         Args:
             intent_name: Name of the intent to be triggered.
-            entities: List of entities to be passed on.
+            entities: Entities to be passed on.
             tracker: The tracker to which the event should be added.
             output_channel: The output channel.
         """

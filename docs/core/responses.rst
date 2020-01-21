@@ -171,7 +171,7 @@ To do so, you can ``POST`` an intent to the
 `trigger_intent endpoint <../../api/http-api/#operation/triggerConversationIntent>`_.
 The intent, let's call it ``EXTERNAL_sensor``, will be treated as if the user had sent a message with this intent.
 You can even provide a dictionary of entities as parameters, e.g. ``{"temperature": "high"}``.
-For your bot to respond, we recommend you use the :ref:`mapping-policy` to connect the sent intent ``EXT_sensor``
+For your bot to respond, we recommend you use the :ref:`mapping-policy` to connect the sent intent ``EXTERNAL_sensor``
 with the action you want your bot to execute, e.g. ``utter_warn_temperature``.
 You can also use a custom action here, of course.
 
