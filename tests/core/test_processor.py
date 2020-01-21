@@ -325,59 +325,12 @@ async def cancel_reminder_and_check(
     assert len((await jobs.scheduler()).get_jobs()) == num_jobs_after
 
 
-def default_reminder_list() -> List[ReminderScheduled]:
-    return [
-        ReminderScheduled("greet", datetime.datetime.now(), kill_on_user_message=False),
-        ReminderScheduled(
-            intent="greet",
-            entities=[{"entity": "name", "value": "Jane Doe"}],
-            trigger_date_time=datetime.datetime.now(),
-            kill_on_user_message=False,
-        ),
-        ReminderScheduled(
-            intent="default",
-            entities=[{"entity": "name", "value": "Jane Doe"}],
-            trigger_date_time=datetime.datetime.now(),
-            kill_on_user_message=False,
-        ),
-        ReminderScheduled(
-            intent="greet",
-            entities=[{"entity": "name", "value": "Bruce Wayne"}],
-            trigger_date_time=datetime.datetime.now(),
-            kill_on_user_message=False,
-        ),
-        ReminderScheduled(
-            "default", datetime.datetime.now(), kill_on_user_message=False
-        ),
-        ReminderScheduled(
-            "default",
-            datetime.datetime.now(),
-            kill_on_user_message=False,
-            name="special",
-        ),
-    ]
-
-
-async def tracker_with_scheduled_reminder(
-    default_processor: MessageProcessor,
-) -> DialogueStateTracker:
-    reminders = default_reminder_list()
-    sender_id = uuid.uuid4().hex
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
-    for reminder in reminders:
-        tracker.update(UserUttered("test"))
-        tracker.update(ActionExecuted("action_reminder_reminder"))
-        tracker.update(reminder)
-
-    default_processor.tracker_store.save(tracker)
-
-    return tracker
-
-
 async def test_reminder_cancelled_by_name(
-    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    tracker_with_six_scheduled_reminders,
 ):
-    tracker = await tracker_with_scheduled_reminder(default_processor)
+    tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
         tracker.events, tracker, default_channel, default_processor.nlg
     )
@@ -389,9 +342,11 @@ async def test_reminder_cancelled_by_name(
 
 
 async def test_reminder_cancelled_by_entities(
-    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    tracker_with_six_scheduled_reminders,
 ):
-    tracker = await tracker_with_scheduled_reminder(default_processor)
+    tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
         tracker.events, tracker, default_channel, default_processor.nlg
     )
@@ -407,9 +362,11 @@ async def test_reminder_cancelled_by_entities(
 
 
 async def test_reminder_cancelled_by_intent(
-    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    tracker_with_six_scheduled_reminders,
 ):
-    tracker = await tracker_with_scheduled_reminder(default_processor)
+    tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
         tracker.events, tracker, default_channel, default_processor.nlg
     )
@@ -421,9 +378,11 @@ async def test_reminder_cancelled_by_intent(
 
 
 async def test_reminder_cancelled_all(
-    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    tracker_with_six_scheduled_reminders,
 ):
-    tracker = await tracker_with_scheduled_reminder(default_processor)
+    tracker = tracker_with_six_scheduled_reminders
     await default_processor._schedule_reminders(
         tracker.events, tracker, default_channel, default_processor.nlg
     )
