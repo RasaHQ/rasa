@@ -739,7 +739,7 @@ def test_get_domain(rasa_app: SanicTestClient):
     assert "intents" in content
     assert "entities" in content
     assert "slots" in content
-    assert "templates" in content
+    assert "responses" in content
     assert "actions" in content
 
 

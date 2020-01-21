@@ -10,7 +10,7 @@ Domains
 
 The ``Domain`` defines the universe in which your assistant operates.
 It specifies the ``intents``, ``entities``, ``slots``, and ``actions``
-your bot should know about. Optionally, it can also include ``templates``
+your bot should know about. Optionally, it can also include ``responses``
 for the things your bot can say.
 
 .. contents::
@@ -81,25 +81,25 @@ The ``name`` function of ``MyAwesomeAction`` needs to return
 ``my_custom_action`` in this example (for more details,
 see :ref:`custom-actions`).
 
-.. _utter_templates:
+.. _domain-responses:
 
-Utterance templates
--------------------
+Responses
+---------
 
-Utterance templates are messages the bot will send back to the user. There are
-two ways to use these templates:
+Responses are messages the bot will send back to the user. There are
+two ways to use these responses:
 
-1. If the name of the template starts with ``utter_``, the utterance can
-   directly be used as an action. You would add the utterance template
+1. If the name of the response starts with ``utter_``, the response can
+   directly be used as an action. You would add the response
    to the domain:
 
    .. code-block:: yaml
 
-      templates:
+      responses:
         utter_greet:
         - text: "Hey! How are you?"
 
-   Afterwards, you can use the template as an action in the
+   Afterwards, you can use the response as an action in the
    stories:
 
    .. code-block:: story
@@ -109,14 +109,14 @@ two ways to use these templates:
         - utter_greet
 
    When ``utter_greet`` is run as an action, it will send the message from
-   the template back to the user.
+   the response back to the user.
 
-2. You can use the templates to generate response messages from your
+2. You can use the responses to generate response messages from your
    custom actions using the dispatcher:
    ``dispatcher.utter_message(template="utter_greet")``.
    This allows you to separate the logic of generating
-   the messages from the actual copy. In you custom action code, you can
-   send a message based on the template like this:
+   the messages from the actual copy. In your custom action code, you can
+   send a message based on the response like this:
 
    .. code-block:: python
 
@@ -133,12 +133,12 @@ two ways to use these templates:
 Images and Buttons
 ------------------
 
-Templates defined in a domain's yaml file can contain images and
+Responses defined in a domain's yaml file can contain images and
 buttons as well:
 
 .. code-block:: yaml
 
-   templates:
+   responses:
      utter_greet:
      - text: "Hey! How are you?"
        buttons:
@@ -164,13 +164,13 @@ You can also send any arbitrary output to the output channel using the
 ``custom:`` key. Note that since the domain is in yaml format, the json
 payload should first be converted to yaml format.
 
-For example, although date pickers are not a defined parameter in utterance
-templates because they are not supported by most channels, a Slack date picker
+For example, although date pickers are not a defined parameter in responses 
+because they are not supported by most channels, a Slack date picker
 can be sent like so:
 
 .. code-block:: yaml
 
-   templates:
+   responses:
      utter_take_bet:
      - custom:
          blocks:
@@ -186,19 +186,20 @@ can be sent like so:
                text: Select a date
 
 
-Channel-Specific Utterances
----------------------------
+Channel-Specific Responses
+--------------------------
 
-If you have certain utterances that you would like sent only to specific
+For each response, you can have multiple **response templates** (see :ref:`variations`).
+If you have certain response templates that you would like sent only to specific
 channels, you can specify this with the ``channel:`` key. The value should match
 the name defined in the ``name()`` method of the channel's ``OutputChannel``
-class. Channel-specific utterances are especially useful if creating custom
+class. Channel-specific responses are especially useful if creating custom
 output payloads that will only work in certain channels.
 
 
 .. code-block:: yaml
 
-  templates:
+  responses:
     utter_ask_game:
     - text: "Which game would you like to play?"
       channel: "slack"
@@ -213,32 +214,32 @@ output payloads that will only work in certain channels.
       - title: "Fortnite"
         payload: '/inform{"game": "fortnite"}'
 
-Each time your bot looks for utterances, it will first check to see if there
-are any channel-specific templates for the connected channel. If there are, it
-will choose **only** from these utterances. If no channel-specific templates are
-found, it will choose from any utterances that do not have a defined ``channel``.
-Therefore, it is good practice to always have at least one template for each
-utterance that has no ``channel`` specified so that your bot can respond in all
+Each time your bot looks for responses, it will first check to see if there
+are any channel-specific response templates for the connected channel. If there are, it
+will choose **only** from these response templates. If no channel-specific response templates are
+found, it will choose from any response templates that do not have a defined ``channel``.
+Therefore, it is good practice to always have at least one response template for each
+response that has no ``channel`` specified so that your bot can respond in all
 environments, including in the shell and in interactive learning.
 
 Variables
 ---------
 
-You can also use **variables** in your templates to insert information
+You can also use **variables** in your responses to insert information
 collected during the dialogue. You can either do that in your custom python
 code or by using the automatic slot filling mechanism. For example, if you
-have a template like this:
+have a response like this:
 
 .. code-block:: yaml
 
-  templates:
+  responses:
     utter_greet:
     - text: "Hey, {name}. How are you?"
 
 Rasa will automatically fill that variable with a value found in a slot called
 ``name``.
 
-In custom code, you can retrieve a template by using:
+In custom code, you can retrieve a response by using:
 
 .. testsetup::
 
@@ -251,12 +252,12 @@ In custom code, you can retrieve a template by using:
          return "action_custom"
 
       def run(self, dispatcher, tracker, domain):
-         # send utter default template to user
+         # send utter default response to user
          dispatcher.utter_message(template="utter_default")
          # ... other code
          return []
 
-If the template contains variables denoted with ``{my_variable}``
+If the response contains variables denoted with ``{my_variable}``
 you can supply values for the fields by passing them as keyword
 arguments to ``utter_message``:
 
@@ -264,15 +265,17 @@ arguments to ``utter_message``:
 
   dispatcher.utter_message(template="utter_greet", my_variable="my text")
 
+.. _variations:
+
 Variations
 ----------
 
 If you want to randomly vary the response sent to the user, you can list
-multiple responses and Rasa will randomly pick one of them, e.g.:
+multiple **response templates** and Rasa will randomly pick one of them, e.g.:
 
 .. code-block:: yaml
 
-  templates:
+  responses:
     utter_greeting:
     - text: "Hey, {name}. How are you?"
     - text: "Hey, {name}. How is your day going?"

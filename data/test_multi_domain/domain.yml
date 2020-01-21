@@ -4,6 +4,6 @@ intents:
 actions:
 - utter_goodbye
 
-templates:
+responses:
   utter_goodbye:
     - text: "Bye"
