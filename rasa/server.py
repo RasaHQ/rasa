@@ -1369,6 +1369,45 @@ def create_app(
         elif intent == "listpickupintent":
             if data["name"] == 'pickup':
                 entityArray.append(data)
+        elif intent == "feeinfointent":
+            if data["name"] == 'fee':
+                entityArray.append(data)
+        elif intent == "libraryinfointent":
+            for data in entMap:
+                if data['name'] == 'libname':
+                    entityArray.append(data)
+                elif data['name'] == 'libinfofilter':
+                    entityArray.append(data)
+                elif data['name'] == 'currently':
+                    entityArray.append(data)
+                elif data["name"] == "time":
+                    if 'from' in data['value']:
+                        print("*********************************************************")
+                        data['value']= data['value'].replace("\'","\"",-1)
+                        datamap = json.loads(data['value'])
+                        tempMap = {}
+                        tempMap['entity'] = 'from'
+                        fromDate = datamap['from'].split("T")
+                        tempMap['value'] = fromDate[0]
+                        entityArray.append(tempMap)
+                        tempMap = {}
+                        tempMap['entity'] = 'to'
+                        todate = datamap['to'].split("T")
+                        tempMap['value'] = todate[0]
+                        entityArray.append(tempMap)
+                    else:
+                        date = data["value"].split("T")
+                        print(type(data["value"]))
+                        print(date)
+                        data["name"] = 'hdate'
+                        data["value"] = date[0]
+                        entityArray.append(data)
+                    conditionMap["hdate"] = data["value"]
+                elif data["name"].lower() == 'date':
+                    data["name"] = 'date'
+                elif data["name"] == "hdate":
+                    if "hdate" not in conditionMap:
+                        entityArray.append(data)
         else:
             for data in entMap:
                 entityArray.append(data)
