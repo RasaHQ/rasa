@@ -345,7 +345,7 @@ class MessageProcessor:
 
         Args:
             intent_name: Name of the intent to be triggered.
-            entities: List of entities to be passed on.
+            entities: Entities to be passed on.
             tracker: The tracker to which the event should be added.
             output_channel: The output channel.
         """
