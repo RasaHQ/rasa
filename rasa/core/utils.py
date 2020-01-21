@@ -466,7 +466,7 @@ def replace_floats_with_decimals(obj: Union[List, Dict], round_digits: int = 9) 
         obj: A `List` or `Dict` object.
         round_digits: A int value to set the rounding precision of Decimal values.
 
-    Returns: An object with all matching values and `float` types replaced by `Decimal`s rounded to 9 decimal places.
+    Returns: An object with all matching values and `float` types replaced by `Decimal`s rounded to `round_digits` decimal places.
 
     """
     if isinstance(obj, list):
