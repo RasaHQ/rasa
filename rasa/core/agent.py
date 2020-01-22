@@ -521,6 +521,20 @@ class Agent:
             sender_id, action, output_channel, self.nlg, policy, confidence
         )
 
+    async def trigger_intent(
+        self,
+        intent_name: Text,
+        entities: List[Dict[Text, Any]],
+        output_channel: OutputChannel,
+        tracker: DialogueStateTracker,
+    ) -> None:
+        """Trigger a user intent, e.g. triggered by an external event."""
+
+        processor = self.create_processor()
+        await processor.trigger_external_user_uttered(
+            intent_name, entities, tracker, output_channel,
+        )
+
     async def handle_text(
         self,
         text_message: Union[Text, Dict[Text, Any]],
