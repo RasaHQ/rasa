@@ -1,0 +1,2 @@
+The endpoint ``/conversations/<conversation_id>/execute`` is now deprecated. Instead, users should use
+the ``/conversations/<conversation_id>/trigger_intent`` endpoint and thus trigger intents instead of actions.
