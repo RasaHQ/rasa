@@ -1,5 +1,7 @@
 import asyncio
 import os
+import uuid
+from datetime import datetime
 
 from typing import Text
 
@@ -10,6 +12,7 @@ import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
 from rasa.core.domain import Domain, SessionConfig
+from rasa.core.events import ReminderScheduled, UserUttered, ActionExecuted
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
@@ -182,6 +185,47 @@ async def default_processor(default_domain, default_nlg):
         tracker_store,
         default_nlg,
     )
+
+
+@pytest.fixture
+def tracker_with_six_scheduled_reminders(
+    default_processor: MessageProcessor,
+) -> DialogueStateTracker:
+    reminders = [
+        ReminderScheduled("greet", datetime.now(), kill_on_user_message=False),
+        ReminderScheduled(
+            intent="greet",
+            entities=[{"entity": "name", "value": "Jane Doe"}],
+            trigger_date_time=datetime.now(),
+            kill_on_user_message=False,
+        ),
+        ReminderScheduled(
+            intent="default",
+            entities=[{"entity": "name", "value": "Jane Doe"}],
+            trigger_date_time=datetime.now(),
+            kill_on_user_message=False,
+        ),
+        ReminderScheduled(
+            intent="greet",
+            entities=[{"entity": "name", "value": "Bruce Wayne"}],
+            trigger_date_time=datetime.now(),
+            kill_on_user_message=False,
+        ),
+        ReminderScheduled("default", datetime.now(), kill_on_user_message=False),
+        ReminderScheduled(
+            "default", datetime.now(), kill_on_user_message=False, name="special",
+        ),
+    ]
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    for reminder in reminders:
+        tracker.update(UserUttered("test"))
+        tracker.update(ActionExecuted("action_reminder_reminder"))
+        tracker.update(reminder)
+
+    default_processor.tracker_store.save(tracker)
+
+    return tracker
 
 
 @pytest.fixture(scope="session")
