@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class SparseDropout(tf.keras.layers.Dropout):
-    def call(self, inputs: tf.Tensor, training: bool) -> tf.Tensor:
+    def call(self, inputs: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
 
         to_retain_prob = tf.random.uniform(
             tf.shape(inputs.values), 0, 1, inputs.values.dtype
@@ -80,7 +80,7 @@ class ReluFfn(tf.keras.layers.Layer):
             )
             self._ffn_layers.append(tf.keras.layers.Dropout(rate=droprate))
 
-    def call(self, x: tf.Tensor, training: bool) -> tf.Tensor:
+    def call(self, x: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
         for layer in self._ffn_layers:
             x = layer(x, training=training)
 
@@ -166,7 +166,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         return output, attention_weights
 
-    def __init__(self, d_model, num_heads: int, reg_lambda: float) -> None:
+    def __init__(self, d_model: int, num_heads: int, reg_lambda: float) -> None:
         super(MultiHeadAttention, self).__init__()
         self.num_heads = num_heads
         self.d_model = d_model
@@ -244,9 +244,9 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 class TransformerEncoderLayer(tf.keras.layers.Layer):
     def __init__(
         self,
-        d_model: tf.Tensor,
+        d_model: int,
         num_heads: int,
-        dff: tf.Tensor,
+        dff: int,
         reg_lambda: float,
         rate: float = 0.1,
     ) -> None:
@@ -269,7 +269,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
             tf.keras.layers.Dropout(rate),
         ]
 
-    def call(self, x: tf.Tensor, pad_mask: tf.Tensor, training: bool) -> tf.Tensor:
+    def call(self, x: tf.Tensor, pad_mask: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
 
         x_norm = self._layernorm(x)  # (batch_size, seq_len, d_model)
         attn_out, _ = self._mha(x_norm, x_norm, x_norm, pad_mask)
@@ -316,9 +316,9 @@ class TransformerEncoder(tf.keras.layers.Layer):
     def __init__(
         self,
         num_layers: int,
-        d_model,
+        d_model: int,
         num_heads: int,
-        dff,
+        dff: int,
         max_seq_length: int,
         reg_lambda: float,
         rate: float = 0.1,
@@ -345,9 +345,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         ]
         self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
-    def call(
-        self, x: "tf.Tensor", pad_mask: "tf.Tensor", training: bool
-    ) -> "tf.Tensor":
+    def call(self, x: tf.Tensor, pad_mask: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
 
         # adding embedding and position encoding.
         x = self._embedding(x)  # (batch_size, seq_len, d_model)
@@ -373,7 +371,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
 
 
 class InputMask(tf.keras.layers.Layer):
-    def build(self, input_shape: List[int]) -> None:
+    def build(self, input_shape: tf.TensorShape) -> None:
         initializer = tf.keras.initializers.GlorotUniform()
         self.mask_vector = self.add_weight(
             shape=(1, 1, input_shape[-1]),
@@ -384,8 +382,8 @@ class InputMask(tf.keras.layers.Layer):
         self.built = True
 
     def call(
-        self, x: "tf.Tensor", mask: "tf.Tensor", training: bool
-    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+        self, x: tf.Tensor, mask: tf.Tensor, training: tf.Tensor
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Randomly mask input sequences."""
 
         # do not substitute with cls token
@@ -440,7 +438,7 @@ class CRF(tf.keras.layers.Layer):
             name="transitions",
         )
 
-    def call(self, logits: "tf.Tensor", sequence_lengths: "tf.Tensor") -> "tf.TEnsor":
+    def call(self, logits: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
         pred_ids, _ = tfa.text.crf.crf_decode(
             logits, self.transition_params, sequence_lengths
         )
@@ -452,11 +450,8 @@ class CRF(tf.keras.layers.Layer):
         return pred_ids * mask
 
     def loss(
-        self,
-        logits: "tf.Tensor",
-        tag_indices: "tf.Tensor",
-        sequence_lengths: "tf.Tensor",
-    ) -> "tf.Tensor":
+        self, logits: tf.Tensor, tag_indices: tf.Tensor, sequence_lengths: tf.Tensor,
+    ) -> tf.Tensor:
         log_likelihood, _ = tfa.text.crf.crf_log_likelihood(
             logits, tag_indices, sequence_lengths, self.transition_params
         )
@@ -485,12 +480,12 @@ class DotProductLoss(tf.keras.layers.Layer):
         self.scale_loss = scale_loss
 
     @staticmethod
-    def _make_flat(x: "tf.Tensor") -> "tf.Tensor":
+    def _make_flat(x: tf.Tensor) -> tf.Tensor:
         """Make tensor 2D."""
 
         return tf.reshape(x, (-1, x.shape[-1]))
 
-    def _random_indices(self, batch_size: "tf.Tensor", total_candidates: "tf.Tensor"):
+    def _random_indices(self, batch_size: tf.Tensor, total_candidates: tf.Tensor):
         def rand_idxs():
             """Create random tensor of indices"""
             # (1, num_neg)
@@ -528,9 +523,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         )[1]
 
     @staticmethod
-    def _sample_idxs(
-        batch_size: "tf.Tensor", x: "tf.Tensor", idxs: "tf.Tensor"
-    ) -> "tf.Tensor":
+    def _sample_idxs(batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor) -> tf.Tensor:
         """Sample negative examples for given indices"""
 
         tiled = tf.tile(tf.expand_dims(x, 0), (batch_size, 1, 1))
@@ -538,8 +531,8 @@ class DotProductLoss(tf.keras.layers.Layer):
         return tf.gather(tiled, idxs, batch_dims=1)
 
     def _get_bad_mask(
-        self, labels: "tf.Tensor", target_labels: "tf.Tensor", idxs: "tf.Tensor"
-    ) -> "tf.Tensor":
+        self, labels: tf.Tensor, target_labels: tf.Tensor, idxs: tf.Tensor
+    ) -> tf.Tensor:
         """Calculate bad mask for given indices.
 
         Checks that input features are different for positive negative samples.
@@ -553,8 +546,8 @@ class DotProductLoss(tf.keras.layers.Layer):
         )
 
     def _get_negs(
-        self, embeds: "tf.Tensor", labels: "tf.Tensor", target_labels: "tf.Tensor"
-    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+        self, embeds: tf.Tensor, labels: tf.Tensor, target_labels: tf.Tensor
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Get negative examples from given tensor."""
 
         embeds_flat = self._make_flat(embeds)
@@ -580,14 +573,12 @@ class DotProductLoss(tf.keras.layers.Layer):
 
     def _sample_negatives(
         self,
-        inputs_embed: "tf.Tensor",
-        labels_embed: "tf.Tensor",
-        labels: "tf.Tensor",
-        all_labels_embed: "tf.Tensor",
-        all_labels: "tf.Tensor",
-    ) -> Tuple[
-        "tf.Tensor", "tf.Tensor", "tf.Tensor", "tf.Tensor", "tf.Tensor", "tf.Tensor"
-    ]:
+        inputs_embed: tf.Tensor,
+        labels_embed: tf.Tensor,
+        labels: tf.Tensor,
+        all_labels_embed: tf.Tensor,
+        all_labels: tf.Tensor,
+    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         """Sample negative examples."""
 
         pos_inputs_embed = tf.expand_dims(inputs_embed, -2)
@@ -609,9 +600,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         )
 
     @staticmethod
-    def sim(
-        a: "tf.Tensor", b: "tf.Tensor", mask: Optional["tf.Tensor"] = None
-    ) -> "tf.Tensor":
+    def sim(a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None) -> tf.Tensor:
         """Calculate similarity between given tensors."""
 
         sim = tf.reduce_sum(a * b, -1)
@@ -622,14 +611,14 @@ class DotProductLoss(tf.keras.layers.Layer):
 
     def _train_sim(
         self,
-        pos_inputs_embed: "tf.Tensor",
-        pos_labels_embed: "tf.Tensor",
-        neg_inputs_embed: "tf.Tensor",
-        neg_labels_embed: "tf.Tensor",
-        inputs_bad_negs: "tf.Tensor",
-        labels_bad_negs: "tf.Tensor",
-        mask: Optional["tf.Tensor"],
-    ) -> Tuple["tf.Tensor", "tf.Tensor", "tf.Tensor", "tf.Tensor", "tf.Tensor"]:
+        pos_inputs_embed: tf.Tensor,
+        pos_labels_embed: tf.Tensor,
+        neg_inputs_embed: tf.Tensor,
+        neg_labels_embed: tf.Tensor,
+        inputs_bad_negs: tf.Tensor,
+        labels_bad_negs: tf.Tensor,
+        mask: Optional[tf.Tensor],
+    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         """Define similarity."""
 
         # calculate similarity with several
@@ -659,7 +648,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         return sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li
 
     @staticmethod
-    def _calc_accuracy(sim_pos: "tf.Tensor", sim_neg: "tf.Tensor") -> "tf.Tensor":
+    def _calc_accuracy(sim_pos: tf.Tensor, sim_neg: tf.Tensor) -> tf.Tensor:
         """Calculate accuracy"""
 
         max_all_sim = tf.reduce_max(tf.concat([sim_pos, sim_neg], -1), -1)
@@ -669,13 +658,13 @@ class DotProductLoss(tf.keras.layers.Layer):
 
     def _loss_margin(
         self,
-        sim_pos: "tf.Tensor",
-        sim_neg_il: "tf.Tensor",
-        sim_neg_ll: "tf.Tensor",
-        sim_neg_ii: "tf.Tensor",
-        sim_neg_li: "tf.Tensor",
-        mask: Optional["tf.Tensor"],
-    ) -> "tf.Tensor":
+        sim_pos: tf.Tensor,
+        sim_neg_il: tf.Tensor,
+        sim_neg_ll: tf.Tensor,
+        sim_neg_ii: tf.Tensor,
+        sim_neg_li: tf.Tensor,
+        mask: Optional[tf.Tensor],
+    ) -> tf.Tensor:
         """Define max margin loss."""
 
         # loss for maximizing similarity with correct action
@@ -716,13 +705,13 @@ class DotProductLoss(tf.keras.layers.Layer):
 
     def _loss_softmax(
         self,
-        sim_pos: "tf.Tensor",
-        sim_neg_il: "tf.Tensor",
-        sim_neg_ll: "tf.Tensor",
-        sim_neg_ii: "tf.Tensor",
-        sim_neg_li: "tf.Tensor",
-        mask: Optional["tf.Tensor"],
-    ) -> "tf.Tensor":
+        sim_pos: tf.Tensor,
+        sim_neg_il: tf.Tensor,
+        sim_neg_ll: tf.Tensor,
+        sim_neg_ii: tf.Tensor,
+        sim_neg_li: tf.Tensor,
+        mask: Optional[tf.Tensor],
+    ) -> tf.Tensor:
         """Define softmax loss."""
 
         logits = tf.concat(
@@ -771,13 +760,13 @@ class DotProductLoss(tf.keras.layers.Layer):
 
     def call(
         self,
-        inputs_embed: "tf.Tensor",
-        labels_embed: "tf.Tensor",
-        labels: "tf.Tensor",
-        all_labels_embed: "tf.Tensor",
-        all_labels: "tf.Tensor",
-        mask: Optional["tf.Tensor"] = None,
-    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+        inputs_embed: tf.Tensor,
+        labels_embed: tf.Tensor,
+        labels: tf.Tensor,
+        all_labels_embed: tf.Tensor,
+        all_labels: tf.Tensor,
+        mask: Optional[tf.Tensor] = None,
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Calculate loss and accuracy."""
 
         (
