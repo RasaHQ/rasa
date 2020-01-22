@@ -58,7 +58,7 @@ class RasaModel(tf.keras.models.Model):
 
         def evaluation_dataset_function(_batch_size):
             return evaluation_model_data.as_tf_dataset(
-                _batch_size, batch_strategy, shuffle=False
+                _batch_size, "sequence", shuffle=False
             )
 
         if eager:
@@ -66,12 +66,16 @@ class RasaModel(tf.keras.models.Model):
             tf_train_dataset_function = train_dataset_function
             tf_train_on_batch_function = self.train_on_batch
         else:
+            logger.debug("Building tensorflow train graph...")
             # allows increasing batch size
             tf_train_dataset_function = tf.function(func=train_dataset_function)
+            init_dataset = tf_train_dataset_function(tf_batch_size)
             tf_train_on_batch_function = tf.function(
                 self.train_on_batch,
-                input_signature=[tf_train_dataset_function(tf_batch_size).element_spec],
+                input_signature=[init_dataset.element_spec],
             )
+            tf_train_on_batch_function(next(iter(init_dataset)))
+            logger.debug("Finished building tensorflow train graph")
 
         if evaluate_on_num_examples > 0:
             if eager:
