@@ -47,7 +47,6 @@ class RasaModel(tf.keras.models.Model):
             )
 
         disable = silent or is_logging_disabled()
-        pbar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
         (
             tf_train_dataset_function,
@@ -58,8 +57,10 @@ class RasaModel(tf.keras.models.Model):
             tf_evaluation_dataset_function,
             tf_evaluation_on_batch_function,
         ) = self._get_tf_evaluation_functions(
-            eager, evaluate_on_num_examples, evaluation_model_data, batch_strategy
+            eager, evaluate_on_num_examples, evaluation_model_data
         )
+
+        pbar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
         for ep in pbar:
             ep_batch_size = self.linearly_increasing_batch_size(ep, batch_size, epochs)
@@ -100,11 +101,16 @@ class RasaModel(tf.keras.models.Model):
             tf_train_dataset_function = train_dataset_function
             tf_train_on_batch_function = self.train_on_batch
         else:
+            logger.debug("Building tensorflow train graph...")
+            # allows increasing batch size
             tf_train_dataset_function = tf.function(func=train_dataset_function)
+            tf_batch_size = tf.ones((), tf.int32)
+            init_dataset = tf_train_dataset_function(tf_batch_size)
             tf_train_on_batch_function = tf.function(
-                self.train_on_batch,
-                input_signature=[tf_train_dataset_function(1).element_spec],
+                self.train_on_batch, input_signature=[init_dataset.element_spec]
             )
+            tf_train_on_batch_function(next(iter(init_dataset)))
+            logger.debug("Finished building tensorflow train graph")
 
         return tf_train_dataset_function, tf_train_on_batch_function
 
@@ -113,11 +119,10 @@ class RasaModel(tf.keras.models.Model):
         eager: bool,
         evaluate_on_num_examples: int,
         evaluation_model_data: RasaModelData,
-        batch_strategy: Text,
     ) -> Tuple[Callable, Callable]:
         def evaluation_dataset_function(_batch_size):
             return evaluation_model_data.as_tf_dataset(
-                _batch_size, batch_strategy, shuffle=False
+                _batch_size, "sequence", shuffle=False
             )
 
         if evaluate_on_num_examples > 0:
@@ -125,12 +130,15 @@ class RasaModel(tf.keras.models.Model):
                 tf_evaluation_dataset_function = evaluation_dataset_function
                 tf_evaluation_on_batch_function = self.evaluate_on_batch
             else:
+                tf_batch_size = tf.ones((), tf.int32)
                 tf_evaluation_dataset_function = tf.function(
                     func=evaluation_dataset_function
                 )
                 tf_evaluation_on_batch_function = tf.function(
                     self.evaluate_on_batch,
-                    input_signature=[tf_evaluation_dataset_function(1).element_spec],
+                    input_signature=[
+                        tf_evaluation_dataset_function(tf_batch_size).element_spec
+                    ],
                 )
         else:
             tf_evaluation_dataset_function = None

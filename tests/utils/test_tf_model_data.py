@@ -60,14 +60,17 @@ async def model_data() -> RasaModelData:
 def test_shuffle_session_data(model_data: RasaModelData):
     before = model_data.values()
 
-    model_data.shuffle()
+    data = model_data.shuffled_data(model_data.data)
 
-    assert np.array(before) != np.array(model_data.values())
+    # check that original data didn't change
+    assert np.array(before) == np.array(model_data.values())
+    # check that new data is different
+    assert np.array(model_data.values()) != np.array(data.values())
 
 
 def test_split_session_data_by_label(model_data: RasaModelData):
     split_model_data = model_data._split_by_label_ids(
-        model_data.get("intent_ids")[0], np.array([0, 1])
+        model_data.data, model_data.get("intent_ids")[0], np.array([0, 1])
     )
 
     assert len(split_model_data) == 2
@@ -100,7 +103,7 @@ def test_train_val_split_incorrect_size(model_data: RasaModelData, size: int):
 
 
 def test_session_data_for_ids(model_data: RasaModelData):
-    filtered_data = model_data._data_for_ids(np.array([0, 1]))
+    filtered_data = model_data._data_for_ids(model_data.data, np.array([0, 1]))
 
     for values in filtered_data.values():
         for v in values:
@@ -142,6 +145,6 @@ def test_gen_batch(model_data: RasaModelData):
 
 
 def test_balance_session_data(model_data: RasaModelData):
-    model_data.balance(2, False)
+    data = model_data.balanced_data(model_data.data, 2, False)
 
-    assert np.all(model_data.get("intent_ids")[0] == np.array([0, 1, 1, 0, 1]))
+    assert np.all(data.get("intent_ids")[0] == np.array([0, 1, 1, 0, 1]))

@@ -7,6 +7,8 @@ from typing import Optional, Dict, Text, List, Tuple, Any, Union, Generator, Nam
 from collections import defaultdict
 
 
+Data = Optional[Dict[Text, List[np.ndarray]]]
+
 class FeatureSignature(NamedTuple):
     is_sparse: bool
     shape: List[int]
@@ -16,10 +18,12 @@ class RasaModelData:
     def __init__(
         self,
         label_key: Optional[Text] = None,
-        data: Optional[Dict[Text, List[np.ndarray]]] = None,
+        data: Data = None,
     ):
         self.data = data or {}
         self.label_key = label_key or ""
+        # will be updated when features are added
+        self.num_examples = self.get_number_of_examples()
 
     def get(self, key: Text) -> List[np.ndarray]:
         return self.data[key]
@@ -35,6 +39,36 @@ class RasaModelData:
 
     def feature_not_exists(self, key: Text) -> bool:
         return key not in self.data or not self.data[key]
+
+    def get_number_of_examples(self) -> int:
+        """Obtain number of examples in data.
+
+        Raise a ValueError if number of examples differ for different data in
+        session data.
+        """
+        if not self.data:
+            return 0
+
+        example_lengths = [v.shape[0] for values in self.data.values() for v in values]
+
+        # check if number of examples is the same for all values
+        if not all(length == example_lengths[0] for length in example_lengths):
+            raise ValueError(
+                f"Number of examples differs for keys '{self.data.keys()}'. Number of "
+                f"examples should be the same for all data."
+            )
+
+        return example_lengths[0]
+
+    def get_feature_dimension(self, key: Text) -> int:
+        """Get the feature dimension of the given key."""
+
+        number_of_features = 0
+        for data in self.data[key]:
+            if data.size > 0:
+                number_of_features += data[0].shape[-1]
+
+        return number_of_features
 
     def split(
         self, number_of_test_examples: int, random_seed: int
@@ -79,6 +113,9 @@ class RasaModelData:
         if not self.data[key]:
             del self.data[key]
 
+        # update number of examples
+        self.num_examples = self.get_number_of_examples()
+
     def add_mask(self, key: Text, from_key: Text):
         """Calculate mask for given key and put it under specified key."""
 
@@ -112,14 +149,13 @@ class RasaModelData:
             for key, values in self.data.items()
         }
 
-    def shuffle(self) -> None:
+    def shuffled_data(self, data: Data) -> Data:
         """Shuffle session data."""
 
-        data_points = self.get_number_of_examples()
-        ids = np.random.permutation(data_points)
-        self.data = self._data_for_ids(ids)
+        ids = np.random.permutation(self.num_examples)
+        return self._data_for_ids(data, ids)
 
-    def balance(self, batch_size: int, shuffle: bool) -> None:
+    def balanced_data(self, data: Data, batch_size: int, shuffle: bool) -> Data:
         """Mix session data to account for class imbalance.
 
         This batching strategy puts rare classes approximately in every other batch,
@@ -127,10 +163,10 @@ class RasaModelData:
         that more populated classes should appear more often.
         """
 
-        if self.label_key not in self.data or len(self.data[self.label_key]) > 1:
+        if self.label_key not in data or len(data[self.label_key]) > 1:
             raise ValueError(f"Key '{self.label_key}' not in RasaModelData.")
 
-        label_ids = self._create_label_ids(self.data[self.label_key][0])
+        label_ids = self._create_label_ids(data[self.label_key][0])
 
         unique_label_ids, counts_label_ids = np.unique(
             label_ids, return_counts=True, axis=0
@@ -138,14 +174,13 @@ class RasaModelData:
         num_label_ids = len(unique_label_ids)
 
         # need to call every time, so that the data is shuffled inside each class
-        label_data = self._split_by_label_ids(label_ids, unique_label_ids)
+        label_data = self._split_by_label_ids(data, label_ids, unique_label_ids)
 
         data_idx = [0] * num_label_ids
         num_data_cycles = [0] * num_label_ids
         skipped = [False] * num_label_ids
 
         new_data = defaultdict(list)
-        num_examples = self.get_number_of_examples()
 
         while min(num_data_cycles) == 0:
             if shuffle:
@@ -161,7 +196,7 @@ class RasaModelData:
                     skipped[index] = False
 
                 index_batch_size = (
-                    int(counts_label_ids[index] / num_examples * batch_size) + 1
+                    int(counts_label_ids[index] / self.num_examples * batch_size) + 1
                 )
 
                 for k, values in label_data[index].items():
@@ -185,61 +220,23 @@ class RasaModelData:
             for v in values:
                 final_data[k].append(np.concatenate(np.array(v)))
 
-        self.data = final_data
-
-    def get_number_of_examples(self) -> int:
-        """Obtain number of examples in session data.
-
-        Raise a ValueError if number of examples differ for different data in
-        session data.
-        """
-
-        example_lengths = [v.shape[0] for values in self.data.values() for v in values]
-
-        # check if number of examples is the same for all values
-        if not all(length == example_lengths[0] for length in example_lengths):
-            raise ValueError(
-                f"Number of examples differs for keys '{self.data.keys()}'. Number of "
-                f"examples should be the same for all data."
-            )
-
-        return example_lengths[0]
-
-    def get_feature_dimension(self, key: Text) -> int:
-        """Get the feature dimension of the given key."""
-
-        number_of_features = 0
-        for data in self.data[key]:
-            if data.size > 0:
-                number_of_features += data[0].shape[-1]
-
-        return number_of_features
-
-    def convert_to_tf_dataset(
-        self, batch_size: int, batch_strategy: Text = "sequence", shuffle: bool = False
-    ):
-        """Create tf dataset."""
-
-        shapes, types = self._get_shapes_types()
-
-        return tf.data.Dataset.from_generator(
-            lambda batch_size_: self._gen_batch(batch_size_, batch_strategy, shuffle),
-            output_types=types,
-            output_shapes=shapes,
-            args=([batch_size]),
-        )
+        return final_data
 
     def prepare_batch(
         self,
+        data: Optional[Data] = None,
         start: Optional[int] = None,
         end: Optional[int] = None,
         tuple_sizes: Optional[Dict[Text, int]] = None,
     ) -> Tuple[Optional[np.ndarray]]:
         """Slices session data into batch using given start and end value."""
 
+        if not data:
+            data = self.data
+
         batch_data = []
 
-        for key, values in self.data.items():
+        for key, values in data.items():
             # add None for not present values during processing
             if not values:
                 if tuple_sizes:
@@ -341,29 +338,28 @@ class RasaModelData:
     ) -> Generator[Tuple, None, None]:
         """Generate batches."""
 
+        data = self.data
+
         if shuffle:
-            self.shuffle()
+            data = self.shuffled_data(data)
 
         if batch_strategy == "balanced":
-            self.balance(batch_size, shuffle)
+            data = self.balanced_data(data, batch_size, shuffle)
 
-        num_examples = self.get_number_of_examples()
-        num_batches = num_examples // batch_size + int(num_examples % batch_size > 0)
+        num_batches = self.num_examples // batch_size + int(self.num_examples % batch_size > 0)
 
         for batch_num in range(num_batches):
             start = batch_num * batch_size
             end = start + batch_size
 
-            yield self.prepare_batch(start, end)
+            yield self.prepare_batch(data, start, end)
 
     def _check_train_test_sizes(
         self, number_of_test_examples: int, label_counts: Dict[Any, int]
     ):
         """Check whether the test data set is too large or too small."""
 
-        number_of_total_examples = self.get_number_of_examples()
-
-        if number_of_test_examples >= number_of_total_examples - len(label_counts):
+        if number_of_test_examples >= self.num_examples - len(label_counts):
             raise ValueError(
                 f"Test set of {number_of_test_examples} is too large. Remaining "
                 f"train set should be at least equal to number of classes "
@@ -375,24 +371,25 @@ class RasaModelData:
                 f"be at least equal to number of classes {label_counts}."
             )
 
-    def _data_for_ids(self, ids: np.ndarray) -> Dict[Text, List[np.ndarray]]:
+    @staticmethod
+    def _data_for_ids(data: Data, ids: np.ndarray) -> Dict[Text, List[np.ndarray]]:
         """Filter session data by ids."""
 
         new_data = defaultdict(list)
-        for k, values in self.data.items():
+        for k, values in data.items():
             for v in values:
                 new_data[k].append(v[ids])
         return new_data
 
     def _split_by_label_ids(
-        self, label_ids: "np.ndarray", unique_label_ids: "np.ndarray"
+        self, data: Data, label_ids: "np.ndarray", unique_label_ids: "np.ndarray"
     ) -> List["RasaModelData"]:
         """Reorganize session data into a list of session data with the same labels."""
 
         label_data = []
         for label_id in unique_label_ids:
             ids = label_ids == label_id
-            label_data.append(RasaModelData(self.label_key, self._data_for_ids(ids)))
+            label_data.append(RasaModelData(self.label_key, self._data_for_ids(data, ids)))
         return label_data
 
     def _check_label_key(self, label_key: Text):
