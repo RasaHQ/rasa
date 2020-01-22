@@ -345,9 +345,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         ]
         self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
-    def call(
-        self, x: tf.Tensor, pad_mask: tf.Tensor, training: tf.Tensor
-    ) -> tf.Tensor:
+    def call(self, x: tf.Tensor, pad_mask: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
 
         # adding embedding and position encoding.
         x = self._embedding(x)  # (batch_size, seq_len, d_model)
@@ -452,10 +450,7 @@ class CRF(tf.keras.layers.Layer):
         return pred_ids * mask
 
     def loss(
-        self,
-        logits: tf.Tensor,
-        tag_indices: tf.Tensor,
-        sequence_lengths: tf.Tensor,
+        self, logits: tf.Tensor, tag_indices: tf.Tensor, sequence_lengths: tf.Tensor,
     ) -> tf.Tensor:
         log_likelihood, _ = tfa.text.crf.crf_log_likelihood(
             logits, tag_indices, sequence_lengths, self.transition_params
@@ -528,9 +523,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         )[1]
 
     @staticmethod
-    def _sample_idxs(
-        batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor
-    ) -> tf.Tensor:
+    def _sample_idxs(batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor) -> tf.Tensor:
         """Sample negative examples for given indices"""
 
         tiled = tf.tile(tf.expand_dims(x, 0), (batch_size, 1, 1))
@@ -585,9 +578,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         labels: tf.Tensor,
         all_labels_embed: tf.Tensor,
         all_labels: tf.Tensor,
-    ) -> Tuple[
-        tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor
-    ]:
+    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         """Sample negative examples."""
 
         pos_inputs_embed = tf.expand_dims(inputs_embed, -2)
@@ -609,9 +600,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         )
 
     @staticmethod
-    def sim(
-        a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None
-    ) -> tf.Tensor:
+    def sim(a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None) -> tf.Tensor:
         """Calculate similarity between given tensors."""
 
         sim = tf.reduce_sum(a * b, -1)
