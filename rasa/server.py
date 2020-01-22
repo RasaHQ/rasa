@@ -1311,8 +1311,6 @@ def create_app(
                 elif data["name"] == "edate":
                     if "edate" not in conditionMap:
                         entityArray.append(data)
-                elif data["name"] == 'sBook' or data["name"] == 'sbook' or data["name"] == 'options':
-                    pass
                 elif data["name"] == "ORG":
                     data["name"] = "libname"
                     entityArray.append(data)
@@ -1326,8 +1324,6 @@ def create_app(
                         else:
                             data["name"] = 'program'
                             entityArray.append(data)
-                elif data["name"] == 'timeline':
-                    pass
                 else:
                     pass
         # elif intent == "hoursintent":
