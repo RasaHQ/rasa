@@ -163,7 +163,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # how often to calculate training accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
-        EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
+        EVAL_NUM_EXAMPLES: 10,  # large values may hurt performance
         # model config
         # if true intent classification is trained and intent predicted
         INTENT_CLASSIFICATION: True,
@@ -889,7 +889,7 @@ class DIET(tf_models.RasaModel):
         inverted_tag_dict: Dict[int, Text],
         config: Dict[Text, Any],
     ) -> None:
-        super(DIET, self).__init__(name="DIET")
+        super(DIET, self).__init__()
 
         # data
         self.data_signature = data_signature
@@ -912,7 +912,14 @@ class DIET(tf_models.RasaModel):
         self.entity_f1 = tfa.metrics.F1Score(
             num_classes=self._num_tags - 1,  # `0` prediction is not a prediction
             average="micro",
+            name="e_f1",
         )
+        self.intent_acc = tf.keras.metrics.Mean(name="i_acc")
+        self.intent_loss = tf.keras.metrics.Mean(name="i_loss")
+        self.total_loss = tf.keras.metrics.Mean(name="t_loss")
+        self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
+        self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
+        self.entity_loss = tf.keras.metrics.Mean(name="e_loss")
 
         # persist
         self.all_labels_embed = None
@@ -969,7 +976,6 @@ class DIET(tf_models.RasaModel):
         self._embed = {}
 
         self.train_metrics = {"t_loss": tf.keras.metrics.Mean(name="t_loss")}
-        self.eval_metrics = {"val_t_loss": tf.keras.metrics.Mean(name="val_t_loss")}
 
         if self.config[MASKED_LM]:
             self._input_mask = tf_layers.InputMask()
@@ -996,8 +1002,6 @@ class DIET(tf_models.RasaModel):
             )
             self.train_metrics["m_loss"] = tf.keras.metrics.Mean(name="m_loss")
             self.train_metrics["m_acc"] = tf.keras.metrics.Mean(name="m_acc")
-            self.eval_metrics["val_m_loss"] = tf.keras.metrics.Mean(name="val_m_loss")
-            self.eval_metrics["val_m_acc"] = tf.keras.metrics.Mean(name="val_m_acc")
         else:
             self._input_mask = None
             self._loss_mask = None
@@ -1026,8 +1030,6 @@ class DIET(tf_models.RasaModel):
             )
             self.train_metrics["i_loss"] = tf.keras.metrics.Mean(name="i_loss")
             self.train_metrics["i_acc"] = tf.keras.metrics.Mean(name="i_acc")
-            self.eval_metrics["val_i_loss"] = tf.keras.metrics.Mean(name="val_i_loss")
-            self.eval_metrics["val_i_acc"] = tf.keras.metrics.Mean(name="val_i_acc")
         else:
             self._loss_label = None
 
@@ -1039,8 +1041,6 @@ class DIET(tf_models.RasaModel):
             self._crf = tf_layers.CRF(self._num_tags, self.config[C2])
             self.train_metrics["e_loss"] = tf.keras.metrics.Mean(name="e_loss")
             self.train_metrics["e_f1"] = tf.keras.metrics.Mean(name="e_f1")
-            self.eval_metrics["val_e_loss"] = tf.keras.metrics.Mean(name="val_e_loss")
-            self.eval_metrics["val_e_f1"] = tf.keras.metrics.Mean(name="val_e_f1")
 
     def set_training_phase(self, training: bool) -> None:
         if training:
@@ -1175,7 +1175,7 @@ class DIET(tf_models.RasaModel):
 
     def _train_losses_scores(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
-    ) -> Tuple[Dict[Text, float], Dict[Text, float]]:
+    ) -> None:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         mask_text = tf_batch_data["text_mask"][0]
@@ -1185,15 +1185,12 @@ class DIET(tf_models.RasaModel):
             tf_batch_data["text_features"], mask_text, "text", self.config[MASKED_LM]
         )
 
-        losses = {}
-        scores = {}
-
         if self.config[MASKED_LM]:
             loss, acc = self._mask_loss(
                 text_transformed, text_in, lm_mask_bool_text, "text"
             )
-            losses["m_loss"] = loss
-            scores["m_acc"] = acc
+            self.train_metrics["m_loss"].update_state(loss)
+            self.train_metrics["m_acc"].update_state(acc)
 
         if self.config[INTENT_CLASSIFICATION]:
             # get _cls_ vector for intent classification
@@ -1207,8 +1204,8 @@ class DIET(tf_models.RasaModel):
                 tf_batch_data["label_features"], tf_batch_data["label_mask"][0], "label"
             )
             loss, acc = self._intent_loss(cls, label)
-            losses["i_loss"] = loss
-            scores["i_acc"] = acc
+            self.train_metrics["i_loss"].update_state(loss)
+            self.train_metrics["i_acc"].update_state(acc)
 
         if self.config[ENTITY_RECOGNITION]:
             tags = tf_batch_data["tag_ids"][0]
@@ -1216,10 +1213,8 @@ class DIET(tf_models.RasaModel):
             loss, f1 = self._entity_loss(
                 text_transformed, tags, mask_text, sequence_lengths
             )
-            losses["e_loss"] = loss
-            scores["e_f1"] = f1
-
-        return losses, scores
+            self.train_metrics["e_loss"].update_state(loss)
+            self.train_metrics["e_f1"].update_state(f1)
 
     def build_for_predict(self, model_data: RasaModelData) -> None:
         self.batch_tuple_sizes = model_data.batch_tuple_sizes()
