@@ -2,7 +2,7 @@ import warnings
 import logging
 import os
 from types import LambdaType
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import numpy as np
 import time
@@ -16,7 +16,6 @@ from rasa.core.channels.channel import (
     OutputChannel,
 )
 from rasa.core.constants import (
-    ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     USER_INTENT_RESTART,
     UTTER_PREFIX,
     USER_INTENT_BACK,
@@ -46,7 +45,6 @@ from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
-
 
 MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
 
@@ -100,7 +98,7 @@ class MessageProcessor:
             )
             return None
 
-        await self._predict_and_execute_next_action(message, tracker)
+        await self._predict_and_execute_next_action(message.output_channel, tracker)
 
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
@@ -324,22 +322,53 @@ class MessageProcessor:
             or not self._is_reminder_still_valid(tracker, reminder_event)
         ):
             logger.debug(
-                f"Canceled reminder because it is outdated. "
-                f"(event: {reminder_event.action_name} id: {reminder_event.name})"
+                f"Canceled reminder because it is outdated. " f"({reminder_event})"
             )
         else:
-            # necessary for proper featurization, otherwise the previous
-            # unrelated message would influence featurization
-            tracker.update(UserUttered.empty())
-            action = self._get_action(reminder_event.action_name)
-            should_continue = await self._run_action(
-                action, tracker, output_channel, nlg
+            intent = reminder_event.intent
+            entities = reminder_event.entities or {}
+            await self.trigger_external_user_uttered(
+                intent, entities, tracker, output_channel
             )
-            if should_continue:
-                user_msg = UserMessage(None, output_channel, sender_id)
-                await self._predict_and_execute_next_action(user_msg, tracker)
-            # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
+
+    async def trigger_external_user_uttered(
+        self,
+        intent_name: Text,
+        entities: Optional[Union[List[Dict[Text, Any]], Dict[Text, Text]]],
+        tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
+    ) -> None:
+        """Triggers an external message.
+
+        Triggers an external message (like a user message, but invisible;
+        used, e.g., by a reminder or the trigger_intent endpoint).
+
+        Args:
+            intent_name: Name of the intent to be triggered.
+            entities: Entities to be passed on.
+            tracker: The tracker to which the event should be added.
+            output_channel: The output channel.
+        """
+        if isinstance(entities, list):
+            entity_list = entities
+        elif isinstance(entities, dict):
+            # Allow for a short-hand notation {"ent1": "val1", "ent2": "val2", ...}.
+            # Useful if properties like 'start', 'end', or 'extractor' are not given,
+            # e.g. for external events.
+            entity_list = [
+                {"entity": ent, "value": val} for ent, val in entities.items()
+            ]
+        elif not entities:
+            entity_list = []
+        else:
+            warnings.warn(
+                f"Invalid entity specification: {entities}. Assuming no entities."
+            )
+            entity_list = []
+        tracker.update(UserUttered.create_external(intent_name, entity_list))
+        await self._predict_and_execute_next_action(output_channel, tracker)
+        # save tracker state to continue conversation from this state
+        self._save_tracker(tracker)
 
     @staticmethod
     def _log_slots(tracker) -> None:
@@ -442,7 +471,7 @@ class MessageProcessor:
         )
 
     async def _predict_and_execute_next_action(
-        self, message: UserMessage, tracker: DialogueStateTracker
+        self, output_channel: OutputChannel, tracker: DialogueStateTracker
     ):
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
@@ -464,7 +493,7 @@ class MessageProcessor:
             action, policy, confidence = self.predict_next_action(tracker)
 
             should_predict_another_action = await self._run_action(
-                action, tracker, message.output_channel, self.nlg, policy, confidence
+                action, tracker, output_channel, self.nlg, policy, confidence
             )
             num_predicted_actions += 1
 
@@ -476,7 +505,7 @@ class MessageProcessor:
             )
             if self.on_circuit_break:
                 # call a registered callback
-                self.on_circuit_break(tracker, message.output_channel, self.nlg)
+                self.on_circuit_break(tracker, output_channel, self.nlg)
 
     @staticmethod
     def should_predict_another_action(action_name: Text) -> bool:
@@ -529,31 +558,24 @@ class MessageProcessor:
                 args=[e, tracker.sender_id, output_channel, nlg],
                 id=e.name,
                 replace_existing=True,
-                name=(
-                    str(e.action_name)
-                    + ACTION_NAME_SENDER_ID_CONNECTOR_STR
-                    + tracker.sender_id
-                ),
+                name=e.scheduled_job_name(tracker.sender_id),
             )
 
     @staticmethod
     async def _cancel_reminders(
         events: List[Event], tracker: DialogueStateTracker
     ) -> None:
-        """Cancel reminders by action_name"""
+        """Cancel reminders that match the `ReminderCancelled` event."""
 
-        # All Reminders with the same action name will be cancelled
-        for e in events:
-            if isinstance(e, ReminderCancelled):
-                name_to_check = (
-                    str(e.action_name)
-                    + ACTION_NAME_SENDER_ID_CONNECTOR_STR
-                    + tracker.sender_id
-                )
+        # All Reminders specified by ReminderCancelled events will be cancelled
+        for event in events:
+            if isinstance(event, ReminderCancelled):
                 scheduler = await jobs.scheduler()
-                for j in scheduler.get_jobs():
-                    if j.name == name_to_check:
-                        scheduler.remove_job(j.id)
+                for scheduled_job in scheduler.get_jobs():
+                    if event.cancels_job_with_name(
+                        scheduled_job.name, tracker.sender_id
+                    ):
+                        scheduler.remove_job(scheduled_job.id)
 
     async def _run_action(
         self, action, tracker, output_channel, nlg, policy=None, confidence=None
