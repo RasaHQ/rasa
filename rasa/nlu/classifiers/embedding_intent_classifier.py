@@ -868,8 +868,7 @@ class DIET(tf_models.RasaModel):
         self.config = config
 
         # tf objects
-        self._tf_layers: Dict[Text, Any] = {"embed": {}}
-        self._tf_prepare_layers()
+        self._prepare_layers()
 
         # tf tensors
         self.training = tf.ones((), tf.bool)
@@ -887,8 +886,10 @@ class DIET(tf_models.RasaModel):
         self.all_labels_embed = None
         self.batch_tuple_sizes = None
 
-    def _tf_prepare_layers(self) -> None:
+    def _prepare_layers(self) -> None:
+        self._tf_layers = {}
         self._prepare_sequence_layers()
+        self._tf_layers["embed"] = {}
         self._prepare_mask_lm_layers()
         self._prepare_intent_classification_layers()
         self._prepare_entity_recognition_layers()
