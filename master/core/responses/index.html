@@ -456,6 +456,29 @@ like this:</p>
 </div>
 <p>Rasa will then use this response and sent it back to the user.</p>
 </div>
+<div class="section" id="proactively-reaching-out-to-the-user-with-external-events">
+<span id="external-events"></span><h2>Proactively Reaching Out to the User with External Events<a class="headerlink" href="#proactively-reaching-out-to-the-user-with-external-events" title="Permalink to this headline">¶</a></h2>
+<p>You may want to proactively reach out to the user,
+for example to display the output of a long running background operation
+or notify the user of an external event.</p>
+<p>To do so, you can <code class="docutils literal notranslate"><span class="pre">POST</span></code> an intent to the
+<a class="reference external" href="../../api/http-api/#operation/triggerConversationIntent">trigger_intent endpoint</a>.
+The intent, let’s call it <code class="docutils literal notranslate"><span class="pre">EXTERNAL_sensor</span></code>, will be treated as if the user had sent a message with this intent.
+You can even provide a dictionary of entities as parameters, e.g. <code class="docutils literal notranslate"><span class="pre">{&quot;temperature&quot;:</span> <span class="pre">&quot;high&quot;}</span></code>.
+For your bot to respond, we recommend you use the <a class="reference internal" href="../policies/#mapping-policy"><span class="std std-ref">Mapping Policy</span></a> to connect the sent intent <code class="docutils literal notranslate"><span class="pre">EXTERNAL_sensor</span></code>
+with the action you want your bot to execute, e.g. <code class="docutils literal notranslate"><span class="pre">utter_warn_temperature</span></code>.
+You can also use a custom action here, of course.</p>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">output_channel</span></code> query parameter to specify which output
+channel should be used to communicate the assistant’s responses back to the user.
+Any messages that are dispatched in the custom action will be forwarded to the specified output channel.
+Set this parameter to <code class="docutils literal notranslate"><span class="pre">&quot;latest&quot;</span></code> if you want to use the latest input channel that the user has used.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Proactively reaching out to the user is dependent on the abilities of a channel and
+hence not supported by every channel. If your channel does not support it, consider
+using the <a class="reference internal" href="../../user-guide/connectors/your-own-website/#callbackinput"><span class="std std-ref">CallbackInput</span></a> channel to send messages to a webhook.</p>
+</div>
+</div>
 </div>
 
 
