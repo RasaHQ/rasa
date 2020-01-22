@@ -946,45 +946,6 @@ class DIET(tf_models.RasaModel):
         self._prepare_intent_classification_layers()
         self._prepare_entity_recognition_layers()
 
-    def _prepare_entity_recognition_layers(self):
-        self._crf = None
-        if self.config[ENTITY_RECOGNITION]:
-            self._embed["logits"] = tf_layers.Embed(
-                self._num_tags, self.config[C2], "logits"
-            )
-            self._crf = tf_layers.CRF(self._num_tags, self.config[C2])
-
-            self.metric_f1_score = tfa.metrics.F1Score(
-                num_classes=self._num_tags - 1,  # `0` prediction is not a prediction
-                average="micro",
-            )
-
-    def _prepare_intent_classification_layers(self):
-        if self.config[INTENT_CLASSIFICATION]:
-            self._embed["text"] = tf_layers.Embed(
-                self.config[EMBED_DIM],
-                self.config[C2],
-                "text",
-                self.config[SIMILARITY_TYPE],
-            )
-            self._embed["label"] = tf_layers.Embed(
-                self.config[EMBED_DIM],
-                self.config[C2],
-                "label",
-                self.config[SIMILARITY_TYPE],
-            )
-            self._loss_label = tf_layers.DotProductLoss(
-                self.config[NUM_NEG],
-                self.config[LOSS_TYPE],
-                self.config[MU_POS],
-                self.config[MU_NEG],
-                self.config[USE_MAX_SIM_NEG],
-                self.config[C_EMB],
-                self.config[SCALE_LOSS],
-            )
-        else:
-            self._loss_label = None
-
     def _prepare_mask_lm_layers(self):
         if self.config[MASKED_LM]:
             self._input_mask = tf_layers.InputMask()
@@ -1012,6 +973,45 @@ class DIET(tf_models.RasaModel):
         else:
             self._input_mask = None
             self._loss_mask = None
+
+    def _prepare_intent_classification_layers(self):
+        if self.config[INTENT_CLASSIFICATION]:
+            self._embed["text"] = tf_layers.Embed(
+                self.config[EMBED_DIM],
+                self.config[C2],
+                "text",
+                self.config[SIMILARITY_TYPE],
+            )
+            self._embed["label"] = tf_layers.Embed(
+                self.config[EMBED_DIM],
+                self.config[C2],
+                "label",
+                self.config[SIMILARITY_TYPE],
+            )
+            self._loss_label = tf_layers.DotProductLoss(
+                self.config[NUM_NEG],
+                self.config[LOSS_TYPE],
+                self.config[MU_POS],
+                self.config[MU_NEG],
+                self.config[USE_MAX_SIM_NEG],
+                self.config[C_EMB],
+                self.config[SCALE_LOSS],
+            )
+        else:
+            self._loss_label = None
+
+    def _prepare_entity_recognition_layers(self):
+        self._crf = None
+        if self.config[ENTITY_RECOGNITION]:
+            self._embed["logits"] = tf_layers.Embed(
+                self._num_tags, self.config[C2], "logits"
+            )
+            self._crf = tf_layers.CRF(self._num_tags, self.config[C2])
+
+            self.metric_f1_score = tfa.metrics.F1Score(
+                num_classes=self._num_tags - 1,  # `0` prediction is not a prediction
+                average="micro",
+            )
 
     def set_training_phase(self, training: bool) -> None:
         if training:
