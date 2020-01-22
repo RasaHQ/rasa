@@ -18,6 +18,7 @@ class RasaModel(tf.keras.models.Model):
         super().__init__(*args, **kwargs)
 
         self.total_loss = tf.keras.metrics.Mean(name="t_loss")
+        self.metrics_to_log = ["t_loss"]
 
     def fit(
         self,
@@ -160,6 +161,7 @@ class RasaModel(tf.keras.models.Model):
         return {
             f"{prefix}{metric.name}": f"{metric.result().numpy():.3f}"
             for metric in self.metrics
+            if metric.name in self.metrics_to_log
         }
 
     def _reset_metrics(self) -> None:
@@ -168,7 +170,13 @@ class RasaModel(tf.keras.models.Model):
             metric.reset_states()
 
     def _get_losses_from_metrics(self) -> List[tf.Tensor]:
-        return list([m.result() for m in self.metrics if "loss" in m.name.lower()])
+        return list(
+            [
+                m.result()
+                for m in self.metrics
+                if "loss" in m.name.lower() and m.name in self.metrics_to_log
+            ]
+        )
 
     def train_on_batch(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs

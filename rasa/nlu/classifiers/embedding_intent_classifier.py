@@ -881,10 +881,19 @@ class DIET(tf_models.RasaModel):
         self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
         self.entity_loss = tf.keras.metrics.Mean(name="e_loss")
         self.entity_f1 = tf.keras.metrics.Mean(name="e_f1")
+        self._update_metrics_to_log()
 
         # persist
         self.all_labels_embed = None
         self.batch_tuple_sizes = None
+
+    def _update_metrics_to_log(self):
+        if self.config[MASKED_LM]:
+            self.metrics_to_log += ["m_loss", "m_acc"]
+        if self.config[INTENT_CLASSIFICATION]:
+            self.metrics_to_log += ["i_loss", "i_acc"]
+        if self.config[ENTITY_RECOGNITION]:
+            self.metrics_to_log += ["e_loss", "e_f1"]
 
     def _prepare_layers(self) -> None:
         self._tf_layers = {}
