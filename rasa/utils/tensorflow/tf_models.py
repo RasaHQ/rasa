@@ -16,7 +16,8 @@ class RasaModel(tf.keras.models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.train_metrics = {}
+
+        self.total_loss = tf.keras.metrics.Mean(name="t_loss")
 
     def fit(
         self,
@@ -90,7 +91,7 @@ class RasaModel(tf.keras.models.Model):
             )
 
             # Reset the metrics
-            for metric in self.train_metrics.values():
+            for metric in self.metrics:
                 metric.reset_states()
 
             # Train on batches
@@ -100,7 +101,7 @@ class RasaModel(tf.keras.models.Model):
 
             # Get the metric results
             postfix_dict = {
-                k: f"{v.result().numpy():3f}" for k, v in self.train_metrics.items()
+                metric.name: f"{metric.result().numpy():.3f}" for metric in self.metrics
             }
 
             if evaluate_on_num_examples > 0:
@@ -110,7 +111,7 @@ class RasaModel(tf.keras.models.Model):
                     or (ep + 1) == epochs
                 ):
                     # Reset the metrics
-                    for metric in self.train_metrics.values():
+                    for metric in self.metrics:
                         metric.reset_states()
 
                     # Eval on batches
@@ -121,8 +122,8 @@ class RasaModel(tf.keras.models.Model):
                 # Get the metric results
                 postfix_dict.update(
                     {
-                        f"val_{k}": f"{v.result().numpy():3f}"
-                        for k, v in self.train_metrics.items()
+                        f"val_{metric.name}": f"{metric.result().numpy():.3f}"
+                        for metric in self.metrics
                     }
                 )
 
@@ -148,23 +149,27 @@ class RasaModel(tf.keras.models.Model):
         with tf.GradientTape() as tape:
             self._train_losses_scores(batch_in)
             regularization_loss = tf.math.add_n(self.losses)
-            pred_loss = 0  # tf.math.add_n(list(losses.values()))
+            pred_loss = tf.math.add_n(
+                list([m.result() for m in self.metrics if "loss" in m.name])
+            )
             total_loss = pred_loss + regularization_loss
 
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-        self.train_metrics["t_loss"].update_state(total_loss)
+        self.total_loss.update_state(total_loss)
 
     def evaluate_on_batch(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> None:
         self._train_losses_scores(batch_in)
         regularization_loss = tf.math.add_n(self.losses)
-        pred_loss = 0  # tf.math.add_n(list(losses.values()))
+        pred_loss = tf.math.add_n(
+            list([m.result() for m in self.metrics if "loss" in m.name])
+        )
         total_loss = pred_loss + regularization_loss
 
-        self.train_metrics["t_loss"].update_state(total_loss)
+        self.total_loss.update_state(total_loss)
 
     def test_on_batch(self, **kwargs) -> None:
         raise NotImplementedError
