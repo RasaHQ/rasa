@@ -29,7 +29,7 @@ class RasaModel(tf.keras.models.Model):
         evaluate_every_num_epochs: int,
         batch_strategy: Text,
         silent: bool = False,
-        eager: bool = True,
+        eager: bool = False,
         random_seed: Optional[int] = None,
         **kwargs,
     ) -> None:
@@ -143,7 +143,7 @@ class RasaModel(tf.keras.models.Model):
 
         # Get the metric results
         return {
-            metric.name: f"{prefix}{metric.result().numpy():.3f}"
+            f"{prefix}{metric.name}": f"{metric.result().numpy():.3f}"
             for metric in self.metrics
             if metric.name in self.metrics_to_log
         }
@@ -153,21 +153,22 @@ class RasaModel(tf.keras.models.Model):
         for metric in self.metrics:
             metric.reset_states()
 
+    def _get_losses_from_metrics(self) -> List[tf.Tensor]:
+        return list(
+            [
+                m.result()
+                for m in self.metrics
+                if "loss" in m.name.lower() and m.name in self.metrics_to_log
+            ]
+        )
+
     def train_on_batch(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> None:
         with tf.GradientTape() as tape:
             self._train_losses_scores(batch_in)
             regularization_loss = tf.math.add_n(self.losses)
-            pred_loss = tf.math.add_n(
-                list(
-                    [
-                        m.result()
-                        for m in self.metrics
-                        if "loss" in m.name.lower() and m.name in self.metrics_to_log
-                    ]
-                )
-            )
+            pred_loss = tf.math.add_n(self._get_losses_from_metrics())
             total_loss = pred_loss + regularization_loss
 
         gradients = tape.gradient(total_loss, self.trainable_variables)
@@ -180,15 +181,7 @@ class RasaModel(tf.keras.models.Model):
     ) -> None:
         self._train_losses_scores(batch_in)
         regularization_loss = tf.math.add_n(self.losses)
-        pred_loss = tf.math.add_n(
-            list(
-                [
-                    m.result()
-                    for m in self.metrics
-                    if "loss" in m.name.lower() and m.name in self.metrics_to_log
-                ]
-            )
-        )
+        pred_loss = tf.math.add_n(self._get_losses_from_metrics())
         total_loss = pred_loss + regularization_loss
 
         self.total_loss.update_state(total_loss)
