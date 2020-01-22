@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class SparseDropout(tf.keras.layers.Dropout):
-    def call(self, inputs: tf.Tensor, training: bool) -> tf.Tensor:
+    def call(self, inputs: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
 
         to_retain_prob = tf.random.uniform(
             tf.shape(inputs.values), 0, 1, inputs.values.dtype
@@ -80,7 +80,7 @@ class ReluFfn(tf.keras.layers.Layer):
             )
             self._ffn_layers.append(tf.keras.layers.Dropout(rate=droprate))
 
-    def call(self, x: tf.Tensor, training: bool) -> tf.Tensor:
+    def call(self, x: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
         for layer in self._ffn_layers:
             x = layer(x, training=training)
 
@@ -166,7 +166,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         return output, attention_weights
 
-    def __init__(self, d_model, num_heads: int, reg_lambda: float) -> None:
+    def __init__(self, d_model: int, num_heads: int, reg_lambda: float) -> None:
         super(MultiHeadAttention, self).__init__()
         self.num_heads = num_heads
         self.d_model = d_model
@@ -244,9 +244,9 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 class TransformerEncoderLayer(tf.keras.layers.Layer):
     def __init__(
         self,
-        d_model: tf.Tensor,
+        d_model: int,
         num_heads: int,
-        dff: tf.Tensor,
+        dff: int,
         reg_lambda: float,
         rate: float = 0.1,
     ) -> None:
@@ -269,7 +269,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
             tf.keras.layers.Dropout(rate),
         ]
 
-    def call(self, x: tf.Tensor, pad_mask: tf.Tensor, training: bool) -> tf.Tensor:
+    def call(self, x: tf.Tensor, pad_mask: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
 
         x_norm = self._layernorm(x)  # (batch_size, seq_len, d_model)
         attn_out, _ = self._mha(x_norm, x_norm, x_norm, pad_mask)
@@ -316,9 +316,9 @@ class TransformerEncoder(tf.keras.layers.Layer):
     def __init__(
         self,
         num_layers: int,
-        d_model,
+        d_model: int,
         num_heads: int,
-        dff,
+        dff: int,
         max_seq_length: int,
         reg_lambda: float,
         rate: float = 0.1,
@@ -346,7 +346,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
     def call(
-        self, x: "tf.Tensor", pad_mask: "tf.Tensor", training: bool
+        self, x: "tf.Tensor", pad_mask: "tf.Tensor", training: tf.Tensor
     ) -> "tf.Tensor":
 
         # adding embedding and position encoding.
@@ -373,7 +373,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
 
 
 class InputMask(tf.keras.layers.Layer):
-    def build(self, input_shape: List[int]) -> None:
+    def build(self, input_shape: "tf.TensorShape") -> None:
         initializer = tf.keras.initializers.GlorotUniform()
         self.mask_vector = self.add_weight(
             shape=(1, 1, input_shape[-1]),
@@ -384,7 +384,7 @@ class InputMask(tf.keras.layers.Layer):
         self.built = True
 
     def call(
-        self, x: "tf.Tensor", mask: "tf.Tensor", training: bool
+        self, x: "tf.Tensor", mask: "tf.Tensor", training: "tf.Tensor"
     ) -> Tuple["tf.Tensor", "tf.Tensor"]:
         """Randomly mask input sequences."""
 
