@@ -855,7 +855,7 @@ class DIET(tf_models.RasaModel):
         inverted_tag_dict: Dict[int, Text],
         config: Dict[Text, Any],
     ) -> None:
-        super(DIET, self).__init__()
+        super().__init__()
 
         # data
         self.data_signature = data_signature
