@@ -41,7 +41,7 @@ class RasaModelData:
         return key not in self.data or not self.data[key]
 
     def get_number_of_examples(self) -> int:
-        """Obtain number of examples in session data.
+        """Obtain number of examples in data.
 
         Raise a ValueError if number of examples differ for different data in
         session data.
