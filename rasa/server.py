@@ -1369,7 +1369,7 @@ def create_app(
         elif intent == "listpickupintent":
             if data["name"] == 'pickup':
                 entityArray.append(data)
-                elif intent == "feeinfointent":
+        elif intent == "feeinfointent":
             if data["name"] == 'fee':
                 entityArray.append(data)
         elif intent == "libraryinfointent":
