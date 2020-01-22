@@ -18,7 +18,6 @@ class RasaModel(tf.keras.models.Model):
         super().__init__(*args, **kwargs)
 
         self.total_loss = tf.keras.metrics.Mean(name="t_loss")
-        self.metrics_to_log = ["t_loss"]
 
     def fit(
         self,
@@ -48,22 +47,27 @@ class RasaModel(tf.keras.models.Model):
 
         disable = silent or is_logging_disabled()
 
+        tf_batch_size = tf.ones((), tf.int32)
         (
             tf_train_dataset_function,
             tf_train_on_batch_function,
-        ) = self._get_tf_train_functions(eager, model_data, batch_strategy)
+        ) = self._get_tf_train_functions(
+            eager, model_data, batch_strategy, tf_batch_size
+        )
 
         (
             tf_evaluation_dataset_function,
             tf_evaluation_on_batch_function,
         ) = self._get_tf_evaluation_functions(
-            eager, evaluate_on_num_examples, evaluation_model_data
+            eager, evaluate_on_num_examples, evaluation_model_data, tf_batch_size
         )
 
         pbar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
         for ep in pbar:
-            ep_batch_size = self.linearly_increasing_batch_size(ep, batch_size, epochs)
+            ep_batch_size = tf_batch_size * self.linearly_increasing_batch_size(
+                ep, batch_size, epochs
+            )
 
             self._reset_metrics()
 
@@ -92,7 +96,11 @@ class RasaModel(tf.keras.models.Model):
             logger.info("Finished training.")
 
     def _get_tf_train_functions(
-        self, eager: bool, model_data: RasaModelData, batch_strategy: Text
+        self,
+        eager: bool,
+        model_data: RasaModelData,
+        batch_strategy: Text,
+        tf_batch_size: tf.Tensor,
     ) -> Tuple[Callable, Callable]:
         def train_dataset_function(_batch_size):
             return model_data.as_tf_dataset(_batch_size, batch_strategy, shuffle=True)
@@ -104,7 +112,6 @@ class RasaModel(tf.keras.models.Model):
             logger.debug("Building tensorflow train graph...")
             # allows increasing batch size
             tf_train_dataset_function = tf.function(func=train_dataset_function)
-            tf_batch_size = tf.ones((), tf.int32)
             init_dataset = tf_train_dataset_function(tf_batch_size)
             tf_train_on_batch_function = tf.function(
                 self.train_on_batch, input_signature=[init_dataset.element_spec]
@@ -119,6 +126,7 @@ class RasaModel(tf.keras.models.Model):
         eager: bool,
         evaluate_on_num_examples: int,
         evaluation_model_data: RasaModelData,
+        tf_batch_size: tf.Tensor,
     ) -> Tuple[Callable, Callable]:
         def evaluation_dataset_function(_batch_size):
             return evaluation_model_data.as_tf_dataset(
@@ -130,7 +138,6 @@ class RasaModel(tf.keras.models.Model):
                 tf_evaluation_dataset_function = evaluation_dataset_function
                 tf_evaluation_on_batch_function = self.evaluate_on_batch
             else:
-                tf_batch_size = tf.ones((), tf.int32)
                 tf_evaluation_dataset_function = tf.function(
                     func=evaluation_dataset_function
                 )
@@ -153,7 +160,6 @@ class RasaModel(tf.keras.models.Model):
         return {
             f"{prefix}{metric.name}": f"{metric.result().numpy():.3f}"
             for metric in self.metrics
-            if metric.name in self.metrics_to_log
         }
 
     def _reset_metrics(self) -> None:
@@ -162,13 +168,7 @@ class RasaModel(tf.keras.models.Model):
             metric.reset_states()
 
     def _get_losses_from_metrics(self) -> List[tf.Tensor]:
-        return list(
-            [
-                m.result()
-                for m in self.metrics
-                if "loss" in m.name.lower() and m.name in self.metrics_to_log
-            ]
-        )
+        return list([m.result() for m in self.metrics if "loss" in m.name.lower()])
 
     def train_on_batch(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
