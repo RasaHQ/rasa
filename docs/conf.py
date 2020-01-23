@@ -52,7 +52,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Rasa"
-copyright = "2019, Rasa Technologies"
+copyright = "2020, Rasa Technologies"
 author = "Rasa Technologies"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -335,8 +335,9 @@ scv_whitelist_branches = (re.compile("^master$"),)
 scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
 scv_whitelist_tags = (
     re.compile(r"^[2-9]+\.\d+\.\d+$"),
-    re.compile(r"^1\.[6789]+\.\d+$"),
-    re.compile(r"^1\.5\.\d+$"),
+    re.compile(r"^1\.[1-9][0-9]+\.\d+$"),
+    re.compile(r"^1\.[6789]\.\d+$"),
+    re.compile(r"^1\.5\.3$"),
     re.compile(r"^1\.4\.6$"),
     re.compile(r"^1\.3\.10$"),
     re.compile(r"^1\.2\.9$"),

@@ -124,7 +124,7 @@ class Validator:
         }
 
     def verify_utterances(self, ignore_warnings: bool = True) -> bool:
-        """Compares list of utterances in actions with utterances in templates."""
+        """Compares list of utterances in actions with utterances in responses."""
 
         actions = self.domain.action_names
         utterance_templates = set(self.domain.templates)

@@ -20,7 +20,7 @@ mapping:
     sequence:
     - type: "str"
       required: True
-  templates:
+  responses:
     type: "map"
     allowempty: True
   slots:

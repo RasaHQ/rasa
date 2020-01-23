@@ -706,6 +706,7 @@ def test_list_routes(default_agent: Agent):
         "replace_events",
         "retrieve_story",
         "execute_action",
+        "trigger_intent",
         "predict",
         "add_message",
         "train",
@@ -738,7 +739,7 @@ def test_get_domain(rasa_app: SanicTestClient):
     assert "intents" in content
     assert "entities" in content
     assert "slots" in content
-    assert "templates" in content
+    assert "responses" in content
     assert "actions" in content
 
 
@@ -849,6 +850,40 @@ def test_execute_with_not_existing_action(rasa_app: SanicTestClient):
     _, response = rasa_app.post(f"/conversations/{test_sender}/execute", json=data)
 
     assert response.status == 500
+
+
+def test_trigger_intent(rasa_app: SanicTestClient):
+    data = {"name": "greet"}
+    _, response = rasa_app.post("/conversations/test_trigger/trigger_intent", json=data)
+
+    assert response.status == 200
+
+    parsed_content = response.json
+    assert parsed_content["tracker"]
+    assert parsed_content["messages"]
+
+
+def test_trigger_intent_with_missing_intent_name(rasa_app: SanicTestClient):
+    test_sender = "test_trigger_intent_with_missing_action_name"
+
+    data = {"wrong-key": "greet"}
+    _, response = rasa_app.post(
+        f"/conversations/{test_sender}/trigger_intent", json=data
+    )
+
+    assert response.status == 400
+
+
+def test_trigger_intent_with_not_existing_intent(rasa_app: SanicTestClient):
+    test_sender = "test_trigger_intent_with_not_existing_intent"
+    _create_tracker_for_sender(rasa_app, test_sender)
+
+    data = {"name": "ka[pa[opi[opj[oj[oija"}
+    _, response = rasa_app.post(
+        f"/conversations/{test_sender}/trigger_intent", json=data
+    )
+
+    assert response.status == 404
 
 
 @pytest.mark.parametrize(

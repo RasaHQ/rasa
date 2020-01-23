@@ -114,7 +114,7 @@ See :ref:`section_unhappy` for how to work with unexpected user input.
 
 Every time the form action gets called, it will ask the user for the next slot in
 ``required_slots`` which is not already set.
-It does this by looking for a template called ``utter_ask_{slot_name}``,
+It does this by looking for a response called ``utter_ask_{slot_name}``,
 so you need to define these in your domain file for each required slot.
 
 Once all the slots are filled, the ``submit()`` method is called, where you can

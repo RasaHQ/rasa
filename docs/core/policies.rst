@@ -401,10 +401,10 @@ simple example that dispatches a bot utterance and then reverts the interaction:
 
 .. note::
 
-  If you use the ``MappingPolicy`` to predict bot utterances directly (e.g.
+  If you use the ``MappingPolicy`` to predict bot utterance actions directly (e.g.
   ``triggers: utter_{}``), these interactions must go in your stories, as in this
   case there is no ``UserUtteranceReverted()`` and the
-  intent and the mapped utterance will appear in the dialogue history.
+  intent and the mapped response action will appear in the dialogue history.
 
 .. note::
 

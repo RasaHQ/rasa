@@ -9,7 +9,7 @@ actions:
 - utter_happy
 - utter_cheer_up
 
-templates:
+responses:
   utter_cheer_up:
   - text: "Here is something to cheer you up:"
     image: "https://i.imgur.com/nGF1K8f.jpg"
