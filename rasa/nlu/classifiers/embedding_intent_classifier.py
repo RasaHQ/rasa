@@ -870,9 +870,6 @@ class DIET(tf_models.RasaModel):
         # tf objects
         self._prepare_layers()
 
-        # tf tensors
-        self.training = tf.ones((), tf.bool)
-
         # tf training
         self._optimizer = tf.keras.optimizers.Adam(config[LEARNING_RATE])
         self._create_metrics()
@@ -907,6 +904,28 @@ class DIET(tf_models.RasaModel):
         self._prepare_mask_lm_layers()
         self._prepare_intent_classification_layers()
         self._prepare_entity_recognition_layers()
+
+    @staticmethod
+    def _create_sparse_dense_layer(
+        data_signature: List[FeatureSignature],
+        name: Text,
+        reg_lambda: float,
+        dense_dim: int,
+    ) -> Optional[tf_layers.DenseForSparse]:
+
+        sparse = False
+        for is_sparse, shape in data_signature:
+            if is_sparse:
+                sparse = is_sparse
+            else:
+                # if dense features are present
+                # use the feature dimension of the dense features
+                dense_dim = shape[-1]
+
+        if sparse:
+            return tf_layers.DenseForSparse(
+                units=dense_dim, reg_lambda=reg_lambda, name=name
+            )
 
     def _prepare_sequence_layers(self) -> None:
         self._tf_layers["sparse_dropout"] = tf_layers.SparseDropout(
@@ -1009,11 +1028,10 @@ class DIET(tf_models.RasaModel):
             average="micro",
         )
 
-    def set_training_phase(self, training: bool) -> None:
-        if training:
-            self.training = tf.ones((), tf.bool)
-        else:
-            self.training = tf.zeros((), tf.bool)
+    @staticmethod
+    def _get_mask_and_lengths(mask):
+        sequence_lengths = tf.cast(tf.reduce_sum(mask[:, :, 0], 1), tf.int32)
+        return mask, sequence_lengths
 
     def _combine_sparse_dense_features(
         self,
@@ -1028,7 +1046,7 @@ class DIET(tf_models.RasaModel):
         for f in features:
             if isinstance(f, tf.SparseTensor):
                 if sparse_dropout:
-                    _f = self._tf_layers["sparse_dropout"](f, self.training)
+                    _f = self._tf_layers["sparse_dropout"](f, self._training)
                 else:
                     _f = f
 
@@ -1043,10 +1061,11 @@ class DIET(tf_models.RasaModel):
         features: List[Union[tf.Tensor, "tf.SparseTensor"]],
         mask: tf.Tensor,
         name: Text,
+        sparse_dropout: bool = False,
     ) -> tf.Tensor:
 
-        x = self._combine_sparse_dense_features(features, mask, name)
-        return self._tf_layers[f"ffnn.{name}"](tf.reduce_sum(x, 1), self.training)
+        x = self._combine_sparse_dense_features(features, mask, name, sparse_dropout)
+        return self._tf_layers[f"ffnn.{name}"](tf.reduce_sum(x, 1), self._training)
 
     def _create_sequence(
         self,
@@ -1060,14 +1079,32 @@ class DIET(tf_models.RasaModel):
         )
 
         if masked_lm_loss:
-            pre, lm_mask_bool = self._tf_layers["input_mask"](x, mask, self.training)
+            pre, lm_mask_bool = self._tf_layers["input_mask"](x, mask, self._training)
         else:
             pre, lm_mask_bool = (x, None)
 
-        transformed = self._tf_layers["transformer"](pre, 1 - mask, self.training)
+        transformed = self._tf_layers["transformer"](pre, 1 - mask, self._training)
         transformed = tf.nn.relu(transformed)
 
         return transformed, x, lm_mask_bool
+
+    @staticmethod
+    def _last_token(x, sequence_lengths):
+        last_index = tf.maximum(
+            tf.constant(0, dtype=sequence_lengths.dtype), sequence_lengths - 1
+        )
+        idxs = tf.stack([tf.range(tf.shape(last_index)[0]), last_index], axis=1)
+        return tf.gather_nd(x, idxs)
+
+    def _build_all_b(self) -> Tuple[tf.Tensor, tf.Tensor]:
+        all_labels = self._create_bow(
+            self.tf_label_data["label_features"],
+            self.tf_label_data["label_mask"][0],
+            "label",
+        )
+        all_labels_embed = self._tf_layers["embed.label"](all_labels)
+
+        return all_labels_embed, all_labels
 
     def _mask_loss(
         self, a_transformed: tf.Tensor, a: tf.Tensor, lm_mask_bool: tf.Tensor
@@ -1089,16 +1126,6 @@ class DIET(tf_models.RasaModel):
         return self._tf_layers["loss.mask"](
             a_t_masked_embed, a_masked_embed, a_masked, a_masked_embed, a_masked
         )
-
-    def _build_all_b(self) -> Tuple[tf.Tensor, tf.Tensor]:
-        all_labels = self._create_bow(
-            self.tf_label_data["label_features"],
-            self.tf_label_data["label_mask"][0],
-            "label",
-        )
-        all_labels_embed = self._tf_layers["embed.label"](all_labels)
-
-        return all_labels_embed, all_labels
 
     def _intent_loss(self, a: tf.Tensor, b: tf.Tensor) -> tf.Tensor:
         all_labels_embed, all_labels = self._build_all_b()
@@ -1141,9 +1168,9 @@ class DIET(tf_models.RasaModel):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        mask_text = tf_batch_data["text_mask"][0]
-        sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
-
+        mask_text, sequence_lengths = self._get_mask_and_lengths(
+            tf_batch_data["text_mask"][0]
+        )
         text_transformed, text_in, lm_mask_bool_text = self._create_sequence(
             tf_batch_data["text_features"], mask_text, "text", self.config[MASKED_LM]
         )
@@ -1158,11 +1185,7 @@ class DIET(tf_models.RasaModel):
 
         if self.config[INTENT_CLASSIFICATION]:
             # get _cls_ vector for intent classification
-            last_index = tf.maximum(
-                tf.constant(0, dtype=sequence_lengths.dtype), sequence_lengths - 1
-            )
-            idxs = tf.stack([tf.range(tf.shape(last_index)[0]), last_index], axis=1)
-            cls = tf.gather_nd(text_transformed, idxs)
+            cls = self._last_token(text_transformed, sequence_lengths)
 
             label = self._create_bow(
                 tf_batch_data["label_features"], tf_batch_data["label_mask"][0], "label"
@@ -1195,9 +1218,9 @@ class DIET(tf_models.RasaModel):
     ) -> Dict[Text, tf.Tensor]:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        mask_text = tf_batch_data["text_mask"][0]
-        sequence_lengths = tf.cast(tf.reduce_sum(mask_text[:, :, 0], 1), tf.int32)
-
+        mask_text, sequence_lengths = self._get_mask_and_lengths(
+            tf_batch_data["text_mask"][0]
+        )
         text_transformed, _, _ = self._create_sequence(
             tf_batch_data["text_features"], mask_text, "text"
         )
@@ -1205,59 +1228,20 @@ class DIET(tf_models.RasaModel):
         out = {}
         if self.config[INTENT_CLASSIFICATION]:
             # get _cls_ vector for intent classification
-            last_index = tf.maximum(
-                tf.constant(0, dtype=sequence_lengths.dtype), sequence_lengths - 1
-            )
-            idxs = tf.stack([tf.range(tf.shape(last_index)[0]), last_index], axis=1)
-            cls = tf.gather_nd(text_transformed, idxs)
-            cls_embed = self._embed["text"](cls)
+            cls = self._last_token(text_transformed, sequence_lengths)
+            cls_embed = self._tf_layers["embed.text"](cls)
 
-            sim_all = self._loss_label.sim(
+            sim_all = self._tf_layers["loss.label"].sim(
                 cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :]
             )
-
-            scores = train_utils.confidence_from_sim(
+            scores = self._tf_layers["loss.label"].confidence_from_sim(
                 sim_all, self.config[SIMILARITY_TYPE]
             )
             out["i_scores"] = scores
 
         if self.config[ENTITY_RECOGNITION]:
-            logits = self._embed["logits"](text_transformed)
-            pred_ids = self._crf(logits, sequence_lengths - 1)
+            logits = self._tf_layers["embed.logits"](text_transformed)
+            pred_ids = self._tf_layers["crf"](logits, sequence_lengths - 1)
             out["e_ids"] = pred_ids
 
         return out
-
-    @staticmethod
-    def _create_sparse_dense_layer(
-        data_signature: List[FeatureSignature],
-        name: Text,
-        reg_lambda: float,
-        dense_dim: int,
-    ) -> Optional[tf_layers.DenseForSparse]:
-
-        sparse = False
-        for is_sparse, shape in data_signature:
-            if is_sparse:
-                sparse = is_sparse
-            else:
-                # if dense features are present
-                # use the feature dimension of the dense features
-                dense_dim = shape[-1]
-
-        if sparse:
-            return tf_layers.DenseForSparse(
-                units=dense_dim, reg_lambda=reg_lambda, name=name
-            )
-
-    @staticmethod
-    def _input_dim(data_signature: List[FeatureSignature], dense_dim: int) -> int:
-
-        for is_sparse, shape in data_signature:
-            if not is_sparse:
-                # if dense features are present
-                # use the feature dimension of the dense features
-                dense_dim = shape[-1]
-                break
-
-        return dense_dim * len(data_signature)

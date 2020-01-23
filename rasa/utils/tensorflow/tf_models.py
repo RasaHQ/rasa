@@ -20,6 +20,9 @@ class RasaModel(tf.keras.models.Model):
         self.total_loss = tf.keras.metrics.Mean(name="t_loss")
         self.metrics_to_log = ["t_loss"]
 
+        self._training = tf.ones((), tf.bool)
+        self._optimizer = None
+
     def batch_loss(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
     ) -> tf.Tensor:
@@ -29,6 +32,12 @@ class RasaModel(tf.keras.models.Model):
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> Dict[Text, tf.Tensor]:
         raise NotImplementedError
+
+    def set_training_phase(self, training: bool) -> None:
+        if training:
+            self._training = tf.ones((), tf.bool)
+        else:
+            self._training = tf.zeros((), tf.bool)
 
     def fit(
         self,
