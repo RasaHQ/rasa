@@ -9,6 +9,7 @@ import tensorflow_addons as tfa
 
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, Callable
 
+import rasa.utils.io
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -710,14 +711,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
-        try:
-            os.makedirs(os.path.dirname(tf_model_file))
-        except OSError as e:
-            # be happy if someone already created the path
-            import errno
-
-            if e.errno != errno.EEXIST:
-                raise
+        rasa.utils.io.create_directory_for_file(tf_model_file)
 
         self.model.save_weights(tf_model_file, save_format="tf")
 
