@@ -27,7 +27,7 @@ intents:
  - thankyou
  - request_info
 
-templates:
+responses:
   utter_greet:
     - text: "hey there!"
   utter_goodbye:

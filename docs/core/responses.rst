@@ -1,4 +1,4 @@
-:desc: Read how to define assistant utterances or use a service to generate the
+:desc: Read how to define assistant responses or use a service to generate the
        responses using Rasa as an open source chat assistant platform.
 
 .. _responses:
@@ -12,28 +12,28 @@ If you want your assistant to respond to user messages, you need to manage
 these responses. In the training data for your bot,
 your stories, you specify the actions your bot
 should execute. These actions
-can use utterances to send messages back to the user.
+can use responses to send messages back to the user.
 
-There are three ways to manage these utterances:
+There are three ways to manage these responses:
 
-1. Utterances are normally stored in your domain file, see :ref:`here <domain-utterances>`
+1. Responses are normally stored in your domain file, see :ref:`here <domain-responses>`
 2. Retrieval action responses are part of the training data, see :ref:`here <retrieval-actions>`
 3. You can also create a custom NLG service to generate responses, see :ref:`here <custom-nlg-service>`
 
-.. _domain-utterances:
+.. _in-domain-responses:
 
-Including the utterances in the domain
+Including the responses in the domain
 --------------------------------------
 
-The default format is to include the utterances in your domain file.
+The default format is to include the responses in your domain file.
 This file then contains references to all your custom actions,
 available entities, slots and intents.
 
 .. literalinclude:: ../../data/test_domains/default_with_slots.yml
    :language: yaml
 
-In this example domain file, the section ``templates`` contains the
-template the assistant uses to send messages to the user.
+In this example domain file, the section ``responses`` contains the
+responses the assistant uses to send messages to the user.
 
 .. note::
 
@@ -42,12 +42,12 @@ template the assistant uses to send messages to the user.
 
 .. note::
 
-    utterances that are used in a story should be listed in the ``stories``
+    Responses that are used in a story should be listed in the ``stories``
     section of the domain.yml file. In this example, the ``utter_channel``
-    utterance is not used in a story so it is not listed in that section.
+    response is not used in a story so it is not listed in that section.
 
 More details about the format of these responses can be found in the
-documentation about the domain file format: :ref:`utter_templates`.
+documentation about the domain file format: :ref:`domain-responses`.
 
 .. _custom-nlg-service:
 
@@ -156,3 +156,32 @@ The endpoint then needs to respond with the generated response:
   }
 
 Rasa will then use this response and sent it back to the user.
+
+
+.. _external-events:
+
+Proactively Reaching Out to the User with External Events
+---------------------------------------------------------
+
+You may want to proactively reach out to the user,
+for example to display the output of a long running background operation
+or notify the user of an external event.
+
+To do so, you can ``POST`` an intent to the
+`trigger_intent endpoint <../../api/http-api/#operation/triggerConversationIntent>`_.
+The intent, let's call it ``EXTERNAL_sensor``, will be treated as if the user had sent a message with this intent.
+You can even provide a dictionary of entities as parameters, e.g. ``{"temperature": "high"}``.
+For your bot to respond, we recommend you use the :ref:`mapping-policy` to connect the sent intent ``EXTERNAL_sensor``
+with the action you want your bot to execute, e.g. ``utter_warn_temperature``.
+You can also use a custom action here, of course.
+
+Use the ``output_channel`` query parameter to specify which output
+channel should be used to communicate the assistant's responses back to the user.
+Any messages that are dispatched in the custom action will be forwarded to the specified output channel.
+Set this parameter to ``"latest"`` if you want to use the latest input channel that the user has used.
+
+.. note::
+
+   Proactively reaching out to the user is dependent on the abilities of a channel and
+   hence not supported by every channel. If your channel does not support it, consider
+   using the :ref:`callbackInput` channel to send messages to a webhook.
