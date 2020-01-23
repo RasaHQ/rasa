@@ -882,6 +882,9 @@ if <code class="docutils literal notranslate"><span class="pre">auto</span></cod
 <code class="docutils literal notranslate"><span class="pre">inner</span></code> for <code class="docutils literal notranslate"><span class="pre">softmax</span></code>, <code class="docutils literal notranslate"><span class="pre">cosine</span></code> for <code class="docutils literal notranslate"><span class="pre">margin</span></code>;</li>
 <li><code class="docutils literal notranslate"><span class="pre">loss_type</span></code> sets the type of the loss function,
 it should be either <code class="docutils literal notranslate"><span class="pre">softmax</span></code> or <code class="docutils literal notranslate"><span class="pre">margin</span></code>;</li>
+<li><code class="docutils literal notranslate"><span class="pre">ranking_length</span></code> defines the number of top confidences over
+which to normalize ranking results if <code class="docutils literal notranslate"><span class="pre">loss_type:</span> <span class="pre">&quot;softmax&quot;</span></code>;
+to turn off normalization set it to 0</li>
 <li><code class="docutils literal notranslate"><span class="pre">mu_pos</span></code> controls how similar the algorithm should try
 to make embedding vectors for correct intent labels,
 used only if <code class="docutils literal notranslate"><span class="pre">loss_type</span></code> is set to <code class="docutils literal notranslate"><span class="pre">margin</span></code>;</li>
@@ -955,6 +958,9 @@ The default values are defined in <code class="docutils literal notranslate"><sp
     <span class="s2">&quot;similarity_type&quot;</span><span class="p">:</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>  <span class="c1"># string &#39;auto&#39; or &#39;cosine&#39; or &#39;inner&#39;</span>
     <span class="c1"># the type of the loss function</span>
     <span class="s2">&quot;loss_type&quot;</span><span class="p">:</span> <span class="s2">&quot;softmax&quot;</span><span class="p">,</span>  <span class="c1"># string &#39;softmax&#39; or &#39;margin&#39;</span>
+    <span class="c1"># number of top intents to normalize scores for softmax loss_type</span>
+    <span class="c1"># set to 0 to turn off normalization</span>
+    <span class="s2">&quot;ranking_length&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
     <span class="c1"># how similar the algorithm should try</span>
     <span class="c1"># to make embedding vectors for correct labels</span>
     <span class="s2">&quot;mu_pos&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># should be 0.0 &lt; ... &lt; 1.0 for &#39;cosine&#39;</span>
@@ -1132,6 +1138,9 @@ The default values are defined in <code class="docutils literal notranslate"><sp
     <span class="s2">&quot;similarity_type&quot;</span><span class="p">:</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>  <span class="c1"># string &#39;auto&#39; or &#39;cosine&#39; or &#39;inner&#39;</span>
     <span class="c1"># the type of the loss function</span>
     <span class="s2">&quot;loss_type&quot;</span><span class="p">:</span> <span class="s2">&quot;softmax&quot;</span><span class="p">,</span>  <span class="c1"># string &#39;softmax&#39; or &#39;margin&#39;</span>
+    <span class="c1"># number of top responses to normalize scores for softmax loss_type</span>
+    <span class="c1"># set to 0 to turn off normalization</span>
+    <span class="s2">&quot;ranking_length&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
     <span class="c1"># how similar the algorithm should try</span>
     <span class="c1"># to make embedding vectors for correct intent labels</span>
     <span class="s2">&quot;mu_pos&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># should be 0.0 &lt; ... &lt; 1.0 for &#39;cosine&#39;</span>
