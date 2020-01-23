@@ -163,14 +163,14 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # how often to calculate training accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
-        EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
+        EVAL_NUM_EXAMPLES: 10,  # large values may hurt performance
         # model config
         # if true intent classification is trained and intent predicted
         INTENT_CLASSIFICATION: True,
         # if true named entity recognition is trained and entities predicted
         ENTITY_RECOGNITION: True,
-        MASKED_LM: False,
-        SPARSE_INPUT_DROPOUT: False,
+        MASKED_LM: True,
+        SPARSE_INPUT_DROPOUT: True,
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -951,16 +951,16 @@ class DIET(tf_models.RasaModel):
         self._tf_layers["embed.lm_mask"] = tf_layers.Embed(
             self.config[EMBED_DIM],
             self.config[C2],
-            "text_mask",
+            "lm_mask",
             self.config[SIMILARITY_TYPE],
         )
         self._tf_layers["embed.golden_token"] = tf_layers.Embed(
             self.config[EMBED_DIM],
             self.config[C2],
-            "text_token",
+            "golden_token",
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["loss_mask"] = tf_layers.DotProductLoss(
+        self._tf_layers["loss.mask"] = tf_layers.DotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
             self.config[MU_POS],
@@ -983,7 +983,7 @@ class DIET(tf_models.RasaModel):
             "label",
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["loss_label"] = tf_layers.DotProductLoss(
+        self._tf_layers["loss.label"] = tf_layers.DotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
             self.config[MU_POS],
@@ -1080,7 +1080,7 @@ class DIET(tf_models.RasaModel):
         a_t_masked_embed = self._tf_layers["embed.lm_mask"](a_t_masked)
         a_masked_embed = self._tf_layers["embed.golden_token"](a_masked)
 
-        return self._tf_layers["loss_mask"](
+        return self._tf_layers["loss.mask"](
             a_t_masked_embed, a_masked_embed, a_masked, a_masked_embed, a_masked
         )
 
@@ -1100,7 +1100,7 @@ class DIET(tf_models.RasaModel):
         a_embed = self._tf_layers["embed.text"](a)
         b_embed = self._tf_layers["embed.label"](b)
 
-        return self._tf_layers["loss_label"](
+        return self._tf_layers["loss.label"](
             a_embed, b_embed, b, all_labels_embed, all_labels
         )
 
