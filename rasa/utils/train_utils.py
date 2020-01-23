@@ -1277,10 +1277,11 @@ def load_tensor(name: Text) -> Optional[Union["tf.Tensor", List["tf.Tensor"]]]:
     return tensor_list
 
 
-def normalize(values: "np.ndarray", ranking_length: Optional[int] = 0) -> None:
-    """Normalizes an array of positive numbers over the top `ranking_length` values, if provided.
+def normalize(values: "np.ndarray", ranking_length: Optional[int] = 0) -> "np.ndarray":
+    """Normalizes an array of positive numbers over the top `ranking_length` values.
 
-    Other values will be set to 0. Happens in place."""
+    Other values will be set to 0. Happens in place.
+    """
 
     if 0 < ranking_length < len(values):
         ranked = sorted(values, reverse=True)
@@ -1288,5 +1289,5 @@ def normalize(values: "np.ndarray", ranking_length: Optional[int] = 0) -> None:
 
     if np.sum(values) > 0:
         values = values / np.sum(values)
-        
+
     return values
