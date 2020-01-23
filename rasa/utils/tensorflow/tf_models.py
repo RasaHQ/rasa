@@ -20,6 +20,16 @@ class RasaModel(tf.keras.models.Model):
         self.total_loss = tf.keras.metrics.Mean(name="t_loss")
         self.metrics_to_log = ["t_loss"]
 
+    def batch_loss(
+            self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+    ) -> tf.Tensor:
+        raise NotImplementedError
+
+    def predict(
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
+    ) -> Dict[Text, tf.Tensor]:
+        raise NotImplementedError
+
     def fit(
         self,
         model_data: RasaModelData,
@@ -70,7 +80,7 @@ class RasaModel(tf.keras.models.Model):
                 ep, batch_size, epochs
             )
 
-            self._reset_metrics()
+            self.reset_metrics()
 
             # Train on batches
             self.set_training_phase(True)
@@ -164,28 +174,13 @@ class RasaModel(tf.keras.models.Model):
             if metric.name in self.metrics_to_log
         }
 
-    def _reset_metrics(self) -> None:
-        # Reset the metrics
-        for metric in self.metrics:
-            metric.reset_states()
-
-    def _get_losses_from_metrics(self) -> List[tf.Tensor]:
-        return list(
-            [
-                m.result()
-                for m in self.metrics
-                if "loss" in m.name.lower() and m.name in self.metrics_to_log
-            ]
-        )
-
     def train_on_batch(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> None:
         with tf.GradientTape() as tape:
-            self._train_losses_scores(batch_in)
+            prediction_loss = self.batch_loss(batch_in)
             regularization_loss = tf.math.add_n(self.losses)
-            pred_loss = tf.math.add_n(self._get_losses_from_metrics())
-            total_loss = pred_loss + regularization_loss
+            total_loss = prediction_loss + regularization_loss
 
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
@@ -195,38 +190,11 @@ class RasaModel(tf.keras.models.Model):
     def evaluate_on_batch(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> None:
-        self._train_losses_scores(batch_in)
+        prediction_loss = self.batch_loss(batch_in)
         regularization_loss = tf.math.add_n(self.losses)
-        pred_loss = tf.math.add_n(self._get_losses_from_metrics())
-        total_loss = pred_loss + regularization_loss
+        total_loss = prediction_loss + regularization_loss
 
         self.total_loss.update_state(total_loss)
-
-    def compile(self, **kwargs) -> None:
-        raise NotImplementedError
-
-    def evaluate(self, **kwargs) -> None:
-        pass
-
-    def predict(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
-    ) -> Dict[Text, tf.Tensor]:
-        pass
-
-    def test_on_batch(self, **kwargs) -> None:
-        raise NotImplementedError
-
-    def predict_on_batch(self, **kwargs) -> None:
-        raise NotImplementedError
-
-    def fit_generator(self, **kwargs) -> None:
-        raise NotImplementedError
-
-    def evaluate_generator(self, **kwargs) -> None:
-        raise NotImplementedError
-
-    def predict_generator(self, **kwargs) -> None:
-        raise NotImplementedError
 
     @staticmethod
     def _should_evaluate(
@@ -291,3 +259,24 @@ class RasaModel(tf.keras.models.Model):
             )
         else:
             return int(batch_size[0])
+
+    def compile(self, **kwargs) -> None:
+        raise NotImplemented
+
+    def evaluate(self, **kwargs) -> None:
+        raise NotImplemented
+
+    def test_on_batch(self, **kwargs) -> None:
+        raise NotImplemented
+
+    def predict_on_batch(self, **kwargs) -> None:
+        raise NotImplemented
+
+    def fit_generator(self, **kwargs) -> None:
+        raise NotImplemented
+
+    def evaluate_generator(self, **kwargs) -> None:
+        raise NotImplemented
+
+    def predict_generator(self, **kwargs) -> None:
+        raise NotImplemented
