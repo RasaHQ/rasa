@@ -887,7 +887,7 @@ class DIET(tf_models.RasaModel):
         self.all_labels_embed = None
         self.batch_tuple_sizes = None
 
-    def _update_metrics_to_log(self):
+    def _update_metrics_to_log(self) -> None:
         if self.config[MASKED_LM]:
             self.metrics_to_log += ["m_loss", "m_acc"]
         if self.config[INTENT_CLASSIFICATION]:
@@ -898,43 +898,38 @@ class DIET(tf_models.RasaModel):
     def _prepare_layers(self) -> None:
         self._tf_layers = {}
         self._prepare_sequence_layers()
-        self._tf_layers["embed"] = {}
         self._prepare_mask_lm_layers()
         self._prepare_intent_classification_layers()
         self._prepare_entity_recognition_layers()
 
-    def _prepare_sequence_layers(self):
+    def _prepare_sequence_layers(self) -> None:
         self._tf_layers["sparse_dropout"] = tf_layers.SparseDropout(
             rate=self.config[DROPRATE]
         )
-        self._tf_layers["sparse_to_dense"] = {
-            "text": self._create_sparse_dense_layer(
-                self.data_signature["text_features"],
-                "text",
-                self.config[C2],
-                self.config[DENSE_DIM]["text"],
-            ),
-            "label": self._create_sparse_dense_layer(
-                self.data_signature["label_features"],
-                "label",
-                self.config[C2],
-                self.config[DENSE_DIM]["label"],
-            ),
-        }
-        self._tf_layers["ffnn"] = {
-            "text": tf_layers.ReluFfn(
-                self.config[HIDDEN_LAYERS_SIZES_TEXT],
-                self.config[DROPRATE],
-                self.config[C2],
-                "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "text",
-            ),
-            "label": tf_layers.ReluFfn(
-                self.config[HIDDEN_LAYERS_SIZES_LABEL],
-                self.config[DROPRATE],
-                self.config[C2],
-                "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "label",
-            ),
-        }
+        self._tf_layers["sparse_to_dense.text"] = self._create_sparse_dense_layer(
+            self.data_signature["text_features"],
+            "text",
+            self.config[C2],
+            self.config[DENSE_DIM]["text"],
+        )
+        self._tf_layers["sparse_to_dense.label"] = self._create_sparse_dense_layer(
+            self.data_signature["label_features"],
+            "label",
+            self.config[C2],
+            self.config[DENSE_DIM]["label"],
+        )
+        self._tf_layers["ffnn.text"] = tf_layers.ReluFfn(
+            self.config[HIDDEN_LAYERS_SIZES_TEXT],
+            self.config[DROPRATE],
+            self.config[C2],
+            "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "text",
+        )
+        self._tf_layers["ffnn.label"] = tf_layers.ReluFfn(
+            self.config[HIDDEN_LAYERS_SIZES_LABEL],
+            self.config[DROPRATE],
+            self.config[C2],
+            "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "label",
+        )
         self._tf_layers["transformer"] = (
             tf_layers.TransformerEncoder(
                 self.config[NUM_TRANSFORMER_LAYERS],
@@ -951,15 +946,15 @@ class DIET(tf_models.RasaModel):
             else lambda x, mask, training: x
         )
 
-    def _prepare_mask_lm_layers(self):
+    def _prepare_mask_lm_layers(self) -> None:
         self._tf_layers["input_mask"] = tf_layers.InputMask()
-        self._tf_layers["embed"]["text_mask"] = tf_layers.Embed(
+        self._tf_layers["embed.lm_mask"] = tf_layers.Embed(
             self.config[EMBED_DIM],
             self.config[C2],
             "text_mask",
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["embed"]["text_token"] = tf_layers.Embed(
+        self._tf_layers["embed.golden_token"] = tf_layers.Embed(
             self.config[EMBED_DIM],
             self.config[C2],
             "text_token",
@@ -975,14 +970,14 @@ class DIET(tf_models.RasaModel):
             self.config[SCALE_LOSS],
         )
 
-    def _prepare_intent_classification_layers(self):
-        self._tf_layers["embed"]["text"] = tf_layers.Embed(
+    def _prepare_intent_classification_layers(self) -> None:
+        self._tf_layers["embed.text"] = tf_layers.Embed(
             self.config[EMBED_DIM],
             self.config[C2],
             "text",
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["embed"]["label"] = tf_layers.Embed(
+        self._tf_layers["embed.label"] = tf_layers.Embed(
             self.config[EMBED_DIM],
             self.config[C2],
             "label",
@@ -998,8 +993,8 @@ class DIET(tf_models.RasaModel):
             self.config[SCALE_LOSS],
         )
 
-    def _prepare_entity_recognition_layers(self):
-        self._tf_layers["embed"]["logits"] = tf_layers.Embed(
+    def _prepare_entity_recognition_layers(self) -> None:
+        self._tf_layers["embed.logits"] = tf_layers.Embed(
             self._num_tags, self.config[C2], "logits"
         )
         self._tf_layers["crf"] = tf_layers.CRF(self._num_tags, self.config[C2])
@@ -1031,7 +1026,7 @@ class DIET(tf_models.RasaModel):
                 else:
                     _f = f
 
-                dense_features.append(self._tf_layers["sparse_to_dense"][name](_f))
+                dense_features.append(self._tf_layers[f"sparse_to_dense.{name}"](_f))
             else:
                 dense_features.append(f)
 
@@ -1045,7 +1040,7 @@ class DIET(tf_models.RasaModel):
     ) -> tf.Tensor:
 
         x = self._combine_sparse_dense_features(features, mask, name)
-        return self._tf_layers["ffnn"][name](tf.reduce_sum(x, 1), self.training)
+        return self._tf_layers[f"ffnn.{name}"](tf.reduce_sum(x, 1), self.training)
 
     def _create_sequence(
         self,
@@ -1053,7 +1048,7 @@ class DIET(tf_models.RasaModel):
         mask: tf.Tensor,
         name: Text,
         masked_lm_loss: bool = False,
-    ):
+    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         x = self._combine_sparse_dense_features(
             features, mask, name, sparse_dropout=self.config[SPARSE_INPUT_DROPOUT]
         )
@@ -1068,7 +1063,9 @@ class DIET(tf_models.RasaModel):
 
         return transformed, x, lm_mask_bool
 
-    def _mask_loss(self, a_transformed, a, lm_mask_bool, name):
+    def _mask_loss(
+        self, a_transformed: tf.Tensor, a: tf.Tensor, lm_mask_bool: tf.Tensor
+    ) -> tf.Tensor:
         # make sure there is at least one element in the mask
         lm_mask_bool = tf.cond(
             tf.reduce_any(lm_mask_bool),
@@ -1080,28 +1077,28 @@ class DIET(tf_models.RasaModel):
         a_t_masked = tf.boolean_mask(a_transformed, lm_mask_bool)
         a_masked = tf.boolean_mask(a, lm_mask_bool)
 
-        a_t_masked_embed = self._tf_layers["embed"][f"{name}_mask"](a_t_masked)
-        a_masked_embed = self._tf_layers["embed"][f"{name}_token"](a_masked)
+        a_t_masked_embed = self._tf_layers["embed.lm_mask"](a_t_masked)
+        a_masked_embed = self._tf_layers["embed.golden_token"](a_masked)
 
-        return self._loss_mask(
+        return self._tf_layers["loss_mask"](
             a_t_masked_embed, a_masked_embed, a_masked, a_masked_embed, a_masked
         )
 
-    def _build_all_b(self):
+    def _build_all_b(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_labels = self._create_bow(
             self.tf_label_data["label_features"],
             self.tf_label_data["label_mask"][0],
             "label",
         )
-        all_labels_embed = self._tf_layers["embed"]["label"](all_labels)
+        all_labels_embed = self._tf_layers["embed.label"](all_labels)
 
         return all_labels_embed, all_labels
 
     def _intent_loss(self, a: tf.Tensor, b: tf.Tensor) -> tf.Tensor:
         all_labels_embed, all_labels = self._build_all_b()
 
-        a_embed = self._tf_layers["embed"]["text"](a)
-        b_embed = self._tf_layers["embed"]["label"](b)
+        a_embed = self._tf_layers["embed.text"](a)
+        b_embed = self._tf_layers["embed.label"](b)
 
         return self._tf_layers["loss_label"](
             a_embed, b_embed, b, all_labels_embed, all_labels
@@ -1114,7 +1111,7 @@ class DIET(tf_models.RasaModel):
         # remove cls token
         sequence_lengths = sequence_lengths - 1
         c = tf.cast(c[:, :, 0], tf.int32)
-        logits = self._tf_layers["embed"]["logits"](a)
+        logits = self._tf_layers["embed.logits"](a)
 
         loss = self._tf_layers["crf"].loss(logits, c, sequence_lengths)
         pred_ids = self._tf_layers["crf"](logits, sequence_lengths)
@@ -1146,9 +1143,7 @@ class DIET(tf_models.RasaModel):
         )
 
         if self.config[MASKED_LM]:
-            loss, acc = self._mask_loss(
-                text_transformed, text_in, lm_mask_bool_text, "text"
-            )
+            loss, acc = self._mask_loss(text_transformed, text_in, lm_mask_bool_text)
             self.mask_loss.update_state(loss)
             self.mask_acc.update_state(acc)
 
