@@ -1,5 +1,6 @@
 # this builtin is needed so we can overwrite in test
 import json
+import uuid
 import logging
 import asyncio
 from typing import Text, Optional, Dict, List
@@ -12,7 +13,6 @@ from prompt_toolkit.styles import Style
 from rasa.cli import utils as cli_utils
 from rasa.core import utils
 from rasa.core.channels.channel import RestInput
-from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import DEFAULT_SERVER_URL
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa.utils.io import DEFAULT_ENCODING
@@ -21,6 +21,8 @@ from typing import Any, Coroutine
 logger = logging.getLogger(__name__)
 
 DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS = 10
+
+CONSOLE_SESSION_USER_ID = str(uuid.uuid4())
 
 
 def print_bot_output(
@@ -111,7 +113,7 @@ async def send_message_receive_stream(
 async def record_messages(
     server_url=DEFAULT_SERVER_URL,
     auth_token="",
-    sender_id=UserMessage.DEFAULT_SENDER_ID,
+    sender_id=CONSOLE_SESSION_USER_ID,
     max_message_limit=None,
     use_response_stream=True,
 ) -> int:
