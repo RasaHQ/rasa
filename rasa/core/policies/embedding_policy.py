@@ -89,7 +89,7 @@ class EmbeddingPolicy(Policy):
         # how to create batches
         BATCH_STRATEGY: "balanced",  # string 'sequence' or 'balanced'
         # number of epochs
-        EPOCHS: 10,
+        EPOCHS: 1,
         # set random seed to any int to get reproducible results
         RANDOM_SEED: None,
         # embedding parameters
@@ -495,17 +495,17 @@ class TED(tf_models.RasaModel):
             self.config[C_EMB],
             self.config[SCALE_LOSS],
         )
-        self._tf_layers["ffnn.dial"] = tf_layers.ReluFfn(
+        self._tf_layers["ffnn.dialogue"] = tf_layers.ReluFfn(
             self.config[HIDDEN_LAYERS_SIZES_PRE_DIAL],
             self.config[DROPRATE_DIAL],
             self.config[C2],
-            layer_name_suffix="pre_dial",
+            layer_name_suffix="dialogue",
         )
-        self._tf_layers["ffnn.bot"] = tf_layers.ReluFfn(
+        self._tf_layers["ffnn.label"] = tf_layers.ReluFfn(
             self.config[HIDDEN_LAYERS_SIZES_BOT],
             self.config[DROPRATE_BOT],
             self.config[C2],
-            layer_name_suffix="bot",
+            layer_name_suffix="label",
         )
         self._tf_layers["transformer"] = tf_layers.TransformerEncoder(
             self.config[NUM_TRANSFORMER_LAYERS],
@@ -515,16 +515,19 @@ class TED(tf_models.RasaModel):
             self.config[MAX_SEQ_LENGTH],
             self.config[C2],
             self.config[DROPRATE_DIAL],
-            name="dial_encoder",
+            name="dialogue_encoder",
         )
-        self._tf_layers["embed.dial"] = tf_layers.Embed(
+        self._tf_layers["embed.dialogue"] = tf_layers.Embed(
             self.config[EMBED_DIM],
             self.config[C2],
-            "dial",
+            "dialogue",
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["embed.bot"] = tf_layers.Embed(
-            self.config[EMBED_DIM], self.config[C2], "bot", self.config[SIMILARITY_TYPE]
+        self._tf_layers["embed.label"] = tf_layers.Embed(
+            self.config[EMBED_DIM],
+            self.config[C2],
+            "label",
+            self.config[SIMILARITY_TYPE],
         )
 
     def set_training_phase(self, training: bool) -> None:
@@ -540,7 +543,7 @@ class TED(tf_models.RasaModel):
         # if there is at least one `-1` it should be masked
         mask = tf.sign(tf.reduce_max(dialogue_in, -1) + 1)
 
-        dialogue = self._tf_layers["ffnn.dial"](dialogue_in, self.training)
+        dialogue = self._tf_layers["ffnn.dialogue"](dialogue_in, self.training)
         dialogue_transformed = self._tf_layers["transformer"](
             dialogue, tf.expand_dims(mask, axis=-1), self.training
         )
@@ -550,13 +553,13 @@ class TED(tf_models.RasaModel):
             dialogue_transformed = dialogue_transformed[:, -1:, :]
             mask = mask[:, -1:]
 
-        dialogue_embed = self._tf_layers["embed.dial"](dialogue_transformed)
+        dialogue_embed = self._tf_layers["embed.dialogue"](dialogue_transformed)
 
         return dialogue_embed, mask
 
     def _embed_label(self, label_in: tf.Tensor) -> tf.Tensor:
-        label = self._tf_layers["ffnn.bot"](label_in, self.training)
-        return self._tf_layers["embed.bot"](label)
+        label = self._tf_layers["ffnn.label"](label_in, self.training)
+        return self._tf_layers["embed.label"](label)
 
     def batch_loss(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]

@@ -39,7 +39,7 @@ class RasaModel(tf.keras.models.Model):
         evaluate_every_num_epochs: int,
         batch_strategy: Text,
         silent: bool = False,
-        eager: bool = True,
+        eager: bool = False,
         random_seed: Optional[int] = None,
         **kwargs,
     ) -> None:
