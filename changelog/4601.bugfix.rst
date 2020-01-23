@@ -1,0 +1,2 @@
+Fixed issue with action_restart getting overridden by action_listen when the mapping policy and 
+two stage fallback policy are used together.
