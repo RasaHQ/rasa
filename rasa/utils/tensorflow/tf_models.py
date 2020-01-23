@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import logging
 from collections import defaultdict
-from typing import List, Text, Dict, Tuple, Union, Optional
+from typing import List, Text, Dict, Tuple, Union, Optional, Callable
 from tqdm import tqdm
 from rasa.utils.common import is_logging_disabled
 from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
@@ -14,15 +14,11 @@ logger = logging.getLogger(__name__)
 class RasaModel(tf.keras.models.Model):
     """Completely override all public methods of keras Model."""
 
-    @staticmethod
-    def _update_postfix_dict(
-        postfix_dict: Dict[Text, Text], metrics, prefix: Text = ""
-    ) -> Dict[Text, Text]:
-        for name, value in metrics.loss.items():
-            postfix_dict[f"{prefix}{name}"] = f"{value:.3f}"
-        for name, value in metrics.score.items():
-            postfix_dict[f"{prefix}{name}"] = f"{value:.3f}"
-        return postfix_dict
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.total_loss = tf.keras.metrics.Mean(name="t_loss")
+        self.metrics_to_log = ["t_loss"]
 
     def fit(
         self,
@@ -39,6 +35,7 @@ class RasaModel(tf.keras.models.Model):
     ) -> None:
         """Train tf graph"""
 
+        evaluation_model_data = None
         if evaluate_on_num_examples > 0:
             logger.info(
                 f"Validation accuracy is calculated every {evaluate_every_num_epochs} "
@@ -52,17 +49,64 @@ class RasaModel(tf.keras.models.Model):
         disable = silent or is_logging_disabled()
 
         tf_batch_size = tf.ones((), tf.int32)
+        (
+            tf_train_dataset_function,
+            tf_train_on_batch_function,
+        ) = self._get_tf_train_functions(
+            eager, model_data, batch_strategy, tf_batch_size
+        )
 
+        (
+            tf_evaluation_dataset_function,
+            tf_evaluation_on_batch_function,
+        ) = self._get_tf_evaluation_functions(
+            eager, evaluate_on_num_examples, evaluation_model_data, tf_batch_size
+        )
+
+        pbar = tqdm(range(epochs), desc="Epochs", disable=disable)
+
+        for ep in pbar:
+            ep_batch_size = tf_batch_size * self.linearly_increasing_batch_size(
+                ep, batch_size, epochs
+            )
+
+            self._reset_metrics()
+
+            # Train on batches
+            self.set_training_phase(True)
+            for batch_in in tf_train_dataset_function(ep_batch_size):
+                tf_train_on_batch_function(batch_in)
+
+            postfix_dict = self._get_metric_results()
+
+            if evaluate_on_num_examples > 0:
+                if self._should_evaluate(evaluate_every_num_epochs, epochs, ep):
+                    self._reset_metrics()
+
+                    # Eval on batches
+                    self.set_training_phase(False)
+                    for batch_in in tf_evaluation_dataset_function(ep_batch_size):
+                        tf_evaluation_on_batch_function(batch_in)
+
+                # Get the metric results
+                postfix_dict.update(self._get_metric_results(prefix="val_"))
+
+            pbar.set_postfix(postfix_dict)
+
+        if not disable:
+            logger.info("Finished training.")
+
+    def _get_tf_train_functions(
+        self,
+        eager: bool,
+        model_data: RasaModelData,
+        batch_strategy: Text,
+        tf_batch_size: tf.Tensor,
+    ) -> Tuple[Callable, Callable]:
         def train_dataset_function(_batch_size):
             return model_data.as_tf_dataset(_batch_size, batch_strategy, shuffle=True)
 
-        def evaluation_dataset_function(_batch_size):
-            return evaluation_model_data.as_tf_dataset(
-                _batch_size, "sequence", shuffle=False
-            )
-
         if eager:
-            # allows increasing batch size
             tf_train_dataset_function = train_dataset_function
             tf_train_on_batch_function = self.train_on_batch
         else:
@@ -71,11 +115,24 @@ class RasaModel(tf.keras.models.Model):
             tf_train_dataset_function = tf.function(func=train_dataset_function)
             init_dataset = tf_train_dataset_function(tf_batch_size)
             tf_train_on_batch_function = tf.function(
-                self.train_on_batch,
-                input_signature=[init_dataset.element_spec],
+                self.train_on_batch, input_signature=[init_dataset.element_spec]
             )
             tf_train_on_batch_function(next(iter(init_dataset)))
             logger.debug("Finished building tensorflow train graph")
+
+        return tf_train_dataset_function, tf_train_on_batch_function
+
+    def _get_tf_evaluation_functions(
+        self,
+        eager: bool,
+        evaluate_on_num_examples: int,
+        evaluation_model_data: RasaModelData,
+        tf_batch_size: tf.Tensor,
+    ) -> Tuple[Callable, Callable]:
+        def evaluation_dataset_function(_batch_size):
+            return evaluation_model_data.as_tf_dataset(
+                _batch_size, "sequence", shuffle=False
+            )
 
         if evaluate_on_num_examples > 0:
             if eager:
@@ -95,50 +152,55 @@ class RasaModel(tf.keras.models.Model):
             tf_evaluation_dataset_function = None
             tf_evaluation_on_batch_function = None
 
-        pbar = tqdm(range(epochs), desc="Epochs", disable=disable)
-        for ep in pbar:
-            ep_batch_size = tf_batch_size * self.linearly_increasing_batch_size(
-                ep, batch_size, epochs
-            )
+        return tf_evaluation_dataset_function, tf_evaluation_on_batch_function
 
-            # Reset the metrics
-            for metric in self.train_metrics.values():
-                metric.reset_states()
+    def _get_metric_results(self, prefix: Optional[Text] = None) -> Dict[Text, Text]:
+        prefix = prefix or ""
 
-            # Train on batches
-            self.set_training_phase(True)
-            for batch_in in tf_train_dataset_function(ep_batch_size):
-                tf_train_on_batch_function(batch_in)
+        # Get the metric results
+        return {
+            f"{prefix}{metric.name}": f"{metric.result().numpy():.3f}"
+            for metric in self.metrics
+            if metric.name in self.metrics_to_log
+        }
 
-            # Get the metric results
-            postfix_dict = {
-                k: v.result().numpy() for k, v in self.train_metrics.items()
-            }
+    def _reset_metrics(self) -> None:
+        # Reset the metrics
+        for metric in self.metrics:
+            metric.reset_states()
 
-            if evaluate_on_num_examples > 0:
-                if (
-                    ep == 0
-                    or (ep + 1) % evaluate_every_num_epochs == 0
-                    or (ep + 1) == epochs
-                ):
-                    # Reset the metrics
-                    for metric in self.eval_metrics.values():
-                        metric.reset_states()
+    def _get_losses_from_metrics(self) -> List[tf.Tensor]:
+        return list(
+            [
+                m.result()
+                for m in self.metrics
+                if "loss" in m.name.lower() and m.name in self.metrics_to_log
+            ]
+        )
 
-                    # Eval on batches
-                    self.set_training_phase(False)
-                    for batch_in in tf_evaluation_dataset_function(ep_batch_size):
-                        tf_evaluation_on_batch_function(batch_in)
+    def train_on_batch(
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
+    ) -> None:
+        with tf.GradientTape() as tape:
+            self._train_losses_scores(batch_in)
+            regularization_loss = tf.math.add_n(self.losses)
+            pred_loss = tf.math.add_n(self._get_losses_from_metrics())
+            total_loss = pred_loss + regularization_loss
 
-                # Get the metric results
-                postfix_dict.update(
-                    {k: v.result().numpy() for k, v in self.eval_metrics.items()}
-                )
+        gradients = tape.gradient(total_loss, self.trainable_variables)
+        self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-            pbar.set_postfix(postfix_dict)
+        self.total_loss.update_state(total_loss)
 
-        if not disable:
-            logger.info("Finished training.")
+    def evaluate_on_batch(
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
+    ) -> None:
+        self._train_losses_scores(batch_in)
+        regularization_loss = tf.math.add_n(self.losses)
+        pred_loss = tf.math.add_n(self._get_losses_from_metrics())
+        total_loss = pred_loss + regularization_loss
+
+        self.total_loss.update_state(total_loss)
 
     def compile(self, **kwargs) -> None:
         raise NotImplementedError
@@ -150,38 +212,6 @@ class RasaModel(tf.keras.models.Model):
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> Dict[Text, tf.Tensor]:
         pass
-
-    def train_on_batch(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
-    ) -> None:
-        with tf.GradientTape() as tape:
-            losses, scores = self._train_losses_scores(batch_in)
-            regularization_loss = tf.math.add_n(self.losses)
-            pred_loss = tf.math.add_n(list(losses.values()))
-            total_loss = pred_loss + regularization_loss
-
-        gradients = tape.gradient(total_loss, self.trainable_variables)
-        self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-
-        self.train_metrics["t_loss"].update_state(total_loss)
-        for k, v in losses.items():
-            self.train_metrics[k].update_state(v)
-        for k, v in scores.items():
-            self.train_metrics[k].update_state(v)
-
-    def evaluate_on_batch(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
-    ) -> None:
-        losses, scores = self._train_losses_scores(batch_in)
-        regularization_loss = tf.math.add_n(self.losses)
-        pred_loss = tf.math.add_n(list(losses.values()))
-        total_loss = pred_loss + regularization_loss
-
-        self.eval_metrics["val_t_loss"].update_state(total_loss)
-        for k, v in losses.items():
-            self.eval_metrics[f"val_{k}"].update_state(v)
-        for k, v in scores.items():
-            self.eval_metrics[f"val_{k}"].update_state(v)
 
     def test_on_batch(self, **kwargs) -> None:
         raise NotImplementedError
@@ -197,6 +227,16 @@ class RasaModel(tf.keras.models.Model):
 
     def predict_generator(self, **kwargs) -> None:
         raise NotImplementedError
+
+    @staticmethod
+    def _should_evaluate(
+        evaluate_every_num_epochs: int, epochs: int, current_epoch: int
+    ) -> bool:
+        return (
+            current_epoch == 0
+            or (current_epoch + 1) % evaluate_every_num_epochs == 0
+            or (current_epoch + 1) == epochs
+        )
 
     @staticmethod
     def batch_to_model_data_format(

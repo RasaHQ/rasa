@@ -17,7 +17,10 @@ install:
   # The instructions listed here should be equivalent to the ones
   # listed in README.md!
   - sudo apt-get update -qq
-  - python -m pip install -U pip
+  # Pip 20.0.1 breaks our build script when installing one of the
+  # dependencies in requirements-dev.txt (ninja 1.9.0.post1).  For the
+  # moment, use pip 19 to install them.
+  - python -m pip install -U 'pip<20'
   - pip install -r requirements-dev.txt
   - pip install -e .
   - make prepare-tests-ubuntu

@@ -848,40 +848,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
 
 class DIET(tf_models.RasaModel):
-    @staticmethod
-    def _create_sparse_dense_layer(
-        data_signature: List[FeatureSignature],
-        name: Text,
-        reg_lambda: float,
-        dense_dim: int,
-    ) -> Optional[tf_layers.DenseForSparse]:
-
-        sparse = False
-        for is_sparse, shape in data_signature:
-            if is_sparse:
-                sparse = is_sparse
-            else:
-                # if dense features are present
-                # use the feature dimension of the dense features
-                dense_dim = shape[-1]
-
-        if sparse:
-            return tf_layers.DenseForSparse(
-                units=dense_dim, reg_lambda=reg_lambda, name=name
-            )
-
-    @staticmethod
-    def _input_dim(data_signature: List[FeatureSignature], dense_dim: int) -> int:
-
-        for is_sparse, shape in data_signature:
-            if not is_sparse:
-                # if dense features are present
-                # use the feature dimension of the dense features
-                dense_dim = shape[-1]
-                break
-
-        return dense_dim * len(data_signature)
-
     def __init__(
         self,
         data_signature: Dict[Text, List[FeatureSignature]],
@@ -889,7 +855,7 @@ class DIET(tf_models.RasaModel):
         inverted_tag_dict: Dict[int, Text],
         config: Dict[Text, Any],
     ) -> None:
-        super(DIET, self).__init__(name="DIET")
+        super().__init__(name="DIET")
 
         # data
         self.data_signature = data_signature
@@ -909,50 +875,63 @@ class DIET(tf_models.RasaModel):
 
         # tf training
         self._optimizer = tf.keras.optimizers.Adam(config[LEARNING_RATE])
-        self.entity_f1 = tfa.metrics.F1Score(
-            num_classes=self._num_tags - 1,  # `0` prediction is not a prediction
-            average="micro",
-        )
+        self.intent_acc = tf.keras.metrics.Mean(name="i_acc")
+        self.intent_loss = tf.keras.metrics.Mean(name="i_loss")
+        self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
+        self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
+        self.entity_loss = tf.keras.metrics.Mean(name="e_loss")
+        self.entity_f1 = tf.keras.metrics.Mean(name="e_f1")
+        self._update_metrics_to_log()
 
         # persist
         self.all_labels_embed = None
         self.batch_tuple_sizes = None
 
+    def _update_metrics_to_log(self) -> None:
+        if self.config[MASKED_LM]:
+            self.metrics_to_log += ["m_loss", "m_acc"]
+        if self.config[INTENT_CLASSIFICATION]:
+            self.metrics_to_log += ["i_loss", "i_acc"]
+        if self.config[ENTITY_RECOGNITION]:
+            self.metrics_to_log += ["e_loss", "e_f1"]
+
     def _prepare_layers(self) -> None:
-        self._sparse_dropout = tf_layers.SparseDropout(rate=self.config[DROPRATE])
+        self._tf_layers = {}
+        self._prepare_sequence_layers()
+        self._prepare_mask_lm_layers()
+        self._prepare_intent_classification_layers()
+        self._prepare_entity_recognition_layers()
 
-        self._sparse_to_dense = {
-            "text": self._create_sparse_dense_layer(
-                self.data_signature["text_features"],
-                "text",
-                self.config[C2],
-                self.config[DENSE_DIM]["text"],
-            ),
-            "label": self._create_sparse_dense_layer(
-                self.data_signature["label_features"],
-                "label",
-                self.config[C2],
-                self.config[DENSE_DIM]["label"],
-            ),
-        }
-
-        self._ffnn = {
-            "text": tf_layers.ReluFfn(
-                self.config[HIDDEN_LAYERS_SIZES_TEXT],
-                self.config[DROPRATE],
-                self.config[C2],
-                "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "text",
-            ),
-            "label": tf_layers.ReluFfn(
-                self.config[HIDDEN_LAYERS_SIZES_LABEL],
-                self.config[DROPRATE],
-                self.config[C2],
-                "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "label",
-            ),
-        }
-
-        if self.config[NUM_TRANSFORMER_LAYERS] > 0:
-            self._transformer = tf_layers.TransformerEncoder(
+    def _prepare_sequence_layers(self) -> None:
+        self._tf_layers["sparse_dropout"] = tf_layers.SparseDropout(
+            rate=self.config[DROPRATE]
+        )
+        self._tf_layers["sparse_to_dense.text"] = self._create_sparse_dense_layer(
+            self.data_signature["text_features"],
+            "text",
+            self.config[C2],
+            self.config[DENSE_DIM]["text"],
+        )
+        self._tf_layers["sparse_to_dense.label"] = self._create_sparse_dense_layer(
+            self.data_signature["label_features"],
+            "label",
+            self.config[C2],
+            self.config[DENSE_DIM]["label"],
+        )
+        self._tf_layers["ffnn.text"] = tf_layers.ReluFfn(
+            self.config[HIDDEN_LAYERS_SIZES_TEXT],
+            self.config[DROPRATE],
+            self.config[C2],
+            "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "text",
+        )
+        self._tf_layers["ffnn.label"] = tf_layers.ReluFfn(
+            self.config[HIDDEN_LAYERS_SIZES_LABEL],
+            self.config[DROPRATE],
+            self.config[C2],
+            "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "label",
+        )
+        self._tf_layers["transformer"] = (
+            tf_layers.TransformerEncoder(
                 self.config[NUM_TRANSFORMER_LAYERS],
                 self.config[TRANSFORMER_SIZE],
                 self.config[NUM_HEADS],
@@ -963,84 +942,66 @@ class DIET(tf_models.RasaModel):
                 self.config[UNIDIRECTIONAL_ENCODER],
                 name="text_encoder",
             )
-        else:
-            self._transformer = lambda x, mask, training: x
+            if self.config[NUM_TRANSFORMER_LAYERS] > 0
+            else lambda x, mask, training: x
+        )
 
-        self._embed = {}
+    def _prepare_mask_lm_layers(self) -> None:
+        self._tf_layers["input_mask"] = tf_layers.InputMask()
+        self._tf_layers["embed.lm_mask"] = tf_layers.Embed(
+            self.config[EMBED_DIM],
+            self.config[C2],
+            "lm_mask",
+            self.config[SIMILARITY_TYPE],
+        )
+        self._tf_layers["embed.golden_token"] = tf_layers.Embed(
+            self.config[EMBED_DIM],
+            self.config[C2],
+            "golden_token",
+            self.config[SIMILARITY_TYPE],
+        )
+        self._tf_layers["loss.mask"] = tf_layers.DotProductLoss(
+            self.config[NUM_NEG],
+            self.config[LOSS_TYPE],
+            self.config[MU_POS],
+            self.config[MU_NEG],
+            self.config[USE_MAX_SIM_NEG],
+            self.config[C_EMB],
+            self.config[SCALE_LOSS],
+        )
 
-        self.train_metrics = {"t_loss": tf.keras.metrics.Mean(name="t_loss")}
-        self.eval_metrics = {"val_t_loss": tf.keras.metrics.Mean(name="val_t_loss")}
+    def _prepare_intent_classification_layers(self) -> None:
+        self._tf_layers["embed.text"] = tf_layers.Embed(
+            self.config[EMBED_DIM],
+            self.config[C2],
+            "text",
+            self.config[SIMILARITY_TYPE],
+        )
+        self._tf_layers["embed.label"] = tf_layers.Embed(
+            self.config[EMBED_DIM],
+            self.config[C2],
+            "label",
+            self.config[SIMILARITY_TYPE],
+        )
+        self._tf_layers["loss.label"] = tf_layers.DotProductLoss(
+            self.config[NUM_NEG],
+            self.config[LOSS_TYPE],
+            self.config[MU_POS],
+            self.config[MU_NEG],
+            self.config[USE_MAX_SIM_NEG],
+            self.config[C_EMB],
+            self.config[SCALE_LOSS],
+        )
 
-        if self.config[MASKED_LM]:
-            self._input_mask = tf_layers.InputMask()
-            self._embed["text_mask"] = tf_layers.Embed(
-                self.config[EMBED_DIM],
-                self.config[C2],
-                "text_mask",
-                self.config[SIMILARITY_TYPE],
-            )
-            self._embed["text_token"] = tf_layers.Embed(
-                self.config[EMBED_DIM],
-                self.config[C2],
-                "text_token",
-                self.config[SIMILARITY_TYPE],
-            )
-            self._loss_mask = tf_layers.DotProductLoss(
-                self.config[NUM_NEG],
-                self.config[LOSS_TYPE],
-                self.config[MU_POS],
-                self.config[MU_NEG],
-                self.config[USE_MAX_SIM_NEG],
-                self.config[C_EMB],
-                self.config[SCALE_LOSS],
-            )
-            self.train_metrics["m_loss"] = tf.keras.metrics.Mean(name="m_loss")
-            self.train_metrics["m_acc"] = tf.keras.metrics.Mean(name="m_acc")
-            self.eval_metrics["val_m_loss"] = tf.keras.metrics.Mean(name="val_m_loss")
-            self.eval_metrics["val_m_acc"] = tf.keras.metrics.Mean(name="val_m_acc")
-        else:
-            self._input_mask = None
-            self._loss_mask = None
-
-        if self.config[INTENT_CLASSIFICATION]:
-            self._embed["text"] = tf_layers.Embed(
-                self.config[EMBED_DIM],
-                self.config[C2],
-                "text",
-                self.config[SIMILARITY_TYPE],
-            )
-            self._embed["label"] = tf_layers.Embed(
-                self.config[EMBED_DIM],
-                self.config[C2],
-                "label",
-                self.config[SIMILARITY_TYPE],
-            )
-            self._loss_label = tf_layers.DotProductLoss(
-                self.config[NUM_NEG],
-                self.config[LOSS_TYPE],
-                self.config[MU_POS],
-                self.config[MU_NEG],
-                self.config[USE_MAX_SIM_NEG],
-                self.config[C_EMB],
-                self.config[SCALE_LOSS],
-            )
-            self.train_metrics["i_loss"] = tf.keras.metrics.Mean(name="i_loss")
-            self.train_metrics["i_acc"] = tf.keras.metrics.Mean(name="i_acc")
-            self.eval_metrics["val_i_loss"] = tf.keras.metrics.Mean(name="val_i_loss")
-            self.eval_metrics["val_i_acc"] = tf.keras.metrics.Mean(name="val_i_acc")
-        else:
-            self._loss_label = None
-
-        self._crf = None
-        if self.config[ENTITY_RECOGNITION]:
-            self._embed["logits"] = tf_layers.Embed(
-                self._num_tags, self.config[C2], "logits"
-            )
-            self._crf = tf_layers.CRF(self._num_tags, self.config[C2])
-            self.train_metrics["e_loss"] = tf.keras.metrics.Mean(name="e_loss")
-            self.train_metrics["e_f1"] = tf.keras.metrics.Mean(name="e_f1")
-            self.eval_metrics["val_e_loss"] = tf.keras.metrics.Mean(name="val_e_loss")
-            self.eval_metrics["val_e_f1"] = tf.keras.metrics.Mean(name="val_e_f1")
+    def _prepare_entity_recognition_layers(self) -> None:
+        self._tf_layers["embed.logits"] = tf_layers.Embed(
+            self._num_tags, self.config[C2], "logits"
+        )
+        self._tf_layers["crf"] = tf_layers.CRF(self._num_tags, self.config[C2])
+        self._tf_layers["crf_f1_score"] = tfa.metrics.F1Score(
+            num_classes=self._num_tags - 1,  # `0` prediction is not a prediction
+            average="micro",
+        )
 
     def set_training_phase(self, training: bool) -> None:
         if training:
@@ -1061,11 +1022,11 @@ class DIET(tf_models.RasaModel):
         for f in features:
             if isinstance(f, tf.SparseTensor):
                 if sparse_dropout:
-                    _f = self._sparse_dropout(f, self.training)
+                    _f = self._tf_layers["sparse_dropout"](f, self.training)
                 else:
                     _f = f
 
-                dense_features.append(self._sparse_to_dense[name](_f))
+                dense_features.append(self._tf_layers[f"sparse_to_dense.{name}"](_f))
             else:
                 dense_features.append(f)
 
@@ -1079,7 +1040,7 @@ class DIET(tf_models.RasaModel):
     ) -> tf.Tensor:
 
         x = self._combine_sparse_dense_features(features, mask, name)
-        return self._ffnn[name](tf.reduce_sum(x, 1), self.training)
+        return self._tf_layers[f"ffnn.{name}"](tf.reduce_sum(x, 1), self.training)
 
     def _create_sequence(
         self,
@@ -1087,22 +1048,24 @@ class DIET(tf_models.RasaModel):
         mask: tf.Tensor,
         name: Text,
         masked_lm_loss: bool = False,
-    ):
+    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         x = self._combine_sparse_dense_features(
             features, mask, name, sparse_dropout=self.config[SPARSE_INPUT_DROPOUT]
         )
 
         if masked_lm_loss:
-            pre, lm_mask_bool = self._input_mask(x, mask, self.training)
+            pre, lm_mask_bool = self._tf_layers["input_mask"](x, mask, self.training)
         else:
             pre, lm_mask_bool = (x, None)
 
-        transformed = self._transformer(pre, 1 - mask, self.training)
+        transformed = self._tf_layers["transformer"](pre, 1 - mask, self.training)
         transformed = tf.nn.relu(transformed)
 
         return transformed, x, lm_mask_bool
 
-    def _mask_loss(self, a_transformed, a, lm_mask_bool, name):
+    def _mask_loss(
+        self, a_transformed: tf.Tensor, a: tf.Tensor, lm_mask_bool: tf.Tensor
+    ) -> tf.Tensor:
         # make sure there is at least one element in the mask
         lm_mask_bool = tf.cond(
             tf.reduce_any(lm_mask_bool),
@@ -1114,30 +1077,32 @@ class DIET(tf_models.RasaModel):
         a_t_masked = tf.boolean_mask(a_transformed, lm_mask_bool)
         a_masked = tf.boolean_mask(a, lm_mask_bool)
 
-        a_t_masked_embed = self._embed[f"{name}_mask"](a_t_masked)
-        a_masked_embed = self._embed[f"{name}_token"](a_masked)
+        a_t_masked_embed = self._tf_layers["embed.lm_mask"](a_t_masked)
+        a_masked_embed = self._tf_layers["embed.golden_token"](a_masked)
 
-        return self._loss_mask(
+        return self._tf_layers["loss.mask"](
             a_t_masked_embed, a_masked_embed, a_masked, a_masked_embed, a_masked
         )
 
-    def _build_all_b(self):
+    def _build_all_b(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_labels = self._create_bow(
             self.tf_label_data["label_features"],
             self.tf_label_data["label_mask"][0],
             "label",
         )
-        all_labels_embed = self._embed["label"](all_labels)
+        all_labels_embed = self._tf_layers["embed.label"](all_labels)
 
         return all_labels_embed, all_labels
 
     def _intent_loss(self, a: tf.Tensor, b: tf.Tensor) -> tf.Tensor:
         all_labels_embed, all_labels = self._build_all_b()
 
-        a_embed = self._embed["text"](a)
-        b_embed = self._embed["label"](b)
+        a_embed = self._tf_layers["embed.text"](a)
+        b_embed = self._tf_layers["embed.label"](b)
 
-        return self._loss_label(a_embed, b_embed, b, all_labels_embed, all_labels)
+        return self._tf_layers["loss.label"](
+            a_embed, b_embed, b, all_labels_embed, all_labels
+        )
 
     def _entity_loss(
         self, a: tf.Tensor, c: tf.Tensor, mask: tf.Tensor, sequence_lengths
@@ -1146,18 +1111,10 @@ class DIET(tf_models.RasaModel):
         # remove cls token
         sequence_lengths = sequence_lengths - 1
         c = tf.cast(c[:, :, 0], tf.int32)
-        logits = self._embed["logits"](a)
+        logits = self._tf_layers["embed.logits"](a)
 
-        # tensor shapes
-        # a: tensor(batch-size, max-seq-len, dim)
-        # sequence_lengths: tensor(batch-size)
-        # c: (batch-size, max-seq-len)
-
-        # CRF Loss
-        loss = self._crf.loss(logits, c, sequence_lengths)
-
-        # CRF preds
-        pred_ids = self._crf(logits, sequence_lengths)
+        loss = self._tf_layers["crf"].loss(logits, c, sequence_lengths)
+        pred_ids = self._tf_layers["crf"](logits, sequence_lengths)
 
         # TODO check that f1 calculation is correct
         # calculate f1 score for train predictions
@@ -1169,13 +1126,13 @@ class DIET(tf_models.RasaModel):
         c_masked_1 = tf.one_hot(c_masked - 1, self._num_tags - 1)
         pred_ids_masked_1 = tf.one_hot(pred_ids_masked - 1, self._num_tags - 1)
 
-        f1 = self.entity_f1(c_masked_1, pred_ids_masked_1)
+        f1 = self._tf_layers["crf_f1_score"](c_masked_1, pred_ids_masked_1)
 
         return loss, f1
 
     def _train_losses_scores(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
-    ) -> Tuple[Dict[Text, float], Dict[Text, float]]:
+    ) -> None:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         mask_text = tf_batch_data["text_mask"][0]
@@ -1185,15 +1142,10 @@ class DIET(tf_models.RasaModel):
             tf_batch_data["text_features"], mask_text, "text", self.config[MASKED_LM]
         )
 
-        losses = {}
-        scores = {}
-
         if self.config[MASKED_LM]:
-            loss, acc = self._mask_loss(
-                text_transformed, text_in, lm_mask_bool_text, "text"
-            )
-            losses["m_loss"] = loss
-            scores["m_acc"] = acc
+            loss, acc = self._mask_loss(text_transformed, text_in, lm_mask_bool_text)
+            self.mask_loss.update_state(loss)
+            self.mask_acc.update_state(acc)
 
         if self.config[INTENT_CLASSIFICATION]:
             # get _cls_ vector for intent classification
@@ -1207,8 +1159,8 @@ class DIET(tf_models.RasaModel):
                 tf_batch_data["label_features"], tf_batch_data["label_mask"][0], "label"
             )
             loss, acc = self._intent_loss(cls, label)
-            losses["i_loss"] = loss
-            scores["i_acc"] = acc
+            self.intent_loss.update_state(loss)
+            self.intent_acc.update_state(acc)
 
         if self.config[ENTITY_RECOGNITION]:
             tags = tf_batch_data["tag_ids"][0]
@@ -1216,10 +1168,8 @@ class DIET(tf_models.RasaModel):
             loss, f1 = self._entity_loss(
                 text_transformed, tags, mask_text, sequence_lengths
             )
-            losses["e_loss"] = loss
-            scores["e_f1"] = f1
-
-        return losses, scores
+            self.entity_loss.update_state(loss)
+            self.entity_f1.update_state(f1)
 
     def build_for_predict(self, model_data: RasaModelData) -> None:
         self.batch_tuple_sizes = model_data.batch_tuple_sizes()
@@ -1264,3 +1214,37 @@ class DIET(tf_models.RasaModel):
             out["e_ids"] = pred_ids
 
         return out
+
+    @staticmethod
+    def _create_sparse_dense_layer(
+        data_signature: List[FeatureSignature],
+        name: Text,
+        reg_lambda: float,
+        dense_dim: int,
+    ) -> Optional[tf_layers.DenseForSparse]:
+
+        sparse = False
+        for is_sparse, shape in data_signature:
+            if is_sparse:
+                sparse = is_sparse
+            else:
+                # if dense features are present
+                # use the feature dimension of the dense features
+                dense_dim = shape[-1]
+
+        if sparse:
+            return tf_layers.DenseForSparse(
+                units=dense_dim, reg_lambda=reg_lambda, name=name
+            )
+
+    @staticmethod
+    def _input_dim(data_signature: List[FeatureSignature], dense_dim: int) -> int:
+
+        for is_sparse, shape in data_signature:
+            if not is_sparse:
+                # if dense features are present
+                # use the feature dimension of the dense features
+                dense_dim = shape[-1]
+                break
+
+        return dense_dim * len(data_signature)
