@@ -29,9 +29,7 @@ class DenseForSparse(tf.keras.layers.Dense):
     def __init__(self, reg_lambda: float, **kwargs) -> None:
         l1_regularizer = tf.keras.regularizers.l1(reg_lambda)
 
-        super(DenseForSparse, self).__init__(
-            kernel_regularizer=l1_regularizer, **kwargs
-        )
+        super().__init__(kernel_regularizer=l1_regularizer, **kwargs)
 
     def call(self, inputs: tf.SparseTensor) -> tf.Tensor:
         if not isinstance(inputs, tf.SparseTensor):
@@ -65,7 +63,7 @@ class ReluFfn(tf.keras.layers.Layer):
         reg_lambda: float,
         layer_name_suffix: Text,
     ) -> None:
-        super(ReluFfn, self).__init__(name=f"ffnn_{layer_name_suffix}")
+        super().__init__(name=f"ffnn_{layer_name_suffix}")
 
         l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
         self._ffn_layers = []
@@ -97,7 +95,7 @@ class Embed(tf.keras.layers.Layer):
         layer_name_suffix: Text,
         similarity_type: Optional[Text] = None,
     ) -> None:
-        super(Embed, self).__init__(name=f"embed_{layer_name_suffix}")
+        super().__init__(name=f"embed_{layer_name_suffix}")
 
         self.similarity_type = similarity_type
         if self.similarity_type and self.similarity_type not in {"cosine", "inner"}:
@@ -167,7 +165,8 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         return output, attention_weights
 
     def __init__(self, d_model: int, num_heads: int, reg_lambda: float) -> None:
-        super(MultiHeadAttention, self).__init__()
+        super().__init__()
+
         self.num_heads = num_heads
         self.d_model = d_model
 
@@ -250,7 +249,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         reg_lambda: float,
         rate: float = 0.1,
     ) -> None:
-        super(TransformerEncoderLayer, self).__init__()
+        super().__init__()
 
         self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
         self._mha = MultiHeadAttention(d_model, num_heads, reg_lambda)
@@ -325,7 +324,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         unidirectional: bool = False,
         name: Optional[Text] = None,
     ) -> None:
-        super(TransformerEncoder, self).__init__(name=name)
+        super().__init__(name=name)
 
         self.d_model = d_model
         self.unidirectional = unidirectional
@@ -450,7 +449,7 @@ class CRF(tf.keras.layers.Layer):
         return pred_ids * mask
 
     def loss(
-        self, logits: tf.Tensor, tag_indices: tf.Tensor, sequence_lengths: tf.Tensor,
+        self, logits: tf.Tensor, tag_indices: tf.Tensor, sequence_lengths: tf.Tensor
     ) -> tf.Tensor:
         log_likelihood, _ = tfa.text.crf.crf_log_likelihood(
             logits, tag_indices, sequence_lengths, self.transition_params
