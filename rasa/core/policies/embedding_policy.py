@@ -4,6 +4,8 @@ import os
 import pickle
 
 import numpy as np
+import tensorflow as tf
+
 from typing import Any, List, Optional, Text, Dict, Tuple, Union, Callable
 
 import rasa.utils.io
@@ -18,12 +20,9 @@ from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils import train_utils
-
-import tensorflow as tf
-
-# avoid warning println on contrib import - remove for tf 2
 from rasa.utils.tensorflow import tf_models, tf_layers
 from rasa.utils.tensorflow.tf_model_data import RasaModelData
+
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +130,7 @@ class EmbeddingPolicy(Policy):
     # end default properties (DOC MARKER - don't remove)
 
     @staticmethod
-    def _standard_featurizer(max_history: Optional[int] = None) -> "TrackerFeaturizer":
+    def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
         if max_history is None:
             return FullDialogueTrackerFeaturizer(LabelTokenizerSingleStateFeaturizer())
         else:
@@ -141,7 +140,7 @@ class EmbeddingPolicy(Policy):
 
     def __init__(
         self,
-        featurizer: Optional["TrackerFeaturizer"] = None,
+        featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
         max_history: Optional[int] = None,
         model: Optional[tf_models.RasaModel] = None,
@@ -152,6 +151,7 @@ class EmbeddingPolicy(Policy):
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
+
         super().__init__(featurizer, priority)
 
         self._load_params(**kwargs)
@@ -166,7 +166,6 @@ class EmbeddingPolicy(Policy):
 
         self._tf_config = train_utils.load_tf_config(self.config)
 
-    # init helpers
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         self.config = copy.deepcopy(self.defaults)
         self.config.update(kwargs)
@@ -214,6 +213,7 @@ class EmbeddingPolicy(Policy):
         self, data_X: np.ndarray, data_Y: Optional[np.ndarray] = None
     ) -> RasaModelData:
         """Combine all tf session related data into dict."""
+
         if data_Y is not None:
             # training time
             label_ids = self._label_ids_for_Y(data_Y)
@@ -238,8 +238,8 @@ class EmbeddingPolicy(Policy):
     # training methods
     def train(
         self,
-        training_trackers: List["DialogueStateTracker"],
-        domain: "Domain",
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
         **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
@@ -265,10 +265,9 @@ class EmbeddingPolicy(Policy):
             "else set num_neg to the number of label_ids - 1"
             "".format(self.config[NUM_NEG], domain.num_actions)
         )
-        # noinspection PyAttributeOutsideInit
         self.config[NUM_NEG] = min(self.config[NUM_NEG], domain.num_actions - 1)
 
-        # extract actual training data to feed to tf session
+        # extract actual training data to feed to model
         model_data = self._create_model_data(training_data.X, training_data.y)
 
         # keep one example for persisting and loading
@@ -292,8 +291,8 @@ class EmbeddingPolicy(Policy):
 
     def continue_training(
         self,
-        training_trackers: List["DialogueStateTracker"],
-        domain: "Domain",
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
         **kwargs: Any,
     ) -> None:
         """Continue training an already trained policy."""
@@ -318,7 +317,7 @@ class EmbeddingPolicy(Policy):
         )
 
     def predict_action_probabilities(
-        self, tracker: "DialogueStateTracker", domain: "Domain"
+        self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[float]:
         """Predict the next action the bot should take.
 
@@ -393,7 +392,7 @@ class EmbeddingPolicy(Policy):
 
         with open(os.path.join(path, file_name + ".data_example.pkl"), "rb") as f:
             model_data_example = RasaModelData(
-                label_key="actions_ids", data=pickle.load(f)
+                label_key="action_ids", data=pickle.load(f)
             )
 
         with open(
@@ -432,11 +431,11 @@ class EmbeddingPolicy(Policy):
         # build the graph for prediction
         model.set_training_phase(False)
         model_data = RasaModelData(
-            label_key="actions_ids",
+            label_key="action_ids",
             data={k: vs for k, vs in model_data_example.items() if "text" in k},
         )
         model.data_signature = model_data.get_signature()
-        model.build_for_predict(model_data)
+        model.build_for_predict()
         predict_dataset = model_data.as_tf_dataset(
             1, batch_strategy="sequence", shuffle=False
         )
@@ -466,22 +465,28 @@ class TED(tf_models.RasaModel):
 
         self.config = config
         self.max_history_tracker_featurizer_used = max_history_tracker_featurizer_used
-
         self._encoded_all_label_ids = encoded_all_label_ids
 
+        # optimizer
         self._optimizer = tf.keras.optimizers.Adam()
 
         # tf tensors
         self.training = tf.ones((), tf.bool)
 
         # persist
-        self.all_bot_embed = None
+        self.all_label_embed = None
 
+        # metrics
         self.metric_loss = tf.keras.metrics.Mean(name="loss")
         self.metric_acc = tf.keras.metrics.Mean(name="acc")
         self.metrics_to_log = ["loss", "acc"]
 
-        self._loss_label = tf_layers.DotProductLoss(
+        # set up tf layers
+        self._tf_layers = {}
+        self._prepare_layers()
+
+    def _prepare_layers(self) -> None:
+        self._tf_layers["loss.label"] = tf_layers.DotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
             self.config[MU_POS],
@@ -490,19 +495,19 @@ class TED(tf_models.RasaModel):
             self.config[C_EMB],
             self.config[SCALE_LOSS],
         )
-        self._ffnn_pre_dial = tf_layers.ReluFfn(
+        self._tf_layers["ffnn.dial"] = tf_layers.ReluFfn(
             self.config[HIDDEN_LAYERS_SIZES_PRE_DIAL],
             self.config[DROPRATE_DIAL],
             self.config[C2],
             layer_name_suffix="pre_dial",
         )
-        self._ffnn_bot = tf_layers.ReluFfn(
+        self._tf_layers["ffnn.bot"] = tf_layers.ReluFfn(
             self.config[HIDDEN_LAYERS_SIZES_BOT],
             self.config[DROPRATE_BOT],
             self.config[C2],
             layer_name_suffix="bot",
         )
-        self._transformer = tf_layers.TransformerEncoder(
+        self._tf_layers["transformer"] = tf_layers.TransformerEncoder(
             self.config[NUM_TRANSFORMER_LAYERS],
             self.config[TRANSFORMER_SIZE],
             self.config[NUM_HEADS],
@@ -512,13 +517,13 @@ class TED(tf_models.RasaModel):
             self.config[DROPRATE_DIAL],
             name="dial_encoder",
         )
-        self._embed_dial = tf_layers.Embed(
+        self._tf_layers["embed.dial"] = tf_layers.Embed(
             self.config[EMBED_DIM],
             self.config[C2],
             "dial",
             self.config[SIMILARITY_TYPE],
         )
-        self._embed_bot = tf_layers.Embed(
+        self._tf_layers["embed.bot"] = tf_layers.Embed(
             self.config[EMBED_DIM], self.config[C2], "bot", self.config[SIMILARITY_TYPE]
         )
 
@@ -528,49 +533,51 @@ class TED(tf_models.RasaModel):
         else:
             self.training = tf.zeros((), tf.bool)
 
-    def _create_tf_dial(self, a_in: tf.Tensor):
+    def _emebed_dialogue(self, dialogue_in: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
         """Create dialogue level embedding and mask."""
 
         # mask different length sequences
         # if there is at least one `-1` it should be masked
-        mask = tf.sign(tf.reduce_max(a_in, -1) + 1)
+        mask = tf.sign(tf.reduce_max(dialogue_in, -1) + 1)
 
-        a = self._ffnn_pre_dial(a_in, self.training)
-        a = self._transformer(a, tf.expand_dims(mask, axis=-1), self.training)
+        dialogue = self._tf_layers["ffnn.dial"](dialogue_in, self.training)
+        dialogue_transformed = self._tf_layers["transformer"](
+            dialogue, tf.expand_dims(mask, axis=-1), self.training
+        )
 
         if self.max_history_tracker_featurizer_used:
             # pick last label if max history featurizer is used
-            a = a[:, -1:, :]
+            dialogue_transformed = dialogue_transformed[:, -1:, :]
             mask = mask[:, -1:]
 
-        dial_embed = self._embed_dial(a)
+        dialogue_embed = self._tf_layers["embed.dial"](dialogue_transformed)
 
-        return dial_embed, mask
+        return dialogue_embed, mask
 
-    def _create_tf_bot_embed(self, b_in: tf.Tensor):
-        b = self._ffnn_bot(b_in, self.training)
-        return self._embed_bot(b)
+    def _embed_label(self, label_in: tf.Tensor) -> tf.Tensor:
+        label = self._tf_layers["ffnn.bot"](label_in, self.training)
+        return self._tf_layers["embed.bot"](label)
 
     def batch_loss(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
     ) -> tf.Tensor:
-        a_in, b_in, _ = batch_in
+        dialogue_in, label_in, _ = batch_in
 
         if self.max_history_tracker_featurizer_used:
             # add time dimension if max history featurizer is used
-            b_in = b_in[:, tf.newaxis, :]
+            label_in = label_in[:, tf.newaxis, :]
 
-        all_bot_raw = tf.constant(
-            self._encoded_all_label_ids, dtype=tf.float32, name="all_bot_raw"
+        all_label = tf.constant(
+            self._encoded_all_label_ids, dtype=tf.float32, name="all_label"
         )
 
-        dial_embed, mask = self._create_tf_dial(a_in)
+        dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
 
-        bot_embed = self._create_tf_bot_embed(b_in)
-        self.all_bot_embed = self._create_tf_bot_embed(all_bot_raw)
+        label_embed = self._embed_label(label_in)
+        self.all_label_embed = self._embed_label(all_label)
 
-        loss, acc = self._loss_label(
-            dial_embed, bot_embed, b_in, self.all_bot_embed, all_bot_raw, mask
+        loss, acc = self._tf_layers["loss.label"](
+            dialogue_embed, label_embed, label_in, self.all_label_embed, all_label, mask
         )
 
         self.metric_loss.update_state(loss)
@@ -579,21 +586,21 @@ class TED(tf_models.RasaModel):
         return loss
 
     def build_for_predict(self) -> None:
-        all_bot_raw = tf.constant(
-            self._encoded_all_label_ids, dtype=tf.float32, name="all_bot_raw"
+        all_label_raw = tf.constant(
+            self._encoded_all_label_ids, dtype=tf.float32, name="all_label"
         )
-        self.all_bot_embed = self._create_tf_bot_embed(all_bot_raw)
+        self.all_label_embed = self._embed_label(all_label_raw)
 
     def predict(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> tf.Tensor:
-        a_in, b_in, _ = batch_in
+        dialogue_in, label_in, _ = batch_in
 
-        dial_embed, mask = self._create_tf_dial(a_in)
+        dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
 
-        sim_all = self._loss_label.sim(
-            dial_embed[:, :, tf.newaxis, :],
-            self.all_bot_embed[tf.newaxis, tf.newaxis, :, :],
+        sim_all = self._tf_layers["loss.label"].sim(
+            dialogue_embed[:, :, tf.newaxis, :],
+            self.all_label_embed[tf.newaxis, tf.newaxis, :, :],
             mask,
         )
 
