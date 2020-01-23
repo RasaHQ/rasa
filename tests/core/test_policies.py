@@ -350,6 +350,8 @@ class TestEmbeddingPolicy(PolicyTestCollection):
             sum([confidence > 0 for confidence in predicted_probabilities])
             == trained_policy.ranking_length
         )
+        # check that the norm is still 1
+        assert sum(predicted_probabilities) == pytest.approx(1)
 
         # also check our function is called
         mock = Mock()
