@@ -861,12 +861,16 @@ class DIET(tf_models.RasaModel):
 
         # tf training
         self._optimizer = tf.keras.optimizers.Adam(config[LEARNING_RATE])
-        self.intent_acc = tf.keras.metrics.Mean(name="i_acc")
-        self.intent_loss = tf.keras.metrics.Mean(name="i_loss")
+        # self.metrics preserve order
+        # output losses first
         self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
-        self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
+        self.intent_loss = tf.keras.metrics.Mean(name="i_loss")
         self.entity_loss = tf.keras.metrics.Mean(name="e_loss")
+        # output accuracies second
+        self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
+        self.intent_acc = tf.keras.metrics.Mean(name="i_acc")
         self.entity_f1 = tf.keras.metrics.Mean(name="e_f1")
+
         self._update_metrics_to_log()
 
         # persist
@@ -1116,9 +1120,9 @@ class DIET(tf_models.RasaModel):
 
         return loss, f1
 
-    def _train_losses_scores(
+    def batch_loss(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
-    ) -> None:
+    ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         mask_text = tf_batch_data["text_mask"][0]
@@ -1128,10 +1132,13 @@ class DIET(tf_models.RasaModel):
             tf_batch_data["text_features"], mask_text, "text", self.config[MASKED_LM]
         )
 
+        losses = []
+
         if self.config[MASKED_LM]:
             loss, acc = self._mask_loss(text_transformed, text_in, lm_mask_bool_text)
             self.mask_loss.update_state(loss)
             self.mask_acc.update_state(acc)
+            losses.append(loss)
 
         if self.config[INTENT_CLASSIFICATION]:
             # get _cls_ vector for intent classification
@@ -1147,6 +1154,7 @@ class DIET(tf_models.RasaModel):
             loss, acc = self._intent_loss(cls, label)
             self.intent_loss.update_state(loss)
             self.intent_acc.update_state(acc)
+            losses.append(loss)
 
         if self.config[ENTITY_RECOGNITION]:
             tags = tf_batch_data["tag_ids"][0]
@@ -1156,6 +1164,9 @@ class DIET(tf_models.RasaModel):
             )
             self.entity_loss.update_state(loss)
             self.entity_f1.update_state(f1)
+            losses.append(loss)
+
+        return tf.math.add_n(losses)
 
     def build_for_predict(self, model_data: RasaModelData) -> None:
         self.batch_tuple_sizes = model_data.batch_tuple_sizes()
