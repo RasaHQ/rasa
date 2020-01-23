@@ -1089,7 +1089,7 @@ class DIET(tf_models.RasaModel):
         return transformed, x, lm_mask_bool
 
     @staticmethod
-    def _last_token(x, sequence_lengths):
+    def _last_token(x: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
         last_index = tf.maximum(
             tf.constant(0, dtype=sequence_lengths.dtype), sequence_lengths - 1
         )
