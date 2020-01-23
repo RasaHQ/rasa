@@ -44,6 +44,18 @@ Otherwise, if you do not have ``rasa`` installed, run this command:
 
     python -m rasa_sdk --actions actions
 
+You can verify that the action server is up and running with the command:
+
+.. code-block:: bash
+
+    curl http://localhost:5055/health
+
+You can get the list of registered custom actions with the command:
+
+.. code-block:: bash
+
+    curl http://localhost:5055/actions
+
 
 The file that contains your custom actions should be called ``actions.py``.
 Alternatively, you can use a package directory called ``actions`` or else

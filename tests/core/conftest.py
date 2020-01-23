@@ -1,5 +1,7 @@
 import asyncio
 import os
+import uuid
+from datetime import datetime
 
 from typing import Text
 
@@ -10,6 +12,7 @@ import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
 from rasa.core.domain import Domain, SessionConfig
+from rasa.core.events import ReminderScheduled, UserUttered, ActionExecuted
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
@@ -25,6 +28,10 @@ from rasa.core.trackers import DialogueStateTracker
 
 
 DEFAULT_DOMAIN_PATH_WITH_SLOTS = "data/test_domains/default_with_slots.yml"
+
+DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS = (
+    "data/test_domains/default_with_slots_and_no_actions.yml"
+)
 
 DEFAULT_DOMAIN_PATH_WITH_MAPPING = "data/test_domains/default_with_mapping.yml"
 
@@ -53,6 +60,7 @@ TEST_DIALOGUES = [
 
 EXAMPLE_DOMAINS = [
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
     "examples/formbot/domain.yml",
     "examples/moodbot/domain.yml",
@@ -82,6 +90,16 @@ class MockedMongoTrackerStore(MongoTrackerStore):
         self.db = MongoClient().rasa
         self.collection = "conversations"
         super(MongoTrackerStore, self).__init__(_domain, None)
+
+
+# https://github.com/pytest-dev/pytest-asyncio/issues/68
+# this event_loop is used by pytest-asyncio, and redefining it
+# is currently the only way of changing the scope of this fixture
+@pytest.yield_fixture(scope="session")
+def event_loop(request):
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope="session")
@@ -169,6 +187,47 @@ async def default_processor(default_domain, default_nlg):
         tracker_store,
         default_nlg,
     )
+
+
+@pytest.fixture
+def tracker_with_six_scheduled_reminders(
+    default_processor: MessageProcessor,
+) -> DialogueStateTracker:
+    reminders = [
+        ReminderScheduled("greet", datetime.now(), kill_on_user_message=False),
+        ReminderScheduled(
+            intent="greet",
+            entities=[{"entity": "name", "value": "Jane Doe"}],
+            trigger_date_time=datetime.now(),
+            kill_on_user_message=False,
+        ),
+        ReminderScheduled(
+            intent="default",
+            entities=[{"entity": "name", "value": "Jane Doe"}],
+            trigger_date_time=datetime.now(),
+            kill_on_user_message=False,
+        ),
+        ReminderScheduled(
+            intent="greet",
+            entities=[{"entity": "name", "value": "Bruce Wayne"}],
+            trigger_date_time=datetime.now(),
+            kill_on_user_message=False,
+        ),
+        ReminderScheduled("default", datetime.now(), kill_on_user_message=False),
+        ReminderScheduled(
+            "default", datetime.now(), kill_on_user_message=False, name="special",
+        ),
+    ]
+    sender_id = uuid.uuid4().hex
+    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    for reminder in reminders:
+        tracker.update(UserUttered("test"))
+        tracker.update(ActionExecuted("action_reminder_reminder"))
+        tracker.update(reminder)
+
+    default_processor.tracker_store.save(tracker)
+
+    return tracker
 
 
 @pytest.fixture(scope="session")

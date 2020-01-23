@@ -255,8 +255,9 @@ paths:
       tags:
       - Tracker
       summary: Run an action in a conversation
+      deprecated: true
       description: >-
-        Runs the action, calling the action server if necessary.
+        DEPRECATED. Runs the action, calling the action server if necessary.
         Any responses sent by the executed action will be forwarded
         to the channel specified in the output_channel parameter.
         If no output channel is specified, any messages that should be
@@ -271,6 +272,57 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ActionRequest'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tracker:
+                    $ref: '#/components/schemas/Tracker'
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BotMessage'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+  /conversations/{conversation_id}/trigger_intent:
+    post:
+      security:
+        - TokenAuth: []
+        - JWT: []
+      operationId: triggerConversationIntent
+      tags:
+        - Tracker
+      summary: Inject an intent into a conversation
+      description: >-
+        Sends a specified intent and list of entities in place of a
+        user message. The bot then predicts and executes a response action.
+        Any responses sent by the executed action will be forwarded
+        to the channel specified in the ``output_channel`` parameter.
+        If no output channel is specified, any messages that should be
+        sent to the user will be included in the response of this endpoint.
+      parameters:
+        - $ref: '#/components/parameters/conversation_id'
+        - $ref: '#/components/parameters/include_events'
+        - $ref: '#/components/parameters/output_channel'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntentTriggerRequest'
       responses:
         200:
           description: Success
@@ -905,19 +957,32 @@ components:
       type: object
       properties:
         name:
-          description: >-
-            Name of the action to be executed.
+          description: Name of the action to be executed.
           type: string
           example: utter_greet
         policy:
-          description: >-
-            Name of the policy that predicted the action (optional).
+          description: Name of the policy that predicted the action.
           type: string
+          nullable: true
         confidence:
-          description: >-
-            Confidence of the prediction (optional).
+          description: Confidence of the prediction.
           type: number
+          nullable: true
           example: 0.987232
+      required: ["name"]
+
+    IntentTriggerRequest:
+      type: object
+      properties:
+        name:
+          description: Name of the intent to be executed.
+          type: string
+          example: greet
+        entities:
+          description: Entities to be passed on.
+          type: object
+          nullable: true
+          example: {"temperature": "high"}
       required: ["name"]
 
     Message:
@@ -1044,7 +1109,7 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/SlotDescription'
-        templates:
+        responses:
           description: Bot response templates
           type: object
           additionalProperties:
@@ -1362,7 +1427,7 @@ components:
           - utter_happy
           - utter_goodbye
 
-        templates:
+        responses:
           utter_greet:
           - text: "Hey! How are you?"
 
@@ -1592,4 +1657,3 @@ components:
         properties:
           use_entities:
             type: boolean
-
