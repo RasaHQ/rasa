@@ -329,11 +329,11 @@ class SlackInput(InputChannel):
 
         return response.text("")
 
-    def get_metadata(self, request: Request):
+    def get_metadata(self, request: Request) -> Dict[Text, Any]:
         slack_event = request.json
         event = slack_event.get("event")
 
-        metadata = {}
+        return {"out_channel": event.get("channel"), "text": ..., ... }
         metadata["out_channel"] = event.get("channel")
         metadata["text"] = event.get("text")
         metadata["sender"] = event.get("user")
@@ -405,5 +405,5 @@ class SlackInput(InputChannel):
         else:
             return SlackBot(self.slack_token, self.slack_channel)
 
-    def set_output_channel(self, channel) -> None:
+    def set_output_channel(self, channel: Text) -> None:
         self.slack_channel = channel
