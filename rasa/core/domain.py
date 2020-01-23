@@ -123,7 +123,14 @@ class Domain:
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
-        utter_templates = cls.collect_templates(data.get("templates", {}))
+        utter_templates = cls.collect_templates(data.get("responses", {}))
+        if "templates" in data:
+            warnings.warn(
+                "Your domain file contains the key: 'templates'. This has been deprecated and renamed to 'responses'. The 'templates' key will no longer work in future versions of Rasa. Please replace 'templates' with 'responses'",
+                FutureWarning,
+            )
+            utter_templates = cls.collect_templates(data.get("templates", {}))
+
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
@@ -226,7 +233,7 @@ class Domain:
         for key in ["entities", "actions", "forms"]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
-        for key in ["templates", "slots"]:
+        for key in ["responses", "slots"]:
             combined[key] = merge_dicts(combined[key], domain_dict[key], override)
 
         return self.__class__.from_dict(combined)
@@ -332,13 +339,14 @@ class Domain:
         self.session_config = session_config
 
         # only includes custom actions and utterance actions
-        self.user_actions = action_names
+        self.user_actions = action.combine_with_templates(action_names, templates)
+
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = (
-            action.combine_user_with_default_actions(action_names) + form_names
+            action.combine_user_with_default_actions(self.user_actions) + form_names
         )
-        self.store_entities_as_slots = store_entities_as_slots
 
+        self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
 
     def __hash__(self) -> int:
@@ -706,7 +714,7 @@ class Domain:
             "intents": [{k: v} for k, v in self.intent_properties.items()],
             "entities": self.entities,
             "slots": self._slot_definitions(),
-            "templates": self.templates,
+            "responses": self.templates,
             "actions": self.user_actions,  # class names of the actions
             "forms": self.form_names,
         }

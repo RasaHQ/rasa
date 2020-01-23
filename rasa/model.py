@@ -187,9 +187,13 @@ def unpack_model(
         working_directory = tempfile.mkdtemp()
 
     # All files are in a subdirectory.
-    with tarfile.open(model_file, mode="r:gz") as tar:
-        tar.extractall(working_directory)
-    logger.debug(f"Extracted model to '{working_directory}'.")
+    try:
+        with tarfile.open(model_file, mode="r:gz") as tar:
+            tar.extractall(working_directory)
+            logger.debug(f"Extracted model to '{working_directory}'.")
+    except Exception as e:
+        logger.error(f"Failed to extract model at {model_file}. Error: {e}")
+        raise
 
     return TempDirectoryPath(working_directory)
 
@@ -282,7 +286,7 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     nlu_data = await file_importer.get_nlu_data()
 
     domain_dict = domain.as_dict()
-    templates = domain_dict.pop("templates")
+    templates = domain_dict.pop("responses")
     domain_without_nlg = Domain.from_dict(domain_dict)
 
     return {

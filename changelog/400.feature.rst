@@ -1,0 +1,3 @@
+Rename ``templates`` key in domain to ``responses``.
+
+``templates`` key will still work for backwards compatibility but will raise a future warning.

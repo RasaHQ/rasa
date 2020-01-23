@@ -30,13 +30,9 @@ slots:
     type: unfeaturized
 
 actions:
-- utter_greet
-- utter_goodbye
-- utter_ask_rephrase
-- utter_iamabot
 - action_query_knowledge_base
 
-templates:
+responses:
   utter_greet:
   - text: "Hey!"
   - text: "Hello! How can I help you?"

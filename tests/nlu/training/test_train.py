@@ -28,6 +28,7 @@ def pipelines_for_tests():
                 "SpacyNLP",
                 "MitieNLP",
                 "WhitespaceTokenizer",
+                "ConveRTTokenizer",
                 "MitieTokenizer",
                 "SpacyTokenizer",
                 "MitieFeaturizer",
