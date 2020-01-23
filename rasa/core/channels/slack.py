@@ -341,9 +341,6 @@ class SlackInput(InputChannel):
         """
         slack_event = request.json
         event = slack_event.get("event")
-        print(event)
-        print("*****")
-        print(event.get("channel"))
         return {
             "out_channel": event.get("channel"),
             "text": event.get("text"),
