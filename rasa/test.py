@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import warnings
 from typing import Text, Dict, Optional, List, Any
 
 import rasa.utils.io as io_utils
@@ -18,6 +19,15 @@ logger = logging.getLogger(__name__)
 
 def test_core_models_in_directory(model_directory: Text, stories: Text, output: Text):
     from rasa.core.test import compare_models_in_dir, plot_core_results
+    from rasa.model import get_latest_model
+
+    if os.path.isfile(model_directory):
+        if model_directory != get_latest_model():
+            warnings.warn(
+                "You passed a file as '--model'. Will use the directory containing this file instead.",
+                Warning,
+            )
+        model_directory = os.path.dirname(model_directory)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(compare_models_in_dir(model_directory, stories, output))
