@@ -875,6 +875,14 @@ class DIET(tf_models.RasaModel):
 
         # tf training
         self._optimizer = tf.keras.optimizers.Adam(config[LEARNING_RATE])
+        self._create_metrics()
+        self._update_metrics_to_log()
+
+        # persist
+        self.all_labels_embed = None
+        self.batch_tuple_sizes = None
+
+    def _create_metrics(self):
         # self.metrics preserve order
         # output losses first
         self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
@@ -884,12 +892,6 @@ class DIET(tf_models.RasaModel):
         self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
         self.intent_acc = tf.keras.metrics.Mean(name="i_acc")
         self.entity_f1 = tf.keras.metrics.Mean(name="e_f1")
-
-        self._update_metrics_to_log()
-
-        # persist
-        self.all_labels_embed = None
-        self.batch_tuple_sizes = None
 
     def _update_metrics_to_log(self) -> None:
         if self.config[MASKED_LM]:
