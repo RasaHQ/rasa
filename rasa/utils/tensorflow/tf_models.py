@@ -21,7 +21,7 @@ class RasaModel(tf.keras.models.Model):
         self.metrics_to_log = ["t_loss"]
 
     def batch_loss(
-            self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
     ) -> tf.Tensor:
         raise NotImplementedError
 

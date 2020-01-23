@@ -9,6 +9,7 @@ from collections import defaultdict
 
 Data = Optional[Dict[Text, List[np.ndarray]]]
 
+
 class FeatureSignature(NamedTuple):
     is_sparse: bool
     shape: List[int]
@@ -16,9 +17,7 @@ class FeatureSignature(NamedTuple):
 
 class RasaModelData:
     def __init__(
-        self,
-        label_key: Optional[Text] = None,
-        data: Data = None,
+        self, label_key: Optional[Text] = None, data: Data = None,
     ):
         self.data = data or {}
         self.label_key = label_key or ""
@@ -346,7 +345,9 @@ class RasaModelData:
         if batch_strategy == "balanced":
             data = self.balanced_data(data, batch_size, shuffle)
 
-        num_batches = self.num_examples // batch_size + int(self.num_examples % batch_size > 0)
+        num_batches = self.num_examples // batch_size + int(
+            self.num_examples % batch_size > 0
+        )
 
         for batch_num in range(num_batches):
             start = batch_num * batch_size
@@ -389,7 +390,9 @@ class RasaModelData:
         label_data = []
         for label_id in unique_label_ids:
             ids = label_ids == label_id
-            label_data.append(RasaModelData(self.label_key, self._data_for_ids(data, ids)))
+            label_data.append(
+                RasaModelData(self.label_key, self._data_for_ids(data, ids))
+            )
         return label_data
 
     def _check_label_key(self, label_key: Text):
