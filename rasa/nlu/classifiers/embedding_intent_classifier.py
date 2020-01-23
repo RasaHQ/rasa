@@ -163,14 +163,14 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # how often to calculate training accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
-        EVAL_NUM_EXAMPLES: 10,  # large values may hurt performance
+        EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
         # model config
         # if true intent classification is trained and intent predicted
         INTENT_CLASSIFICATION: True,
         # if true named entity recognition is trained and entities predicted
         ENTITY_RECOGNITION: True,
-        MASKED_LM: True,
-        SPARSE_INPUT_DROPOUT: True,
+        MASKED_LM: False,
+        SPARSE_INPUT_DROPOUT: False,
     }
     # end default properties (DOC MARKER - don't remove)
 
