@@ -78,6 +78,8 @@ def test_core(args: argparse.Namespace) -> None:
         )
 
         if args.evaluate_model_directory:
+            if os.path.isfile(args.model):
+                args.model = os.path.dirname(args.model)
             test_core_models_in_directory(args.model, stories, output)
         else:
             test_core(
