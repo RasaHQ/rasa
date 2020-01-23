@@ -469,6 +469,8 @@ class TED(tf_models.RasaModel):
 
         self._encoded_all_label_ids = encoded_all_label_ids
 
+        self._optimizer = tf.keras.optimizers.Adam()
+
         # tf tensors
         self.training = tf.ones((), tf.bool)
 
@@ -533,7 +535,7 @@ class TED(tf_models.RasaModel):
         mask = tf.sign(tf.reduce_max(a_in, -1) + 1)
 
         a = self._ffnn_pre_dial(a_in, self.training)
-        a = self._transformer(a, mask, self.training)
+        a = self._transformer(a, tf.expand_dims(mask, axis=-1), self.training)
 
         if self.max_history_tracker_featurizer_used:
             # pick last label if max history featurizer is used
