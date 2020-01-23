@@ -180,7 +180,11 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             ACTION_DEFAULT_ASK_REPHRASE_NAME,
             self.fallback_action_name,
         ]
-        input_given = type(tracker.events[-1]) is UserUttered
+        input_given = (
+            type(tracker.events[-1]) is UserUttered
+            if len(tracker.events) > 0
+            else False
+        )
         return action_requires_input and not input_given
 
     def _has_user_denied(
