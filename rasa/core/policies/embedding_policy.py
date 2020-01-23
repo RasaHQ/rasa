@@ -6,7 +6,7 @@ import pickle
 import warnings
 
 import numpy as np
-from typing import Any, List, Optional, Text, Dict, Tuple
+from typing import Any, List, Optional, Text, Dict, Tuple, Union, Callable
 
 import rasa.utils.io
 from rasa.core.domain import Domain
@@ -24,10 +24,39 @@ from rasa.utils import train_utils
 import tensorflow as tf
 
 # avoid warning println on contrib import - remove for tf 2
+from utils.tensorflow import tf_models, tf_layers
 from utils.train_utils import TrainingMetrics
 
 tf.contrib._warning = None
 logger = logging.getLogger(__name__)
+
+
+# constants - configuration parameters
+HIDDEN_LAYERS_SIZES_PRE_DIAL = "hidden_layers_sizes_pre_dial"
+HIDDEN_LAYERS_SIZES_BOT = "hidden_layers_sizes_bot"
+TRANSFORMER_SIZE = "transformer_size"
+NUM_TRANSFORMER_LAYERS = "number_of_transformer_layers"
+NUM_HEADS = "number_of_attention_heads"
+POS_ENCODING = "positional_encoding"
+MAX_SEQ_LENGTH = "maximum_sequence_length"
+BATCH_SIZES = "batch_sizes"
+BATCH_STRATEGY = "batch_strategy"
+EPOCHS = "epochs"
+RANDOM_SEED = "random_seed"
+EMBED_DIM = "embedding_dimension"
+NUM_NEG = "number_of_negative_examples"
+SIMILARITY_TYPE = "similarity_type"
+LOSS_TYPE = "loss_type"
+MU_POS = "maximum_positive_similarity"
+MU_NEG = "maximum_negative_similarity"
+USE_MAX_SIM_NEG = "use_maximum_negative_similarity"
+SCALE_LOSS = "scale_loss"
+C2 = "l2_regularization"
+C_EMB = "c_emb"
+DROPRATE_DIAL = "droprate_dial"
+DROPRATE_BOT = "droprate_bot"
+EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
+EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"
 
 
 class EmbeddingPolicy(Policy):
@@ -43,64 +72,64 @@ class EmbeddingPolicy(Policy):
         # nn architecture
         # a list of hidden layers sizes before user embed layer
         # number of hidden layers is equal to the length of this list
-        "hidden_layers_sizes_pre_dial": [],
+        HIDDEN_LAYERS_SIZES_PRE_DIAL: [],
         # a list of hidden layers sizes before bot embed layer
         # number of hidden layers is equal to the length of this list
-        "hidden_layers_sizes_bot": [],
+        HIDDEN_LAYERS_SIZES_BOT: [],
         # number of units in transformer
-        "transformer_size": 128,
+        TRANSFORMER_SIZE: 128,
         # number of transformer layers
-        "num_transformer_layers": 1,
+        NUM_TRANSFORMER_LAYERS: 1,
         # type of positional encoding in transformer
-        "pos_encoding": "timing",  # string 'timing' or 'emb'
+        POS_ENCODING: "timing",  # string 'timing' or 'emb'
         # max sequence length if pos_encoding='emb'
-        "max_seq_length": 256,
+        MAX_SEQ_LENGTH: 256,
         # number of attention heads in transformer
-        "num_heads": 4,
+        NUM_HEADS: 4,
         # training parameters
         # initial and final batch sizes:
         # batch size will be linearly increased for each epoch
-        "batch_size": [8, 32],
+        BATCH_SIZES: [8, 32],
         # how to create batches
-        "batch_strategy": "balanced",  # string 'sequence' or 'balanced'
+        BATCH_STRATEGY: "balanced",  # string 'sequence' or 'balanced'
         # number of epochs
-        "epochs": 1,
+        EPOCHS: 1,
         # set random seed to any int to get reproducible results
-        "random_seed": None,
+        RANDOM_SEED: None,
         # embedding parameters
         # dimension size of embedding vectors
-        "embed_dim": 20,
+        EMBED_DIM: 20,
         # the type of the similarity
-        "num_neg": 20,
+        NUM_NEG: 20,
         # flag if minimize only maximum similarity over incorrect labels
-        "similarity_type": "auto",  # string 'auto' or 'cosine' or 'inner'
+        SIMILARITY_TYPE: "auto",  # string 'auto' or 'cosine' or 'inner'
         # the type of the loss function
-        "loss_type": "softmax",  # string 'softmax' or 'margin'
+        LOSS_TYPE: "softmax",  # string 'softmax' or 'margin'
         # how similar the algorithm should try
         # to make embedding vectors for correct labels
-        "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
+        MU_POS: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
         # maximum negative similarity for incorrect labels
-        "mu_neg": -0.2,  # should be -1.0 < ... < 1.0 for 'cosine'
+        MU_NEG: -0.2,  # should be -1.0 < ... < 1.0 for 'cosine'
         # the number of incorrect labels, the algorithm will minimize
         # their similarity to the user input during training
-        "use_max_sim_neg": True,  # flag which loss function to use
+        USE_MAX_SIM_NEG: True,  # flag which loss function to use
         # scale loss inverse proportionally to confidence of correct prediction
-        "scale_loss": True,
+        SCALE_LOSS: True,
         # regularization
         # the scale of L2 regularization
-        "C2": 0.001,
+        C2: 0.001,
         # the scale of how important is to minimize the maximum similarity
         # between embeddings of different labels
-        "C_emb": 0.8,
+        C_EMB: 0.8,
         # dropout rate for dial nn
-        "droprate_a": 0.1,
+        DROPRATE_DIAL: 0.1,
         # dropout rate for bot nn
-        "droprate_b": 0.0,
+        DROPRATE_BOT: 0.0,
         # visualization of accuracy
         # how often calculate validation accuracy
-        "evaluate_every_num_epochs": 20,  # small values may hurt performance
+        EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for hold out validation set
-        "evaluate_on_num_examples": 0,  # large values may hurt performance
+        EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -117,18 +146,9 @@ class EmbeddingPolicy(Policy):
         self,
         featurizer: Optional["TrackerFeaturizer"] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
-        graph: Optional["tf.Graph"] = None,
-        session: Optional["tf.Session"] = None,
-        user_placeholder: Optional["tf.Tensor"] = None,
-        bot_placeholder: Optional["tf.Tensor"] = None,
-        similarity_all: Optional["tf.Tensor"] = None,
-        pred_confidence: Optional["tf.Tensor"] = None,
-        similarity: Optional["tf.Tensor"] = None,
-        dial_embed: Optional["tf.Tensor"] = None,
-        bot_embed: Optional["tf.Tensor"] = None,
-        all_bot_embed: Optional["tf.Tensor"] = None,
-        attention_weights: Optional["tf.Tensor"] = None,
         max_history: Optional[int] = None,
+        model: Optional[tf_models.RasaModel] = None,
+        predict_func: Optional[Callable] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instant variables with default values"""
@@ -139,88 +159,27 @@ class EmbeddingPolicy(Policy):
 
         self._load_params(**kwargs)
 
+        self.model = model
+        self.predict_func = predict_func
+
         # encode all label_ids with numbers
         self._encoded_all_label_ids = None
 
-        # tf related instances
-        self.graph = graph
-        self.session = session
-        self.a_in = user_placeholder
-        self.b_in = bot_placeholder
-        self.sim_all = similarity_all
-        self.pred_confidence = pred_confidence
-        self.sim = similarity
-
-        # persisted embeddings
-        self.dial_embed = dial_embed
-        self.bot_embed = bot_embed
-        self.all_bot_embed = all_bot_embed
-
-        self.attention_weights = attention_weights
-        # internal tf instances
-        self._iterator = None
-        self._train_op = None
-        self._is_training = None
+        self._tf_config = train_utils.load_tf_config(self.config)
 
     # init helpers
-    def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
-        self.hidden_layers_sizes = {
-            "pre_dial": config["hidden_layers_sizes_pre_dial"],
-            "bot": config["hidden_layers_sizes_bot"],
-        }
-
-        self.pos_encoding = config["pos_encoding"]
-        self.max_seq_length = config["max_seq_length"]
-        self.num_heads = config["num_heads"]
-
-        self.transformer_size = config["transformer_size"]
-        self.num_transformer_layers = config["num_transformer_layers"]
-
-        self.batch_size = config["batch_size"]
-        self.batch_strategy = config["batch_strategy"]
-
-        self.epochs = config["epochs"]
-
-        self.random_seed = config["random_seed"]
-
-    def _load_embedding_params(self, config: Dict[Text, Any]) -> None:
-        self.embed_dim = config["embed_dim"]
-        self.num_neg = config["num_neg"]
-
-        self.similarity_type = config["similarity_type"]
-        self.loss_type = config["loss_type"]
-        if self.similarity_type == "auto":
-            if self.loss_type == "softmax":
-                self.similarity_type = "inner"
-            elif self.loss_type == "margin":
-                self.similarity_type = "cosine"
-
-        self.mu_pos = config["mu_pos"]
-        self.mu_neg = config["mu_neg"]
-        self.use_max_sim_neg = config["use_max_sim_neg"]
-
-        self.scale_loss = config["scale_loss"]
-
-    def _load_regularization_params(self, config: Dict[Text, Any]) -> None:
-        self.C2 = config["C2"]
-        self.C_emb = config["C_emb"]
-        self.droprate = {"bot": config["droprate_b"], "dial": config["droprate_a"]}
-
-    def _load_visual_params(self, config: Dict[Text, Any]) -> None:
-        self.evaluate_every_num_epochs = config["evaluate_every_num_epochs"]
-        if self.evaluate_every_num_epochs < 1:
-            self.evaluate_every_num_epochs = self.epochs
-        self.evaluate_on_num_examples = config["evaluate_on_num_examples"]
-
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
-        config = copy.deepcopy(self.defaults)
-        config.update(kwargs)
+        self.config = copy.deepcopy(self.defaults)
+        self.config.update(kwargs)
 
-        self._tf_config = train_utils.load_tf_config(config)
-        self._load_nn_architecture_params(config)
-        self._load_embedding_params(config)
-        self._load_regularization_params(config)
-        self._load_visual_params(config)
+        if self.config[SIMILARITY_TYPE] == "auto":
+            if self.config[LOSS_TYPE] == "softmax":
+                self.config[SIMILARITY_TYPE] = "inner"
+            elif self.config[LOSS_TYPE] == "margin":
+                self.config[SIMILARITY_TYPE] = "cosine"
+
+        if self.config[EVAL_NUM_EPOCHS] < 1:
+            self.config[EVAL_NUM_EPOCHS] = self.config[EPOCHS]
 
     # data helpers
     # noinspection PyPep8Naming
@@ -679,3 +638,135 @@ class EmbeddingPolicy(Policy):
             all_bot_embed=all_bot_embed,
             attention_weights=attention_weights,
         )
+
+
+class TED(tf_models.RasaModel):
+    def __init__(self, config: Dict[Text, Any]):
+        super().__init__()
+
+        self.config = config
+
+        # tf tensors
+        self.training = tf.ones((), tf.bool)
+
+        # persist
+        self.all_bot_embed = None
+
+        self.metric_loss = tf.keras.metrics.Mean(name="loss")
+        self.metric_acc = tf.keras.metrics.Mean(name="acc")
+
+        self._loss_label = tf_layers.DotProductLoss(
+            self.config[NUM_NEG],
+            self.config[LOSS_TYPE],
+            self.config[MU_POS],
+            self.config[MU_NEG],
+            self.config[USE_MAX_SIM_NEG],
+            self.config[C_EMB],
+            self.config[SCALE_LOSS],
+        )
+        self._ffnn_pre_dial = tf_layers.ReluFfn(
+            self.config[HIDDEN_LAYERS_SIZES_PRE_DIAL],
+            self.config[DROPRATE_DIAL],
+            self.config[C2],
+            layer_name_suffix="pre_dial",
+        )
+        self._ffnn_bot = tf_layers.ReluFfn(
+            self.config[HIDDEN_LAYERS_SIZES_BOT],
+            self.config[DROPRATE_BOT],
+            self.config[C2],
+            layer_name_suffix="bot",
+        )
+        self._transformer = tf_layers.TransformerEncoder(
+            self.config[NUM_TRANSFORMER_LAYERS],
+            self.config[TRANSFORMER_SIZE],
+            self.config[NUM_HEADS],
+            self.config[TRANSFORMER_SIZE] * 4,
+            self.config[MAX_SEQ_LENGTH],
+            self.config[C2],
+            self.config[DROPRATE_DIAL],
+            name="dial_encoder",
+        )
+        self._embed_dial = tf_layers.Embed(
+            self.config[EMBED_DIM],
+            self.config[C2],
+            "dial",
+            self.config[SIMILARITY_TYPE],
+        )
+        self._embed_bot = tf_layers.Embed(
+            self.config[EMBED_DIM], self.config[C2], "bot", self.config[SIMILARITY_TYPE]
+        )
+
+    def set_training_phase(self, training: bool) -> None:
+        if training:
+            self.training = tf.ones((), tf.bool)
+        else:
+            self.training = tf.zeros((), tf.bool)
+
+    def _create_tf_dial(self, a_in: tf.Tensor):
+        """Create dialogue level embedding and mask."""
+
+        # mask different length sequences
+        # if there is at least one `-1` it should be masked
+        mask = tf.sign(tf.reduce_max(self.a_in, -1) + 1)
+
+        a = self._ffnn_pre_dial(a_in, self.training)
+        a = self._transformer(a, mask, self.training)
+
+        if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
+            # pick last label if max history featurizer is used
+            a = a[:, -1:, :]
+            mask = mask[:, -1:]
+
+        dial_embed = self._embed_dial(a)
+
+        return dial_embed, mask
+
+    def _create_tf_bot_embed(self, b_in: tf.Tensor):
+        b = self._ffnn_bot(b_in, self.training)
+        return self._embed_bot(b)
+
+    def _train_losses_scores(
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+    ) -> None:
+        a_in, b_in, _ = batch_in
+
+        if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
+            # add time dimension if max history featurizer is used
+            b_in = b_in[:, tf.newaxis, :]
+
+        all_bot_raw = tf.constant(
+            self._encoded_all_label_ids, dtype=tf.float32, name="all_bot_raw"
+        )
+
+        dial_embed, mask = self._create_tf_dial(self.a_in)
+
+        bot_embed = self._create_tf_bot_embed(self.b_in)
+        self.all_bot_embed = self._create_tf_bot_embed(all_bot_raw)
+
+        loss, acc = self._loss_label(
+            dial_embed, bot_embed, b_in, self.all_bot_embed, all_bot_raw, mask
+        )
+
+        self.metric_loss.update_state(loss)
+        self.metric_acc.update_state(acc)
+
+    def build_for_predict(self) -> None:
+        all_bot_raw = tf.constant(
+            self._encoded_all_label_ids, dtype=tf.float32, name="all_bot_raw"
+        )
+        self.all_bot_embed = self._create_tf_bot_embed(all_bot_raw)
+
+    def predict(
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
+    ) -> tf.Tensor:
+        a_in, b_in, _ = batch_in
+
+        dial_embed, mask = self._create_tf_dial(a_in)
+
+        sim_all = self._loss_label.sim(
+            dial_embed[:, :, tf.newaxis, :],
+            self.all_bot_embed[tf.newaxis, tf.newaxis, :, :],
+            mask,
+        )
+
+        return train_utils.confidence_from_sim(sim_all, self.config[SIMILARITY_TYPE])

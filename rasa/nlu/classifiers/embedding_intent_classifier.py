@@ -208,7 +208,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         model: Optional[tf_models.RasaModel] = None,
         predict_func: Optional[Callable] = None,
         batch_tuple_sizes: Optional[Dict] = None,
-        attention_weights: Optional[tf.Tensor] = None,
     ) -> None:
         """Declare instance variables with default values"""
 
@@ -229,15 +228,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # keep the input tuple sizes in self.batch_in
         self.batch_tuple_sizes = batch_tuple_sizes
 
-        # internal tf instances
-        self._iterator = None
-        self._train_op = None
-        self._is_training = None
-
         # number of entity tags
         self.num_tags = 0
-
-        self.attention_weights = attention_weights
 
         self._tf_config = train_utils.load_tf_config(self.component_config)
 
