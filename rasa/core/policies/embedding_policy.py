@@ -90,7 +90,7 @@ class EmbeddingPolicy(Policy):
         # how to create batches
         BATCH_STRATEGY: "balanced",  # string 'sequence' or 'balanced'
         # number of epochs
-        EPOCHS: 1,
+        EPOCHS: 10,
         # set random seed to any int to get reproducible results
         RANDOM_SEED: None,
         # embedding parameters
@@ -479,6 +479,7 @@ class TED(tf_models.RasaModel):
 
         self.metric_loss = tf.keras.metrics.Mean(name="loss")
         self.metric_acc = tf.keras.metrics.Mean(name="acc")
+        self.metrics_to_log = ["loss", "acc"]
 
         self._loss_label = tf_layers.DotProductLoss(
             self.config[NUM_NEG],
@@ -550,9 +551,9 @@ class TED(tf_models.RasaModel):
         b = self._ffnn_bot(b_in, self.training)
         return self._embed_bot(b)
 
-    def _train_losses_scores(
+    def batch_loss(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
-    ) -> None:
+    ) -> tf.Tensor:
         a_in, b_in, _ = batch_in
 
         if self.max_history_tracker_featurizer_used:
@@ -574,6 +575,8 @@ class TED(tf_models.RasaModel):
 
         self.metric_loss.update_state(loss)
         self.metric_acc.update_state(acc)
+
+        return loss
 
     def build_for_predict(self) -> None:
         all_bot_raw = tf.constant(
