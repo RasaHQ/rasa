@@ -1287,4 +1287,6 @@ def normalize(values: "np.ndarray", ranking_length: Optional[int] = 0) -> None:
         values[values < ranked[ranking_length - 1]] = 0
 
     if np.sum(values) > 0:
-        values /= np.sum(values)
+        values = values / np.sum(values)
+        
+    return values
