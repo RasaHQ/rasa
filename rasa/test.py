@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import warnings
 from typing import Text, Dict, Optional, List, Any
 
 import rasa.utils.io as io_utils
@@ -23,9 +22,8 @@ def test_core_models_in_directory(model_directory: Text, stories: Text, output: 
 
     if os.path.isfile(model_directory):
         if model_directory != get_latest_model():
-            warnings.warn(
-                "You passed a file as '--model'. Will use the directory containing this file instead.",
-                Warning,
+            print_warning(
+                "You passed a file as '--model'. Will use the directory containing this file instead."
             )
         model_directory = os.path.dirname(model_directory)
 
