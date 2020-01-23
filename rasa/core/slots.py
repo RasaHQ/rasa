@@ -32,6 +32,12 @@ class Slot:
         to correspond to this value."""
         return 1
 
+    def add_default_value(self) -> None:
+        """Add a default value to a slots user-defined values"""
+        raise NotImplementedError(
+            "Each slot type needs to specify its own" "default value to add, if any"
+        )
+
     def has_features(self) -> bool:
         """Indicate if the slot creates any features."""
         return self.feature_dimensionality() != 0
@@ -200,7 +206,8 @@ class CategoricalSlot(Slot):
         self.values = [str(v).lower() for v in values] if values else []
 
     def add_default_value(self) -> None:
-        if DEFAULT_CATEGORICAL_SLOT_VALUE not in self.values:
+        values = set(self.values)
+        if DEFAULT_CATEGORICAL_SLOT_VALUE not in values:
             self.values.append(DEFAULT_CATEGORICAL_SLOT_VALUE)
 
     def persistence_info(self) -> Dict[Text, Any]:
