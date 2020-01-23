@@ -461,6 +461,50 @@ def test_botframework_attachments():
     assert ch.add_attachments_to_metadata(payload, metadata) == updated_metadata
 
 
+def test_slack_metadata():
+    from rasa.core.channels.slack import SlackInput
+    from sanic.request import Request
+
+    user = "user1"
+    channel = "channel1"
+    direct_message_event = {
+        "authed_users": ["test"],
+        "event": {
+            "client_msg_id": "XXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+            "type": "message",
+            "text": "hello world",
+            "user": user,
+            "ts": "1579802617.000800",
+            "team": "XXXXXXXXX",
+            "blocks": [
+                {
+                    "type": "rich_text",
+                    "block_id": "XXXXX",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [{"type": "text", "text": "hi"}],
+                        }
+                    ],
+                }
+            ],
+            "channel": channel,
+            "event_ts": "1579802617.000800",
+            "channel_type": "im",
+        },
+    }
+
+    input_channel = SlackInput(
+        slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
+    )
+
+    r = Request(None, None, None, None, None, app="test")
+    r.parsed_json = direct_message_event
+    metadata = input_channel.get_metadata(request=r)
+    assert metadata["sender"] == user
+    assert metadata["out_channel"] == channel
+
+
 def test_slack_message_sanitization():
     from rasa.core.channels.slack import SlackInput
 

@@ -330,16 +330,26 @@ class SlackInput(InputChannel):
         return response.text("")
 
     def get_metadata(self, request: Request) -> Dict[Text, Any]:
+        """Extracts the metadata from a slack API event (https://api.slack.com/types/event).
+
+        Args:
+            request: a `Request` object that contains a slack API event in the body.
+
+        Returns:
+            A `dict` containing the output channel for the response, the text from the user, the sender's ID, and
+            users that have installed the bot.
+        """
         slack_event = request.json
         event = slack_event.get("event")
-
-        return {"out_channel": event.get("channel"), "text": ..., ... }
-        metadata["out_channel"] = event.get("channel")
-        metadata["text"] = event.get("text")
-        metadata["sender"] = event.get("user")
-        metadata["users"] = slack_event.get("authed_users")
-
-        return metadata
+        print(event)
+        print("*****")
+        print(event.get("channel"))
+        return {
+            "out_channel": event.get("channel"),
+            "text": event.get("text"),
+            "sender": event.get("user"),
+            "users": slack_event.get("authed_users"),
+        }
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
@@ -393,7 +403,11 @@ class SlackInput(InputChannel):
                             metadata=metadata,
                         )
                     else:
-                        return response.text("")
+                        return response.text(
+                            "Received message on unsupported channel: {}".format(
+                                metadata["out_channel"]
+                            )
+                        )
 
             return response.text("Bot message delivered")
 
