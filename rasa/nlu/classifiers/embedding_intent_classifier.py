@@ -1029,7 +1029,7 @@ class DIET(tf_models.RasaModel):
         )
 
     @staticmethod
-    def _get_mask_and_lengths(mask):
+    def _get_mask_and_lengths(mask: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
         sequence_lengths = tf.cast(tf.reduce_sum(mask[:, :, 0], 1), tf.int32)
         return mask, sequence_lengths
 
@@ -1090,13 +1090,11 @@ class DIET(tf_models.RasaModel):
 
     @staticmethod
     def _last_token(x: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
-        last_index = tf.maximum(
-            tf.constant(0, dtype=sequence_lengths.dtype), sequence_lengths - 1
-        )
+        last_index = tf.maximum(0, sequence_lengths - 1)
         idxs = tf.stack([tf.range(tf.shape(last_index)[0]), last_index], axis=1)
         return tf.gather_nd(x, idxs)
 
-    def _build_all_b(self) -> Tuple[tf.Tensor, tf.Tensor]:
+    def _build_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_labels = self._create_bow(
             self.tf_label_data["label_features"],
             self.tf_label_data["label_mask"][0],
@@ -1128,7 +1126,7 @@ class DIET(tf_models.RasaModel):
         )
 
     def _intent_loss(self, a: tf.Tensor, b: tf.Tensor) -> tf.Tensor:
-        all_labels_embed, all_labels = self._build_all_b()
+        all_labels_embed, all_labels = self._build_all_labels()
 
         a_embed = self._tf_layers["embed.text"](a)
         b_embed = self._tf_layers["embed.label"](b)
@@ -1210,7 +1208,7 @@ class DIET(tf_models.RasaModel):
     def build_for_predict(self, model_data: RasaModelData) -> None:
         self.batch_tuple_sizes = model_data.batch_tuple_sizes()
 
-        all_labels_embed, _ = self._build_all_b()
+        all_labels_embed, _ = self._build_all_labels()
         self.all_labels_embed = tf.constant(all_labels_embed.numpy())
 
     def predict(

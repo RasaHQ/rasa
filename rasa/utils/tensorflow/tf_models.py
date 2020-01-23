@@ -139,7 +139,7 @@ class RasaModel(tf.keras.models.Model):
     def _batch_loop(
         self,
         dataset_function: Callable,
-        method_function: Callable,
+        call_model_function: Callable,
         batch_size: Union[tf.Tensor, int],
         training: bool,
     ) -> None:
@@ -148,19 +148,19 @@ class RasaModel(tf.keras.models.Model):
         self.reset_metrics()
         self.set_training_phase(training)
         for batch_in in dataset_function(batch_size):
-            method_function(batch_in)
+            call_model_function(batch_in)
 
     @staticmethod
     def _get_tf_functions(
         dataset_function: Callable,
-        method_function: Callable,
+        call_model_function: Callable,
         eager: bool,
         method: Text,
     ) -> Tuple[Callable, Callable]:
         """Convert functions to tensorflow functions"""
 
         if eager:
-            return dataset_function, method_function
+            return dataset_function, call_model_function
 
         logger.debug(f"Building tensorflow {method} graph...")
         # allows increasing batch size
@@ -169,7 +169,7 @@ class RasaModel(tf.keras.models.Model):
         init_dataset = tf_dataset_function(tf.ones((), tf.int32))
 
         tf_method_function = tf.function(
-            method_function, input_signature=[init_dataset.element_spec]
+            call_model_function, input_signature=[init_dataset.element_spec]
         )
         tf_method_function(next(iter(init_dataset)))
 
@@ -182,7 +182,7 @@ class RasaModel(tf.keras.models.Model):
     ) -> Tuple[Callable, Callable]:
         """Create train tensorflow functions"""
 
-        def train_dataset_function(_batch_size):
+        def train_dataset_function(_batch_size: tf.Tensor) -> tf.data.Dataset:
             return model_data.as_tf_dataset(_batch_size, batch_strategy, shuffle=True)
 
         return self._get_tf_functions(
@@ -199,7 +199,7 @@ class RasaModel(tf.keras.models.Model):
 
         if evaluate_on_num_examples > 0:
 
-            def evaluation_dataset_function(_batch_size):
+            def evaluation_dataset_function(_batch_size: tf.Tensor) -> tf.data.Dataset:
                 return evaluation_model_data.as_tf_dataset(
                     _batch_size, "sequence", shuffle=False
                 )
