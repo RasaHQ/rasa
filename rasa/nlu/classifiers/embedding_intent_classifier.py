@@ -18,6 +18,7 @@ from rasa.nlu.components import any_of
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import tf_layers, tf_models
 from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
+from rasa.utils.tensorflow.constants import *
 from rasa.nlu.constants import (
     INTENT_ATTRIBUTE,
     TEXT_ATTRIBUTE,
@@ -31,44 +32,7 @@ from rasa.nlu.training_data import TrainingData
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message
 
-
 logger = logging.getLogger(__name__)
-
-
-# constants - configuration parameters
-HIDDEN_LAYERS_SIZES_TEXT = "hidden_layers_sizes_text"
-HIDDEN_LAYERS_SIZES_LABEL = "hidden_layers_sizes_label"
-SHARE_HIDDEN_LAYERS = "share_hidden_layers"
-TRANSFORMER_SIZE = "transformer_size"
-NUM_TRANSFORMER_LAYERS = "number_of_transformer_layers"
-NUM_HEADS = "number_of_attention_heads"
-POS_ENCODING = "positional_encoding"
-MAX_SEQ_LENGTH = "maximum_sequence_length"
-BATCH_SIZES = "batch_sizes"
-BATCH_STRATEGY = "batch_strategy"
-EPOCHS = "epochs"
-RANDOM_SEED = "random_seed"
-LEARNING_RATE = "learning_rate"
-DENSE_DIM = "dense_dimensions"
-EMBED_DIM = "embedding_dimension"
-NUM_NEG = "number_of_negative_examples"
-SIMILARITY_TYPE = "similarity_type"
-LOSS_TYPE = "loss_type"
-MU_POS = "maximum_positive_similarity"
-MU_NEG = "maximum_negative_similarity"
-USE_MAX_SIM_NEG = "use_maximum_negative_similarity"
-SCALE_LOSS = "scale_loss"
-C2 = "l2_regularization"
-C_EMB = "c_emb"
-DROPRATE = "droprate"
-UNIDIRECTIONAL_ENCODER = "unidirectional_encoder"
-EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
-EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"
-INTENT_CLASSIFICATION = "perform_intent_classification"
-ENTITY_RECOGNITION = "perform_entity_recognition"
-MASKED_LM = "use_masked_language_model"
-SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
-RANKING_LENGTH = "ranking_length"
 
 
 class EmbeddingIntentClassifier(EntityExtractor):

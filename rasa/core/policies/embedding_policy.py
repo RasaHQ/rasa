@@ -22,38 +22,10 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import tf_models, tf_layers
 from rasa.utils.tensorflow.tf_model_data import RasaModelData
+from rasa.utils.tensorflow.constants import *
 
 
 logger = logging.getLogger(__name__)
-
-
-# constants - configuration parameters
-HIDDEN_LAYERS_SIZES_PRE_DIAL = "hidden_layers_sizes_pre_dial"
-HIDDEN_LAYERS_SIZES_BOT = "hidden_layers_sizes_bot"
-TRANSFORMER_SIZE = "transformer_size"
-NUM_TRANSFORMER_LAYERS = "number_of_transformer_layers"
-NUM_HEADS = "number_of_attention_heads"
-POS_ENCODING = "positional_encoding"
-MAX_SEQ_LENGTH = "maximum_sequence_length"
-BATCH_SIZES = "batch_sizes"
-BATCH_STRATEGY = "batch_strategy"
-EPOCHS = "epochs"
-RANDOM_SEED = "random_seed"
-EMBED_DIM = "embedding_dimension"
-NUM_NEG = "number_of_negative_examples"
-SIMILARITY_TYPE = "similarity_type"
-LOSS_TYPE = "loss_type"
-MU_POS = "maximum_positive_similarity"
-MU_NEG = "maximum_negative_similarity"
-USE_MAX_SIM_NEG = "use_maximum_negative_similarity"
-SCALE_LOSS = "scale_loss"
-C2 = "l2_regularization"
-C_EMB = "c_emb"
-DROPRATE_DIAL = "droprate_dial"
-DROPRATE_BOT = "droprate_bot"
-EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
-EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"
-RANKING_LENGTH = "ranking_length"
 
 
 class EmbeddingPolicy(Policy):
@@ -148,7 +120,6 @@ class EmbeddingPolicy(Policy):
         priority: int = DEFAULT_POLICY_PRIORITY,
         max_history: Optional[int] = None,
         model: Optional[tf_models.RasaModel] = None,
-        predict_func: Optional[Callable] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instant variables with default values"""
@@ -161,7 +132,6 @@ class EmbeddingPolicy(Policy):
         self._load_params(**kwargs)
 
         self.model = model
-        self.predict_func = predict_func
 
         # encode all label_ids with numbers
         self._encoded_all_label_ids = None
@@ -324,16 +294,16 @@ class EmbeddingPolicy(Policy):
 
         Return the list of probabilities for the next actions.
         """
-        if self.model is None or self.predict_func is None:
+        if self.model is None:
             return [0.0] * domain.num_actions
 
         # create model data from message and convert it into a batch of 1
         data_X = self.featurizer.create_X([tracker], domain)
         model_data = self._create_model_data(data_X)
-        predict_dataset = model_data.as_tf_dataset(1)
-        batch_in = next(iter(predict_dataset))
 
-        confidence = self.predict_func(batch_in)
+        output = self.model.predict(model_data)
+
+        confidence = output["action_scores"]
         confidence = confidence[0, -1, :].numpy()
 
         if self.config[LOSS_TYPE] == "softmax" and self.config[RANKING_LENGTH] > 0:
@@ -384,7 +354,7 @@ class EmbeddingPolicy(Policy):
         if not os.path.exists(path):
             raise Exception(
                 f"Failed to load embedding policy model. Path "
-                f"'{os.path.abspath(path)}' doesn't exist"
+                f"'{os.path.abspath(path)}' doesn't exist."
             )
 
         file_name = "embedding_policy"
@@ -411,48 +381,26 @@ class EmbeddingPolicy(Policy):
             elif meta[LOSS_TYPE] == "margin":
                 meta[SIMILARITY_TYPE] = "cosine"
 
-        model = TED(
+        model = TED.load(
+            tf_model_file,
+            model_data_example,
             meta,
             isinstance(featurizer, MaxHistoryTrackerFeaturizer),
             encoded_all_label_ids,
         )
 
-        logger.debug("Loading the model ...")
-        model.fit(
-            model_data_example,
-            1,
-            1,
-            0,
-            0,
-            batch_strategy=meta[BATCH_STRATEGY],
-            silent=True,  # don't confuse users with training output
-            eager=True,  # no need to build tf graph, eager is faster here
-        )
-        model.load_weights(tf_model_file)
-
         # build the graph for prediction
-        model.set_training_phase(False)
-        model_data = RasaModelData(
+        predict_data_example = RasaModelData(
             label_key="label_ids",
             data={k: vs for k, vs in model_data_example.items() if "dialogue" in k},
         )
-        model.build_for_predict()
-        predict_dataset = model_data.as_tf_dataset(
-            1, batch_strategy="sequence", shuffle=False
-        )
-        predict_func = tf.function(
-            func=model.predict, input_signature=[predict_dataset.element_spec]
-        )
-        batch_in = next(iter(predict_dataset))
-        predict_func(batch_in)
-        logger.debug("Finished loading the model.")
+        model.build_for_predict(predict_data_example)
 
         return cls(
             featurizer=featurizer,
             component_config=meta,
             priority=meta["priority"],
             model=model,
-            predict_func=predict_func,
         )
 
 
@@ -470,9 +418,6 @@ class TED(tf_models.RasaModel):
 
         # optimizer
         self._optimizer = tf.keras.optimizers.Adam()
-
-        # tf tensors
-        self.training = tf.ones((), tf.bool)
 
         self.all_labels_embed = None
         self._encoded_all_label_ids = encoded_all_label_ids
@@ -497,14 +442,14 @@ class TED(tf_models.RasaModel):
             self.config[SCALE_LOSS],
         )
         self._tf_layers["ffnn.dialogue"] = tf_layers.ReluFfn(
-            self.config[HIDDEN_LAYERS_SIZES_PRE_DIAL],
-            self.config[DROPRATE_DIAL],
+            self.config[HIDDEN_LAYERS_SIZES_DIALOGUE],
+            self.config[DROPRATE_DIALOGUE],
             self.config[C2],
             layer_name_suffix="dialogue",
         )
         self._tf_layers["ffnn.label"] = tf_layers.ReluFfn(
-            self.config[HIDDEN_LAYERS_SIZES_BOT],
-            self.config[DROPRATE_BOT],
+            self.config[HIDDEN_LAYERS_SIZES_LABEL],
+            self.config[DROPRATE_LABEL],
             self.config[C2],
             layer_name_suffix="label",
         )
@@ -515,7 +460,7 @@ class TED(tf_models.RasaModel):
             self.config[TRANSFORMER_SIZE] * 4,
             self.config[MAX_SEQ_LENGTH],
             self.config[C2],
-            self.config[DROPRATE_DIAL],
+            self.config[DROPRATE_DIALOGUE],
             name="dialogue_encoder",
         )
         self._tf_layers["embed.dialogue"] = tf_layers.Embed(
@@ -531,11 +476,13 @@ class TED(tf_models.RasaModel):
             self.config[SIMILARITY_TYPE],
         )
 
-    def set_training_phase(self, training: bool) -> None:
-        if training:
-            self.training = tf.ones((), tf.bool)
-        else:
-            self.training = tf.zeros((), tf.bool)
+    def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
+        all_label = tf.constant(
+            self._encoded_all_label_ids, dtype=tf.float32, name="all_label"
+        )
+        all_labels_embed = self._embed_label(all_label)
+
+        return all_label, all_labels_embed
 
     def _emebed_dialogue(self, dialogue_in: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
         """Create dialogue level embedding and mask."""
@@ -544,9 +491,9 @@ class TED(tf_models.RasaModel):
         # if there is at least one `-1` it should be masked
         mask = tf.sign(tf.reduce_max(dialogue_in, -1) + 1)
 
-        dialogue = self._tf_layers["ffnn.dialogue"](dialogue_in, self.training)
+        dialogue = self._tf_layers["ffnn.dialogue"](dialogue_in, self._training)
         dialogue_transformed = self._tf_layers["transformer"](
-            dialogue, tf.expand_dims(mask, axis=-1), self.training
+            dialogue, tf.expand_dims(mask, axis=-1), self._training
         )
 
         if self.max_history_tracker_featurizer_used:
@@ -559,7 +506,7 @@ class TED(tf_models.RasaModel):
         return dialogue_embed, mask
 
     def _embed_label(self, label_in: tf.Tensor) -> tf.Tensor:
-        label = self._tf_layers["ffnn.label"](label_in, self.training)
+        label = self._tf_layers["ffnn.label"](label_in, self._training)
         return self._tf_layers["embed.label"](label)
 
     def batch_loss(
@@ -571,14 +518,10 @@ class TED(tf_models.RasaModel):
             # add time dimension if max history featurizer is used
             label_in = label_in[:, tf.newaxis, :]
 
-        all_label = tf.constant(
-            self._encoded_all_label_ids, dtype=tf.float32, name="all_label"
-        )
+        all_label, self.all_labels_embed = self._create_all_labels_embed()
 
         dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
-
         label_embed = self._embed_label(label_in)
-        self.all_labels_embed = self._embed_label(all_label)
 
         loss, acc = self._tf_layers["loss.label"](
             dialogue_embed,
@@ -594,16 +537,13 @@ class TED(tf_models.RasaModel):
 
         return loss
 
-    def build_for_predict(self) -> None:
-        all_label = tf.constant(
-            self._encoded_all_label_ids, dtype=tf.float32, name="all_label"
-        )
-        all_labels_embed = self._embed_label(all_label)
-
-        self.all_labels_embed = tf.constant(all_labels_embed.numpy())
-
-    def predict(self, batch_in: Tuple[tf.Tensor], **kwargs) -> tf.Tensor:
+    def batch_predict(
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+    ) -> Dict[Text, tf.Tensor]:
         dialogue_in = batch_in[0]
+
+        if self.all_labels_embed is None:
+            _, self.all_labels_embed = self._create_all_labels_embed()
 
         dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
 
@@ -613,4 +553,8 @@ class TED(tf_models.RasaModel):
             mask,
         )
 
-        return train_utils.confidence_from_sim(sim_all, self.config[SIMILARITY_TYPE])
+        scores = self._tf_layers["loss.label"].confidence_from_sim(
+            sim_all, self.config[SIMILARITY_TYPE]
+        )
+
+        return {"action_scores": scores}

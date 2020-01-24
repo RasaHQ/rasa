@@ -145,7 +145,7 @@ class RasaModel(tf.keras.models.Model):
             logger.debug("There is no tensorflow prediction graph.")
             self.build_for_predict(predict_data)
 
-        predict_dataset = predict_data.as_tf_dataset(1)
+        predict_dataset = predict_data.as_tf_dataset(batch_size=1)
         batch_in = next(iter(predict_dataset))
         self.set_training_phase(False)
         return self._predict_function(batch_in)
@@ -163,10 +163,10 @@ class RasaModel(tf.keras.models.Model):
         # need to train on 1 example to build weights of the correct size
         model.fit(
             model_data_example,
-            1,
-            1,
-            0,
-            0,
+            epochs=1,
+            batch_size=1,
+            evaluate_every_num_epochs=0,
+            evaluate_on_num_examples=0,
             batch_strategy="sequence",
             silent=True,  # don't confuse users with training output
             eager=True,  # no need to build tf graph, eager is faster here
@@ -230,7 +230,7 @@ class RasaModel(tf.keras.models.Model):
         return tf_dataset_function, tf_method_function
 
     def _get_tf_train_functions(
-        self, eager: bool, model_data: RasaModelData, batch_strategy: Text,
+        self, eager: bool, model_data: RasaModelData, batch_strategy: Text
     ) -> Tuple[Callable, Callable]:
         """Create train tensorflow functions"""
 
@@ -261,10 +261,7 @@ class RasaModel(tf.keras.models.Model):
                 )
 
             return self._get_tf_functions(
-                evaluation_dataset_function,
-                self._total_batch_loss,
-                eager,
-                "evaluation",
+                evaluation_dataset_function, self._total_batch_loss, eager, "evaluation"
             )
 
         return None, None
