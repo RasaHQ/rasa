@@ -11,7 +11,7 @@ from rasa.core.domain import Domain
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.events import UserUttered
 
-from tests.core.utilities import user_uttered
+from tests.core import utilities
 from rasa.core.actions.action import ACTION_DEFAULT_FALLBACK_NAME, ACTION_RESTART_NAME
 from rasa.core.constants import USER_INTENT_RESTART
 from rasa.core.events import ActionExecuted
@@ -98,7 +98,7 @@ def test_fallback_mapping_restart():
     domain = Domain.load("data/test_domains/default.yml")
     events = [
         ActionExecuted(ACTION_DEFAULT_FALLBACK_NAME),
-        user_uttered(USER_INTENT_RESTART, 1),
+        utilities.user_uttered(USER_INTENT_RESTART, 1),
     ]
     tracker = DialogueStateTracker.from_events("test", events, [])
 
