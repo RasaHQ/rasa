@@ -727,7 +727,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             if e.errno != errno.EEXIST:
                 raise
 
-        self.model.save_weights(tf_model_file, save_format="tf")
+        self.model.save(tf_model_file)
 
         with open(os.path.join(model_dir, file_name + ".data_example.pkl"), "wb") as f:
             pickle.dump(self.data_example, f)
@@ -804,30 +804,25 @@ class EmbeddingIntentClassifier(EntityExtractor):
             elif meta[LOSS_TYPE] == "margin":
                 meta[SIMILARITY_TYPE] = "cosine"
 
-        model = DIET(model_data_example.get_signature(), label_data, inv_tag_dict, meta)
-
         logger.debug("Loading the model ...")
-        model.fit(
+        model = DIET.load(
+            tf_model_file,
             model_data_example,
-            1,
-            1,
-            0,
-            0,
-            batch_strategy=meta[BATCH_STRATEGY],
-            silent=True,  # don't confuse users with training output
-            eager=True,  # no need to build tf graph, eager is faster here
+            model_data_example.get_signature(),
+            label_data,
+            inv_tag_dict,
+            meta,
         )
-        model.load_weights(tf_model_file)
-
         # build the graph for prediction
         model.set_training_phase(False)
-        model_data = RasaModelData(
+        predict_data = RasaModelData(
             label_key="label_ids",
             data={k: vs for k, vs in model_data_example.items() if "text" in k},
         )
-        model.data_signature = model_data.get_signature()
-        model.build_for_predict(model_data)
-        predict_dataset = model_data.as_tf_dataset(
+        # override train signature with predict signature
+        model.data_signature = predict_data.get_signature()
+        model.build_for_predict()
+        predict_dataset = predict_data.as_tf_dataset(
             1, batch_strategy="sequence", shuffle=False
         )
         predict_func = tf.function(
@@ -877,7 +872,6 @@ class DIET(tf_models.RasaModel):
 
         # persist
         self.all_labels_embed = None
-        self.batch_tuple_sizes = None
 
     def _create_metrics(self):
         # self.metrics preserve order
@@ -1205,9 +1199,7 @@ class DIET(tf_models.RasaModel):
 
         return tf.math.add_n(losses)
 
-    def build_for_predict(self, model_data: RasaModelData) -> None:
-        self.batch_tuple_sizes = model_data.batch_tuple_sizes()
-
+    def build_for_predict(self) -> None:
         all_labels_embed, _ = self._build_all_labels()
         self.all_labels_embed = tf.constant(all_labels_embed.numpy())
 

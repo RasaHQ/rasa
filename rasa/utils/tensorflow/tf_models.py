@@ -124,6 +124,29 @@ class RasaModel(tf.keras.models.Model):
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
+    def save(self, model_file_name) -> None:
+        self.save_weights(model_file_name, save_format="tf")
+
+    @classmethod
+    def load(cls, model_file_name, model_data_example, *args, **kwargs):
+        # create empty model
+        model = cls(*args, **kwargs)
+        # need to train on 1 example to build weights of the correct size
+        model.fit(
+            model_data_example,
+            1,
+            1,
+            0,
+            0,
+            batch_strategy="sequence",
+            silent=True,  # don't confuse users with training output
+            eager=True,  # no need to build tf graph, eager is faster here
+        )
+        # load trained weights
+        model.load_weights(model_file_name)
+
+        return model
+
     def _total_batch_loss(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
     ) -> tf.Tensor:
@@ -182,7 +205,9 @@ class RasaModel(tf.keras.models.Model):
     ) -> Tuple[Callable, Callable]:
         """Create train tensorflow functions"""
 
-        def train_dataset_function(_batch_size: tf.Tensor) -> tf.data.Dataset:
+        def train_dataset_function(
+            _batch_size: Union[tf.Tensor, int]
+        ) -> tf.data.Dataset:
             return model_data.as_tf_dataset(_batch_size, batch_strategy, shuffle=True)
 
         return self._get_tf_functions(
@@ -199,7 +224,9 @@ class RasaModel(tf.keras.models.Model):
 
         if evaluate_on_num_examples > 0:
 
-            def evaluation_dataset_function(_batch_size: tf.Tensor) -> tf.data.Dataset:
+            def evaluation_dataset_function(
+                _batch_size: Union[tf.Tensor, int]
+            ) -> tf.data.Dataset:
                 return evaluation_model_data.as_tf_dataset(
                     _batch_size, "sequence", shuffle=False
                 )
