@@ -461,6 +461,7 @@ class TED(tf_models.RasaModel):
             self.config[MAX_SEQ_LENGTH],
             self.config[C2],
             self.config[DROPRATE_DIALOGUE],
+            unidirectional=True,
             name="dialogue_encoder",
         )
         self._tf_layers["embed.dialogue"] = tf_layers.Embed(
