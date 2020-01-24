@@ -21,7 +21,7 @@ from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import tf_models, tf_layers
-from rasa.utils.tensorflow.tf_model_data import RasaModelData
+from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import *
 
 
@@ -245,6 +245,7 @@ class EmbeddingPolicy(Policy):
         self.data_example = {k: [v[:1] for v in vs] for k, vs in model_data.items()}
 
         self.model = TED(
+            model_data.get_signature(),
             self.config,
             isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
             self._encoded_all_label_ids,
@@ -382,6 +383,7 @@ class EmbeddingPolicy(Policy):
         model = TED.load(
             tf_model_file,
             model_data_example,
+            data_signature=model_data_example.get_signature(),
             config=meta,
             max_history_tracker_featurizer_used=isinstance(
                 featurizer, MaxHistoryTrackerFeaturizer
@@ -407,6 +409,7 @@ class EmbeddingPolicy(Policy):
 class TED(tf_models.RasaModel):
     def __init__(
         self,
+        data_signature: Dict[Text, List[FeatureSignature]],
         config: Dict[Text, Any],
         max_history_tracker_featurizer_used: bool,
         encoded_all_label_ids: np.ndarray,
@@ -415,6 +418,12 @@ class TED(tf_models.RasaModel):
 
         self.config = config
         self.max_history_tracker_featurizer_used = max_history_tracker_featurizer_used
+
+        # data
+        self.data_signature = data_signature
+        self.predict_data_signature = {
+            k: vs for k, vs in data_signature.items() if "dialogue" in k
+        }
 
         # optimizer
         self._set_optimizer(tf.keras.optimizers.Adam())
@@ -511,24 +520,22 @@ class TED(tf_models.RasaModel):
         return self._tf_layers["embed.label"](label)
 
     def batch_loss(self, batch_in: List[tf.Tensor]) -> tf.Tensor:
-        dialogue_in, label_in, _ = batch_in
+        batch = self.batch_to_model_data_format(batch_in, self.data_signature)
+
+        dialogue_in = batch["dialogue_features"][0]
+        label_in = batch["label_features"][0]
 
         if self.max_history_tracker_featurizer_used:
             # add time dimension if max history featurizer is used
             label_in = label_in[:, tf.newaxis, :]
 
-        all_label, self.all_labels_embed = self._create_all_labels_embed()
+        all_label, all_labels_embed = self._create_all_labels_embed()
 
         dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
         label_embed = self._embed_label(label_in)
 
         loss, acc = self._tf_layers["loss.label"](
-            dialogue_embed,
-            label_embed,
-            label_in,
-            self.all_labels_embed,
-            all_label,
-            mask,
+            dialogue_embed, label_embed, label_in, all_labels_embed, all_label, mask
         )
 
         self.metric_loss.update_state(loss)
@@ -537,7 +544,9 @@ class TED(tf_models.RasaModel):
         return loss
 
     def batch_predict(self, batch_in: List[tf.Tensor]) -> Dict[Text, tf.Tensor]:
-        dialogue_in = batch_in[0]
+        batch = self.batch_to_model_data_format(batch_in, self.predict_data_signature)
+
+        dialogue_in = batch["dialogue_features"][0]
 
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels_embed()
