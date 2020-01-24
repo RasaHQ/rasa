@@ -442,7 +442,7 @@ class TED(RasaModel):
         # metrics
         self.metric_loss = tf.keras.metrics.Mean(name="loss")
         self.metric_acc = tf.keras.metrics.Mean(name="acc")
-        self.metrics_to_log = ["loss", "acc"]
+        self.metrics_to_log += ["loss", "acc"]
 
         # set up tf layers
         self._tf_layers = {}
@@ -509,7 +509,7 @@ class TED(RasaModel):
 
         dialogue = self._tf_layers["ffnn.dialogue"](dialogue_in, self._training)
         dialogue_transformed = self._tf_layers["transformer"](
-            dialogue, tf.expand_dims(mask, axis=-1), self._training
+            dialogue, 1 - tf.expand_dims(mask, axis=-1), self._training
         )
 
         if self.max_history_tracker_featurizer_used:
