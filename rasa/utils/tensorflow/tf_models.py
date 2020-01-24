@@ -128,7 +128,9 @@ class RasaModel(tf.keras.models.Model):
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-    def build_for_predict(self, predict_data: RasaModelData, eager: bool = False):
+    def build_for_predict(
+        self, predict_data: RasaModelData, eager: bool = False
+    ) -> None:
         def predict_dataset_function(  # to reuse the same helper method
             _batch_size: Union[tf.Tensor, int]
         ) -> tf.data.Dataset:
@@ -138,7 +140,7 @@ class RasaModel(tf.keras.models.Model):
             predict_dataset_function, self.batch_predict, eager, "prediction"
         )
 
-    def predict(self, predict_data):
+    def predict(self, predict_data: RasaModelData) -> Dict[Text, tf.Tensor]:
         if self._predict_function is None:
             logger.debug("There is no tensorflow prediction graph")
             self.build_for_predict(predict_data)
