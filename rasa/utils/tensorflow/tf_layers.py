@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional, Text, Tuple, Callable
 import tensorflow as tf
 import tensorflow_addons as tfa
+from tensorflow.python.keras.utils import tf_utils
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -9,13 +10,16 @@ logger = logging.getLogger(__name__)
 
 class SparseDropout(tf.keras.layers.Dropout):
     def call(self, inputs: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
+        def dropped_inputs():
+            to_retain_prob = tf.random.uniform(
+                tf.shape(inputs.values), 0, 1, inputs.values.dtype
+            )
+            to_retain = tf.greater_equal(to_retain_prob, self.rate)
+            return tf.sparse.retain(inputs, to_retain)
 
-        to_retain_prob = tf.random.uniform(
-            tf.shape(inputs.values), 0, 1, inputs.values.dtype
+        outputs = tf_utils.smart_cond(
+            training, dropped_inputs, lambda: tf.identity(inputs)
         )
-        to_retain = tf.greater_equal(to_retain_prob, self.rate)
-        dropped_inputs = tf.sparse.retain(inputs, to_retain)
-        outputs = tf.cond(training, lambda: dropped_inputs, lambda: inputs)
         # noinspection PyProtectedMember
         outputs._dense_shape = inputs._dense_shape
 
@@ -164,7 +168,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         return output, attention_weights
 
-    def __init__(self, d_model: int, num_heads: int, reg_lambda: float) -> None:
+    def __init__(self, d_model: int, num_heads: int) -> None:
         super().__init__()
 
         self.num_heads = num_heads
@@ -174,17 +178,10 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         self._depth = d_model // self.num_heads
 
-        l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
-        self._wq = tf.keras.layers.Dense(
-            d_model, use_bias=False, kernel_regularizer=l2_regularizer
-        )
-        self._wk = tf.keras.layers.Dense(
-            d_model, use_bias=False, kernel_regularizer=l2_regularizer
-        )
-        self._wv = tf.keras.layers.Dense(
-            d_model, use_bias=False, kernel_regularizer=l2_regularizer
-        )
-        self._dense = tf.keras.layers.Dense(d_model, kernel_regularizer=l2_regularizer)
+        self._wq = tf.keras.layers.Dense(d_model, use_bias=False)
+        self._wk = tf.keras.layers.Dense(d_model, use_bias=False)
+        self._wv = tf.keras.layers.Dense(d_model, use_bias=False)
+        self._dense = tf.keras.layers.Dense(d_model)
 
     def _split_heads(self, x: tf.Tensor) -> tf.Tensor:
         """Split the last dimension into (num_heads, depth).
@@ -242,29 +239,19 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
 class TransformerEncoderLayer(tf.keras.layers.Layer):
     def __init__(
-        self,
-        d_model: int,
-        num_heads: int,
-        dff: int,
-        reg_lambda: float,
-        rate: float = 0.1,
+        self, d_model: int, num_heads: int, dff: int, rate: float = 0.1,
     ) -> None:
         super().__init__()
 
         self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
-        self._mha = MultiHeadAttention(d_model, num_heads, reg_lambda)
+        self._mha = MultiHeadAttention(d_model, num_heads)
         self._dropout = tf.keras.layers.Dropout(rate)
 
-        l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
         self._ffn_layers = [
             tf.keras.layers.LayerNormalization(epsilon=1e-6),
-            tf.keras.layers.Dense(
-                dff, activation="relu", kernel_regularizer=l2_regularizer
-            ),  # (batch_size, seq_len, dff)
+            tf.keras.layers.Dense(dff, activation="relu"),  # (batch_size, seq_len, dff)
             tf.keras.layers.Dropout(rate),
-            tf.keras.layers.Dense(
-                d_model, kernel_regularizer=l2_regularizer
-            ),  # (batch_size, seq_len, d_model)
+            tf.keras.layers.Dense(d_model),  # (batch_size, seq_len, d_model)
             tf.keras.layers.Dropout(rate),
         ]
 
@@ -339,7 +326,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         self._dropout = tf.keras.layers.Dropout(rate)
 
         self._enc_layers = [
-            TransformerEncoderLayer(d_model, num_heads, dff, reg_lambda, rate)
+            TransformerEncoderLayer(d_model, num_heads, dff, rate)
             for _ in range(num_layers)
         ]
         self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
@@ -385,42 +372,49 @@ class InputMask(tf.keras.layers.Layer):
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Randomly mask input sequences."""
 
-        # do not substitute with cls token
-        pad_mask_up_to_last = tf.math.cumprod(
-            1 - mask, axis=1, exclusive=True, reverse=True
-        )
-        mask_up_to_last = 1 - pad_mask_up_to_last
-
-        x_random_pad = (
-            tf.random.uniform(tf.shape(x), tf.reduce_min(x), tf.reduce_max(x), x.dtype)
-            * pad_mask_up_to_last
-        )
-        # shuffle over batch dim
-        x_shuffle = tf.random.shuffle(x * mask_up_to_last + x_random_pad)
-
-        # shuffle over sequence dim
-        x_shuffle = tf.transpose(x_shuffle, [1, 0, 2])
-        x_shuffle = tf.random.shuffle(x_shuffle)
-        x_shuffle = tf.transpose(x_shuffle, [1, 0, 2])
-
-        # shuffle doesn't support backprop
-        x_shuffle = tf.stop_gradient(x_shuffle)
-
-        mask_vector = tf.tile(self.mask_vector, (tf.shape(x)[0], tf.shape(x)[1], 1))
-
-        other_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype)
-        other_prob = tf.tile(other_prob, (1, 1, x.shape[-1]))
-        x_other = tf.where(
-            other_prob < 0.70, mask_vector, tf.where(other_prob < 0.80, x_shuffle, x)
-        )
-
         lm_mask_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype) * mask
         lm_mask_bool = tf.greater_equal(lm_mask_prob, 0.85)
-        x_masked = tf.where(tf.tile(lm_mask_bool, (1, 1, x.shape[-1])), x_other, x)
 
-        x_masked = tf.cond(training, lambda: x_masked, lambda: x)
+        def x_masked():
+            # do not substitute with cls token
+            pad_mask_up_to_last = tf.math.cumprod(
+                1 - mask, axis=1, exclusive=True, reverse=True
+            )
+            mask_up_to_last = 1 - pad_mask_up_to_last
 
-        return x_masked, lm_mask_bool
+            x_random_pad = (
+                tf.random.uniform(
+                    tf.shape(x), tf.reduce_min(x), tf.reduce_max(x), x.dtype
+                )
+                * pad_mask_up_to_last
+            )
+            # shuffle over batch dim
+            x_shuffle = tf.random.shuffle(x * mask_up_to_last + x_random_pad)
+
+            # shuffle over sequence dim
+            x_shuffle = tf.transpose(x_shuffle, [1, 0, 2])
+            x_shuffle = tf.random.shuffle(x_shuffle)
+            x_shuffle = tf.transpose(x_shuffle, [1, 0, 2])
+
+            # shuffle doesn't support backprop
+            x_shuffle = tf.stop_gradient(x_shuffle)
+
+            mask_vector = tf.tile(self.mask_vector, (tf.shape(x)[0], tf.shape(x)[1], 1))
+
+            other_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype)
+            other_prob = tf.tile(other_prob, (1, 1, x.shape[-1]))
+            x_other = tf.where(
+                other_prob < 0.70,
+                mask_vector,
+                tf.where(other_prob < 0.80, x_shuffle, x),
+            )
+
+            return tf.where(tf.tile(lm_mask_bool, (1, 1, x.shape[-1])), x_other, x)
+
+        return (
+            tf_utils.smart_cond(training, x_masked, lambda: tf.identity(x)),
+            lm_mask_bool,
+        )
 
 
 class CRF(tf.keras.layers.Layer):
