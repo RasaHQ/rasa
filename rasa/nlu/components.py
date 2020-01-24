@@ -5,7 +5,7 @@ import warnings
 
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
 from rasa.nlu.training_data import TrainingData, Message
-from rasa.nlu.constants import RESPONSE_ATTRIBUTE
+from rasa.nlu.constants import RESPONSE_ATTRIBUTE, MESSAGE_ATTRIBUTES
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
@@ -184,15 +184,10 @@ def validate_required_components_from_data(
             "your NLU pipeline does not include an EntitySynonymMapper. "
             "To map synonyms, add an EntitySynonymMapper to your pipeline."
         )
-    response_selector_exists = False
-    for component in pipeline:
-        # check if a response selector is part of NLU pipeline
-        if RESPONSE_ATTRIBUTE in component.provides:
-            response_selector_exists = True
 
     # Check for response selector but no component for it
     if data.response_examples and not any(
-        [MESSAGE_RESPONSE_ATTRIBUTE in component.provides for component in pipeline]
+        [MESSAGE_ATTRIBUTES in component.provides for component in pipeline]
     ):
         warnings.warn(
             "Your training data includes examples for training a response selector, but "
