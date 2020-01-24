@@ -519,6 +519,7 @@ def test_slack_message_sanitization():
         == 0
     )
 
+
 def test_slack_init_one_parameter():
     from rasa.core.channels.slack import SlackInput
 

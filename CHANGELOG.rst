@@ -21,7 +21,6 @@ Added
 - Add command line argument ``rasa x --config CONFIG``, to specify path to the policy and
   NLU pipeline configuration of your bot (default: ``config.yml``)
 
-
 Changed
 -------
 - Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
