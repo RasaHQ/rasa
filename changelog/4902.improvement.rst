@@ -1,0 +1,2 @@
+The ``EmbeddingPolicy``, ``EmbeddingIntentClassifier``, and ``ResponseSelector`` now by default normalize confidence
+levels over the top 10 results. See :ref:`migration-to-rasa-1.7` for more details.

@@ -37,6 +37,7 @@ from rasa.nlu.classifiers.embedding_intent_classifier import (
     ENTITY_RECOGNITION,
     MASKED_LM,
     SPARSE_INPUT_DROPOUT,
+    RANKING_LENGTH,
 )
 from rasa.nlu.constants import (
     RESPONSE_ATTRIBUTE,
@@ -128,6 +129,9 @@ class ResponseSelector(EmbeddingIntentClassifier):
         SIMILARITY_TYPE: "auto",  # string 'auto' or 'cosine' or 'inner'
         # the type of the loss function
         LOSS_TYPE: "softmax",  # string 'softmax' or 'margin'
+        # number of top responses to normalize scores for softmax loss_type
+        # set to 0 to turn off normalization
+        RANKING_LENGTH: 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct intent labels
         MU_POS: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'

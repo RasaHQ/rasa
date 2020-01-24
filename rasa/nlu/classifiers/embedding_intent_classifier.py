@@ -67,6 +67,7 @@ INTENT_CLASSIFICATION = "perform_intent_classification"
 ENTITY_RECOGNITION = "perform_entity_recognition"
 MASKED_LM = "use_masked_language_model"
 SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
+RANKING_LENGTH = "ranking_length"
 
 
 class EmbeddingIntentClassifier(EntityExtractor):
@@ -140,6 +141,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         SIMILARITY_TYPE: "auto",  # string 'auto' or 'cosine' or 'inner'
         # the type of the loss function
         LOSS_TYPE: "softmax",  # string 'softmax' or 'margin'
+        # number of top intents to normalize scores for softmax loss_type
+        # set to 0 to turn off normalization
+        RANKING_LENGTH: 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct labels
         MU_POS: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
@@ -609,6 +613,15 @@ class EmbeddingIntentClassifier(EntityExtractor):
         message_sim = message_sim.flatten()  # sim is a matrix
 
         label_ids = message_sim.argsort()[::-1]
+
+        if (
+            self.component_config[LOSS_TYPE] == "softmax"
+            and self.component_config[RANKING_LENGTH] > 0
+        ):
+            message_sim = train_utils.normalize(
+                message_sim, self.component_config[RANKING_LENGTH]
+            )
+
         message_sim[::-1].sort()
         message_sim = message_sim.tolist()
 
@@ -619,8 +632,16 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 "confidence": message_sim[0],
             }
 
+            if (
+                self.component_config[RANKING_LENGTH]
+                and 0 < self.component_config[RANKING_LENGTH] < LABEL_RANKING_LENGTH
+            ):
+                output_length = self.component_config[RANKING_LENGTH]
+            else:
+                output_length = LABEL_RANKING_LENGTH
+
             ranking = list(zip(list(label_ids), message_sim))
-            ranking = ranking[:LABEL_RANKING_LENGTH]
+            ranking = ranking[:output_length]
             label_ranking = [
                 {"name": self.inverted_label_dict[label_idx], "confidence": score}
                 for label_idx, score in ranking
