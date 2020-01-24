@@ -144,7 +144,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
                 "on training examples combining all retrieval intents."
             )
 
-    def _load_params(self) -> None:
+    def _check_config_parameters(self) -> None:
+        super()._check_config_parameters()
         self._load_selector_params(self.component_config)
 
     @staticmethod

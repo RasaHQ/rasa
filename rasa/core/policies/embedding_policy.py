@@ -41,10 +41,10 @@ class EmbeddingPolicy(Policy):
         # nn architecture
         # a list of hidden layers sizes before user embed layer
         # number of hidden layers is equal to the length of this list
-        HIDDEN_LAYERS_SIZES_PRE_DIAL: [],
+        HIDDEN_LAYERS_SIZES_DIALOGUE: [],
         # a list of hidden layers sizes before bot embed layer
         # number of hidden layers is equal to the length of this list
-        HIDDEN_LAYERS_SIZES_BOT: [],
+        HIDDEN_LAYERS_SIZES_LABEL: [],
         # number of units in transformer
         TRANSFORMER_SIZE: 128,
         # number of transformer layers
@@ -94,9 +94,9 @@ class EmbeddingPolicy(Policy):
         # between embeddings of different labels
         C_EMB: 0.8,
         # dropout rate for dial nn
-        DROPRATE_DIAL: 0.1,
+        DROPRATE_DIALOGUE: 0.1,
         # dropout rate for bot nn
-        DROPRATE_BOT: 0.0,
+        DROPRATE_LABEL: 0.0,
         # visualization of accuracy
         # how often calculate validation accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
