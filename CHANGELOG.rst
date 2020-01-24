@@ -38,7 +38,7 @@ Fixed
 - Fixed rasa init showing traceback error when user does Keyboard Interrupt before choosing a project path
 - ``CountVectorsFeaturizer`` featurizes intents only if its analyzer is set to ``word``
 - fixed bug where facebooks generic template was not rendered when buttons were ``None``
-- Fixed issue in converting multi links in incoming message as part of Slack sanitization 
+
 
 [1.4.5] - 2019-11-14
 ^^^^^^^^^^^^^^^^^^^^
