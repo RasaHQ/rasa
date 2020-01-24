@@ -297,14 +297,14 @@ class EmbeddingPolicy(Policy):
         if self.model is None:
             return [0.0] * domain.num_actions
 
-        # create model data from message and convert it into a batch of 1
+        # create model data from tracker
         data_X = self.featurizer.create_X([tracker], domain)
         model_data = self._create_model_data(data_X)
 
         output = self.model.predict(model_data)
 
-        confidence = output["action_scores"]
-        confidence = confidence[0, -1, :].numpy()
+        confidence = output["action_scores"].numpy()
+        confidence = confidence[0, -1, :]
 
         if self.config[LOSS_TYPE] == "softmax" and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
@@ -324,7 +324,7 @@ class EmbeddingPolicy(Policy):
 
         self.featurizer.persist(path)
 
-        self.model.save_weights(tf_model_file, save_format="tf")
+        self.model.save(tf_model_file)
 
         with open(os.path.join(path, file_name + ".tf_config.pkl"), "wb") as f:
             pickle.dump(self._tf_config, f)
@@ -341,8 +341,6 @@ class EmbeddingPolicy(Policy):
             os.path.join(path, file_name + ".encoded_all_label_ids.pkl"), "wb"
         ) as f:
             pickle.dump(self._encoded_all_label_ids, f)
-
-        return {"file": file_name}
 
     @classmethod
     def load(cls, path: Text) -> "EmbeddingPolicy":
@@ -384,9 +382,11 @@ class EmbeddingPolicy(Policy):
         model = TED.load(
             tf_model_file,
             model_data_example,
-            meta,
-            isinstance(featurizer, MaxHistoryTrackerFeaturizer),
-            encoded_all_label_ids,
+            config=meta,
+            max_history_tracker_featurizer_used=isinstance(
+                featurizer, MaxHistoryTrackerFeaturizer
+            ),
+            encoded_all_label_ids=encoded_all_label_ids,
         )
 
         # build the graph for prediction
