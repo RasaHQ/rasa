@@ -21,15 +21,6 @@ def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto
         return None
 
 
-def confidence_from_sim(sim: "tf.Tensor", similarity_type: Text) -> "tf.Tensor":
-    if similarity_type == "cosine":
-        # clip negative values to zero
-        return tf.nn.relu(sim)
-    else:
-        # normalize result to [0, 1] with softmax
-        return tf.nn.softmax(sim)
-
-
 def extract_attention(attention_weights) -> Optional["tf.Tensor"]:
     """Extract attention probabilities from t2t dict"""
 

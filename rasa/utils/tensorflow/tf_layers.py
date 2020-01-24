@@ -608,6 +608,15 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         return sim
 
+    @staticmethod
+    def confidence_from_sim(sim: tf.Tensor, similarity_type: Text) -> tf.Tensor:
+        if similarity_type == "cosine":
+            # clip negative values to zero
+            return tf.nn.relu(sim)
+        else:
+            # normalize result to [0, 1] with softmax
+            return tf.nn.softmax(sim)
+
     def _train_sim(
         self,
         pos_inputs_embed: tf.Tensor,

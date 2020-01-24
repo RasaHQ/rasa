@@ -282,10 +282,10 @@ class RasaModelData:
 
     def as_tf_dataset(
         self,
-        batch_size: Union["tf.Tensor", int],
+        batch_size: Union[tf.Tensor, int],
         batch_strategy: Text = "sequence",
         shuffle: bool = False,
-    ) -> "tf.data.Dataset":
+    ) -> tf.data.Dataset:
         """Create tf dataset."""
 
         shapes, types = self._get_shapes_types()
@@ -383,7 +383,7 @@ class RasaModelData:
         return new_data
 
     def _split_by_label_ids(
-        self, data: Data, label_ids: "np.ndarray", unique_label_ids: "np.ndarray"
+        self, data: Data, label_ids: np.ndarray, unique_label_ids: np.ndarray
     ) -> List["RasaModelData"]:
         """Reorganize session data into a list of session data with the same labels."""
 
