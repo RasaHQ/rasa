@@ -468,6 +468,8 @@ def test_slack_message_sanitization():
     target_message_1 = "You can sit here if you want"
     target_message_2 = "Hey, you can sit here if you want !"
     target_message_3 = "Hey, you can sit here if you want!"
+    target_message_4 = "convert garbled url to vicdb-f.net"
+    target_message_5 = "convert multiple garbled url to vicdb-f.net. Also eemdb-p.net"
 
     uid_token = f"<@{test_uid}>"
     raw_messages = [
@@ -483,6 +485,9 @@ def test_slack_message_sanitization():
             "You can sit here{uid}if you want",
             "Hey {uid}, you can sit here if you want{uid}!",
             "Hey{uid} , you can sit here if you want {uid}!",
+            "convert garbled url to <http://vicdb-f.net|vicdb-f.net>",
+            "convert multiple garbled url to <http://vicdb-f.net|vicdb-f.net>. Also <http://eemdb-p.net|eemdb-p.net>",
+            
         ]
     ]
 
@@ -493,6 +498,8 @@ def test_slack_message_sanitization():
         target_message_1,
         target_message_2,
         target_message_3,
+        target_message_4,
+        target_message_5,
     ]
 
     sanitized_messages = [
@@ -511,7 +518,6 @@ def test_slack_message_sanitization():
         )
         == 0
     )
-
 
 def test_slack_init_one_parameter():
     from rasa.core.channels.slack import SlackInput
