@@ -488,10 +488,10 @@ class TED(RasaModel):
         )
 
     def _create_all_labels_embed(self) -> Tuple[np.ndarray, tf.Tensor]:
-        all_label = self._encoded_all_label_ids.astype(np.float32)
+        all_labels = self._encoded_all_label_ids.astype(np.float32)
         all_labels_embed = self._embed_label(all_label)
 
-        return all_label, all_labels_embed
+        return all_labels, all_labels_embed
 
     def _emebed_dialogue(self, dialogue_in: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
         """Create dialogue level embedding and mask."""
@@ -518,7 +518,9 @@ class TED(RasaModel):
         label = self._tf_layers["ffnn.label"](label_in, self._training)
         return self._tf_layers["embed.label"](label)
 
-    def batch_loss(self, batch_in: List[tf.Tensor]) -> tf.Tensor:
+    def batch_loss(
+        self, batch_in: Union[List[tf.Tensor], List[np.ndarray]]
+    ) -> tf.Tensor:
         batch = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         dialogue_in = batch["dialogue_features"][0]
@@ -528,13 +530,13 @@ class TED(RasaModel):
             # add time dimension if max history featurizer is used
             label_in = label_in[:, tf.newaxis, :]
 
-        all_label, all_labels_embed = self._create_all_labels_embed()
+        all_labels, all_labels_embed = self._create_all_labels_embed()
 
         dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
         label_embed = self._embed_label(label_in)
 
         loss, acc = self._tf_layers["loss.label"](
-            dialogue_embed, label_embed, label_in, all_labels_embed, all_label, mask
+            dialogue_embed, label_embed, label_in, all_labels_embed, all_labels, mask
         )
 
         self.metric_loss.update_state(loss)
@@ -542,7 +544,9 @@ class TED(RasaModel):
 
         return loss
 
-    def batch_predict(self, batch_in: List[tf.Tensor]) -> Dict[Text, tf.Tensor]:
+    def batch_predict(
+        self, batch_in: Union[List[tf.Tensor], List[np.ndarray]]
+    ) -> Dict[Text, tf.Tensor]:
         batch = self.batch_to_model_data_format(batch_in, self.predict_data_signature)
 
         dialogue_in = batch["dialogue_features"][0]
