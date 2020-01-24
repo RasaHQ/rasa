@@ -290,6 +290,10 @@ Bugfixes
 - Slots will be correctly interpolated if there are lists in custom response templates.
 - Fixed compatibility issues with ``rasa-sdk`` ``1.5``
 - Updated ``/status`` endpoint to show correct path to model archive
+Changed
+-------
+- Do not retrain the entire Core model if only the ``templates`` section of the domain is changed.
+- Upgraded ``jsonschema`` version
 
 [1.5.0] - 2019-11-26
 ^^^^^^^^^^^^^^^^^^^^
