@@ -417,7 +417,7 @@ class TED(tf_models.RasaModel):
         self.max_history_tracker_featurizer_used = max_history_tracker_featurizer_used
 
         # optimizer
-        self._optimizer = tf.keras.optimizers.Adam()
+        self._set_optimizer(tf.keras.optimizers.Adam())
 
         self.all_labels_embed = None
         self._encoded_all_label_ids = encoded_all_label_ids
