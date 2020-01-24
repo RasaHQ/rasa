@@ -39,7 +39,6 @@ Fixed
 - ``CountVectorsFeaturizer`` featurizes intents only if its analyzer is set to ``word``
 - fixed bug where facebooks generic template was not rendered when buttons were ``None``
 
-
 [1.4.5] - 2019-11-14
 ^^^^^^^^^^^^^^^^^^^^
 
