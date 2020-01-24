@@ -290,14 +290,14 @@ class TransformerEncoder(tf.keras.layers.Layer):
         return pad_mask[tf.newaxis, tf.newaxis, :, :]  # (1, 1, seq_len, seq_len)
 
     @staticmethod
-    def _get_angles(pos, i, d_model):
+    def _get_angles(pos: np.ndarray, i: np.ndarray, d_model: int) -> np.ndarray:
         angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
         return pos * angle_rates
 
     @classmethod
-    def _positional_encoding(cls, position, d_model) -> tf.Tensor:
+    def _positional_encoding(cls, max_position: int, d_model: int) -> tf.Tensor:
         angle_rads = cls._get_angles(
-            np.arange(position)[:, np.newaxis],
+            np.arange(max_position)[:, np.newaxis],
             np.arange(d_model)[np.newaxis, :],
             d_model,
         )
