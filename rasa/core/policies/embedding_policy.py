@@ -134,9 +134,7 @@ class EmbeddingPolicy(Policy):
 
         self.model = model
 
-        # encode all label_ids with numbers
-        self._encoded_all_label_ids = None
-
+        self._label_data = None
         self.data_example = None
 
         self._tf_config = train_utils.load_tf_config(self.config)
@@ -172,7 +170,7 @@ class EmbeddingPolicy(Policy):
                 [
                     np.stack(
                         [
-                            self._encoded_all_label_ids[label_idx]
+                            self._label_data.get("label_features")[0][label_idx]
                             for label_idx in seq_label_ids
                         ]
                     )
@@ -182,7 +180,10 @@ class EmbeddingPolicy(Policy):
 
         # max history featurizer is used
         return np.stack(
-            [self._encoded_all_label_ids[label_idx] for label_idx in label_ids]
+            [
+                self._label_data.get("label_features")[0][label_idx]
+                for label_idx in label_ids
+            ]
         )
 
     # noinspection PyPep8Naming
@@ -208,6 +209,16 @@ class EmbeddingPolicy(Policy):
 
         return model_data
 
+    def _create_label_data(self, domain: Domain) -> RasaModelData:
+        # encode all label_ids with policies' featurizer
+        state_featurizer = self.featurizer.state_featurizer
+        all_labels = state_featurizer.create_encoded_all_actions(domain)
+        all_labels = all_labels.astype(np.float32)
+
+        label_data = RasaModelData(label_key="label_features")
+        label_data.add_features("label_features", [all_labels])
+        return label_data
+
     # training methods
     def train(
         self,
@@ -225,11 +236,7 @@ class EmbeddingPolicy(Policy):
         # dealing with training data
         training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
 
-        # encode all label_ids with policies' featurizer
-        state_featurizer = self.featurizer.state_featurizer
-        self._encoded_all_label_ids = state_featurizer.create_encoded_all_actions(
-            domain
-        )
+        self._label_data = self._create_label_data(domain)
 
         # check if number of negatives is less than number of label_ids
         logger.debug(
@@ -249,7 +256,7 @@ class EmbeddingPolicy(Policy):
             model_data.get_signature(),
             self.config,
             isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
-            self._encoded_all_label_ids,
+            self._label_data,
         )
 
         self.model.fit(
@@ -339,10 +346,8 @@ class EmbeddingPolicy(Policy):
         with open(os.path.join(path, file_name + ".data_example.pkl"), "wb") as f:
             pickle.dump(self.data_example, f)
 
-        with open(
-            os.path.join(path, file_name + ".encoded_all_label_ids.pkl"), "wb"
-        ) as f:
-            pickle.dump(self._encoded_all_label_ids, f)
+        with open(os.path.join(path, file_name + ".label_data.pkl"), "wb") as f:
+            pickle.dump(self._label_data, f)
 
     @classmethod
     def load(cls, path: Text) -> "EmbeddingPolicy":
@@ -367,10 +372,8 @@ class EmbeddingPolicy(Policy):
                 label_key="label_ids", data=pickle.load(f)
             )
 
-        with open(
-            os.path.join(path, file_name + ".encoded_all_label_ids.pkl"), "rb"
-        ) as f:
-            encoded_all_label_ids = pickle.load(f)
+        with open(os.path.join(path, file_name + ".label_data.pkl"), "rb") as f:
+            label_data = pickle.load(f)
 
         with open(os.path.join(path, file_name + ".meta.pkl"), "rb") as f:
             meta = pickle.load(f)
@@ -389,7 +392,7 @@ class EmbeddingPolicy(Policy):
             max_history_tracker_featurizer_used=isinstance(
                 featurizer, MaxHistoryTrackerFeaturizer
             ),
-            encoded_all_label_ids=encoded_all_label_ids,
+            label_data=label_data,
         )
 
         # build the graph for prediction
@@ -413,7 +416,7 @@ class TED(RasaModel):
         data_signature: Dict[Text, List[FeatureSignature]],
         config: Dict[Text, Any],
         max_history_tracker_featurizer_used: bool,
-        encoded_all_label_ids: np.ndarray,
+        label_data: RasaModelData,
     ):
         super().__init__()
 
@@ -430,7 +433,11 @@ class TED(RasaModel):
         self._set_optimizer(tf.keras.optimizers.Adam())
 
         self.all_labels_embed = None
-        self._encoded_all_label_ids = encoded_all_label_ids
+
+        label_batch = label_data.prepare_batch()
+        self.tf_label_data = self.batch_to_model_data_format(
+            label_batch, label_data.get_signature()
+        )
 
         # metrics
         self.metric_loss = tf.keras.metrics.Mean(name="loss")
@@ -487,9 +494,9 @@ class TED(RasaModel):
             self.config[SIMILARITY_TYPE],
         )
 
-    def _create_all_labels_embed(self) -> Tuple[np.ndarray, tf.Tensor]:
-        all_labels = self._encoded_all_label_ids.astype(np.float32)
-        all_labels_embed = self._embed_label(all_label)
+    def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
+        all_labels = self.tf_label_data["label_features"][0]
+        all_labels_embed = self._embed_label(all_labels)
 
         return all_labels, all_labels_embed
 
@@ -519,7 +526,7 @@ class TED(RasaModel):
         return self._tf_layers["embed.label"](label)
 
     def batch_loss(
-        self, batch_in: Union[List[tf.Tensor], List[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         batch = self.batch_to_model_data_format(batch_in, self.data_signature)
 
@@ -545,7 +552,7 @@ class TED(RasaModel):
         return loss
 
     def batch_predict(
-        self, batch_in: Union[List[tf.Tensor], List[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
         batch = self.batch_to_model_data_format(batch_in, self.predict_data_signature)
 

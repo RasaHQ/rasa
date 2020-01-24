@@ -28,12 +28,12 @@ class RasaModel(tf.keras.models.Model):
         self._predict_function = None
 
     def batch_loss(
-        self, batch_in: Union[List[tf.Tensor], List[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         raise NotImplementedError
 
     def batch_predict(
-        self, batch_in: Union[List[tf.Tensor], List[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
         raise NotImplementedError
 
@@ -117,7 +117,7 @@ class RasaModel(tf.keras.models.Model):
             logger.info("Finished training.")
 
     def train_on_batch(
-        self, batch_in: Union[List[tf.Tensor], List[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> None:
         """Train on batch"""
 
@@ -176,7 +176,7 @@ class RasaModel(tf.keras.models.Model):
         return model
 
     def _total_batch_loss(
-        self, batch_in: Union[List[tf.Tensor], List[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         """Calculate total loss"""
 
@@ -288,7 +288,7 @@ class RasaModel(tf.keras.models.Model):
 
     @staticmethod
     def batch_to_model_data_format(
-        batch: Union[List[tf.Tensor], List[np.ndarray]],
+        batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]],
         data_signature: Dict[Text, List[FeatureSignature]],
     ) -> Dict[Text, List[tf.Tensor]]:
         """Convert input batch tensors into batch data format.
