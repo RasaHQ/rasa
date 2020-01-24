@@ -815,14 +815,14 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
         # build the graph for prediction
         model.set_training_phase(False)
-        predict_data = RasaModelData(
+        predict_data_example = RasaModelData(
             label_key="label_ids",
             data={k: vs for k, vs in model_data_example.items() if "text" in k},
         )
         # override train signature with predict signature
-        model.data_signature = predict_data.get_signature()
+        model.data_signature = predict_data_example.get_signature()
         model.build_for_predict()
-        predict_dataset = predict_data.as_tf_dataset(
+        predict_dataset = predict_data_example.as_tf_dataset(
             1, batch_strategy="sequence", shuffle=False
         )
         predict_func = tf.function(

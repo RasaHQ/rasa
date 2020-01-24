@@ -12,7 +12,10 @@ logger = logging.getLogger(__name__)
 
 # noinspection PyMethodOverriding
 class RasaModel(tf.keras.models.Model):
-    """Completely override all public methods of keras Model."""
+    """Completely override all public methods of keras Model.
+
+    Cannot be used as tf.keras.Model
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -29,7 +32,7 @@ class RasaModel(tf.keras.models.Model):
         raise NotImplementedError
 
     def predict(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
     ) -> Dict[Text, tf.Tensor]:
         raise NotImplementedError
 
@@ -50,7 +53,6 @@ class RasaModel(tf.keras.models.Model):
         silent: bool = False,
         eager: bool = False,
         random_seed: Optional[int] = None,
-        **kwargs,
     ) -> None:
         """Fit model data"""
 
@@ -114,7 +116,7 @@ class RasaModel(tf.keras.models.Model):
             logger.info("Finished training.")
 
     def train_on_batch(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
     ) -> None:
         """Train on batch"""
 
@@ -124,11 +126,13 @@ class RasaModel(tf.keras.models.Model):
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-    def save(self, model_file_name) -> None:
+    def save(self, model_file_name: Text) -> None:
         self.save_weights(model_file_name, save_format="tf")
 
     @classmethod
-    def load(cls, model_file_name, model_data_example, *args, **kwargs):
+    def load(
+        cls, model_file_name: Text, model_data_example: RasaModelData, *args, **kwargs
+    ) -> "RasaModel":
         # create empty model
         model = cls(*args, **kwargs)
         # need to train on 1 example to build weights of the correct size
@@ -315,23 +319,23 @@ class RasaModel(tf.keras.models.Model):
         else:
             return int(batch_size[0])
 
-    def compile(self, **kwargs) -> None:
+    def compile(self, *args, **kwargs) -> None:
         raise NotImplemented
 
-    def evaluate(self, **kwargs) -> None:
+    def evaluate(self, *args, **kwargs) -> None:
         raise NotImplemented
 
-    def test_on_batch(self, **kwargs) -> None:
+    def test_on_batch(self, *args, **kwargs) -> None:
         raise NotImplemented
 
-    def predict_on_batch(self, **kwargs) -> None:
+    def predict_on_batch(self, *args, **kwargs) -> None:
         raise NotImplemented
 
-    def fit_generator(self, **kwargs) -> None:
+    def fit_generator(self, *args, **kwargs) -> None:
         raise NotImplemented
 
-    def evaluate_generator(self, **kwargs) -> None:
+    def evaluate_generator(self, *args, **kwargs) -> None:
         raise NotImplemented
 
-    def predict_generator(self, **kwargs) -> None:
+    def predict_generator(self, *args, **kwargs) -> None:
         raise NotImplemented
