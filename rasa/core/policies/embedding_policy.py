@@ -195,7 +195,8 @@ class EmbeddingPolicy(Policy):
     def _label_features_for_Y(self, label_ids: np.ndarray) -> np.ndarray:
         """Prepare Y data for training: features for label_ids."""
 
-        if len(label_ids.shape) == 2:  # full dialogue featurizer is used
+        # full dialogue featurizer is used
+        if len(label_ids.shape) == 2:
             return np.stack(
                 [
                     np.stack(
@@ -207,33 +208,32 @@ class EmbeddingPolicy(Policy):
                     for seq_label_ids in label_ids
                 ]
             )
-        else:  # max history featurizer is used
-            return np.stack(
-                [self._encoded_all_label_ids[label_idx] for label_idx in label_ids]
-            )
+
+        # max history featurizer is used
+        return np.stack(
+            [self._encoded_all_label_ids[label_idx] for label_idx in label_ids]
+        )
 
     # noinspection PyPep8Naming
     def _create_model_data(
         self, data_X: np.ndarray, data_Y: Optional[np.ndarray] = None
     ) -> RasaModelData:
-        """Combine all tf session related data into dict."""
+        """Combine all model related data into RasaModelData."""
+
+        label_ids = np.array([])
+        Y = np.array([])
 
         if data_Y is not None:
-            # training time
             label_ids = self._label_ids_for_Y(data_Y)
             Y = self._label_features_for_Y(label_ids)
             # explicitly add last dimension to label_ids
             # to track correctly dynamic sequences
             label_ids = np.expand_dims(label_ids, -1)
-        else:
-            # prediction time
-            label_ids = np.array([])
-            Y = np.array([])
 
-        model_data = RasaModelData(label_key="action_ids")
+        model_data = RasaModelData(label_key="label_ids")
         model_data.add_features("dialogue_features", [data_X])
-        model_data.add_features("bot_features", [Y])
-        model_data.add_features("action_ids", [label_ids])
+        model_data.add_features("label_features", [Y])
+        model_data.add_features("label_ids", [label_ids])
 
         return model_data
 
@@ -262,10 +262,9 @@ class EmbeddingPolicy(Policy):
 
         # check if number of negatives is less than number of label_ids
         logger.debug(
-            "Check if num_neg {} is smaller "
-            "than number of label_ids {}, "
-            "else set num_neg to the number of label_ids - 1"
-            "".format(self.config[NUM_NEG], domain.num_actions)
+            f"Check if num_neg {self.config[NUM_NEG]} is smaller "
+            f"than number of label_ids {domain.num_actions}, "
+            f"else set num_neg to the number of label_ids - 1."
         )
         self.config[NUM_NEG] = min(self.config[NUM_NEG], domain.num_actions - 1)
 
@@ -384,8 +383,8 @@ class EmbeddingPolicy(Policy):
 
         if not os.path.exists(path):
             raise Exception(
-                "Failed to load dialogue model. Path '{}' "
-                "doesn't exist".format(os.path.abspath(path))
+                f"Failed to load embedding policy model. Path "
+                f"'{os.path.abspath(path)}' doesn't exist"
             )
 
         file_name = "embedding_policy"
@@ -395,7 +394,7 @@ class EmbeddingPolicy(Policy):
 
         with open(os.path.join(path, file_name + ".data_example.pkl"), "rb") as f:
             model_data_example = RasaModelData(
-                label_key="action_ids", data=pickle.load(f)
+                label_key="label_ids", data=pickle.load(f)
             )
 
         with open(
@@ -434,7 +433,7 @@ class EmbeddingPolicy(Policy):
         # build the graph for prediction
         model.set_training_phase(False)
         model_data = RasaModelData(
-            label_key="action_ids",
+            label_key="label_ids",
             data={k: vs for k, vs in model_data_example.items() if "dialogue" in k},
         )
         model.build_for_predict()
@@ -603,9 +602,7 @@ class TED(tf_models.RasaModel):
 
         self.all_labels_embed = tf.constant(all_labels_embed.numpy())
 
-    def predict(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
-    ) -> tf.Tensor:
+    def predict(self, batch_in: Tuple[tf.Tensor], **kwargs) -> tf.Tensor:
         dialogue_in = batch_in[0]
 
         dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
