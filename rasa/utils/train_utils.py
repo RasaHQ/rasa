@@ -1,6 +1,7 @@
 import logging
 from typing import Optional, Text, Dict, Any
 import tensorflow as tf
+import numpy as np
 
 
 logger = logging.getLogger(__name__)
@@ -22,3 +23,19 @@ def confidence_from_sim(sim: "tf.Tensor", similarity_type: Text) -> "tf.Tensor":
     else:
         # normalize result to [0, 1] with softmax
         return tf.nn.softmax(sim)
+
+
+def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
+    """Normalizes an array of positive numbers over the top `ranking_length` values.
+    Other values will be set to 0.
+    """
+
+    new_values = values.copy()  # prevent mutation of the input
+    if 0 < ranking_length < len(new_values):
+        ranked = sorted(new_values, reverse=True)
+        new_values[new_values < ranked[ranking_length - 1]] = 0
+
+    if np.sum(new_values) > 0:
+        new_values = new_values / np.sum(new_values)
+
+    return new_values

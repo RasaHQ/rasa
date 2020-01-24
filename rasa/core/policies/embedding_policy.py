@@ -53,6 +53,7 @@ DROPRATE_DIAL = "droprate_dial"
 DROPRATE_BOT = "droprate_bot"
 EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
 EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"
+RANKING_LENGTH = "ranking_length"
 
 
 class EmbeddingPolicy(Policy):
@@ -101,6 +102,9 @@ class EmbeddingPolicy(Policy):
         SIMILARITY_TYPE: "auto",  # string 'auto' or 'cosine' or 'inner'
         # the type of the loss function
         LOSS_TYPE: "softmax",  # string 'softmax' or 'margin'
+        # number of top actions to normalize scores for softmax loss_type
+        # set to 0 to turn off normalization
+        RANKING_LENGTH: 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct labels
         MU_POS: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
@@ -223,17 +227,15 @@ class EmbeddingPolicy(Policy):
             label_ids = np.expand_dims(label_ids, -1)
         else:
             # prediction time
-            label_ids = None
-            Y = None
+            label_ids = np.array([])
+            Y = np.array([])
 
-        return RasaModelData(
-            label_key="action_ids",
-            data={
-                "dialogue_features": [data_X],
-                "bot_features": [Y],
-                "action_ids": [label_ids],
-            },
-        )
+        model_data = RasaModelData(label_key="action_ids")
+        model_data.add_features("dialogue_features", [data_X])
+        model_data.add_features("bot_features", [Y])
+        model_data.add_features("action_ids", [label_ids])
+
+        return model_data
 
     # training methods
     def train(
@@ -333,8 +335,12 @@ class EmbeddingPolicy(Policy):
         batch_in = next(iter(predict_dataset))
 
         confidence = self.predict_func(batch_in)
+        confidence = confidence[0, -1, :].numpy()
 
-        return confidence[0, -1, :].tolist()
+        if self.config[LOSS_TYPE] == "softmax" and self.config[RANKING_LENGTH] > 0:
+            confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
+
+        return list(confidence)
 
     def persist(self, path: Text):
         """Persists the policy to a storage."""
@@ -387,9 +393,6 @@ class EmbeddingPolicy(Policy):
 
         featurizer = TrackerFeaturizer.load(path)
 
-        if not os.path.exists(tf_model_file + ".meta"):
-            return cls(featurizer=featurizer)
-
         with open(os.path.join(path, file_name + ".data_example.pkl"), "rb") as f:
             model_data_example = RasaModelData(
                 label_key="action_ids", data=pickle.load(f)
@@ -432,9 +435,8 @@ class EmbeddingPolicy(Policy):
         model.set_training_phase(False)
         model_data = RasaModelData(
             label_key="action_ids",
-            data={k: vs for k, vs in model_data_example.items() if "text" in k},
+            data={k: vs for k, vs in model_data_example.items() if "dialogue" in k},
         )
-        model.data_signature = model_data.get_signature()
         model.build_for_predict()
         predict_dataset = model_data.as_tf_dataset(
             1, batch_strategy="sequence", shuffle=False
@@ -447,6 +449,7 @@ class EmbeddingPolicy(Policy):
         logger.debug("Finished loading the model.")
 
         return cls(
+            featurizer=featurizer,
             component_config=meta,
             priority=meta["priority"],
             model=model,
@@ -465,7 +468,6 @@ class TED(tf_models.RasaModel):
 
         self.config = config
         self.max_history_tracker_featurizer_used = max_history_tracker_featurizer_used
-        self._encoded_all_label_ids = encoded_all_label_ids
 
         # optimizer
         self._optimizer = tf.keras.optimizers.Adam()
@@ -473,8 +475,8 @@ class TED(tf_models.RasaModel):
         # tf tensors
         self.training = tf.ones((), tf.bool)
 
-        # persist
-        self.all_label_embed = None
+        self.all_labels_embed = None
+        self._encoded_all_label_ids = encoded_all_label_ids
 
         # metrics
         self.metric_loss = tf.keras.metrics.Mean(name="loss")
@@ -577,10 +579,15 @@ class TED(tf_models.RasaModel):
         dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
 
         label_embed = self._embed_label(label_in)
-        self.all_label_embed = self._embed_label(all_label)
+        self.all_labels_embed = self._embed_label(all_label)
 
         loss, acc = self._tf_layers["loss.label"](
-            dialogue_embed, label_embed, label_in, self.all_label_embed, all_label, mask
+            dialogue_embed,
+            label_embed,
+            label_in,
+            self.all_labels_embed,
+            all_label,
+            mask,
         )
 
         self.metric_loss.update_state(loss)
@@ -589,21 +596,23 @@ class TED(tf_models.RasaModel):
         return loss
 
     def build_for_predict(self) -> None:
-        all_label_raw = tf.constant(
+        all_label = tf.constant(
             self._encoded_all_label_ids, dtype=tf.float32, name="all_label"
         )
-        self.all_label_embed = self._embed_label(all_label_raw)
+        all_labels_embed = self._embed_label(all_label)
+
+        self.all_labels_embed = tf.constant(all_labels_embed.numpy())
 
     def predict(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
     ) -> tf.Tensor:
-        dialogue_in, label_in, _ = batch_in
+        dialogue_in = batch_in[0]
 
         dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
 
         sim_all = self._tf_layers["loss.label"].sim(
             dialogue_embed[:, :, tf.newaxis, :],
-            self.all_label_embed[tf.newaxis, tf.newaxis, :, :],
+            self.all_labels_embed[tf.newaxis, tf.newaxis, :, :],
             mask,
         )
 
