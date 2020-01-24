@@ -509,9 +509,7 @@ class TED(tf_models.RasaModel):
         label = self._tf_layers["ffnn.label"](label_in, self._training)
         return self._tf_layers["embed.label"](label)
 
-    def batch_loss(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
-    ) -> tf.Tensor:
+    def batch_loss(self, batch_in: List[tf.Tensor]) -> tf.Tensor:
         dialogue_in, label_in, _ = batch_in
 
         if self.max_history_tracker_featurizer_used:
@@ -537,9 +535,7 @@ class TED(tf_models.RasaModel):
 
         return loss
 
-    def batch_predict(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
-    ) -> Dict[Text, tf.Tensor]:
+    def batch_predict(self, batch_in: List[tf.Tensor]) -> Dict[Text, tf.Tensor]:
         dialogue_in = batch_in[0]
 
         if self.all_labels_embed is None:

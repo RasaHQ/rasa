@@ -1108,9 +1108,7 @@ class DIET(tf_models.RasaModel):
 
         return loss, f1
 
-    def batch_loss(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
-    ) -> tf.Tensor:
+    def batch_loss(self, batch_in: List[tf.Tensor]) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
         mask_text = tf_batch_data["text_mask"][0]
@@ -1152,9 +1150,7 @@ class DIET(tf_models.RasaModel):
 
         return tf.math.add_n(losses)
 
-    def batch_predict(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
-    ) -> Dict[Text, tf.Tensor]:
+    def batch_predict(self, batch_in: List[tf.Tensor]) -> Dict[Text, tf.Tensor]:
         tf_batch_data = self.batch_to_model_data_format(
             batch_in, self.predict_data_signature
         )
