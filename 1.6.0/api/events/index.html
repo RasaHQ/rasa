@@ -225,9 +225,6 @@ like resetting slots, scheduling reminder or pausing a conversation." />
               <a href="../../../1.6.1/api/events/">1.6.1</a>
               <a href="../../../1.6.0/api/events/">1.6.0</a>
               <a href="../../../1.5.3/api/events/">1.5.3</a>
-              <a href="../../../1.5.2/api/events/">1.5.2</a>
-              <a href="../../../1.5.1/api/events/">1.5.1</a>
-              <a href="../../../1.5.0/api/events/">1.5.0</a>
               <a href="../../../1.4.6/api/events/">1.4.6</a>
               <a href="../../../1.3.10/api/events/">1.3.10</a>
               <a href="../../../1.2.9/api/events/">1.2.9</a>
@@ -437,10 +434,9 @@ values.</p>
 </tr>
 <tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
 <dt id="rasa.core.events.ReminderScheduled">
-<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ReminderScheduled</code><span class="sig-paren">(</span><em>action_name</em>, <em>trigger_date_time</em>, <em>name=None</em>, <em>kill_on_user_message=True</em>, <em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ReminderScheduled" title="Permalink to this definition">¶</a></dt>
-<dd><p>Allows asynchronous scheduling of action execution.</p>
-<p>As a side effect the message processor will schedule an action to be run
-at the trigger date.</p>
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ReminderScheduled</code><span class="sig-paren">(</span><em>intent</em>, <em>trigger_date_time</em>, <em>entities=None</em>, <em>name=None</em>, <em>kill_on_user_message=True</em>, <em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ReminderScheduled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Schedules the asynchronous triggering of a user intent
+(with entities if needed) at a given time.</p>
 </dd></dl>
 
 </td>
