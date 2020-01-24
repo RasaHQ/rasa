@@ -206,7 +206,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         inverted_label_dict: Optional[Dict[int, Text]] = None,
         inverted_tag_dict: Optional[Dict[int, Text]] = None,
         model: Optional[tf_models.RasaModel] = None,
-        predict_func: Optional[Callable] = None,
         batch_tuple_sizes: Optional[Dict] = None,
         attention_weights: Optional[tf.Tensor] = None,
     ) -> None:
@@ -221,7 +220,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         self.inverted_tag_dict = inverted_tag_dict
 
         self.model = model
-        self.predict_func = predict_func
 
         # encode all label_ids with numbers
         self._label_data = None
@@ -563,10 +561,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # set random seed
         tf.random.set_seed(self.component_config[RANDOM_SEED])
 
-        model_data_signature = model_data.get_signature()
-
         self.model = DIET(
-            model_data_signature,
+            model_data.get_signature(),
             self._label_data,
             self.inverted_tag_dict,
             self.component_config,
@@ -584,15 +580,13 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
     # process helpers
     def _predict(self, message: Message) -> Optional[Dict[Text, tf.Tensor]]:
-        if self.model is None or self.predict_func is None:
+        if self.model is None:
             return
 
         # create session data from message and convert it into a batch of 1
         model_data = self._create_model_data([message])
-        predict_dataset = model_data.as_tf_dataset(1)
-        batch_in = next(iter(predict_dataset))
 
-        return self.predict_func(batch_in)
+        return self.model.predict(model_data)
 
     def _predict_label(
         self, out: Dict[Text, tf.Tensor]
@@ -804,7 +798,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
             elif meta[LOSS_TYPE] == "margin":
                 meta[SIMILARITY_TYPE] = "cosine"
 
-        logger.debug("Loading the model ...")
         model = DIET.load(
             tf_model_file,
             model_data_example,
@@ -814,30 +807,17 @@ class EmbeddingIntentClassifier(EntityExtractor):
             meta,
         )
         # build the graph for prediction
-        model.set_training_phase(False)
         predict_data_example = RasaModelData(
             label_key="label_ids",
             data={k: vs for k, vs in model_data_example.items() if "text" in k},
         )
-        # override train signature with predict signature
-        model.data_signature = predict_data_example.get_signature()
-        model.build_for_predict()
-        predict_dataset = predict_data_example.as_tf_dataset(
-            1, batch_strategy="sequence", shuffle=False
-        )
-        predict_func = tf.function(
-            func=model.predict, input_signature=[predict_dataset.element_spec]
-        )
-        batch_in = next(iter(predict_dataset))
-        predict_func(batch_in)
-        logger.debug("Finished loading the model.")
+        model.build_for_predict(predict_data_example)
 
         return cls(
             component_config=meta,
             inverted_label_dict=inv_label_dict,
             inverted_tag_dict=inv_tag_dict,
             model=model,
-            predict_func=predict_func,
             batch_tuple_sizes=batch_tuple_sizes,
         )
 
@@ -854,6 +834,10 @@ class DIET(tf_models.RasaModel):
 
         # data
         self.data_signature = data_signature
+        self.predict_data_signature = {
+            k: vs for k, vs in data_signature.items() if "text" in k
+        }
+
         label_batch = label_data.prepare_batch()
         self.tf_label_data = self.batch_to_model_data_format(
             label_batch, label_data.get_signature()
@@ -870,7 +854,7 @@ class DIET(tf_models.RasaModel):
         self._create_metrics()
         self._update_metrics_to_log()
 
-        # persist
+        # predict
         self.all_labels_embed = None
 
     def _create_metrics(self):
@@ -901,14 +885,14 @@ class DIET(tf_models.RasaModel):
 
     @staticmethod
     def _create_sparse_dense_layer(
-        data_signature: List[FeatureSignature],
+        feature_signatures: List[FeatureSignature],
         name: Text,
         reg_lambda: float,
         dense_dim: int,
     ) -> Optional[tf_layers.DenseForSparse]:
 
         sparse = False
-        for is_sparse, shape in data_signature:
+        for is_sparse, shape in feature_signatures:
             if is_sparse:
                 sparse = is_sparse
             else:
@@ -1023,9 +1007,8 @@ class DIET(tf_models.RasaModel):
         )
 
     @staticmethod
-    def _get_mask_and_lengths(mask: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
-        sequence_lengths = tf.cast(tf.reduce_sum(mask[:, :, 0], 1), tf.int32)
-        return mask, sequence_lengths
+    def _get_sequence_lengths(mask: tf.Tensor) -> tf.Tensor:
+        return tf.cast(tf.reduce_sum(mask[:, :, 0], 1), tf.int32)
 
     def _combine_sparse_dense_features(
         self,
@@ -1082,13 +1065,7 @@ class DIET(tf_models.RasaModel):
 
         return transformed, x, lm_mask_bool
 
-    @staticmethod
-    def _last_token(x: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
-        last_index = tf.maximum(0, sequence_lengths - 1)
-        idxs = tf.stack([tf.range(tf.shape(last_index)[0]), last_index], axis=1)
-        return tf.gather_nd(x, idxs)
-
-    def _build_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
+    def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_labels = self._create_bow(
             self.tf_label_data["label_features"],
             self.tf_label_data["label_mask"][0],
@@ -1097,6 +1074,12 @@ class DIET(tf_models.RasaModel):
         all_labels_embed = self._tf_layers["embed.label"](all_labels)
 
         return all_labels_embed, all_labels
+
+    @staticmethod
+    def _last_token(x: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
+        last_index = tf.maximum(0, sequence_lengths - 1)
+        idxs = tf.stack([tf.range(tf.shape(last_index)[0]), last_index], axis=1)
+        return tf.gather_nd(x, idxs)
 
     def _mask_loss(
         self, a_transformed: tf.Tensor, a: tf.Tensor, lm_mask_bool: tf.Tensor
@@ -1120,7 +1103,7 @@ class DIET(tf_models.RasaModel):
         )
 
     def _intent_loss(self, a: tf.Tensor, b: tf.Tensor) -> tf.Tensor:
-        all_labels_embed, all_labels = self._build_all_labels()
+        all_labels_embed, all_labels = self._create_all_labels()
 
         a_embed = self._tf_layers["embed.text"](a)
         b_embed = self._tf_layers["embed.label"](b)
@@ -1160,9 +1143,9 @@ class DIET(tf_models.RasaModel):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        mask_text, sequence_lengths = self._get_mask_and_lengths(
-            tf_batch_data["text_mask"][0]
-        )
+        mask_text = tf_batch_data["text_mask"][0]
+        sequence_lengths = self._get_sequence_lengths(mask_text)
+
         text_transformed, text_in, lm_mask_bool_text = self._create_sequence(
             tf_batch_data["text_features"], mask_text, "text", self.config[MASKED_LM]
         )
@@ -1199,24 +1182,25 @@ class DIET(tf_models.RasaModel):
 
         return tf.math.add_n(losses)
 
-    def build_for_predict(self) -> None:
-        all_labels_embed, _ = self._build_all_labels()
-        self.all_labels_embed = tf.constant(all_labels_embed.numpy())
-
-    def predict(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]], **kwargs
+    def batch_predict(
+        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
     ) -> Dict[Text, tf.Tensor]:
-        tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
-
-        mask_text, sequence_lengths = self._get_mask_and_lengths(
-            tf_batch_data["text_mask"][0]
+        tf_batch_data = self.batch_to_model_data_format(
+            batch_in, self.predict_data_signature
         )
+
+        mask_text = tf_batch_data["text_mask"][0]
+        sequence_lengths = self._get_sequence_lengths(mask_text)
+
         text_transformed, _, _ = self._create_sequence(
             tf_batch_data["text_features"], mask_text, "text"
         )
 
         out = {}
         if self.config[INTENT_CLASSIFICATION]:
+            if self.all_labels_embed is None:
+                self.all_labels_embed, _ = self._create_all_labels()
+
             # get _cls_ vector for intent classification
             cls = self._last_token(text_transformed, sequence_lengths)
             cls_embed = self._tf_layers["embed.text"](cls)

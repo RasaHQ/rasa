@@ -26,12 +26,14 @@ class RasaModel(tf.keras.models.Model):
         self._training = tf.ones((), tf.bool)
         self._optimizer = None
 
+        self._predict_function = None
+
     def batch_loss(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
     ) -> tf.Tensor:
         raise NotImplementedError
 
-    def predict(
+    def batch_predict(
         self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
     ) -> Dict[Text, tf.Tensor]:
         raise NotImplementedError
@@ -126,6 +128,26 @@ class RasaModel(tf.keras.models.Model):
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
+    def build_for_predict(self, predict_data: RasaModelData, eager: bool = False):
+        def predict_dataset_function(  # to reuse the same helper method
+            _batch_size: Union[tf.Tensor, int]
+        ) -> tf.data.Dataset:
+            return predict_data.as_tf_dataset(_batch_size, "sequence", shuffle=False)
+
+        _, self._predict_function = self._get_tf_functions(
+            predict_dataset_function, self.batch_predict, eager, "prediction"
+        )
+
+    def predict(self, predict_data):
+        if self._predict_function is None:
+            logger.debug("There is no tensorflow prediction graph")
+            self.build_for_predict(predict_data)
+
+        predict_dataset = predict_data.as_tf_dataset(1)
+        batch_in = next(iter(predict_dataset))
+        self.set_training_phase(False)
+        return self._predict_function(batch_in)
+
     def save(self, model_file_name: Text) -> None:
         self.save_weights(model_file_name, save_format="tf")
 
@@ -133,6 +155,7 @@ class RasaModel(tf.keras.models.Model):
     def load(
         cls, model_file_name: Text, model_data_example: RasaModelData, *args, **kwargs
     ) -> "RasaModel":
+        logger.debug("Loading the model ...")
         # create empty model
         model = cls(*args, **kwargs)
         # need to train on 1 example to build weights of the correct size
@@ -148,7 +171,7 @@ class RasaModel(tf.keras.models.Model):
         )
         # load trained weights
         model.load_weights(model_file_name)
-
+        logger.debug("Finished loading the model.")
         return model
 
     def _total_batch_loss(
