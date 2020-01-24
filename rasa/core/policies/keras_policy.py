@@ -18,7 +18,6 @@ from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.common import obtain_verbosity
-from rasa.utils.tensorflow import tf_models
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 # there are a number of issues with imports from tensorflow. hence the deactivation

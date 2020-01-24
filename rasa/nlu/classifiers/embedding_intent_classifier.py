@@ -1043,7 +1043,7 @@ class DIET(tf_models.RasaModel):
         )
         all_labels_embed = self._tf_layers["embed.label"](all_labels)
 
-        return all_labels_embed, all_labels
+        return all_labels, all_labels_embed
 
     @staticmethod
     def _last_token(x: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
@@ -1073,7 +1073,7 @@ class DIET(tf_models.RasaModel):
         )
 
     def _intent_loss(self, a: tf.Tensor, b: tf.Tensor) -> tf.Tensor:
-        all_labels_embed, all_labels = self._create_all_labels()
+        all_labels, all_labels_embed = self._create_all_labels()
 
         a_embed = self._tf_layers["embed.text"](a)
         b_embed = self._tf_layers["embed.label"](b)
@@ -1165,7 +1165,7 @@ class DIET(tf_models.RasaModel):
         out = {}
         if self.config[INTENT_CLASSIFICATION]:
             if self.all_labels_embed is None:
-                self.all_labels_embed, _ = self._create_all_labels()
+                _, self.all_labels_embed = self._create_all_labels()
 
             # get _cls_ vector for intent classification
             cls = self._last_token(text_transformed, sequence_lengths)

@@ -486,10 +486,8 @@ class TED(tf_models.RasaModel):
             self.config[SIMILARITY_TYPE],
         )
 
-    def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
-        all_label = tf.constant(
-            self._encoded_all_label_ids, dtype=tf.float32, name="all_label"
-        )
+    def _create_all_labels_embed(self) -> Tuple[np.ndarray, tf.Tensor]:
+        all_label = self._encoded_all_label_ids.astype(np.float32)
         all_labels_embed = self._embed_label(all_label)
 
         return all_label, all_labels_embed
@@ -515,7 +513,7 @@ class TED(tf_models.RasaModel):
 
         return dialogue_embed, mask
 
-    def _embed_label(self, label_in: tf.Tensor) -> tf.Tensor:
+    def _embed_label(self, label_in: Union[tf.Tensor, np.ndarray]) -> tf.Tensor:
         label = self._tf_layers["ffnn.label"](label_in, self._training)
         return self._tf_layers["embed.label"](label)
 
