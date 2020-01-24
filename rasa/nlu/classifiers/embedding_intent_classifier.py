@@ -854,8 +854,7 @@ class DIET(tf_models.RasaModel):
         self._create_metrics()
         self._update_metrics_to_log()
 
-        # predict
-        self.all_labels_embed = None
+        self.all_labels_embed = None  # needed for efficient prediction
 
     def _create_metrics(self):
         # self.metrics preserve order

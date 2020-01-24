@@ -142,7 +142,7 @@ class RasaModel(tf.keras.models.Model):
 
     def predict(self, predict_data: RasaModelData) -> Dict[Text, tf.Tensor]:
         if self._predict_function is None:
-            logger.debug("There is no tensorflow prediction graph")
+            logger.debug("There is no tensorflow prediction graph.")
             self.build_for_predict(predict_data)
 
         predict_dataset = predict_data.as_tf_dataset(1)
@@ -207,14 +207,14 @@ class RasaModel(tf.keras.models.Model):
         dataset_function: Callable,
         call_model_function: Callable,
         eager: bool,
-        method: Text,
+        phase: Text,
     ) -> Tuple[Callable, Callable]:
         """Convert functions to tensorflow functions"""
 
         if eager:
             return dataset_function, call_model_function
 
-        logger.debug(f"Building tensorflow {method} graph...")
+        logger.debug(f"Building tensorflow {phase} graph...")
         # allows increasing batch size
         tf_dataset_function = tf.function(func=dataset_function)
 
@@ -225,7 +225,7 @@ class RasaModel(tf.keras.models.Model):
         )
         tf_method_function(next(iter(init_dataset)))
 
-        logger.debug(f"Finished building tensorflow {method} graph")
+        logger.debug(f"Finished building tensorflow {phase} graph.")
 
         return tf_dataset_function, tf_method_function
 
