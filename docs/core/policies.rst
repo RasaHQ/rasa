@@ -70,7 +70,7 @@ in the policy configuration yaml file.
 
     Only the ``MaxHistoryTrackerFeaturizer`` uses a max history,
     whereas the ``FullDialogueTrackerFeaturizer`` always looks at
-    the full conversation history. See :ref:`featurization` for details.
+    the full conversation history. See :ref:`featurization_conversations` for details.
 
 As an example, let's say you have an ``out_of_scope`` intent which
 describes off-topic user messages. If your bot sees this intent multiple
@@ -87,7 +87,7 @@ with. So your story might look like this:
       - utter_help_message
 
 For Rasa Core to learn this pattern, the ``max_history``
-has to be `at least` 3.
+has to be `at least` 4.
 
 If you increase your ``max_history``, your model will become bigger and
 training will take longer. If you have some information that should
@@ -218,7 +218,7 @@ following steps:
 
 It is recommended to use
 ``state_featurizer=LabelTokenizerSingleStateFeaturizer(...)``
-(see :ref:`featurization` for details).
+(see :ref:`featurization_conversations` for details).
 
 **Configuration:**
 
@@ -271,6 +271,9 @@ It is recommended to use
               ``inner`` for ``softmax``, ``cosine`` for ``margin``;
             - ``loss_type`` sets the type of the loss function,
               it should be either ``softmax`` or ``margin``;
+            - ``ranking_length`` defines the number of top confidences over
+              which to normalize ranking results if ``loss_type: "softmax"``;
+              to turn off normalization set it to 0
             - ``mu_pos`` controls how similar the algorithm should try
               to make embedding vectors for correct intent labels,
               used only if ``loss_type`` is set to ``margin``;
@@ -308,7 +311,7 @@ It is recommended to use
         Default ``max_history`` for this policy is ``None`` which means it'll use
         the ``FullDialogueTrackerFeaturizer``. We recommend to set ``max_history`` to
         some finite value in order to use ``MaxHistoryTrackerFeaturizer``
-        for **faster training**. See :ref:`featurization` for details.
+        for **faster training**. See :ref:`featurization_conversations` for details.
         We recommend to increase ``batch_size`` for ``MaxHistoryTrackerFeaturizer``
         (e.g. ``"batch_size": [32, 64]``)
 
@@ -393,15 +396,15 @@ simple example that dispatches a bot utterance and then reverts the interaction:
       return "action_is_bot"
 
   def run(self, dispatcher, tracker, domain):
-      dispatcher.utter_template("utter_is_bot", tracker)
+      dispatcher.utter_template(template="utter_is_bot")
       return [UserUtteranceReverted()]
 
 .. note::
 
-  If you use the ``MappingPolicy`` to predict bot utterances directly (e.g.
+  If you use the ``MappingPolicy`` to predict bot utterance actions directly (e.g.
   ``triggers: utter_{}``), these interactions must go in your stories, as in this
   case there is no ``UserUtteranceReverted()`` and the
-  intent and the mapped utterance will appear in the dialogue history.
+  intent and the mapped response action will appear in the dialogue history.
 
 .. note::
 

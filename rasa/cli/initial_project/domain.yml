@@ -15,7 +15,7 @@ actions:
 - utter_goodbye
 - utter_iamabot
 
-templates:
+responses:
   utter_greet:
   - text: "Hey! How are you?"
 
@@ -34,3 +34,7 @@ templates:
 
   utter_iamabot:
   - text: "I am a bot, powered by Rasa."
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

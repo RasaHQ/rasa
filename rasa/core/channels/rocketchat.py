@@ -14,7 +14,7 @@ class RocketChatBot(OutputChannel):
     def name(cls) -> Text:
         return "rocketchat"
 
-    def __init__(self, user, password, server_url):
+    def __init__(self, user, password, server_url) -> None:
         from rocketchat_API.rocketchat import RocketChat
 
         self.rocket = RocketChat(user, password, server_url=server_url)

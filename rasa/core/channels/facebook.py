@@ -338,7 +338,9 @@ class FacebookInput(InputChannel):
         return fb_webhook
 
     @staticmethod
-    def validate_hub_signature(app_secret, request_payload, hub_signature_header):
+    def validate_hub_signature(
+        app_secret, request_payload, hub_signature_header
+    ) -> bool:
         """Make sure the incoming webhook requests are properly signed.
 
         Args:

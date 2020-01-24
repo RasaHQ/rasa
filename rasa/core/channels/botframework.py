@@ -36,13 +36,17 @@ class BotFramework(OutputChannel):
         service_url: Text,
     ) -> None:
 
+        service_url = (
+            f"{service_url}/" if not service_url.endswith("/") else service_url
+        )
+
         self.app_id = app_id
         self.app_password = app_password
         self.conversation = conversation
         self.global_uri = f"{service_url}v3/"
         self.bot = bot
 
-    async def _get_headers(self):
+    async def _get_headers(self) -> Optional[Dict[Text, Any]]:
         if BotFramework.token_expiration_date < datetime.datetime.now():
             uri = f"{MICROSOFT_OAUTH2_URL}/{MICROSOFT_OAUTH2_PATH}"
             grant_type = "client_credentials"

@@ -2,12 +2,14 @@ import os
 
 import json
 from collections import Counter
+from typing import Text, Dict
 
 import numpy as np
+import pytest
 
 from rasa.core import training
 from rasa.core.interpreter import RegexInterpreter
-from rasa.core.training.dsl import StoryFileReader
+from rasa.core.training.dsl import StoryFileReader, EndToEndReader
 from rasa.core.domain import Domain
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.events import (
@@ -16,6 +18,7 @@ from rasa.core.events import (
     ActionExecutionRejected,
     Form,
     FormValidation,
+    SessionStarted,
 )
 from rasa.core.training.structures import Story
 from rasa.core.featurizers import (
@@ -215,7 +218,7 @@ async def test_read_story_file_with_cycles(tmpdir, default_domain):
     assert len(graph_without_cycles.story_end_checkpoints) == 2
 
 
-async def test_generate_training_data_with_cycles(tmpdir, default_domain):
+async def test_generate_training_data_with_cycles(default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(
         BinarySingleStateFeaturizer(), max_history=4
     )
@@ -229,11 +232,11 @@ async def test_generate_training_data_with_cycles(tmpdir, default_domain):
     # deterministic way but should always be 3 or 4
     assert len(training_trackers) == 3 or len(training_trackers) == 4
 
-    # if we have 4 trackers, there is going to be one example more for label 4
-    num_threes = len(training_trackers) - 1
+    # if we have 4 trackers, there is going to be one example more for label 10
+    num_tens = len(training_trackers) - 1
     # if new default actions are added the keys of the actions will be changed
 
-    assert Counter(y) == {0: 6, 9: 3, 8: num_threes, 1: 2, 10: 1}
+    assert Counter(y) == {0: 6, 10: num_tens, 12: 1, 1: 2, 11: 3}
 
 
 async def test_generate_training_data_with_unused_checkpoints(tmpdir, default_domain):
@@ -364,3 +367,128 @@ async def test_read_stories_with_multiline_comments(tmpdir, default_domain):
     assert len(story_steps[2].events) == 7
     assert story_steps[3].block_name == "say goodbye"
     assert len(story_steps[3].events) == 2
+
+
+@pytest.mark.parametrize(
+    "line, expected",
+    [
+        (" greet: hi", {"intent": "greet", "true_intent": "greet", "text": "hi"}),
+        (
+            " greet: /greet",
+            {
+                "intent": "greet",
+                "true_intent": "greet",
+                "text": "/greet",
+                "entities": [],
+            },
+        ),
+        (
+            'greet: /greet{"test": "test"}',
+            {
+                "intent": "greet",
+                "entities": [
+                    {"entity": "test", "start": 6, "end": 22, "value": "test"}
+                ],
+                "true_intent": "greet",
+                "text": '/greet{"test": "test"}',
+            },
+        ),
+        (
+            'greet{"test": "test"}: /greet{"test": "test"}',
+            {
+                "intent": "greet",
+                "entities": [
+                    {"entity": "test", "start": 6, "end": 22, "value": "test"}
+                ],
+                "true_intent": "greet",
+                "text": '/greet{"test": "test"}',
+            },
+        ),
+        (
+            "mood_great: [great](feeling)",
+            {
+                "intent": "mood_great",
+                "entities": [
+                    {"start": 0, "end": 5, "value": "great", "entity": "feeling"}
+                ],
+                "true_intent": "mood_great",
+                "text": "great",
+            },
+        ),
+        (
+            'form: greet{"test": "test"}: /greet{"test": "test"}',
+            {
+                "intent": "greet",
+                "entities": [
+                    {"end": 22, "entity": "test", "start": 6, "value": "test"}
+                ],
+                "true_intent": "greet",
+                "text": '/greet{"test": "test"}',
+            },
+        ),
+    ],
+)
+def test_e2e_parsing(line: Text, expected: Dict):
+    reader = EndToEndReader()
+    actual = reader._parse_item(line)
+
+    assert actual.as_dict() == expected
+
+
+@pytest.mark.parametrize(
+    "parse_data, expected_story_string",
+    [
+        (
+            {
+                "text": "/simple",
+                "parse_data": {
+                    "intent": {"confidence": 1.0, "name": "simple"},
+                    "entities": [
+                        {"start": 0, "end": 5, "value": "great", "entity": "feeling"}
+                    ],
+                },
+            },
+            "simple: /simple",
+        ),
+        (
+            {
+                "text": "great",
+                "parse_data": {
+                    "intent": {"confidence": 1.0, "name": "simple"},
+                    "entities": [
+                        {"start": 0, "end": 5, "value": "great", "entity": "feeling"}
+                    ],
+                },
+            },
+            "simple: [great](feeling)",
+        ),
+        (
+            {
+                "text": "great",
+                "parse_data": {
+                    "intent": {"confidence": 1.0, "name": "simple"},
+                    "entities": [],
+                },
+            },
+            "simple: great",
+        ),
+    ],
+)
+def test_user_uttered_to_e2e(parse_data: Dict, expected_story_string: Text):
+    event = UserUttered.from_story_string("user", parse_data)[0]
+
+    assert isinstance(event, UserUttered)
+    assert event.as_story_string(e2e=True) == expected_story_string
+
+
+def test_session_started_event_is_not_serialised():
+    assert SessionStarted().as_story_string() is None
+
+
+@pytest.mark.parametrize("line", [" greet{: hi"])
+def test_invalid_end_to_end_format(line: Text):
+    reader = EndToEndReader()
+
+    with pytest.raises(ValueError):
+        # noinspection PyProtectedMember
+        _ = reader._parse_item(line)

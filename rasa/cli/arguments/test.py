@@ -15,6 +15,7 @@ from rasa.model import get_latest_model
 
 def set_test_arguments(parser: argparse.ArgumentParser):
     add_model_param(parser, add_positional_arg=False)
+    add_no_plot_param(parser)
 
     core_arguments = parser.add_argument_group("Core Test Arguments")
     add_test_core_argument_group(core_arguments)
@@ -79,6 +80,7 @@ def add_test_core_argument_group(
         "All models in the provided directory are evaluated "
         "and compared against each other.",
     )
+    add_no_plot_param(parser)
 
 
 def add_test_nlu_argument_group(
@@ -140,7 +142,7 @@ def add_test_nlu_argument_group(
         "-f",
         "--folds",
         required=False,
-        default=10,
+        default=5,
         help="Number of cross validation folds (cross validation only).",
     )
     comparison_arguments = parser.add_argument_group("Comparison Mode")
@@ -162,6 +164,8 @@ def add_test_nlu_argument_group(
         help="Percentages of training data to exclude during comparison.",
     )
 
+    add_no_plot_param(parser)
+
 
 def add_test_core_model_param(parser: argparse.ArgumentParser):
     default_path = get_latest_model(DEFAULT_MODELS_PATH)
@@ -174,4 +178,17 @@ def add_test_core_model_param(parser: argparse.ArgumentParser):
         "will be used. If it is a directory, the latest model in that directory "
         "will be used (exception: '--evaluate-model-directory' flag is set). If multiple "
         "'tar.gz' files are provided, all those models will be compared.",
+    )
+
+
+def add_no_plot_param(
+    parser: argparse.ArgumentParser, default: bool = False, required: bool = False
+) -> None:
+    parser.add_argument(
+        "--no-plot",
+        dest="disable_plotting",
+        action="store_true",
+        default=default,
+        help=f"Don't render evaluation plots",
+        required=required,
     )

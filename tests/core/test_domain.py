@@ -11,10 +11,14 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT_TYPE,
 )
 from rasa.core import training, utils
-from rasa.core.domain import Domain, InvalidDomain
+from rasa.core.domain import Domain, InvalidDomain, SessionConfig
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.slots import TextSlot, UnfeaturizedSlot
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
+from tests.core.conftest import (
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
+    DEFAULT_STORIES_FILE,
+)
 from rasa.utils import io as io_utils
 
 
@@ -157,7 +161,16 @@ def test_domain_from_template():
 
     assert not domain.is_empty()
     assert len(domain.intents) == 10
-    assert len(domain.action_names) == 11
+    assert len(domain.action_names) == 13
+
+
+def test_avoid_action_repetition():
+    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+    domain_with_no_actions = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS)
+
+    assert not domain.is_empty() and not domain_with_no_actions.is_empty()
+    assert len(domain.intents) == len(domain_with_no_actions.intents)
+    assert len(domain.action_names) == len(domain_with_no_actions.action_names)
 
 
 def test_utter_templates():
@@ -181,7 +194,7 @@ def test_custom_slot_type(tmpdir: Path):
          custom:
            type: tests.core.conftest.CustomSlot
 
-       templates:
+       responses:
          utter_greet:
            - text: hey there!
 
@@ -200,7 +213,7 @@ def test_custom_slot_type(tmpdir: Path):
         custom:
          type: tests.core.conftest.Unknown
 
-    templates:
+    responses:
         utter_greet:
          - text: hey there!
 
@@ -211,7 +224,7 @@ def test_custom_slot_type(tmpdir: Path):
         custom:
          type: blubblubblub
 
-    templates:
+    responses:
         utter_greet:
          - text: hey there!
 
@@ -234,15 +247,56 @@ config:
 entities: []
 forms: []
 intents: []
-slots: {}
-templates:
+responses:
   utter_greet:
-  - text: hey there!"""
+  - text: hey there!
+session_config:
+  carry_over_slots_to_new_session: true
+  session_expiration_time: 60
+slots: {}"""
 
     domain = Domain.from_yaml(test_yaml)
     # python 3 and 2 are different here, python 3 will have a leading set
     # of --- at the beginning of the yml
     assert domain.as_yaml().strip().endswith(test_yaml.strip())
+    assert Domain.from_yaml(domain.as_yaml()) is not None
+
+
+def test_domain_to_yaml_deprecated_templates():
+    test_yaml = """actions:
+- utter_greet
+config:
+  store_entities_as_slots: true
+entities: []
+forms: []
+intents: []
+templates:
+  utter_greet:
+  - text: hey there!
+session_config:
+  carry_over_slots_to_new_session: true
+  session_expiration_time: 60
+slots: {}"""
+
+    target_yaml = """actions:
+- utter_greet
+config:
+  store_entities_as_slots: true
+entities: []
+forms: []
+intents: []
+responses:
+  utter_greet:
+  - text: hey there!
+session_config:
+  carry_over_slots_to_new_session: true
+  session_expiration_time: 60
+slots: {}"""
+
+    domain = Domain.from_yaml(test_yaml)
+    # python 3 and 2 are different here, python 3 will have a leading set
+    # of --- at the beginning of the yml
+    assert domain.as_yaml().strip().endswith(target_yaml.strip())
     assert Domain.from_yaml(domain.as_yaml()) is not None
 
 
@@ -254,7 +308,7 @@ config:
 entities: []
 intents: []
 slots: {}
-templates:
+responses:
   utter_greet:
   - text: hey there!"""
 
@@ -263,6 +317,9 @@ templates:
 - utter_goodbye
 config:
   store_entities_as_slots: false
+session_config:
+    session_expiration_time: 20
+    carry_over_slots: true
 entities:
 - cuisine
 intents:
@@ -270,7 +327,7 @@ intents:
 slots:
   cuisine:
     type: text
-templates:
+responses:
   utter_greet:
   - text: hey you!"""
 
@@ -287,12 +344,36 @@ templates:
     assert isinstance(domain.slots[0], TextSlot)
     assert domain.slots[0].name == "cuisine"
     assert sorted(domain.user_actions) == sorted(["utter_greet", "utter_goodbye"])
+    assert domain.session_config == SessionConfig(20, True)
 
     domain = domain_1.merge(domain_2, override=True)
     # single attribute should be taken from domain_2
     assert not domain.store_entities_as_slots
     # conflicts should take value from domain_2
     assert domain.templates == {"utter_greet": [{"text": "hey you!"}]}
+    assert domain.session_config == SessionConfig(20, True)
+
+
+def test_merge_session_config_if_first_is_not_default():
+    yaml1 = """
+session_config:
+    session_expiration_time: 20
+    carry_over_slots: true"""
+
+    yaml2 = """
+ session_config:
+    session_expiration_time: 40
+    carry_over_slots: true
+    """
+
+    domain1 = Domain.from_yaml(yaml1)
+    domain2 = Domain.from_yaml(yaml2)
+
+    merged = domain1.merge(domain2)
+    assert merged.session_config == SessionConfig(20, True)
+
+    merged = domain1.merge(domain2, override=True)
+    assert merged.session_config == SessionConfig(40, True)
 
 
 @pytest.mark.parametrize(
@@ -529,7 +610,36 @@ def test_clean_domain():
             "pure_intent",
         ],
         "entities": ["name", "other", "unrelated_recognized_entity"],
-        "templates": {
+        "responses": {
+            "utter_greet": [{"text": "hey there!"}],
+            "utter_goodbye": [{"text": "goodbye :("}],
+            "utter_default": [{"text": "default message"}],
+        },
+        "actions": ["utter_default", "utter_goodbye", "utter_greet"],
+    }
+
+    expected = Domain.from_dict(expected)
+    actual = Domain.from_dict(cleaned)
+
+    assert hash(actual) == hash(expected)
+
+
+def test_clean_domain_deprecated_templates():
+    domain_path = "data/test_domains/default_deprecated_templates.yml"
+    cleaned = Domain.load(domain_path).cleaned_domain()
+
+    expected = {
+        "intents": [
+            {"greet": {"use_entities": ["name"]}},
+            {"default": {"ignore_entities": ["unrelated_recognized_entity"]}},
+            {"goodbye": {"use_entities": []}},
+            {"thank": {"use_entities": []}},
+            "ask",
+            {"why": {"use_entities": []}},
+            "pure_intent",
+        ],
+        "entities": ["name", "other", "unrelated_recognized_entity"],
+        "responses": {
             "utter_greet": [{"text": "hey there!"}],
             "utter_goodbye": [{"text": "goodbye :("}],
             "utter_default": [{"text": "default message"}],
@@ -564,3 +674,66 @@ def test_add_knowledge_base_slots(default_domain):
     assert SLOT_LISTED_ITEMS in slot_names
     assert SLOT_LAST_OBJECT in slot_names
     assert SLOT_LAST_OBJECT_TYPE in slot_names
+
+
+@pytest.mark.parametrize(
+    "input_domain, expected_session_expiration_time, expected_carry_over_slots",
+    [
+        (
+            """session_config:
+    session_expiration_time: 0
+    carry_over_slots_to_new_session: true""",
+            0,
+            True,
+        ),
+        ("", 0, True),
+        (
+            """session_config:
+    carry_over_slots_to_new_session: false""",
+            0,
+            False,
+        ),
+        (
+            """session_config:
+    session_expiration_time: 20.2
+    carry_over_slots_to_new_session: False""",
+            20.2,
+            False,
+        ),
+        ("""session_config: {}""", 0, True),
+    ],
+)
+def test_session_config(
+    input_domain,
+    expected_session_expiration_time: float,
+    expected_carry_over_slots: bool,
+):
+    domain = Domain.from_yaml(input_domain)
+    assert (
+        domain.session_config.session_expiration_time
+        == expected_session_expiration_time
+    )
+    assert domain.session_config.carry_over_slots == expected_carry_over_slots
+
+
+def test_domain_as_dict_with_session_config():
+    session_config = SessionConfig(123, False)
+    domain = Domain.empty()
+    domain.session_config = session_config
+
+    serialized = domain.as_dict()
+    deserialized = Domain.from_dict(serialized)
+
+    assert deserialized.session_config == session_config
+
+
+@pytest.mark.parametrize(
+    "session_config, enabled",
+    [
+        (SessionConfig(0, True), False),
+        (SessionConfig(1, True), True),
+        (SessionConfig(-1, False), False),
+    ],
+)
+def test_are_sessions_enabled(session_config: SessionConfig, enabled: bool):
+    assert session_config.are_sessions_enabled() == enabled

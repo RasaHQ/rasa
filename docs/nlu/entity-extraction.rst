@@ -151,10 +151,16 @@ If you just want to match regular expressions exactly, you can do this in your c
 as a postprocessing step after receiving the response from Rasa NLU.
 
 
+.. _entity-extraction-custom-features:
+
 Passing Custom Features to ``CRFEntityExtractor``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you want to pass custom features to ``CRFEntityExtractor``, you can create a ``Featurizer`` that provides ``ner_features``.
-If you do, ``ner_features`` should be an iterable of ``len(tokens)``, where each entry is a vector.
-If ``CRFEntityExtractor`` finds ``"ner_features"`` in one of the arrays in ``features`` in the config, it will pass the ``ner_features`` vectors to ``sklearn_crfsuite``.
-The simplest example of this is to pass word vectors as features, which you can do using :ref:``SpacyFeaturizer``.
+If you want to pass custom features, such as pre-trained word embeddings, to ``CRFEntityExtractor``, you can
+add any dense featurizer to the pipeline before the ``CRFEntityExtractor``.
+``CRFEntityExtractor`` automatically finds the additional dense features and checks if the dense features are an
+iterable of ``len(tokens)``, where each entry is a vector.
+A warning will be shown in case the check fails.
+However, ``CRFEntityExtractor`` will continue to train just without the additional custom features.
+In case dense features are present, ``CRFEntityExtractor`` will pass the dense features to ``sklearn_crfsuite``
+and use them for training.
