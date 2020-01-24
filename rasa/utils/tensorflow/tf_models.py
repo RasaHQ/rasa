@@ -24,7 +24,6 @@ class RasaModel(tf.keras.models.Model):
         self.metrics_to_log = ["t_loss"]
 
         self._training = tf.ones((), tf.bool)
-        self._optimizer = None
 
         self._predict_function = None
 
@@ -126,7 +125,7 @@ class RasaModel(tf.keras.models.Model):
             total_loss = self._total_batch_loss(batch_in)
 
         gradients = tape.gradient(total_loss, self.trainable_variables)
-        self._optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
     def build_for_predict(
         self, predict_data: RasaModelData, eager: bool = False
