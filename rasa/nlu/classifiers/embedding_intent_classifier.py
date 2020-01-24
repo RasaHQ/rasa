@@ -16,7 +16,8 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import any_of
 from rasa.utils import train_utils
-from rasa.utils.tensorflow import tf_layers, tf_models
+from rasa.utils.tensorflow import tf_layers
+from rasa.utils.tensorflow.tf_models import RasaModel
 from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import *
 from rasa.nlu.constants import (
@@ -174,7 +175,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         component_config: Optional[Dict[Text, Any]] = None,
         inverted_label_dict: Optional[Dict[int, Text]] = None,
         inverted_tag_dict: Optional[Dict[int, Text]] = None,
-        model: Optional[tf_models.RasaModel] = None,
+        model: Optional[RasaModel] = None,
         batch_tuple_sizes: Optional[Dict] = None,
     ) -> None:
         """Declare instance variables with default values"""
@@ -793,7 +794,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
 
-class DIET(tf_models.RasaModel):
+class DIET(RasaModel):
     def __init__(
         self,
         data_signature: Dict[Text, List[FeatureSignature]],

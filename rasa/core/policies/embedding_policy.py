@@ -6,7 +6,7 @@ import pickle
 import numpy as np
 import tensorflow as tf
 
-from typing import Any, List, Optional, Text, Dict, Tuple, Union, Callable
+from typing import Any, List, Optional, Text, Dict, Tuple, Union
 
 import rasa.utils.io
 from rasa.core.domain import Domain
@@ -20,7 +20,8 @@ from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils import train_utils
-from rasa.utils.tensorflow import tf_models, tf_layers
+from rasa.utils.tensorflow import tf_layers
+from rasa.utils.tensorflow.tf_models import RasaModel
 from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import *
 
@@ -119,7 +120,7 @@ class EmbeddingPolicy(Policy):
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
         max_history: Optional[int] = None,
-        model: Optional[tf_models.RasaModel] = None,
+        model: Optional[RasaModel] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instant variables with default values"""
@@ -406,7 +407,7 @@ class EmbeddingPolicy(Policy):
         )
 
 
-class TED(tf_models.RasaModel):
+class TED(RasaModel):
     def __init__(
         self,
         data_signature: Dict[Text, List[FeatureSignature]],
