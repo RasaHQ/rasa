@@ -631,7 +631,7 @@ class MessageProcessor:
                         warnings.warn(
                             f"Action '{action_name}' set a slot type '{e.key}' that "
                             f"it never set during the training. This "
-                            f"can throw of the prediction. Make sure to "
+                            f"can throw off the prediction. Make sure to "
                             f"include training examples in your stories "
                             f"for the different types of slots this "
                             f"action can return. Remember: you need to "
