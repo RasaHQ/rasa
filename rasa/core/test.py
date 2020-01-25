@@ -615,13 +615,13 @@ async def compare_models_in_dir(
         number_correct_in_run = defaultdict(list)
 
         for model in sorted(io_utils.list_files(run)):
-            if not model.endswith("tar.gz"):
+            if not str(model).endswith("tar.gz"):
                 continue
 
             # The model files are named like <config-name>PERCENTAGE_KEY<number>.tar.gz
             # Remove the percentage key and number from the name to get the config name
             config_name = os.path.basename(model).split(PERCENTAGE_KEY)[0]
-            number_of_correct_stories = await _evaluate_core_model(model, stories_file)
+            number_of_correct_stories = await _evaluate_core_model(str(model), stories_file)
             number_correct_in_run[config_name].append(number_of_correct_stories)
 
         for k, v in number_correct_in_run.items():

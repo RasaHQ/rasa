@@ -1,7 +1,7 @@
 import logging
-import os
 import typing
 import warnings
+from pathlib import Path
 from typing import Any, Dict, Optional, Text, List, Tuple
 
 import rasa.utils.io
@@ -132,10 +132,11 @@ class DialogflowReader(TrainingDataReader):
             examples_type = "entries"
         examples_fn_ending = f"_{examples_type}_{language}.json"
         examples_fn = fn.replace(".json", examples_fn_ending)
-        if os.path.isfile(examples_fn):
+
+        if Path(examples_fn).is_file():
             return rasa.utils.io.read_json_file(examples_fn)
-        else:
-            return None
+
+        return None
 
     def reads(self, s, **kwargs):
         raise NotImplementedError

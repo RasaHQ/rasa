@@ -3,7 +3,8 @@ import logging
 import os
 import shutil
 import typing
-from typing import Any, Dict, List, Optional, Text
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Text, Union
 
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
@@ -77,40 +78,45 @@ class JiebaTokenizer(Tokenizer):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Union[Optional[Path], Optional[Text]] = None,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional[Component] = None,
         **kwargs: Any,
     ) -> "JiebaTokenizer":
 
+        model_dir = Path(model_dir)
         relative_dictionary_path = meta.get("dictionary_path")
 
         # get real path of dictionary path, if any
         if relative_dictionary_path is not None:
-            dictionary_path = os.path.join(model_dir, relative_dictionary_path)
+            dictionary_path = model_dir / relative_dictionary_path
 
             meta["dictionary_path"] = dictionary_path
 
         return cls(meta)
 
     @staticmethod
-    def copy_files_dir_to_dir(input_dir: Text, output_dir: Text) -> None:
-        # make sure target path exists
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+    def copy_files_dir_to_dir(
+        input_dir: Union[Path, Text], output_dir: Union[Path, Text]
+    ) -> None:
+        output_dir = Path(output_dir)
+
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         target_file_list = glob.glob(f"{input_dir}/*")
         for target_file in target_file_list:
             shutil.copy2(target_file, output_dir)
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(
+        self, file_name: Text, model_dir: Union[Path, Text]
+    ) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
 
         # copy custom dictionaries to model dir, if any
         if self.dictionary_path is not None:
-            target_dictionary_path = os.path.join(model_dir, file_name)
+            target_dictionary_path = model_dir / file_name
             self.copy_files_dir_to_dir(self.dictionary_path, target_dictionary_path)
 
             return {"dictionary_path": file_name}
-        else:
-            return {"dictionary_path": None}
+
+        return {"dictionary_path": None}

@@ -1,10 +1,10 @@
 import logging
 
 import numpy as np
-import os
 import pickle
 import scipy.sparse
 import typing
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 import warnings
 
@@ -724,9 +724,11 @@ class EmbeddingIntentClassifier(Component):
         possible_to_train = self._check_enough_labels(session_data)
 
         if not possible_to_train:
-            raise ValueError("Can not train a classifier. "
-                            "Need at least 2 different classes. "
-                            "Skipping training of classifier.")
+            raise ValueError(
+                "Can not train a classifier. "
+                "Need at least 2 different classes. "
+                "Skipping training of classifier."
+            )
 
             return
 
@@ -867,7 +869,7 @@ class EmbeddingIntentClassifier(Component):
         message.set("intent", label, add_to_output=True)
         message.set("intent_ranking", label_ranking, add_to_output=True)
 
-    def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+    def persist(self, file_name: Text, model_dir: Union[Path, Text]) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again.
@@ -876,16 +878,11 @@ class EmbeddingIntentClassifier(Component):
         if self.session is None:
             return {"file": None}
 
-        checkpoint = os.path.join(model_dir, file_name + ".ckpt")
+        model_dir = Path(model_dir)
 
-        try:
-            os.makedirs(os.path.dirname(checkpoint))
-        except OSError as e:
-            # be happy if someone already created the path
-            import errno
+        checkpoint = model_dir / file_name + ".ckpt"
+        checkpoint.mkdir(parents=True, exist_ok=True)
 
-            if e.errno != errno.EEXIST:
-                raise
         with self.graph.as_default():
             train_utils.persist_tensor("batch_placeholder", self.batch_in, self.graph)
 
@@ -904,17 +901,13 @@ class EmbeddingIntentClassifier(Component):
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
 
-        with open(
-            os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "wb"
-        ) as f:
+        with open(model_dir / file_name + ".inv_label_dict.pkl", "wb") as f:
             pickle.dump(self.inverted_label_dict, f)
 
-        with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "wb") as f:
+        with open(model_dir / file_name + ".tf_config.pkl", "wb") as f:
             pickle.dump(self._tf_config, f)
 
-        with open(
-            os.path.join(model_dir, file_name + ".batch_tuple_sizes.pkl"), "wb"
-        ) as f:
+        with open(model_dir / file_name + ".batch_tuple_sizes.pkl") as f:
             pickle.dump(self.batch_tuple_sizes, f)
 
         return {"file": file_name}
@@ -923,7 +916,7 @@ class EmbeddingIntentClassifier(Component):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
+        model_dir: Union[Path, Text] = None,
         model_metadata: "Metadata" = None,
         cached_component: Optional["EmbeddingIntentClassifier"] = None,
         **kwargs: Any,
@@ -932,9 +925,11 @@ class EmbeddingIntentClassifier(Component):
 
         if model_dir and meta.get("file"):
             file_name = meta.get("file")
-            checkpoint = os.path.join(model_dir, file_name + ".ckpt")
+            checkpoint = Path(model_dir) / file_name
 
-            with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "rb") as f:
+            model_dir = Path(model_dir)
+
+            with open(model_dir / file_name + ".tf_config.pkl", "rb") as f:
                 _tf_config = pickle.load(f)
 
             graph = tf.Graph()
@@ -954,14 +949,10 @@ class EmbeddingIntentClassifier(Component):
                 label_embed = train_utils.load_tensor("label_embed")
                 all_labels_embed = train_utils.load_tensor("all_labels_embed")
 
-            with open(
-                os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "rb"
-            ) as f:
+            with open(model_dir / file_name + ".inv_label_dict.pkl") as f:
                 inv_label_dict = pickle.load(f)
 
-            with open(
-                os.path.join(model_dir, file_name + ".batch_tuple_sizes.pkl"), "rb"
-            ) as f:
+            with open(model_dir / file_name + ".batch_tuple_sizes.pkl") as f:
                 batch_tuple_sizes = pickle.load(f)
 
             return cls(
@@ -982,6 +973,6 @@ class EmbeddingIntentClassifier(Component):
         else:
             warnings.warn(
                 f"Failed to load nlu model. "
-                f"Maybe path '{os.path.abspath(model_dir)}' doesn't exist."
+                f"Maybe path '{model_dir.resolve()}' doesn't exist."
             )
             return cls(component_config=meta)

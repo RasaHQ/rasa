@@ -1,9 +1,9 @@
-import os
 import warnings
 import logging
 import typing
 import re
-from typing import Any, Dict, Optional, Text
+from pathlib import Path
+from typing import Any, Dict, Optional, Text, Union
 
 from rasa.nlu import utils
 from rasa.nlu.components import Component
@@ -124,14 +124,14 @@ class KeywordIntentClassifier(Component):
         logger.debug("KeywordClassifier did not find any keywords in the message.")
         return None
 
-    def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+    def persist(self, file_name: Text, model_dir: Union[Path, Text]) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again.
         """
 
         file_name = file_name + ".json"
-        keyword_file = os.path.join(model_dir, file_name)
+        keyword_file = Path(model_dir) / file_name
         utils.write_json_to_file(keyword_file, self.intent_keyword_map)
 
         return {"file": file_name}
@@ -140,7 +140,7 @@ class KeywordIntentClassifier(Component):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Union[Optional[Path], Optional[Text]] = None,
         model_metadata: "Metadata" = None,
         cached_component: Optional["KeywordIntentClassifier"] = None,
         **kwargs: Any,
@@ -148,8 +148,9 @@ class KeywordIntentClassifier(Component):
 
         if model_dir and meta.get("file"):
             file_name = meta.get("file")
-            keyword_file = os.path.join(model_dir, file_name)
-            if os.path.exists(keyword_file):
+
+            keyword_file = Path(model_dir) / file_name
+            if keyword_file.exists():
                 intent_keyword_map = utils.read_json_file(keyword_file)
             else:
                 warnings.warn(

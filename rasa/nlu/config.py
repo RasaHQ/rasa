@@ -1,7 +1,7 @@
 import copy
 import logging
 import warnings
-import os
+from pathlib import Path
 import ruamel.yaml as yaml
 from typing import Any, Dict, List, Optional, Text, Union, Tuple
 
@@ -26,7 +26,7 @@ def load(
         return _load_from_dict(config, **kwargs)
 
     file_config = {}
-    if config is None and os.path.isfile(DEFAULT_CONFIG_PATH):
+    if config is None and Path(DEFAULT_CONFIG_PATH).is_file():
         config = DEFAULT_CONFIG_PATH
 
     if config is not None:

@@ -3,7 +3,8 @@ import logging
 import os
 import shutil
 import tarfile
-from typing import List, Optional, Text, Tuple
+from pathlib import Path
+from typing import List, Optional, Text, Tuple, Union
 
 
 logger = logging.getLogger(__name__)
@@ -34,16 +35,18 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
 class Persistor:
     """Store models in cloud and fetch them when needed"""
 
-    def persist(self, model_directory: Text, model_name: Text) -> None:
+    def persist(self, model_directory: Union[Path, Text], model_name: Text) -> None:
         """Uploads a model persisted in the `target_dir` to cloud storage."""
 
-        if not os.path.isdir(model_directory):
+        model_directory = Path(model_directory)
+
+        if not model_directory.is_dir():
             raise ValueError(f"Target directory '{model_directory}' not found.")
 
         file_key, tar_path = self._compress(model_directory, model_name)
         self._persist_tar(file_key, tar_path)
 
-    def retrieve(self, model_name: Text, target_path: Text) -> None:
+    def retrieve(self, model_name: Text, target_path: Union[Path, Text]) -> None:
         """Downloads a model that has been persisted to cloud storage."""
 
         tar_name = model_name
@@ -53,7 +56,7 @@ class Persistor:
             tar_name = self._tar_name(model_name)
 
         self._retrieve_tar(tar_name)
-        self._decompress(os.path.basename(tar_name), target_path)
+        self._decompress(Path(tar_name).name, target_path)
 
     def list_models(self) -> List[Text]:
         """Lists all the trained models."""
@@ -70,19 +73,18 @@ class Persistor:
 
         raise NotImplementedError("")
 
-    def _compress(self, model_directory: Text, model_name: Text) -> Tuple[Text, Text]:
+    def _compress(
+        self, model_directory: Union[Path, Text], model_name: Text
+    ) -> Tuple[Text, Text]:
         """Creates a compressed archive and returns key and tar."""
         import tempfile
 
-        dirpath = tempfile.mkdtemp()
+        dirpath = Path(tempfile.mkdtemp())
         base_name = self._tar_name(model_name, include_extension=False)
         tar_name = shutil.make_archive(
-            os.path.join(dirpath, base_name),
-            "gztar",
-            root_dir=model_directory,
-            base_dir=".",
+            str(dirpath / base_name), "gztar", root_dir=model_directory, base_dir=".",
         )
-        file_key = os.path.basename(tar_name)
+        file_key = Path(tar_name).name
         return file_key, tar_name
 
     @staticmethod
@@ -92,8 +94,8 @@ class Persistor:
         if len(split) > 1:
             model_name = split[1].replace(".tar.gz", "")
             return split[0], model_name
-        else:
-            return split[0], ""
+
+        return split[0], ""
 
     @staticmethod
     def _tar_name(model_name: Text, include_extension: bool = True) -> Text:
@@ -102,7 +104,7 @@ class Persistor:
         return f"{model_name}{ext}"
 
     @staticmethod
-    def _decompress(compressed_path: Text, target_path: Text) -> None:
+    def _decompress(compressed_path: Text, target_path: Union[Path, Text]) -> None:
 
         with tarfile.open(compressed_path, "r:gz") as tar:
             tar.extractall(target_path)  # target dir will be created if it not exists
@@ -151,9 +153,10 @@ class AWSPersistor(Persistor):
         with open(tar_path, "rb") as f:
             self.s3.Object(self.bucket_name, file_key).put(Body=f)
 
-    def _retrieve_tar(self, model_path: Text) -> None:
+    def _retrieve_tar(self, model_path: Union[Path, Text]) -> None:
         """Downloads a model that has previously been persisted to s3."""
-        tar_name = os.path.basename(model_path)
+
+        tar_name = Path(model_path).name
         with open(tar_name, "wb") as f:
             self.bucket.download_fileobj(model_path, f)
 

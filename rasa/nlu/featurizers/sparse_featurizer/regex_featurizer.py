@@ -2,11 +2,11 @@ import logging
 import warnings
 
 import numpy as np
-import os
 import re
 import typing
 import scipy.sparse
-from typing import Any, Dict, Optional, Text, Union, List
+from pathlib import Path
+from typing import Any, Dict, Optional, Text, Union, List, Union
 
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
@@ -163,27 +163,31 @@ class RegexFeaturizer(Featurizer):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Union[Optional[Path], Optional[Text]] = None,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional["RegexFeaturizer"] = None,
         **kwargs: Any,
     ) -> "RegexFeaturizer":
 
         file_name = meta.get("file")
-        regex_file = os.path.join(model_dir, file_name)
 
-        if os.path.exists(regex_file):
+        model_dir = Path(model_dir)
+        regex_file = model_dir / file_name
+
+        if regex_file.exists():
             known_patterns = rasa.utils.io.read_json_file(regex_file)
             return RegexFeaturizer(meta, known_patterns=known_patterns)
-        else:
-            return RegexFeaturizer(meta)
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+        return RegexFeaturizer(meta)
+
+    def persist(
+        self, file_name: Text, model_dir: Union[Path, Text]
+    ) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again."""
         file_name = file_name + ".pkl"
-        regex_file = os.path.join(model_dir, file_name)
+        regex_file = Path(model_dir) / file_name
         utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
 
         return {"file": file_name}

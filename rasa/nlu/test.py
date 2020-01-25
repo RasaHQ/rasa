@@ -1,5 +1,5 @@
 import itertools
-import os
+from pathlib import Path
 import logging
 import numpy as np
 from collections import defaultdict, namedtuple
@@ -367,7 +367,7 @@ def evaluate_response_selections(
             target_responses, predicted_responses, output_dict=True
         )
 
-        report_filename = os.path.join(report_folder, "response_selection_report.json")
+        report_filename = Path(report_folder) / "response_selection_report.json"
 
         utils.write_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
@@ -479,7 +479,7 @@ def evaluate_intents(
         )
         report = _add_confused_intents_to_report(report, cnf_matrix, labels)
 
-        report_filename = os.path.join(output_directory, "intent_report.json")
+        report_filename = Path(output_directory) / "intent_report.json"
 
         utils.write_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
@@ -494,14 +494,14 @@ def evaluate_intents(
     if successes:
         successes_filename = "intent_successes.json"
         if output_directory:
-            successes_filename = os.path.join(output_directory, successes_filename)
+            successes_filename = Path(output_directory) / successes_filename
         # save classified samples to file for debugging
         collect_nlu_successes(intent_results, successes_filename)
 
     if errors:
         errors_filename = "intent_errors.json"
         if output_directory:
-            errors_filename = os.path.join(output_directory, errors_filename)
+            errors_filename = Path(output_directory) / errors_filename
         # log and save misclassified samples to file for debugging
         collect_nlu_errors(intent_results, errors_filename)
 
@@ -539,7 +539,7 @@ def _plot_confusion_matrix(
     labels: Collection[Text],
 ) -> None:
     if output_directory:
-        confmat_filename = os.path.join(output_directory, confmat_filename)
+        confmat_filename = Path(output_directory) / confmat_filename
 
     plot_confusion_matrix(
         cnf_matrix,
@@ -555,7 +555,7 @@ def _plot_histogram(
     intent_results: List[IntentEvaluationResult],
 ) -> None:
     if output_directory:
-        intent_hist_filename = os.path.join(output_directory, intent_hist_filename)
+        intent_hist_filename = Path(output_directory) / intent_hist_filename
         plot_attribute_confidences(
             intent_results, intent_hist_filename, "intent_target", "intent_prediction"
         )
@@ -692,7 +692,7 @@ def evaluate_entities(
         logger.info(f"Evaluation for entity extractor: {extractor} ")
         if output_directory:
             report_filename = f"{extractor}_report.json"
-            extractor_report_filename = os.path.join(output_directory, report_filename)
+            extractor_report_filename = Path("output_directory") / report_filename
 
             report, precision, f1, accuracy = get_evaluation_metrics(
                 merged_targets,
@@ -720,7 +720,7 @@ def evaluate_entities(
         if successes:
             successes_filename = f"{extractor}_successes.json"
             if output_directory:
-                successes_filename = os.path.join(output_directory, successes_filename)
+                successes_filename = Path(output_directory) / successes_filename
             # save classified samples to file for debugging
             write_successful_entity_predictions(
                 entity_results, merged_targets, merged_predictions, successes_filename
@@ -729,7 +729,7 @@ def evaluate_entities(
         if errors:
             errors_filename = f"{extractor}_errors.json"
             if output_directory:
-                errors_filename = os.path.join(output_directory, errors_filename)
+                errors_filename = Path(output_directory) / errors_filename
             # log and save misclassified samples to file for debugging
             write_incorrect_entity_predictions(
                 entity_results, merged_targets, merged_predictions, errors_filename
@@ -1424,10 +1424,10 @@ def compare_nlu(
 
         logger.info("Beginning comparison run {}/{}".format(run + 1, runs))
 
-        run_path = os.path.join(output, "run_{}".format(run + 1))
+        run_path = Path(output) / "run_{}".format(run + 1)
         io_utils.create_path(run_path)
 
-        test_path = os.path.join(run_path, TEST_DATA_FILE)
+        test_path = run_path / TEST_DATA_FILE
         io_utils.create_path(test_path)
 
         train, test = data.train_test_split()
@@ -1441,8 +1441,9 @@ def compare_nlu(
             _, train = train.train_test_split(percentage / 100)
             training_examples_per_run.append(len(train.training_examples))
 
-            model_output_path = os.path.join(run_path, percent_string)
-            train_split_path = os.path.join(model_output_path, TRAIN_DATA_FILE)
+            model_output_path = run_path / percent_string
+            train_split_path = run_path / TRAIN_DATA_FILE
+
             io_utils.create_path(train_split_path)
             write_to_file(train_split_path, train.nlu_as_markdown())
 
@@ -1465,9 +1466,10 @@ def compare_nlu(
                     f_score_results[model_name][run].append(0.0)
                     continue
 
-                model_path = os.path.join(get_model(model_path), "nlu")
+                model_path = Path(get_model(model_path)) / "nlu"
 
-                output_path = os.path.join(model_output_path, f"{model_name}_report")
+                output_path = Path(model_output_path) / f"{model_name}_report"
+
                 result = run_evaluation(
                     test_path, model_path, output_directory=output_path, errors=True
                 )

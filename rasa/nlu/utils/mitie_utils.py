@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import typing
 from typing import Any, Dict, List, Optional, Text
 
@@ -17,7 +17,8 @@ class MitieNLP(Component):
     defaults = {
         # name of the language model to load - this contains
         # the MITIE feature extractor
-        "model": os.path.join("data", "total_word_feature_extractor.dat")
+        "model": Path("data")
+        / "total_word_feature_extractor.dat"
     }
 
     def __init__(
@@ -63,9 +64,9 @@ class MitieNLP(Component):
 
         mitie_file = component_meta.get("model", None)
         if mitie_file is not None:
-            return cls.name + "-" + str(os.path.abspath(mitie_file))
-        else:
-            return None
+            return cls.name + "-" + str(Path(mitie_file).resolve())
+
+        return None
 
     def provide_context(self) -> Dict[Text, Any]:
 

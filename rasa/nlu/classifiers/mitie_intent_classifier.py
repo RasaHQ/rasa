@@ -1,6 +1,6 @@
-import os
 import typing
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text, Union
+from pathlib import Path
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
@@ -87,7 +87,7 @@ class MitieIntentClassifier(Component):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Union[Optional[Path], Optional[Text]] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["MitieIntentClassifier"] = None,
         **kwargs: Any,
@@ -98,19 +98,22 @@ class MitieIntentClassifier(Component):
 
         if not file_name:
             return cls(meta)
-        classifier_file = os.path.join(model_dir, file_name)
-        if os.path.exists(classifier_file):
+
+        model_dir = Path(model_dir)
+        classifier_file = model_dir / file_name
+
+        if classifier_file.exists():
             classifier = mitie.text_categorizer(classifier_file)
             return cls(meta, classifier)
-        else:
-            return cls(meta)
 
-    def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+        return cls(meta)
+
+    def persist(self, file_name: Text, model_dir: Union[Path, Text]) -> Dict[Text, Any]:
 
         if self.clf:
             file_name = file_name + ".dat"
-            classifier_file = os.path.join(model_dir, file_name)
+            classifier_file = Path(model_dir) / file_name
             self.clf.save_to_disk(classifier_file, pure_model=True)
             return {"file": file_name}
-        else:
-            return {"file": None}
+
+        return {"file": None}

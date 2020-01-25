@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from pathlib import Path
 
 import typing
 from typing import Optional, Text
@@ -60,7 +61,7 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
     Merges them if loaded from disk and multiple files are found."""
     from rasa.nlu.training_data import TrainingData
 
-    if not os.path.exists(resource_name):
+    if not Path(resource_name).exists():
         raise ValueError(f"File '{resource_name}' does not exist.")
 
     files = io_utils.list_files(resource_name)

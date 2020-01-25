@@ -1,8 +1,8 @@
 import logging
 import warnings
-import os
 import typing
 import numpy as np
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, NamedTuple
 
 from rasa.nlu.config import InvalidConfigError, RasaNLUModelConfig
@@ -409,23 +409,27 @@ class CRFEntityExtractor(EntityExtractor):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
+        model_dir: Union[Path, Text] = None,
         model_metadata: Metadata = None,
         cached_component: Optional["CRFEntityExtractor"] = None,
         **kwargs: Any,
     ) -> "CRFEntityExtractor":
         from sklearn.externals import joblib
 
-        file_name = meta.get("file")
-        model_file = os.path.join(model_dir, file_name)
+        model_dir = Path(model_dir)
 
-        if os.path.exists(model_file):
+        file_name = meta.get("file")
+        model_file = model_dir / file_name
+
+        if model_file.exists():
             ent_tagger = joblib.load(model_file)
             return cls(meta, ent_tagger)
-        else:
-            return cls(meta)
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+        return cls(meta)
+
+    def persist(
+        self, file_name: Text, model_dir: Union[Path, Text]
+    ) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
         Returns the metadata necessary to load the model again."""
@@ -434,7 +438,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         file_name = file_name + ".pkl"
         if self.ent_tagger:
-            model_file_name = os.path.join(model_dir, file_name)
+            model_file_name = model_dir / file_name
             joblib.dump(self.ent_tagger, model_file_name)
 
         return {"file": file_name}

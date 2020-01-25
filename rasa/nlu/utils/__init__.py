@@ -1,7 +1,9 @@
 import json
 import os
 import re
-from typing import Any, Dict, List, Optional, Text
+from os.path import relpath
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Text, Union
 
 import rasa.utils.io as io_utils
 
@@ -10,13 +12,17 @@ import rasa.utils.io as io_utils
 from rasa.utils.io import read_json_file
 
 
-def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
+def relative_normpath(
+    f: Union[Optional[Path], Optional[Text]], path: Union[Path, Text]
+) -> Optional[Path]:
     """Return the path of file relative to `path`."""
 
     if f is not None:
-        return os.path.normpath(os.path.relpath(f, path))
-    else:
-        return None
+        f = Path(f)
+        path = Path(path)
+
+        return Path(relpath(f, path)).resolve()
+    return None
 
 
 def list_to_str(l: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
@@ -75,11 +81,14 @@ def is_model_dir(model_dir: Text) -> bool:
     if all files have an appropriate ending."""
     allowed_extensions = {".json", ".pkl", ".dat"}
     dir_tree = list(os.walk(model_dir))
+
     if len(dir_tree) != 1:
         return False
+
     model_dir, child_dirs, files = dir_tree[0]
-    file_extenstions = [os.path.splitext(f)[1] for f in files]
+    file_extenstions = [Path(f).suffix for f in files]
     only_valid_files = all([ext in allowed_extensions for ext in file_extenstions])
+
     return only_valid_files
 
 

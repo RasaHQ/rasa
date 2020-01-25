@@ -2,7 +2,8 @@ import logging
 import os
 import re
 import scipy.sparse
-from typing import Any, Dict, List, Optional, Text
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Text, Union
 
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu import utils
@@ -539,7 +540,9 @@ class CountVectorsFeaturizer(Featurizer):
 
         return any(value is not None for value in attribute_vocabularies.values())
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(
+        self, file_name: Text, model_dir: Union[Path, Text]
+    ) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
         Returns the metadata necessary to load the model again.
@@ -552,7 +555,7 @@ class CountVectorsFeaturizer(Featurizer):
             attribute_vocabularies = self._collect_vectorizer_vocabularies()
             if self._is_any_model_trained(attribute_vocabularies):
                 # Definitely need to persist some vocabularies
-                featurizer_file = os.path.join(model_dir, file_name)
+                featurizer_file = model_dir / file_name
 
                 if self.use_shared_vocab:
                     # Only persist vocabulary from one attribute. Can be loaded and
@@ -623,16 +626,16 @@ class CountVectorsFeaturizer(Featurizer):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Union[Optional[Path], Optional[Text]] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["CountVectorsFeaturizer"] = None,
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
 
         file_name = meta.get("file")
-        featurizer_file = os.path.join(model_dir, file_name)
+        featurizer_file = Path(model_dir) / file_name
 
-        if not os.path.exists(featurizer_file):
+        if not featurizer_file.exists():
             return cls(meta)
 
         vocabulary = utils.json_unpickle(featurizer_file)

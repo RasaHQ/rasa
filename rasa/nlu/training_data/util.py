@@ -1,7 +1,7 @@
 import json
 import logging
-import os
 import warnings
+from pathlib import Path
 from typing import Any, Dict, Optional, Text
 
 import rasa.utils.io as io_utils
@@ -40,7 +40,7 @@ def check_duplicate_synonym(
 def get_file_format(resource_name: Text) -> Text:
     from rasa.nlu.training_data import loading
 
-    if resource_name is None or not os.path.exists(resource_name):
+    if resource_name is None or not Path(resource_name).exists():
         raise AttributeError(f"Resource '{resource_name}' does not exist.")
 
     files = io_utils.list_files(resource_name)

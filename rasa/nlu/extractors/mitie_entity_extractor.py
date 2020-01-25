@@ -1,8 +1,8 @@
 import logging
 import warnings
-import os
 import typing
-from typing import Any, Dict, List, Optional, Text
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Text, Union
 
 from rasa.nlu.constants import ENTITIES_ATTRIBUTE, TOKENS_NAMES, TEXT_ATTRIBUTE
 from rasa.nlu.config import RasaNLUModelConfig
@@ -155,19 +155,25 @@ class MitieEntityExtractor(EntityExtractor):
         if not file_name:
             return cls(meta)
 
-        classifier_file = os.path.join(model_dir, file_name)
-        if os.path.exists(classifier_file):
+        model_dir = Path(model_dir)
+
+        classifier_file = model_dir / file_name
+
+        if classifier_file.exists():
             extractor = mitie.named_entity_extractor(classifier_file)
             return cls(meta, extractor)
-        else:
-            return cls(meta)
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+        return cls(meta)
+
+    def persist(
+        self, file_name: Text, model_dir: Union[Path, Text]
+    ) -> Optional[Dict[Text, Any]]:
 
         if self.ner:
             file_name = file_name + ".dat"
-            entity_extractor_file = os.path.join(model_dir, file_name)
+            entity_extractor_file = model_dir / file_name
+
             self.ner.save_to_disk(entity_extractor_file, pure_model=True)
             return {"file": file_name}
-        else:
-            return {"file": None}
+
+        return {"file": None}

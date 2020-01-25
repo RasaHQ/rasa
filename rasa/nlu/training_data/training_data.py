@@ -2,10 +2,11 @@ import logging
 import os
 import random
 import warnings
+from pathlib import Path
 from collections import Counter, OrderedDict
 from copy import deepcopy
 from os.path import relpath
-from typing import Any, Dict, List, Optional, Set, Text, Tuple
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union
 
 import rasa.nlu.utils
 import rasa.utils.common as rasa_utils
@@ -243,11 +244,11 @@ class TrainingData:
 
         return self.nlu_as_markdown()
 
-    def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH):
+    def persist_nlu(self, filename: Union[Path, Text] = DEFAULT_TRAINING_DATA_OUTPUT_PATH):
 
-        if filename.endswith("json"):
+        if str(filename).endswith("json"):
             rasa.nlu.utils.write_to_file(filename, self.nlu_as_json(indent=2))
-        elif filename.endswith("md"):
+        elif str(filename).endswith("md"):
             rasa.nlu.utils.write_to_file(filename, self.nlu_as_markdown())
         else:
             ValueError(
@@ -255,7 +256,7 @@ class TrainingData:
                 "and 'md'."
             )
 
-    def persist_nlg(self, filename: Text) -> None:
+    def persist_nlg(self, filename: Union[Path, Text]) -> None:
 
         nlg_serialized_data = self.nlg_as_markdown()
         if nlg_serialized_data == "":
@@ -264,25 +265,26 @@ class TrainingData:
         rasa.nlu.utils.write_to_file(filename, self.nlg_as_markdown())
 
     @staticmethod
-    def get_nlg_persist_filename(nlu_filename: Text) -> Text:
+    def get_nlg_persist_filename(nlu_filename: Union[Path, Text]) -> Path:
+        nlu_filename = Path(nlu_filename)
+        name = f"nlg_{nlu_filename.stem}.md"
 
         # Add nlg_ as prefix and change extension to .md
-        filename = os.path.join(
-            os.path.dirname(nlu_filename),
-            "nlg_" + os.path.splitext(os.path.basename(nlu_filename))[0] + ".md",
-        )
-        return filename
+        return nlu_filename.parent / name
 
     def persist(
-        self, dir_name: Text, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH
+        self,
+        dir_name: Union[Path, Text],
+        filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH,
     ) -> Dict[Text, Any]:
         """Persists this training data to disk and returns necessary
         information to load it again."""
 
-        if not os.path.exists(dir_name):
-            os.makedirs(dir_name)
+        dir_name = Path(dir_name)
+        dir_name.mkdir(parents=True, exist_ok=True)
 
-        nlu_data_file = os.path.join(dir_name, filename)
+        nlu_data_file = dir_name / filename
+
         self.persist_nlu(nlu_data_file)
         self.persist_nlg(self.get_nlg_persist_filename(nlu_data_file))
 

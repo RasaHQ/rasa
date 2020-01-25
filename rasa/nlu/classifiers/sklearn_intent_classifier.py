@@ -3,7 +3,8 @@ import warnings
 import numpy as np
 import os
 import typing
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from pathlib import Path
 
 from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu import utils
@@ -203,17 +204,20 @@ class SklearnIntentClassifier(Component):
         sorted_indices = np.fliplr(np.argsort(pred_result, axis=1))
         return sorted_indices, pred_result[:, sorted_indices]
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(
+        self, file_name: Text, model_dir: Union[Path, Text]
+    ) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
 
         classifier_file_name = file_name + "_classifier.pkl"
         encoder_file_name = file_name + "_encoder.pkl"
+
+        model_dir = Path(model_dir)
+
         if self.clf and self.le:
+            utils.json_pickle(model_dir / encoder_file_name, self.le.classes_)
             utils.json_pickle(
-                os.path.join(model_dir, encoder_file_name), self.le.classes_
-            )
-            utils.json_pickle(
-                os.path.join(model_dir, classifier_file_name), self.clf.best_estimator_
+                model_dir / classifier_file_name, self.clf.best_estimator_
             )
         return {"classifier": classifier_file_name, "encoder": encoder_file_name}
 
@@ -221,21 +225,24 @@ class SklearnIntentClassifier(Component):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Union[Optional[Path], Optional[Text]] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["SklearnIntentClassifier"] = None,
         **kwargs: Any,
     ) -> "SklearnIntentClassifier":
         from sklearn.preprocessing import LabelEncoder
 
-        classifier_file = os.path.join(model_dir, meta.get("classifier"))
-        encoder_file = os.path.join(model_dir, meta.get("encoder"))
+        model_dir = Path(model_dir) / meta.get("classifier")
 
-        if os.path.exists(classifier_file):
+        classifier_file = model_dir / meta.get("classifier")
+        encoder_file = model_dir / meta.get("encoder")
+
+        if classifier_file.exists():
             classifier = utils.json_unpickle(classifier_file)
             classes = utils.json_unpickle(encoder_file)
             encoder = LabelEncoder()
             encoder.classes_ = classes
+
             return cls(meta, classifier, encoder)
-        else:
-            return cls(meta)
+
+        return cls(meta)

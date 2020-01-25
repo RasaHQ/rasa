@@ -2,6 +2,7 @@ import copy
 import datetime
 import logging
 import os
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
@@ -59,14 +60,15 @@ class Metadata:
         Returns:
             Metadata: A metadata object describing the model
         """
+        metadata_file = Path(model_dir) / "metadata.json"
+
         try:
-            metadata_file = os.path.join(model_dir, "metadata.json")
             data = rasa.utils.io.read_json_file(metadata_file)
+
             return Metadata(data, model_dir)
         except Exception as e:
-            abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))
             raise InvalidModelError(
-                f"Failed to load model metadata from '{abspath}'. {e}"
+                f"Failed to load model metadata from '{model_dir.resolve()}'. {e}"
             )
 
     def __init__(self, metadata: Dict[Text, Any], model_dir: Optional[Text]):
@@ -109,7 +111,7 @@ class Metadata:
             }
         )
 
-        filename = os.path.join(model_dir, "metadata.json")
+        filename = Path(model_dir) / "metadata.json"
         write_json_to_file(filename, metadata, indent=4)
 
 
@@ -218,8 +220,8 @@ class Trainer:
         else:
             model_name = MODEL_NAME_PREFIX + timestamp
 
-        path = os.path.abspath(path)
-        dir_name = os.path.join(path, model_name)
+        path = Path(path).resolve()
+        dir_name = path / model_name
 
         rasa.utils.io.create_directory(dir_name)
 
@@ -240,9 +242,8 @@ class Trainer:
 
         if persistor is not None:
             persistor.persist(dir_name, model_name)
-        logger.info(
-            "Successfully saved model into '{}'".format(os.path.abspath(dir_name))
-        )
+        logger.info("Successfully saved model into '{}'".format(dir_name.resolve()))
+
         return dir_name
 
 

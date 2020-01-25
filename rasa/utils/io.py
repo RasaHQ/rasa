@@ -9,10 +9,11 @@ import typing
 import warnings
 import zipfile
 import glob
+from os.path import expandvars
 from asyncio import AbstractEventLoop
 from io import BytesIO as IOReader
 from pathlib import Path
-from typing import Text, Any, Dict, Union, List, Type, Callable
+from typing import Text, Any, Dict, Union, List, Type, Callable, Union
 
 import ruamel.yaml as yaml
 
@@ -84,8 +85,10 @@ def replace_environment_variables() -> None:
 
     def env_var_constructor(loader, node):
         """Process environment variables found in the YAML."""
+
         value = loader.construct_scalar(node)
-        expanded_vars = os.path.expandvars(value)
+        expanded_vars = expandvars(value)
+
         if "$" in expanded_vars:
             not_expanded = [w for w in expanded_vars.split() if "$" in w]
             raise ValueError(
@@ -139,7 +142,7 @@ def read_file(filename: Text, encoding: Text = DEFAULT_ENCODING) -> Any:
         raise ValueError(f"File '{filename}' does not exist.")
 
 
-def read_json_file(filename: Text) -> Any:
+def read_json_file(filename: Union[Path, Text]) -> Any:
     """Read json from a file."""
     content = read_file(filename)
     try:
@@ -147,7 +150,7 @@ def read_json_file(filename: Text) -> Any:
     except ValueError as e:
         raise ValueError(
             "Failed to read json from '{}'. Error: "
-            "{}".format(os.path.abspath(filename), e)
+            "{}".format(Path(filename).resolve(), e)
         )
 
 
@@ -234,12 +237,14 @@ def write_text_file(
         file.write(content)
 
 
-def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
+def is_subdirectory(
+    path: Union[Path, Text], potential_parent_directory: Union[Path, Text]
+) -> bool:
     if path is None or potential_parent_directory is None:
         return False
 
-    path = os.path.abspath(path)
-    potential_parent_directory = os.path.abspath(potential_parent_directory)
+    path = str(Path(path).resolve())
+    potential_parent_directory = str(Path(potential_parent_directory).resolve())
 
     return potential_parent_directory in path
 
@@ -259,18 +264,21 @@ def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Te
     return f.name
 
 
-def create_path(file_path: Text) -> None:
+def create_path(file_path: Union[Text, Path]) -> None:
     """Makes sure all directories in the 'file_path' exists."""
 
-    parent_dir = os.path.dirname(os.path.abspath(file_path))
-    if not os.path.exists(parent_dir):
-        os.makedirs(parent_dir)
+    file_path = Path(file_path)  # If is text
+
+    parent_dir = file_path.parent
+    parent_dir.mkdir(parents=True, exist_ok=True)
 
 
-def create_directory_for_file(file_path: Text) -> None:
+def create_directory_for_file(file_path: Union[Path, Text]) -> None:
     """Creates any missing parent directories of this file path."""
 
-    create_directory(os.path.dirname(file_path))
+    file_path = Path(file_path)
+
+    create_directory(file_path.parent)
 
 
 def file_type_validator(
@@ -318,20 +326,22 @@ def create_validator(
     return FunctionValidator
 
 
-def list_files(path: Text) -> List[Text]:
+def list_files(path: Text) -> List[Path]:
     """Returns all files excluding hidden files.
 
     If the path points to a file, returns the file."""
 
-    return [fn for fn in list_directory(path) if os.path.isfile(fn)]
+    return [fn for fn in list_directory(path) if Path(fn).is_file()]
 
 
-def list_subdirectories(path: Text) -> List[Text]:
+def list_subdirectories(path: Union[Path, Text]) -> List[Text]:
     """Returns all folders excluding hidden files.
 
     If the path points to a file, returns an empty list."""
 
-    return [fn for fn in glob.glob(os.path.join(path, "*")) if os.path.isdir(fn)]
+    path = Path(path)
+
+    return [fn for fn in glob.glob(str(path / "*")) if Path(fn).is_dir()]
 
 
 def _filename_without_prefix(file: Text) -> Text:
@@ -339,49 +349,38 @@ def _filename_without_prefix(file: Text) -> Text:
     return "_".join(file.split("_")[1:])
 
 
-def list_directory(path: Text) -> List[Text]:
+def list_directory(path: Union[Path, Text]) -> List[Path]:
     """Returns all files and folders excluding hidden files.
 
     If the path points to a file, returns the file. This is a recursive
     implementation returning files in any depth of the path."""
 
-    if not isinstance(path, str):
-        raise ValueError(
-            "`resource_name` must be a string type. "
-            "Got `{}` instead".format(type(path))
-        )
+    path = Path(path)
 
-    if os.path.isfile(path):
+    if path.is_file():
         return [path]
-    elif os.path.isdir(path):
+    elif path.is_dir():
         results = []
         for base, dirs, files in os.walk(path):
             # sort files for same order across runs
             files = sorted(files, key=_filename_without_prefix)
             # add not hidden files
             good_files = filter(lambda x: not x.startswith("."), files)
-            results.extend(os.path.join(base, f) for f in good_files)
+            results.extend(Path(base) / f for f in good_files)
             # add not hidden directories
             good_directories = filter(lambda x: not x.startswith("."), dirs)
-            results.extend(os.path.join(base, f) for f in good_directories)
+            results.extend(Path(base) / f for f in good_directories)
         return results
     else:
-        raise ValueError(
-            "Could not locate the resource '{}'.".format(os.path.abspath(path))
-        )
+        raise ValueError("Could not locate the resource '{}'.".format(path.resolve()))
 
 
-def create_directory(directory_path: Text) -> None:
+def create_directory(directory_path: Union[Path, Text]) -> None:
     """Creates a directory and its super paths.
 
     Succeeds even if the path already exists."""
 
-    try:
-        os.makedirs(directory_path)
-    except OSError as e:
-        # be happy if someone already created the path
-        if e.errno != errno.EEXIST:
-            raise
+    Path(directory_path).mkdir(parents=True, exist_ok=True)
 
 
 def zip_folder(folder: Text) -> Text:
