@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS = 10
 
-CONSOLE_SESSION_USER_ID = str(uuid.uuid4())
 
 
 def print_bot_output(
