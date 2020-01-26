@@ -22,7 +22,12 @@ class SemanticFoldingGenerator:
         self._vocab = set()
         self._snippets = []
         self._snippet_data = None
-        self.vectorizer = CountVectorizer(lowercase=False)
+
+        with open("/home/jem-mosig/rasa/rasa/rasa/nlu/utils/vocabulary.txt", "r", encoding="utf8") as f:
+            vocabulary = f.read().splitlines()
+            print(f"Vocabulary size: {len(vocabulary)}")
+
+        self.vectorizer = CountVectorizer(lowercase=False, vocabulary=vocabulary)
 
     @staticmethod
     def _words_of_line(line: Text) -> List[Text]:
@@ -59,15 +64,15 @@ class SemanticFoldingGenerator:
                     snippet = ""
 
     def _train_som(self, data: csr_matrix, num_iterations: int = 10**6) -> None:
-        dump_file_name = "som.npy"
+        dump_file_name = "book_som.npy"
         _, input_dim = data.shape
         self._som = BSom(self.height, self.width, input_dim, topol=topology.HEXA)
-        if os.path.exists(dump_file_name):
-            print("Loading codebook...")
-            self._som.codebook = np.load(dump_file_name)
-        else:
-            self._som.train(data, cool=cooling.LINEAR)
-            np.save(dump_file_name, self._som.codebook)
+        # if os.path.exists(dump_file_name):
+        #     print("Loading codebook...")
+        #     self._som.codebook = np.load(dump_file_name)
+        # else:
+        self._som.train(data, cool=cooling.LINEAR)
+        np.save(dump_file_name, self._som.codebook)
 
     def train(self):
         self.vectorizer.fit(self._snippets)
@@ -77,8 +82,8 @@ class SemanticFoldingGenerator:
 
     def fingerprint(self, word: Text) -> np.ndarray:
         word_index = self.vectorizer.vocabulary_.get(word)
-        if not word_index:
-            raise ValueError("OOV")
+        if word_index is None:
+            raise ValueError(f"The word '{word}' with index {word_index} is not part of the vocabulary.")
 
         # Find all snippets (rows) which contain the `word`
         rows, cols = self._snippet_data.nonzero()
@@ -125,16 +130,22 @@ if __name__ == '__main__':
     sfg = SemanticFoldingGenerator(32, 32)
 
     # traverse root directory, and list directories as dirs and files as files
-    dir = "/home/jem-mosig/rasa/rasa/docs/"
-    sfg.file_system_scan(sfg._load_snippets_from_file, dir, ".rst")
+    dir = "/home/jem-mosig/books/"
+    sfg.file_system_scan(sfg._load_snippets_from_file, dir, ".txt")
     sfg.train()
 
     np.set_printoptions(threshold=np.inf)
     # import matplotlib.pyplot as plt
 
+    print(str(sfg.vectorizer.vocabulary_))
+
     with open("model.txt", "w+", encoding="utf8") as file:
+        progress = 0
+        vocabulary_size = len(sfg.vectorizer.vocabulary_)
         for word in sfg.vectorizer.vocabulary_.keys():
             file.write(f"\"{word}\": {sfg.fingerprint(word).tolist()}\n")
+            file.flush()
+            print(f"{round(100.0 * progress / vocabulary_size):.2f}% ({word})")
 
     # print(sfg.fingerprint("Rasa"))
 
