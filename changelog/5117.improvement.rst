@@ -1,0 +1,2 @@
+New user ID will be generated for each shell session.
+Previously the user ID was always 'default'.
