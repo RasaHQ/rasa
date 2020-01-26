@@ -113,7 +113,7 @@ async def send_message_receive_stream(
 async def record_messages(
     server_url=DEFAULT_SERVER_URL,
     auth_token="",
-    sender_id=CONSOLE_SESSION_USER_ID,
+    sender_id=uuid.uuid4().hex,
     max_message_limit=None,
     use_response_stream=True,
 ) -> int:
