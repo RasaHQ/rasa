@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS = 10
 
 
-
 def print_bot_output(
     message: Dict[Text, Any], color=cli_utils.bcolors.OKBLUE
 ) -> Optional[questionary.Question]:
