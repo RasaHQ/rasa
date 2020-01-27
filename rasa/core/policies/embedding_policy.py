@@ -143,11 +143,7 @@ class EmbeddingPolicy(Policy):
         self.config = copy.deepcopy(self.defaults)
         self.config.update(kwargs)
 
-        if self.config[SIMILARITY_TYPE] == "auto":
-            if self.config[LOSS_TYPE] == "softmax":
-                self.config[SIMILARITY_TYPE] = "inner"
-            elif self.config[LOSS_TYPE] == "margin":
-                self.config[SIMILARITY_TYPE] = "cosine"
+        self.config = train_utils.update_auto_similarity_type(self.config)
 
         if self.config[EVAL_NUM_EPOCHS] < 1:
             self.config[EVAL_NUM_EPOCHS] = self.config[EPOCHS]
@@ -215,7 +211,7 @@ class EmbeddingPolicy(Policy):
         all_labels = state_featurizer.create_encoded_all_actions(domain)
         all_labels = all_labels.astype(np.float32)
 
-        label_data = RasaModelData(label_key="label_features")
+        label_data = RasaModelData()
         label_data.add_features("label_features", [all_labels])
         return label_data
 
@@ -378,11 +374,7 @@ class EmbeddingPolicy(Policy):
         with open(os.path.join(path, file_name + ".meta.pkl"), "rb") as f:
             meta = pickle.load(f)
 
-        if meta[SIMILARITY_TYPE] == "auto":
-            if meta[LOSS_TYPE] == "softmax":
-                meta[SIMILARITY_TYPE] = "inner"
-            elif meta[LOSS_TYPE] == "margin":
-                meta[SIMILARITY_TYPE] = "cosine"
+        meta = train_utils.update_auto_similarity_type(meta)
 
         model = TED.load(
             tf_model_file,

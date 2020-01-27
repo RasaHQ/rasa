@@ -156,11 +156,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 "hidden_layer_sizes for text and label must coincide."
             )
 
-        if self.component_config[SIMILARITY_TYPE] == "auto":
-            if self.component_config[LOSS_TYPE] == "softmax":
-                self.component_config[SIMILARITY_TYPE] = "inner"
-            elif self.component_config[LOSS_TYPE] == "margin":
-                self.component_config[SIMILARITY_TYPE] = "cosine"
+        self.component_config = train_utils.update_auto_similarity_type(
+            self.component_config
+        )
 
         if self.component_config[EVAL_NUM_EPOCHS] < 1:
             self.component_config[EVAL_NUM_EPOCHS] = self.component_config[EPOCHS]
@@ -764,11 +762,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         ) as f:
             batch_tuple_sizes = pickle.load(f)
 
-        if meta[SIMILARITY_TYPE] == "auto":
-            if meta[LOSS_TYPE] == "softmax":
-                meta[SIMILARITY_TYPE] = "inner"
-            elif meta[LOSS_TYPE] == "margin":
-                meta[SIMILARITY_TYPE] = "cosine"
+        meta = train_utils.update_auto_similarity_type(meta)
 
         model = DIET.load(
             tf_model_file,

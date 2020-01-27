@@ -3,6 +3,7 @@ import tensorflow as tf
 import numpy as np
 from typing import Optional, Text, Dict, Any
 
+from rasa.utils.tensorflow.constants import SIMILARITY_TYPE, LOSS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -30,3 +31,13 @@ def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarr
         new_values = new_values / np.sum(new_values)
 
     return new_values
+
+
+def update_auto_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
+    if config[SIMILARITY_TYPE] == "auto":
+        if config[LOSS_TYPE] == "softmax":
+            config[SIMILARITY_TYPE] = "inner"
+        elif config[LOSS_TYPE] == "margin":
+            config[SIMILARITY_TYPE] = "cosine"
+
+    return config
