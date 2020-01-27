@@ -43,7 +43,7 @@ class StoryConflict:
         """Checks if prior events exist.
 
         Returns:
-            True if anything has happened before this conflict, otherwise False.
+            `True` if anything has happened before this conflict, otherwise `False`.
         """
         return _get_previous_event(self._sliced_states[-1])[0] is not None
 
@@ -95,7 +95,7 @@ class TrackerEventStateTuple(NamedTuple):
 def find_story_conflicts(
     trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
 ) -> List[StoryConflict]:
-    """Generates a list of StoryConflict objects, describing conflicts in the given trackers.
+    """Generates a list of `StoryConflict` objects, describing conflicts in the given trackers.
 
     Args:
         trackers: Trackers in which to search for conflicts.
