@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, Text
 
 from rasa.nlu.training_data import TrainingData, Message
-from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
+from rasa.nlu.classifiers.DIET_classifier import DIETClassifier
 from rasa.nlu.components import any_of
 from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES_TEXT,
@@ -53,7 +53,7 @@ from rasa.utils.tensorflow.tf_model_data import RasaModelData
 logger = logging.getLogger(__name__)
 
 
-class ResponseSelector(EmbeddingIntentClassifier):
+class ResponseSelector(DIETClassifier):
     """Response selector using supervised embeddings.
 
     The response selector embeds user inputs

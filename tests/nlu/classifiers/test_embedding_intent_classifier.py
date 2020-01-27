@@ -13,7 +13,7 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     INTENT_ATTRIBUTE,
 )
-from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
+from rasa.nlu.classifiers.DIET_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
 from rasa.nlu.training_data import Message
 from rasa.utils import train_utils
@@ -28,7 +28,7 @@ def test_compute_default_label_features():
         Message("test d"),
     ]
 
-    output = EmbeddingIntentClassifier._compute_default_label_features(label_features)
+    output = DIETClassifier._compute_default_label_features(label_features)
 
     output = output[0]
 
@@ -77,10 +77,7 @@ def test_compute_default_label_features():
 def test_check_labels_features_exist(messages, expected):
     attribute = TEXT_ATTRIBUTE
 
-    assert (
-        EmbeddingIntentClassifier._check_labels_features_exist(messages, attribute)
-        == expected
-    )
+    assert DIETClassifier._check_labels_features_exist(messages, attribute) == expected
 
 
 async def test_train(component_builder, tmpdir):

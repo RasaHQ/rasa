@@ -70,7 +70,7 @@ from rasa.utils.tensorflow.constants import (
 logger = logging.getLogger(__name__)
 
 
-class EmbeddingIntentClassifier(EntityExtractor):
+class DIETClassifier(EntityExtractor):
     """label classifier using supervised embeddings.
 
     The embedding intent classifier embeds user inputs
@@ -755,9 +755,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
         meta: Dict[Text, Any],
         model_dir: Text = None,
         model_metadata: "Metadata" = None,
-        cached_component: Optional["EmbeddingIntentClassifier"] = None,
+        cached_component: Optional["DIETClassifier"] = None,
         **kwargs: Any,
-    ) -> "EmbeddingIntentClassifier":
+    ) -> "DIETClassifier":
         """Loads the trained model from the provided directory."""
 
         if not model_dir or not meta.get("file"):
