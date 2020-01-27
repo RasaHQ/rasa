@@ -291,7 +291,7 @@ class RasaModel(tf.keras.models.Model):
         data_signature: Dict[Text, List[FeatureSignature]],
     ) -> Dict[Text, List[tf.Tensor]]:
         """Convert input batch tensors into batch data format.
-    
+
         Batch contains any number of batch data. The order is equal to the
         key-value pairs in session data. As sparse data were converted into indices, data,
         shape before, this methods converts them into sparse tensors. Dense data is
