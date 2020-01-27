@@ -231,8 +231,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # number of entity tags
         self.num_tags = 0
 
-        self._tf_config = train_utils.load_tf_config(self.component_config)
-
         self.data_example = None
 
     # training data helpers:
@@ -741,9 +739,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         with open(os.path.join(model_dir, file_name + ".inv_tag_dict.pkl"), "wb") as f:
             pickle.dump(self.inverted_tag_dict, f)
 
-        with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "wb") as f:
-            pickle.dump(self._tf_config, f)
-
         with open(
             os.path.join(model_dir, file_name + ".batch_tuple_sizes.pkl"), "wb"
         ) as f:
@@ -771,9 +766,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         file_name = meta.get("file")
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
-
-        # with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "rb") as f:
-        #    _tf_config = pickle.load(f)
 
         with open(os.path.join(model_dir, file_name + ".data_example.pkl"), "rb") as f:
             model_data_example = RasaModelData(
@@ -1022,11 +1014,15 @@ class DIET(RasaModel):
         for f in features:
             if isinstance(f, tf.SparseTensor):
                 if sparse_dropout:
-                    _f = self._tf_layers["sparse_dropout"](f, self._training)
+                    _f = self._tf_layers["sparse_dropout"](
+                        f, self._training
+                    )  # pytype: disable=key-error
                 else:
                     _f = f
 
-                dense_features.append(self._tf_layers[f"sparse_to_dense.{name}"](_f))
+                dense_features.append(
+                    self._tf_layers[f"sparse_to_dense.{name}"](_f)
+                )  # pytype: disable=key-error
             else:
                 dense_features.append(f)
 
@@ -1055,11 +1051,15 @@ class DIET(RasaModel):
         )
 
         if masked_lm_loss:
-            pre, lm_mask_bool = self._tf_layers["input_mask"](x, mask, self._training)
+            pre, lm_mask_bool = self._tf_layers["input_mask"](
+                x, mask, self._training
+            )  # pytype: disable=key-error
         else:
             pre, lm_mask_bool = (x, None)
 
-        transformed = self._tf_layers["transformer"](pre, 1 - mask, self._training)
+        transformed = self._tf_layers["transformer"](
+            pre, 1 - mask, self._training
+        )  # pytype: disable=key-error
         transformed = tf.nn.relu(transformed)
 
         return transformed, x, lm_mask_bool
@@ -1070,7 +1070,9 @@ class DIET(RasaModel):
             self.tf_label_data["label_mask"][0],
             "label",
         )
-        all_labels_embed = self._tf_layers["embed.label"](all_labels)
+        all_labels_embed = self._tf_layers["embed.label"](
+            all_labels
+        )  # pytype: disable=key-error
 
         return all_labels, all_labels_embed
 
@@ -1094,22 +1096,26 @@ class DIET(RasaModel):
         a_t_masked = tf.boolean_mask(a_transformed, lm_mask_bool)
         a_masked = tf.boolean_mask(a, lm_mask_bool)
 
+        # pytype: disable=key-error
         a_t_masked_embed = self._tf_layers["embed.lm_mask"](a_t_masked)
         a_masked_embed = self._tf_layers["embed.golden_token"](a_masked)
 
         return self._tf_layers["loss.mask"](
             a_t_masked_embed, a_masked_embed, a_masked, a_masked_embed, a_masked
         )
+        # pytype: enable=key-error
 
     def _intent_loss(self, a: tf.Tensor, b: tf.Tensor) -> tf.Tensor:
         all_labels, all_labels_embed = self._create_all_labels()
 
+        # pytype: disable=key-error
         a_embed = self._tf_layers["embed.text"](a)
         b_embed = self._tf_layers["embed.label"](b)
 
         return self._tf_layers["loss.label"](
             a_embed, b_embed, b, all_labels_embed, all_labels
         )
+        # pytype: enable=key-error
 
     def _entity_loss(
         self, a: tf.Tensor, c: tf.Tensor, mask: tf.Tensor, sequence_lengths
@@ -1118,10 +1124,13 @@ class DIET(RasaModel):
         # remove cls token
         sequence_lengths = sequence_lengths - 1
         c = tf.cast(c[:, :, 0], tf.int32)
+
+        # pytype: disable=key-error
         logits = self._tf_layers["embed.logits"](a)
 
         loss = self._tf_layers["crf"].loss(logits, c, sequence_lengths)
         pred_ids = self._tf_layers["crf"](logits, sequence_lengths)
+        # pytype: enable=key-error
 
         # TODO check that f1 calculation is correct
         # calculate f1 score for train predictions
@@ -1133,12 +1142,14 @@ class DIET(RasaModel):
         c_masked_1 = tf.one_hot(c_masked - 1, self._num_tags - 1)
         pred_ids_masked_1 = tf.one_hot(pred_ids_masked - 1, self._num_tags - 1)
 
-        f1 = self._tf_layers["crf_f1_score"](c_masked_1, pred_ids_masked_1)
+        f1 = self._tf_layers["crf_f1_score"](
+            c_masked_1, pred_ids_masked_1
+        )  # pytype: disable=key-error
 
         return loss, f1
 
     def batch_loss(
-        self, batch_in: Union[List[tf.Tensor], List[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
@@ -1182,7 +1193,7 @@ class DIET(RasaModel):
         return tf.math.add_n(losses)
 
     def batch_predict(
-        self, batch_in: Union[List[tf.Tensor], List[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
         tf_batch_data = self.batch_to_model_data_format(
             batch_in, self.predict_data_signature
@@ -1202,6 +1213,7 @@ class DIET(RasaModel):
 
             # get _cls_ vector for intent classification
             cls = self._last_token(text_transformed, sequence_lengths)
+            # pytype: disable=key-error
             cls_embed = self._tf_layers["embed.text"](cls)
 
             sim_all = self._tf_layers["loss.label"].sim(
@@ -1210,11 +1222,14 @@ class DIET(RasaModel):
             scores = self._tf_layers["loss.label"].confidence_from_sim(
                 sim_all, self.config[SIMILARITY_TYPE]
             )
+            # pytype: enable=key-error
             out["i_scores"] = scores
 
         if self.config[ENTITY_RECOGNITION]:
+            # pytype: disable=key-error
             logits = self._tf_layers["embed.logits"](text_transformed)
             pred_ids = self._tf_layers["crf"](logits, sequence_lengths - 1)
+            # pytype: enable=key-error
             out["e_ids"] = pred_ids
 
         return out

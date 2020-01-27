@@ -16,9 +16,7 @@ class FeatureSignature(NamedTuple):
 
 
 class RasaModelData:
-    def __init__(
-        self, label_key: Optional[Text] = None, data: Data = None,
-    ):
+    def __init__(self, label_key: Optional[Text] = None, data: Data = None):
         self.data = data or {}
         self.label_key = label_key or ""
         # will be updated when features are added
@@ -377,6 +375,10 @@ class RasaModelData:
         """Filter session data by ids."""
 
         new_data = defaultdict(list)
+
+        if data is None:
+            return new_data
+
         for k, values in data.items():
             for v in values:
                 new_data[k].append(v[ids])
