@@ -108,7 +108,9 @@ def find_story_conflicts(
 
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
-    conflicting_state_action_mapping = _find_conflicting_states(trackers, domain, max_history)
+    conflicting_state_action_mapping = _find_conflicting_states(
+        trackers, domain, max_history
+    )
 
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
@@ -212,23 +214,17 @@ def _get_previous_event(
     Returns:
         Tuple of (type, name) strings of the prior event.
     """
-    previous_event_type = None
-    previous_event_name = None
 
     if not state:
-        return previous_event_type, previous_event_name
+        return None, None
 
     for turn_label in state:
         if (
             turn_label.startswith(PREV_PREFIX)
             and turn_label.replace(PREV_PREFIX, "") != ACTION_LISTEN_NAME
         ):
-            previous_event_type = "action"
-            previous_event_name = turn_label.replace(PREV_PREFIX, "")
-            break
+            return "action", turn_label.replace(PREV_PREFIX, "")
         elif turn_label.startswith(INTENT_ATTRIBUTE + "_"):
-            previous_event_type = "intent"
-            previous_event_name = turn_label.replace(INTENT_ATTRIBUTE + "_", "")
-            break
+            return "intent", turn_label.replace(INTENT_ATTRIBUTE + "_", "")
 
-    return previous_event_type, previous_event_name
+    return None, None
