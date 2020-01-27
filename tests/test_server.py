@@ -1,11 +1,12 @@
 import os
+from multiprocessing.managers import DictProxy
+
 import requests
-import subprocess
 import time
 import tempfile
 import uuid
 
-from typing import Any, Dict, List, Text, Type
+from typing import Any, Dict, List, Text, Type, Generator, NoReturn
 from contextlib import ExitStack
 
 from aioresponses import aioresponses
@@ -75,13 +76,6 @@ def rasa_secured_app(rasa_server_secured: Sanic) -> SanicTestClient:
     return get_test_client(rasa_server_secured)
 
 
-@pytest.fixture
-def server_process():
-    server = Process(target=subprocess.run, args=(["rasa", "run", "--enable-api"],))
-    yield server
-    server.kill()
-
-
 def test_root(rasa_app: SanicTestClient):
     _, response = rasa_app.get("/")
     assert response.status == 200
@@ -137,89 +131,113 @@ def test_status_not_ready_agent(rasa_app: SanicTestClient):
     assert response.status == 409
 
 
-def _send_train_request(
-    training_result: Dict[Text, Any], working_directory: Text
-) -> None:
-    """Send a request to /model/train. Used in test_train_status().
-
-    Must be picklable to be used as a `Process` target, therefore defined at the top level of the module.
-    """
-
-    os.chdir(working_directory)
-    with ExitStack() as stack:
-        formbot_data = dict(
-            domain="examples/formbot/domain.yml",
-            config="examples/formbot/config.yml",
-            stories="examples/formbot/data/stories.md",
-            nlu="examples/formbot/data/nlu.md",
-        )
-        payload = {
-            key: stack.enter_context(open(path)).read()
-            for key, path in formbot_data.items()
-        }
-        payload["force"] = True
-
-    train_resp = requests.post("http://localhost:5005/model/train", json=payload)
-    training_result["train_response_code"] = train_resp.status_code
+@pytest.fixture
+def shared_statuses() -> DictProxy:
+    return Manager().dict()
 
 
-def test_train_status(server_process):
+@pytest.fixture
+def background_server(
+    shared_statuses: DictProxy, tmpdir
+) -> Generator[Process, None, None]:
+    # Create a fake model archive which the mocked train function can return
+    from pathlib import Path
 
-    # run a rasa server in one process
-    server_process.start()
+    fake_model = Path(tmpdir) / "fake_model.tar.gz"
+    fake_model.touch()
+    fake_model_path = str(fake_model)
 
-    server_ready = False
-    # wait until server is up before sending train request and status test loop
-    while not server_ready:
-        try:
-            start = time.time()
-            server_ready = (
-                requests.get("http://localhost:5005/status").status_code == 200
+    # Fake training function which blocks until we tell it to stop blocking
+    # If we can send a status request while this is blocking, we can be sure that the
+    # actual training is also not blocking
+    def mocked_training_function(*_, **__) -> Text:
+        # Tell the others that we are now blocking
+        shared_statuses["started_training"] = True
+        # Block until somebody tells us to not block anymore
+        while shared_statuses.get("stop_training") is not True:
+            time.sleep(1)
+
+        return fake_model_path
+
+    def run_server() -> NoReturn:
+        import sys
+
+        sys.argv = ["rasa", "run", "--enable-api"]
+        from rasa import __main__
+
+        import rasa
+
+        rasa.train = mocked_training_function
+        __main__.main()
+
+    server = Process(target=run_server)
+    yield server
+    server.kill()
+
+
+@pytest.fixture()
+def training_request(shared_statuses: DictProxy) -> Generator[Process, None, None]:
+    def send_request():
+        with ExitStack() as stack:
+            formbot_data = dict(
+                domain="examples/formbot/domain.yml",
+                config="examples/formbot/config.yml",
+                stories="examples/formbot/data/stories.md",
+                nlu="examples/formbot/data/nlu.md",
             )
-            status_request_duration = time.time() - start
-            if server_ready:
-                print(f"no training: {status_request_duration}")
-        except requests.exceptions.ConnectionError:
-            pass
+            payload = {
+                key: stack.enter_context(open(path)).read()
+                for key, path in formbot_data.items()
+            }
+            payload["force"] = True
+
+        response = requests.post("http://localhost:5005/model/train", json=payload)
+        shared_statuses["training_result"] = response.status_code
+
+    process = Process(target=send_request)
+    yield process
+    process.kill()
+
+
+def test_train_status_is_not_blocked_by_training(
+    background_server: Process, shared_statuses: DictProxy, training_request: Process
+):
+    background_server.start()
+
+    def is_server_ready() -> bool:
+        try:
+            return requests.get("http://localhost:5005/status").status_code == 200
+        except Exception:
+            return False
+
+    # wait until server is up before sending train request and status test loop
+    while not is_server_ready():
         time.sleep(1)
 
-    print("server reeady")
-    # use another process to hit the first server with a training request
-    training_result = Manager().dict()
-    working_directory = os.getcwd()
-    training_request = Process(
-        target=_send_train_request, args=(training_result, working_directory)
-    )
     training_request.start()
 
-    training_started = False
-    training_finished = False
-    # use our current process to query the status endpoint while the training is running
-    while not training_finished:
-        time.sleep(0.5)
-        # hit status endpoint with short timeout to ensure training doesn't block
-        start = time.time()
-        status_resp = requests.get("http://localhost:5005/status")
-        status_request_duration = time.time() - start
-        if training_started and not training_finished:
-            print(f"while training: {status_request_duration}")
-        assert status_resp.status_code == 200
+    # Wait until the blocking training function was called
+    while shared_statuses.get("started_training") is not True:
+        time.sleep(1)
 
-        if not training_started:
-            # make sure that we don't fail because we got status before training updated number of jobs
-            training_started = status_resp.json()["num_active_training_jobs"] == 1
-        else:
-            if training_result.get("train_response_code") is None:
-                assert status_resp.json()["num_active_training_jobs"] == 1
-            else:
-                # once the response code is in, training is done, `num_active_training_jobs ` should be 0 again
-                assert training_result.get("train_response_code") == 200
-                training_finished = True
-                status_resp = requests.get("http://localhost:5005/status")
-                assert status_resp.json()["num_active_training_jobs"] == 0
+    # Check if the number of currently running trainings was incremented
+    response = requests.get("http://localhost:5005/status")
+    assert response.status_code == 200
+    assert response.json()["num_active_training_jobs"] == 1
 
-    training_request.join()
-    assert False
+    # Tell the blocking training function to stop
+    shared_statuses["stop_training"] = True
+
+    while shared_statuses.get("training_result") is None:
+        time.sleep(1)
+
+    # Check that the training worked correctly
+    assert shared_statuses["training_result"] == 200
+
+    # Check if the number of currently running trainings was decremented
+    response = requests.get("http://localhost:5005/status")
+    assert response.status_code == 200
+    assert response.json()["num_active_training_jobs"] == 0
 
 
 @pytest.mark.parametrize(

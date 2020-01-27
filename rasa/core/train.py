@@ -68,9 +68,10 @@ async def train(
 
     loop = asyncio.get_event_loop()
     # pass None to run in default executor
-    await loop.run_in_executor(
-        None, functools.partial(agent.train, training_data, **kwargs)
-    )
+    agent.train(training_data, **kwargs)
+    # await loop.run_in_executor(
+    #     None, functools.partial(agent.train, training_data, **kwargs)
+    # )
     agent.persist(output_path, dump_stories)
 
     return agent

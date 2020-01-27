@@ -703,17 +703,20 @@ def create_app(
                 domain=domain_path,
                 config=config_path,
                 training_files=temp_dir,
-                output_path=model_output_directory,
+                output=model_output_directory,
                 force_training=rjs.get("force", False),
             )
 
             import asyncio
             import functools
+            import time
 
             loop = asyncio.get_event_loop()
             # pass None to run in default executor
+            from rasa import train
+
             model_path = await loop.run_in_executor(
-                None, functools.partial(train.train, **info)
+                None, functools.partial(train, **info)
             )
 
             filename = os.path.basename(model_path) if model_path else None

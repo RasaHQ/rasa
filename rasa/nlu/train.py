@@ -82,9 +82,10 @@ async def train(
 
     loop = asyncio.get_event_loop()
     # pass None to run in default executor
-    interpreter = await loop.run_in_executor(
-        None, functools.partial(trainer.train, training_data, **kwargs)
-    )
+    interpreter = trainer.train(training_data, **kwargs)
+    # interpreter = await loop.run_in_executor(
+    #     None, functools.partial(trainer.train, training_data, **kwargs)
+    # )
 
     if path:
         persisted_path = trainer.persist(
