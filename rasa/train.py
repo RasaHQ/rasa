@@ -28,7 +28,7 @@ def train(
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
-    kwargs: Optional[Dict] = None,
+    additional_arguments: Optional[Dict] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
 ) -> Optional[Text]:
     if loop is None:
@@ -47,7 +47,7 @@ def train(
             force_training=force_training,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
-            kwargs=kwargs,
+            additional_arguments=additional_arguments,
         )
     )
 
@@ -60,7 +60,7 @@ async def train_async(
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
-    kwargs: Optional[Dict] = None,
+    additional_arguments: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
 
@@ -73,7 +73,7 @@ async def train_async(
         fixed_model_name: Name of model to be stored.
         persist_nlu_training_data: `True` if the NLU training data should be persisted
                                    with the model.
-        kwargs: Additional training parameters.
+        additional_arguments: Additional training parameters.
 
     Returns:
         Path of the trained model archive.
@@ -98,7 +98,7 @@ async def train_async(
             force_training,
             fixed_model_name,
             persist_nlu_training_data,
-            kwargs,
+            additional_arguments,
         )
 
 
@@ -122,7 +122,7 @@ async def _train_async_internal(
     force_training: bool,
     fixed_model_name: Optional[Text],
     persist_nlu_training_data: bool,
-    kwargs: Optional[Dict],
+    additional_arguments: Optional[Dict],
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU). Use only from `train_async`.
 
@@ -134,13 +134,15 @@ async def _train_async_internal(
         persist_nlu_training_data: `True` if the NLU training data should be persisted
                                    with the model.
         fixed_model_name: Name of model to be stored.
-        kwargs: Additional training parameters.
+        additional_arguments: Additional training parameters.
 
     Returns:
         Path of the trained model archive.
     """
-    stories = await file_importer.get_stories()
-    nlu_data = await file_importer.get_nlu_data()
+
+    stories, nlu_data = await asyncio.gather(
+        file_importer.get_stories(), file_importer.get_nlu_data()
+    )
 
     if stories.is_empty() and nlu_data.is_empty():
         print_error(
@@ -164,7 +166,7 @@ async def _train_async_internal(
             file_importer,
             output=output_path,
             fixed_model_name=fixed_model_name,
-            kwargs=kwargs,
+            additional_arguments=additional_arguments,
         )
 
     new_fingerprint = await model.model_fingerprint(file_importer)
@@ -183,7 +185,7 @@ async def _train_async_internal(
             fingerprint_comparison_result=fingerprint_comparison,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
-            kwargs=kwargs,
+            additional_arguments=additional_arguments,
         )
 
         return model.package_model(
@@ -207,7 +209,7 @@ async def _do_training(
     fingerprint_comparison_result: Optional[FingerprintComparisonResult] = None,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
-    kwargs: Optional[Dict] = None,
+    additional_arguments: Optional[Dict] = None,
 ):
     if not fingerprint_comparison_result:
         fingerprint_comparison_result = FingerprintComparisonResult()
@@ -218,7 +220,7 @@ async def _do_training(
             output=output_path,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
-            kwargs=kwargs,
+            additional_arguments=additional_arguments,
         )
     elif fingerprint_comparison_result.should_retrain_nlg():
         print_color(
@@ -256,7 +258,7 @@ def train_core(
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
-    kwargs: Optional[Dict] = None,
+    additional_arguments: Optional[Dict] = None,
 ) -> Optional[Text]:
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
@@ -267,7 +269,7 @@ def train_core(
             output=output,
             train_path=train_path,
             fixed_model_name=fixed_model_name,
-            kwargs=kwargs,
+            additional_arguments=additional_arguments,
         )
     )
 
@@ -279,7 +281,7 @@ async def train_core_async(
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
-    kwargs: Optional[Dict] = None,
+    additional_arguments: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Core model.
 
@@ -292,7 +294,7 @@ async def train_core_async(
             directory, otherwise in the provided directory.
         fixed_model_name: Name of model to be stored.
         uncompress: If `True` the model will not be compressed.
-        kwargs: Additional training parameters.
+        additional_arguments: Additional training parameters.
 
     Returns:
         If `train_path` is given it returns the path to the model archive,
@@ -323,7 +325,7 @@ async def train_core_async(
         output=output,
         train_path=train_path,
         fixed_model_name=fixed_model_name,
-        kwargs=kwargs,
+        additional_arguments=additional_arguments,
     )
 
 
@@ -332,7 +334,7 @@ async def _train_core_with_validated_data(
     output: Text,
     train_path: Optional[Text] = None,
     fixed_model_name: Optional[Text] = None,
-    kwargs: Optional[Dict] = None,
+    additional_arguments: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Train Core with validated training and config data."""
 
@@ -348,14 +350,15 @@ async def _train_core_with_validated_data(
 
         # normal (not compare) training
         print_color("Training Core model...", color=bcolors.OKBLUE)
-        domain = await file_importer.get_domain()
-        config = await file_importer.get_config()
+        domain, config = await asyncio.gather(
+            file_importer.get_domain(), file_importer.get_config()
+        )
         await rasa.core.train(
             domain_file=domain,
             training_resource=file_importer,
             output_path=os.path.join(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME),
             policy_config=config,
-            kwargs=kwargs,
+            additional_arguments=additional_arguments,
         )
         print_color("Core model training completed.", color=bcolors.OKBLUE)
 

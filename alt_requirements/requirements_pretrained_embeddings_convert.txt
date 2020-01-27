@@ -1,0 +1,5 @@
+# Minimum Install Requirements
+-r ../requirements.txt
+
+tensorflow_text==1.15.1
+tensorflow_hub==0.6.0

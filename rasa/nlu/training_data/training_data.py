@@ -9,10 +9,7 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
 import rasa.nlu.utils
 import rasa.utils.common as rasa_utils
-from rasa.nlu.constants import (
-    MESSAGE_RESPONSE_ATTRIBUTE,
-    MESSAGE_RESPONSE_KEY_ATTRIBUTE,
-)
+from rasa.nlu.constants import RESPONSE_ATTRIBUTE, RESPONSE_KEY_ATTRIBUTE
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.utils import list_to_str
@@ -177,10 +174,10 @@ class TrainingData:
             self.regex_features, key=lambda e: "{}+{}".format(e["name"], e["pattern"])
         )
 
-    def fill_response_phrases(self):
+    def fill_response_phrases(self) -> None:
         """Set response phrase for all examples by looking up NLG stories"""
         for example in self.training_examples:
-            response_key = example.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE)
+            response_key = example.get(RESPONSE_KEY_ATTRIBUTE)
             # if response_key is None, that means the corresponding intent is not a retrieval intent
             # and hence no response text needs to be fetched.
             # If response_key is set, fetch the corresponding response text
@@ -190,7 +187,7 @@ class TrainingData:
                 assistant_utterances = self.nlg_stories.get(story_lookup_intent, [])
                 if assistant_utterances:
                     # selecting only first assistant utterance for now
-                    example.set(MESSAGE_RESPONSE_ATTRIBUTE, assistant_utterances[0])
+                    example.set(RESPONSE_ATTRIBUTE, assistant_utterances[0])
                 else:
                     raise ValueError(
                         "No response phrases found for {}. Check training data "
@@ -258,7 +255,7 @@ class TrainingData:
                 "and 'md'."
             )
 
-    def persist_nlg(self, filename):
+    def persist_nlg(self, filename: Text) -> None:
 
         nlg_serialized_data = self.nlg_as_markdown()
         if nlg_serialized_data == "":
@@ -267,7 +264,7 @@ class TrainingData:
         rasa.nlu.utils.write_to_file(filename, self.nlg_as_markdown())
 
     @staticmethod
-    def get_nlg_persist_filename(nlu_filename):
+    def get_nlg_persist_filename(nlu_filename: Text) -> Text:
 
         # Add nlg_ as prefix and change extension to .md
         filename = os.path.join(
@@ -343,13 +340,13 @@ class TrainingData:
                 )
 
     def train_test_split(
-        self, train_frac: float = 0.8
+        self, train_frac: float = 0.8, random_seed: Optional[int] = None
     ) -> Tuple["TrainingData", "TrainingData"]:
         """Split into a training and test dataset,
         preserving the fraction of examples per intent."""
 
         # collect all nlu data
-        test, train = self.split_nlu_examples(train_frac)
+        test, train = self.split_nlu_examples(train_frac, random_seed)
 
         # collect all nlg stories
         test_nlg_stories, train_nlg_stories = self.split_nlg_responses(test, train)
@@ -374,30 +371,36 @@ class TrainingData:
 
         return data_train, data_test
 
-    def split_nlg_responses(self, test, train):
+    def split_nlg_responses(
+        self, test, train
+    ) -> Tuple[Dict[Text, list], Dict[Text, list]]:
 
         train_nlg_stories = self.build_nlg_stories_from_examples(train)
         test_nlg_stories = self.build_nlg_stories_from_examples(test)
         return test_nlg_stories, train_nlg_stories
 
     @staticmethod
-    def build_nlg_stories_from_examples(examples):
+    def build_nlg_stories_from_examples(examples) -> Dict[Text, list]:
 
         nlg_stories = {}
         for ex in examples:
-            if ex.get(MESSAGE_RESPONSE_KEY_ATTRIBUTE) and ex.get(
-                MESSAGE_RESPONSE_ATTRIBUTE
-            ):
+            if ex.get(RESPONSE_KEY_ATTRIBUTE) and ex.get(RESPONSE_ATTRIBUTE):
                 nlg_stories[ex.get_combined_intent_response_key()] = [
-                    ex.get(MESSAGE_RESPONSE_ATTRIBUTE)
+                    ex.get(RESPONSE_ATTRIBUTE)
                 ]
         return nlg_stories
 
-    def split_nlu_examples(self, train_frac):
+    def split_nlu_examples(
+        self, train_frac: float, random_seed: Optional[int] = None
+    ) -> Tuple[list, list]:
         train, test = [], []
         for intent, count in self.examples_per_intent.items():
             ex = [e for e in self.intent_examples if e.data["intent"] == intent]
-            random.shuffle(ex)
+            if random_seed is not None:
+                random.Random(random_seed).shuffle(ex)
+            else:
+                random.shuffle(ex)
+
             n_train = int(count * train_frac)
             train.extend(ex[:n_train])
             test.extend(ex[n_train:])

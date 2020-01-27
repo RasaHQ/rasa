@@ -45,7 +45,7 @@ async def test_fail_on_invalid_utterances(tmpdir):
     invalid_domain = str(tmpdir / "invalid_domain.yml")
     io_utils.write_yaml_file(
         {
-            "templates": {"utter_greet": {"text": "hello"}},
+            "responses": {"utter_greet": {"text": "hello"}},
             "actions": [
                 "utter_greet",
                 "utter_non_existent",  # error: utter template odes not exist
@@ -82,8 +82,8 @@ async def test_verify_logging_message_for_repetition_in_intents(caplog):
         validator.verify_example_repetition_in_intents(False)
     assert len(record) == 1
     assert (
-        "The example 'good afternoon' was found in these "
-        "multiples intents: goodbye, greet" in record[0].message.args[0]
+        "The example 'good afternoon' was found in "
+        "multiple intents: goodbye, greet" in record[0].message.args[0]
     )
 
 

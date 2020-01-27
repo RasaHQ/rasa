@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Text
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
+from rasa.nlu.constants import TOKENS_NAMES, TEXT_ATTRIBUTE, INTENT_ATTRIBUTE
 from rasa.nlu.training_data import Message, TrainingData
 
 if typing.TYPE_CHECKING:
@@ -13,9 +14,9 @@ if typing.TYPE_CHECKING:
 
 class MitieIntentClassifier(Component):
 
-    provides = ["intent"]
+    provides = [INTENT_ATTRIBUTE]
 
-    requires = ["tokens", "mitie_feature_extractor", "mitie_file"]
+    requires = [TOKENS_NAMES[TEXT_ATTRIBUTE], "mitie_feature_extractor", "mitie_file"]
 
     def __init__(
         self, component_config: Optional[Dict[Text, Any]] = None, clf=None
@@ -48,7 +49,7 @@ class MitieIntentClassifier(Component):
 
         for example in training_data.intent_examples:
             tokens = self._tokens_of_message(example)
-            trainer.add_labeled_text(tokens, example.get("intent"))
+            trainer.add_labeled_text(tokens, example.get(INTENT_ATTRIBUTE))
 
         if training_data.intent_examples:
             # we can not call train if there are no examples!
@@ -77,8 +78,10 @@ class MitieIntentClassifier(Component):
         )
 
     @staticmethod
-    def _tokens_of_message(message):
-        return [token.text for token in message.get("tokens", [])]
+    def _tokens_of_message(message) -> List[Text]:
+        tokens = [token.text for token in message.get(TOKENS_NAMES[TEXT_ATTRIBUTE], [])]
+        # return tokens without CLS token
+        return tokens[:-1]
 
     @classmethod
     def load(

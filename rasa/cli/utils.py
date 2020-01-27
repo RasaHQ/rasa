@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from questionary import Question
 
 from rasa.constants import DEFAULT_MODELS_PATH
+from typing import NoReturn
 
 logger = logging.getLogger(__name__)
 
@@ -238,6 +239,6 @@ def print_error_and_exit(message: Text, exit_code: int = 1) -> None:
     sys.exit(exit_code)
 
 
-def signal_handler(sig, frame):
+def signal_handler(sig, frame) -> NoReturn:
     print("Goodbye 👋")
     sys.exit(0)
