@@ -178,7 +178,7 @@ def background_server(
 
     server = Process(target=run_server)
     yield server
-    server.kill()
+    server.terminate()
 
 
 @pytest.fixture()
@@ -203,7 +203,7 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
 
     train_request = Process(target=send_request)
     yield train_request
-    train_request.kill()
+    train_request.terminate()
 
 
 def test_train_status_is_not_blocked_by_training(
