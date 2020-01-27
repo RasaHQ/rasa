@@ -7,7 +7,7 @@ import warnings
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, Callable
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import rasa.utils.io
 from rasa.nlu.extractors import EntityExtractor
@@ -19,7 +19,6 @@ from rasa.utils import train_utils
 from rasa.utils.tensorflow import tf_layers
 from rasa.utils.tensorflow.tf_models import RasaModel
 from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
-from rasa.utils.tensorflow.constants import *
 from rasa.nlu.constants import (
     INTENT_ATTRIBUTE,
     TEXT_ATTRIBUTE,
@@ -32,6 +31,41 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message
+from rasa.utils.tensorflow.constants import (
+    HIDDEN_LAYERS_SIZES_TEXT,
+    HIDDEN_LAYERS_SIZES_LABEL,
+    SHARE_HIDDEN_LAYERS,
+    TRANSFORMER_SIZE,
+    NUM_TRANSFORMER_LAYERS,
+    NUM_HEADS,
+    POS_ENCODING,
+    MAX_SEQ_LENGTH,
+    BATCH_SIZES,
+    BATCH_STRATEGY,
+    EPOCHS,
+    RANDOM_SEED,
+    LEARNING_RATE,
+    DENSE_DIM,
+    RANKING_LENGTH,
+    LOSS_TYPE,
+    SIMILARITY_TYPE,
+    NUM_NEG,
+    SPARSE_INPUT_DROPOUT,
+    MASKED_LM,
+    ENTITY_RECOGNITION,
+    INTENT_CLASSIFICATION,
+    EVAL_NUM_EXAMPLES,
+    EVAL_NUM_EPOCHS,
+    UNIDIRECTIONAL_ENCODER,
+    DROPRATE,
+    C_EMB,
+    C2,
+    SCALE_LOSS,
+    USE_MAX_SIM_NEG,
+    MU_NEG,
+    MU_POS,
+    EMBED_DIM,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -32,6 +32,7 @@ from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.utils.tensorflow.constants import SIMILARITY_TYPE
 from rasa.utils import train_utils
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
@@ -39,7 +40,6 @@ from tests.core.conftest import (
     DEFAULT_STORIES_FILE,
 )
 from tests.core.utilities import get_tracker, read_dialogue_file, user_uttered
-from utils.tensorflow.constants import SIMILARITY_TYPE
 
 
 def tf_defaults():

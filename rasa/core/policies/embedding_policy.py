@@ -23,7 +23,34 @@ from rasa.utils import train_utils
 from rasa.utils.tensorflow import tf_layers
 from rasa.utils.tensorflow.tf_models import RasaModel
 from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
-from rasa.utils.tensorflow.constants import *
+from rasa.utils.tensorflow.constants import (
+    HIDDEN_LAYERS_SIZES_LABEL,
+    TRANSFORMER_SIZE,
+    NUM_TRANSFORMER_LAYERS,
+    NUM_HEADS,
+    POS_ENCODING,
+    MAX_SEQ_LENGTH,
+    BATCH_SIZES,
+    BATCH_STRATEGY,
+    EPOCHS,
+    RANDOM_SEED,
+    RANKING_LENGTH,
+    LOSS_TYPE,
+    SIMILARITY_TYPE,
+    NUM_NEG,
+    EVAL_NUM_EXAMPLES,
+    EVAL_NUM_EPOCHS,
+    C_EMB,
+    C2,
+    SCALE_LOSS,
+    USE_MAX_SIM_NEG,
+    MU_NEG,
+    MU_POS,
+    EMBED_DIM,
+    HIDDEN_LAYERS_SIZES_DIALOGUE,
+    DROPRATE_DIALOGUE,
+    DROPRATE_LABEL,
+)
 
 
 logger = logging.getLogger(__name__)

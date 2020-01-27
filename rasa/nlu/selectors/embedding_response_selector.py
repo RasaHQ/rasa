@@ -4,7 +4,41 @@ from typing import Any, Dict, Text
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.components import any_of
-from rasa.utils.tensorflow.constants import *
+from rasa.utils.tensorflow.constants import (
+    HIDDEN_LAYERS_SIZES_TEXT,
+    HIDDEN_LAYERS_SIZES_LABEL,
+    SHARE_HIDDEN_LAYERS,
+    TRANSFORMER_SIZE,
+    NUM_TRANSFORMER_LAYERS,
+    NUM_HEADS,
+    POS_ENCODING,
+    MAX_SEQ_LENGTH,
+    BATCH_SIZES,
+    BATCH_STRATEGY,
+    EPOCHS,
+    RANDOM_SEED,
+    LEARNING_RATE,
+    DENSE_DIM,
+    RANKING_LENGTH,
+    LOSS_TYPE,
+    SIMILARITY_TYPE,
+    NUM_NEG,
+    SPARSE_INPUT_DROPOUT,
+    MASKED_LM,
+    ENTITY_RECOGNITION,
+    INTENT_CLASSIFICATION,
+    EVAL_NUM_EXAMPLES,
+    EVAL_NUM_EPOCHS,
+    UNIDIRECTIONAL_ENCODER,
+    DROPRATE,
+    C_EMB,
+    C2,
+    SCALE_LOSS,
+    USE_MAX_SIM_NEG,
+    MU_NEG,
+    MU_POS,
+    EMBED_DIM,
+)
 from rasa.nlu.constants import (
     RESPONSE_ATTRIBUTE,
     RESPONSE_SELECTOR_PROPERTY_NAME,

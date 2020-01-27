@@ -239,7 +239,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
 class TransformerEncoderLayer(tf.keras.layers.Layer):
     def __init__(
-        self, d_model: int, num_heads: int, dff: int, rate: float = 0.1,
+        self, d_model: int, num_heads: int, dff: int, rate: float = 0.1
     ) -> None:
         super().__init__()
 
@@ -256,6 +256,8 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         ]
 
     def call(self, x: tf.Tensor, pad_mask: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
+
+        tf.print(training)
 
         x_norm = self._layernorm(x)  # (batch_size, seq_len, d_model)
         attn_out, _ = self._mha(x_norm, x_norm, x_norm, pad_mask)
