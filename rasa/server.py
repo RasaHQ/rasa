@@ -737,11 +737,9 @@ def create_app(
 
     @app.post("/model/train")
     @requires_auth(app, auth_token)
-    async def train(request: Request):
+    async def train(request: Request) -> HTTPResponse:
         """Train a Rasa Model."""
-        from rasa.train import train_async
 
-        logger.warning("validating request body")
         validate_request_body(
             request,
             "You must provide training data in the request body in order to "
@@ -750,7 +748,6 @@ def create_app(
 
         rjs = request.json
         validate_request(rjs)
-        logger.warning("done validating")
 
         # create a temporary directory to store config, domain and
         # training data
@@ -795,9 +792,11 @@ def create_app(
             import time
 
             loop = asyncio.get_event_loop()
-            # pass None to run in default executor
+
+            # Import it here to shadown `server.train(...)` function
             from rasa import train
 
+            # pass None to run in default executor
             model_path = await loop.run_in_executor(
                 None, functools.partial(train, **info)
             )

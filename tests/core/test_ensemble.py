@@ -11,17 +11,6 @@ from rasa.core.domain import Domain
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.events import UserUttered
 
-from tests.core.utilities import user_uttered
-from rasa.core.actions.action import (
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_RESTART_NAME,
-    ACTION_LISTEN_NAME,
-)
-from rasa.core.constants import USER_INTENT_RESTART
-from rasa.core.events import ActionExecuted
-from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-from rasa.core.policies.mapping_policy import MappingPolicy
-
 
 class WorkingPolicy(Policy):
     @classmethod
@@ -96,35 +85,6 @@ def test_policy_priority():
     )
     assert best_policy == "policy_{}_{}".format(i, type(priority_2).__name__)
     assert result == priority_2_result
-
-
-def test_fallback_mapping_restart():
-    domain = Domain.load("data/test_domains/default.yml")
-    events = [
-        ActionExecuted(ACTION_DEFAULT_FALLBACK_NAME),
-        ActionExecuted(ACTION_LISTEN_NAME),
-        user_uttered(USER_INTENT_RESTART, 1),
-    ]
-    tracker = DialogueStateTracker.from_events("test", events, [])
-
-    two_stage_fallback_policy = TwoStageFallbackPolicy(
-        priority=2, deny_suggestion_intent_name="deny"
-    )
-    mapping_policy = MappingPolicy(priority=1)
-
-    mapping_fallback_ensemble = SimplePolicyEnsemble(
-        [two_stage_fallback_policy, mapping_policy]
-    )
-
-    result, best_policy = mapping_fallback_ensemble.probabilities_using_best_policy(
-        tracker, domain
-    )
-    max_confidence_index = result.index(max(result))
-    i = 1
-    next_action = domain.action_for_index(max_confidence_index, None)
-
-    # assert best_policy == "policy_{}_{}".format(i, MappingPolicy.__name__)
-    assert next_action.name() == ACTION_RESTART_NAME
 
 
 class LoadReturnsNonePolicy(Policy):

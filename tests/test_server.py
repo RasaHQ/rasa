@@ -6,9 +6,10 @@ import time
 import tempfile
 import uuid
 
-from typing import Any, Dict, List, Text, Type, Generator, NoReturn
+from typing import List, Text, Type, Generator, NoReturn
 from contextlib import ExitStack
 
+from _pytest import pathlib
 from aioresponses import aioresponses
 
 import pytest
@@ -143,7 +144,7 @@ def shared_statuses() -> DictProxy:
 
 @pytest.fixture
 def background_server(
-    shared_statuses: DictProxy, tmpdir
+    shared_statuses: DictProxy, tmpdir: pathlib.Path
 ) -> Generator[Process, None, None]:
     # Create a fake model archive which the mocked train function can return
     from pathlib import Path
@@ -182,7 +183,8 @@ def background_server(
 
 @pytest.fixture()
 def training_request(shared_statuses: DictProxy) -> Generator[Process, None, None]:
-    def send_request():
+    def send_request() -> None:
+
         with ExitStack() as stack:
             formbot_data = dict(
                 domain="examples/formbot/domain.yml",
@@ -199,9 +201,9 @@ def training_request(shared_statuses: DictProxy) -> Generator[Process, None, Non
         response = requests.post("http://localhost:5005/model/train", json=payload)
         shared_statuses["training_result"] = response.status_code
 
-    process = Process(target=send_request)
-    yield process
-    process.kill()
+    train_request = Process(target=send_request)
+    yield train_request
+    train_request.kill()
 
 
 def test_train_status_is_not_blocked_by_training(

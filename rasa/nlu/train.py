@@ -1,5 +1,3 @@
-import asyncio
-import functools
 import logging
 import typing
 from typing import Any, Optional, Text, Tuple, Union, Dict
@@ -86,12 +84,7 @@ async def train(
 
     training_data.print_stats()
 
-    loop = asyncio.get_event_loop()
-    # pass None to run in default executor
     interpreter = trainer.train(training_data, **kwargs)
-    # interpreter = await loop.run_in_executor(
-    #     None, functools.partial(trainer.train, training_data, **kwargs)
-    # )
 
     if path:
         persisted_path = trainer.persist(
