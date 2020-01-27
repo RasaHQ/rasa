@@ -32,6 +32,7 @@ from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.utils.tensorflow.constants import SIMILARITY_TYPE
 from rasa.utils import train_utils
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
@@ -174,16 +175,17 @@ class PolicyTestCollection:
         loaded = empty_policy.__class__.load(tmpdir.strpath)
         assert loaded is not None
 
-    def test_tf_config(self, trained_policy, tmpdir):
-        if hasattr(trained_policy, "session"):
-            import tensorflow as tf
-
-            # noinspection PyProtectedMember
-            assert trained_policy.session._config == tf.Session()._config
-            trained_policy.persist(tmpdir.strpath)
-            loaded = trained_policy.__class__.load(tmpdir.strpath)
-            # noinspection PyProtectedMember
-            assert loaded.session._config == tf.Session()._config
+    # TODO test tf config
+    # def test_tf_config(self, trained_policy, tmpdir):
+    #     if hasattr(trained_policy, "session"):
+    #         import tensorflow as tf
+    #
+    #         # noinspection PyProtectedMember
+    #         assert trained_policy.session._config == tf.Session()._config
+    #         trained_policy.persist(tmpdir.strpath)
+    #         loaded = trained_policy.__class__.load(tmpdir.strpath)
+    #         # noinspection PyProtectedMember
+    #         assert loaded.session._config == tf.Session()._config
 
     @staticmethod
     def _get_next_action(policy, events, domain):
@@ -205,13 +207,14 @@ class TestKerasPolicyWithTfConfig(PolicyTestCollection):
         p = KerasPolicy(featurizer, priority, **tf_defaults())
         return p
 
-    def test_tf_config(self, trained_policy, tmpdir):
-        # noinspection PyProtectedMember
-        assert trained_policy.session._config == session_config()
-        trained_policy.persist(tmpdir.strpath)
-        loaded = trained_policy.__class__.load(tmpdir.strpath)
-        # noinspection PyProtectedMember
-        assert loaded.session._config == session_config()
+    # TODO test tf config
+    # def test_tf_config(self, trained_policy, tmpdir):
+    #     # noinspection PyProtectedMember
+    #     assert trained_policy.session._config == session_config()
+    #     trained_policy.persist(tmpdir.strpath)
+    #     loaded = trained_policy.__class__.load(tmpdir.strpath)
+    #     # noinspection PyProtectedMember
+    #     assert loaded.session._config == session_config()
 
 
 class TestSklearnPolicy(PolicyTestCollection):
@@ -335,7 +338,7 @@ class TestEmbeddingPolicy(PolicyTestCollection):
         return p
 
     def test_similarity_type(self, trained_policy):
-        assert trained_policy.similarity_type == "inner"
+        assert trained_policy.config[SIMILARITY_TYPE] == "inner"
 
     def test_ranking_length(self, trained_policy):
         assert trained_policy.ranking_length == 10
@@ -365,33 +368,28 @@ class TestEmbeddingPolicy(PolicyTestCollection):
         training_data = trained_policy.featurize_for_training(
             training_trackers, default_domain
         )
-        session_data = trained_policy._create_session_data(
-            training_data.X, training_data.y
-        )
+        model_data = trained_policy._create_modeldata(training_data.X, training_data.y)
         batch_size = 2
         batch_x, batch_y, _ = next(
-            train_utils.gen_batch(
-                session_data=session_data, batch_size=batch_size, label_key="action_ids"
-            )
+            model_data.gen_batch(batch_size=batch_size, label_key="label_ids")
         )
         assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
         assert (
-            batch_x[0].shape == session_data["dialogue_features"][0][0].shape
-            and batch_y[0].shape == session_data["bot_features"][0][0].shape
+            batch_x[0].shape == model_data.get("dialogue_features")[0][0].shape
+            and batch_y[0].shape == model_data.get("label_features")[0][0].shape
         )
         batch_x, batch_y, _ = next(
-            train_utils.gen_batch(
-                session_data=session_data,
+            model_data.gen_batch(
                 batch_size=batch_size,
-                label_key="action_ids",
+                label_key="label_ids",
                 batch_strategy="balanced",
                 shuffle=True,
             )
         )
         assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
         assert (
-            batch_x[0].shape == session_data["dialogue_features"][0][0].shape
-            and batch_y[0].shape == session_data["bot_features"][0][0].shape
+            batch_x[0].shape == model_data.get("dialogue_features")[0][0].shape
+            and batch_y[0].shape == model_data.get("label_features")[0][0].shape
         )
 
 

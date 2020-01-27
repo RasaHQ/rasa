@@ -1,18 +1,17 @@
 import logging
-import typing
 from typing import Any, Dict, Text
 
+from rasa.nlu.training_data import TrainingData, Message
+from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.components import any_of
-from rasa.nlu.classifiers.embedding_intent_classifier import (
-    EmbeddingIntentClassifier,
-    USE_MAX_SIM_NEG,
+from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES_TEXT,
     HIDDEN_LAYERS_SIZES_LABEL,
     SHARE_HIDDEN_LAYERS,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
-    POS_ENCODING,
     NUM_HEADS,
+    POS_ENCODING,
     MAX_SEQ_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
@@ -20,24 +19,25 @@ from rasa.nlu.classifiers.embedding_intent_classifier import (
     RANDOM_SEED,
     LEARNING_RATE,
     DENSE_DIM,
-    EMBED_DIM,
-    NUM_NEG,
-    SIMILARITY_TYPE,
-    LOSS_TYPE,
-    MU_POS,
-    MU_NEG,
-    SCALE_LOSS,
-    C2,
-    C_EMB,
-    DROPRATE,
-    UNIDIRECTIONAL_ENCODER,
-    EVAL_NUM_EPOCHS,
-    EVAL_NUM_EXAMPLES,
-    INTENT_CLASSIFICATION,
-    ENTITY_RECOGNITION,
-    MASKED_LM,
-    SPARSE_INPUT_DROPOUT,
     RANKING_LENGTH,
+    LOSS_TYPE,
+    SIMILARITY_TYPE,
+    NUM_NEG,
+    SPARSE_INPUT_DROPOUT,
+    MASKED_LM,
+    ENTITY_RECOGNITION,
+    INTENT_CLASSIFICATION,
+    EVAL_NUM_EXAMPLES,
+    EVAL_NUM_EPOCHS,
+    UNIDIRECTIONAL_ENCODER,
+    DROPRATE,
+    C_EMB,
+    C2,
+    SCALE_LOSS,
+    USE_MAX_SIM_NEG,
+    MU_NEG,
+    MU_POS,
+    EMBED_DIM,
 )
 from rasa.nlu.constants import (
     RESPONSE_ATTRIBUTE,
@@ -47,11 +47,10 @@ from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
 )
+from rasa.utils.tensorflow.tf_model_data import RasaModelData
+
 
 logger = logging.getLogger(__name__)
-
-if typing.TYPE_CHECKING:
-    from rasa.nlu.training_data import Message
 
 
 class ResponseSelector(EmbeddingIntentClassifier):
@@ -170,7 +169,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
 
     # end default properties (DOC MARKER - don't remove)
 
-    def _load_selector_params(self, config: Dict[Text, Any]):
+    def _load_selector_params(self, config: Dict[Text, Any]) -> None:
         self.retrieval_intent = config["retrieval_intent"]
         if not self.retrieval_intent:
             # retrieval intent was left to its default value
@@ -179,14 +178,14 @@ class ResponseSelector(EmbeddingIntentClassifier):
                 "on training examples combining all retrieval intents."
             )
 
-    def _load_params(self) -> None:
-        super()._load_params()
+    def _check_config_parameters(self) -> None:
+        super()._check_config_parameters()
         self._load_selector_params(self.component_config)
 
     @staticmethod
     def _set_message_property(
-        message: "Message", prediction_dict: Dict[Text, Any], selector_key: Text
-    ):
+        message: Message, prediction_dict: Dict[Text, Any], selector_key: Text
+    ) -> None:
 
         message_selector_properties = message.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
         message_selector_properties[selector_key] = prediction_dict
@@ -196,7 +195,7 @@ class ResponseSelector(EmbeddingIntentClassifier):
             add_to_output=True,
         )
 
-    def preprocess_train_data(self, training_data):
+    def preprocess_train_data(self, training_data: TrainingData) -> RasaModelData:
         """Performs sanity checks on training data, extracts encodings for labels
         and prepares data for training"""
         if self.retrieval_intent:
@@ -211,20 +210,21 @@ class ResponseSelector(EmbeddingIntentClassifier):
             training_data, label_id_dict, attribute=RESPONSE_ATTRIBUTE
         )
 
-        session_data = self._create_model_data(
+        model_data = self._create_model_data(
             training_data.intent_examples,
             label_id_dict,
             label_attribute=RESPONSE_ATTRIBUTE,
         )
 
-        self.check_input_dimension_consistency(session_data)
+        self.check_input_dimension_consistency(model_data)
 
-        return session_data
+        return model_data
 
-    def process(self, message: "Message", **kwargs: Any) -> None:
+    def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely response and its similarity to the input."""
 
-        label, label_ranking = self.predict_label(message)
+        out = self._predict(message)
+        label, label_ranking = self._predict_label(out)
 
         selector_key = (
             self.retrieval_intent

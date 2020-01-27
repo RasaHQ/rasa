@@ -7,15 +7,17 @@ import warnings
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, Callable
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
+import rasa.utils.io
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import any_of
 from rasa.utils import train_utils
-from rasa.utils.tensorflow import tf_layers, tf_models
+from rasa.utils.tensorflow import tf_layers
+from rasa.utils.tensorflow.tf_models import RasaModel
 from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
 from rasa.nlu.constants import (
     INTENT_ATTRIBUTE,
@@ -29,45 +31,43 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message
-
+from rasa.utils.tensorflow.constants import (
+    HIDDEN_LAYERS_SIZES_TEXT,
+    HIDDEN_LAYERS_SIZES_LABEL,
+    SHARE_HIDDEN_LAYERS,
+    TRANSFORMER_SIZE,
+    NUM_TRANSFORMER_LAYERS,
+    NUM_HEADS,
+    POS_ENCODING,
+    MAX_SEQ_LENGTH,
+    BATCH_SIZES,
+    BATCH_STRATEGY,
+    EPOCHS,
+    RANDOM_SEED,
+    LEARNING_RATE,
+    DENSE_DIM,
+    RANKING_LENGTH,
+    LOSS_TYPE,
+    SIMILARITY_TYPE,
+    NUM_NEG,
+    SPARSE_INPUT_DROPOUT,
+    MASKED_LM,
+    ENTITY_RECOGNITION,
+    INTENT_CLASSIFICATION,
+    EVAL_NUM_EXAMPLES,
+    EVAL_NUM_EPOCHS,
+    UNIDIRECTIONAL_ENCODER,
+    DROPRATE,
+    C_EMB,
+    C2,
+    SCALE_LOSS,
+    USE_MAX_SIM_NEG,
+    MU_NEG,
+    MU_POS,
+    EMBED_DIM,
+)
 
 logger = logging.getLogger(__name__)
-
-
-# constants - configuration parameters
-HIDDEN_LAYERS_SIZES_TEXT = "hidden_layers_sizes_text"
-HIDDEN_LAYERS_SIZES_LABEL = "hidden_layers_sizes_label"
-SHARE_HIDDEN_LAYERS = "share_hidden_layers"
-TRANSFORMER_SIZE = "transformer_size"
-NUM_TRANSFORMER_LAYERS = "number_of_transformer_layers"
-NUM_HEADS = "number_of_attention_heads"
-POS_ENCODING = "positional_encoding"
-MAX_SEQ_LENGTH = "maximum_sequence_length"
-BATCH_SIZES = "batch_sizes"
-BATCH_STRATEGY = "batch_strategy"
-EPOCHS = "epochs"
-RANDOM_SEED = "random_seed"
-LEARNING_RATE = "learning_rate"
-DENSE_DIM = "dense_dimensions"
-EMBED_DIM = "embedding_dimension"
-NUM_NEG = "number_of_negative_examples"
-SIMILARITY_TYPE = "similarity_type"
-LOSS_TYPE = "loss_type"
-MU_POS = "maximum_positive_similarity"
-MU_NEG = "maximum_negative_similarity"
-USE_MAX_SIM_NEG = "use_maximum_negative_similarity"
-SCALE_LOSS = "scale_loss"
-C2 = "l2_regularization"
-C_EMB = "c_emb"
-DROPRATE = "droprate"
-UNIDIRECTIONAL_ENCODER = "unidirectional_encoder"
-EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
-EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"
-INTENT_CLASSIFICATION = "perform_intent_classification"
-ENTITY_RECOGNITION = "perform_entity_recognition"
-MASKED_LM = "use_masked_language_model"
-SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
-RANKING_LENGTH = "ranking_length"
 
 
 class EmbeddingIntentClassifier(EntityExtractor):
@@ -190,11 +190,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 "hidden_layer_sizes for text and label must coincide."
             )
 
-        if self.component_config[SIMILARITY_TYPE] == "auto":
-            if self.component_config[LOSS_TYPE] == "softmax":
-                self.component_config[SIMILARITY_TYPE] = "inner"
-            elif self.component_config[LOSS_TYPE] == "margin":
-                self.component_config[SIMILARITY_TYPE] = "cosine"
+        self.component_config = train_utils.update_auto_similarity_type(
+            self.component_config
+        )
 
         if self.component_config[EVAL_NUM_EPOCHS] < 1:
             self.component_config[EVAL_NUM_EPOCHS] = self.component_config[EPOCHS]
@@ -209,9 +207,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         component_config: Optional[Dict[Text, Any]] = None,
         inverted_label_dict: Optional[Dict[int, Text]] = None,
         inverted_tag_dict: Optional[Dict[int, Text]] = None,
-        model: Optional[tf_models.RasaModel] = None,
+        model: Optional[RasaModel] = None,
         batch_tuple_sizes: Optional[Dict] = None,
-        attention_weights: Optional[tf.Tensor] = None,
     ) -> None:
         """Declare instance variables with default values"""
 
@@ -231,15 +228,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # keep the input tuple sizes in self.batch_in
         self.batch_tuple_sizes = batch_tuple_sizes
 
-        # internal tf instances
-        self._iterator = None
-        self._train_op = None
-        self._is_training = None
-
         # number of entity tags
         self.num_tags = 0
-
-        self.attention_weights = attention_weights
 
         self._tf_config = train_utils.load_tf_config(self.component_config)
 
@@ -733,14 +723,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
-        try:
-            os.makedirs(os.path.dirname(tf_model_file))
-        except OSError as e:
-            # be happy if someone already created the path
-            import errno
-
-            if e.errno != errno.EEXIST:
-                raise
+        rasa.utils.io.create_directory_for_file(tf_model_file)
 
         self.model.save(tf_model_file)
 
@@ -813,11 +796,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         ) as f:
             batch_tuple_sizes = pickle.load(f)
 
-        if meta[SIMILARITY_TYPE] == "auto":
-            if meta[LOSS_TYPE] == "softmax":
-                meta[SIMILARITY_TYPE] = "inner"
-            elif meta[LOSS_TYPE] == "margin":
-                meta[SIMILARITY_TYPE] = "cosine"
+        meta = train_utils.update_auto_similarity_type(meta)
 
         model = DIET.load(
             tf_model_file,
@@ -843,7 +822,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
 
-class DIET(tf_models.RasaModel):
+class DIET(RasaModel):
     def __init__(
         self,
         data_signature: Dict[Text, List[FeatureSignature]],
@@ -1093,7 +1072,7 @@ class DIET(tf_models.RasaModel):
         )
         all_labels_embed = self._tf_layers["embed.label"](all_labels)
 
-        return all_labels_embed, all_labels
+        return all_labels, all_labels_embed
 
     @staticmethod
     def _last_token(x: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
@@ -1123,7 +1102,7 @@ class DIET(tf_models.RasaModel):
         )
 
     def _intent_loss(self, a: tf.Tensor, b: tf.Tensor) -> tf.Tensor:
-        all_labels_embed, all_labels = self._create_all_labels()
+        all_labels, all_labels_embed = self._create_all_labels()
 
         a_embed = self._tf_layers["embed.text"](a)
         b_embed = self._tf_layers["embed.label"](b)
@@ -1159,7 +1138,7 @@ class DIET(tf_models.RasaModel):
         return loss, f1
 
     def batch_loss(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[List[tf.Tensor], List[np.ndarray]]
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
@@ -1203,7 +1182,7 @@ class DIET(tf_models.RasaModel):
         return tf.math.add_n(losses)
 
     def batch_predict(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[List[tf.Tensor], List[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
         tf_batch_data = self.batch_to_model_data_format(
             batch_in, self.predict_data_signature
@@ -1219,7 +1198,7 @@ class DIET(tf_models.RasaModel):
         out = {}
         if self.config[INTENT_CLASSIFICATION]:
             if self.all_labels_embed is None:
-                self.all_labels_embed, _ = self._create_all_labels()
+                _, self.all_labels_embed = self._create_all_labels()
 
             # get _cls_ vector for intent classification
             cls = self._last_token(text_transformed, sequence_lengths)

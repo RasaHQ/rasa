@@ -23,25 +23,19 @@ class RasaModel(tf.keras.models.Model):
         self.total_loss = tf.keras.metrics.Mean(name="t_loss")
         self.metrics_to_log = ["t_loss"]
 
-        self._training = tf.ones((), tf.bool)
+        self._training = None  # training phase should be defined when building a graph
 
         self._predict_function = None
 
     def batch_loss(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         raise NotImplementedError
 
     def batch_predict(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
         raise NotImplementedError
-
-    def set_training_phase(self, training: bool) -> None:
-        if training:
-            self._training = tf.ones((), tf.bool)
-        else:
-            self._training = tf.zeros((), tf.bool)
 
     def fit(
         self,
@@ -113,11 +107,12 @@ class RasaModel(tf.keras.models.Model):
 
             pbar.set_postfix(postfix_dict)
 
+        self._training = None  # training phase should be defined when building a graph
         if not disable:
             logger.info("Finished training.")
 
     def train_on_batch(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> None:
         """Train on batch"""
 
@@ -135,6 +130,7 @@ class RasaModel(tf.keras.models.Model):
         ) -> tf.data.Dataset:
             return predict_data.as_tf_dataset(_batch_size, "sequence", shuffle=False)
 
+        self._training = False  # needed for tf graph mode
         _, self._predict_function = self._get_tf_functions(
             predict_dataset_function, self.batch_predict, eager, "prediction"
         )
@@ -144,9 +140,10 @@ class RasaModel(tf.keras.models.Model):
             logger.debug("There is no tensorflow prediction graph.")
             self.build_for_predict(predict_data)
 
-        predict_dataset = predict_data.as_tf_dataset(1)
+        predict_dataset = predict_data.as_tf_dataset(batch_size=1)
         batch_in = next(iter(predict_dataset))
-        self.set_training_phase(False)
+
+        self._training = False  # needed for eager mode
         return self._predict_function(batch_in)
 
     def save(self, model_file_name: Text) -> None:
@@ -162,10 +159,10 @@ class RasaModel(tf.keras.models.Model):
         # need to train on 1 example to build weights of the correct size
         model.fit(
             model_data_example,
-            1,
-            1,
-            0,
-            0,
+            epochs=1,
+            batch_size=1,
+            evaluate_every_num_epochs=0,
+            evaluate_on_num_examples=0,
             batch_strategy="sequence",
             silent=True,  # don't confuse users with training output
             eager=True,  # no need to build tf graph, eager is faster here
@@ -176,7 +173,7 @@ class RasaModel(tf.keras.models.Model):
         return model
 
     def _total_batch_loss(
-        self, batch_in: Union[Tuple[np.ndarray], Tuple[tf.Tensor]]
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         """Calculate total loss"""
 
@@ -197,7 +194,7 @@ class RasaModel(tf.keras.models.Model):
         """Run on batches"""
 
         self.reset_metrics()
-        self.set_training_phase(training)
+        self._training = training  # needed for eager mode
         for batch_in in dataset_function(batch_size):
             call_model_function(batch_in)
 
@@ -229,7 +226,7 @@ class RasaModel(tf.keras.models.Model):
         return tf_dataset_function, tf_method_function
 
     def _get_tf_train_functions(
-        self, eager: bool, model_data: RasaModelData, batch_strategy: Text,
+        self, eager: bool, model_data: RasaModelData, batch_strategy: Text
     ) -> Tuple[Callable, Callable]:
         """Create train tensorflow functions"""
 
@@ -238,6 +235,7 @@ class RasaModel(tf.keras.models.Model):
         ) -> tf.data.Dataset:
             return model_data.as_tf_dataset(_batch_size, batch_strategy, shuffle=True)
 
+        self._training = True  # needed for tf graph mode
         return self._get_tf_functions(
             train_dataset_function, self.train_on_batch, eager, "train"
         )
@@ -259,11 +257,9 @@ class RasaModel(tf.keras.models.Model):
                     _batch_size, "sequence", shuffle=False
                 )
 
+            self._training = False  # needed for tf graph mode
             return self._get_tf_functions(
-                evaluation_dataset_function,
-                self._total_batch_loss,
-                eager,
-                "evaluation",
+                evaluation_dataset_function, self._total_batch_loss, eager, "evaluation"
             )
 
         return None, None
@@ -291,7 +287,7 @@ class RasaModel(tf.keras.models.Model):
 
     @staticmethod
     def batch_to_model_data_format(
-        batch: Union[Tuple[np.ndarray], Tuple[tf.Tensor]],
+        batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]],
         data_signature: Dict[Text, List[FeatureSignature]],
     ) -> Dict[Text, List[tf.Tensor]]:
         """Convert input batch tensors into batch data format.

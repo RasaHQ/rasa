@@ -148,3 +148,9 @@ def test_balance_session_data(model_data: RasaModelData):
     data = model_data.balanced_data(model_data.data, 2, False)
 
     assert np.all(data.get("intent_ids")[0] == np.array([0, 1, 1, 0, 1]))
+
+
+def test_get_num_of_features(model_data: RasaModelData):
+    num_features = model_data.get_feature_dimension("text_features")
+
+    assert num_features == 24

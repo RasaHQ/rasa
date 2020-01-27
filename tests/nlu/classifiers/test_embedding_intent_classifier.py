@@ -38,37 +38,6 @@ def test_compute_default_label_features():
         assert o.shape == (1, len(label_features))
 
 
-def test_get_num_of_features():
-    session_data = {
-        "text_features": [
-            np.array(
-                [
-                    np.random.rand(5, 14),
-                    np.random.rand(2, 14),
-                    np.random.rand(3, 14),
-                    np.random.rand(1, 14),
-                    np.random.rand(3, 14),
-                ]
-            ),
-            np.array(
-                [
-                    scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
-                    scipy.sparse.csr_matrix(np.random.randint(5, size=(2, 10))),
-                    scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
-                    scipy.sparse.csr_matrix(np.random.randint(5, size=(1, 10))),
-                    scipy.sparse.csr_matrix(np.random.randint(5, size=(3, 10))),
-                ]
-            ),
-        ]
-    }
-
-    num_features = EmbeddingIntentClassifier._get_num_of_features(
-        session_data, "text_features"
-    )
-
-    assert num_features == 24
-
-
 @pytest.mark.parametrize(
     "messages, expected",
     [
@@ -243,7 +212,7 @@ async def test_softmax_normalization(
     [({"loss_type": "margin", "random_seed": 42}, LABEL_RANKING_LENGTH)],
 )
 async def test_margin_loss_is_not_normalized(
-    monkeypatch, component_builder, tmpdir, classifier_params, output_length,
+    monkeypatch, component_builder, tmpdir, classifier_params, output_length
 ):
     pipeline = as_pipeline(
         "WhitespaceTokenizer", "CountVectorsFeaturizer", "EmbeddingIntentClassifier"

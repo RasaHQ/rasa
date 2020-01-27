@@ -80,4 +80,4 @@ def test_override_defaults_supervised_embeddings_pipeline():
 
     component2_cfg = cfg.for_component(1)
     component2 = builder.create_component(component2_cfg, cfg)
-    assert component2.epochs == 10
+    assert component2.component_config["epochs"] == 10
