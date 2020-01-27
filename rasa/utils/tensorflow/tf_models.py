@@ -17,7 +17,7 @@ class RasaModel(tf.keras.models.Model):
     Cannot be used as tf.keras.Model
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, random_seed: Optional[int], *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.total_loss = tf.keras.metrics.Mean(name="t_loss")
@@ -26,6 +26,11 @@ class RasaModel(tf.keras.models.Model):
         self._training = None  # training phase should be defined when building a graph
 
         self._predict_function = None
+
+        self.random_seed = random_seed
+
+        tf.random.set_seed(random_seed)
+        np.random.seed(random_seed)
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -47,7 +52,6 @@ class RasaModel(tf.keras.models.Model):
         batch_strategy: Text,
         silent: bool = False,
         eager: bool = False,
-        random_seed: Optional[int] = None,
     ) -> None:
         """Fit model data"""
 
@@ -62,7 +66,7 @@ class RasaModel(tf.keras.models.Model):
                 )
 
             model_data, evaluation_model_data = model_data.split(
-                evaluate_on_num_examples, random_seed
+                evaluate_on_num_examples, self.random_seed
             )
 
         (

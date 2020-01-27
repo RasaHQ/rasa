@@ -289,7 +289,6 @@ class TEDPolicy(Policy):
             self.config[EVAL_NUM_EXAMPLES],
             self.config[EVAL_NUM_EPOCHS],
             batch_strategy=self.config[BATCH_STRATEGY],
-            random_seed=self.config[RANDOM_SEED],
         )
 
     def continue_training(
@@ -316,7 +315,6 @@ class TEDPolicy(Policy):
             self.config[EVAL_NUM_EXAMPLES],
             self.config[EVAL_NUM_EPOCHS],
             batch_strategy=self.config[BATCH_STRATEGY],
-            random_seed=self.config[RANDOM_SEED],
         )
 
     def predict_action_probabilities(
@@ -437,7 +435,7 @@ class TED(RasaModel):
         max_history_tracker_featurizer_used: bool,
         label_data: RasaModelData,
     ):
-        super().__init__()
+        super().__init__(name="TED", random_seed=config[RANDOM_SEED])
 
         self.config = config
         self.max_history_tracker_featurizer_used = max_history_tracker_featurizer_used

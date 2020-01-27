@@ -552,10 +552,6 @@ class DIETClassifier(EntityExtractor):
         # keep one example for persisting and loading
         self.data_example = {k: [v[:1] for v in vs] for k, vs in model_data.items()}
 
-        # TODO set it in the model
-        # set random seed
-        tf.random.set_seed(self.component_config[RANDOM_SEED])
-
         self.model = DIET(
             model_data.get_signature(),
             self._label_data,
@@ -570,7 +566,6 @@ class DIETClassifier(EntityExtractor):
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[EVAL_NUM_EPOCHS],
             batch_strategy=self.component_config[BATCH_STRATEGY],
-            random_seed=self.component_config[RANDOM_SEED],
         )
 
     # process helpers
@@ -825,7 +820,7 @@ class DIET(RasaModel):
         inverted_tag_dict: Dict[int, Text],
         config: Dict[Text, Any],
     ) -> None:
-        super().__init__(name="DIET")
+        super().__init__(name="DIET", random_seed=config[RANDOM_SEED])
 
         # data
         self.data_signature = data_signature

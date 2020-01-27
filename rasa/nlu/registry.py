@@ -105,7 +105,7 @@ old_style_names = {
     "intent_classifier_sklearn": "SklearnIntentClassifier",
     "intent_classifier_mitie": "MitieIntentClassifier",
     "intent_classifier_keyword": "KeywordIntentClassifier",
-    "intent_classifier_tensorflow_embedding": "EmbeddingIntentClassifier",
+    "intent_classifier_tensorflow_embedding": "DIETClassifier",
 }
 
 # To simplify usage, there are a couple of model templates, that already add
@@ -134,12 +134,12 @@ registered_pipeline_templates = {
             "min_ngram": 1,
             "max_ngram": 4,
         },
-        {"name": "EmbeddingIntentClassifier"},
+        {"name": "DIETClassifier"},
     ],
     "pretrained_embeddings_convert": [
         {"name": "ConveRTTokenizer"},
         {"name": "ConveRTFeaturizer"},
-        {"name": "EmbeddingIntentClassifier"},
+        {"name": "DIETClassifier"},
     ],
 }
 
