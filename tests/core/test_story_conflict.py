@@ -132,6 +132,7 @@ async def test_has_prior_events():
 
 async def test_get_previous_event():
     assert _get_previous_event({"prev_utter_greet": 1.0, "intent_greet": 1.0}) == ("action", "utter_greet")
+    assert _get_previous_event({"intent_greet": 1.0, "prev_utter_greet": 1.0}) == ("action", "utter_greet")
     assert _get_previous_event({"intent_greet": 1.0, "prev_action_listen": 1.0}) == ("intent", "greet")
 
 

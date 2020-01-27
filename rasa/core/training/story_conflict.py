@@ -215,16 +215,26 @@ def _get_previous_event(
         Tuple of (type, name) strings of the prior event.
     """
 
-    if not state:
-        return None, None
+    previous_event_type = None
+    previous_event_name = None
 
+    if not state:
+        return previous_event_type, previous_event_name
+
+    # A typical state is, for example,
+    # `{'prev_action_listen': 1.0, 'intent_greet': 1.0, 'slot_cuisine_0': 1.0}`.
+    # We need to look out for `prev_` and `intent_` prefixes in the labels.
     for turn_label in state:
         if (
             turn_label.startswith(PREV_PREFIX)
             and turn_label.replace(PREV_PREFIX, "") != ACTION_LISTEN_NAME
         ):
+            # The `prev_...` was an action that was NOT `action_listen`
             return "action", turn_label.replace(PREV_PREFIX, "")
         elif turn_label.startswith(INTENT_ATTRIBUTE + "_"):
-            return "intent", turn_label.replace(INTENT_ATTRIBUTE + "_", "")
+            # We found an intent, but it is only the previous event if
+            # the `prev_...` was `prev_action_listen`, so we don't return.
+            previous_event_type = "intent"
+            previous_event_name = turn_label.replace(INTENT_ATTRIBUTE + "_", "")
 
-    return None, None
+    return previous_event_type, previous_event_name
