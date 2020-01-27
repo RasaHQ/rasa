@@ -43,7 +43,7 @@ class StoryConflict:
         """Checks if prior events exist.
 
         Returns:
-            True if anything has happened before this conflict, otherwise False.
+            `True` if anything has happened before this conflict, otherwise `False`.
         """
         return _get_previous_event(self._sliced_states[-1])[0] is not None
 
