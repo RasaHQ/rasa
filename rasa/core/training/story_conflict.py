@@ -95,7 +95,7 @@ class TrackerEventStateTuple(NamedTuple):
 def find_story_conflicts(
     trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
 ) -> List[StoryConflict]:
-    """Generates a list of StoryConflict objects, describing conflicts in the given trackers.
+    """Generates a list of `StoryConflict` objects, describing conflicts in the given trackers.
 
     Args:
         trackers: Trackers in which to search for conflicts.
