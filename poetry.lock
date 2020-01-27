@@ -1662,6 +1662,7 @@ version = "2.5.0"
 [[package]]
 category = "main"
 description = "C parser in Python"
+marker = "sys_platform == \"win32\" and platform_python_implementation == \"CPython\""
 name = "pycparser"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
@@ -2879,7 +2880,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools"]
 
 [metadata]
-content-hash = "d847a62df1e55b1ef74eebd7ad049af9cd2f4391066831ae0f57269fc487fb90"
+content-hash = "3a6d1e2d2f6db735425e2e0d7ed972a2f2be46706f1d2d99015c72199428885b"
 python-versions = "^3.6"
 
 [metadata.files]
