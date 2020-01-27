@@ -335,7 +335,7 @@ class TestEmbeddingPolicy(PolicyTestCollection):
         return p
 
     def test_similarity_type(self, trained_policy):
-        assert trained_policy.similarity_type == "inner"
+        assert trained_policy.config[SIMILARITY_TYPE] == "inner"
 
     def test_ranking_length(self, trained_policy):
         assert trained_policy.ranking_length == 10
