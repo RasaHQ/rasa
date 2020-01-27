@@ -219,13 +219,13 @@ class Validator:
         # Create a list of `StoryConflict` objects
         conflicts = find_story_conflicts(trackers, self.domain, max_history)
 
-        if len(conflicts) == 0:
+        if not conflicts:
             logger.info("No story structure conflicts found.")
         else:
             for conflict in conflicts:
                 logger.warning(conflict)
 
-        return ignore_warnings or len(conflicts) == 0
+        return ignore_warnings or not conflicts
 
     def verify_nlu(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""
