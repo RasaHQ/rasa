@@ -70,7 +70,7 @@ def print_bot_output(
         cli_utils.print_color(json.dumps(message.get("custom"), indent=2), color=color)
 
 
-def get_user_input(previous_response: Dict[str, Any]) -> Optional[Text]:
+def get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Text]:
     button_response = None
     if previous_response is not None:
         button_response = print_bot_output(previous_response, is_last=True)
