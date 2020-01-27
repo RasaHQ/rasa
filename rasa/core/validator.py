@@ -218,7 +218,7 @@ class Validator:
 
         return ignore_warnings or len(conflicts) == 0
 
-    def verify_all(self, ignore_warnings: bool = True) -> bool:
+    def verify_nlu(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""
 
         logger.info("Validating intents...")

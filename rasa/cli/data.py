@@ -8,6 +8,8 @@ from rasa import data
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
 from rasa.constants import DEFAULT_DATA_PATH
+from rasa.core.validator import Validator
+from rasa.importers.rasa import RasaFileImporter
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +104,7 @@ def _add_data_validate_parsers(
         help="Checks for inconsistencies in the story files.",
     )
     _append_story_structure_arguments(story_structure_parser)
-    story_structure_parser.set_defaults(func=validate_stories)
+    story_structure_parser.set_defaults(func=validate_files, stories_only=True)
     arguments.set_validator_arguments(story_structure_parser)
 
 
@@ -132,47 +134,42 @@ def split_nlu_data(args) -> None:
 
 
 def validate_files(args: argparse.Namespace) -> None:
-    """Validate all files needed for training a model.
-
-    Fails with a non-zero exit code if there are any errors in the data."""
-    from rasa.core.validator import Validator
-    from rasa.importers.rasa import RasaFileImporter
-
     loop = asyncio.get_event_loop()
     file_importer = RasaFileImporter(
         domain_path=args.domain, training_data_paths=args.data
     )
 
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
-    domain_is_valid = validator.verify_domain_validity()
-    if not domain_is_valid:
-        sys.exit(1)
 
-    everything_is_alright = validator.verify_all(not args.fail_on_warnings)
-    if not args.max_history:
+    if "stories_only" in args:
+        all_good = _validate_story_structure(validator, args)
+    elif not args.max_history:
         logger.info(
             "Will not test for inconsistencies in stories since "
             "you did not provide a value for `--max-history`."
         )
+        all_good = _validate_domain(validator) and _validate_nlu(validator, args)
     else:
-        # Only run story structure validation if everything else is fine
-        # since this might take a while
-        everything_is_alright = validator.verify_story_structure(
-            not args.fail_on_warnings, max_history=args.max_history
+        all_good = (
+            _validate_domain(validator)
+            and _validate_nlu(validator, args)
+            and _validate_story_structure(validator, args)
         )
 
-    if not everything_is_alright:
+    if not all_good:
         rasa.cli.utils.print_error("Project validation completed with errors.")
         sys.exit(1)
 
 
-def validate_stories(args: "argparse.Namespace") -> None:
-    """Validate only the story structure.
+def _validate_domain(validator: Validator) -> bool:
+    return validator.verify_domain_validity()
 
-    Fails with a non-zero exit code if there are any errors in the data."""
-    from rasa.core.validator import Validator
-    from rasa.importers.rasa import RasaFileImporter
 
+def _validate_nlu(validator: Validator, args: argparse.Namespace) -> bool:
+    return validator.verify_nlu(not args.fail_on_warnings)
+
+
+def _validate_story_structure(validator: Validator, args: argparse.Namespace) -> bool:
     # Check if a valid setting for `max_history` was given
     if not isinstance(args.max_history, int) or args.max_history < 1:
         raise argparse.ArgumentError(
@@ -180,20 +177,6 @@ def validate_stories(args: "argparse.Namespace") -> None:
             "You have to provide a positive integer for --max-history.",
         )
 
-    # Prepare story and domain file import
-    loop = asyncio.get_event_loop()
-    file_importer = RasaFileImporter(
-        domain_path=args.domain, training_data_paths=args.data
-    )
-
-    # Loads the stories
-    validator = loop.run_until_complete(Validator.from_importer(file_importer))
-
-    # If names are unique, look for story conflicts
-    stories_are_consistent = validator.verify_story_structure(
+    return validator.verify_story_structure(
         not args.fail_on_warnings, max_history=args.max_history
     )
-
-    if not stories_are_consistent:
-        rasa.cli.utils.print_error("Story validation completed with errors.")
-        sys.exit(1)
