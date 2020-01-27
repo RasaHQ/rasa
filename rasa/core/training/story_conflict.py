@@ -104,7 +104,6 @@ def find_story_conflicts(
     Returns:
         List of conflicts.
     """
-
     # We do this in two steps, to reduce memory consumption:
 
     # Create a 'state -> list of actions' dict, where the state is
