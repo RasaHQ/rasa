@@ -159,7 +159,7 @@ def _build_conflicts_from_states(
                 story_name=element.tracker.sender_id,
             )
 
-    # Remove conflicts that arise from unpredictable actions
+    # Return list of conflicts that arise from unpredictable actions
     # (actions that start the conversation)
     return [
         conflict
