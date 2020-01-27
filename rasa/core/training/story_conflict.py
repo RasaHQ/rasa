@@ -88,7 +88,7 @@ class TrackerEventStateTuple(NamedTuple):
     sliced_states: List[Dict[Text, float]]
 
     @property
-    def sliced_states_hash(self):
+    def sliced_states_hash(self) -> int:
         return hash(str(list(self.sliced_states)))
 
 
