@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 from typing import Text, Dict, Optional, List, Any
+from pathlib import Path
 
 import rasa.utils.io as io_utils
 from rasa.constants import (
@@ -16,16 +17,12 @@ from rasa.exceptions import ModelNotFound
 logger = logging.getLogger(__name__)
 
 
-def test_core_models_in_directory(model_directory: Text, stories: Text, output: Text):
+def test_core_models_in_directory(
+    model_directory: Text, stories: Text, output: Text
+) -> None:
     from rasa.core.test import compare_models_in_dir, plot_core_results
-    from rasa.model import get_latest_model
 
-    if os.path.isfile(model_directory):
-        if model_directory != get_latest_model():
-            print_warning(
-                "You passed a file as '--model'. Will use the directory containing this file instead."
-            )
-        model_directory = os.path.dirname(model_directory)
+    model_directory = _test_core_models_in_directory_default_input(model_directory)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(compare_models_in_dir(model_directory, stories, output))
@@ -33,6 +30,20 @@ def test_core_models_in_directory(model_directory: Text, stories: Text, output: 
     story_n_path = os.path.join(model_directory, NUMBER_OF_TRAINING_STORIES_FILE)
     number_of_stories = io_utils.read_json_file(story_n_path)
     plot_core_results(output, number_of_stories)
+
+
+def _test_core_models_in_directory_default_input(model_directory: Text) -> Text:
+    import rasa.model
+
+    p = Path(model_directory)
+    if p.is_file():
+        if model_directory != rasa.model.get_latest_model():
+            print_warning(
+                "You passed a file as '--model'. Will use the directory containing this file instead."
+            )
+        model_directory = p.parent
+
+    return model_directory
 
 
 def test_core_models(models: List[Text], stories: Text, output: Text):
