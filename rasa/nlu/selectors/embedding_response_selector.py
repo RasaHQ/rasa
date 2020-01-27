@@ -162,8 +162,12 @@ class ResponseSelector(EmbeddingIntentClassifier):
         # if true intent classification is trained and intent predicted
         INTENT_CLASSIFICATION: True,
         # if true named entity recognition is trained and entities predicted
+        # (should always be false)
         ENTITY_RECOGNITION: False,
+        # if true random tokens of the input message will be masked and the model
+        # should predict those tokens
         MASKED_LM: False,
+        # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: False,
     }
 

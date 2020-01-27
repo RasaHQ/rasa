@@ -24,7 +24,7 @@ from rasa.core.featurizers import (
     FullDialogueTrackerFeaturizer,
 )
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-from rasa.core.policies.embedding_policy import EmbeddingPolicy
+from rasa.core.policies.TED_policy import TEDPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.keras_policy import KerasPolicy
@@ -334,7 +334,7 @@ class TestSklearnPolicy(PolicyTestCollection):
 
 class TestEmbeddingPolicy(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
-        p = EmbeddingPolicy(featurizer=featurizer, priority=priority)
+        p = TEDPolicy(featurizer=featurizer, priority=priority)
         return p
 
     def test_similarity_type(self, trained_policy):
@@ -395,7 +395,7 @@ class TestEmbeddingPolicy(PolicyTestCollection):
 
 class TestEmbeddingPolicyMargin(TestEmbeddingPolicy):
     def create_policy(self, featurizer, priority):
-        p = EmbeddingPolicy(
+        p = TEDPolicy(
             featurizer=featurizer, priority=priority, **{"loss_type": "margin"}
         )
         return p
@@ -415,7 +415,7 @@ class TestEmbeddingPolicyMargin(TestEmbeddingPolicy):
 
 class TestEmbeddingPolicyWithEval(TestEmbeddingPolicy):
     def create_policy(self, featurizer, priority):
-        p = EmbeddingPolicy(
+        p = TEDPolicy(
             featurizer=featurizer,
             priority=priority,
             **{"scale_loss": False, "evaluate_on_num_examples": 4},
@@ -425,9 +425,7 @@ class TestEmbeddingPolicyWithEval(TestEmbeddingPolicy):
 
 class TestEmbeddingPolicyNoNormalization(TestEmbeddingPolicy):
     def create_policy(self, featurizer, priority):
-        p = EmbeddingPolicy(
-            featurizer=featurizer, priority=priority, **{"ranking_length": 0}
-        )
+        p = TEDPolicy(featurizer=featurizer, priority=priority, **{"ranking_length": 0})
         return p
 
     def test_ranking_length(self, trained_policy):
@@ -451,9 +449,7 @@ class TestEmbeddingPolicyNoNormalization(TestEmbeddingPolicy):
 
 class TestEmbeddingPolicyLowRankingLength(TestEmbeddingPolicy):
     def create_policy(self, featurizer, priority):
-        p = EmbeddingPolicy(
-            featurizer=featurizer, priority=priority, **{"ranking_length": 3}
-        )
+        p = TEDPolicy(featurizer=featurizer, priority=priority, **{"ranking_length": 3})
         return p
 
     def test_ranking_length(self, trained_policy):
@@ -462,7 +458,7 @@ class TestEmbeddingPolicyLowRankingLength(TestEmbeddingPolicy):
 
 class TestEmbeddingPolicyHighRankingLength(TestEmbeddingPolicy):
     def create_policy(self, featurizer, priority):
-        p = EmbeddingPolicy(
+        p = TEDPolicy(
             featurizer=featurizer, priority=priority, **{"ranking_length": 11}
         )
         return p
@@ -476,7 +472,7 @@ class TestEmbeddingPolicyWithFullDialogue(TestEmbeddingPolicy):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
         # if max_history is not specified
-        p = EmbeddingPolicy(priority=priority)
+        p = TEDPolicy(priority=priority)
         return p
 
     def test_featurizer(self, trained_policy, tmpdir):
@@ -498,7 +494,7 @@ class TestEmbeddingPolicyWithMaxHistory(TestEmbeddingPolicy):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using MaxHistoryTrackerFeaturizer
         # if max_history is specified
-        p = EmbeddingPolicy(priority=priority, max_history=self.max_history)
+        p = TEDPolicy(priority=priority, max_history=self.max_history)
         return p
 
     def test_featurizer(self, trained_policy, tmpdir):
@@ -519,7 +515,7 @@ class TestEmbeddingPolicyWithMaxHistory(TestEmbeddingPolicy):
 
 class TestEmbeddingPolicyWithTfConfig(TestEmbeddingPolicy):
     def create_policy(self, featurizer, priority):
-        p = EmbeddingPolicy(featurizer=featurizer, priority=priority, **tf_defaults())
+        p = TEDPolicy(featurizer=featurizer, priority=priority, **tf_defaults())
         return p
 
     def test_tf_config(self, trained_policy, tmpdir):

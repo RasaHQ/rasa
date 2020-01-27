@@ -56,7 +56,7 @@ from rasa.utils.tensorflow.constants import (
 logger = logging.getLogger(__name__)
 
 
-class EmbeddingPolicy(Policy):
+class TEDPolicy(Policy):
     """Transformer Embedding Dialogue Policy (TEDP)
 
     Transformer version of the REDP used in our paper https://arxiv.org/abs/1811.11707
@@ -373,7 +373,7 @@ class EmbeddingPolicy(Policy):
             pickle.dump(self._label_data, f)
 
     @classmethod
-    def load(cls, path: Text) -> "EmbeddingPolicy":
+    def load(cls, path: Text) -> "TEDPolicy":
         """Loads a policy from the storage.
 
         **Needs to load its featurizer**
