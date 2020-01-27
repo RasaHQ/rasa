@@ -102,7 +102,7 @@ async def test_find_conflicts_multiple_stories():
     conflicts = find_story_conflicts(trackers, domain, 5)
 
     assert len(conflicts) == 1
-    assert "and 3 other trackers" in str(conflicts[0])
+    assert "and 2 other trackers" in str(conflicts[0])
 
 
 async def test_add_conflicting_action():

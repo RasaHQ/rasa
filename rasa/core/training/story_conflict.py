@@ -68,7 +68,7 @@ class StoryConflict:
         if len(stories) > 3:
             # Four or more stories are present
             conflict_description = (
-                f"'{stories[0]}' and {len(stories) - 1} other trackers"
+                f"'{stories[0]}', '{stories[1]}', and {len(stories) - 2} other trackers"
             )
         else:
             conflict_description = (
