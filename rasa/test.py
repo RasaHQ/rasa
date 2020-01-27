@@ -41,7 +41,7 @@ def _test_core_models_in_directory_default_input(model_directory: Text) -> Text:
             print_warning(
                 "You passed a file as '--model'. Will use the directory containing this file instead."
             )
-        model_directory = p.parent
+        model_directory = str(p.parent)
 
     return model_directory
 

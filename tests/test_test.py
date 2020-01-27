@@ -27,7 +27,7 @@ def test_test_core_models_in_directory_default_input(
     new_modeldir = _test_core_models_in_directory_default_input(modeldir)
     captured = capsys.readouterr()
     assert captured.out == ""
-    assert new_modeldir == p.parent
+    assert new_modeldir == str(p.parent)
 
     # Case 2: another file given
     # => Should return containing directory and print a warning
@@ -39,7 +39,7 @@ def test_test_core_models_in_directory_default_input(
     )
     warning = capsys.readouterr()
     assert captured.out == warning.out
-    assert new_modeldir == p.parent
+    assert new_modeldir == str(p.parent)
 
     # Case 3: anything else given (e.g. other existing directory or nonsense)
     # => Should return input
