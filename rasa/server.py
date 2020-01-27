@@ -1,3 +1,5 @@
+import asyncio
+import functools
 import logging
 import warnings
 import multiprocessing
@@ -44,7 +46,6 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
 from rasa.utils.endpoints import EndpointConfig
-from rasa import train
 
 if typing.TYPE_CHECKING:
     from ssl import SSLContext
@@ -787,16 +788,12 @@ def create_app(
                 force_training=rjs.get("force", False),
             )
 
-            import asyncio
-            import functools
-            import time
-
             loop = asyncio.get_event_loop()
 
-            # Import it here to shadown `server.train(...)` function
+            # Import `train`` here to shadow `server.train(...)` function
             from rasa import train
 
-            # pass None to run in default executor
+            # pass `None` to run in default executor
             model_path = await loop.run_in_executor(
                 None, functools.partial(train, **info)
             )
