@@ -5,7 +5,6 @@ import logging
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 
 # TODO: add tests for other classifers
-# from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 # from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 # from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa.nlu.training_data.formats.rasa import RasaReader

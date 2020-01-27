@@ -85,7 +85,7 @@ async def test_train(component_builder, tmpdir):
         {"name": "ConveRTTokenizer"},
         {"name": "CountVectorsFeaturizer"},
         {"name": "ConveRTFeaturizer"},
-        {"name": "EmbeddingIntentClassifier"},
+        {"name": "DIETClassifier"},
     ]
 
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
@@ -110,10 +110,7 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
 
     _config = RasaNLUModelConfig(
         {
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "EmbeddingIntentClassifier"},
-            ],
+            "pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "DIETClassifier"}],
             "language": "en",
         }
     )
@@ -127,7 +124,7 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
         )
 
     assert (
-        "Failed to validate component 'EmbeddingIntentClassifier'. Missing one of "
+        "Failed to validate component 'DIETClassifier'. Missing one of "
         "the following properties: " in str(e.value)
     )
 
@@ -175,9 +172,9 @@ async def test_softmax_normalization(
     output_should_sum_to_1,
 ):
     pipeline = as_pipeline(
-        "WhitespaceTokenizer", "CountVectorsFeaturizer", "EmbeddingIntentClassifier"
+        "WhitespaceTokenizer", "CountVectorsFeaturizer", "DIETClassifier"
     )
-    assert pipeline[2]["name"] == "EmbeddingIntentClassifier"
+    assert pipeline[2]["name"] == "DIETClassifier"
     pipeline[2].update(classifier_params)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
@@ -212,9 +209,9 @@ async def test_margin_loss_is_not_normalized(
     monkeypatch, component_builder, tmpdir, classifier_params, output_length
 ):
     pipeline = as_pipeline(
-        "WhitespaceTokenizer", "CountVectorsFeaturizer", "EmbeddingIntentClassifier"
+        "WhitespaceTokenizer", "CountVectorsFeaturizer", "DIETClassifier"
     )
-    assert pipeline[2]["name"] == "EmbeddingIntentClassifier"
+    assert pipeline[2]["name"] == "DIETClassifier"
     pipeline[2].update(classifier_params)
 
     mock = Mock()

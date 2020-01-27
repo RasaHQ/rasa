@@ -332,7 +332,7 @@ class TestSklearnPolicy(PolicyTestCollection):
         policy.train(trackers, domain=default_domain)
 
 
-class TestEmbeddingPolicy(PolicyTestCollection):
+class TestTEDPolicy(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
         p = TEDPolicy(featurizer=featurizer, priority=priority)
         return p
@@ -393,7 +393,7 @@ class TestEmbeddingPolicy(PolicyTestCollection):
         )
 
 
-class TestEmbeddingPolicyMargin(TestEmbeddingPolicy):
+class TestTEDPolicyMargin(TestTEDPolicy):
     def create_policy(self, featurizer, priority):
         p = TEDPolicy(
             featurizer=featurizer, priority=priority, **{"loss_type": "margin"}
@@ -413,7 +413,7 @@ class TestEmbeddingPolicyMargin(TestEmbeddingPolicy):
         mock.normalize.assert_not_called()
 
 
-class TestEmbeddingPolicyWithEval(TestEmbeddingPolicy):
+class TestTEDPolicyWithEval(TestTEDPolicy):
     def create_policy(self, featurizer, priority):
         p = TEDPolicy(
             featurizer=featurizer,
@@ -423,7 +423,7 @@ class TestEmbeddingPolicyWithEval(TestEmbeddingPolicy):
         return p
 
 
-class TestEmbeddingPolicyNoNormalization(TestEmbeddingPolicy):
+class TestTEDPolicyNoNormalization(TestTEDPolicy):
     def create_policy(self, featurizer, priority):
         p = TEDPolicy(featurizer=featurizer, priority=priority, **{"ranking_length": 0})
         return p
@@ -447,7 +447,7 @@ class TestEmbeddingPolicyNoNormalization(TestEmbeddingPolicy):
         mock.normalize.assert_not_called()
 
 
-class TestEmbeddingPolicyLowRankingLength(TestEmbeddingPolicy):
+class TestTEDPolicyLowRankingLength(TestTEDPolicy):
     def create_policy(self, featurizer, priority):
         p = TEDPolicy(featurizer=featurizer, priority=priority, **{"ranking_length": 3})
         return p
@@ -456,7 +456,7 @@ class TestEmbeddingPolicyLowRankingLength(TestEmbeddingPolicy):
         assert trained_policy.ranking_length == 3
 
 
-class TestEmbeddingPolicyHighRankingLength(TestEmbeddingPolicy):
+class TestTEDPolicyHighRankingLength(TestTEDPolicy):
     def create_policy(self, featurizer, priority):
         p = TEDPolicy(
             featurizer=featurizer, priority=priority, **{"ranking_length": 11}
@@ -467,9 +467,9 @@ class TestEmbeddingPolicyHighRankingLength(TestEmbeddingPolicy):
         assert trained_policy.ranking_length == 11
 
 
-class TestEmbeddingPolicyWithFullDialogue(TestEmbeddingPolicy):
+class TestTEDPolicyWithFullDialogue(TestTEDPolicy):
     def create_policy(self, featurizer, priority):
-        # use standard featurizer from EmbeddingPolicy,
+        # use standard featurizer from TEDPolicy,
         # since it is using FullDialogueTrackerFeaturizer
         # if max_history is not specified
         p = TEDPolicy(priority=priority)
@@ -489,9 +489,9 @@ class TestEmbeddingPolicyWithFullDialogue(TestEmbeddingPolicy):
         )
 
 
-class TestEmbeddingPolicyWithMaxHistory(TestEmbeddingPolicy):
+class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
     def create_policy(self, featurizer, priority):
-        # use standard featurizer from EmbeddingPolicy,
+        # use standard featurizer from TEDPolicy,
         # since it is using MaxHistoryTrackerFeaturizer
         # if max_history is specified
         p = TEDPolicy(priority=priority, max_history=self.max_history)
@@ -513,7 +513,7 @@ class TestEmbeddingPolicyWithMaxHistory(TestEmbeddingPolicy):
         )
 
 
-class TestEmbeddingPolicyWithTfConfig(TestEmbeddingPolicy):
+class TestTEDPolicyWithTfConfig(TestTEDPolicy):
     def create_policy(self, featurizer, priority):
         p = TEDPolicy(featurizer=featurizer, priority=priority, **tf_defaults())
         return p

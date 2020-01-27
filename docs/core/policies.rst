@@ -148,7 +148,7 @@ expected outcome in the case of a tie. They look like this, where higher numbers
     | 4. ``FallbackPolicy`` and ``TwoStageFallbackPolicy``
     | 3. ``MemoizationPolicy`` and ``AugmentedMemoizationPolicy``
     | 2. ``MappingPolicy``
-    | 1. ``EmbeddingPolicy``, ``KerasPolicy``, and ``SklearnPolicy``
+    | 1. ``TEDPolicy``, ``KerasPolicy``, and ``SklearnPolicy``
 
 This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
 above the ``nlu_threshold``, the bot will still fall back. In general, it is not recommended to have more
@@ -192,7 +192,7 @@ set the ``random_seed`` attribute of the ``KerasPolicy`` to any integer.
 
 .. _embedding_policy:
 
-Embedding Policy
+TED Policy
 ^^^^^^^^^^^^^^^^
 
 Transformer Embedding Dialogue Policy (TEDP)
@@ -223,11 +223,11 @@ It is recommended to use
 **Configuration:**
 
     Configuration parameters can be passed as parameters to the
-    ``EmbeddingPolicy`` within the policy configuration file.
+    ``TEDPolicy`` within the policy configuration file.
 
     .. warning::
 
-        Pass an appropriate number of ``epochs`` to the ``EmbeddingPolicy``,
+        Pass an appropriate number of ``epochs`` to the ``TEDPolicy``,
         otherwise the policy will be trained only for ``1``
         epoch.
 
@@ -345,7 +345,7 @@ It is recommended to use
     These parameters can be specified in the policy configuration file.
     The default values are defined in ``EmbeddingPolicy.defaults``:
 
-    .. literalinclude:: ../../rasa/core/policies/embedding_policy.py
+    .. literalinclude:: ../../rasa/core/policies/TED_policy.py
        :dedent: 4
        :start-after: # default properties (DOC MARKER - don't remove)
        :end-before: # end default properties (DOC MARKER - don't remove)

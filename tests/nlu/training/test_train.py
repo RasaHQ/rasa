@@ -44,7 +44,7 @@ def pipelines_for_tests():
                 "EntitySynonymMapper",
                 "SklearnIntentClassifier",
                 "MitieIntentClassifier",
-                "EmbeddingIntentClassifier",
+                "DIETClassifier",
                 "KeywordIntentClassifier",
                 "ResponseSelector",
             ),
