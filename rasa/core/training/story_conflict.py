@@ -39,7 +39,7 @@ class StoryConflict:
         return list(self._conflicting_actions.keys())
 
     @property
-    def has_prior_events(self) -> bool:
+    def conflict_has_prior_events(self) -> bool:
         """Checks if prior events exist.
 
         Returns:
@@ -164,7 +164,7 @@ def _build_conflicts_from_states(
     return [
         conflict
         for (hashed_state, conflict) in conflicts.items()
-        if conflict.has_prior_events
+        if conflict.conflict_has_prior_events
     ]
 
 
