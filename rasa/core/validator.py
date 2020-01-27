@@ -193,7 +193,16 @@ class Validator:
     def verify_story_structure(
         self, ignore_warnings: bool = True, max_history: int = 5
     ) -> bool:
-        """Verifies that bot behaviour in stories is deterministic."""
+        """Verifies that bot behaviour in stories is deterministic.
+
+        Args:
+            ignore_warnings: When `True`, return `True` even if conflicts were found.
+            max_history: Maximal number of events to take into account for conflict identification.
+
+        Returns:
+            `False` is a conflict was found and `ignore_warnings` is `False`.
+            `True` otherwise.
+        """
 
         logger.info("Story structure validation...")
         logger.info(
