@@ -64,7 +64,7 @@ class StoryConflict:
         return conflict_message
 
     @staticmethod
-    def _summarize_conflict(action, stories):
+    def _summarize_conflict(action: Text, stories: List[Text]) -> Text:
         if len(stories) > 3:
             # Four or more stories are present
             conflict_description = (
