@@ -790,12 +790,11 @@ def create_app(
 
             loop = asyncio.get_event_loop()
 
-            # Import `train`` here to shadow `server.train(...)` function
-            from rasa import train
+            from rasa import train as train_model
 
             # pass `None` to run in default executor
             model_path = await loop.run_in_executor(
-                None, functools.partial(train, **info)
+                None, functools.partial(train_model, **info)
             )
 
             filename = os.path.basename(model_path) if model_path else None
