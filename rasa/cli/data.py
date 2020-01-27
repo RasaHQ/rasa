@@ -90,12 +90,7 @@ def _add_data_validate_parsers(
         parents=parents,
         help="Validates domain and data files to check for possible mistakes.",
     )
-    validate_parser.add_argument(
-        "--max-history",
-        type=int,
-        default=None,
-        help="Number of turns taken into account for story structure validation.",
-    )
+    _append_story_structure_arguments(validate_parser)
     validate_parser.set_defaults(func=validate_files)
     arguments.set_validator_arguments(validate_parser)
 
@@ -106,13 +101,18 @@ def _add_data_validate_parsers(
         parents=parents,
         help="Checks for inconsistencies in the story files.",
     )
-    story_structure_parser.add_argument(
-        "--max-history",
-        type=int,
-        help="Number of turns taken into account for story structure validation.",
-    )
+    _append_story_structure_arguments(story_structure_parser)
     story_structure_parser.set_defaults(func=validate_stories)
     arguments.set_validator_arguments(story_structure_parser)
+
+
+def _append_story_structure_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--max-history",
+        type=int,
+        default=None,
+        help="Number of turns taken into account for story structure validation.",
+    )
 
 
 def split_nlu_data(args) -> None:
