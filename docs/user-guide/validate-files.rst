@@ -19,7 +19,7 @@ You can run it with the following command:
   rasa data validate
 
 The script above runs all the validations on your files, except for story structure validation,
-which is omitted unless you provide the `--max-history` argument. Here is the list of options to
+which is omitted unless you provide the ``--max-history`` argument. Here is the list of options to
 the script:
 
 .. program-output:: rasa data validate --help
