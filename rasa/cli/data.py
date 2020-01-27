@@ -174,7 +174,7 @@ def _validate_story_structure(validator: Validator, args: argparse.Namespace) ->
     if not isinstance(args.max_history, int) or args.max_history < 1:
         raise argparse.ArgumentError(
             args.max_history,
-            "You have to provide a positive integer for --max-history.",
+            "You have to provide a positive integer for `--max-history`.",
         )
 
     return validator.verify_story_structure(

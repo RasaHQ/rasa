@@ -1,7 +1,7 @@
 import os
 import pytest
 from collections import namedtuple
-from typing import Callable
+from typing import Callable, Text
 from _pytest.pytester import RunResult
 from rasa.cli import data
 
@@ -67,6 +67,29 @@ def test_data_validate_help(run: Callable[..., RunResult]):
 
     for i, line in enumerate(lines):
         assert output.outlines[i] == line
+
+
+def _text_is_part_of_output_error(text: Text, output: RunResult) -> bool:
+    found_info_string = False
+    for line in output.errlines:
+        if text in line:
+            found_info_string = True
+    return found_info_string
+
+
+def test_data_validate_without_max_history(run: Callable[..., RunResult]):
+    output = run("data", "validate")
+    assert _text_is_part_of_output_error("did not provide a value for `--max-history`", output)
+
+
+def test_data_validate_stories_without_max_history(run: Callable[..., RunResult]):
+    output = run("data", "validate", "stories")
+    assert _text_is_part_of_output_error("have to provide a positive integer for `--max-history`", output)
+
+
+def test_data_validate_stories_with_max_history_zero(run: Callable[..., RunResult]):
+    output = run("data", "validate", "stories", "--max-history", "0")
+    assert _text_is_part_of_output_error("have to provide a positive integer for `--max-history`", output)
 
 
 def test_validate_files_exit_early():
