@@ -11,13 +11,13 @@ from rasa.core.training.generator import TrackerWithCachedStates
 
 class StoryConflict:
     def __init__(self, sliced_states: List[Optional[Dict[Text, float]]],) -> None:
-        self.sliced_states = sliced_states
+        self._sliced_states = sliced_states
         self._conflicting_actions = defaultdict(
             list
         )  # {"action": ["story_1", ...], ...}
 
     def __hash__(self) -> int:
-        return hash(str(list(self.sliced_states)))
+        return hash(str(list(self._sliced_states)))
 
     def add_conflicting_action(self, action: Text, story_name: Text) -> None:
         """Adds another action that follows from the same state.
@@ -45,11 +45,11 @@ class StoryConflict:
         Returns:
             True if anything has happened before this conflict, otherwise False.
         """
-        return _get_previous_event(self.sliced_states[-1])[0] is not None
+        return _get_previous_event(self._sliced_states[-1])[0] is not None
 
     def __str__(self) -> Text:
         # Describe where the conflict occurs in the stories
-        last_event_type, last_event_name = _get_previous_event(self.sliced_states[-1])
+        last_event_type, last_event_name = _get_previous_event(self._sliced_states[-1])
         if last_event_type:
             conflict_message = (
                 f"CONFLICT after {last_event_type} '{last_event_name}':\n"
