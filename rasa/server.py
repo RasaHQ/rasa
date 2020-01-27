@@ -670,7 +670,6 @@ def create_app(
 
         # create a temporary directory to store config, domain and
         # training data
-        print("read/writing files")
         temp_dir = tempfile.mkdtemp()
 
         config_path = os.path.join(temp_dir, "config.yml")
