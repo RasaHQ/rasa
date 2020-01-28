@@ -376,20 +376,14 @@ class InputMask(tf.keras.layers.Layer):
         lm_mask_bool = tf.greater_equal(lm_mask_prob, 0.85)
 
         def x_masked():
-            # do not substitute with cls token
-            pad_mask_up_to_last = tf.math.cumprod(
-                1 - mask, axis=1, exclusive=True, reverse=True
-            )
-            mask_up_to_last = 1 - pad_mask_up_to_last
-
             x_random_pad = (
                 tf.random.uniform(
                     tf.shape(x), tf.reduce_min(x), tf.reduce_max(x), x.dtype
                 )
-                * pad_mask_up_to_last
+                * (1 - mask)
             )
             # shuffle over batch dim
-            x_shuffle = tf.random.shuffle(x * mask_up_to_last + x_random_pad)
+            x_shuffle = tf.random.shuffle(x * mask + x_random_pad)
 
             # shuffle over sequence dim
             x_shuffle = tf.transpose(x_shuffle, [1, 0, 2])

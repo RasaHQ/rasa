@@ -162,7 +162,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # dropout rate for rnn
         DROPRATE: 0.2,
         # use a unidirectional or bidirectional encoder
-        UNIDIRECTIONAL_ENCODER: True,
+        UNIDIRECTIONAL_ENCODER: False,
         # visualization of accuracy
         # how often to calculate training accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
@@ -174,7 +174,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # if true named entity recognition is trained and entities predicted
         ENTITY_RECOGNITION: True,
         MASKED_LM: False,
-        SPARSE_INPUT_DROPOUT: False,
+        SPARSE_INPUT_DROPOUT: True,
     }
     # end default properties (DOC MARKER - don't remove)
 
