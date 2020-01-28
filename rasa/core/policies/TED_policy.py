@@ -92,7 +92,7 @@ class TEDPolicy(Policy):
         # number of epochs
         EPOCHS: 1,
         # set random seed to any int to get reproducible results
-        RANDOM_SEED: None,
+        RANDOM_SEED: 42,
         # embedding parameters
         # dimension size of embedding vectors
         EMBED_DIM: 20,
@@ -337,9 +337,10 @@ class TEDPolicy(Policy):
         confidence = confidence[0, -1, :]
 
         if self.config[LOSS_TYPE] == "softmax" and self.config[RANKING_LENGTH] > 0:
+            print("DOING NORMALIZATION")
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
-        return list(confidence)
+        return confidence.tolist()
 
     def persist(self, path: Text):
         """Persists the policy to a storage."""
@@ -388,6 +389,9 @@ class TEDPolicy(Policy):
 
         featurizer = TrackerFeaturizer.load(path)
 
+        if not os.path.exists(os.path.join(path, file_name + ".data_example.pkl")):
+            return cls(featurizer=featurizer)
+
         with open(os.path.join(path, file_name + ".data_example.pkl"), "rb") as f:
             model_data_example = RasaModelData(
                 label_key="label_ids", data=pickle.load(f)
@@ -419,12 +423,7 @@ class TEDPolicy(Policy):
         )
         model.build_for_predict(predict_data_example)
 
-        return cls(
-            featurizer=featurizer,
-            component_config=meta,
-            priority=meta["priority"],
-            model=model,
-        )
+        return cls(featurizer=featurizer, component_config=meta, model=model, **meta)
 
 
 # pytype: disable=key-error
