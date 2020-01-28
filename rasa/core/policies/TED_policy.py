@@ -337,7 +337,6 @@ class TEDPolicy(Policy):
         confidence = confidence[0, -1, :]
 
         if self.config[LOSS_TYPE] == "softmax" and self.config[RANKING_LENGTH] > 0:
-            print("DOING NORMALIZATION")
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
         return confidence.tolist()
