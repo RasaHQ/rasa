@@ -157,16 +157,14 @@ class TEDPolicy(Policy):
 
         super().__init__(featurizer, priority)
 
-        self._load_params(**kwargs)
+        self._load_params(kwargs)
 
         self.model = model
 
         self._label_data = None
         self.data_example = None
 
-        self._tf_config = train_utils.load_tf_config(self.config)
-
-    def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
+    def _load_params(self, kwargs: Dict[Text, Any]) -> None:
         self.config = copy.deepcopy(self.defaults)
         self.config.update(kwargs)
 
@@ -356,10 +354,8 @@ class TEDPolicy(Policy):
 
         self.model.save(tf_model_file)
 
-        with open(os.path.join(path, file_name + ".tf_config.pkl"), "wb") as f:
-            pickle.dump(self._tf_config, f)
-
-        self.config["priority"] = self.priority
+        with open(os.path.join(path, file_name + ".priority.pkl"), "wb") as f:
+            pickle.dump(self.priority, f)
 
         with open(os.path.join(path, file_name + ".meta.pkl"), "wb") as f:
             pickle.dump(self.config, f)
@@ -402,6 +398,9 @@ class TEDPolicy(Policy):
         with open(os.path.join(path, file_name + ".meta.pkl"), "rb") as f:
             meta = pickle.load(f)
 
+        with open(os.path.join(path, file_name + ".priority.pkl"), "rb") as f:
+            priority = pickle.load(f)
+
         meta = train_utils.update_auto_similarity_type(meta)
 
         model = TED.load(
@@ -422,7 +421,7 @@ class TEDPolicy(Policy):
         )
         model.build_for_predict(predict_data_example)
 
-        return cls(featurizer=featurizer, component_config=meta, model=model, **meta)
+        return cls(featurizer=featurizer, priority=priority, model=model, **meta)
 
 
 # pytype: disable=key-error
