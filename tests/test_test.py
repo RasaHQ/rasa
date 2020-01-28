@@ -6,11 +6,10 @@ import rasa.model
 import rasa.cli.utils
 
 
-def monkeypatch_get_latest_model(tmp_path: Path, monkeypatch: MonkeyPatch):
-
+def monkeypatch_get_latest_model(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
     latest_model = tmp_path / "my_test_model.tar.gz"
 
-    def mock_get_latest_model():
+    def mock_get_latest_model() -> Text:
         return str(latest_model)
 
     monkeypatch.setattr(rasa.model, "get_latest_model", mock_get_latest_model)
@@ -23,6 +22,7 @@ def test_test_core_models_in_directory_input_default(
 
     monkeypatch_get_latest_model(tmp_path, monkeypatch)
 
+    # Create a fake model on disk so that `is_file` returns `True`
     latest_model = Path(rasa.model.get_latest_model())
     latest_model.touch()
 
