@@ -216,12 +216,13 @@ Facebook Messenger, Slack, Telegram or even your very own website." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.6.1
+          viewing: 1.6.2
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.6.2/user-guide/messaging-and-voice-channels/">1.6.2</a>
               <a href="../.././1.6.1/user-guide/messaging-and-voice-channels/">1.6.1</a>
               <a href="../.././1.6.0/user-guide/messaging-and-voice-channels/">1.6.0</a>
               <a href="../.././1.5.3/user-guide/messaging-and-voice-channels/">1.5.3</a>
@@ -264,11 +265,7 @@ Facebook Messenger, Slack, Telegram or even your very own website." />
 
   <div class="edit-link">
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/user-guide/messaging-and-voice-channels.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
-  </div><p>If you’re testing this on your local computer (i.e. not a server), you
-will need to use <a class="reference external" href="https://rasa.com/docs/rasa-x/get-feedback-from-test-users/#use-ngrok-for-local-testing">ngrok</a>.
-This gives your machine a domain name so that Facebook, Slack, etc. know where to send messages to
-reach your local machine.</p>
-<p>To make your assistant available on a messaging platform you need to provide credentials
+  </div><p>To make your assistant available on a messaging platform you need to provide credentials
 in a <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code> file.
 An example file is created when you run <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code>, so it’s easiest to edit that file
 and add your credentials there. Here is an example with Facebook credentials:</p>
@@ -292,6 +289,32 @@ and add your credentials there. Here is an example with Facebook credentials:</p
 <li class="toctree-l1"><a class="reference internal" href="../connectors/mattermost/">Mattermost</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../connectors/custom-connectors/">Custom Connectors</a></li>
 </ul>
+</div>
+<div class="section" id="testing-channels-on-your-local-machine-with-ngrok">
+<span id="using-ngrok"></span><h2>Testing Channels on Your Local Machine with Ngrok<a class="headerlink" href="#testing-channels-on-your-local-machine-with-ngrok" title="Permalink to this headline">¶</a></h2>
+<p>You can use <a class="reference external" href="https://ngrok.com/">ngrok</a> to create a connection to your local
+computer that is publicly available on the internet.
+You don’t need this when running Rasa on a server because, you can set up a domain
+name to point to that server’s IP address, or use the IP address itself.</p>
+<p>After installing ngrok, run:</p>
+
+  <pre class="copyable-snippet">
+    <div class="code copyable" data-clipboard-text="ngrok http 5005; rasa run">
+ngrok http 5005; rasa run
+    </div>
+    <button class="button copyable" data-clipboard-text="ngrok http 5005; rasa run">copy</button>
+    <div class="copyable confirm" id="ngrok-http-5005;-rasa-run">copied!</div>
+  </pre>
+<p>Your webhook address will look like the following:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">https://yyyyyy.ngrok.io/webhooks/&lt;CHANNEL&gt;/webhook</span></code>, e.g.</li>
+<li><code class="docutils literal notranslate"><span class="pre">https://yyyyyy.ngrok.io/webhooks/facebook/webhook</span></code></li>
+</ul>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">With the free-tier of ngrok, you can run into limits on how many connections you can make per minute.
+As of writing this, it is set to 40 connections / minute.</p>
+</div>
 </div>
 </div>
 
