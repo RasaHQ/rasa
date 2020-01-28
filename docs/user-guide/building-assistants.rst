@@ -96,7 +96,7 @@ We’ll also need to add the intents, actions and templates to our ``domain.yml`
      utter_bye:
        - text: Bye!
 
-Finally, we’ll copy over some NLU data from Sara into our ``nlu.md`` (more can be found `here <https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md>`_): 
+Finally, we’ll copy over some NLU data from Sara into our ``nlu.md`` (more can be found `here <https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md>`__): 
 
 .. code-block:: md
 
@@ -187,7 +187,7 @@ want to increase your bot's scope.
 
 People often ask Sara different questions surrounding the Rasa products, so let’s
 start with three intents: ``ask_channels``, ``ask_languages``, and ``ask_rasax``.
-We’re going to copy over some NLU data from `Sara <https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md>`_
+We’re going to copy over some NLU data from the `Sara training data <https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md>`_
 into our ``nlu.md``. It’s important that these intents have an ``faq/`` prefix, so they’re
 recognised as the faq intent by the ResponseSelector: 
 
@@ -475,7 +475,7 @@ intent called ``contact_sales``. Add the following training data to your nlu fil
    - I would like to talk to someone from your sales team
    - sales please
 
-You can view the full intent `here <https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md#intentcontact_sales>`_)
+You can view the full intent `here <https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md#intentcontact_sales>`__)
 
 We will also create an intent called ``inform`` which covers any sort of information the user
 provides to the bot. *The reason we put all this under one intent, is because there is no
@@ -584,7 +584,7 @@ Then you can retrain and talk to your bot:
 This simple form will work out of the box, however you will likely want to add a bit
 more capability to handle different situations. One example of this is validating
 slots, to make sure the user provided information correctly (read more about it
-`here <https://rasa.com/docs/rasa/core/forms/#validating-user-input>`_). 
+`here <https://rasa.com/docs/rasa/core/forms/#validating-user-input>`__). 
 
 Another example is that you may want to fill slots from things other than entities
 of the same name. E.g. for the "use case" situation in our Form, we would expect
@@ -608,7 +608,7 @@ Now our bot will extract the full user message when asking for the use case slot
 and we don’t need to use the ``use_case`` entity defined before.
 
 All of the methods within a form can be customised to handle different branches in your
-business logic. Read more about this `here <https://rasa.com/docs/rasa/core/forms/#>`_.
+business logic. Read more about this `here <https://rasa.com/docs/rasa/core/forms/#>`__.
 However, you should make sure not to handle any unhappy paths inside the form.
 
 Handling unexpected user input
@@ -836,10 +836,10 @@ There are also a bunch of ways in which you can customise this policy. In Sara, 
 we’ve customised it to suggest intents to the user within a certain confidence range to make
 it easier for the user to give the bot the information it needs. 
 
-This is done by customising the action ``ActionDefaultAskAffirmation`` as shown in the `Sara rasa-demo <https://github.com/RasaHQ/rasa-demo/blob/6212face2a6b5fd36b0726e43df018c76ef2279a/demo/actions.py#L430>`_
+This is done by customising the action ``ActionDefaultAskAffirmation`` as shown in the `Sara rasa-demo action server <https://github.com/RasaHQ/rasa-demo/blob/6212face2a6b5fd36b0726e43df018c76ef2279a/demo/actions.py#L430>`_
 We define some intent mappings to make it more intuitive to the user what an intent means.
 
-.. image:: ../_static/images/intent_mappings.png
+.. image:: /_static/images/intent_mappings.png
    :width: 240
    :alt: Intent Mappings
 
@@ -947,7 +947,7 @@ guide the flow with entities and slots. For example, if the user gives you the
 information that they’re new to Rasa at the beginning, you may want to skip this
 question by storing this information in a slot.
 
-.. code-block:: yaml
+.. code-block:: md
 
    * how_to_get_started{"user_type": "new"}
      - slot{"user_type":"new"}
@@ -967,7 +967,7 @@ To make your bot more robust to interjections, you can replace the MemoizationPo
 with the AugmentedMemoizationPolicy. It works the same way as the MemoizationPolicy,
 but if no exact match is found it additionally has a mechanism that forgets a certain
 amount of steps in the conversation history to find a match in your stories (read more
-`here <https://rasa.com/docs/rasa/core/policies/#augmented-memoization-policy>`_) 
+`here <https://rasa.com/docs/rasa/core/policies/#augmented-memoization-policy>`__) 
 
 Using ML to generalise
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -977,7 +977,7 @@ policies you can use. These come in as an additional layer in your policy config
 and only jump in if the user follows a path that you have not anticipated. **It is important
 to understand that using these policies does not mean letting go of control over your
 assistant.** If a rule based policy is able to make a prediction, that prediction will
-always have a higher priority (read more `here <https://rasa.com/docs/rasa/core/policies/#action-selection>`_) and predict the next action. The
+always have a higher priority (read more `here <https://rasa.com/docs/rasa/core/policies/#action-selection>`__) and predict the next action. The
 ML based policies give your assistant the chance not to fail, whereas if they are not
 used your assistant will definitely fail, like in state machine based dialogue systems.  
 
