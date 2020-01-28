@@ -40,17 +40,16 @@ RUN apt-get update -qq \
 
 # Copy only what we really need
 COPY README.md .
-COPY setup.py .
-COPY setup.cfg .
-COPY MANIFEST.in .
-COPY requirements.txt .
+COPY pyproject.toml .
+COPY poetry.lock .
 COPY LICENSE.txt .
 
 # Install dependencies
-RUN pip install -U pip && pip install --no-cache-dir -r requirements.txt
+RUN pip install -U pip && pip install -U poetry && poetry install
 
 # Install Rasa as package
 COPY rasa ./rasa
+#TODO(alwx): update this to use poetry instead:
 RUN pip install .[sql]
 
 # Runtime stage which uses the virtualenv which we built in the previous stage

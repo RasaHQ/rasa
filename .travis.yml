@@ -18,10 +18,10 @@ install:
   # listed in README.md!
   - sudo apt-get update -qq
   - python -m pip install -U pip
-  - pip install -r requirements-dev.txt
-  - pip install -e .
+  - pip install --user poetry
+  - poetry install
   - make prepare-tests-ubuntu
-  - pip list
+  - poetry show
 before_script:
   - mkdir $HOME/tmp
   - export TMPDIR=$HOME/tmp
@@ -59,7 +59,7 @@ jobs:
   - stage: test
     name: "Test Docs"
     install:
-    - pip install -r requirements.txt
+    - poetry install
     - pip install -r requirements-docs.txt
     - pip install -e .[sql]
     - pip list
@@ -73,7 +73,7 @@ jobs:
     - RASABASTER=rasabaster-0.7.23.tar.gz
     - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
     - pip install $RASABASTER
-    - pip install -r requirements.txt
+    - poetry install
     - pip install --no-cache-dir -r requirements-docs.txt
     - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
     - pip install -e .
