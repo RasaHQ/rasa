@@ -143,7 +143,7 @@ def validate_files(args: argparse.Namespace) -> None:
 
     if "stories_only" in args:
         all_good = _validate_story_structure(validator, args)
-    elif not args.max_history:
+    elif "max_history" not in args or args.max_history is None:
         logger.info(
             "Will not test for inconsistencies in stories since "
             "you did not provide a value for `--max-history`."
