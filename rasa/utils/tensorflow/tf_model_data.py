@@ -23,7 +23,10 @@ class RasaModelData:
         self.num_examples = self.get_number_of_examples()
 
     def get(self, key: Text) -> List[np.ndarray]:
-        return self.data[key]
+        if key in self.data:
+            return self.data[key]
+        else:
+            return []
 
     def items(self):
         return self.data.items()
