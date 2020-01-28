@@ -17,6 +17,7 @@ from rasa.nlu.classifiers.DIET_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
 from rasa.nlu.training_data import Message
 from rasa.utils import train_utils
+from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
@@ -117,41 +118,6 @@ async def test_train_persist_load(pipeline, component_builder, tmpdir):
     assert loaded.parse("Hello today is Monday, again!") == trained.parse(
         "Hello today is Monday, again!"
     )
-
-
-@pytest.mark.parametrize(
-    "pipeline",
-    [
-        [
-            {"name": "WhitespaceTokenizer"},
-            {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETClassifier", RANDOM_SEED: 42},
-        ]
-    ],
-)
-async def test_train_multiple_runs(pipeline, component_builder, tmpdir):
-
-    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
-
-    trained_models = []
-
-    for _ in range(3):
-        (trainer, trained, persisted_path) = await train(
-            _config,
-            path=tmpdir.strpath,
-            data=DEFAULT_DATA_PATH,
-            component_builder=component_builder,
-        )
-
-        trained_models.append(trained)
-
-    result_1 = (trained_models[0]).parse("Hello again!")
-    result_2 = (trained_models[1]).parse("Hello again!")
-    result_3 = (trained_models[2]).parse("Hello again!")
-
-    assert result_1 == result_2
-    assert result_1 == result_3
-    assert result_2 == result_3
 
 
 async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
