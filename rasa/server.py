@@ -792,8 +792,10 @@ def create_app(
 
             from rasa import train as train_model
 
+            # Declare `model_path` upfront to avoid pytype `name-error`
+            model_path: Optional[Text] = None
             # pass `None` to run in default executor
-            model_path: Text = await loop.run_in_executor(
+            model_path = await loop.run_in_executor(
                 None, functools.partial(train_model, **info)
             )
 
