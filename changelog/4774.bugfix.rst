@@ -1,0 +1,1 @@
+Requests to ``/model/train`` do not longer block other requests to the Rasa server.
