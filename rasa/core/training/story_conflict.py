@@ -72,7 +72,7 @@ class StoryConflict:
             )
         else:
             conflict_description = (
-                {1: "'{}'", 2: "'{}' and '{}'", 3: "'{}', '{}', and '{}'",}
+                {1: "'{}'", 2: "'{}' and '{}'", 3: "'{}', '{}', and '{}'"}
                 .get(len(stories))
                 .format(*stories)
             )

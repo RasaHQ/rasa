@@ -77,18 +77,18 @@ def _text_is_part_of_output_error(text: Text, output: RunResult) -> bool:
     return found_info_string
 
 
-def test_data_validate_without_max_history(run: Callable[..., RunResult]):
-    output = run("data", "validate")
+def test_data_validate_without_max_history(run_in_default_project_with_info: Callable[..., RunResult]):
+    output = run_in_default_project_with_info("data", "validate")
     assert _text_is_part_of_output_error("did not provide a value for `--max-history`", output)
 
 
-def test_data_validate_stories_without_max_history(run: Callable[..., RunResult]):
-    output = run("data", "validate", "stories")
+def test_data_validate_stories_without_max_history(run_in_default_project_with_info: Callable[..., RunResult]):
+    output = run_in_default_project_with_info("data", "validate", "stories")
     assert _text_is_part_of_output_error("have to provide a positive integer for `--max-history`", output)
 
 
-def test_data_validate_stories_with_max_history_zero(run: Callable[..., RunResult]):
-    output = run("data", "validate", "stories", "--max-history", "0")
+def test_data_validate_stories_with_max_history_zero(run_in_default_project_with_info: Callable[..., RunResult]):
+    output = run_in_default_project_with_info("data", "validate", "stories", "--max-history", "0")
     assert _text_is_part_of_output_error("have to provide a positive integer for `--max-history`", output)
 
 
