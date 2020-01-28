@@ -7,9 +7,17 @@ from typing import Text, List, Any
 import numpy as np
 from tqdm import tqdm
 from scipy.sparse import csr_matrix, save_npz, load_npz
+from scipy.io import mmwrite
 from sparse_som import *
 
 from sklearn.feature_extraction.text import CountVectorizer
+import json
+
+
+def save_sparse_csr(filename, array):
+    # note that .npz extension is added automatically
+    np.savez(filename, data=array.data, indices=array.indices,
+             indptr=array.indptr, shape=array.shape)
 
 
 class SemanticFoldingGenerator:
@@ -69,7 +77,7 @@ class SemanticFoldingGenerator:
         self._som = BSom(self.height, self.width, input_dim, topol=topology.HEXA)
         # if os.path.exists(dump_file_name):
         #     print("Loading codebook...")
-        #     self._som.codebook = np.load(dump_file_name)
+        #     self._som.codebook = np.load(dump_file_name)   # som.codebook.dtype
         # else:
         self._som.train(data, cool=cooling.LINEAR)
         np.save(dump_file_name, self._som.codebook)
@@ -78,6 +86,10 @@ class SemanticFoldingGenerator:
         self.vectorizer.fit(self._snippets)
         self._snippet_data = self.vectorizer.transform(self._snippets)
         print(self._snippet_data.shape)
+        print(type(self._snippet_data))
+        # save_npz("snippets_encoded", self._snippet_data)
+        # save_sparse_csr("snippets_encoded", self._snippet_data)
+        mmwrite("snippets_encoded", self._snippet_data)
         self._train_som(self._snippet_data)
 
     def fingerprint(self, word: Text) -> np.ndarray:
@@ -127,7 +139,7 @@ class SemanticFoldingGenerator:
 
 
 if __name__ == '__main__':
-    sfg = SemanticFoldingGenerator(32, 32)
+    sfg = SemanticFoldingGenerator(8, 8)
 
     # traverse root directory, and list directories as dirs and files as files
     dir = "/home/jem-mosig/books/"
@@ -137,7 +149,12 @@ if __name__ == '__main__':
     np.set_printoptions(threshold=np.inf)
     # import matplotlib.pyplot as plt
 
+    with open("vocab_encoded.json", "w+") as file:
+        json.dump(sfg.vectorizer.vocabulary_, file)
+
     print(str(sfg.vectorizer.vocabulary_))
+
+    exit(0)
 
     with open("model.txt", "w+", encoding="utf8") as file:
         progress = 0
