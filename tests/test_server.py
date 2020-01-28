@@ -166,14 +166,14 @@ def background_server(
         return fake_model_path
 
     def run_server() -> NoReturn:
-        import sys
-
-        sys.argv = ["rasa", "run", "--enable-api"]
-        from rasa import __main__
-
         import rasa
 
         rasa.train = mocked_training_function
+
+        from rasa import __main__
+        import sys
+
+        sys.argv = ["rasa", "run", "--enable-api"]
         __main__.main()
 
     server = Process(target=run_server)

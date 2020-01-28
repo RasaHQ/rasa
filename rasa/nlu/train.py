@@ -83,7 +83,6 @@ async def train(
         training_data = load_data(data, nlu_config.language)
 
     training_data.print_stats()
-
     interpreter = trainer.train(training_data, **kwargs)
 
     if path:
