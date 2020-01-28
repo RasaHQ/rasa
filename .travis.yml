@@ -96,11 +96,6 @@ jobs:
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
     - sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster
-  - stage: docs-netlify
-    if: branch = master AND type != pull_request OR tag IS present
-    install: skip
-    script:
-    - curl -X POST -d "docs" https://api.netlify.com/build_hooks/${NETLIFY_HOOK_ID}
   - stage: deploy
     name: "Deploy to PyPI"
     python: 3.6
