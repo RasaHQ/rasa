@@ -1,3 +1,0 @@
-Switching back to a TensorFlow release which only includes CPU support to reduce the
-size of the dependencies. If you want to use the TensorFlow package with GPU support,
-please run ``tensorflow-gpu==1.15.0``.
