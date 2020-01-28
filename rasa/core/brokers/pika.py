@@ -337,7 +337,10 @@ class PikaEventBroker(EventBroker):
 
         kwargs = {"app_id": self.rasa_environment} if self.rasa_environment else {}
 
-        return BasicProperties(**kwargs)
+        return BasicProperties(
+            delivery_mode = 2, # make message persistent
+            **kwargs
+        )
 
     def _publish(self, body: Text) -> None:
         if self._pika_connection.is_closed:
