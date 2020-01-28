@@ -71,17 +71,11 @@ class StoryConflict:
                 f"'{stories[0]}', '{stories[1]}', and {len(stories) - 2} other trackers"
             )
         elif len(stories) == 3:
-            conflict_description = (
-                f"'{stories[0]}', '{stories[1]}', and '{stories[2]}'"
-            )
+            conflict_description = f"'{stories[0]}', '{stories[1]}', and '{stories[2]}'"
         elif len(stories) == 2:
-            conflict_description = (
-                f"'{stories[0]}' and '{stories[1]}'"
-            )
+            conflict_description = f"'{stories[0]}' and '{stories[1]}'"
         elif len(stories) == 1:
-            conflict_description = (
-                f"'{stories[0]}'"
-            )
+            conflict_description = f"'{stories[0]}'"
         else:
             raise ValueError("Trying to summarize conflict without stories.")
 
