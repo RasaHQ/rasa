@@ -32,7 +32,7 @@ from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.tensorflow.constants import SIMILARITY_TYPE
+from rasa.utils.tensorflow.constants import SIMILARITY_TYPE, RANKING_LENGTH
 from rasa.utils import train_utils
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
@@ -341,7 +341,7 @@ class TestTEDPolicy(PolicyTestCollection):
         assert trained_policy.config[SIMILARITY_TYPE] == "inner"
 
     def test_ranking_length(self, trained_policy):
-        assert trained_policy.ranking_length == 10
+        assert trained_policy.config[RANKING_LENGTH] == 10
 
     def test_normalization(self, trained_policy, tracker, default_domain, monkeypatch):
         # first check the output is what we expect
@@ -351,7 +351,7 @@ class TestTEDPolicy(PolicyTestCollection):
         # count number of non-zero confidences
         assert (
             sum([confidence > 0 for confidence in predicted_probabilities])
-            == trained_policy.ranking_length
+            == trained_policy.config[RANKING_LENGTH]
         )
         # check that the norm is still 1
         assert sum(predicted_probabilities) == pytest.approx(1)
@@ -368,7 +368,7 @@ class TestTEDPolicy(PolicyTestCollection):
         training_data = trained_policy.featurize_for_training(
             training_trackers, default_domain
         )
-        model_data = trained_policy._create_modeldata(training_data.X, training_data.y)
+        model_data = trained_policy._create_model_data(training_data.X, training_data.y)
         batch_size = 2
         batch_x, batch_y, _ = next(
             model_data.gen_batch(batch_size=batch_size, label_key="label_ids")

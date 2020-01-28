@@ -2,6 +2,7 @@ import copy
 import logging
 import os
 import pickle
+from collections import defaultdict
 
 import numpy as np
 import tensorflow as tf
@@ -347,7 +348,7 @@ class TEDPolicy(Policy):
         if self.model is None:
             return
 
-        file_name = "embedding_policy"
+        file_name = "TED_policy"
         tf_model_file = os.path.join(path, f"{file_name}.tf_model")
 
         rasa.utils.io.create_directory_for_file(tf_model_file)
@@ -379,11 +380,11 @@ class TEDPolicy(Policy):
 
         if not os.path.exists(path):
             raise Exception(
-                f"Failed to load embedding policy model. Path "
+                f"Failed to load TED policy model. Path "
                 f"'{os.path.abspath(path)}' doesn't exist."
             )
 
-        file_name = "embedding_policy"
+        file_name = "TED_policy"
         tf_model_file = os.path.join(path, f"{file_name}.tf_model")
 
         featurizer = TrackerFeaturizer.load(path)
@@ -462,7 +463,7 @@ class TED(RasaModel):
         self.metrics_to_log += ["loss", "acc"]
 
         # set up tf layers
-        self._tf_layers = {}
+        self._tf_layers = defaultdict()
         self._prepare_layers()
 
     def _prepare_layers(self) -> None:
