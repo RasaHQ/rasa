@@ -70,12 +70,20 @@ class StoryConflict:
             conflict_description = (
                 f"'{stories[0]}', '{stories[1]}', and {len(stories) - 2} other trackers"
             )
-        else:
+        elif len(stories) == 3:
             conflict_description = (
-                {1: "'{}'", 2: "'{}' and '{}'", 3: "'{}', '{}', and '{}'"}
-                .get(len(stories))
-                .format(*stories)
+                f"'{stories[0]}', '{stories[1]}', and '{stories[2]}'"
             )
+        elif len(stories) == 2:
+            conflict_description = (
+                f"'{stories[0]}' and '{stories[1]}'"
+            )
+        elif len(stories) == 1:
+            conflict_description = (
+                f"'{stories[0]}'"
+            )
+        else:
+            raise ValueError("Trying to summarize conflict without stories.")
 
         return f"{action} predicted in {conflict_description}\n"
 
