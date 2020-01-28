@@ -33,20 +33,16 @@ def test_core_models_in_directory(
 
 
 def _get_sanitized_model_directory(model_directory: Text) -> Text:
-    """Adjusts the '--model' argument of 'rasa test core' when called with '--evaluate-model-directory'.
+    """Adjusts the `--model` argument of `rasa test core` when called with `--evaluate-model-directory`.
 
-    If a file is passed as 'model_directory' to 'test_core_models_in_directory' instead of a directory, returns the
-    directory that file is contained in. Prints a warning if the file is not the latest model. If the passed
-    'model_directory' is the latest model, it's probably caused by the default value of the CLI. Doesn't warn in this
-    case.
-    If anything other than an existing file is passed as 'model_directory' to 'test_core_models_in, returns the
-    'model_directory' argument as is.
+    By default rasa uses the latest model for the `--model` parameter. However, for `--evaluate-model-directory` we
+    need a directory. This function checks if the passed parameter is a model or an individual model file.
 
     Args:
-        model_directory: the 'model_directory' argument that was given to 'test_core_models_in_directory'
+        model_directory: The model_directory argument that was given to `test_core_models_in_directory`.
 
     Returns:
-        The adjusted model_directory that should be used in 'test_core_models_in_directory'
+        The adjusted model_directory that should be used in `test_core_models_in_directory`.
     """
     import rasa.model
 
