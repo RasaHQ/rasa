@@ -1,0 +1,1 @@
+Add story structure validation functionality (e.g. `rasa data validate stories --max-history 5`).
