@@ -962,7 +962,7 @@ def create_app(
                     entityArray.append(data)
                 elif data["name"] == 'type' or data["name"] == 'timeline' or data[
                     "name"] == 'mtype' or data["name"] == 'renew' or data["name"] == 'renewAll' or data[
-                    "name"] == "cancelhold" or data["name"] == 'type':
+                    "name"] == "cancelhold" or data["name"] == 'type' or data['name'] == 'reserve':
                     data["name"] = data["name"].lower()
                     entityArray.append(data)
                 elif data["name"] == "pubyear":
@@ -1363,11 +1363,17 @@ def create_app(
                     data['value'] = str(data['value'])
                     entityArray.append(data)
         elif intent == "listpickupintent":
-            if data["name"] == 'pickup':
-                entityArray.append(data)
+            for data in entMap:
+                if data["name"] == 'pickup':
+                    entityArray.append(data)
         elif intent == "feeinfointent":
-            if data["name"] == 'fee':
-                entityArray.append(data)
+            for data in entMap:
+                if data["name"] == 'fee':
+                    entityArray.append(data)
+        elif intent == "reserve_searchintent":
+            for data in entMap:
+                if data["name"] == 'subject':
+                    entityArray.append(data)
         elif intent == "libraryinfointent":
             condMap = {}
             for data in entMap:
@@ -1409,6 +1415,84 @@ def create_app(
                 elif data["name"] == "hdate":
                     if "hdate" not in conditionMap:
                         entityArray.append(data)
+        elif intent == "updateholdintent":
+            conditionMap = {}
+            for data in entMap:
+                if data['name'] == 'holdFilter' or data['name'] == 'mtype':
+                    entityArray.append(data)
+                elif data["name"] == "WORK_OF_ART":
+                    data["name"] = "stitle"
+                    data["value"] = data["value"].lower().replace("search for a book", "").replace(
+                        "search for the book", "").replace("serach for title", "").replace("search for a title",
+                                                                                           "").replace(
+                        "serach for the title", "")
+                    if data["value"] != "":
+                        if 'filterphrase' in contentMap and contentMap['WORK_OF_ART'] == contentMap['filterphrase']:
+                            pass
+                        else:
+                            entityArray.append(data)
+                            conditionMap["stitle"] = data["value"]
+                    print("Entity array after work of art is ", entityArray)
+                elif data["name"] == "person":
+                    if "stitle" in conditionMap:
+                        if data["value"] != conditionMap["stitle"]:
+                            data["name"] = "sauthor"
+                            entityArray.append(data)
+                    else:
+                        data["name"] = "sauthor"
+                        entityArray.append(data)
+                elif data["name"] == "sBook":
+                    if "stitle" not in conditionMap:
+                        data["name"] = "stitle"
+                        entityArray.append(data)
+                        conditionMap["stitle"] = data["value"]
+                elif data["name"] == "sbook":
+                    if "stitle" not in conditionMap:
+                        if len(data["value"]) <= 50:
+                            data["name"] = "stitle"
+                            entityArray.append(data)
+                            conditionMap["stitle"] = data["value"]
+                        else:
+                            if "subject" not in conditionMap:
+                                data["name"] = "subject"
+                                data["name"] = data["name"].lower()
+                                entityArray.append(data)
+                                conditionMap["subject"] = data["value"]
+                    else:
+                        print(entityArray)
+                        entityArray.pop(0)
+                        conditionMap["stitle"] = data["value"].lower()
+                        data["value"] = data["value"].lower()
+                        data["name"] = "stitle"
+                        entityArray.append(data)
+                        print(entityArray)
+                elif data["name"] == "time":
+                    if 'from' in data['value']:
+                        print("*********************************************************")
+                        data['value'] = data['value'].replace("\'", "\"", -1)
+                        datamap = json.loads(data['value'])
+                        tempMap = {}
+                        tempMap['entity'] = 'from'
+                        fromDate = datamap['from'].split("T")
+                        tempMap['value'] = fromDate[0]
+                        entityArray.append(tempMap)
+                        tempMap = {}
+                        tempMap['entity'] = 'to'
+                        todate = datamap['to'].split("T")
+                        tempMap['value'] = todate[0]
+                        entityArray.append(tempMap)
+                    else:
+                        date = data["value"].split("T")
+                        print(type(data["value"]))
+                        print(date)
+                        data["name"] = 'hdate'
+                        data["value"] = date[0]
+                        if 'currently' in condMap:
+                            pass
+                        else:
+                            entityArray.append(data)
+                    conditionMap["hdate"] = data["value"]
+
         else:
             for data in entMap:
                 entityArray.append(data)
