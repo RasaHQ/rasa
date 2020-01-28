@@ -17,6 +17,23 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.6.2] - 2020-01-28
+^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#4989 <https://github.com/rasahq/rasa/issues/4989>`_: Switching back to a TensorFlow release which only includes CPU support to reduce the
+  size of the dependencies. If you want to use the TensorFlow package with GPU support,
+  please run ``tensorflow-gpu==1.15.0``.
+
+Bugfixes
+--------
+- `#5111 <https://github.com/rasahq/rasa/issues/5111>`_: Fixes ``Exception 'Loop' object has no attribute '_ready'`` error when running 
+  ``rasa init``.
+- `#5126 <https://github.com/rasahq/rasa/issues/5126>`_: Updated the end-to-end ValueError you recieve when you have a invalid story format to point
+  to the updated doc link.
+
+
 [1.6.1] - 2020-01-07
 ^^^^^^^^^^^^^^^^^^^^
 

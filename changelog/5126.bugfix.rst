@@ -1,2 +1,0 @@
-Updated the end-to-end ValueError you recieve when you have a invalid story format to point
-to the updated doc link.

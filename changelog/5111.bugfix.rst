@@ -1,2 +1,0 @@
-Fixes ``Exception 'Loop' object has no attribute '_ready'`` error when running 
-``rasa init``.
