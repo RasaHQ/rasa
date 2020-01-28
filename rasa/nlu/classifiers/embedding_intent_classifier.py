@@ -1059,8 +1059,6 @@ class DIET(RasaModel):
         else:
             pre, lm_mask_bool = (x, None)
 
-        last = mask * tf.math.cumprod(1 - mask, axis=1, exclusive=True, reverse=True)
-        pre = tf.concat([pre, last], -1)
         transformed = self._tf_layers["transformer"](pre, 1 - mask, self._training)
         transformed = tf.nn.relu(transformed)
 
