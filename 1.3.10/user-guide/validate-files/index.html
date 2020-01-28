@@ -271,11 +271,20 @@ You can run it with the following command:</p>
 </div>
 <p>The script above runs all the validations on your files. Here is the list of options to
 the script:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data validate [-h] [-v] [-vv] [--quiet] [--fail-on-warnings]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data validate [-h] [-v] [-vv] [--quiet]
+                          [--max-history MAX_HISTORY] [--fail-on-warnings]
                           [-d DOMAIN] [--data DATA]
+                          {stories} ...
+
+positional arguments:
+  {stories}
+    stories             Checks for inconsistencies in the story files.
 
 optional arguments:
   -h, --help            show this help message and exit
+  --max-history MAX_HISTORY
+                        Number of turns taken into account for story structure
+                        validation. (default: None)
   --fail-on-warnings    Fail validation on warnings and errors. If omitted
                         only errors will result in a non zero exit code.
                         (default: False)
