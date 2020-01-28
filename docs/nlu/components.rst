@@ -453,7 +453,7 @@ SklearnIntentClassifier
           kernels: ["linear"]
 
 DIETClassifier
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 :Short: Embedding intent classifier
 :Outputs: ``intent`` and ``intent_ranking``

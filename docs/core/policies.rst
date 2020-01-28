@@ -193,7 +193,7 @@ set the ``random_seed`` attribute of the ``KerasPolicy`` to any integer.
 .. _embedding_policy:
 
 TED Policy
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^
 
 Transformer Embedding Dialogue Policy (TEDP)
 
