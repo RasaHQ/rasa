@@ -18,8 +18,9 @@ install:
   # listed in README.md!
   - sudo apt-get update -qq
   - python -m pip install -U pip
-  - pip install --user poetry
+  - pip install poetry
   - poetry install
+  - poetry install --dev
   - make prepare-tests-ubuntu
   - poetry show
 before_script:
