@@ -163,7 +163,7 @@ class DIETClassifier(EntityExtractor):
         # dropout rate for rnn
         DROPRATE: 0.2,
         # use a unidirectional or bidirectional encoder
-        UNIDIRECTIONAL_ENCODER: True,
+        UNIDIRECTIONAL_ENCODER: False,
         # visualization of accuracy
         # how often to calculate training accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
@@ -178,7 +178,7 @@ class DIETClassifier(EntityExtractor):
         # should predict those tokens
         MASKED_LM: False,
         # if true apply dropout to sparse tensors
-        SPARSE_INPUT_DROPOUT: False,
+        SPARSE_INPUT_DROPOUT: True,
     }
     # end default properties (DOC MARKER - don't remove)
 
