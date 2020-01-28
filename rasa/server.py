@@ -1,3 +1,5 @@
+import asyncio
+import functools
 import logging
 import warnings
 import multiprocessing
@@ -736,9 +738,8 @@ def create_app(
 
     @app.post("/model/train")
     @requires_auth(app, auth_token)
-    async def train(request: Request):
+    async def train(request: Request) -> HTTPResponse:
         """Train a Rasa Model."""
-        from rasa.train import train_async
 
         validate_request_body(
             request,
@@ -779,12 +780,23 @@ def create_app(
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value += 1
 
-            model_path = await train_async(
+            info = dict(
                 domain=domain_path,
                 config=config_path,
                 training_files=temp_dir,
-                output_path=model_output_directory,
+                output=model_output_directory,
                 force_training=rjs.get("force", False),
+            )
+
+            loop = asyncio.get_event_loop()
+
+            from rasa import train as train_model
+
+            # Declare `model_path` upfront to avoid pytype `name-error`
+            model_path: Optional[Text] = None
+            # pass `None` to run in default executor
+            model_path = await loop.run_in_executor(
+                None, functools.partial(train_model, **info)
             )
 
             filename = os.path.basename(model_path) if model_path else None
