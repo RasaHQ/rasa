@@ -22,7 +22,7 @@ def test_core_models_in_directory(
 ) -> None:
     from rasa.core.test import compare_models_in_dir, plot_core_results
 
-    model_directory = _test_core_models_in_directory_input(model_directory)
+    model_directory = _get_sanitized_model_directory(model_directory)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(compare_models_in_dir(model_directory, stories, output))
@@ -32,7 +32,7 @@ def test_core_models_in_directory(
     plot_core_results(output, number_of_stories)
 
 
-def _test_core_models_in_directory_input(model_directory: Text) -> Text:
+def _get_sanitized_model_directory(model_directory: Text) -> Text:
     import rasa.model
 
     p = Path(model_directory)

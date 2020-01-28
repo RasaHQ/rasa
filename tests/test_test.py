@@ -8,17 +8,13 @@ import rasa.cli.utils
 
 def monkeypatch_get_latest_model(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
     latest_model = tmp_path / "my_test_model.tar.gz"
-
-    def mock_get_latest_model() -> Text:
-        return str(latest_model)
-
-    monkeypatch.setattr(rasa.model, "get_latest_model", mock_get_latest_model)
+    monkeypatch.setattr(rasa.model, "get_latest_model", lambda: str(latest_model))
 
 
-def test_test_core_models_in_directory_input_default(
+def test_get_sanitized_model_directory_when_not_passing_model(
     capsys: CaptureFixture, tmp_path: Path, monkeypatch: MonkeyPatch
 ):
-    from rasa.test import _test_core_models_in_directory_input
+    from rasa.test import _get_sanitized_model_directory
 
     monkeypatch_get_latest_model(tmp_path, monkeypatch)
 
@@ -28,18 +24,16 @@ def test_test_core_models_in_directory_input_default(
 
     # Input: default model file
     # => Should return containing directory
-    modeldir = rasa.model.get_latest_model()
-    p = Path(modeldir)
-    new_modeldir = _test_core_models_in_directory_input(modeldir)
+    new_modeldir = _get_sanitized_model_directory(str(latest_model))
     captured = capsys.readouterr()
-    assert captured.out == ""
-    assert new_modeldir == str(p.parent)
+    assert not captured.out
+    assert new_modeldir == str(latest_model.parent)
 
 
-def test_test_core_models_in_directory_input_file(
+def test_get_sanitized_model_directory_when_passing_model_file_explicitly(
     capsys: CaptureFixture, tmp_path: Path, monkeypatch: MonkeyPatch
 ):
-    from rasa.test import _test_core_models_in_directory_input
+    from rasa.test import _get_sanitized_model_directory
 
     monkeypatch_get_latest_model(tmp_path, monkeypatch)
 
@@ -49,22 +43,16 @@ def test_test_core_models_in_directory_input_file(
 
     # Input: some file
     # => Should return containing directory and print a warning
-    modeldir = str(other_model)
-    p = Path(modeldir)
-    new_modeldir = _test_core_models_in_directory_input(modeldir)
+    new_modeldir = _get_sanitized_model_directory(str(other_model))
     captured = capsys.readouterr()
-    rasa.cli.utils.print_warning(
-        "You passed a file as '--model'. Will use the directory containing this file instead."
-    )
-    warning = capsys.readouterr()
-    assert captured.out == warning.out
-    assert new_modeldir == str(p.parent)
+    assert captured.out
+    assert new_modeldir == str(other_model.parent)
 
 
-def test_test_core_models_in_directory_input_other(
+def test_get_sanitized_model_directory_when_passing_other_input(
     capsys: CaptureFixture, tmp_path: Path, monkeypatch: MonkeyPatch
 ):
-    from rasa.test import _test_core_models_in_directory_input
+    from rasa.test import _get_sanitized_model_directory
 
     monkeypatch_get_latest_model(tmp_path, monkeypatch)
 
@@ -72,7 +60,7 @@ def test_test_core_models_in_directory_input_other(
     # => Should return input
     modeldir = "random_dir"
     assert not Path(modeldir).is_file()
-    new_modeldir = _test_core_models_in_directory_input(modeldir)
+    new_modeldir = _get_sanitized_model_directory(modeldir)
     captured = capsys.readouterr()
-    assert captured.out == ""
+    assert not captured.out
     assert new_modeldir == modeldir
