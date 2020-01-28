@@ -2,7 +2,6 @@ import copy
 import logging
 import os
 import pickle
-from collections import defaultdict
 
 import numpy as np
 import tensorflow as tf
@@ -428,6 +427,9 @@ class TEDPolicy(Policy):
         )
 
 
+# pytype: disable=key-error
+
+
 class TED(RasaModel):
     def __init__(
         self,
@@ -463,7 +465,7 @@ class TED(RasaModel):
         self.metrics_to_log += ["loss", "acc"]
 
         # set up tf layers
-        self._tf_layers = defaultdict()
+        self._tf_layers = {}
         self._prepare_layers()
 
     def _prepare_layers(self) -> None:
@@ -592,3 +594,6 @@ class TED(RasaModel):
         )
 
         return {"action_scores": scores}
+
+
+# pytype: enable=key-error

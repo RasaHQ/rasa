@@ -1,5 +1,4 @@
 import logging
-from collections import defaultdict
 
 import numpy as np
 import os
@@ -814,6 +813,9 @@ class DIETClassifier(EntityExtractor):
         )
 
 
+# pytype: disable=key-error
+
+
 class DIET(RasaModel):
     def __init__(
         self,
@@ -839,7 +841,7 @@ class DIET(RasaModel):
         self.config = config
 
         # tf objects
-        self._tf_layers = defaultdict()
+        self._tf_layers = {}
         self._prepare_layers()
 
         # tf training
@@ -1210,3 +1212,6 @@ class DIET(RasaModel):
             out["e_ids"] = pred_ids
 
         return out
+
+
+# pytype: enable=key-error
