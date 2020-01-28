@@ -471,13 +471,13 @@ def replace_floats_with_decimals(obj: Union[List, Dict], round_digits: int = 9) 
     """
     if isinstance(obj, list):
         for i in range(len(obj)):
-            obj[i] = replace_floats_with_decimals(obj[i])
+            obj[i] = replace_floats_with_decimals(obj[i], round_digits)
         return obj
     elif isinstance(obj, dict):
         for j in obj:
-            obj[j] = replace_floats_with_decimals(obj[j])
+            obj[j] = replace_floats_with_decimals(obj[j], round_digits)
         return obj
-    elif isinstance(obj, float):
+    elif isinstance(obj, float) or isinstance(obj, Decimal):
         return round(Decimal(obj), round_digits)
     else:
         return obj
