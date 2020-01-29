@@ -7,7 +7,7 @@ Building Assistants
 
 .. edit-link::
 
-After following the basics of setting up an ssistant in the `Rasa Tutorial <https://rasa.com/docs/rasa/user-guide/rasa-tutorial/>`_, we'll
+After following the basics of setting up an assistant in the `Rasa Tutorial <https://rasa.com/docs/rasa/user-guide/rasa-tutorial/>`_, we'll
 now walk through building a basic FAQ chatbot and then build a bot that can handle
 contextual conversations.
 
@@ -33,7 +33,7 @@ We’re going to use content from `Sara <https://github.com/RasaHQ/rasa-demo>`_,
 assistant that, amongst other things, helps the user get started with the Rasa products.
 You should first install Rasa using the `Step-by-step Installation Guide <https://rasa.com/docs/rasa/user-guide/installation/#step-by-step-installation-guide>`_
 and then follow the `Rasa Tutorial <https://rasa.com/docs/rasa/user-guide/rasa-tutorial/>`_
-to get an initial bot going. With the basic bot from that tutorial, let’s remove any
+to make sure you know the basics. With the basic bot from that tutorial, let’s remove any
 mood bot content so that your ``nlu.md``, ``stories.md`` and ``domain.yml`` are empty.
 
 Memoization Policy
@@ -572,7 +572,9 @@ At this point, you already have a working form, so let’s try it out. Make sure
     url: "http://localhost:5055/webhook"
 
 Then start the action server in a new terminal window:
-rasa run actions
+.. code-block:: bash
+
+    rasa run actions
 
 Then you can retrain and talk to your bot:
 
@@ -595,7 +597,7 @@ use the ``from_text`` method to extract the users whole message:
 
 .. code-block:: python
 
-    def slot_mappings(self):
+    def slot_mappings(self) -> Dict[Text: Union[Dict, List[Dict]]]:
         # type: () -> Dict[Text: Union[Dict, List[Dict]]]
         """A dictionary to map required slots to
         - an extracted entity
