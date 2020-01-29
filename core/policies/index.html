@@ -143,7 +143,8 @@ require generalization." />
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Rasa Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/building-assistants/">Tutorial: Building Assistants</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
@@ -220,12 +221,13 @@ require generalization." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.6.2
+          viewing: 1.7.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.7.0/core/policies/">1.7.0</a>
               <a href="../.././1.6.2/core/policies/">1.6.2</a>
               <a href="../.././1.6.1/core/policies/">1.6.1</a>
               <a href="../.././1.6.0/core/policies/">1.6.0</a>
@@ -623,6 +625,9 @@ if <code class="docutils literal notranslate"><span class="pre">auto</span></cod
 <code class="docutils literal notranslate"><span class="pre">inner</span></code> for <code class="docutils literal notranslate"><span class="pre">softmax</span></code>, <code class="docutils literal notranslate"><span class="pre">cosine</span></code> for <code class="docutils literal notranslate"><span class="pre">margin</span></code>;</li>
 <li><code class="docutils literal notranslate"><span class="pre">loss_type</span></code> sets the type of the loss function,
 it should be either <code class="docutils literal notranslate"><span class="pre">softmax</span></code> or <code class="docutils literal notranslate"><span class="pre">margin</span></code>;</li>
+<li><code class="docutils literal notranslate"><span class="pre">ranking_length</span></code> defines the number of top confidences over
+which to normalize ranking results if <code class="docutils literal notranslate"><span class="pre">loss_type:</span> <span class="pre">&quot;softmax&quot;</span></code>;
+to turn off normalization set it to 0</li>
 <li><code class="docutils literal notranslate"><span class="pre">mu_pos</span></code> controls how similar the algorithm should try
 to make embedding vectors for correct intent labels,
 used only if <code class="docutils literal notranslate"><span class="pre">loss_type</span></code> is set to <code class="docutils literal notranslate"><span class="pre">margin</span></code>;</li>
@@ -740,6 +745,9 @@ The default values are defined in <code class="docutils literal notranslate"><sp
     <span class="s2">&quot;similarity_type&quot;</span><span class="p">:</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>  <span class="c1"># string &#39;auto&#39; or &#39;cosine&#39; or &#39;inner&#39;</span>
     <span class="c1"># the type of the loss function</span>
     <span class="s2">&quot;loss_type&quot;</span><span class="p">:</span> <span class="s2">&quot;softmax&quot;</span><span class="p">,</span>  <span class="c1"># string &#39;softmax&#39; or &#39;margin&#39;</span>
+    <span class="c1"># number of top actions to normalize scores for softmax loss_type</span>
+    <span class="c1"># set to 0 to turn off normalization</span>
+    <span class="s2">&quot;ranking_length&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
     <span class="c1"># how similar the algorithm should try</span>
     <span class="c1"># to make embedding vectors for correct labels</span>
     <span class="s2">&quot;mu_pos&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># should be 0.0 &lt; ... &lt; 1.0 for &#39;cosine&#39;</span>
@@ -812,10 +820,10 @@ simple example that dispatches a bot utterance and then reverts the interaction:
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">If you use the <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> to predict bot utterances directly (e.g.
+<p class="last">If you use the <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> to predict bot utterance actions directly (e.g.
 <code class="docutils literal notranslate"><span class="pre">triggers:</span> <span class="pre">utter_{}</span></code>), these interactions must go in your stories, as in this
 case there is no <code class="docutils literal notranslate"><span class="pre">UserUtteranceReverted()</span></code> and the
-intent and the mapped utterance will appear in the dialogue history.</p>
+intent and the mapped response action will appear in the dialogue history.</p>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -1049,7 +1057,7 @@ slots in the form are filled. For more information, see <a class="reference inte
             </div>
 
             <div class="copyright small">
-            &copy;2019, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
             
             </div>
 

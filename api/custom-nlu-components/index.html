@@ -139,7 +139,8 @@ analysis to integrate with open source bot framework Rasa." />
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Rasa Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/building-assistants/">Tutorial: Building Assistants</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
@@ -216,12 +217,13 @@ analysis to integrate with open source bot framework Rasa." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.6.2
+          viewing: 1.7.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.7.0/api/custom-nlu-components/">1.7.0</a>
               <a href="../.././1.6.2/api/custom-nlu-components/">1.6.2</a>
               <a href="../.././1.6.1/api/custom-nlu-components/">1.6.1</a>
               <a href="../.././1.6.0/api/custom-nlu-components/">1.6.0</a>
@@ -367,7 +369,10 @@ methods that you should implement:</p>
 82
 83
 84
-85</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa.nlu.components</span> <span class="kn">import</span> <span class="n">Component</span>
+85
+86
+87
+88</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa.nlu.components</span> <span class="kn">import</span> <span class="n">Component</span>
 <span class="kn">import</span> <span class="nn">typing</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Text</span><span class="p">,</span> <span class="n">Dict</span>
 
@@ -386,9 +391,12 @@ methods that you should implement:</p>
     <span class="n">provides</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="c1"># Which attributes on a message are required by this</span>
-    <span class="c1"># component. e.g. if requires contains &quot;tokens&quot;, than a</span>
+    <span class="c1"># component. E.g. if requires contains &quot;tokens&quot;, than a</span>
     <span class="c1"># previous component in the pipeline needs to have &quot;tokens&quot;</span>
     <span class="c1"># within the above described `provides` property.</span>
+    <span class="c1"># Use `any_of(&quot;option_1&quot;, &quot;option_2&quot;)` to define that either</span>
+    <span class="c1"># &quot;option_1&quot; or &quot;option_2&quot; needs to be present in the</span>
+    <span class="c1"># provided properties from the previous components.</span>
     <span class="n">requires</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="c1"># Defines the default configuration parameters of a component</span>
@@ -456,22 +464,16 @@ methods that you should implement:</p>
 </td></tr></table></div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p>If you create a custom tokenizer you should have the following entry in your default dict.</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span># add __CLS__ token to the end of the list of tokens
-&quot;use_cls_token&quot;: False,
-</pre></div>
-</div>
-<p class="last">To add the __CLS__ token you can use the function <a class="reference external" href="https://github.com/RasaHQ/rasa/blob/master/rasa/nlu/tokenizers/tokenizer.py#L64/">add_cls_token()</a>.</p>
+<p class="last">If you create a custom tokenizer you should implement the methods of <code class="docutils literal notranslate"><span class="pre">rasa.nlu.tokenizers.tokenizer.Tokenizer</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">train</span></code> and <code class="docutils literal notranslate"><span class="pre">process</span></code> methods are already implemented and you simply need to overwrite the <code class="docutils literal notranslate"><span class="pre">tokenize</span></code>
+method. <code class="docutils literal notranslate"><span class="pre">train</span></code> and <code class="docutils literal notranslate"><span class="pre">process</span></code> will automatically add a special token <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> to the end of list of tokens,
+which is needed further down the pipeline.</p>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p>If you create a custom featurizer you should have the following entry in your default dict.</p>
-<div class="last highlight-none notranslate"><div class="highlight"><pre><span></span># if True return a sequence of features (return vector has size
-# token-size x feature-dimension)
-# if False token-size will be equal to 1
-&quot;return_sequence&quot;: False,
-</pre></div>
-</div>
+<p class="last">If you create a custom featurizer you should return a sequence of features.
+E.g. your featurizer should return a matrix of size (number-of-tokens x feature-dimension).
+The feature vector of the <code class="docutils literal notranslate"><span class="pre">__CLS__</span></code> token should contain features for the complete message.</p>
 </div>
 <div class="section" id="component">
 <h2>Component<a class="headerlink" href="#component" title="Permalink to this headline">¶</a></h2>
@@ -692,7 +694,7 @@ determine which language is supported.)</p>
             </div>
 
             <div class="copyright small">
-            &copy;2019, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
             
             </div>
 

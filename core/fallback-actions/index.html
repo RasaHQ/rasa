@@ -139,7 +139,8 @@ your conversation fail gracefully with open source dialogue management." />
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Rasa Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/building-assistants/">Tutorial: Building Assistants</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
@@ -216,12 +217,13 @@ your conversation fail gracefully with open source dialogue management." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.6.2
+          viewing: 1.7.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.7.0/core/fallback-actions/">1.7.0</a>
               <a href="../.././1.6.2/core/fallback-actions/">1.6.2</a>
               <a href="../.././1.6.1/core/fallback-actions/">1.6.1</a>
               <a href="../.././1.6.0/core/fallback-actions/">1.6.0</a>
@@ -285,7 +287,7 @@ file as parameters of the <code class="docutils literal notranslate"><span class
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">action_default_fallback</span></code> is a default action in Rasa Core which sends the
-<code class="docutils literal notranslate"><span class="pre">utter_default</span></code> template message to the user. Make sure to specify
+<code class="docutils literal notranslate"><span class="pre">utter_default</span></code> response to the user. Make sure to specify
 the <code class="docutils literal notranslate"><span class="pre">utter_default</span></code> in your domain file. It will also revert back to the
 state of the conversation before the user message that caused the
 fallback, so that it will not influence the prediction of future actions.
@@ -364,8 +366,8 @@ this intent from the beginning.</li>
 <p>Rasa Core provides the default implementations of
 <code class="docutils literal notranslate"><span class="pre">action_default_ask_affirmation</span></code> and <code class="docutils literal notranslate"><span class="pre">action_default_ask_rephrase</span></code>.
 The default implementation of <code class="docutils literal notranslate"><span class="pre">action_default_ask_rephrase</span></code> action utters
-the response template <code class="docutils literal notranslate"><span class="pre">utter_ask_rephrase</span></code>, so be sure to specify this
-template in your domain file.
+the response <code class="docutils literal notranslate"><span class="pre">utter_ask_rephrase</span></code>, so be sure to specify this
+response in your domain file.
 The implementation of both actions can be overwritten with <a class="reference internal" href="../actions/#custom-actions"><span class="std std-ref">custom actions</span></a>.</p>
 <p>You can specify the core fallback action as well as the ultimate NLU
 fallback action as parameters to <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> in your
@@ -408,7 +410,7 @@ policy configuration file.</p>
             </div>
 
             <div class="copyright small">
-            &copy;2019, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
             
             </div>
 

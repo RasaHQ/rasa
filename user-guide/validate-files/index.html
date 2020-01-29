@@ -135,7 +135,8 @@
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../rasa-tutorial/">Rasa Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../building-assistants/">Tutorial: Building Assistants</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
@@ -212,12 +213,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.6.2
+          viewing: 1.7.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.7.0/user-guide/validate-files/">1.7.0</a>
               <a href="../.././1.6.2/user-guide/validate-files/">1.6.2</a>
               <a href="../.././1.6.1/user-guide/validate-files/">1.6.1</a>
               <a href="../.././1.6.0/user-guide/validate-files/">1.6.0</a>
@@ -302,8 +304,8 @@ which has the following methods:</p>
 <p><strong>verify_intents():</strong> Checks if intents listed in domain file are consistent with the NLU data.</p>
 <p><strong>verify_example_repetition_in_intents():</strong> Checks if there is no duplicated data among distinct intents at NLU data.</p>
 <p><strong>verify_intents_in_stories():</strong> Verification for intents in the stories, to check if they are valid.</p>
-<p><strong>verify_utterances():</strong> Checks domain file for consistency between utterance templates and utterances listed under
-actions.</p>
+<p><strong>verify_utterances():</strong> Checks domain file for consistency between responses listed in the <cite>responses</cite> section
+and the utterance actions you have defined.</p>
 <p><strong>verify_utterances_in_stories():</strong> Verification for utterances in stories, to check if they are valid.</p>
 <p><strong>verify_all():</strong> Runs all verifications above.</p>
 <p><strong>verify_domain_validity():</strong> Check if domain is valid.</p>
@@ -352,7 +354,7 @@ actions.</p>
             </div>
 
             <div class="copyright small">
-            &copy;2019, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
             
             </div>
 

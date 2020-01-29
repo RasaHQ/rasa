@@ -139,7 +139,8 @@ like resetting slots, scheduling reminder or pausing a conversation." />
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Rasa Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/building-assistants/">Tutorial: Building Assistants</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
@@ -216,12 +217,13 @@ like resetting slots, scheduling reminder or pausing a conversation." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.6.2
+          viewing: 1.7.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.7.0/api/events/">1.7.0</a>
               <a href="../.././1.6.2/api/events/">1.6.2</a>
               <a href="../.././1.6.1/api/events/">1.6.1</a>
               <a href="../.././1.6.0/api/events/">1.6.0</a>
@@ -281,18 +283,19 @@ your events should be formatted like the JSON objects on this page.</p>
 <li><a class="reference internal" href="#restart-a-conversation" id="id4">Restart a conversation</a></li>
 <li><a class="reference internal" href="#reset-all-slots" id="id5">Reset all Slots</a></li>
 <li><a class="reference internal" href="#schedule-a-reminder" id="id6">Schedule a reminder</a></li>
-<li><a class="reference internal" href="#pause-a-conversation" id="id7">Pause a conversation</a></li>
-<li><a class="reference internal" href="#resume-a-conversation" id="id8">Resume a conversation</a></li>
-<li><a class="reference internal" href="#force-a-followup-action" id="id9">Force a followup action</a></li>
+<li><a class="reference internal" href="#cancel-a-reminder" id="id7">Cancel a reminder</a></li>
+<li><a class="reference internal" href="#pause-a-conversation" id="id8">Pause a conversation</a></li>
+<li><a class="reference internal" href="#resume-a-conversation" id="id9">Resume a conversation</a></li>
+<li><a class="reference internal" href="#force-a-followup-action" id="id10">Force a followup action</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#automatically-tracked-events" id="id10">Automatically tracked events</a><ul>
-<li><a class="reference internal" href="#user-sent-message" id="id11">User sent message</a></li>
-<li><a class="reference internal" href="#bot-responded-message" id="id12">Bot responded message</a></li>
-<li><a class="reference internal" href="#undo-a-user-message" id="id13">Undo a user message</a></li>
-<li><a class="reference internal" href="#undo-an-action" id="id14">Undo an action</a></li>
-<li><a class="reference internal" href="#log-an-executed-action" id="id15">Log an executed action</a></li>
-<li><a class="reference internal" href="#start-a-new-conversation-session" id="id16">Start a new conversation session</a></li>
+<li><a class="reference internal" href="#automatically-tracked-events" id="id11">Automatically tracked events</a><ul>
+<li><a class="reference internal" href="#user-sent-message" id="id12">User sent message</a></li>
+<li><a class="reference internal" href="#bot-responded-message" id="id13">Bot responded message</a></li>
+<li><a class="reference internal" href="#undo-a-user-message" id="id14">Undo a user message</a></li>
+<li><a class="reference internal" href="#undo-an-action" id="id15">Undo an action</a></li>
+<li><a class="reference internal" href="#log-an-executed-action" id="id16">Log an executed action</a></li>
+<li><a class="reference internal" href="#start-a-new-conversation-session" id="id17">Start a new conversation session</a></li>
 </ul>
 </li>
 </ul>
@@ -416,15 +419,16 @@ values.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Schedule an action to be executed in the future.</p>
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Schedule an intent to be triggered in the future.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">evt</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;reminder&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;my_action&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;date_time&quot;</span><span class="p">:</span> <span class="s2">&quot;2018-09-03T11:41:10.128172&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_reminder&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;kill_on_user_msg&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+  <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;reminder&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;my_intent&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;entities&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;entity1&quot;</span><span class="p">:</span> <span class="s2">&quot;value1&quot;</span><span class="p">,</span> <span class="s2">&quot;entity2&quot;</span><span class="p">:</span> <span class="s2">&quot;value2&quot;</span><span class="p">},</span>
+  <span class="s2">&quot;date_time&quot;</span><span class="p">:</span> <span class="s2">&quot;2018-09-03T11:41:10.128172&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_reminder&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;kill_on_user_msg&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -439,15 +443,60 @@ values.</p>
 
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first last">When added to a tracker, core will schedule the action to be
-run in the future.</p>
+<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first last">When added to a tracker, Rasa Core will schedule the intent (and entities) to be
+triggered in the future, in place of a user input. You can link
+this intent to an action of your choice using the <a class="reference internal" href="../../core/policies/#mapping-policy"><span class="std std-ref">Mapping Policy</span></a>.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="cancel-a-reminder">
+<h3><a class="toc-backref" href="#id7">Cancel a reminder</a><a class="headerlink" href="#cancel-a-reminder" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Cancel one or more reminders.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">JSON:</th><td class="field-body"><div class="first highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">evt</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;cancel_reminder&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_reminder&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;my_intent&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;entity1&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;value1&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;entity2&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;value2&quot;</span><span class="p">},</span>
+    <span class="p">],</span>
+  <span class="s2">&quot;date_time&quot;</span><span class="p">:</span> <span class="s2">&quot;2018-09-03T11:41:10.128172&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Class:</th><td class="field-body"><dl class="first class">
+<dt id="rasa.core.events.ReminderCancelled">
+<em class="property">class </em><code class="descclassname">rasa.core.events.</code><code class="descname">ReminderCancelled</code><span class="sig-paren">(</span><em>name=None</em>, <em>intent=None</em>, <em>entities=None</em>, <em>timestamp=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.events.ReminderCancelled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cancel certain jobs.</p>
+</dd></dl>
+
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Effect:</th><td class="field-body"><p class="first">When added to a tracker, Rasa Core will cancel any outstanding reminders that
+match the <code class="docutils literal notranslate"><span class="pre">ReminderCancelled</span></code> event. For example,</p>
+<ul class="last simple">
+<li><code class="docutils literal notranslate"><span class="pre">ReminderCancelled(intent=&quot;greet&quot;)</span></code> cancels all reminders with intent <code class="docutils literal notranslate"><span class="pre">greet</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">ReminderCancelled(entities={...})</span></code> cancels all reminders with the given entities</li>
+<li><code class="docutils literal notranslate"><span class="pre">ReminderCancelled(&quot;...&quot;)</span></code> cancels the one unique reminder with the given name</li>
+<li><code class="docutils literal notranslate"><span class="pre">ReminderCancelled()</span></code> cancels all reminders</li>
+</ul>
 </td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="pause-a-conversation">
-<h3><a class="toc-backref" href="#id7">Pause a conversation</a><a class="headerlink" href="#pause-a-conversation" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id8">Pause a conversation</a><a class="headerlink" href="#pause-a-conversation" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -482,7 +531,7 @@ be set to <code class="docutils literal notranslate"><span class="pre">True</spa
 </table>
 </div>
 <div class="section" id="resume-a-conversation">
-<h3><a class="toc-backref" href="#id8">Resume a conversation</a><a class="headerlink" href="#resume-a-conversation" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id9">Resume a conversation</a><a class="headerlink" href="#resume-a-conversation" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -517,7 +566,7 @@ predicting actions again.</p>
 </table>
 </div>
 <div class="section" id="force-a-followup-action">
-<h3><a class="toc-backref" href="#id9">Force a followup action</a><a class="headerlink" href="#force-a-followup-action" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id10">Force a followup action</a><a class="headerlink" href="#force-a-followup-action" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -551,9 +600,9 @@ to be a fixed one.</p>
 </div>
 </div>
 <div class="section" id="automatically-tracked-events">
-<h2><a class="toc-backref" href="#id10">Automatically tracked events</a><a class="headerlink" href="#automatically-tracked-events" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id11">Automatically tracked events</a><a class="headerlink" href="#automatically-tracked-events" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="user-sent-message">
-<h3><a class="toc-backref" href="#id11">User sent message</a><a class="headerlink" href="#user-sent-message" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id12">User sent message</a><a class="headerlink" href="#user-sent-message" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -598,7 +647,7 @@ to be a fixed one.</p>
 </table>
 </div>
 <div class="section" id="bot-responded-message">
-<h3><a class="toc-backref" href="#id12">Bot responded message</a><a class="headerlink" href="#bot-responded-message" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id13">Bot responded message</a><a class="headerlink" href="#bot-responded-message" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -633,7 +682,7 @@ to be a fixed one.</p>
 </table>
 </div>
 <div class="section" id="undo-a-user-message">
-<h3><a class="toc-backref" href="#id13">Undo a user message</a><a class="headerlink" href="#undo-a-user-message" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id14">Undo a user message</a><a class="headerlink" href="#undo-a-user-message" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -670,7 +719,7 @@ and the bot is waiting for a new user message.</p>
 </table>
 </div>
 <div class="section" id="undo-an-action">
-<h3><a class="toc-backref" href="#id14">Undo an action</a><a class="headerlink" href="#undo-an-action" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id15">Undo an action</a><a class="headerlink" href="#undo-an-action" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -709,7 +758,7 @@ action.</p>
 </table>
 </div>
 <div class="section" id="log-an-executed-action">
-<h3><a class="toc-backref" href="#id15">Log an executed action</a><a class="headerlink" href="#log-an-executed-action" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id16">Log an executed action</a><a class="headerlink" href="#log-an-executed-action" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -746,7 +795,7 @@ to the latest <code class="docutils literal notranslate"><span class="pre">Turn<
 </table>
 </div>
 <div class="section" id="start-a-new-conversation-session">
-<h3><a class="toc-backref" href="#id16">Start a new conversation session</a><a class="headerlink" href="#start-a-new-conversation-session" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id17">Start a new conversation session</a><a class="headerlink" href="#start-a-new-conversation-session" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -809,7 +858,7 @@ triggers an <code class="docutils literal notranslate"><span class="pre">ActionS
             </div>
 
             <div class="copyright small">
-            &copy;2019, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
             
             </div>
 

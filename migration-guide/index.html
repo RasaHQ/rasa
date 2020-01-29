@@ -139,7 +139,8 @@ Rasa Core and how you can migrate from one version to another." />
         <div class="sphinxsidebarwrapper"><p class="caption"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../user-guide/installation/">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../user-guide/rasa-tutorial/">Rasa Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user-guide/rasa-tutorial/">Tutorial: Rasa Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user-guide/building-assistants/">Tutorial: Building Assistants</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../user-guide/command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../user-guide/architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
@@ -216,12 +217,13 @@ Rasa Core and how you can migrate from one version to another." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.6.2
+          viewing: 1.7.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href=".././1.7.0/migration-guide/">1.7.0</a>
               <a href=".././1.6.2/migration-guide/">1.6.2</a>
               <a href=".././1.6.1/migration-guide/">1.6.1</a>
               <a href=".././1.6.0/migration-guide/">1.6.0</a>
@@ -267,6 +269,18 @@ Rasa Core and how you can migrate from one version to another." />
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/migration-guide.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
   </div><p>This page contains information about changes between major versions and
 how you can migrate from one version to another.</p>
+<div class="section" id="rasa-1-6-to-rasa-1-7">
+<span id="migration-to-rasa-1-7"></span><h2>Rasa 1.6 to Rasa 1.7<a class="headerlink" href="#rasa-1-6-to-rasa-1-7" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="general">
+<h3>General<a class="headerlink" href="#general" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>By default, the <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code>, <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>, and <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> will
+now normalize the top 10 confidence results if the <code class="docutils literal notranslate"><span class="pre">loss_type</span></code> is <code class="docutils literal notranslate"><span class="pre">&quot;softmax&quot;</span></code> (which has been
+default since 1.3, see <a class="reference internal" href="#migration-to-rasa-1-3"><span class="std std-ref">Rasa 1.2 to Rasa 1.3</span></a>). This is configurable via the <code class="docutils literal notranslate"><span class="pre">ranking_length</span></code>
+configuration parameter; to turn off normalization to match the previous behavior, set <code class="docutils literal notranslate"><span class="pre">ranking_length:</span> <span class="pre">0</span></code>.</li>
+</ul>
+</div>
+</div>
 <div class="section" id="rasa-1-2-to-rasa-1-3">
 <span id="migration-to-rasa-1-3"></span><h2>Rasa 1.2 to Rasa 1.3<a class="headerlink" href="#rasa-1-2-to-rasa-1-3" title="Permalink to this headline">¶</a></h2>
 <div class="admonition warning">
@@ -275,8 +289,8 @@ how you can migrate from one version to another.</p>
 It is not possible to load previously trained models. Please make sure to retrain a
 model before trying to use it with this improved version.</p>
 </div>
-<div class="section" id="general">
-<h3>General<a class="headerlink" href="#general" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id2">
+<h3>General<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Default parameters of <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> are changed. See <a class="reference internal" href="../nlu/components/#components"><span class="std std-ref">Components</span></a> for details.
 Architecture implementation is changed as well, so <strong>old trained models cannot be loaded</strong>.
@@ -318,8 +332,8 @@ identifier. Make sure you don’t include <code class="docutils literal notransl
 It is not possible to load previously trained models. Please make sure to retrain a
 model before trying to use it with this improved version.</p>
 </div>
-<div class="section" id="id2">
-<h3>General<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id3">
+<h3>General<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>The scripts in <code class="docutils literal notranslate"><span class="pre">rasa.core</span></code> and <code class="docutils literal notranslate"><span class="pre">rasa.nlu</span></code> can no longer be executed. To train, test, run, … an NLU or Core
 model, you should now use the command line interface <code class="docutils literal notranslate"><span class="pre">rasa</span></code>. The functionality is, for the most part, the same as before.
@@ -392,7 +406,7 @@ any kind of data files or directory to be <code class="docutils literal notransl
             </div>
 
             <div class="copyright small">
-            &copy;2019, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
+            &copy;2020, Rasa Technologies | <a href="https://rasa.com/imprint/" target="_blank">Imprint</a> | <a href="https://rasa.com/privacy-policy/" target="_blank">Privacy Policy</a>
             
             </div>
 
