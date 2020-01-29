@@ -1,6 +1,6 @@
 import numpy as np
 import typing
-from typing import Any, List, Text
+from typing import Any, List, Text, Optional
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurizer import Featurizer
@@ -39,7 +39,10 @@ class MitieFeaturizer(Featurizer):
         return example.get(TOKENS_NAMES[attribute])
 
     def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
