@@ -57,11 +57,14 @@ def parse_changelog(tag_name: Text) -> Text:
         if consuming_version:
             version_lines.append(line)
 
-    return "\n".join(version_lines)
+    # drop the first lines (version headline, not needed for GH)
+    return "\n".join(version_lines[2:]).strip()
 
 
 def convert_rst_to_md(text):
-    return pypandoc.convert_text(text, "md", format="rst")
+    return pypandoc.convert_text(
+        text, "md", format="rst", extra_args=["--wrap=preserve"]
+    )
 
 
 def main():
