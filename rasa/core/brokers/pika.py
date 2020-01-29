@@ -422,7 +422,8 @@ class PikaProducer(PikaEventBroker):
             "The `PikaProducer` class is deprecated, please inherit "
             "from `PikaEventBroker` instead. `PikaProducer` will be "
             "removed in future Rasa versions.",
-            DeprecationWarning,
+            FutureWarning,
+            docs="/api/event-brokers/",
         )
         super(PikaProducer, self).__init__(
             host, username, password, port, queue, loglevel

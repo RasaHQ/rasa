@@ -98,7 +98,8 @@ class KafkaProducer(KafkaEventBroker):
             "The `KafkaProducer` class is deprecated, please inherit "
             "from `KafkaEventBroker` instead. `KafkaProducer` will be "
             "removed in future Rasa versions.",
-            DeprecationWarning,
+            FutureWarning,
+            docs="/api/event-brokers/",
         )
 
         super(KafkaProducer, self).__init__(

@@ -89,6 +89,7 @@ class SQLProducer(SQLEventBroker):
             "The `SQLProducer` class is deprecated, please inherit "
             "from `SQLEventBroker` instead. `SQLProducer` will be "
             "removed in future Rasa versions.",
-            DeprecationWarning,
+            FutureWarning,
+            docs="/api/event-brokers/",
         )
         super(SQLProducer, self).__init__(dialect, host, port, db, username, password)
