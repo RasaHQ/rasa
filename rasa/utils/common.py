@@ -310,7 +310,7 @@ def raise_warning(
 
     original_formatter = warnings.formatwarning
 
-    def should_show_source_line():
+    def should_show_source_line() -> bool:
         if "stacklevel" not in kwargs:
             if category == UserWarning or category is None:
                 return False
@@ -318,7 +318,13 @@ def raise_warning(
                 return False
         return True
 
-    def formatwarning(message, category, filename, lineno, line=None):
+    def formatwarning(
+        message: Text,
+        category: Optional[Type[Warning]],
+        filename: Text,
+        lineno: Optional[int],
+        line: Optional[Text] = None,
+    ):
         """Function to format a warning the standard way."""
 
         if not should_show_source_line():
@@ -327,8 +333,10 @@ def raise_warning(
             else:
                 line = ""
 
-        msg = original_formatter(message, category, filename, lineno, line)
-        return utils.wrap_with_color(msg, color=bcolors.WARNING)
+        formatted_message = original_formatter(
+            message, category, filename, lineno, line
+        )
+        return utils.wrap_with_color(formatted_message, color=bcolors.WARNING)
 
     if "stacklevel" not in kwargs:
         # try to set useful defaults for the most common warning categories
