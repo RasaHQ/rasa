@@ -5,6 +5,7 @@ import typing
 import numpy as np
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, NamedTuple
 
+import rasa.nlu.utils.bilou_utils as bilou_utils
 from rasa.nlu.config import InvalidConfigError, RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
@@ -143,7 +144,10 @@ class CRFEntityExtractor(EntityExtractor):
         return ["sklearn_crfsuite", "sklearn"]
 
     def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
 
         # checks whether there is at least one
@@ -167,7 +171,7 @@ class CRFEntityExtractor(EntityExtractor):
         dataset = []
 
         for example in examples:
-            entity_offsets = self._convert_example(example)
+            entity_offsets = bilou_utils.map_message_entities(example)
             dataset.append(self._from_json_to_crf(example, entity_offsets))
 
         return dataset
@@ -193,13 +197,6 @@ class CRFEntityExtractor(EntityExtractor):
             message.get(ENTITIES_ATTRIBUTE, []) + extracted,
             add_to_output=True,
         )
-
-    @staticmethod
-    def _convert_example(example: Message) -> List[Tuple[int, int, Text]]:
-        def convert_entity(entity):
-            return entity["start"], entity["end"], entity["entity"]
-
-        return [convert_entity(ent) for ent in example.get(ENTITIES_ATTRIBUTE, [])]
 
     def extract_entities(self, message: Message) -> List[Dict[Text, Any]]:
         """Take a sentence and return entities in json format"""
@@ -266,16 +263,6 @@ class CRFEntityExtractor(EntityExtractor):
         }
 
     @staticmethod
-    def _entity_from_label(label) -> Text:
-        return label[2:]
-
-    @staticmethod
-    def _bilou_from_label(label) -> Optional[Text]:
-        if len(label) >= 2 and label[1] == "-":
-            return label[0].upper()
-        return None
-
-    @staticmethod
     def _tokens_without_cls(message: Message) -> List[Token]:
         # [:-1] to remove the CLS token from the list of tokens
         return message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
@@ -286,7 +273,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         # get information about the first word, tagged with `B-...`
         label, confidence = self.most_likely_entity(word_idx, entities)
-        entity_label = self._entity_from_label(label)
+        entity_label = bilou_utils.entity_name_from_tag(label)
 
         while not finished:
             label, label_confidence = self.most_likely_entity(ent_word_idx, entities)
@@ -323,12 +310,12 @@ class CRFEntityExtractor(EntityExtractor):
         self, word_idx: int, entities: List[Any]
     ) -> Tuple[Any, Any, Any]:
         label, confidence = self.most_likely_entity(word_idx, entities)
-        entity_label = self._entity_from_label(label)
+        entity_label = bilou_utils.entity_name_from_tag(label)
 
-        if self._bilou_from_label(label) == "U":
+        if bilou_utils.bilou_from_tag(label) == "U":
             return word_idx, confidence, entity_label
 
-        elif self._bilou_from_label(label) == "B":
+        elif bilou_utils.bilou_from_tag(label) == "B":
             # start of multi word-entity need to represent whole extent
             ent_word_idx, confidence = self._find_bilou_end(word_idx, entities)
             return ent_word_idx, confidence, entity_label
@@ -509,7 +496,7 @@ class CRFEntityExtractor(EntityExtractor):
             ents = [l[5] for l in gold.orig_annot]
         else:
             doc_or_tokens = self._tokens_without_cls(message)
-            ents = self._bilou_tags_from_offsets(doc_or_tokens, entity_offsets)
+            ents = bilou_utils.bilou_tags_from_offsets(doc_or_tokens, entity_offsets)
 
         # collect badly annotated examples
         collected = []
@@ -531,44 +518,11 @@ class CRFEntityExtractor(EntityExtractor):
 
         if not self.component_config["BILOU_flag"]:
             for i, label in enumerate(ents):
-                if self._bilou_from_label(label) in {"B", "I", "U", "L"}:
+                if bilou_utils.bilou_from_tag(label) in {"B", "I", "U", "L"}:
                     # removes BILOU prefix from label
-                    ents[i] = self._entity_from_label(label)
+                    ents[i] = bilou_utils.entity_name_from_tag(label)
 
         return self._from_text_to_crf(message, ents)
-
-    @staticmethod
-    def _bilou_tags_from_offsets(tokens, entities, missing: Text = "O") -> List[Text]:
-        # From spacy.spacy.GoldParse, under MIT License
-        starts = {token.start: i for i, token in enumerate(tokens)}
-        ends = {token.end: i for i, token in enumerate(tokens)}
-        bilou = ["-" for _ in tokens]
-        # Handle entity cases
-        for start_char, end_char, label in entities:
-            start_token = starts.get(start_char)
-            end_token = ends.get(end_char)
-            # Only interested if the tokenization is correct
-            if start_token is not None and end_token is not None:
-                if start_token == end_token:
-                    bilou[start_token] = "U-%s" % label
-                else:
-                    bilou[start_token] = "B-%s" % label
-                    for i in range(start_token + 1, end_token):
-                        bilou[i] = "I-%s" % label
-                    bilou[end_token] = "L-%s" % label
-        # Now distinguish the O cases from ones where we miss the tokenization
-        entity_chars = set()
-        for start_char, end_char, label in entities:
-            for i in range(start_char, end_char):
-                entity_chars.add(i)
-        for n, token in enumerate(tokens):
-            for i in range(token.start, token.end):
-                if i in entity_chars:
-                    break
-            else:
-                bilou[n] = missing
-
-        return bilou
 
     @staticmethod
     def __pattern_of_token(message: Message, i: int) -> Dict:
