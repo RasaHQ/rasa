@@ -104,7 +104,7 @@ def _add_data_validate_parsers(
         help="Checks for inconsistencies in the story files.",
     )
     _append_story_structure_arguments(story_structure_parser)
-    story_structure_parser.set_defaults(func=validate_files, stories_only=True)
+    story_structure_parser.set_defaults(func=validate_stories)
     arguments.set_validator_arguments(story_structure_parser)
 
 
@@ -133,7 +133,7 @@ def split_nlu_data(args) -> None:
     test.persist(args.out, filename=f"test_data.{fformat}")
 
 
-def validate_files(args: argparse.Namespace) -> None:
+def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:
     loop = asyncio.get_event_loop()
     file_importer = RasaFileImporter(
         domain_path=args.domain, training_data_paths=args.data
@@ -141,9 +141,9 @@ def validate_files(args: argparse.Namespace) -> None:
 
     validator = loop.run_until_complete(Validator.from_importer(file_importer))
 
-    if "stories_only" in args:
+    if stories_only:
         all_good = _validate_story_structure(validator, args)
-    elif "max_history" not in args or args.max_history is None:
+    elif not args.max_history:
         logger.info(
             "Will not test for inconsistencies in stories since "
             "you did not provide a value for `--max-history`."
@@ -159,6 +159,10 @@ def validate_files(args: argparse.Namespace) -> None:
     if not all_good:
         rasa.cli.utils.print_error("Project validation completed with errors.")
         sys.exit(1)
+
+
+def validate_stories(args: argparse.Namespace) -> None:
+    validate_files(args, stories_only=True)
 
 
 def _validate_domain(validator: Validator) -> bool:
