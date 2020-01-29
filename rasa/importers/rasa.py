@@ -1,17 +1,17 @@
 import logging
-import warnings
 import os
-from typing import Optional, Text, Union, List, Dict
+from typing import Dict, List, Optional, Text, Union
 
 from rasa import data
 from rasa.core.domain import Domain, InvalidDomain
-from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
-from rasa.core.training.structures import StoryGraph
+from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.training.dsl import StoryFileReader
+from rasa.core.training.structures import StoryGraph
 from rasa.importers import utils
 from rasa.importers.importer import TrainingDataImporter
 from rasa.nlu.training_data import TrainingData
 from rasa.utils import io as io_utils
+from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class RasaFileImporter(TrainingDataImporter):
             domain = Domain.load(self._domain_path)
             domain.check_missing_templates()
         except InvalidDomain as e:
-            warnings.warn(
+            raise_warning(
                 f"Loading domain from '{self._domain_path}' failed. Using "
                 f"empty domain. Error: '{e.message}'"
             )

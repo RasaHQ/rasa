@@ -343,6 +343,11 @@ class TEDPolicy(Policy):
         """Persists the policy to a storage."""
 
         if self.model is None:
+            logger.debug(
+                "Method `persist(...)` was called "
+                "without a trained model present. "
+                "Nothing to persist then!"
+            )
             return
 
         file_name = "TED_policy"

@@ -807,6 +807,8 @@ MitieEntityExtractor
         pipeline:
         - name: "MitieEntityExtractor"
 
+.. _SpacyEntityExtractor:
+
 SpacyEntityExtractor
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -1004,5 +1006,5 @@ DucklingHTTPExtractor
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
           # Timeout for receiving response from http url of the running duckling server
-          # if not set the default timeout of duckling http url is set to 3 seconds. 
+          # if not set the default timeout of duckling http url is set to 3 seconds.
           timeout : 3
