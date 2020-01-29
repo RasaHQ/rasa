@@ -148,7 +148,7 @@ class TEDPolicy(Policy):
         priority: int = DEFAULT_POLICY_PRIORITY,
         max_history: Optional[int] = None,
         model: Optional[RasaModel] = None,
-        **kwargs: Any,
+        **kwargs: Dict[Text, Any],
     ) -> None:
         """Declare instant variables with default values"""
 
@@ -157,14 +157,14 @@ class TEDPolicy(Policy):
 
         super().__init__(featurizer, priority)
 
-        self._load_params(kwargs)
+        self._load_params(**kwargs)
 
         self.model = model
 
         self._label_data = None
         self.data_example = None
 
-    def _load_params(self, kwargs: Dict[Text, Any]) -> None:
+    def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         self.config = copy.deepcopy(self.defaults)
         self.config.update(kwargs)
 
