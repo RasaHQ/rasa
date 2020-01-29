@@ -1,9 +1,9 @@
-:desc: How to build simple FAQ and contextual assistants 
+:desc: How to build simple FAQ and contextual assistants
 
 .. _building-assistants:
 
-Building Assistants
-===================
+Tutorial: Building Assistants
+=============================
 
 .. edit-link::
 
@@ -20,11 +20,10 @@ Building a simple FAQ assistant
 -------------------------------
 
 FAQ assistants are the simplest assistants to build and a good place to get started.
-These assistants allow the user to ask a simple question and get a response. In this
-guide, we’re going to build a basic FAQ assistant using features of Rasa designed
-specifically for this type of assistant.
+These assistants allow the user to ask a simple question and get a response. We’re going to
+build a basic FAQ assistant using features of Rasa designed specifically for this type of assistant.
 
-In this tutorial we’re going to cover the following topics:
+In this section we’re going to cover the following topics:
 
     - Responding to simple intents with the MemoizationPolicy
     - Handling FAQs using the ResponseSelector
@@ -33,8 +32,19 @@ We’re going to use content from `Sara <https://github.com/RasaHQ/rasa-demo>`_,
 assistant that, amongst other things, helps the user get started with the Rasa products.
 You should first install Rasa using the `Step-by-step Installation Guide <https://rasa.com/docs/rasa/user-guide/installation/#step-by-step-installation-guide>`_
 and then follow the `Rasa Tutorial <https://rasa.com/docs/rasa/user-guide/rasa-tutorial/>`_
-to make sure you know the basics. With the basic bot from that tutorial, let’s remove any
-mood bot content so that your ``nlu.md``, ``stories.md`` and ``domain.yml`` are empty.
+to make sure you know the basics.
+
+To prepare for this tutorial, we're going to create a new directory and start a
+new Rasa project.
+
+.. code-block:: bash
+
+    mkdir rasa-assistant
+    rasa init
+
+
+Let's remove the default content from this bot, so that the ``nlu.md``, ``stories.md``
+and ``domain.yml`` are empty.
 
 Memoization Policy
 ^^^^^^^^^^^^^^^^^^
@@ -44,7 +54,7 @@ of turns. The number of "turns" includes messages the user sent, and actions the
 assistant performed. For the purpose of a simple, context-less FAQ bot, we only need
 to pay attention to the last message the user sent, and therefore we’ll set that to ``1``.
 
-You can do this by editing your ``config.yml`` file as follows: 
+You can do this by editing your ``config.yml`` file as follows:
 
 .. code-block:: yaml
 
@@ -96,7 +106,8 @@ We’ll also need to add the intents, actions and templates to our ``domain.yml`
      utter_bye:
        - text: Bye!
 
-Finally, we’ll copy over some NLU data from Sara into our ``nlu.md`` (more can be found `here <https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md>`__): 
+Finally, we’ll copy over some NLU data from Sara into our ``nlu.md``
+(more can be found `here <https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md>`__):
 
 .. code-block:: md
 
@@ -136,7 +147,7 @@ You can now train a first model and test the bot, by running the following comma
    rasa train
    rasa shell
 
-This bot should now be able to reply to the intents we defined consistently, and in any order.  
+This bot should now be able to reply to the intents we defined consistently, and in any order.
 
 While it's good to test the bot interactively, we should also add end to end test cases that
 can later be included as part of our CI/CD system. `End to end stories <https://rasa.com/docs/rasa/user-guide/evaluating-models/#end-to-end-evaluation>`_
@@ -180,16 +191,16 @@ an exception that and stop the pipeline.
 Response Selectors
 ^^^^^^^^^^^^^^^^^^
 
-The ResponseSelector NLU component is designed to make it easier to handle dialogue
-elements like Small Talk and FAQ messages in a simple manner. By using the ResponseSelector,
-you only need one story to handle all faqs, instead of adding new stories every time you
-want to increase your bot's scope. 
+The :ref:`response-selector` NLU component is designed to make it easier to handle dialogue
+elements like :ref:`small-talk` and FAQ messages in a simple manner. By using the ResponseSelector,
+you only need one story to handle all FAQs, instead of adding new stories every time you
+want to increase your bot's scope.
 
 People often ask Sara different questions surrounding the Rasa products, so let’s
 start with three intents: ``ask_channels``, ``ask_languages``, and ``ask_rasax``.
 We’re going to copy over some NLU data from the `Sara training data <https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md>`_
 into our ``nlu.md``. It’s important that these intents have an ``faq/`` prefix, so they’re
-recognised as the faq intent by the ResponseSelector: 
+recognised as the faq intent by the ResponseSelector:
 
 .. code-block:: md
 
@@ -283,7 +294,7 @@ Next we’ll write a story so that Core knows which action to predict:
 
 This prediction is handled by the MemoizationPolicy, as we described earlier.
 
-After all of the changes are done, train a new model and test the modified FAQs: 
+After all of the changes are done, train a new model and test the modified FAQs:
 
 .. code-block:: bash
 
@@ -318,7 +329,7 @@ Building contextual assistants
 ------------------------------
 
 Whether you’ve just created an FAQ bot or are starting from scratch, the next step is to expand
-your bot to handle contextual conversations. 
+your bot to handle contextual conversations.
 
 In this tutorial we’re going to cover a variety of topics:
 
@@ -327,8 +338,8 @@ In this tutorial we’re going to cover a variety of topics:
     - Failing gracefully
     - More complex contextual conversations
 
-Please make sure you’ve got all the data from the :ref:`build-faq-assistant` before starting this tutorial.
-You will need to make some adjustments to your configuration file, since we now need to pay attention to context: 
+Please make sure you’ve got all the data from the :ref:`build-faq-assistant` section before starting this part.
+You will need to make some adjustments to your configuration file, since we now need to pay attention to context:
 
 .. code-block:: yaml
 
@@ -336,8 +347,9 @@ You will need to make some adjustments to your configuration file, since we now 
    - name: MemoizationPolicy
    - name: MappingPolicy
 
-We removed the ``max_history: 1`` configuration, because the default is ``5``, meaning Core will pay
-attention to the past 5 turns when making a prediction (see explanation of `max history <https://rasa.com/docs/rasa/core/policies/#max-history>`_).
+We removed the ``max_history: 1`` configuration. The default is ``5``,
+meaning Core will pay attention to the past 5 turns when making a prediction
+(see explanation of `max history <https://rasa.com/docs/rasa/core/policies/#max-history>`_).
 
 Business logic
 ^^^^^^^^^^^^^^
@@ -347,18 +359,18 @@ from the user before being able to do something for them. This is called slot fi
 example, in the banking industry you may have a user goal of transferring money, where you
 need to collect information about which account to transfer from, whom to transfer to and the
 amount to transfer. This type of behaviour can and should be handled in a rule based way, as it
-is clear how this information should be collected. 
+is clear how this information should be collected.
 
 For this type of use case, we can use Forms and our FormPolicy. The `FormPolicy <https://rasa.com/docs/rasa/core/policies/#form-policy>`_
-works by predicting the form as the next action until all information is gathered from the user. 
+works by predicting the form as the next action until all information is gathered from the user.
 
 As an example, we will build out the SalesForm from Sara. The user wants to contact
 our sales team, and for this we need to gather the following pieces of information:
 
-    - Their job 
+    - Their job
     - Their bot use case
     - Their name
-    - Their email 
+    - Their email
     - Their budget
     - Their company
 
@@ -377,7 +389,7 @@ returns the name that will be used in our stories:
            return "sales_form"
 
 Next we have to define the ``required_slots`` method which specifies which pieces of information to
-ask for, i.e. which slots to fill. 
+ask for, i.e. which slots to fill.
 
 .. code-block:: python
 
@@ -451,7 +463,7 @@ In this case, we only tell the user that we’ll be in touch with them, however
 usually you would send this information to an API or a database. See the `rasa-demo <https://github.com/RasaHQ/rasa-demo/blob/master/demo/actions.py#L69>`_
 for an example of how to store this information in a spreadsheet.
 
-We’ll need to add the form we just created to a new section in the domain file: 
+We’ll need to add the form we just created to a new section in the domain file:
 
 .. code-block:: yaml
 
@@ -480,7 +492,7 @@ You can view the full intent `here <https://github.com/RasaHQ/rasa-demo/blob/mas
 We will also create an intent called ``inform`` which covers any sort of information the user
 provides to the bot. *The reason we put all this under one intent, is because there is no
 real intent behind providing information, only the entity is important.* Add the following
-data to your NLU file: 
+data to your NLU file:
 
 .. code-block:: md
 
@@ -519,8 +531,9 @@ data to your NLU file:
    - we're building a [conversational assistant](use_case) for our employees to book meeting rooms.
 
 .. note::
-    entities like business_email + budget would usually be handled by pretrained entity extractors
-    (link to spacy/duckling), but for this tutorial we want to avoid any additional setup.
+    Entities like ``business_email`` and ``budget`` would usually be handled by pretrained entity extractors
+    (e.g. :ref:`DucklingHTTPExtractor` or :ref:`SpacyEntityExtractor`), but for this tutorial
+    we want to avoid any additional setup.
 
 The intents and entities will need to be added to your domain as well:
 
@@ -586,7 +599,7 @@ Then you can retrain and talk to your bot:
 This simple form will work out of the box, however you will likely want to add a bit
 more capability to handle different situations. One example of this is validating
 slots, to make sure the user provided information correctly (read more about it
-`here <https://rasa.com/docs/rasa/core/forms/#validating-user-input>`__). 
+`here <https://rasa.com/docs/rasa/core/forms/#validating-user-input>`__).
 
 Another example is that you may want to fill slots from things other than entities
 of the same name. E.g. for the "use case" situation in our Form, we would expect
@@ -610,24 +623,32 @@ Now our bot will extract the full user message when asking for the use case slot
 and we don’t need to use the ``use_case`` entity defined before.
 
 All of the methods within a form can be customised to handle different branches in your
-business logic. Read more about this `here <https://rasa.com/docs/rasa/core/forms/#>`__.
-However, you should make sure not to handle any unhappy paths inside the form.
+business logic. Read more about this `here <https://rasa.com/docs/rasa/core/forms/#>`_.
+However, you should make sure not to handle any unhappy paths inside the form. These
+should be handled by writing regular stories, so your model can learn this behaviour.
 
 Handling unexpected user input
-------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 All expected user inputs should be handled by the form we defined above, i.e. if the
 user provides the information the bot asks for. However, in real situations, the user
 will often behave differently. In this section we’ll go through various forms of
 "interjections" and how to handle them within Rasa.
 
+The decision to handle these types of user input should always come from reviewing
+real conversations. You should first build part of your assistant, test it with real users
+(whether that's your end user, or your colleague) and then add what's missing. You shouldn't
+try to implement every possible edge case that you think might happen, because in the end
+your users may never actually behave in that way. `Rasa X <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`_
+is a tool that can help you review conversations and make these types of decisions.
+
 Generic interjections
-^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""
 
 If you have generic interjections that should always have the same single response no
-matter the context, you can use the MappingPolicy to handle these. It will always
+matter the context, you can use the :ref:`mapping-policy` to handle these. It will always
 predict the same action for an intent, and when combined with a forgetting mechanism,
-you don’t need to write any stories either. 
+you don’t need to write any stories either.
 
 The greet intent is a good example where we will always give the same response and
 yet we don’t want the intent to affect the dialogue history. To do this, the response
@@ -685,8 +706,6 @@ Then we can retrain the model, and try out our additions:
    rasa train
    rasa shell
 
-You can read more about the MappingPolicy on the Policies page
-
 To handle FAQs defined with retrieval actions, you can add a simple story that will be handled by the MemoizationPolicy:
 
 .. code-block:: md
@@ -700,12 +719,14 @@ To handle FAQs defined with retrieval actions, you can add a simple story that w
        - sales_form
        - form{"name": null}
 
-This will break out of the form and deal with the users FAQ question, and then return back to the original task. 
+This will break out of the form and deal with the users FAQ question, and then return back to the original task.
 If you find it difficult to write stories in this format, you can always use `Interactive Learning <https://rasa.com/docs/rasa/core/interactive-learning/>`_
 to help you create them.
 
 As always, make sure to add an end to end test case to your `test_stories.md` file.
+
 Contextual questions
+""""""""""""""""""""
 
 You can also handle `contextual questions <https://rasa.com/docs/rasa/dialogue-elements/completing-tasks/#contextual-questions)>`_,
 like the user asking the question "Why do you need to know that". The user could ask this based on a certain slot
@@ -718,7 +739,7 @@ To handle this, we need to make the ``requested_slot`` featurized, and assign it
    slots:
      requested_slot:
        type: categorical
-       values: 
+       values:
          - business_email
          - company
          - person_name
@@ -795,17 +816,17 @@ Then you can retrain your bot and test it again:
     You will need to add a story for each of the values of the ``requested_slot`` slot
     for the bot to handle every case of "Why do you need to know that"
 
-Don’t forget to add a few end to end stories to your ``test_stories.md`` for testing as well. 
+Don’t forget to add a few end to end stories to your ``test_stories.md`` for testing as well.
 
 Failing gracefully
-------------------
+^^^^^^^^^^^^^^^^^^
 
 Even if you design your bot perfectly, users will inevitably say things to your
 assistant that you did not anticipate. In these cases, your assistant will fail,
-and it’s important you ensure it does so gracefully.  
+and it’s important you ensure it does so gracefully.
 
 Fallback policy
-^^^^^^^^^^^^^^^
+"""""""""""""""
 
 One of the most common failures is low NLU confidence, which is handled very nicely with
 the TwoStageFallbackPolicy. You can enable it by adding the following to your configuration file,
@@ -825,7 +846,7 @@ and adding the ``out_of_scope`` intent to your domain file:
 
 When the nlu confidence falls below the defined threshold, the bot will prompt the user to
 rephrase their message. If the bot isn’t able to get their message three times, there
-will be a final action where the bot can e.g. hand off to a human. 
+will be a final action where the bot can e.g. hand off to a human.
 
 To try this out, retrain your model and send a message like "order me a pizza" to your bot:
 
@@ -836,20 +857,21 @@ To try this out, retrain your model and send a message like "order me a pizza" t
 
 There are also a bunch of ways in which you can customise this policy. In Sara, our demo bot,
 we’ve customised it to suggest intents to the user within a certain confidence range to make
-it easier for the user to give the bot the information it needs. 
+it easier for the user to give the bot the information it needs.
 
-This is done by customising the action ``ActionDefaultAskAffirmation`` as shown in the `Sara rasa-demo action server <https://github.com/RasaHQ/rasa-demo/blob/6212face2a6b5fd36b0726e43df018c76ef2279a/demo/actions.py#L430>`_
+This is done by customising the action ``ActionDefaultAskAffirmation`` as shown in the `Sara rasa-demo action server <https://github.com/RasaHQ/rasa-demo/blob/master/demo/actions.py#L443>`_
 We define some intent mappings to make it more intuitive to the user what an intent means.
 
 .. image:: /_static/images/intent_mappings.png
    :width: 240
    :alt: Intent Mappings
+   :align: center
 
 Out of scope intent
-^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""
 
 It is good practice to also handle questions you know your users may ask, but you don’t necessarily have a skill
-implemented yet. 
+implemented yet.
 
 You can define an ``out_of_scope`` intent to handle generic out of scope requests, like "I’m hungry" and have
 the bot respond with a default message like "Sorry, I can’t handle that request":
@@ -891,7 +913,7 @@ Going one step further, if you observe your users asking for certain things, tha
 want to turn into a user goal in future, you can handle these as separate intents, to let
 the user know you’ve understood their message, but don’t have a solution quite yet. E.g.,
 let’s say the user asks "I want to apply for a job at Rasa", we can then reply with
-"I understand you’re looking for a job, but I’m afraid I can’t handle that skill yet." 
+"I understand you’re looking for a job, but I’m afraid I can’t handle that skill yet."
 
 .. code-block:: md
 
@@ -899,7 +921,7 @@ let’s say the user asks "I want to apply for a job at Rasa", we can then reply
      utter_job_not_handled
 
 More complex contextual conversations
--------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Not every user goal you define will fall under the category of business logic. For the
 other cases you will need to use stories and context to help the user achieve their goal.
@@ -907,9 +929,10 @@ other cases you will need to use stories and context to help the user achieve th
 If we take the example of the "getting started" skill from Sara, we want to give them
 different information based on whether they’ve built an AI assistant before and are
 migrating from a different tool etc. This can be done quite simply with stories and
-the concept of `max history <https://rasa.com/docs/rasa/core/policies/#max-history>`_.  
+the concept of `max history <https://rasa.com/docs/rasa/core/policies/#max-history>`_.
 
 .. code-block:: md
+  :emphasize-lines: 4,5,6,7,8,24,25,26,27,28
 
    ## new to rasa + built a bot before
    * how_to_get_started
@@ -959,20 +982,20 @@ question by storing this information in a slot.
      - utter_built_bot_before
 
 For this to work, keep in mind that the slot has to be featurized in your domain
-file. This time we can use the "text" slot type, as we only care about whether the
-`slot was set or not <https://rasa.com/docs/rasa/core/slots/>`_. 
+file. This time we can use the ``text`` slot type, as we only care about whether the
+`slot was set or not <https://rasa.com/docs/rasa/core/slots/>`_.
 
 AugmentedMemoizationPolicy
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""
 
 To make your bot more robust to interjections, you can replace the MemoizationPolicy
 with the AugmentedMemoizationPolicy. It works the same way as the MemoizationPolicy,
 but if no exact match is found it additionally has a mechanism that forgets a certain
 amount of steps in the conversation history to find a match in your stories (read more
-`here <https://rasa.com/docs/rasa/core/policies/#augmented-memoization-policy>`__) 
+`here <https://rasa.com/docs/rasa/core/policies/#augmented-memoization-policy>`__)
 
 Using ML to generalise
-^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""
 
 Aside from the more rule-based policies we described above, Core also has some ML
 policies you can use. These come in as an additional layer in your policy configuration,
@@ -981,12 +1004,12 @@ to understand that using these policies does not mean letting go of control over
 assistant.** If a rule based policy is able to make a prediction, that prediction will
 always have a higher priority (read more `here <https://rasa.com/docs/rasa/core/policies/#action-selection>`__) and predict the next action. The
 ML based policies give your assistant the chance not to fail, whereas if they are not
-used your assistant will definitely fail, like in state machine based dialogue systems.  
+used your assistant will definitely fail, like in state machine based dialogue systems.
 
 These types of unexpected user behaviors are something our `EmbeddingPolicy <https://blog.rasa.com/attention-dialogue-and-learning-reusable-patterns/>`_ deals with
 very well. It can learn to bring the user back on track after some
 interjections during the main user goal the user is trying to complete. For example,
-in the conversation below (extracted from a conversation on Rasa X): 
+in the conversation below (extracted from a conversation on `Rasa X <https://rasa.com/docs/rasa-x/user-guide/review-conversations/>`_):
 
 .. code-block:: md
 
@@ -1012,7 +1035,7 @@ in the conversation below (extracted from a conversation on Rasa X):
 Here we can see the user has completed a few chitchat tasks first, and then ultimately
 asks how they can get started with Rasa X. The EmbeddingPolicy correctly predicts that
 Rasa X should be explained to the user, and then also takes them down the getting started
-path, without asking all the qualifying questions first. 
+path, without asking all the qualifying questions first.
 
 Since the ML policy generalized well in this situation, it makes sense to add this story
 to your training data to continuously improve your bot and help the ML generalize even
