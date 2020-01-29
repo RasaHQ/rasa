@@ -58,7 +58,7 @@ class EndToEndReader(MarkdownReader):
                 "Encountered invalid end-to-end format for message "
                 "`{}`. Please visit the documentation page on "
                 "end-to-end evaluation at {}/user-guide/evaluating-models/"
-                "end-to-end-evaluation/".format(line, DOCS_BASE_URL)
+                "#end-to-end-evaluation/".format(line, DOCS_BASE_URL)
             )
 
         intent = match.group(2)

@@ -73,6 +73,8 @@ install_requires = [
     "multidict==4.6.1",
     "aiohttp~=3.5",
     "questionary>=1.1.0",
+    # needed because of https://github.com/prompt-toolkit/python-prompt-toolkit/issues/951
+    "prompt-toolkit<3.0",
     "python-socketio>=4.3.1",
     # the below can be unpinned when python-socketio pins >=3.9.3
     "python-engineio>=3.9.3",
