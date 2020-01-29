@@ -4,6 +4,7 @@ import typing
 import warnings
 from typing import Any, Dict, Optional, Text, List, Tuple
 
+from rasa.constants import DOCS_URL_MIGRATE_GOOGLE
 import rasa.utils.io
 from rasa.nlu import utils
 from rasa.nlu.training_data.formats.readerwriter import TrainingDataReader
@@ -43,7 +44,7 @@ class DialogflowReader(TrainingDataReader):
         if not examples_js:
             raise_warning(
                 f"No training examples found for dialogflow file {fn}!",
-                docs="/migrate-from/google-dialogflow-to-rasa/",
+                docs=DOCS_URL_MIGRATE_GOOGLE,
             )
             return TrainingData()
         elif fformat == DIALOGFLOW_INTENT:

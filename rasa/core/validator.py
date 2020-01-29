@@ -2,6 +2,7 @@ import logging
 from collections import defaultdict
 from typing import List, Set, Text
 
+from rasa.constants import DOCS_URL_DOMAINS, DOCS_URL_ACTIONS
 from rasa.core.constants import UTTER_PREFIX
 from rasa.core.domain import Domain
 from rasa.core.training.dsl import ActionExecuted, StoryStep, UserUttered
@@ -53,7 +54,7 @@ class Validator:
                     f"There is a message in the training data labelled with intent "
                     f"'{intent}'. This intent is not listed in your domain. You "
                     f"should need to add that intent to your domain file!",
-                    docs="/core/domains/",
+                    docs=DOCS_URL_DOMAINS,
                 )
                 everything_is_alright = False
 
@@ -105,7 +106,7 @@ class Validator:
                     f"The intent '{story_intent}' is used in your stories, but it "
                     f"is not listed in the domain file. You should add it to your "
                     f"domain file!",
-                    docs="/core/domains/",
+                    docs=DOCS_URL_DOMAINS,
                 )
                 everything_is_alright = False
 
@@ -147,7 +148,7 @@ class Validator:
                         f"The action is listed in your domains action list, but "
                         f"there is no template defined with this name. You should "
                         f"add a template with this key.",
-                        docs="/core/actions/#utterance-actions",
+                        docs=DOCS_URL_ACTIONS + "#utterance-actions",
                     )
                     everything_is_alright = False
 
@@ -182,7 +183,7 @@ class Validator:
                         f"but is not a valid utterance action. Please make sure "
                         f"the action is listed in your domain and there is a "
                         f"template defined with its name.",
-                        docs="/core/actions/#utterance-actions",
+                        docs=DOCS_URL_ACTIONS + "#utterance-actions",
                     )
                     everything_is_alright = False
                 stories_utterances.add(event.action_name)

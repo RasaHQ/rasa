@@ -3,7 +3,7 @@ import typing
 from collections import defaultdict
 from typing import Any, Dict, Text
 
-from rasa.constants import DOCS_BASE_URL
+from rasa.constants import DOCS_BASE_URL, DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.training_data.formats.readerwriter import (
     JsonTrainingDataReader,
     TrainingDataWriter,
@@ -44,7 +44,7 @@ class RasaReader(JsonTrainingDataReader):
                 "putting all your examples "
                 "into the 'common_examples' section.",
                 FutureWarning,
-                docs="/nlu/training-data-format/",
+                docs=DOCS_URL_TRAINING_DATA_NLU,
             )
 
         all_examples = common_examples + intent_examples + entity_examples

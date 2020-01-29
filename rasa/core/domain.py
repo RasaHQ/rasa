@@ -15,7 +15,11 @@ from rasa.utils.common import (
 )
 import rasa.utils.io
 from rasa.cli.utils import bcolors, wrap_with_color
-from rasa.constants import DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION, DOMAIN_SCHEMA_FILE
+from rasa.constants import (
+    DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+    DOMAIN_SCHEMA_FILE,
+    DOCS_URL_DOMAINS,
+)
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
 from rasa.core.actions.action import Action  # pytype: disable=pyi-error
@@ -135,7 +139,7 @@ class Domain:
                 "no longer work in future versions of Rasa. Please replace "
                 "'templates' with 'responses'",
                 FutureWarning,
-                docs="/core/domains/",
+                docs=DOCS_URL_DOMAINS,
             )
             utter_templates = cls.collect_templates(data.get("templates", {}))
 
@@ -167,7 +171,7 @@ class Domain:
                 "session expiration time of 60 minutes in Rasa version 2.0 if not "
                 "configured otherwise.",
                 FutureWarning,
-                docs="/core/domains/#session-configuration",
+                docs=DOCS_URL_DOMAINS + "#session-configuration",
             )
             session_expiration_time = 0
 
@@ -315,7 +319,7 @@ class Domain:
                         f"either a '- text: ' or a '- custom: ' "
                         f"attribute to be a proper template.",
                         FutureWarning,
-                        docs="/core/domains/#utterance-templates",
+                        docs=DOCS_URL_DOMAINS + "#utterance-templates",
                     )
                     validated_variations.append({"text": t})
                 elif "text" not in t and "custom" not in t:
@@ -603,7 +607,7 @@ class Domain:
                 f" excluded for intent '{intent_name}'."
                 f"Excluding takes precedence in this case. "
                 f"Please resolve that ambiguity.",
-                docs="/core/domains/#ignoring-entities-for-certain-intents",
+                docs=DOCS_URL_DOMAINS + "#ignoring-entities-for-certain-intents",
             )
 
         return entity_names.intersection(wanted_entities)
@@ -972,7 +976,7 @@ class Domain:
                     f"action in the domain file, but there is "
                     f"no matching utterance template. Please "
                     f"check your domain.",
-                    docs="/core/domains/#utterance-templates",
+                    docs=DOCS_URL_DOMAINS + "#utterance-templates",
                 )
 
     def is_empty(self) -> bool:

@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Any, Dict, Optional, Text
 
+from rasa.constants import DOCS_URL_EVENT_BROKERS
 from rasa.core.brokers.broker import EventBroker
 from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
@@ -90,6 +91,6 @@ class SQLProducer(SQLEventBroker):
             "from `SQLEventBroker` instead. `SQLProducer` will be "
             "removed in future Rasa versions.",
             FutureWarning,
-            docs="/api/event-brokers/",
+            docs=DOCS_URL_EVENT_BROKERS,
         )
         super(SQLProducer, self).__init__(dialect, host, port, db, username, password)

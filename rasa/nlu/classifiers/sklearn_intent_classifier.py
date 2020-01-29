@@ -5,6 +5,8 @@ import warnings
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 import numpy as np
+
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu import utils
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
@@ -93,7 +95,7 @@ class SklearnIntentClassifier(Component):
                 "Can not train an intent classifier as there are not "
                 "enough intents. Need at least 2 different intents. "
                 "Skipping training of intent classifier.",
-                docs="/nlu/training-data-format/",
+                docs=DOCS_URL_TRAINING_DATA_NLU,
             )
         else:
             y = self.transform_labels_str2num(labels)

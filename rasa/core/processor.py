@@ -6,6 +6,8 @@ from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import numpy as np
+
+from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_DOMAINS
 from rasa.core import jobs
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -99,7 +101,7 @@ class MessageProcessor:
             raise_warning(
                 "No policy ensemble or domain set. Skipping action prediction "
                 "and execution.",
-                docs="/core/policies/",
+                docs=DOCS_URL_POLICIES,
             )
             return None
 
@@ -129,7 +131,7 @@ class MessageProcessor:
             raise_warning(
                 "No policy ensemble or domain set. Skipping action prediction."
                 "You should set a policy before training a model.",
-                docs="/core/policies/",
+                docs=DOCS_URL_POLICIES,
             )
             return None
 
@@ -402,7 +404,7 @@ class MessageProcessor:
                     f"Interpreter parsed an intent '{intent}' "
                     f"which is not defined in the domain. "
                     f"Please make sure all intents are listed in the domain.",
-                    docs="/core/domains",
+                    docs=DOCS_URL_DOMAINS,
                 )
 
         entities = parse_data["entities"] or []
@@ -413,7 +415,7 @@ class MessageProcessor:
                     f"Interpreter parsed an entity '{entity}' "
                     f"which is not defined in the domain. "
                     f"Please make sure all entities are listed in the domain.",
-                    docs="/core/domains",
+                    docs=DOCS_URL_DOMAINS,
                 )
 
     def _get_action(self, action_name) -> Optional[Action]:

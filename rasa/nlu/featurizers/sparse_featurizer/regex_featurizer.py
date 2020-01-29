@@ -5,6 +5,8 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Union
 
 import numpy as np
+
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 import rasa.utils.io
 import rasa.utils.io
 import scipy.sparse
@@ -131,7 +133,7 @@ class RegexFeaturizer(Featurizer):
                 f"Directly including lookup tables as a list is deprecated since Rasa "
                 f"1.6.",
                 FutureWarning,
-                docs="/nlu/training-data-format/#lookup-tables",
+                docs=DOCS_URL_TRAINING_DATA_NLU + "#lookup-tables",
             )
 
         # otherwise it's a file path.

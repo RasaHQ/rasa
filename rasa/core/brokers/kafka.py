@@ -3,6 +3,7 @@ import logging
 import warnings
 from typing import Optional
 
+from rasa.constants import DOCS_URL_EVENT_BROKERS
 from rasa.core.brokers.broker import EventBroker
 from rasa.utils.common import raise_warning
 from rasa.utils.io import DEFAULT_ENCODING
@@ -99,7 +100,7 @@ class KafkaProducer(KafkaEventBroker):
             "from `KafkaEventBroker` instead. `KafkaProducer` will be "
             "removed in future Rasa versions.",
             FutureWarning,
-            docs="/api/event-brokers/",
+            docs=DOCS_URL_EVENT_BROKERS,
         )
 
         super(KafkaProducer, self).__init__(

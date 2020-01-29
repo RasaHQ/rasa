@@ -6,7 +6,7 @@ import ruamel.yaml as yaml
 from typing import Any, Dict, List, Optional, Text, Union, Tuple
 
 import rasa.utils.io
-from rasa.constants import DEFAULT_CONFIG_PATH
+from rasa.constants import DEFAULT_CONFIG_PATH, DOCS_URL_PIPELINE
 from rasa.nlu.utils import json_to_string
 from rasa.utils.common import raise_warning
 
@@ -73,7 +73,7 @@ def component_config_from_pipeline(
             f"Tried to get configuration value for component "
             f"number {index} which is not part of your pipeline. "
             f"Returning `defaults`.",
-            docs="/nlu/choosing-a-pipeline/",
+            docs=DOCS_URL_PIPELINE,
         )
         return override_defaults(defaults, {})
 
@@ -112,7 +112,7 @@ class RasaNLUModelConfig:
                     f"longer work with future versions of "
                     f"Rasa.",
                     FutureWarning,
-                    docs="/nlu/choosing-a-pipeline/",
+                    docs=DOCS_URL_PIPELINE,
                 )
                 template_name = new_names[template_name]
 
@@ -185,7 +185,7 @@ class RasaNLUModelConfig:
             raise_warning(
                 f"Tried to set configuration value for component "
                 f"number {index} which is not part of the pipeline.",
-                docs="/nlu/choosing-a-pipeline/",
+                docs=DOCS_URL_PIPELINE,
             )
 
     def override(self, config) -> None:

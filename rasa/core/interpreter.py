@@ -8,6 +8,7 @@ import re
 import os
 from typing import Text, List, Dict, Any, Union, Optional, Tuple
 
+from rasa.constants import DOCS_URL_STORIES
 from rasa.core import constants
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
@@ -110,7 +111,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                 f"as a json object. Make sure the intent "
                 f"is followed by a proper json object. "
                 f"Error: {e}",
-                docs="/core/stories/",
+                docs=DOCS_URL_STORIES,
             )
             return []
 
@@ -127,7 +128,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                 f"'{confidence_str}'. Make sure the intent confidence is an "
                 f"@ followed by a decimal number. "
                 f"Error: {e}",
-                docs="/core/stories/",
+                docs=DOCS_URL_STORIES,
             )
             return 0.0
 

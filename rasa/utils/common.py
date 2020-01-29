@@ -15,7 +15,6 @@ from rasa.constants import (
     ENV_LOG_LEVEL,
     ENV_LOG_LEVEL_LIBRARIES,
     GLOBAL_USER_CONFIG_PATH,
-    DOCS_BASE_URL,
 )
 
 logger = logging.getLogger(__name__)
@@ -324,7 +323,7 @@ def raise_warning(
 
         if not should_show_source_line():
             if docs:
-                line = f"More info at {DOCS_BASE_URL}{docs}"
+                line = f"More info at {docs}"
             else:
                 line = ""
 

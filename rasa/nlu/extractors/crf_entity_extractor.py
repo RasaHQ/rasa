@@ -17,7 +17,11 @@ from rasa.nlu.constants import (
     SPACY_DOCS,
     ENTITIES_ATTRIBUTE,
 )
-from rasa.constants import DOCS_BASE_URL
+from rasa.constants import (
+    DOCS_BASE_URL,
+    DOCS_URL_TRAINING_DATA_NLU,
+    DOCS_URL_COMPONENTS,
+)
 from rasa.utils.common import raise_warning
 
 try:
@@ -527,7 +531,7 @@ class CRFEntityExtractor(EntityExtractor):
                     f"annotated training examples end at token "
                     f"boundaries (e.g. don't include trailing "
                     f"whitespaces or punctuation).",
-                    docs="/nlu/training-data-format/",
+                    docs=DOCS_URL_TRAINING_DATA_NLU,
                 )
                 collected = []
 
@@ -601,7 +605,7 @@ class CRFEntityExtractor(EntityExtractor):
                 f"does not match number of tokens ({len(tokens)}). Set "
                 f"'return_sequence' to true in the corresponding featurizer in order "
                 f"to make use of the features in 'CRFEntityExtractor'.",
-                docs="/nlu/components/#crfentityextractor",
+                docs=DOCS_URL_COMPONENTS + "#crfentityextractor",
             )
             return None
 

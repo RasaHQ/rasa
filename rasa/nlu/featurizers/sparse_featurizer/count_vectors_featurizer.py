@@ -3,6 +3,8 @@ import os
 import re
 import scipy.sparse
 from typing import Any, Dict, List, Optional, Text
+
+from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.utils.common import raise_warning
 
 from sklearn.feature_extraction.text import CountVectorizer
@@ -296,7 +298,7 @@ class CountVectorsFeaturizer(Featurizer):
                 f"The out of vocabulary token '{self.OOV_token}' was configured, but "
                 f"could not be found in any one of the NLU message training examples. "
                 f"All unseen words will be ignored during prediction.",
-                docs="/nlu/components/#countvectorsfeaturizer",
+                docs=DOCS_URL_COMPONENTS + "#countvectorsfeaturizer",
             )
 
     def _get_all_attributes_processed_tokens(

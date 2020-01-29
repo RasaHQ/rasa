@@ -2,6 +2,7 @@ import logging
 import warnings
 from typing import Any, Dict, List, Optional, Text, Tuple
 
+from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.config import RasaNLUModelConfig
@@ -181,7 +182,7 @@ class ConveRTFeaturizer(Featurizer):
                 f"corpus of conversations, this featurizer should only be "
                 f"used if your training data is in english language. "
                 f"However, you are training in '{config.language}'.",
-                docs="/nlu/components/#convertfeaturizer",
+                docs=DOCS_URL_COMPONENTS + "#convertfeaturizer",
             )
 
         batch_size = 64

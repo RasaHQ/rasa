@@ -8,6 +8,7 @@ import logging
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
+from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
@@ -186,7 +187,7 @@ def get_component_class(component_name: Text) -> Type["Component"]:
                 f"you should change it to its new class name: "
                 f"`{old_style_names[component_name]}`.",
                 FutureWarning,
-                docs="/nlu/components/",
+                docs=DOCS_URL_COMPONENTS,
             )
             component_name = old_style_names[component_name]
 

@@ -7,7 +7,11 @@ from collections import deque
 from threading import Thread
 from typing import Callable, Deque, Dict, Optional, Text, Union
 
-from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
+from rasa.constants import (
+    DEFAULT_LOG_LEVEL_LIBRARIES,
+    ENV_LOG_LEVEL_LIBRARIES,
+    DOCS_URL_EVENT_BROKERS,
+)
 from rasa.core.brokers.broker import EventBroker
 from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
@@ -423,7 +427,7 @@ class PikaProducer(PikaEventBroker):
             "from `PikaEventBroker` instead. `PikaProducer` will be "
             "removed in future Rasa versions.",
             FutureWarning,
-            docs="/api/event-brokers/",
+            docs=DOCS_URL_EVENT_BROKERS,
         )
         super(PikaProducer, self).__init__(
             host, username, password, port, queue, loglevel

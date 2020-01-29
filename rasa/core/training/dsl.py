@@ -7,7 +7,7 @@ import warnings
 from typing import Optional, List, Text, Any, Dict, TYPE_CHECKING, Iterable
 
 import rasa.utils.io as io_utils
-from rasa.constants import DOCS_BASE_URL
+from rasa.constants import DOCS_BASE_URL, DOCS_URL_STORIES, DOCS_URL_DOMAINS
 from rasa.core import utils
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.events import ActionExecuted, UserUttered, Event, SlotSet
@@ -94,7 +94,7 @@ class StoryStepBuilder:
                     f"End or intermediate checkpoints "
                     f"do not support conditions! "
                     f"(checkpoint: {name})",
-                    docs="/core/stories/#checkpoints",
+                    docs=DOCS_URL_STORIES + "#checkpoints",
                 )
             additional_steps = []
             for t in self.current_steps:
@@ -304,7 +304,7 @@ class StoryFileReader:
         else:
             raise_warning(
                 f"Failed to parse action line '{line}'. Ignoring this line.",
-                docs="/core/stories/",
+                docs=DOCS_URL_STORIES,
             )
             return "", {}
 
@@ -420,7 +420,7 @@ class StoryFileReader:
                 "Please, make sure that all intents are "
                 "listed in your domain yaml.",
                 UserWarning,
-                docs="https://rasa.com/docs/rasa/core/domains/",
+                docs=DOCS_URL_DOMAINS,
             )
         return utterance
 

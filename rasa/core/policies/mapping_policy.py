@@ -5,6 +5,7 @@ import os
 import typing
 from typing import Any, List, Text, Optional
 
+from rasa.constants import DOCS_URL_POLICIES
 import rasa.utils.io
 
 from rasa.core.actions.action import (
@@ -110,7 +111,7 @@ class MappingPolicy(Policy):
                         f"MappingPolicy tried to predict unknown "
                         f"action '{action}'. Make sure all mapped actions are "
                         f"listed in the domain.",
-                        docs="/core/policies/#mapping-policy",
+                        docs=DOCS_URL_POLICIES + "#mapping-policy",
                     )
                 else:
                     prediction[idx] = 1

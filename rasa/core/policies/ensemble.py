@@ -10,7 +10,7 @@ from typing import Text, Optional, Any, List, Dict, Tuple, Set
 
 import rasa.core
 import rasa.utils.io
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL, DOCS_URL_POLICIES
 
 from rasa.core import utils, training
 from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
@@ -112,7 +112,7 @@ class PolicyEnsemble:
                     f"in PolicyEnsemble. When personalizing "
                     f"priorities, be sure to give all policies "
                     f"different priorities.",
-                    docs="/core/policies/",
+                    docs=DOCS_URL_POLICIES,
                 )
 
     def train(

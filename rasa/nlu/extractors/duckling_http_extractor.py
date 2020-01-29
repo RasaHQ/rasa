@@ -6,6 +6,7 @@ import os
 import requests
 from typing import Any, List, Optional, Text, Dict
 
+from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.constants import ENTITIES_ATTRIBUTE
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
@@ -184,7 +185,7 @@ class DucklingHTTPExtractor(EntityExtractor):
                 "`url` configuration in the config "
                 "file nor is `RASA_DUCKLING_HTTP_URL` "
                 "set as an environment variable. No entities will be extracted!",
-                docs="/nlu/components/#ducklinghttpextractor",
+                docs=DOCS_URL_COMPONENTS + "#ducklinghttpextractor",
             )
 
         extracted = self.add_extractor_name(extracted)

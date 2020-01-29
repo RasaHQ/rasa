@@ -7,6 +7,7 @@ import random
 from tqdm import tqdm
 from typing import Optional, List, Text, Set, Dict, Tuple
 
+from rasa.constants import DOCS_URL_STORIES
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -659,7 +660,7 @@ class TrainingDataGenerator:
                 "All your story blocks start with some checkpoint. "
                 "There should be at least one story block "
                 "that starts without any checkpoint.",
-                docs="/core/stories/#stories",
+                docs=DOCS_URL_STORIES + "#stories",
             )
 
         # running through the steps first will result in only one warning
@@ -687,7 +688,7 @@ class TrainingDataGenerator:
                     f"Remove this checkpoint or add "
                     f"story blocks that end "
                     f"with this checkpoint.",
-                    docs="/core/stories/#checkpoints",
+                    docs=DOCS_URL_STORIES + "#checkpoints",
                 )
 
         for cp, block_name in collected_end:
@@ -698,5 +699,5 @@ class TrainingDataGenerator:
                     f"Remove this checkpoint or add "
                     f"story blocks that start "
                     f"with this checkpoint.",
-                    docs="/core/stories/#checkpoints",
+                    docs=DOCS_URL_STORIES + "#checkpoints",
                 )
