@@ -95,7 +95,7 @@ class KeywordIntentClassifier(Component):
                         f"keyword of intent '{intent2}."
                         f" '{keyword1}' will be removed from the list of keywords.\n"
                         f"Remove (one of) the conflicting keywords from the"
-                        " training data.",
+                        f" training data.",
                         docs=DOCS_URL_COMPONENTS + "#keyword-intent-classifier",
                     )
         for intent, keyword in ambiguous_mappings:
