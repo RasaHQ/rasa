@@ -37,7 +37,7 @@ slots:
   requested_slot:
     type: unfeaturized
 
-templates:
+responses:
   utter_ask_cuisine:
     - text: "what cuisine?"
   utter_ask_num_people:
@@ -75,14 +75,6 @@ templates:
     - text: "Hello! I am restaurant search assistant! How can I help?"
   utter_iamabot:
     - text: "I am a bot, powered by Rasa."
-
-actions:
-  - utter_slots_values
-  - utter_noworries
-  - utter_chitchat
-  - utter_ask_continue
-  - utter_greet
-  - utter_iamabot
 
 forms:
   - restaurant_form

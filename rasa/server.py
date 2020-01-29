@@ -1,3 +1,5 @@
+import asyncio
+import functools
 import logging
 import warnings
 import multiprocessing
@@ -11,6 +13,7 @@ from typing import Any, Callable, List, Optional, Text, Union
 
 from sanic import Sanic, response
 from sanic.request import Request
+from sanic.response import HTTPResponse
 from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
@@ -581,6 +584,13 @@ def create_app(
                 {"parameter": "name", "in": "body"},
             )
 
+        # Deprecation warning
+        warnings.warn(
+            "Triggering actions via the execute endpoint is deprecated. "
+            "Trigger an intent via the `/conversations/<conversation_id>/trigger_intent` endpoint instead.",
+            FutureWarning,
+        )
+
         policy = request_params.get("policy", None)
         confidence = request_params.get("confidence", None)
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
@@ -606,6 +616,60 @@ def create_app(
             )
 
         tracker = await get_tracker(app.agent.create_processor(), conversation_id)
+        state = tracker.current_state(verbosity)
+
+        response_body = {"tracker": state}
+
+        if isinstance(output_channel, CollectingOutputChannel):
+            response_body["messages"] = output_channel.messages
+
+        return response.json(response_body)
+
+    @app.post("/conversations/<conversation_id>/trigger_intent")
+    @requires_auth(app, auth_token)
+    @ensure_loaded_agent(app)
+    async def trigger_intent(request: Request, conversation_id: Text) -> HTTPResponse:
+        request_params = request.json
+
+        intent_to_trigger = request_params.get("name")
+        entities = request_params.get("entities", [])
+
+        if not intent_to_trigger:
+            raise ErrorResponse(
+                400,
+                "BadRequest",
+                "Name of the intent not provided in request body.",
+                {"parameter": "name", "in": "body"},
+            )
+
+        verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
+
+        try:
+            async with app.agent.lock_store.lock(conversation_id):
+                tracker = await get_tracker(
+                    app.agent.create_processor(), conversation_id
+                )
+                output_channel = _get_output_channel(request, tracker)
+                if intent_to_trigger not in app.agent.domain.intents:
+                    raise ErrorResponse(
+                        404,
+                        "NotFound",
+                        f"The intent {trigger_intent} does not exist in the domain.",
+                    )
+                await app.agent.trigger_intent(
+                    intent_name=intent_to_trigger,
+                    entities=entities,
+                    output_channel=output_channel,
+                    tracker=tracker,
+                )
+        except ErrorResponse:
+            raise
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500, "ConversationError", f"An unexpected error occurred. Error: {e}"
+            )
+
         state = tracker.current_state(verbosity)
 
         response_body = {"tracker": state}
@@ -674,9 +738,8 @@ def create_app(
 
     @app.post("/model/train")
     @requires_auth(app, auth_token)
-    async def train(request: Request):
+    async def train(request: Request) -> HTTPResponse:
         """Train a Rasa Model."""
-        from rasa.train import train_async
 
         validate_request_body(
             request,
@@ -717,12 +780,23 @@ def create_app(
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value += 1
 
-            model_path = await train_async(
+            info = dict(
                 domain=domain_path,
                 config=config_path,
                 training_files=temp_dir,
-                output_path=model_output_directory,
+                output=model_output_directory,
                 force_training=rjs.get("force", False),
+            )
+
+            loop = asyncio.get_event_loop()
+
+            from rasa import train as train_model
+
+            # Declare `model_path` upfront to avoid pytype `name-error`
+            model_path: Optional[Text] = None
+            # pass `None` to run in default executor
+            model_path = await loop.run_in_executor(
+                None, functools.partial(train_model, **info)
             )
 
             filename = os.path.basename(model_path) if model_path else None
