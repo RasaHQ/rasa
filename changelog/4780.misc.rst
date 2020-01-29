@@ -1,0 +1,3 @@
+Colored warning messages. All warnings are now a bit easier to find since they are
+yellow. Where it makes sense, we also added links to the documentation to help you
+fix the warning.

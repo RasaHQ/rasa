@@ -95,7 +95,7 @@ def combine_user_with_default_actions(user_actions: List[Text]) -> List[Text]:
 def combine_with_templates(
     actions: List[Text], templates: Dict[Text, Any]
 ) -> List[Text]:
-    """Combines actions with utter actions listed in templates section"""
+    """Combines actions with utter actions listed in responses section."""
     unique_template_names = [a for a in list(templates.keys()) if a not in actions]
     return actions + unique_template_names
 
