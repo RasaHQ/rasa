@@ -1,0 +1,5 @@
+The document vector of the ``SpacyFeaturizer`` can be calculated using max or mean pooling.
+
+To specify the pooling operation, set the option ``pooling`` for the ``SpacyFeaturizer`` in your configuration file.
+The default pooling operation is ``mean``.
+The mean pooling operation also does not take words into account anymore, that do not have a word vector.
