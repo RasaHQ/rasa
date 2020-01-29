@@ -94,7 +94,7 @@ class KeywordIntentClassifier(Component):
                         f"but also a substring of '{keyword2}', which is a "
                         f"keyword of intent '{intent2}."
                         f" '{keyword1}' will be removed from the list of keywords.\n"
-                        "Remove (one of) the conflicting keywords from the"
+                        f"Remove (one of) the conflicting keywords from the"
                         " training data.",
                         docs=DOCS_URL_COMPONENTS + "#keyword-intent-classifier",
                     )
