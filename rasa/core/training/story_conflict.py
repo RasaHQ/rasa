@@ -10,7 +10,25 @@ from rasa.core.training.generator import TrackerWithCachedStates
 
 
 class StoryConflict:
-    def __init__(self, sliced_states: List[Optional[Dict[Text, float]]],) -> None:
+    """
+    Represents a conflict between two or more stories.
+
+    Here, a conflict means that different actions are supposed to follow from
+    the same dialogue state, which most policies cannot learn.
+
+    Attributes:
+        conflicting_actions: A list of actions that all follow from the same state.
+        conflict_has_prior_events: If `False`, then the conflict occurs without any
+                                   prior events (i.e. at the beginning of a dialogue).
+    """
+
+    def __init__(self, sliced_states: List[Optional[Dict[Text, float]]], ) -> None:
+        """
+        Creates a `StoryConflict` from a given state.
+
+        Args:
+            sliced_states: The (sliced) dialogue state at which the conflict occurs.
+        """
         self._sliced_states = sliced_states
         self._conflicting_actions = defaultdict(
             list
@@ -59,12 +77,21 @@ class StoryConflict:
 
         # List which stories are in conflict with one another
         for action, stories in self._conflicting_actions.items():
-            conflict_message += "  " + self._summarize_conflict(action, stories)
+            conflict_message += f"  {self._summarize_action_occurence(action, stories)}"
 
         return conflict_message
 
     @staticmethod
-    def _summarize_conflict(action: Text, stories: List[Text]) -> Text:
+    def _summarize_action_occurence(action: Text, stories: List[Text]) -> Text:
+        """Gives a summarized textual description of where one action occurs.
+
+        Args:
+            action: The name of the action.
+            stories: The stories in which the action occurs.
+
+        Returns:
+            A textural summary.
+        """
         if len(stories) > 3:
             # Four or more stories are present
             conflict_description = (
@@ -95,7 +122,7 @@ class TrackerEventStateTuple(NamedTuple):
 
 
 def find_story_conflicts(
-    trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
+        trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
 ) -> List[StoryConflict]:
     """Generates a list of `StoryConflict` objects, describing conflicts in the given trackers.
 
@@ -124,8 +151,18 @@ def find_story_conflicts(
 
 
 def _find_conflicting_states(
-    trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
+        trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
 ) -> Dict[int, Optional[List[Text]]]:
+    """Identifies all states from which different actions follow.
+
+    Args:
+        trackers: Trackers that contain the states.
+        domain: The domain object.
+        max_history: Number of turns to take into account for the state descriptions.
+
+    Returns:
+        A dictionary mapping state-hashes to a list of actions that follow from each state.
+    """
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
     state_action_mapping = defaultdict(list)
@@ -143,11 +180,24 @@ def _find_conflicting_states(
 
 
 def _build_conflicts_from_states(
-    trackers: List[TrackerWithCachedStates],
-    domain: Domain,
-    max_history: int,
-    conflicting_state_action_mapping: Dict[int, Optional[List[Text]]],
+        trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        max_history: int,
+        conflicting_state_action_mapping: Dict[int, Optional[List[Text]]],
 ) -> List["StoryConflict"]:
+    """Builds a list of `StoryConflict` objects for each given conflict.
+
+    Args:
+        trackers: Trackers that contain the states.
+        domain: The domain object.
+        max_history: Number of turns to take into account for the state descriptions.
+        conflicting_state_action_mapping: A dictionary mapping state-hashes to a list of actions
+                                          that follow from each state.
+
+    Returns:
+        A list of `StoryConflict` objects that describe inconsistencies in the story
+        structure. These objects also contain the history that leads up to the conflict.
+    """
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
     conflicts = {}
@@ -173,7 +223,7 @@ def _build_conflicts_from_states(
 
 
 def _sliced_states_iterator(
-    trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
+        trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
 ) -> Generator[TrackerEventStateTuple, None, None]:
     """Creates an iterator over sliced states.
 
@@ -203,7 +253,7 @@ def _sliced_states_iterator(
 
 
 def _get_previous_event(
-    state: Optional[Dict[Text, float]]
+        state: Optional[Dict[Text, float]]
 ) -> Tuple[Optional[Text], Optional[Text]]:
     """Returns previous event type and name.
 
@@ -228,8 +278,8 @@ def _get_previous_event(
     # We need to look out for `prev_` and `intent_` prefixes in the labels.
     for turn_label in state:
         if (
-            turn_label.startswith(PREV_PREFIX)
-            and turn_label.replace(PREV_PREFIX, "") != ACTION_LISTEN_NAME
+                turn_label.startswith(PREV_PREFIX)
+                and turn_label.replace(PREV_PREFIX, "") != ACTION_LISTEN_NAME
         ):
             # The `prev_...` was an action that was NOT `action_listen`
             return "action", turn_label.replace(PREV_PREFIX, "")
