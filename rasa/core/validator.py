@@ -144,7 +144,7 @@ class Validator:
             if action.startswith(UTTER_PREFIX):
                 if action not in utterance_templates:
                     raise_warning(
-                        f"There is no template for the utterance action '{action}'."
+                        f"There is no template for the utterance action '{action}'. "
                         f"The action is listed in your domains action list, but "
                         f"there is no template defined with this name. You should "
                         f"add a template with this key.",
