@@ -2,7 +2,6 @@ import asyncio
 import logging
 import os
 import shutil
-import warnings
 from functools import partial
 from typing import Any, List, Optional, Text, Union
 
@@ -21,6 +20,7 @@ from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.lock_store import LockStore
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
+from rasa.utils.common import raise_warning
 from sanic import Sanic
 
 logger = logging.getLogger()  # get the root logger
@@ -248,7 +248,7 @@ async def load_agent_on_start(
     )
 
     if not app.agent:
-        warnings.warn(
+        raise_warning(
             "Agent could not be loaded with the provided configuration. "
             "Load default agent without any model."
         )

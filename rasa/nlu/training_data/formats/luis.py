@@ -4,6 +4,7 @@ import typing
 from typing import Any, Dict, Text
 
 from rasa.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
+from rasa.utils.common import raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
@@ -22,7 +23,7 @@ class LuisReader(JsonTrainingDataReader):
         max_tested_luis_schema_version = 5
         major_version = int(js["luis_schema_version"].split(".")[0])
         if major_version > max_tested_luis_schema_version:
-            warnings.warn(
+            raise_warning(
                 f"Your luis data schema version {js['luis_schema_version']} "
                 f"is higher than 5.x.x. "
                 f"Training may not be performed correctly. "
