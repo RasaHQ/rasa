@@ -74,7 +74,7 @@ async def test_find_conflicts_or():
     assert conflicts[0].conflicting_actions == ["utter_default", "utter_goodbye"]
 
 
-async def test_find_conflicts_slots():
+async def test_find_conflicts_slots_that_break():
     trackers, domain = await _setup_trackers_for_testing(
         "data/test_domains/default.yml", "data/test_stories/stories_conflicting_4.md"
     )
@@ -86,7 +86,7 @@ async def test_find_conflicts_slots():
     assert conflicts[0].conflicting_actions == ["utter_default", "utter_greet"]
 
 
-async def test_find_conflicts_slots_2():
+async def test_find_conflicts_slots_that_dont_break():
     trackers, domain = await _setup_trackers_for_testing(
         "data/test_domains/default.yml", "data/test_stories/stories_conflicting_5.md"
     )
