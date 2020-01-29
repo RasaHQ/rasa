@@ -88,9 +88,9 @@ Miscellaneous internal changes
 
 Improvements
 ------------
-- `#4989 <https://github.com/rasahq/rasa/issues/4989>`_: Switching back to a TensorFlow release which only includes CPU support to reduce the
+- `#4994 <https://github.com/rasahq/rasa/issues/4994>`_: Switching back to a TensorFlow release which only includes CPU support to reduce the
   size of the dependencies. If you want to use the TensorFlow package with GPU support,
-  please run ``tensorflow-gpu==1.15.0``.
+  please run ``pip install tensorflow-gpu==1.15.0``.
 
 Bugfixes
 --------
