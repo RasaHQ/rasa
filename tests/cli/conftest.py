@@ -29,14 +29,15 @@ def run_in_default_project(testdir: Testdir) -> Callable[..., RunResult]:
 
     def do_run(*args):
         args = ["rasa"] + list(args)
-        return testdir.run(*args)
+        result = testdir.run(*args)
+        os.environ["LOG_LEVEL"] = "INFO"
+        return result
 
     return do_run
 
 
 @pytest.fixture
 def run_in_default_project_with_info(testdir: Testdir) -> Callable[..., RunResult]:
-    os.environ["LOG_LEVEL"] = "INFO"
     testdir.run("rasa", "init", "--no-prompt")
 
     def do_run(*args):
