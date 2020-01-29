@@ -35,7 +35,7 @@ def test_entity_name_from_tag(tag, expected):
     ],
 )
 def test_bilou_from_tag(tag, expected):
-    actual = bilou_utils.bilou_from_tag(tag)
+    actual = bilou_utils.bilou_prefix_from_tag(tag)
 
     assert actual == expected
 

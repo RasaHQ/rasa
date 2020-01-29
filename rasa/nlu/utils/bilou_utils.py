@@ -1,4 +1,4 @@
-from typing import List, Tuple, Text, Optional, Dict
+from typing import List, Tuple, Text, Optional, Dict, Set
 
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
@@ -20,7 +20,7 @@ def entity_name_from_tag(tag: Text) -> Text:
     return tag
 
 
-def bilou_from_tag(tag: Text) -> Optional[Text]:
+def bilou_prefix_from_tag(tag: Text) -> Optional[Text]:
     """Get the BILOU prefix (without -) from the given tag."""
     if len(tag) >= 2 and tag[1] == "-" and tag[:2] in BILOU_PREFIXES:
         return tag[0].upper()
@@ -47,7 +47,7 @@ def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
 
 def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, int]:
     """Create a mapping of unique tags to ids."""
-    distinct_tag_ids = set(
+    distinct_tags = set(
         [
             entity_name_from_tag(e)
             for example in training_data.training_examples
@@ -57,8 +57,8 @@ def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, int]:
     ) - {"O"}
 
     tag_id_dict = {
-        f"{prefix}{tag_id}": idx_1 * len(BILOU_PREFIXES) + idx_2 + 1
-        for idx_1, tag_id in enumerate(sorted(distinct_tag_ids))
+        f"{prefix}{tag}": idx_1 * len(BILOU_PREFIXES) + idx_2 + 1
+        for idx_1, tag in enumerate(sorted(distinct_tags))
         for idx_2, prefix in enumerate(BILOU_PREFIXES)
     }
     tag_id_dict["O"] = 0
@@ -98,36 +98,59 @@ def bilou_tags_from_offsets(
     """Creates a list of BILOU tags for the given list of tokens and entities."""
 
     # From spacy.spacy.GoldParse, under MIT License
-    starts = {token.start: i for i, token in enumerate(tokens)}
-    ends = {token.end: i for i, token in enumerate(tokens)}
+
+    start_pos_to_token_idx = {token.start: i for i, token in enumerate(tokens)}
+    end_pos_to_token_idx = {token.end: i for i, token in enumerate(tokens)}
+
     bilou = ["-" for _ in tokens]
 
     # Handle entity cases
-    for start_char, end_char, label in entities:
-        start_token = starts.get(start_char)
-        end_token = ends.get(end_char)
-
-        # Only interested if the tokenization is correct
-        if start_token is not None and end_token is not None:
-            if start_token == end_token:
-                bilou[start_token] = "U-%s" % label
-            else:
-                bilou[start_token] = "B-%s" % label
-                for i in range(start_token + 1, end_token):
-                    bilou[i] = "I-%s" % label
-                bilou[end_token] = "L-%s" % label
+    _handle_entities(bilou, entities, end_pos_to_token_idx, start_pos_to_token_idx)
 
     # Now distinguish the O cases from ones where we miss the tokenization
-    entity_chars = set()
-    for start_char, end_char, label in entities:
-        for i in range(start_char, end_char):
-            entity_chars.add(i)
+    entity_positions = _get_entity_positions(entities)
+    _handle_not_an_entity(bilou, tokens, entity_positions, missing)
 
+    return bilou
+
+
+def _handle_entities(
+    bilou: List[Text],
+    entities: List[Tuple[int, int, Text]],
+    end_pos_to_token_idx: Dict[int, int],
+    start_pos_to_token_idx: Dict[int, int],
+):
+    for start_pos, end_pos, label in entities:
+        start_token_idx = start_pos_to_token_idx.get(start_pos)
+        end_token_idx = end_pos_to_token_idx.get(end_pos)
+
+        # Only interested if the tokenization is correct
+        if start_token_idx is not None and end_token_idx is not None:
+            if start_token_idx == end_token_idx:
+                bilou[start_token_idx] = "U-%s" % label
+            else:
+                bilou[start_token_idx] = "B-%s" % label
+                for i in range(start_token_idx + 1, end_token_idx):
+                    bilou[i] = "I-%s" % label
+                bilou[end_token_idx] = "L-%s" % label
+
+
+def _get_entity_positions(entities: List[Tuple[int, int, Text]]) -> Set[int]:
+    entity_positions = set()
+
+    for start_pos, end_pos, label in entities:
+        for i in range(start_pos, end_pos):
+            entity_positions.add(i)
+
+    return entity_positions
+
+
+def _handle_not_an_entity(
+    bilou: List[Text], tokens: List[Token], entity_positions: Set[int], missing: Text
+):
     for n, token in enumerate(tokens):
         for i in range(token.start, token.end):
-            if i in entity_chars:
+            if i in entity_positions:
                 break
         else:
             bilou[n] = missing
-
-    return bilou

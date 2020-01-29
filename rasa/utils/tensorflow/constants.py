@@ -46,3 +46,5 @@ MASKED_LM = "use_masked_language_model"
 SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
 
 RANKING_LENGTH = "ranking_length"
+
+BILOU_FLAG = "BILOU_flag"

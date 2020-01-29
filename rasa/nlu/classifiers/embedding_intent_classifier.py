@@ -10,6 +10,7 @@ import tensorflow_addons as tfa
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import rasa.utils.io
+import rasa.nlu.utils.bilou_utils as bilou_utils
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -65,6 +66,7 @@ from rasa.utils.tensorflow.constants import (
     MU_NEG,
     MU_POS,
     EMBED_DIM,
+    BILOU_FLAG,
 )
 
 logger = logging.getLogger(__name__)
@@ -175,6 +177,8 @@ class EmbeddingIntentClassifier(EntityExtractor):
         ENTITY_RECOGNITION: True,
         MASKED_LM: False,
         SPARSE_INPUT_DROPOUT: True,
+        # if true BILOU schema is used for entities
+        BILOU_FLAG: False,
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -249,9 +253,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
             label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
         }
 
-    @staticmethod
-    def _create_tag_id_dict(training_data: TrainingData) -> Dict[Text, int]:
+    def _create_tag_id_dict(self, training_data: TrainingData) -> Dict[Text, int]:
         """Create label_id dictionary"""
+
+        if self.component_config[BILOU_FLAG]:
+            return bilou_utils.build_tag_id_dict(training_data)
 
         distinct_tag_ids = set(
             [
@@ -454,10 +460,15 @@ class EmbeddingIntentClassifier(EntityExtractor):
                     label_ids.append(label_id_dict[e.get(label_attribute)])
 
             if self.component_config[ENTITY_RECOGNITION] and tag_id_dict:
-                _tags = []
-                for t in e.get(TOKENS_NAMES[TEXT_ATTRIBUTE]):
-                    _tag = determine_token_labels(t, e.get(ENTITIES_ATTRIBUTE), None)
-                    _tags.append(tag_id_dict[_tag])
+                if self.component_config[BILOU_FLAG]:
+                    _tags = bilou_utils.tags_to_ids(e, tag_id_dict)
+                else:
+                    _tags = []
+                    for t in e.get(TOKENS_NAMES[TEXT_ATTRIBUTE]):
+                        _tag = determine_token_labels(
+                            t, e.get(ENTITIES_ATTRIBUTE), None
+                        )
+                        _tags.append(tag_id_dict[_tag])
                 # transpose to have seq_len x 1
                 tag_ids.append(np.array([_tags]).T)
 
@@ -493,6 +504,9 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         Performs sanity checks on training data, extracts encodings for labels.
         """
+        if self.component_config[BILOU_FLAG]:
+            bilou_utils.apply_bilou_schema(training_data)
+
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=INTENT_ATTRIBUTE
         )
@@ -654,6 +668,11 @@ class EmbeddingIntentClassifier(EntityExtractor):
         predictions = out["e_ids"].numpy()
 
         tags = [self.inverted_tag_dict[p] for p in predictions[0]]
+
+        print(tags)
+
+        if self.component_config[BILOU_FLAG]:
+            tags = bilou_utils.remove_bilou_prefixes(tags)
 
         entities = self._convert_tags_to_entities(
             message.text, message.get("tokens", []), tags

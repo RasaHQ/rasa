@@ -312,10 +312,10 @@ class CRFEntityExtractor(EntityExtractor):
         label, confidence = self.most_likely_entity(word_idx, entities)
         entity_label = bilou_utils.entity_name_from_tag(label)
 
-        if bilou_utils.bilou_from_tag(label) == "U":
+        if bilou_utils.bilou_prefix_from_tag(label) == "U":
             return word_idx, confidence, entity_label
 
-        elif bilou_utils.bilou_from_tag(label) == "B":
+        elif bilou_utils.bilou_prefix_from_tag(label) == "B":
             # start of multi word-entity need to represent whole extent
             ent_word_idx, confidence = self._find_bilou_end(word_idx, entities)
             return ent_word_idx, confidence, entity_label
@@ -518,7 +518,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         if not self.component_config["BILOU_flag"]:
             for i, label in enumerate(ents):
-                if bilou_utils.bilou_from_tag(label) in {"B", "I", "U", "L"}:
+                if bilou_utils.bilou_prefix_from_tag(label) in {"B", "I", "U", "L"}:
                     # removes BILOU prefix from label
                     ents[i] = bilou_utils.entity_name_from_tag(label)
 
