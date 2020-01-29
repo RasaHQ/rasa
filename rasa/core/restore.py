@@ -1,20 +1,19 @@
 import json
 import logging
-import warnings
+import typing
 from difflib import SequenceMatcher
+from typing import List, Text, Tuple
 
 import rasa.cli.utils
 import rasa.utils.io
-import typing
-from typing import List, Text, Tuple
-
 from rasa.cli import utils as cli_utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.channels import console
-from rasa.core.channels.channel import UserMessage, CollectingOutputChannel
+from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.trackers import DialogueStateTracker
+from rasa.utils.common import raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -29,9 +28,9 @@ def _check_prediction_aligns_with_story(
 
     p, a = align_lists(last_prediction, actions_between_utterances)
     if p != a:
-        warnings.warn(
-            "Model predicted different actions than the "
-            "model used to create the story! Expected: "
+        raise_warning(
+            f"The model predicted different actions than the "
+            f"model used to create the story! Expected: "
             f"{p} but got {a}."
         )
 

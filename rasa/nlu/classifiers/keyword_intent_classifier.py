@@ -5,10 +5,12 @@ import typing
 import re
 from typing import Any, Dict, Optional, Text
 
+from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import utils
 from rasa.nlu.components import Component
 from rasa.nlu.training_data import Message
 from rasa.nlu.constants import INTENT_ATTRIBUTE
+from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -57,12 +59,13 @@ class KeywordIntentClassifier(Component):
                 and ex.get(INTENT_ATTRIBUTE) != self.intent_keyword_map[ex.text]
             ):
                 duplicate_examples.add(ex.text)
-                warnings.warn(
-                    f"Keyword '{ex.text}' is a keyword of intent "
-                    f"'{self.intent_keyword_map[ex.text]}' and of "
-                    f"intent '{ex.get(INTENT_ATTRIBUTE)}', it will be removed from "
-                    f"the list of keywords.\n"
-                    f"Remove (one of) the duplicates from the training data."
+                raise_warning(
+                    f"Keyword '{ex.text}' is a keyword to trigger intent "
+                    f"'{self.intent_keyword_map[ex.text]}' and also "
+                    f"intent '{ex.get(INTENT_ATTRIBUTE)}', it will be removed "
+                    f"from the list of keywords for both of them. "
+                    f"Remove (one of) the duplicates from the training data.",
+                    docs=DOCS_URL_COMPONENTS + "#keyword-intent-classifier",
                 )
             else:
                 self.intent_keyword_map[ex.text] = ex.get(INTENT_ATTRIBUTE)
@@ -86,13 +89,14 @@ class KeywordIntentClassifier(Component):
                     and intent1 != intent2
                 ):
                     ambiguous_mappings.append((intent1, keyword1))
-                    warnings.warn(
+                    raise_warning(
                         f"Keyword '{keyword1}' is a keyword of intent '{intent1}', "
                         f"but also a substring of '{keyword2}', which is a "
                         f"keyword of intent '{intent2}."
                         f" '{keyword1}' will be removed from the list of keywords.\n"
-                        "Remove (one of) the conflicting keywords from the"
-                        " training data."
+                        f"Remove (one of) the conflicting keywords from the"
+                        f" training data.",
+                        docs=DOCS_URL_COMPONENTS + "#keyword-intent-classifier",
                     )
         for intent, keyword in ambiguous_mappings:
             self.intent_keyword_map.pop(keyword)
@@ -152,8 +156,14 @@ class KeywordIntentClassifier(Component):
             if os.path.exists(keyword_file):
                 intent_keyword_map = utils.read_json_file(keyword_file)
             else:
-                warnings.warn(
-                    f"Failed to load IntentKeywordClassifier, maybe "
-                    "{keyword_file} does not exist."
+                raise_warning(
+                    f"Failed to load key word file for `IntentKeywordClassifier`, "
+                    f"maybe {keyword_file} does not exist?",
                 )
-        return cls(meta, intent_keyword_map)
+                intent_keyword_map = None
+            return cls(meta, intent_keyword_map)
+        else:
+            raise Exception(
+                f"Failed to load keyword intent classifier model. "
+                f"Path {os.path.abspath(meta.get('file'))} doesn't exist."
+            )

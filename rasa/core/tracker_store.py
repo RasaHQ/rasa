@@ -1,33 +1,25 @@
 import contextlib
+import itertools
 import json
 import logging
 import os
 import pickle
 import typing
-import warnings
 from datetime import datetime, timezone
-
-from typing import Iterator, Optional, Text, Iterable, Union, Dict, Callable, List
-
-import itertools
-from boto3.dynamodb.conditions import Key
 
 # noinspection PyPep8Naming
 from time import sleep
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Text, Union
 
+from boto3.dynamodb.conditions import Key
 from rasa.core import utils
-from rasa.utils import common
 from rasa.core.actions.action import ACTION_LISTEN_NAME
-
-from rasa.core.events import SessionStarted
-
-
 from rasa.core.brokers.broker import EventBroker
-
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
+from rasa.core.events import SessionStarted
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
-from rasa.utils.common import class_from_module_path
+from rasa.utils.common import class_from_module_path, raise_warning, arguments_of
 from rasa.utils.endpoints import EndpointConfig
 
 if typing.TYPE_CHECKING:
@@ -70,12 +62,11 @@ class TrackerStore:
     ) -> "TrackerStore":
         """Returns the tracker_store type"""
 
-        warnings.warn(
+        raise_warning(
             "The `create_tracker_store` function is deprecated, please use "
             "`TrackerStore.create` instead. `create_tracker_store` will be "
             "removed in future Rasa versions.",
             DeprecationWarning,
-            stacklevel=2,
         )
 
         return TrackerStore.create(store, domain, event_broker)
@@ -722,9 +713,6 @@ class SQLTrackerStore(TrackerStore):
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
 
-        import sqlalchemy as sa
-        from rasa.core.events import SessionStarted
-
         with self.session_scope() as session:
 
             serialised_events = self._event_query(session, sender_id).all()
@@ -964,12 +952,13 @@ def _load_from_module_string(
 
     try:
         tracker_store_class = class_from_module_path(store.type)
-        init_args = common.arguments_of(tracker_store_class.__init__)
+        init_args = arguments_of(tracker_store_class.__init__)
         if "url" in init_args and "host" not in init_args:
-            warnings.warn(
-                "The `url` initialization argument for custom tracker stores is deprecated. Your "
-                "custom tracker store should take a `host` argument in ``__init__()`` instead.",
-                FutureWarning,
+            raise_warning(
+                "The `url` initialization argument for custom tracker stores is "
+                "deprecated. Your custom tracker store should take a `host` "
+                "argument in its `__init__()` instead.",
+                DeprecationWarning,
             )
             store.kwargs["url"] = store.url
         else:
@@ -979,8 +968,8 @@ def _load_from_module_string(
             domain=domain, event_broker=event_broker, **store.kwargs
         )
     except (AttributeError, ImportError):
-        warnings.warn(
-            f"Tracker store type '{store.type}' not found. "
+        raise_warning(
+            f"Tracker store with type '{store.type}' not found. "
             f"Using `InMemoryTrackerStore` instead."
         )
         return InMemoryTrackerStore(domain)

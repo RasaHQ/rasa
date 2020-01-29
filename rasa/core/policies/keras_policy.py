@@ -93,14 +93,6 @@ class KerasPolicy(Policy):
         else:
             return None
 
-    def _build_model(self, num_features, num_actions, max_history_len) -> None:
-        warnings.warn(
-            "Deprecated, use `model_architecture` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return
-
     def model_architecture(
         self, input_shape: Tuple[int, int], output_shape: Tuple[int, Optional[int]]
     ) -> tf.keras.models.Sequential:
@@ -277,7 +269,7 @@ class KerasPolicy(Policy):
             with open(tf_config_file, "wb") as f:
                 pickle.dump(self._tf_config, f)
         else:
-            warnings.warn(
+            logger.debug(
                 "Method `persist(...)` was called "
                 "without a trained model present. "
                 "Nothing to persist then!"

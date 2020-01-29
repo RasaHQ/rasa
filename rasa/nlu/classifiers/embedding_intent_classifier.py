@@ -67,6 +67,7 @@ from rasa.utils.tensorflow.constants import (
     EMBED_DIM,
 )
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -765,7 +766,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         if not model_dir or not meta.get("file"):
             warnings.warn(
                 f"Failed to load nlu model. "
-                f"Maybe path '{os.path.abspath(model_dir)}' doesn't exist."
+                f"Maybe the path '{os.path.abspath(model_dir)}' doesn't exist?"
             )
             return cls(component_config=meta)
 
