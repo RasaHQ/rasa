@@ -439,11 +439,16 @@ class DIETClassifier(EntityExtractor):
         tag_ids = []
 
         for e in training_data:
-            _sparse, _dense = self._extract_and_add_features(e, TEXT_ATTRIBUTE)
-            if _sparse is not None:
-                X_sparse.append(_sparse)
-            if _dense is not None:
-                X_dense.append(_dense)
+            if (
+                label_attribute is None
+                or label_attribute == INTENT_ATTRIBUTE
+                or e.get(label_attribute)
+            ):
+                _sparse, _dense = self._extract_and_add_features(e, TEXT_ATTRIBUTE)
+                if _sparse is not None:
+                    X_sparse.append(_sparse)
+                if _dense is not None:
+                    X_dense.append(_dense)
 
             if e.get(label_attribute):
                 _sparse, _dense = self._extract_and_add_features(e, label_attribute)
@@ -821,7 +826,7 @@ class DIET(RasaModel):
         self,
         data_signature: Dict[Text, List[FeatureSignature]],
         label_data: RasaModelData,
-        inverted_tag_dict: Dict[int, Text],
+        inverted_tag_dict: Optional[Dict[int, Text]],
         config: Dict[Text, Any],
     ) -> None:
         super().__init__(name="DIET", random_seed=config[RANDOM_SEED])
@@ -836,7 +841,7 @@ class DIET(RasaModel):
         self.tf_label_data = self.batch_to_model_data_format(
             label_batch, label_data.get_signature()
         )
-        self._num_tags = len(inverted_tag_dict)
+        self._num_tags = len(inverted_tag_dict) if inverted_tag_dict is not None else 0
 
         self.config = config
 
