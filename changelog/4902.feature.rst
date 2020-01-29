@@ -1,2 +1,0 @@
-Added a new configuration parameter, ``ranking_length`` to the ``EmbeddingPolicy``, ``EmbeddingIntentClassifier``,
-and ``ResponseSelector`` classes.
