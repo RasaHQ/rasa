@@ -792,10 +792,10 @@ class DIETClassifier(EntityExtractor):
         model = DIET.load(
             tf_model_file,
             model_data_example,
-            model_data_example.get_signature(),
-            label_data,
-            inv_tag_dict,
-            meta,
+            data_signature=model_data_example.get_signature(),
+            label_data=label_data,
+            inverted_tag_dict=inv_tag_dict,
+            config=meta,
         )
         # build the graph for prediction
         predict_data_example = RasaModelData(

@@ -1,3 +1,5 @@
+import copy
+
 import pytest
 import scipy.sparse
 import numpy as np
@@ -58,14 +60,21 @@ async def model_data() -> RasaModelData:
 
 
 def test_shuffle_session_data(model_data: RasaModelData):
-    before = model_data.values()
+    before = copy.copy(model_data)
+
+    # precondition
+    assert np.all(
+        np.array(list(before.values())) == np.array(list(model_data.values()))
+    )
 
     data = model_data.shuffled_data(model_data.data)
 
     # check that original data didn't change
-    assert np.array(before) == np.array(model_data.values())
+    assert np.all(
+        np.array(list(before.values())) == np.array(list(model_data.values()))
+    )
     # check that new data is different
-    assert np.array(model_data.values()) != np.array(data.values())
+    assert np.all(np.array(model_data.values()) != np.array(data.values()))
 
 
 def test_split_session_data_by_label(model_data: RasaModelData):
@@ -120,7 +129,7 @@ def test_get_number_of_examples(model_data: RasaModelData):
 
 
 def test_get_number_of_examples_raises_value_error(model_data: RasaModelData):
-    model_data.add_features("dense", [np.random.randint(5, size=(2, 10))])
+    model_data.data["dense"] = [np.random.randint(5, size=(2, 10))]
     with pytest.raises(ValueError):
         model_data.get_number_of_examples()
 
