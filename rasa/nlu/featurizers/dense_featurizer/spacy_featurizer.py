@@ -67,7 +67,7 @@ class SpacyFeaturizer(Featurizer):
         non_zero_features = np.array([f for f in features if f.any()])
 
         if self.pooling_operation == "mean":
-            return np.mean(features, axis=0, keepdims=True)
+            return np.mean(non_zero_features, axis=0, keepdims=True)
         elif self.pooling_operation == "max":
             return np.max(features, axis=0, keepdims=True)
         else:
