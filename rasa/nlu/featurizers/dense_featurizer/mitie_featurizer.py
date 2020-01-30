@@ -1,6 +1,6 @@
 import numpy as np
 import typing
-from typing import Any, List, Text
+from typing import Any, List, Text, Optional, Dict
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurizer import Featurizer
@@ -27,6 +27,17 @@ class MitieFeaturizer(Featurizer):
         "mitie_feature_extractor"
     ]
 
+    defaults = {
+        # Specify what pooling operation should be used to calculate the vector of
+        # the CLS token. Available options: 'mean' and 'max'
+        "pooling": "mean"
+    }
+
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None):
+        super().__init__(component_config)
+
+        self.pooling_operation = self.component_config["pooling"]
+
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["mitie", "numpy"]
@@ -39,7 +50,10 @@ class MitieFeaturizer(Featurizer):
         return example.get(TOKENS_NAMES[attribute])
 
     def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
@@ -104,7 +118,7 @@ class MitieFeaturizer(Featurizer):
             features.append(feature_extractor.get_feature_vector(token.text))
         features = np.array(features)
 
-        cls_token_vec = np.mean(features, axis=0, keepdims=True)
+        cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
         features = np.concatenate([features, cls_token_vec])
 
         return features

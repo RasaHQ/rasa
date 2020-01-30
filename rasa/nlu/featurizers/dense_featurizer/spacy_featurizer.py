@@ -1,6 +1,6 @@
 import numpy as np
 import typing
-from typing import Any, Optional, Text
+from typing import Any, Optional, Text, Dict
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurizer import Featurizer
@@ -28,6 +28,17 @@ class SpacyFeaturizer(Featurizer):
         SPACY_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ] + [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
 
+    defaults = {
+        # Specify what pooling operation should be used to calculate the vector of
+        # the CLS token. Available options: 'mean' and 'max'
+        "pooling": "mean"
+    }
+
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None):
+        super().__init__(component_config)
+
+        self.pooling_operation = self.component_config["pooling"]
+
     def _features_for_doc(self, doc: "Doc") -> np.ndarray:
         """Feature vector for a single document / sentence / tokens."""
         return np.array([t.vector for t in doc])
@@ -35,7 +46,7 @@ class SpacyFeaturizer(Featurizer):
     def train(
         self,
         training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig],
+        config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
 
@@ -59,7 +70,7 @@ class SpacyFeaturizer(Featurizer):
         if message_attribute_doc is not None:
             features = self._features_for_doc(message_attribute_doc)
 
-            cls_token_vec = np.mean(features, axis=0, keepdims=True)
+            cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
             features = np.concatenate([features, cls_token_vec])
 
             features = self._combine_with_existing_dense_features(

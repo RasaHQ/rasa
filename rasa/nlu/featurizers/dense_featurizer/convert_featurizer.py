@@ -166,7 +166,7 @@ class ConveRTFeaturizer(Featurizer):
     def train(
         self,
         training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig],
+        config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
 
