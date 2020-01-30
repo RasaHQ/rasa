@@ -171,26 +171,3 @@ def test_spacy_featurizer_train(spacy_nlp):
     vecs = message.get(DENSE_FEATURE_NAMES[INTENT_ATTRIBUTE])
 
     assert vecs is None
-
-
-@pytest.mark.parametrize(
-    "pooling, features, expected",
-    [
-        (
-            "mean",
-            np.array([[0.5, 3, 0.4, 0.1], [0, 0, 0, 0], [0.5, 3, 0.4, 0.1]]),
-            np.array([[0.5, 3, 0.4, 0.1]]),
-        ),
-        (
-            "max",
-            np.array([[1.0, 3.0, 0.0, 2.0], [4.0, 3.0, 1.0, 0.0]]),
-            np.array([[4.0, 3.0, 1.0, 2.0]]),
-        ),
-    ],
-)
-def test_calculate_cls_vector(pooling, features, expected):
-    featurizer = SpacyFeaturizer.create({"pooling": pooling}, RasaNLUModelConfig())
-
-    actual = featurizer._calculate_cls_vector(features)
-
-    assert np.all(actual == expected)

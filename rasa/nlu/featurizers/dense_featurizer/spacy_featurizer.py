@@ -62,20 +62,6 @@ class SpacyFeaturizer(Featurizer):
 
         self._set_spacy_features(message)
 
-    def _calculate_cls_vector(self, features: np.ndarray) -> np.ndarray:
-        # take only non zeros feature vectors into account
-        non_zero_features = np.array([f for f in features if f.any()])
-
-        if self.pooling_operation == "mean":
-            return np.mean(non_zero_features, axis=0, keepdims=True)
-        elif self.pooling_operation == "max":
-            return np.max(non_zero_features, axis=0, keepdims=True)
-        else:
-            raise ValueError(
-                f"Invalid pooling operation specified. Available operations are "
-                f"'mean' or 'max', but provided value is '{self.pooling_operation}'."
-            )
-
     def _set_spacy_features(self, message: Message, attribute: Text = TEXT_ATTRIBUTE):
         """Adds the spacy word vectors to the messages features."""
 
@@ -84,7 +70,7 @@ class SpacyFeaturizer(Featurizer):
         if message_attribute_doc is not None:
             features = self._features_for_doc(message_attribute_doc)
 
-            cls_token_vec = self._calculate_cls_vector(features)
+            cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
             features = np.concatenate([features, cls_token_vec])
 
             features = self._combine_with_existing_dense_features(

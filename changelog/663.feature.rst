@@ -1,5 +1,5 @@
-The document vector of the ``SpacyFeaturizer`` can be calculated using max or mean pooling.
+The sentence vector of the ``SpacyFeaturizer`` and ``MitieFeaturizer`` can be calculated using max or mean pooling.
 
-To specify the pooling operation, set the option ``pooling`` for the ``SpacyFeaturizer`` in your configuration file.
-The default pooling operation is ``mean``.
-The mean pooling operation also does not take into account words, that do not have a word vector.
+To specify the pooling operation, set the option ``pooling`` for the ``SpacyFeaturizer`` or the ``MitieFeaturizer``
+in your configuration file. The default pooling operation is ``mean``. The mean pooling operation also does not take
+into account words, that do not have a word vector.

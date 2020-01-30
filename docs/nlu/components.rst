@@ -114,12 +114,17 @@ MitieFeaturizer
         to use precomputed features.
 
 :Configuration:
+    The sentence vector, e.g. the vector of the ``CLS`` token can be calculated in two different ways, either via
+    mean or via max pooling. You can specify the pooling method in your configuration file with the option ``pooling``.
+    The default pooling method is set to ``mean``.
 
     .. code-block:: yaml
 
         pipeline:
         - name: "MitieFeaturizer"
-
+          # Specify what pooling operation should be used to calculate the vector of
+          # the CLS token. Available options: 'mean' and 'max'
+          "pooling": "mean"
 
 
 SpacyFeaturizer
