@@ -26,27 +26,6 @@ class SparseDropout(tf.keras.layers.Dropout):
         return outputs
 
 
-class DenseWithSparseWeights(tf.keras.layers.Dense):
-    def __init__(self, sparsity: int = 0.8, **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.sparsity = sparsity
-
-    def build(self, input_shape: tf.TensorShape) -> None:
-        super().build(input_shape)
-        # create random mask to set weights to 0
-        kernel_mask = tf.random.uniform(tf.shape(self.kernel), 0, 1)
-        kernel_mask = tf.cast(
-            tf.greater_equal(kernel_mask, self.sparsity), self.kernel.dtype
-        )
-        self.kernel_mask = tf.Variable(initial_value=kernel_mask, trainable=False)
-
-    def call(self, inputs: tf.Tensor) -> tf.Tensor:
-        if self.sparsity:
-            # set some weights to 0
-            self.kernel.assign(self.kernel * self.kernel_mask)
-        return super().call(inputs)
-
-
 class DenseForSparse(tf.keras.layers.Dense):
     """Dense layer for sparse input tensor"""
 
@@ -75,6 +54,27 @@ class DenseForSparse(tf.keras.layers.Dense):
         if self.activation is not None:
             return self.activation(outputs)
         return outputs
+
+
+class DenseWithSparseWeights(tf.keras.layers.Dense):
+    def __init__(self, sparsity: int = 0.8, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.sparsity = sparsity
+
+    def build(self, input_shape: tf.TensorShape) -> None:
+        super().build(input_shape)
+        # create random mask to set weights to 0
+        kernel_mask = tf.random.uniform(tf.shape(self.kernel), 0, 1)
+        kernel_mask = tf.cast(
+            tf.greater_equal(kernel_mask, self.sparsity), self.kernel.dtype
+        )
+        self.kernel_mask = tf.Variable(initial_value=kernel_mask, trainable=False)
+
+    def call(self, inputs: tf.Tensor) -> tf.Tensor:
+        if self.sparsity:
+            # set some weights to 0
+            self.kernel.assign(self.kernel * self.kernel_mask)
+        return super().call(inputs)
 
 
 class Ffnn(tf.keras.layers.Layer):
