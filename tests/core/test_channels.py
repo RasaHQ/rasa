@@ -114,7 +114,9 @@ async def test_console_input():
             )
 
             await console.record_messages(
-                server_url="https://example.com", max_message_limit=3
+                server_url="https://example.com",
+                max_message_limit=3,
+                sender_id="default"
             )
 
             r = latest_request(
