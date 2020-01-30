@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 # noinspection PyProtectedMember
 def add_subparser(
-        subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
     data_parser = subparsers.add_parser(
         "data",
@@ -35,7 +35,7 @@ def add_subparser(
 
 
 def _add_data_convert_parsers(
-        data_subparsers, parents: List[argparse.ArgumentParser]
+    data_subparsers, parents: List[argparse.ArgumentParser]
 ) -> None:
     from rasa.nlu import convert
 
@@ -60,7 +60,7 @@ def _add_data_convert_parsers(
 
 
 def _add_data_split_parsers(
-        data_subparsers, parents: List[argparse.ArgumentParser]
+    data_subparsers, parents: List[argparse.ArgumentParser]
 ) -> None:
     split_parser = data_subparsers.add_parser(
         "split",
@@ -76,7 +76,7 @@ def _add_data_split_parsers(
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Performs a split of your NLU data into training and test data "
-             "according to the specified percentages.",
+        "according to the specified percentages.",
     )
     nlu_split_parser.set_defaults(func=split_nlu_data)
 
@@ -84,7 +84,7 @@ def _add_data_split_parsers(
 
 
 def _add_data_validate_parsers(
-        data_subparsers, parents: List[argparse.ArgumentParser]
+    data_subparsers, parents: List[argparse.ArgumentParser]
 ) -> None:
     validate_parser = data_subparsers.add_parser(
         "validate",
@@ -158,9 +158,9 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
         all_good = _validate_domain(validator) and _validate_nlu(validator, args)
     else:
         all_good = (
-                _validate_domain(validator)
-                and _validate_nlu(validator, args)
-                and _validate_story_structure(validator, args)
+            _validate_domain(validator)
+            and _validate_nlu(validator, args)
+            and _validate_story_structure(validator, args)
         )
 
     if not all_good:

@@ -22,7 +22,7 @@ class StoryConflict:
                                    prior events (i.e. at the beginning of a dialogue).
     """
 
-    def __init__(self, sliced_states: List[Optional[Dict[Text, float]]], ) -> None:
+    def __init__(self, sliced_states: List[Optional[Dict[Text, float]]],) -> None:
         """
         Creates a `StoryConflict` from a given state.
 
@@ -122,7 +122,7 @@ class TrackerEventStateTuple(NamedTuple):
 
 
 def find_story_conflicts(
-        trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
+    trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
 ) -> List[StoryConflict]:
     """Generates a list of `StoryConflict` objects, describing conflicts in the given trackers.
 
@@ -151,7 +151,7 @@ def find_story_conflicts(
 
 
 def _find_conflicting_states(
-        trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
+    trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
 ) -> Dict[int, Optional[List[Text]]]:
     """Identifies all states from which different actions follow.
 
@@ -180,10 +180,10 @@ def _find_conflicting_states(
 
 
 def _build_conflicts_from_states(
-        trackers: List[TrackerWithCachedStates],
-        domain: Domain,
-        max_history: int,
-        conflicting_state_action_mapping: Dict[int, Optional[List[Text]]],
+    trackers: List[TrackerWithCachedStates],
+    domain: Domain,
+    max_history: int,
+    conflicting_state_action_mapping: Dict[int, Optional[List[Text]]],
 ) -> List["StoryConflict"]:
     """Builds a list of `StoryConflict` objects for each given conflict.
 
@@ -223,7 +223,7 @@ def _build_conflicts_from_states(
 
 
 def _sliced_states_iterator(
-        trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
+    trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
 ) -> Generator[TrackerEventStateTuple, None, None]:
     """Creates an iterator over sliced states.
 
@@ -253,7 +253,7 @@ def _sliced_states_iterator(
 
 
 def _get_previous_event(
-        state: Optional[Dict[Text, float]]
+    state: Optional[Dict[Text, float]]
 ) -> Tuple[Optional[Text], Optional[Text]]:
     """Returns previous event type and name.
 
@@ -278,8 +278,8 @@ def _get_previous_event(
     # We need to look out for `prev_` and `intent_` prefixes in the labels.
     for turn_label in state:
         if (
-                turn_label.startswith(PREV_PREFIX)
-                and turn_label.replace(PREV_PREFIX, "") != ACTION_LISTEN_NAME
+            turn_label.startswith(PREV_PREFIX)
+            and turn_label.replace(PREV_PREFIX, "") != ACTION_LISTEN_NAME
         ):
             # The `prev_...` was an action that was NOT `action_listen`
             return "action", turn_label.replace(PREV_PREFIX, "")

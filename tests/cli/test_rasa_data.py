@@ -78,7 +78,7 @@ def _text_is_part_of_output_error(text: Text, output: RunResult) -> bool:
 
 
 def test_data_validate_without_max_history(
-        run_in_default_project_with_info: Callable[..., RunResult]
+    run_in_default_project_with_info: Callable[..., RunResult]
 ):
     output = run_in_default_project_with_info("data", "validate")
     assert _text_is_part_of_output_error(
@@ -87,7 +87,7 @@ def test_data_validate_without_max_history(
 
 
 def test_data_validate_stories_without_max_history(
-        run_in_default_project_with_info: Callable[..., RunResult]
+    run_in_default_project_with_info: Callable[..., RunResult]
 ):
     output = run_in_default_project_with_info("data", "validate", "stories")
     assert _text_is_part_of_output_error(
@@ -96,7 +96,7 @@ def test_data_validate_stories_without_max_history(
 
 
 def test_data_validate_stories_with_max_history_zero(
-        run_in_default_project_with_info: Callable[..., RunResult]
+    run_in_default_project_with_info: Callable[..., RunResult]
 ):
     output = run_in_default_project_with_info(
         "data", "validate", "stories", "--max-history", "0"
@@ -111,7 +111,7 @@ def test_validate_files_exit_early():
         args = {
             "domain": "data/test_domains/duplicate_intents.yml",
             "data": None,
-            "max_history": None
+            "max_history": None,
         }
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
 
