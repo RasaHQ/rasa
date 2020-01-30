@@ -28,6 +28,12 @@ def add_subparser(
         action="store_true",
         help="Automatically choose default options for prompts and suppress warnings.",
     )
+    scaffold_parser.add_argument(
+        "--init-dir", 
+        default=".", 
+        help="Descibe init folder path."
+    )
+
     scaffold_parser.set_defaults(func=run)
 
 
@@ -181,7 +187,7 @@ def run(args: argparse.Namespace) -> None:
             "created [default: current directory]",
             default=".",
         )
-        .skip_if(args.no_prompt, default=".")
+        .skip_if(args.no_prompt, default=args.init_dir)
         .ask()
     )
 
