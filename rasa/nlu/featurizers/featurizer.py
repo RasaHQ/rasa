@@ -69,11 +69,16 @@ class Featurizer(Component):
         else:
             return additional_features
 
+    @staticmethod
     def _calculate_cls_vector(
-        self, features: np.ndarray, pooling_operation: Text
+        features: np.ndarray, pooling_operation: Text
     ) -> np.ndarray:
         # take only non zeros feature vectors into account
         non_zero_features = np.array([f for f in features if f.any()])
+
+        # if features are all zero just return a vector with all zeros
+        if non_zero_features.size == 0:
+            return np.zeros([1, features.shape[-1]])
 
         if pooling_operation == "mean":
             return np.mean(non_zero_features, axis=0, keepdims=True)

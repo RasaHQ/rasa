@@ -116,11 +116,14 @@ def test_sequence_to_sentence_features(features, expected):
             np.array([[1.0, 3.0, 0.0, 2.0], [4.0, 3.0, 1.0, 0.0]]),
             np.array([[4.0, 3.0, 1.0, 2.0]]),
         ),
+        (
+            "max",
+            np.array([[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]),
+            np.array([[0.0, 0.0, 0.0, 0.0]]),
+        ),
     ],
 )
 def test_calculate_cls_vector(pooling, features, expected):
-    featurizer = Featurizer()
-
-    actual = featurizer._calculate_cls_vector(features, pooling)
+    actual = Featurizer._calculate_cls_vector(features, pooling)
 
     assert np.all(actual == expected)
