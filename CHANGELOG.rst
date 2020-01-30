@@ -17,6 +17,89 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.7.0] - 2020-01-29
+^^^^^^^^^^^^^^^^^^^^
+
+Deprecations and Removals
+-------------------------
+- `#4964 <https://github.com/rasahq/rasa/issues/4964>`_: The endpoint ``/conversations/<conversation_id>/execute`` is now deprecated. Instead, users should use
+  the ``/conversations/<conversation_id>/trigger_intent`` endpoint and thus trigger intents instead of actions.
+- `#4978 <https://github.com/rasahq/rasa/issues/4978>`_: Remove option ``use_cls_token`` from tokenizers and option ``return_sequence`` from featurizers.
+
+  By default all tokenizer add a special token (``__CLS__``) to the end of the list of tokens.
+  This token will be used to capture the features of the whole utterance.
+
+  The featurizers will return a matrix of size (number-of-tokens x feature-dimension) by default.
+  This allows to train sequence models.
+  However, the feature vector of the ``__CLS__`` token can be used to train non-sequence models.
+  The corresponding classifier can decide what kind of features to use.
+
+Features
+--------
+- `#400 <https://github.com/rasahq/rasa/issues/400>`_: Rename ``templates`` key in domain to ``responses``.
+
+  ``templates`` key will still work for backwards compatibility but will raise a future warning.
+- `#4902 <https://github.com/rasahq/rasa/issues/4902>`_: Added a new configuration parameter, ``ranking_length`` to the ``EmbeddingPolicy``, ``EmbeddingIntentClassifier``,
+  and ``ResponseSelector`` classes.
+- `#4964 <https://github.com/rasahq/rasa/issues/4964>`_: External events and reminders now trigger intents (and entities) instead of actions.
+
+  Add new endpoint ``/conversations/<conversation_id>/trigger_intent``, which lets the user specify an intent and a
+  list of entities that is injected into the conversation in place of a user message. The bot then predicts and
+  executes a response action.
+- `#4978 <https://github.com/rasahq/rasa/issues/4978>`_: Add ``ConveRTTokenizer``.
+
+  The tokenizer should be used whenever the ``ConveRTFeaturizer`` is used.
+
+  Every tokenizer now supports the following configuration options:
+  ``intent_tokenization_flag``: Flag to check whether to split intents (default ``False``).
+  ``intent_split_symbol``: Symbol on which intent should be split (default ``_``)
+
+Improvements
+------------
+- `#1988 <https://github.com/rasahq/rasa/issues/1988>`_: Remove the need of specifying utter actions in the ``actions`` section explicitly if these actions are already
+  listed in the ``templates`` section.
+- `#4877 <https://github.com/rasahq/rasa/issues/4877>`_: Entity examples that have been extracted using an external extractor are excluded
+  from Markdown dumping in ``MarkdownWriter.dumps()``. The excluded external extractors
+  are ``DucklingHTTPExtractor`` and ``SpacyEntityExtractor``.
+- `#4902 <https://github.com/rasahq/rasa/issues/4902>`_: The ``EmbeddingPolicy``, ``EmbeddingIntentClassifier``, and ``ResponseSelector`` now by default normalize confidence
+  levels over the top 10 results. See :ref:`migration-to-rasa-1.7` for more details.
+- `#4964 <https://github.com/rasahq/rasa/issues/4964>`_: ``ReminderCancelled`` can now cancel multiple reminders if no name is given. It still cancels a single
+  reminder if the reminder's name is specified.
+
+Bugfixes
+--------
+- `#4774 <https://github.com/rasahq/rasa/issues/4774>`_: Requests to ``/model/train`` do not longer block other requests to the Rasa server.
+- `#4896 <https://github.com/rasahq/rasa/issues/4896>`_: Fixed default behavior of ``rasa test core --evaluate-model-directory`` when called without ``--model``. Previously, the latest model file was used as ``--model``. Now the default model directory is used instead.
+
+  New behavior of ``rasa test core --evaluate-model-directory`` when given an existing file as argument for ``--model``: Previously, this led to an error. Now a warning is displayed and the directory containing the given file is used as ``--model``.
+- `#5040 <https://github.com/rasahq/rasa/issues/5040>`_: Updated the dependency ``networkx`` from 2.3.0 to 2.4.0. The old version created incompatibilities when using pip. 
+
+  There is an imcompatibility between Rasa dependecy requests 2.22.0 and the own depedency from Rasa for networkx raising errors upon pip install. There is also a bug corrected in ``requirements.txt`` which used ``~=`` instead of ``==``. All of these are fixed using networkx 2.4.0.
+- `#5057 <https://github.com/rasahq/rasa/issues/5057>`_: Fixed compatibility issue with Microsoft Bot Framework Emulator if ``service_url`` lacked a trailing ``/``.
+- `#5092 <https://github.com/rasahq/rasa/issues/5092>`_: DynamoDB tracker store decimal values will now be rounded on save. Previously values exceeding 38 digits caused an unhandled error.
+
+Miscellaneous internal changes
+------------------------------
+- #4458, #4664, #4780, #5029
+
+
+[1.6.2] - 2020-01-28
+^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#4994 <https://github.com/rasahq/rasa/issues/4994>`_: Switching back to a TensorFlow release which only includes CPU support to reduce the
+  size of the dependencies. If you want to use the TensorFlow package with GPU support,
+  please run ``pip install tensorflow-gpu==1.15.0``.
+
+Bugfixes
+--------
+- `#5111 <https://github.com/rasahq/rasa/issues/5111>`_: Fixes ``Exception 'Loop' object has no attribute '_ready'`` error when running 
+  ``rasa init``.
+- `#5126 <https://github.com/rasahq/rasa/issues/5126>`_: Updated the end-to-end ValueError you recieve when you have a invalid story format to point
+  to the updated doc link.
+
+
 [1.6.1] - 2020-01-07
 ^^^^^^^^^^^^^^^^^^^^
 

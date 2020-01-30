@@ -1,10 +1,10 @@
 import logging
-import warnings
+from typing import Any, Dict, List, NoReturn, Optional, Text, Type
 
 from rasa.core import utils
-from rasa.utils.common import class_from_module_path
 from typing import Any, Dict, List, NoReturn, Optional, Text, Type
 from rasa.core.constants import DEFAULT_CATEGORICAL_SLOT_VALUE
+from rasa.utils.common import class_from_module_path, raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -119,10 +119,10 @@ class FloatSlot(Slot):
             )
 
         if initial_value is not None and not (min_value <= initial_value <= max_value):
-            warnings.warn(
+            raise_warning(
                 f"Float slot ('{self.name}') created with an initial value "
-                f"{self.value} outside of configured min ({self.min_value}) "
-                f"and max ({self.max_value}) values."
+                f"{self.value}. This value is outside of the configured min "
+                f"({self.min_value}) and max ({self.max_value}) values."
             )
 
     def as_feature(self) -> List[float]:
@@ -229,7 +229,7 @@ class CategoricalSlot(Slot):
                         i = self.values.index(DEFAULT_CATEGORICAL_SLOT_VALUE)
                         r[i] = 1.0
                     else:
-                        warnings.warn(
+                        raise_warning(
                             f"Categorical slot '{self.name}' is set to a value "
                             f"('{self.value}') "
                             "that is not specified in the domain. "
@@ -238,7 +238,6 @@ class CategoricalSlot(Slot):
                             "Make sure to add all values a categorical "
                             "slot should store to the domain."
                         )
-
         except (TypeError, ValueError):
             logger.exception("Failed to featurize categorical slot.")
             return r

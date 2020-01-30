@@ -34,14 +34,6 @@ DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 pytest_plugins = ["pytester"]
 
 
-@pytest.fixture(autouse=True)
-def set_log_level_debug(caplog: LogCaptureFixture) -> None:
-    # Set the post-test log level to DEBUG for failing tests.  For all tests
-    # (failing and successful), the live log level can be additionally set in
-    # `setup.cfg`. It should be set to WARNING.
-    caplog.set_level(logging.DEBUG)
-
-
 @pytest.fixture
 async def default_agent(tmpdir_factory: TempdirFactory) -> Agent:
     model_path = tmpdir_factory.mktemp("model").strpath
@@ -220,50 +212,3 @@ def get_test_client(server):
     test_client = server.test_client
     test_client.port = None
     return test_client
-
-
-@contextmanager
-def assert_log_emitted(
-    _caplog: LogCaptureFixture, logger_name: Text, log_level: int, text: Text = None
-) -> None:
-    """Context manager testing whether a logging message has been emitted.
-
-    Provides a context in which an assertion is made about a logging message.
-    Raises an `AssertionError` if the log isn't emitted as expected.
-
-    Example usage:
-
-    ```
-    with assert_log_emitted(caplog, LOGGER_NAME, LOGGING_LEVEL, TEXT):
-        <method supposed to emit TEXT at level LOGGING_LEVEL>
-    ```
-
-    Args:
-        _caplog: `LogCaptureFixture` used to capture logs.
-        logger_name: Name of the logger being examined.
-        log_level: Log level to be tested.
-        text: Logging message to be tested (optional). If left blank, assertion is made
-            only about `log_level` and `logger_name`.
-
-    Yields:
-        `None`
-
-    """
-
-    yield
-
-    record_tuples = _caplog.record_tuples
-
-    if not any(
-        (
-            record[0] == logger_name
-            and record[1] == log_level
-            and (text in record[2] if text else True)
-        )
-        for record in record_tuples
-    ):
-        raise AssertionError(
-            f"Did not detect expected logging output.\nExpected output is (logger "
-            f"name, log level, text): ({logger_name}, {log_level}, {text})\n"
-            f"Instead found records:\n{record_tuples}"
-        )
