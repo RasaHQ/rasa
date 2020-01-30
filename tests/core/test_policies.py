@@ -214,6 +214,7 @@ class TestKerasPolicyWithTfConfig(PolicyTestCollection):
         p = KerasPolicy(featurizer, priority, **tf_defaults())
         return p
 
+    # TODO fix and test tf config
     @pytest.mark.skip(reason="We need to fix tf.config!")
     def test_tf_config(self, trained_policy, tmpdir):
         # noinspection PyProtectedMember
@@ -229,7 +230,6 @@ class TestSklearnPolicy(PolicyTestCollection):
         p = SklearnPolicy(featurizer, priority, **kwargs)
         return p
 
-    # TODO fix and test tf config
     @pytest.yield_fixture
     def mock_search(self):
         with patch("rasa.core.policies.sklearn_policy.GridSearchCV") as gs:
@@ -512,19 +512,20 @@ class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
         )
 
 
-# TODO test tf config
-# class TestTEDPolicyWithTfConfig(TestTEDPolicy):
-#     def create_policy(self, featurizer, priority):
-#         p = TEDPolicy(featurizer=featurizer, priority=priority, **tf_defaults())
-#         return p
-#
-#     def test_tf_config(self, trained_policy, tmpdir):
-#         # noinspection PyProtectedMember
-#         assert trained_policy.session._config == session_config()
-#         trained_policy.persist(tmpdir.strpath)
-#         loaded = trained_policy.__class__.load(tmpdir.strpath)
-#         # noinspection PyProtectedMember
-#         assert loaded.session._config == session_config()
+class TestTEDPolicyWithTfConfig(TestTEDPolicy):
+    def create_policy(self, featurizer, priority):
+        p = TEDPolicy(featurizer=featurizer, priority=priority, **tf_defaults())
+        return p
+
+    # TODO test tf config
+    @pytest.mark.skip(reason="Fix tf config.")
+    def test_tf_config(self, trained_policy, tmpdir):
+        # noinspection PyProtectedMember
+        assert trained_policy.session._config == session_config()
+        trained_policy.persist(tmpdir.strpath)
+        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        # noinspection PyProtectedMember
+        assert loaded.session._config == session_config()
 
 
 class TestMemoizationPolicy(PolicyTestCollection):
