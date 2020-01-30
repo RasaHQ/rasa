@@ -29,7 +29,6 @@ class SparseDropout(tf.keras.layers.Dropout):
 class DenseForSparse(tf.keras.layers.Dense):
     """Dense layer for sparse input tensor"""
 
-    # noinspection PyPep8Naming
     def __init__(self, reg_lambda: float, **kwargs) -> None:
         l1_regularizer = tf.keras.regularizers.l1(reg_lambda)
 
@@ -57,7 +56,27 @@ class DenseForSparse(tf.keras.layers.Dense):
         return outputs
 
 
-class ReluFfn(tf.keras.layers.Layer):
+class DenseWithSparseWeights(tf.keras.layers.Dense):
+    def __init__(self, sparsity: int = 0.8, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.sparsity = sparsity
+
+    def build(self, input_shape: tf.TensorShape) -> None:
+        super().build(input_shape)
+        # create random mask to set some weights to 0
+        kernel_mask = tf.random.uniform(tf.shape(self.kernel), 0, 1)
+        kernel_mask = tf.cast(
+            tf.greater_equal(kernel_mask, self.sparsity), self.kernel.dtype
+        )
+        self.kernel_mask = tf.Variable(initial_value=kernel_mask, trainable=False)
+
+    def call(self, inputs: tf.Tensor) -> tf.Tensor:
+        # set some weights to 0 according to precomputed mask
+        self.kernel.assign(self.kernel * self.kernel_mask)
+        return super().call(inputs)
+
+
+class Ffnn(tf.keras.layers.Layer):
     """Create feed-forward network with hidden layers and name suffix."""
 
     def __init__(
@@ -73,9 +92,9 @@ class ReluFfn(tf.keras.layers.Layer):
         self._ffn_layers = []
         for i, layer_size in enumerate(layer_sizes):
             self._ffn_layers.append(
-                tf.keras.layers.Dense(
+                DenseWithSparseWeights(
                     units=layer_size,
-                    activation="relu",
+                    activation=tfa.activations.gelu,
                     kernel_regularizer=l2_regularizer,
                     name=f"hidden_layer_{layer_name_suffix}_{i}",
                 )
@@ -178,10 +197,10 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         self._depth = d_model // self.num_heads
 
-        self._wq = tf.keras.layers.Dense(d_model, use_bias=False)
-        self._wk = tf.keras.layers.Dense(d_model, use_bias=False)
-        self._wv = tf.keras.layers.Dense(d_model, use_bias=False)
-        self._dense = tf.keras.layers.Dense(d_model)
+        self._wq = DenseWithSparseWeights(units=d_model, use_bias=False)
+        self._wk = DenseWithSparseWeights(units=d_model, use_bias=False)
+        self._wv = DenseWithSparseWeights(units=d_model, use_bias=False)
+        self._dense = DenseWithSparseWeights(units=d_model)
 
     def _split_heads(self, x: tf.Tensor) -> tf.Tensor:
         """Split the last dimension into (num_heads, depth).
@@ -249,9 +268,11 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
 
         self._ffn_layers = [
             tf.keras.layers.LayerNormalization(epsilon=1e-6),
-            tf.keras.layers.Dense(dff, activation="relu"),  # (batch_size, seq_len, dff)
+            DenseWithSparseWeights(
+                units=dff, activation=tfa.activations.gelu
+            ),  # (batch_size, seq_len, dff)
             tf.keras.layers.Dropout(rate),
-            tf.keras.layers.Dense(d_model),  # (batch_size, seq_len, d_model)
+            DenseWithSparseWeights(units=d_model),  # (batch_size, seq_len, d_model)
             tf.keras.layers.Dropout(rate),
         ]
 
@@ -317,7 +338,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         self.unidirectional = unidirectional
 
         l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
-        self._embedding = tf.keras.layers.Dense(
+        self._embedding = DenseWithSparseWeights(
             units=d_model, kernel_regularizer=l2_regularizer
         )
 
@@ -376,12 +397,9 @@ class InputMask(tf.keras.layers.Layer):
         lm_mask_bool = tf.greater_equal(lm_mask_prob, 0.85)
 
         def x_masked():
-            x_random_pad = (
-                tf.random.uniform(
-                    tf.shape(x), tf.reduce_min(x), tf.reduce_max(x), x.dtype
-                )
-                * (1 - mask)
-            )
+            x_random_pad = tf.random.uniform(
+                tf.shape(x), tf.reduce_min(x), tf.reduce_max(x), x.dtype
+            ) * (1 - mask)
             # shuffle over batch dim
             x_shuffle = tf.random.shuffle(x * mask + x_random_pad)
 

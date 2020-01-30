@@ -921,13 +921,13 @@ class DIET(RasaModel):
             self.config[C2],
             self.config[DENSE_DIM]["label"],
         )
-        self._tf_layers["ffnn.text"] = tf_layers.ReluFfn(
+        self._tf_layers["ffnn.text"] = tf_layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_TEXT],
             self.config[DROPRATE],
             self.config[C2],
             "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "text",
         )
-        self._tf_layers["ffnn.label"] = tf_layers.ReluFfn(
+        self._tf_layers["ffnn.label"] = tf_layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_LABEL],
             self.config[DROPRATE],
             self.config[C2],
@@ -1061,7 +1061,7 @@ class DIET(RasaModel):
             pre, lm_mask_bool = (x, None)
 
         transformed = self._tf_layers["transformer"](pre, 1 - mask, self._training)
-        transformed = tf.nn.relu(transformed)
+        transformed = tfa.activations.gelu(transformed)
 
         return transformed, x, lm_mask_bool
 
@@ -1139,7 +1139,7 @@ class DIET(RasaModel):
         return loss, f1
 
     def batch_loss(
-        self, batch_in: Union[List[tf.Tensor], List[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
