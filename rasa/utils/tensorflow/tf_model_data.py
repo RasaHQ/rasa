@@ -166,6 +166,10 @@ class RasaModelData:
         if self.label_key not in data or len(data[self.label_key]) > 1:
             raise ValueError(f"Key '{self.label_key}' not in RasaModelData.")
 
+        # skip balancing if labels are token based
+        if data[self.label_key][0].size > 2:
+            return data
+
         label_ids = self._create_label_ids(data[self.label_key][0])
 
         unique_label_ids, counts_label_ids = np.unique(

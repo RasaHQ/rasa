@@ -5,6 +5,7 @@ from rasa.constants import DOCS_BASE_URL
 from rasa.nlu.components import any_of
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.constants import (
+    TOKENS_NAMES,
     TEXT_ATTRIBUTE,
     ENTITIES_ATTRIBUTE,
     DENSE_FEATURE_NAMES,
@@ -12,6 +13,7 @@ from rasa.nlu.constants import (
 )
 from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES_TEXT,
+    HIDDEN_LAYERS_SIZES_LABEL,
     SHARE_HIDDEN_LAYERS,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
@@ -23,6 +25,10 @@ from rasa.utils.tensorflow.constants import (
     RANDOM_SEED,
     LEARNING_RATE,
     DENSE_DIM,
+    RANKING_LENGTH,
+    LOSS_TYPE,
+    SIMILARITY_TYPE,
+    NUM_NEG,
     SPARSE_INPUT_DROPOUT,
     MASKED_LM,
     ENTITY_RECOGNITION,
@@ -31,22 +37,28 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EPOCHS,
     UNIDIRECTIONAL_ENCODER,
     DROPRATE,
+    C_EMB,
     C2,
-    BILOU_FLAG,
+    SCALE_LOSS,
+    USE_MAX_SIM_NEG,
+    MU_NEG,
+    MU_POS,
+    EMBED_DIM,
 )
 from utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
 
-class CRFEntityExtractor(DIETClassifier):
+class EmbeddingIntentClassifier(DIETClassifier):
 
     provides = [ENTITIES_ATTRIBUTE]
 
     requires = [
+        TOKENS_NAMES[TEXT_ATTRIBUTE],
         any_of(
             DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE], SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
-        )
+        ),
     ]
 
     # default properties (DOC MARKER - don't remove)
@@ -54,7 +66,20 @@ class CRFEntityExtractor(DIETClassifier):
         # nn architecture
         # sizes of hidden layers before the embedding layer for input words
         # the number of hidden layers is thus equal to the length of this list
-        HIDDEN_LAYERS_SIZES_TEXT: [256, 128],
+        HIDDEN_LAYERS_SIZES_TEXT: [],
+        # sizes of hidden layers before the embedding layer for intent labels
+        # the number of hidden layers is thus equal to the length of this list
+        HIDDEN_LAYERS_SIZES_LABEL: [],
+        # Whether to share the hidden layer weights between input words and labels
+        SHARE_HIDDEN_LAYERS: False,
+        # number of units in transformer
+        TRANSFORMER_SIZE: 256,
+        # number of transformer layers
+        NUM_TRANSFORMER_LAYERS: 2,
+        # number of attention heads in transformer
+        NUM_HEADS: 4,
+        # max sequence length if pos_encoding='emb'
+        MAX_SEQ_LENGTH: 256,
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
@@ -70,42 +95,56 @@ class CRFEntityExtractor(DIETClassifier):
         # embedding parameters
         # default dense dimension used if no dense features are present
         DENSE_DIM: {"text": 512, "label": 20},
+        # dimension size of embedding vectors
+        EMBED_DIM: 20,
+        # the type of the similarity
+        NUM_NEG: 20,
+        # flag if minimize only maximum similarity over incorrect actions
+        SIMILARITY_TYPE: "auto",  # string 'auto' or 'cosine' or 'inner'
+        # the type of the loss function
+        LOSS_TYPE: "softmax",  # string 'softmax' or 'margin'
+        # number of top intents to normalize scores for softmax loss_type
+        # set to 0 to turn off normalization
+        RANKING_LENGTH: 10,
+        # how similar the algorithm should try
+        # to make embedding vectors for correct labels
+        MU_POS: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
+        # maximum negative similarity for incorrect labels
+        MU_NEG: -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
+        # flag: if true, only minimize the maximum similarity for incorrect labels
+        USE_MAX_SIM_NEG: True,
+        # scale loss inverse proportionally to confidence of correct prediction
+        SCALE_LOSS: True,
         # regularization parameters
         # the scale of L2 regularization
         C2: 0.002,
+        # the scale of how critical the algorithm should be of minimizing the
+        # maximum similarity between embeddings of different labels
+        C_EMB: 0.8,
         # dropout rate for rnn
         DROPRATE: 0.2,
+        # use a unidirectional or bidirectional encoder
+        UNIDIRECTIONAL_ENCODER: False,
         # if true apply dropout to sparse tensors
-        SPARSE_INPUT_DROPOUT: False,
+        SPARSE_INPUT_DROPOUT: True,
         # visualization of accuracy
         # how often to calculate training accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
-        EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance,
-        # BILOU_flag determines whether to use BILOU tagging or not.
-        # More rigorous however requires more examples per entity
-        # rule of thumb: use only if more than 100 egs. per entity
-        BILOU_FLAG: True,
+        EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
     }
     # end default properties (DOC MARKER - don't remove)
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
-        component_config[INTENT_CLASSIFICATION] = False
-        component_config[ENTITY_RECOGNITION] = True
+        component_config[INTENT_CLASSIFICATION] = True
+        component_config[ENTITY_RECOGNITION] = False
         component_config[MASKED_LM] = False
-        component_config[TRANSFORMER_SIZE] = 128
-        component_config[NUM_TRANSFORMER_LAYERS] = 0
-        component_config[NUM_HEADS] = 4
-        component_config[SHARE_HIDDEN_LAYERS] = False
-        component_config[MAX_SEQ_LENGTH] = 256
-        component_config[UNIDIRECTIONAL_ENCODER] = True
 
         super().__init__(component_config)
 
         raise_warning(
-            f"'CRFEntityExtractor' is deprecated. Use 'DIETClassifier' in"
-            f"combination with the 'LexicalSyntacticFeaturizer'. Check "
-            f"Check '{DOCS_BASE_URL}/nlu/components/' for more details.",
+            f"'EmbeddingIntentClassifier' is deprecated. Use 'DIETClassifier' instead ."
+            f" Check '{DOCS_BASE_URL}/nlu/components/' for more details.",
             DeprecationWarning,
         )

@@ -40,7 +40,6 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    POS_ENCODING,
     MAX_SEQ_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
@@ -118,8 +117,6 @@ class DIETClassifier(EntityExtractor):
         NUM_TRANSFORMER_LAYERS: 2,
         # number of attention heads in transformer
         NUM_HEADS: 4,
-        # type of positional encoding in transformer
-        POS_ENCODING: "timing",  # string 'timing' or 'emb'
         # max sequence length if pos_encoding='emb'
         MAX_SEQ_LENGTH: 256,
         # training parameters
@@ -167,6 +164,8 @@ class DIETClassifier(EntityExtractor):
         DROPRATE: 0.2,
         # use a unidirectional or bidirectional encoder
         UNIDIRECTIONAL_ENCODER: False,
+        # if true apply dropout to sparse tensors
+        SPARSE_INPUT_DROPOUT: True,
         # visualization of accuracy
         # how often to calculate training accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
@@ -180,28 +179,29 @@ class DIETClassifier(EntityExtractor):
         # if true random tokens of the input message will be masked and the model
         # should predict those tokens
         MASKED_LM: False,
-        # if true apply dropout to sparse tensors
-        SPARSE_INPUT_DROPOUT: True,
-        # if true BILOU schema is used for entities
-        BILOU_FLAG: False,
+        # BILOU_flag determines whether to use BILOU tagging or not.
+        # More rigorous however requires more examples per entity
+        # rule of thumb: use only if more than 100 egs. per entity
+        BILOU_FLAG: True,
     }
     # end default properties (DOC MARKER - don't remove)
 
     # init helpers
     def _check_config_parameters(self) -> None:
-        if (
-            self.component_config[SHARE_HIDDEN_LAYERS]
-            and self.component_config[HIDDEN_LAYERS_SIZES_TEXT]
-            != self.component_config[HIDDEN_LAYERS_SIZES_LABEL]
-        ):
-            raise ValueError(
-                "If hidden layer weights are shared,"
-                "hidden_layer_sizes for text and label must coincide."
-            )
+        if self.component_config[INTENT_CLASSIFICATION]:
+            if (
+                self.component_config[SHARE_HIDDEN_LAYERS]
+                and self.component_config[HIDDEN_LAYERS_SIZES_TEXT]
+                != self.component_config[HIDDEN_LAYERS_SIZES_LABEL]
+            ):
+                raise ValueError(
+                    "If hidden layer weights are shared,"
+                    "hidden_layer_sizes for text and label must coincide."
+                )
 
-        self.component_config = train_utils.update_similarity_type(
-            self.component_config
-        )
+            self.component_config = train_utils.update_similarity_type(
+                self.component_config
+            )
 
         if self.component_config[EVAL_NUM_EPOCHS] < 1:
             self.component_config[EVAL_NUM_EPOCHS] = self.component_config[EPOCHS]
@@ -241,6 +241,10 @@ class DIETClassifier(EntityExtractor):
         self.num_tags = 0
 
         self.data_example = None
+
+        self.label_key = (
+            "label_ids" if self.component_config[INTENT_CLASSIFICATION] else "tag_ids"
+        )
 
     # training data helpers:
     @staticmethod
@@ -483,7 +487,7 @@ class DIETClassifier(EntityExtractor):
         label_ids = np.array(label_ids)
         tag_ids = np.array(tag_ids)
 
-        model_data = RasaModelData(label_key="label_ids")
+        model_data = RasaModelData(label_key=self.label_key)
         model_data.add_features("text_features", [X_sparse, X_dense])
         model_data.add_features("label_features", [Y_sparse, Y_dense])
         if label_attribute and model_data.feature_not_exists("label_features"):
@@ -789,10 +793,10 @@ class DIETClassifier(EntityExtractor):
         file_name = meta.get("file")
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
+        label_key = "label_ids" if meta[INTENT_CLASSIFICATION] else "tag_ids"
+
         with open(os.path.join(model_dir, file_name + ".data_example.pkl"), "rb") as f:
-            model_data_example = RasaModelData(
-                label_key="label_ids", data=pickle.load(f)
-            )
+            model_data_example = RasaModelData(label_key=label_key, data=pickle.load(f))
 
         with open(os.path.join(model_dir, file_name + ".label_data.pkl"), "rb") as f:
             label_data = pickle.load(f)
@@ -822,7 +826,7 @@ class DIETClassifier(EntityExtractor):
         )
         # build the graph for prediction
         predict_data_example = RasaModelData(
-            label_key="label_ids",
+            label_key=label_key,
             data={k: vs for k, vs in model_data_example.items() if "text" in k},
         )
         model.build_for_predict(predict_data_example)
@@ -895,9 +899,12 @@ class DIET(RasaModel):
 
     def _prepare_layers(self) -> None:
         self._prepare_sequence_layers()
-        self._prepare_mask_lm_layers()
-        self._prepare_intent_classification_layers()
-        self._prepare_entity_recognition_layers()
+        if self.config[MASKED_LM]:
+            self._prepare_mask_lm_layers()
+        if self.config[INTENT_CLASSIFICATION]:
+            self._prepare_intent_classification_layers()
+        if self.config[ENTITY_RECOGNITION]:
+            self._prepare_entity_recognition_layers()
 
     @staticmethod
     def _create_sparse_dense_layer(
@@ -931,24 +938,26 @@ class DIET(RasaModel):
             self.config[C2],
             self.config[DENSE_DIM]["text"],
         )
-        self._tf_layers["sparse_to_dense.label"] = self._create_sparse_dense_layer(
-            self.data_signature["label_features"],
-            "label",
-            self.config[C2],
-            self.config[DENSE_DIM]["label"],
-        )
+        if self.config[INTENT_CLASSIFICATION]:
+            self._tf_layers["sparse_to_dense.label"] = self._create_sparse_dense_layer(
+                self.data_signature["label_features"],
+                "label",
+                self.config[C2],
+                self.config[DENSE_DIM]["label"],
+            )
         self._tf_layers["ffnn.text"] = tf_layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_TEXT],
             self.config[DROPRATE],
             self.config[C2],
             "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "text",
         )
-        self._tf_layers["ffnn.label"] = tf_layers.Ffnn(
-            self.config[HIDDEN_LAYERS_SIZES_LABEL],
-            self.config[DROPRATE],
-            self.config[C2],
-            "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "label",
-        )
+        if self.config[INTENT_CLASSIFICATION]:
+            self._tf_layers["ffnn.label"] = tf_layers.Ffnn(
+                self.config[HIDDEN_LAYERS_SIZES_LABEL],
+                self.config[DROPRATE],
+                self.config[C2],
+                "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "label",
+            )
         self._tf_layers["transformer"] = (
             tf_layers.TransformerEncoder(
                 self.config[NUM_TRANSFORMER_LAYERS],

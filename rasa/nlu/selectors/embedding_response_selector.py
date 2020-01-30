@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Text
+from typing import Any, Dict, Text, Optional
 
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -159,27 +159,27 @@ class ResponseSelector(DIETClassifier):
         # selector config
         # name of the intent for which this response selector is to be trained
         "retrieval_intent": None,
-        # if true intent classification is trained and intent predicted
-        INTENT_CLASSIFICATION: True,
-        # if true named entity recognition is trained and entities predicted
-        # (should always be false)
-        ENTITY_RECOGNITION: False,
-        # if true random tokens of the input message will be masked and the model
-        # should predict those tokens
-        MASKED_LM: False,
         # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: False,
     }
-
     # end default properties (DOC MARKER - don't remove)
+
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None):
+        super().__init__(component_config)
+
+        # ResponseSelector should not be able to set the following properties
+        self.component_config[INTENT_CLASSIFICATION] = True
+        self.component_config[ENTITY_RECOGNITION] = False
+        self.component_config[MASKED_LM] = False
 
     def _load_selector_params(self, config: Dict[Text, Any]) -> None:
         self.retrieval_intent = config["retrieval_intent"]
         if not self.retrieval_intent:
             # retrieval intent was left to its default value
             logger.info(
-                "Retrieval intent parameter was left to its default value. This response selector will be trained"
-                "on training examples combining all retrieval intents."
+                "Retrieval intent parameter was left to its default value. This "
+                "response selector will be trained on training examples combining "
+                "all retrieval intents."
             )
 
     def _check_config_parameters(self) -> None:
