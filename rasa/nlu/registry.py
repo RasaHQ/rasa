@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.constants import DOCS_URL_COMPONENTS
 
-from rasa.nlu.classifiers.DIET_classifier import DIETClassifier
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier

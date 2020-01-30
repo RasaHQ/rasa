@@ -7,6 +7,7 @@ INTENT_ATTRIBUTE = "intent"
 RESPONSE_ATTRIBUTE = "response"
 
 ENTITIES_ATTRIBUTE = "entities"
+BILOU_ENTITIES_ATTRIBUTE = "bilou_entities"
 
 EXTRACTOR_ATTRIBUTE = "extractor"
 

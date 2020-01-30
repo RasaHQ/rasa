@@ -13,11 +13,9 @@ from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import TOKENS_NAMES, TEXT_ATTRIBUTE, SPARSE_FEATURE_NAMES
+from rasa.nlu.model import Metadata
 
 logger = logging.getLogger(__name__)
-
-if typing.TYPE_CHECKING:
-    from rasa.nlu.model import Metadata
 
 
 class LexicalSyntacticFeaturizer(Featurizer):
@@ -269,7 +267,7 @@ class LexicalSyntacticFeaturizer(Featurizer):
         cls,
         meta: Dict[Text, Any],
         model_dir: Optional[Text] = None,
-        model_metadata: Optional["Metadata"] = None,
+        model_metadata: Optional[Metadata] = None,
         cached_component: Optional["LexicalSyntacticFeaturizer"] = None,
         **kwargs: Any,
     ) -> "LexicalSyntacticFeaturizer":

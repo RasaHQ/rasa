@@ -22,11 +22,9 @@ from rasa.nlu.constants import (
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import raise_warning
+from rasa.nlu.model import Metadata
 
 logger = logging.getLogger(__name__)
-
-if typing.TYPE_CHECKING:
-    from rasa.nlu.model import Metadata
 
 
 class RegexFeaturizer(Featurizer):
@@ -168,7 +166,7 @@ class RegexFeaturizer(Featurizer):
         cls,
         meta: Dict[Text, Any],
         model_dir: Optional[Text] = None,
-        model_metadata: Optional["Metadata"] = None,
+        model_metadata: Optional[Metadata] = None,
         cached_component: Optional["RegexFeaturizer"] = None,
         **kwargs: Any,
     ) -> "RegexFeaturizer":

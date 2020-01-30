@@ -1,3 +1,4 @@
+from rasa.nlu.constants import TEXT_ATTRIBUTE
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData, Message
 
@@ -172,6 +173,7 @@ def test_crf_create_entity_dict(spacy_nlp):
                             },
                         }
                     ],
+                    "spacy_doc": spacy_nlp("where is St. Michael's Hospital?"),
                 },
             )
         },
@@ -196,14 +198,17 @@ def test_crf_create_entity_dict(spacy_nlp):
                             },
                         }
                     ],
+                    "spacy_doc": spacy_nlp("where is Children's Hospital?"),
                 },
             )
         },
     ]
     for ex in examples:
         # spacy tokenizers receives a Doc as input and whitespace tokenizer receives a text
-        spacy_tokens = spacy_tokenizer.tokenize(spacy_nlp(ex["message"].text))
-        white_space_tokens = white_space_tokenizer.tokenize(ex["message"].text)
+        spacy_tokens = spacy_tokenizer.tokenize(ex["message"], TEXT_ATTRIBUTE)
+        white_space_tokens = white_space_tokenizer.tokenize(
+            ex["message"], TEXT_ATTRIBUTE
+        )
         for tokenizer, tokens in [
             ("SpacyTokenizer", spacy_tokens),
             ("WhitespaceTokenizer", white_space_tokens),

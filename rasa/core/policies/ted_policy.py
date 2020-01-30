@@ -169,7 +169,7 @@ class TEDPolicy(Policy):
         self.config = copy.deepcopy(self.defaults)
         self.config.update(kwargs)
 
-        self.config = train_utils.update_auto_similarity_type(self.config)
+        self.config = train_utils.update_similarity_type(self.config)
 
         if self.config[EVAL_NUM_EPOCHS] < 1:
             self.config[EVAL_NUM_EPOCHS] = self.config[EPOCHS]
@@ -407,7 +407,7 @@ class TEDPolicy(Policy):
         with open(os.path.join(path, file_name + ".priority.pkl"), "rb") as f:
             priority = pickle.load(f)
 
-        meta = train_utils.update_auto_similarity_type(meta)
+        meta = train_utils.update_similarity_type(meta)
 
         model = TED.load(
             tf_model_file,

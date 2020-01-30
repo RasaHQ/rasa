@@ -13,7 +13,7 @@ from rasa.nlu.constants import (
     INTENT_ATTRIBUTE,
 )
 from rasa.utils.tensorflow.constants import LOSS_TYPE, RANDOM_SEED, RANKING_LENGTH
-from rasa.nlu.classifiers.DIET_classifier import DIETClassifier
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
 from rasa.nlu.training_data import Message
 from rasa.utils import train_utils

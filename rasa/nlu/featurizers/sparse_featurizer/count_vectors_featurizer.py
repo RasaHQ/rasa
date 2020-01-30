@@ -264,7 +264,7 @@ class CountVectorsFeaturizer(Featurizer):
         return tokens
 
     def _get_processed_message_tokens_by_attribute(
-        self, message: "Message", attribute: Text = TEXT_ATTRIBUTE
+        self, message: Message, attribute: Text = TEXT_ATTRIBUTE
     ) -> List[Text]:
         """Get processed text of attribute of a message"""
 
@@ -302,7 +302,7 @@ class CountVectorsFeaturizer(Featurizer):
             )
 
     def _get_all_attributes_processed_tokens(
-        self, training_data: "TrainingData"
+        self, training_data: TrainingData
     ) -> Dict[Text, List[List[Text]]]:
         """Get processed text for all attributes of examples in training data"""
 
@@ -444,7 +444,7 @@ class CountVectorsFeaturizer(Featurizer):
             return None
 
     def _set_attribute_features(
-        self, attribute: Text, attribute_features: List, training_data: "TrainingData"
+        self, attribute: Text, attribute_features: List, training_data: TrainingData
     ) -> None:
         """Set computed features of the attribute to corresponding message objects"""
         for i, example in enumerate(training_data.training_examples):
@@ -572,7 +572,7 @@ class CountVectorsFeaturizer(Featurizer):
     @classmethod
     def _create_shared_vocab_vectorizers(
         cls, parameters: Dict[Text, Any], vocabulary: Optional[Any] = None
-    ) -> Dict[Text, "CountVectorizer"]:
+    ) -> Dict[Text, CountVectorizer]:
         """Create vectorizers for all attributes with shared vocabulary"""
 
         shared_vectorizer = CountVectorizer(
@@ -598,7 +598,7 @@ class CountVectorsFeaturizer(Featurizer):
     @classmethod
     def _create_independent_vocab_vectorizers(
         cls, parameters: Dict[Text, Any], vocabulary: Optional[Any] = None
-    ) -> Dict[Text, "CountVectorizer"]:
+    ) -> Dict[Text, CountVectorizer]:
         """Create vectorizers for all attributes with independent vocabulary"""
 
         attribute_vectorizers = {}

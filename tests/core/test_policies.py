@@ -24,7 +24,7 @@ from rasa.core.featurizers import (
     FullDialogueTrackerFeaturizer,
 )
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-from rasa.core.policies.TED_policy import TEDPolicy
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.keras_policy import KerasPolicy

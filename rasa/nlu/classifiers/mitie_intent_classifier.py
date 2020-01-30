@@ -32,7 +32,10 @@ class MitieIntentClassifier(Component):
         return ["mitie"]
 
     def train(
-        self, training_data: TrainingData, cfg: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
         import mitie
 
