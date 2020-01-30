@@ -49,7 +49,10 @@ class RegexFeaturizer(Featurizer):
         self._add_lookup_table_regexes(lookup_tables)
 
     def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
 
         self.known_patterns = training_data.regex_features

@@ -68,3 +68,19 @@ class Featurizer(Component):
             return hstack([message.get(feature_name), additional_features])
         else:
             return additional_features
+
+    def _calculate_cls_vector(
+        self, features: np.ndarray, pooling_operation: Text
+    ) -> np.ndarray:
+        # take only non zeros feature vectors into account
+        non_zero_features = np.array([f for f in features if f.any()])
+
+        if pooling_operation == "mean":
+            return np.mean(non_zero_features, axis=0, keepdims=True)
+        elif pooling_operation == "max":
+            return np.max(non_zero_features, axis=0, keepdims=True)
+        else:
+            raise ValueError(
+                f"Invalid pooling operation specified. Available operations are "
+                f"'mean' or 'max', but provided value is '{pooling_operation}'."
+            )
