@@ -63,7 +63,7 @@ class DenseWithSparseWeights(tf.keras.layers.Dense):
 
     def build(self, input_shape: tf.TensorShape) -> None:
         super().build(input_shape)
-        # create random mask to set weights to 0
+        # create random mask to set some weights to 0
         kernel_mask = tf.random.uniform(tf.shape(self.kernel), 0, 1)
         kernel_mask = tf.cast(
             tf.greater_equal(kernel_mask, self.sparsity), self.kernel.dtype
