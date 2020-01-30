@@ -132,7 +132,7 @@ SpacyFeaturizer
 :Description:
     Creates feature for intent classification using the spacy featurizer.
 :Configuration:
-    The document vector, e.g. the vector of the ``CLS`` token can be calculated in two different ways, either via
+    The sentence vector, e.g. the vector of the ``CLS`` token can be calculated in two different ways, either via
     mean or via max pooling. You can specify the pooling method in your configuration file with the option ``pooling``.
     The default pooling method is set to ``mean``.
 
