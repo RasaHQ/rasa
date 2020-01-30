@@ -602,9 +602,7 @@ class CRFEntityExtractor(EntityExtractor):
             raise_warning(
                 f"Number of features ({len(features)}) for attribute "
                 f"'{DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]}' "
-                f"does not match number of tokens ({len(tokens)}). Set "
-                f"'return_sequence' to true in the corresponding featurizer in order "
-                f"to make use of the features in 'CRFEntityExtractor'.",
+                f"does not match number of tokens ({len(tokens)}).",
                 docs=DOCS_URL_COMPONENTS + "#crfentityextractor",
             )
             return None
