@@ -5,6 +5,7 @@ import pickle
 
 import numpy as np
 import tensorflow as tf
+import tensorflow_addons as tfa
 
 from typing import Any, List, Optional, Text, Dict, Tuple, Union
 
@@ -477,13 +478,13 @@ class TED(RasaModel):
             self.config[C_EMB],
             self.config[SCALE_LOSS],
         )
-        self._tf_layers["ffnn.dialogue"] = tf_layers.ReluFfn(
+        self._tf_layers["ffnn.dialogue"] = tf_layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_DIALOGUE],
             self.config[DROPRATE_DIALOGUE],
             self.config[C2],
             layer_name_suffix="dialogue",
         )
-        self._tf_layers["ffnn.label"] = tf_layers.ReluFfn(
+        self._tf_layers["ffnn.label"] = tf_layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_LABEL],
             self.config[DROPRATE_LABEL],
             self.config[C2],
@@ -530,6 +531,7 @@ class TED(RasaModel):
         dialogue_transformed = self._tf_layers["transformer"](
             dialogue, 1 - tf.expand_dims(mask, axis=-1), self._training
         )
+        dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 
         if self.max_history_tracker_featurizer_used:
             # pick last label if max history featurizer is used
