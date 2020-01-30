@@ -34,7 +34,7 @@ from rasa.utils.tensorflow.constants import (
     C2,
     BILOU_FLAG,
 )
-from utils.common import raise_warning
+from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 

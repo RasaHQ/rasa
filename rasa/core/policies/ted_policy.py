@@ -29,7 +29,6 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    POS_ENCODING,
     MAX_SEQ_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
@@ -78,8 +77,6 @@ class TEDPolicy(Policy):
         TRANSFORMER_SIZE: 128,
         # number of transformer layers
         NUM_TRANSFORMER_LAYERS: 1,
-        # type of positional encoding in transformer
-        POS_ENCODING: "timing",  # string 'timing' or 'emb'
         # max sequence length if pos_encoding='emb'
         MAX_SEQ_LENGTH: 256,
         # number of attention heads in transformer
@@ -173,6 +170,39 @@ class TEDPolicy(Policy):
 
         if self.config[EVAL_NUM_EPOCHS] < 1:
             self.config[EVAL_NUM_EPOCHS] = self.config[EPOCHS]
+
+        self._check_deprecated_options()
+
+    def _check_deprecated_options(self):
+        if "hidden_layers_sizes_pre_dial" in self.config:
+            logger.warning(
+                f"Option 'hidden_layers_sizes_pre_dial' got renamed to"
+                f" {HIDDEN_LAYERS_SIZES_DIALOGUE}. Please update your configuration "
+                f"file."
+            )
+            self.config[HIDDEN_LAYERS_SIZES_DIALOGUE] = self.config[
+                "hidden_layers_sizes_pre_dial"
+            ]
+        if "hidden_layers_sizes_bot" in self.config:
+            logger.warning(
+                f"Option 'hidden_layers_sizes_bot' got renamed to "
+                f"{HIDDEN_LAYERS_SIZES_LABEL}. Please update your configuration file."
+            )
+            self.config[HIDDEN_LAYERS_SIZES_LABEL] = self.config[
+                "hidden_layers_sizes_bot"
+            ]
+        if "droprate_a" in self.config:
+            logger.warning(
+                f"Option 'droprate_a' got renamed to {DROPRATE_DIALOGUE}. Please "
+                f"update your configuration file."
+            )
+            self.config[DROPRATE_DIALOGUE] = self.config["droprate_a"]
+        if "droprate_b" in self.config:
+            logger.warning(
+                f"Option 'droprate_b' got renamed to {DROPRATE_LABEL}. Please "
+                f"update your configuration file."
+            )
+            self.config[DROPRATE_LABEL] = self.config["droprate_b"]
 
     # data helpers
     # noinspection PyPep8Naming

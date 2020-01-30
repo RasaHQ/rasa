@@ -45,7 +45,7 @@ from rasa.utils.tensorflow.constants import (
     MU_POS,
     EMBED_DIM,
 )
-from utils.common import raise_warning
+from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +140,15 @@ class EmbeddingIntentClassifier(DIETClassifier):
         component_config[INTENT_CLASSIFICATION] = True
         component_config[ENTITY_RECOGNITION] = False
         component_config[MASKED_LM] = False
+
+        if "hidden_layers_sizes_a" in component_config:
+            component_config[HIDDEN_LAYERS_SIZES_TEXT] = component_config[
+                "hidden_layers_sizes_a"
+            ]
+        if "hidden_layers_sizes_b" in component_config:
+            component_config[HIDDEN_LAYERS_SIZES_LABEL] = component_config[
+                "hidden_layers_sizes_b"
+            ]
 
         super().__init__(component_config)
 
