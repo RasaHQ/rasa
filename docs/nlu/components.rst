@@ -455,7 +455,7 @@ SklearnIntentClassifier
 DIETClassifier
 ~~~~~~~~~~~~~~
 
-:Short: Embedding intent classifier
+:Short: Dual Intent Entity Transformer used for intent classification and entity extraction
 :Outputs: ``intent`` and ``intent_ranking``
 :Requires: A featurizer
 :Output-Example:
