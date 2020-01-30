@@ -64,7 +64,7 @@ class SpacyFeaturizer(Featurizer):
 
     def _calculate_cls_vector(self, features: np.ndarray) -> np.ndarray:
         # take only non zeros feature vectors into account
-        features = np.array([f for f in features if f.any()])
+        non_zero_features = np.array([f for f in features if f.any()])
 
         if self.pooling_operation == "mean":
             return np.mean(features, axis=0, keepdims=True)
