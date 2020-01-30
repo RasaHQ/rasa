@@ -333,14 +333,14 @@ class SlackInput(InputChannel):
         """Extracts the metadata from a slack API event (https://api.slack.com/types/event).
 
         Args:
-            request: a `Request` object that contains a slack API event in the body.
+            request: A `Request` object that contains a slack API event in the body.
 
         Returns:
             A `dict` containing the output channel for the response, the text from the user, the sender's ID, and
             users that have installed the bot.
         """
         slack_event = request.json
-        event = slack_event.get("event")
+        event = slack_event.get("event", {})
         return {
             "out_channel": event.get("channel"),
             "text": event.get("text"),
@@ -411,7 +411,8 @@ class SlackInput(InputChannel):
         return slack_webhook
 
     def get_output_channel(self, channel: Optional[Text] = None) -> OutputChannel:
-        if channel is not None:
+        channel = channel or self.slack_channel
+        return SlackBot(self.slack_token, channel)
             return SlackBot(self.slack_token, channel)
         else:
             return SlackBot(self.slack_token, self.slack_channel)
