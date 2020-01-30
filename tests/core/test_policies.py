@@ -214,14 +214,14 @@ class TestKerasPolicyWithTfConfig(PolicyTestCollection):
         p = KerasPolicy(featurizer, priority, **tf_defaults())
         return p
 
-    # TODO test tf config
-    # def test_tf_config(self, trained_policy, tmpdir):
-    #     # noinspection PyProtectedMember
-    #     assert trained_policy.session._config == session_config()
-    #     trained_policy.persist(tmpdir.strpath)
-    #     loaded = trained_policy.__class__.load(tmpdir.strpath)
-    #     # noinspection PyProtectedMember
-    #     assert loaded.session._config == session_config()
+    @pytest.mark.skip(reason="We need to fix tf.config!")
+    def test_tf_config(self, trained_policy, tmpdir):
+        # noinspection PyProtectedMember
+        assert trained_policy.session._config == session_config()
+        trained_policy.persist(tmpdir.strpath)
+        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        # noinspection PyProtectedMember
+        assert loaded.session._config == session_config()
 
 
 class TestSklearnPolicy(PolicyTestCollection):
