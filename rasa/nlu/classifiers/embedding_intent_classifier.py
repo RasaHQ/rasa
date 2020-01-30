@@ -124,7 +124,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         # dropout rate for rnn
         DROPRATE: 0.2,
         # use a unidirectional or bidirectional encoder
-        UNIDIRECTIONAL_ENCODER: False,
+        UNIDIRECTIONAL_ENCODER: True,
         # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: True,
         # visualization of accuracy
