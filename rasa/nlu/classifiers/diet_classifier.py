@@ -343,8 +343,7 @@ class DIETClassifier(EntityExtractor):
 
             if num_text_features != num_intent_features:
                 raise ValueError(
-                    "If embeddings are shared "
-                    "text features and label features "
+                    "If embeddings are shared text features and label features "
                     "must coincide. Check the output dimensions of previous components."
                 )
 

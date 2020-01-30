@@ -20,13 +20,6 @@ def entity_name_from_tag(tag: Text) -> Text:
     return tag
 
 
-def bilou_prefix_from_tag(tag: Text) -> Optional[Text]:
-    """Get the BILOU prefix (without -) from the given tag."""
-    if len(tag) >= 2 and tag[1] == "-" and tag[:2] in BILOU_PREFIXES:
-        return tag[0].upper()
-    return None
-
-
 def tags_to_ids(message: Message, tag_id_dict: Dict[Text, int]) -> List[int]:
     """Maps the entity tags of the message to the ids of the provided dict."""
     if message.get(BILOU_ENTITIES_ATTRIBUTE):
@@ -75,15 +68,15 @@ def apply_bilou_schema(training_data: TrainingData):
         if not entities:
             continue
 
-        entities = map_message_entities(message)
-        output = bilou_tags_from_offsets(
+        entities = _map_message_entities(message)
+        output = _bilou_tags_from_offsets(
             message.get(TOKENS_NAMES[TEXT_ATTRIBUTE]), entities
         )
 
         message.set(BILOU_ENTITIES_ATTRIBUTE, output)
 
 
-def map_message_entities(message: Message) -> List[Tuple[int, int, Text]]:
+def _map_message_entities(message: Message) -> List[Tuple[int, int, Text]]:
     """Maps the entities of the given message to their start, end, and tag values."""
 
     def convert_entity(entity):
@@ -92,7 +85,7 @@ def map_message_entities(message: Message) -> List[Tuple[int, int, Text]]:
     return [convert_entity(entity) for entity in message.get(ENTITIES_ATTRIBUTE, [])]
 
 
-def bilou_tags_from_offsets(
+def _bilou_tags_from_offsets(
     tokens: List[Token], entities: List[Tuple[int, int, Text]], missing: Text = "O"
 ) -> List[Text]:
     """Creates a list of BILOU tags for the given list of tokens and entities."""
