@@ -69,7 +69,7 @@ class SpacyFeaturizer(Featurizer):
         if self.pooling_operation == "mean":
             return np.mean(non_zero_features, axis=0, keepdims=True)
         elif self.pooling_operation == "max":
-            return np.max(features, axis=0, keepdims=True)
+            return np.max(non_zero_features, axis=0, keepdims=True)
         else:
             raise ValueError(
                 f"Invalid pooling operation specified. Available operations are "
