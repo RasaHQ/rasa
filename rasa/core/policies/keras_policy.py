@@ -71,13 +71,10 @@ class KerasPolicy(Policy):
         self.current_epoch = current_epoch
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
-        from rasa.utils.train_utils import load_tf_config
-
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
         # filter out kwargs that are used explicitly
-        self._tf_config = load_tf_config(config)
         self.rnn_size = config.pop("rnn_size")
         self.epochs = config.pop("epochs")
         self.batch_size = config.pop("batch_size")
@@ -92,14 +89,6 @@ class KerasPolicy(Policy):
             return self.model.layers[0].batch_input_shape[1]
         else:
             return None
-
-    def _build_model(self, num_features, num_actions, max_history_len) -> None:
-        warnings.warn(
-            "Deprecated, use `model_architecture` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return
 
     def model_architecture(
         self, input_shape: Tuple[int, int], output_shape: Tuple[int, Optional[int]]
@@ -273,11 +262,8 @@ class KerasPolicy(Policy):
             rasa.utils.io.create_directory_for_file(model_file)
             self.model.save(model_file, overwrite=True)
 
-            tf_config_file = os.path.join(path, "keras_policy.tf_config.pkl")
-            with open(tf_config_file, "wb") as f:
-                pickle.dump(self._tf_config, f)
         else:
-            warnings.warn(
+            logger.debug(
                 "Method `persist(...)` was called "
                 "without a trained model present. "
                 "Nothing to persist then!"
@@ -292,10 +278,6 @@ class KerasPolicy(Policy):
             meta_file = os.path.join(path, "keras_policy.json")
             if os.path.isfile(meta_file):
                 meta = json.loads(rasa.utils.io.read_file(meta_file))
-
-                tf_config_file = os.path.join(path, "keras_policy.tf_config.pkl")
-                with open(tf_config_file, "rb") as f:
-                    _tf_config = pickle.load(f)
 
                 model_file = os.path.join(path, meta["model"])
 

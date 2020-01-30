@@ -329,9 +329,12 @@ def test_run_cv_evaluation_with_response_selector():
     assert len(response_selection_results.test["Accuracy"]) == n_folds
     assert len(response_selection_results.test["Precision"]) == n_folds
     assert len(response_selection_results.test["F1-score"]) == n_folds
-    # No entity extractor in pipeline
-    assert len(entity_results.train) == 0
-    assert len(entity_results.test) == 0
+    assert len(entity_results.train["DIETClassifier"]["Accuracy"]) == n_folds
+    assert len(entity_results.train["DIETClassifier"]["Precision"]) == n_folds
+    assert len(entity_results.train["DIETClassifier"]["F1-score"]) == n_folds
+    assert len(entity_results.test["DIETClassifier"]["Accuracy"]) == n_folds
+    assert len(entity_results.test["DIETClassifier"]["Precision"]) == n_folds
+    assert len(entity_results.test["DIETClassifier"]["F1-score"]) == n_folds
 
 
 def test_response_selector_present():

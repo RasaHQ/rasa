@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, Text
 
 from rasa.nlu.training_data import TrainingData, Message
-from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
+from rasa.nlu.classifiers.DIET_classifier import DIETClassifier
 from rasa.nlu.components import any_of
 from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES_TEXT,
@@ -53,7 +53,7 @@ from rasa.utils.tensorflow.tf_model_data import RasaModelData
 logger = logging.getLogger(__name__)
 
 
-class ResponseSelector(EmbeddingIntentClassifier):
+class ResponseSelector(DIETClassifier):
     """Response selector using supervised embeddings.
 
     The response selector embeds user inputs
@@ -162,8 +162,12 @@ class ResponseSelector(EmbeddingIntentClassifier):
         # if true intent classification is trained and intent predicted
         INTENT_CLASSIFICATION: True,
         # if true named entity recognition is trained and entities predicted
+        # (should always be false)
         ENTITY_RECOGNITION: False,
+        # if true random tokens of the input message will be masked and the model
+        # should predict those tokens
         MASKED_LM: False,
+        # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: False,
     }
 
@@ -204,8 +208,8 @@ class ResponseSelector(EmbeddingIntentClassifier):
         label_id_dict = self._create_label_id_dict(
             training_data, attribute=RESPONSE_ATTRIBUTE
         )
-
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
+
         self._label_data = self._create_label_data(
             training_data, label_id_dict, attribute=RESPONSE_ATTRIBUTE
         )

@@ -1,4 +1,5 @@
 import logging
+
 import numpy as np
 import os
 import pickle
@@ -69,10 +70,11 @@ from rasa.utils.tensorflow.constants import (
     BILOU_FLAG,
 )
 
+
 logger = logging.getLogger(__name__)
 
 
-class EmbeddingIntentClassifier(EntityExtractor):
+class DIETClassifier(EntityExtractor):
     """label classifier using supervised embeddings.
 
     The embedding intent classifier embeds user inputs
@@ -175,7 +177,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
         INTENT_CLASSIFICATION: True,
         # if true named entity recognition is trained and entities predicted
         ENTITY_RECOGNITION: True,
+        # if true random tokens of the input message will be masked and the model
+        # should predict those tokens
         MASKED_LM: False,
+        # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: True,
         # if true BILOU schema is used for entities
         BILOU_FLAG: False,
@@ -234,8 +239,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
 
         # number of entity tags
         self.num_tags = 0
-
-        self._tf_config = train_utils.load_tf_config(self.component_config)
 
         self.data_example = None
 
@@ -443,11 +446,12 @@ class EmbeddingIntentClassifier(EntityExtractor):
         tag_ids = []
 
         for e in training_data:
-            _sparse, _dense = self._extract_and_add_features(e, TEXT_ATTRIBUTE)
-            if _sparse is not None:
-                X_sparse.append(_sparse)
-            if _dense is not None:
-                X_dense.append(_dense)
+            if label_attribute is None or e.get(label_attribute):
+                _sparse, _dense = self._extract_and_add_features(e, TEXT_ATTRIBUTE)
+                if _sparse is not None:
+                    X_sparse.append(_sparse)
+                if _dense is not None:
+                    X_dense.append(_dense)
 
             if e.get(label_attribute):
                 _sparse, _dense = self._extract_and_add_features(e, label_attribute)
@@ -519,11 +523,15 @@ class EmbeddingIntentClassifier(EntityExtractor):
         tag_id_dict = self._create_tag_id_dict(training_data)
         self.inverted_tag_dict = {v: k for k, v in tag_id_dict.items()}
 
+        label_attribute = (
+            INTENT_ATTRIBUTE if self.component_config[INTENT_CLASSIFICATION] else None
+        )
+
         model_data = self._create_model_data(
             training_data.training_examples,
             label_id_dict,
             tag_id_dict,
-            label_attribute=INTENT_ATTRIBUTE,
+            label_attribute=label_attribute,
         )
 
         self.num_tags = len(self.inverted_tag_dict)
@@ -565,10 +573,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         # keep one example for persisting and loading
         self.data_example = {k: [v[:1] for v in vs] for k, vs in model_data.items()}
 
-        # TODO set it in the model
-        # set random seed
-        tf.random.set_seed(self.component_config[RANDOM_SEED])
-
         self.model = DIET(
             model_data.get_signature(),
             self._label_data,
@@ -582,8 +586,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
             self.component_config[BATCH_SIZES],
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[EVAL_NUM_EPOCHS],
-            batch_strategy=self.component_config[BATCH_STRATEGY],
-            random_seed=self.component_config[RANDOM_SEED],
+            self.component_config[BATCH_STRATEGY],
         )
 
     # process helpers
@@ -760,9 +763,6 @@ class EmbeddingIntentClassifier(EntityExtractor):
         with open(os.path.join(model_dir, file_name + ".inv_tag_dict.pkl"), "wb") as f:
             pickle.dump(self.inverted_tag_dict, f)
 
-        with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "wb") as f:
-            pickle.dump(self._tf_config, f)
-
         with open(
             os.path.join(model_dir, file_name + ".batch_tuple_sizes.pkl"), "wb"
         ) as f:
@@ -776,23 +776,20 @@ class EmbeddingIntentClassifier(EntityExtractor):
         meta: Dict[Text, Any],
         model_dir: Text = None,
         model_metadata: "Metadata" = None,
-        cached_component: Optional["EmbeddingIntentClassifier"] = None,
+        cached_component: Optional["DIETClassifier"] = None,
         **kwargs: Any,
-    ) -> "EmbeddingIntentClassifier":
+    ) -> "DIETClassifier":
         """Loads the trained model from the provided directory."""
 
         if not model_dir or not meta.get("file"):
             warnings.warn(
                 f"Failed to load nlu model. "
-                f"Maybe path '{os.path.abspath(model_dir)}' doesn't exist."
+                f"Maybe the path '{os.path.abspath(model_dir)}' doesn't exist?"
             )
             return cls(component_config=meta)
 
         file_name = meta.get("file")
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
-
-        # with open(os.path.join(model_dir, file_name + ".tf_config.pkl"), "rb") as f:
-        #    _tf_config = pickle.load(f)
 
         with open(os.path.join(model_dir, file_name + ".data_example.pkl"), "rb") as f:
             model_data_example = RasaModelData(
@@ -820,10 +817,10 @@ class EmbeddingIntentClassifier(EntityExtractor):
         model = DIET.load(
             tf_model_file,
             model_data_example,
-            model_data_example.get_signature(),
-            label_data,
-            inv_tag_dict,
-            meta,
+            data_signature=model_data_example.get_signature(),
+            label_data=label_data,
+            inverted_tag_dict=inv_tag_dict,
+            config=meta,
         )
         # build the graph for prediction
         predict_data_example = RasaModelData(
@@ -841,15 +838,18 @@ class EmbeddingIntentClassifier(EntityExtractor):
         )
 
 
+# pytype: disable=key-error
+
+
 class DIET(RasaModel):
     def __init__(
         self,
         data_signature: Dict[Text, List[FeatureSignature]],
         label_data: RasaModelData,
-        inverted_tag_dict: Dict[int, Text],
+        inverted_tag_dict: Optional[Dict[int, Text]],
         config: Dict[Text, Any],
     ) -> None:
-        super().__init__(name="DIET")
+        super().__init__(name="DIET", random_seed=config[RANDOM_SEED])
 
         # data
         self.data_signature = data_signature
@@ -861,11 +861,12 @@ class DIET(RasaModel):
         self.tf_label_data = self.batch_to_model_data_format(
             label_batch, label_data.get_signature()
         )
-        self._num_tags = len(inverted_tag_dict)
+        self._num_tags = len(inverted_tag_dict) if inverted_tag_dict is not None else 0
 
         self.config = config
 
         # tf objects
+        self._tf_layers = {}
         self._prepare_layers()
 
         # tf training
@@ -895,7 +896,6 @@ class DIET(RasaModel):
             self.metrics_to_log += ["e_loss", "e_f1"]
 
     def _prepare_layers(self) -> None:
-        self._tf_layers = {}
         self._prepare_sequence_layers()
         self._prepare_mask_lm_layers()
         self._prepare_intent_classification_layers()
@@ -939,13 +939,13 @@ class DIET(RasaModel):
             self.config[C2],
             self.config[DENSE_DIM]["label"],
         )
-        self._tf_layers["ffnn.text"] = tf_layers.ReluFfn(
+        self._tf_layers["ffnn.text"] = tf_layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_TEXT],
             self.config[DROPRATE],
             self.config[C2],
             "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "text",
         )
-        self._tf_layers["ffnn.label"] = tf_layers.ReluFfn(
+        self._tf_layers["ffnn.label"] = tf_layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_LABEL],
             self.config[DROPRATE],
             self.config[C2],
@@ -989,6 +989,8 @@ class DIET(RasaModel):
             self.config[USE_MAX_SIM_NEG],
             self.config[C_EMB],
             self.config[SCALE_LOSS],
+            # set to 1 to get deterministic behaviour
+            parallel_iterations=1 if self.random_seed is not None else 1000,
         )
 
     def _prepare_intent_classification_layers(self) -> None:
@@ -1012,6 +1014,8 @@ class DIET(RasaModel):
             self.config[USE_MAX_SIM_NEG],
             self.config[C_EMB],
             self.config[SCALE_LOSS],
+            # set to 1 to get deterministic behaviour
+            parallel_iterations=1 if self.random_seed is not None else 1000,
         )
 
     def _prepare_entity_recognition_layers(self) -> None:
@@ -1044,7 +1048,6 @@ class DIET(RasaModel):
                     _f = self._tf_layers["sparse_dropout"](f, self._training)
                 else:
                     _f = f
-
                 dense_features.append(self._tf_layers[f"sparse_to_dense.{name}"](_f))
             else:
                 dense_features.append(f)
@@ -1079,7 +1082,7 @@ class DIET(RasaModel):
             pre, lm_mask_bool = (x, None)
 
         transformed = self._tf_layers["transformer"](pre, 1 - mask, self._training)
-        transformed = tf.nn.relu(transformed)
+        transformed = tfa.activations.gelu(transformed)
 
         return transformed, x, lm_mask_bool
 
@@ -1137,6 +1140,7 @@ class DIET(RasaModel):
         # remove cls token
         sequence_lengths = sequence_lengths - 1
         c = tf.cast(c[:, :, 0], tf.int32)
+
         logits = self._tf_layers["embed.logits"](a)
 
         loss = self._tf_layers["crf"].loss(logits, c, sequence_lengths)
@@ -1157,7 +1161,7 @@ class DIET(RasaModel):
         return loss, f1
 
     def batch_loss(
-        self, batch_in: Union[List[tf.Tensor], List[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
@@ -1201,7 +1205,7 @@ class DIET(RasaModel):
         return tf.math.add_n(losses)
 
     def batch_predict(
-        self, batch_in: Union[List[tf.Tensor], List[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
         tf_batch_data = self.batch_to_model_data_format(
             batch_in, self.predict_data_signature
@@ -1237,3 +1241,6 @@ class DIET(RasaModel):
             out["e_ids"] = pred_ids
 
         return out
+
+
+# pytype: enable=key-error

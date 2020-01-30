@@ -2,6 +2,7 @@ import os
 import warnings
 from typing import Any, Dict, Optional, Text
 
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.constants import ENTITIES_ATTRIBUTE
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
@@ -9,6 +10,7 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
 import rasa.utils.io
+from rasa.utils.common import raise_warning
 
 
 class EntitySynonymMapper(EntityExtractor):
@@ -78,8 +80,9 @@ class EntitySynonymMapper(EntityExtractor):
             synonyms = rasa.utils.io.read_json_file(entity_synonyms_file)
         else:
             synonyms = None
-            warnings.warn(
-                f"Failed to load synonyms file from '{entity_synonyms_file}'."
+            raise_warning(
+                f"Failed to load synonyms file from '{entity_synonyms_file}'.",
+                docs=DOCS_URL_TRAINING_DATA_NLU + "#entity-synonyms",
             )
         return cls(meta, synonyms)
 
@@ -99,14 +102,15 @@ class EntitySynonymMapper(EntityExtractor):
             if original != replacement:
                 original = original.lower()
                 if original in self.synonyms and self.synonyms[original] != replacement:
-                    warnings.warn(
-                        "Found conflicting synonym definitions "
+                    raise_warning(
+                        f"Found conflicting synonym definitions "
                         f"for {repr(original)}. Overwriting target "
                         f"{repr(self.synonyms[original])} with "
                         f"{repr(replacement)}. "
-                        "Check your training data and remove "
-                        "conflicting synonym definitions to "
-                        "prevent this from happening."
+                        f"Check your training data and remove "
+                        f"conflicting synonym definitions to "
+                        f"prevent this from happening.",
+                        docs=DOCS_URL_TRAINING_DATA_NLU + "#entity-synonyms",
                     )
 
                 self.synonyms[original] = replacement

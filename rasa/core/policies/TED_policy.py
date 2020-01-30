@@ -5,6 +5,7 @@ import pickle
 
 import numpy as np
 import tensorflow as tf
+import tensorflow_addons as tfa
 
 from typing import Any, List, Optional, Text, Dict, Tuple, Union
 
@@ -56,7 +57,7 @@ from rasa.utils.tensorflow.constants import (
 logger = logging.getLogger(__name__)
 
 
-class EmbeddingPolicy(Policy):
+class TEDPolicy(Policy):
     """Transformer Embedding Dialogue Policy (TEDP)
 
     Transformer version of the REDP used in our paper https://arxiv.org/abs/1811.11707
@@ -148,7 +149,7 @@ class EmbeddingPolicy(Policy):
         priority: int = DEFAULT_POLICY_PRIORITY,
         max_history: Optional[int] = None,
         model: Optional[RasaModel] = None,
-        **kwargs: Any,
+        **kwargs: Dict[Text, Any],
     ) -> None:
         """Declare instant variables with default values"""
 
@@ -163,8 +164,6 @@ class EmbeddingPolicy(Policy):
 
         self._label_data = None
         self.data_example = None
-
-        self._tf_config = train_utils.load_tf_config(self.config)
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         self.config = copy.deepcopy(self.defaults)
@@ -289,7 +288,6 @@ class EmbeddingPolicy(Policy):
             self.config[EVAL_NUM_EXAMPLES],
             self.config[EVAL_NUM_EPOCHS],
             batch_strategy=self.config[BATCH_STRATEGY],
-            random_seed=self.config[RANDOM_SEED],
         )
 
     def continue_training(
@@ -316,7 +314,6 @@ class EmbeddingPolicy(Policy):
             self.config[EVAL_NUM_EXAMPLES],
             self.config[EVAL_NUM_EPOCHS],
             batch_strategy=self.config[BATCH_STRATEGY],
-            random_seed=self.config[RANDOM_SEED],
         )
 
     def predict_action_probabilities(
@@ -341,15 +338,20 @@ class EmbeddingPolicy(Policy):
         if self.config[LOSS_TYPE] == "softmax" and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
-        return list(confidence)
+        return confidence.tolist()
 
     def persist(self, path: Text):
         """Persists the policy to a storage."""
 
         if self.model is None:
+            logger.debug(
+                "Method `persist(...)` was called "
+                "without a trained model present. "
+                "Nothing to persist then!"
+            )
             return
 
-        file_name = "embedding_policy"
+        file_name = "TED_policy"
         tf_model_file = os.path.join(path, f"{file_name}.tf_model")
 
         rasa.utils.io.create_directory_for_file(tf_model_file)
@@ -358,10 +360,8 @@ class EmbeddingPolicy(Policy):
 
         self.model.save(tf_model_file)
 
-        with open(os.path.join(path, file_name + ".tf_config.pkl"), "wb") as f:
-            pickle.dump(self._tf_config, f)
-
-        self.config["priority"] = self.priority
+        with open(os.path.join(path, file_name + ".priority.pkl"), "wb") as f:
+            pickle.dump(self.priority, f)
 
         with open(os.path.join(path, file_name + ".meta.pkl"), "wb") as f:
             pickle.dump(self.config, f)
@@ -373,7 +373,7 @@ class EmbeddingPolicy(Policy):
             pickle.dump(self._label_data, f)
 
     @classmethod
-    def load(cls, path: Text) -> "EmbeddingPolicy":
+    def load(cls, path: Text) -> "TEDPolicy":
         """Loads a policy from the storage.
 
         **Needs to load its featurizer**
@@ -381,14 +381,17 @@ class EmbeddingPolicy(Policy):
 
         if not os.path.exists(path):
             raise Exception(
-                f"Failed to load embedding policy model. Path "
+                f"Failed to load TED policy model. Path "
                 f"'{os.path.abspath(path)}' doesn't exist."
             )
 
-        file_name = "embedding_policy"
+        file_name = "TED_policy"
         tf_model_file = os.path.join(path, f"{file_name}.tf_model")
 
         featurizer = TrackerFeaturizer.load(path)
+
+        if not os.path.exists(os.path.join(path, file_name + ".data_example.pkl")):
+            return cls(featurizer=featurizer)
 
         with open(os.path.join(path, file_name + ".data_example.pkl"), "rb") as f:
             model_data_example = RasaModelData(
@@ -400,6 +403,9 @@ class EmbeddingPolicy(Policy):
 
         with open(os.path.join(path, file_name + ".meta.pkl"), "rb") as f:
             meta = pickle.load(f)
+
+        with open(os.path.join(path, file_name + ".priority.pkl"), "rb") as f:
+            priority = pickle.load(f)
 
         meta = train_utils.update_similarity_type(meta)
 
@@ -421,12 +427,10 @@ class EmbeddingPolicy(Policy):
         )
         model.build_for_predict(predict_data_example)
 
-        return cls(
-            featurizer=featurizer,
-            component_config=meta,
-            priority=meta["priority"],
-            model=model,
-        )
+        return cls(featurizer=featurizer, priority=priority, model=model, **meta)
+
+
+# pytype: disable=key-error
 
 
 class TED(RasaModel):
@@ -437,7 +441,7 @@ class TED(RasaModel):
         max_history_tracker_featurizer_used: bool,
         label_data: RasaModelData,
     ):
-        super().__init__()
+        super().__init__(name="TED", random_seed=config[RANDOM_SEED])
 
         self.config = config
         self.max_history_tracker_featurizer_used = max_history_tracker_featurizer_used
@@ -476,14 +480,16 @@ class TED(RasaModel):
             self.config[USE_MAX_SIM_NEG],
             self.config[C_EMB],
             self.config[SCALE_LOSS],
+            # set to 1 to get deterministic behaviour
+            parallel_iterations=1 if self.random_seed is not None else 1000,
         )
-        self._tf_layers["ffnn.dialogue"] = tf_layers.ReluFfn(
+        self._tf_layers["ffnn.dialogue"] = tf_layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_DIALOGUE],
             self.config[DROPRATE_DIALOGUE],
             self.config[C2],
             layer_name_suffix="dialogue",
         )
-        self._tf_layers["ffnn.label"] = tf_layers.ReluFfn(
+        self._tf_layers["ffnn.label"] = tf_layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_LABEL],
             self.config[DROPRATE_LABEL],
             self.config[C2],
@@ -530,6 +536,7 @@ class TED(RasaModel):
         dialogue_transformed = self._tf_layers["transformer"](
             dialogue, 1 - tf.expand_dims(mask, axis=-1), self._training
         )
+        dialogue_transformed = tfa.activations.gelu(dialogue_transformed)
 
         if self.max_history_tracker_featurizer_used:
             # pick last label if max history featurizer is used
@@ -593,3 +600,6 @@ class TED(RasaModel):
         )
 
         return {"action_scores": scores}
+
+
+# pytype: enable=key-error

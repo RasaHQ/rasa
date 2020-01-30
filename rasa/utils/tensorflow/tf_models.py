@@ -17,8 +17,8 @@ class RasaModel(tf.keras.models.Model):
     Cannot be used as tf.keras.Model
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, random_seed: Optional[int] = None, **kwargs):
+        super().__init__(**kwargs)
 
         self.total_loss = tf.keras.metrics.Mean(name="t_loss")
         self.metrics_to_log = ["t_loss"]
@@ -26,6 +26,8 @@ class RasaModel(tf.keras.models.Model):
         self._training = None  # training phase should be defined when building a graph
 
         self._predict_function = None
+
+        self.random_seed = random_seed
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -47,9 +49,11 @@ class RasaModel(tf.keras.models.Model):
         batch_strategy: Text,
         silent: bool = False,
         eager: bool = False,
-        random_seed: Optional[int] = None,
     ) -> None:
         """Fit model data"""
+
+        tf.random.set_seed(self.random_seed)
+        np.random.seed(self.random_seed)
 
         disable = silent or is_logging_disabled()
 
@@ -62,7 +66,7 @@ class RasaModel(tf.keras.models.Model):
                 )
 
             model_data, evaluation_model_data = model_data.split(
-                evaluate_on_num_examples, random_seed
+                evaluate_on_num_examples, self.random_seed
             )
 
         (
@@ -169,6 +173,7 @@ class RasaModel(tf.keras.models.Model):
         )
         # load trained weights
         model.load_weights(model_file_name)
+
         logger.debug("Finished loading the model.")
         return model
 
@@ -291,7 +296,7 @@ class RasaModel(tf.keras.models.Model):
         data_signature: Dict[Text, List[FeatureSignature]],
     ) -> Dict[Text, List[tf.Tensor]]:
         """Convert input batch tensors into batch data format.
-    
+
         Batch contains any number of batch data. The order is equal to the
         key-value pairs in session data. As sparse data were converted into indices, data,
         shape before, this methods converts them into sparse tensors. Dense data is

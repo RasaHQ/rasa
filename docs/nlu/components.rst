@@ -114,12 +114,17 @@ MitieFeaturizer
         to use precomputed features.
 
 :Configuration:
+    The sentence vector, e.g. the vector of the ``CLS`` token can be calculated in two different ways, either via
+    mean or via max pooling. You can specify the pooling method in your configuration file with the option ``pooling``.
+    The default pooling method is set to ``mean``.
 
     .. code-block:: yaml
 
         pipeline:
         - name: "MitieFeaturizer"
-
+          # Specify what pooling operation should be used to calculate the vector of
+          # the CLS token. Available options: 'mean' and 'max'
+          "pooling": "mean"
 
 
 SpacyFeaturizer
@@ -132,11 +137,17 @@ SpacyFeaturizer
 :Description:
     Creates feature for intent classification using the spacy featurizer.
 :Configuration:
+    The sentence vector, e.g. the vector of the ``CLS`` token can be calculated in two different ways, either via
+    mean or via max pooling. You can specify the pooling method in your configuration file with the option ``pooling``.
+    The default pooling method is set to ``mean``.
 
     .. code-block:: yaml
 
         pipeline:
         - name: "SpacyFeaturizer"
+          # Specify what pooling operation should be used to calculate the vector of
+          # the CLS token. Available options: 'mean' and 'max'
+          "pooling": "mean"
 
 
 ConveRTFeaturizer
@@ -147,7 +158,7 @@ ConveRTFeaturizer
     `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model.
 :Outputs:
     nothing, used as an input to intent classifiers and response selectors that need intent features and response
-    features respectively (e.g. ``EmbeddingIntentClassifier`` and ``ResponseSelector``)
+    features respectively (e.g. ``DIETClassifier`` and ``ResponseSelector``)
 :Requires: :ref:`ConveRTTokenizer`
 :Type: Dense featurizer
 :Description:
@@ -197,7 +208,7 @@ CountVectorsFeaturizer
 :Outputs:
    nothing, used as an input to intent classifiers that
    need bag-of-words representation of intent features
-   (e.g. ``EmbeddingIntentClassifier``)
+   (e.g. ``DIETClassifier``)
 :Requires: nothing
 :Type: Sparse featurizer
 :Description:
@@ -452,10 +463,10 @@ SklearnIntentClassifier
           # This is used with the ``C`` hyperparameter in GridSearchCV.
           kernels: ["linear"]
 
-EmbeddingIntentClassifier
-~~~~~~~~~~~~~~~~~~~~~~~~~
+DIETClassifier
+~~~~~~~~~~~~~~
 
-:Short: Embedding intent classifier
+:Short: Dual Intent Entity Transformer used for intent classification and entity extraction
 :Outputs: ``intent`` and ``intent_ranking``
 :Requires: A featurizer
 :Output-Example:
@@ -565,9 +576,9 @@ EmbeddingIntentClassifier
               If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
 
     In the config, you can specify these parameters.
-    The default values are defined in ``EmbeddingIntentClassifier.defaults``:
+    The default values are defined in ``DIETClassifier.defaults``:
 
-    .. literalinclude:: ../../rasa/nlu/classifiers/embedding_intent_classifier.py
+    .. literalinclude:: ../../rasa/nlu/classifiers/DIET_classifier.py
        :dedent: 4
        :start-after: # default properties (DOC MARKER - don't remove)
        :end-before: # end default properties (DOC MARKER - don't remove)
@@ -653,7 +664,7 @@ Response Selector
     Response Selector component can be used to build a response retrieval model to directly predict a bot response from
     a set of candidate responses. The prediction of this model is used by :ref:`retrieval-actions`.
     It embeds user inputs and response labels into the same space and follows the exact same
-    neural network architecture and optimization as the ``EmbeddingIntentClassifier``.
+    neural network architecture and optimization as the ``DIETClassifier``.
 
     The response selector needs to be preceded by a featurizer in the pipeline.
     This featurizer creates the features used for the embeddings.
@@ -666,7 +677,7 @@ Response Selector
 
 :Configuration:
 
-    The algorithm includes all the hyperparameters that ``EmbeddingIntentClassifier`` uses.
+    The algorithm includes all the hyperparameters that ``DIETClassifier`` uses.
     In addition, the component can also be configured to train a response selector for a particular retrieval intent
 
         - ``retrieval_intent``: sets the name of the intent for which this response selector model is trained. Default ``None``
@@ -806,6 +817,8 @@ MitieEntityExtractor
 
         pipeline:
         - name: "MitieEntityExtractor"
+
+.. _SpacyEntityExtractor:
 
 SpacyEntityExtractor
 ~~~~~~~~~~~~~~~~~~~~
@@ -1004,5 +1017,5 @@ DucklingHTTPExtractor
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
           # Timeout for receiving response from http url of the running duckling server
-          # if not set the default timeout of duckling http url is set to 3 seconds. 
+          # if not set the default timeout of duckling http url is set to 3 seconds.
           timeout : 3

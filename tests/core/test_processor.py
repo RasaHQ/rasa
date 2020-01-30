@@ -78,13 +78,14 @@ async def test_log_unseen_feature(default_processor: MessageProcessor):
     with pytest.warns(UserWarning) as record:
         default_processor._log_unseen_features(parsed)
     assert len(record) == 2
+
     assert (
-        record[0].message.args[0]
-        == "Interpreter parsed an intent 'dislike' that is not defined in the domain."
+        record[0].message.args[0].startswith("Interpreter parsed an intent 'dislike'")
     )
     assert (
-        record[1].message.args[0]
-        == "Interpreter parsed an entity 'test_entity' that is not defined in the domain."
+        record[1]
+        .message.args[0]
+        .startswith("Interpreter parsed an entity 'test_entity'")
     )
 
 
@@ -423,7 +424,7 @@ async def test_reminder_restart(
         # last user event is way in the past
         (UserUttered(timestamp=1), 60, True),
         # user event are very recent
-        (UserUttered("hello", timestamp=time.time()), 60, False),
+        (UserUttered("hello", timestamp=time.time()), 120, False),
         # there is user event
         (ActionExecuted(ACTION_LISTEN_NAME, timestamp=time.time()), 60, False),
         # Old event, but sessions are disabled

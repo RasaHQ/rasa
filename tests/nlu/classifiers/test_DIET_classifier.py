@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-import scipy.sparse
 
 from unittest.mock import Mock
 
@@ -13,10 +12,12 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     INTENT_ATTRIBUTE,
 )
-from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
+from rasa.utils.tensorflow.constants import LOSS_TYPE, RANDOM_SEED, RANKING_LENGTH
+from rasa.nlu.classifiers.DIET_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
 from rasa.nlu.training_data import Message
 from rasa.utils import train_utils
+from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
@@ -28,7 +29,7 @@ def test_compute_default_label_features():
         Message("test d"),
     ]
 
-    output = EmbeddingIntentClassifier._compute_default_label_features(label_features)
+    output = DIETClassifier._compute_default_label_features(label_features)
 
     output = output[0]
 
@@ -77,35 +78,46 @@ def test_compute_default_label_features():
 def test_check_labels_features_exist(messages, expected):
     attribute = TEXT_ATTRIBUTE
 
-    assert (
-        EmbeddingIntentClassifier._check_labels_features_exist(messages, attribute)
-        == expected
-    )
+    assert DIETClassifier._check_labels_features_exist(messages, attribute) == expected
 
 
-async def test_train(component_builder, tmpdir):
-    pipeline = [
-        {"name": "ConveRTTokenizer"},
-        {"name": "CountVectorsFeaturizer"},
-        {"name": "ConveRTFeaturizer"},
-        {"name": "EmbeddingIntentClassifier"},
-    ]
+@pytest.mark.parametrize(
+    "pipeline",
+    [
+        [
+            {"name": "ConveRTTokenizer"},
+            {"name": "CountVectorsFeaturizer"},
+            {"name": "ConveRTFeaturizer"},
+            {"name": "DIETClassifier"},
+        ],
+        [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "CountVectorsFeaturizer"},
+            {"name": "DIETClassifier", LOSS_TYPE: "margin"},
+        ],
+    ],
+)
+async def test_train_persist_load(pipeline, component_builder, tmpdir):
 
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
-    (trained, _, persisted_path) = await train(
+    (trainer, trained, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
         data=DEFAULT_DATA_PATH,
         component_builder=component_builder,
     )
 
+    assert trainer.pipeline
     assert trained.pipeline
 
     loaded = Interpreter.load(persisted_path, component_builder)
+
     assert loaded.pipeline
-    assert loaded.parse("hello") is not None
-    assert loaded.parse("Hello today is Monday, again!") is not None
+    assert loaded.parse("hello") == trained.parse("hello")
+    assert loaded.parse("Hello today is Monday, again!") == trained.parse(
+        "Hello today is Monday, again!"
+    )
 
 
 async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
@@ -113,10 +125,7 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
 
     _config = RasaNLUModelConfig(
         {
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "EmbeddingIntentClassifier"},
-            ],
+            "pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "DIETClassifier"}],
             "language": "en",
         }
     )
@@ -130,7 +139,7 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
         )
 
     assert (
-        "Failed to validate component 'EmbeddingIntentClassifier'. Missing one of "
+        "Failed to validate component 'DIETClassifier'. Missing one of "
         "the following properties: " in str(e.value)
     )
 
@@ -144,25 +153,25 @@ def as_pipeline(*components):
     [
         ({"random_seed": 42}, "data/test/many_intents.md", 10, True),  # default config
         (
-            {"random_seed": 42, "ranking_length": 0},
+            {RANDOM_SEED: 42, RANKING_LENGTH: 0},
             "data/test/many_intents.md",
             LABEL_RANKING_LENGTH,
             False,
         ),  # no normalization
         (
-            {"random_seed": 42, "ranking_length": 3},
+            {RANDOM_SEED: 42, RANKING_LENGTH: 3},
             "data/test/many_intents.md",
             3,
             True,
         ),  # lower than default ranking_length
         (
-            {"random_seed": 42, "ranking_length": 12},
+            {RANDOM_SEED: 42, RANKING_LENGTH: 12},
             "data/test/many_intents.md",
             LABEL_RANKING_LENGTH,
             False,
         ),  # higher than default ranking_length
         (
-            {"random_seed": 42},
+            {RANDOM_SEED: 42},
             "examples/moodbot/data/nlu.md",
             7,
             True,
@@ -178,9 +187,9 @@ async def test_softmax_normalization(
     output_should_sum_to_1,
 ):
     pipeline = as_pipeline(
-        "WhitespaceTokenizer", "CountVectorsFeaturizer", "EmbeddingIntentClassifier"
+        "WhitespaceTokenizer", "CountVectorsFeaturizer", "DIETClassifier"
     )
-    assert pipeline[2]["name"] == "EmbeddingIntentClassifier"
+    assert pipeline[2]["name"] == "DIETClassifier"
     pipeline[2].update(classifier_params)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
@@ -209,15 +218,15 @@ async def test_softmax_normalization(
 
 @pytest.mark.parametrize(
     "classifier_params, output_length",
-    [({"loss_type": "margin", "random_seed": 42}, LABEL_RANKING_LENGTH)],
+    [({LOSS_TYPE: "margin", RANDOM_SEED: 42}, LABEL_RANKING_LENGTH)],
 )
 async def test_margin_loss_is_not_normalized(
     monkeypatch, component_builder, tmpdir, classifier_params, output_length
 ):
     pipeline = as_pipeline(
-        "WhitespaceTokenizer", "CountVectorsFeaturizer", "EmbeddingIntentClassifier"
+        "WhitespaceTokenizer", "CountVectorsFeaturizer", "DIETClassifier"
     )
-    assert pipeline[2]["name"] == "EmbeddingIntentClassifier"
+    assert pipeline[2]["name"] == "DIETClassifier"
     pipeline[2].update(classifier_params)
 
     mock = Mock()
