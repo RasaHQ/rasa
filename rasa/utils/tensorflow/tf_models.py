@@ -29,9 +29,6 @@ class RasaModel(tf.keras.models.Model):
 
         self.random_seed = random_seed
 
-        tf.random.set_seed(random_seed)
-        np.random.seed(random_seed)
-
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
@@ -54,6 +51,9 @@ class RasaModel(tf.keras.models.Model):
         eager: bool = False,
     ) -> None:
         """Fit model data"""
+
+        tf.random.set_seed(self.random_seed)
+        np.random.seed(self.random_seed)
 
         disable = silent or is_logging_disabled()
 
@@ -173,6 +173,7 @@ class RasaModel(tf.keras.models.Model):
         )
         # load trained weights
         model.load_weights(model_file_name)
+
         logger.debug("Finished loading the model.")
         return model
 

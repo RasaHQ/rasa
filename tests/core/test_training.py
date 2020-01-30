@@ -116,12 +116,11 @@ def configs_for_random_seed_test():
     ]
 
 
-# TODO fix random seed
-@pytest.mark.skip(reason="we need to fix the random seed first")
 @pytest.mark.parametrize("config_file", configs_for_random_seed_test())
 async def test_random_seed(tmpdir, config_file):
     # set random seed in config file to
     # generate a reproducible training result
+
     agent_1 = await train(
         DEFAULT_DOMAIN_PATH_WITH_SLOTS,
         DEFAULT_STORIES_FILE,

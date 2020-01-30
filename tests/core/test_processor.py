@@ -424,7 +424,7 @@ async def test_reminder_restart(
         # last user event is way in the past
         (UserUttered(timestamp=1), 60, True),
         # user event are very recent
-        (UserUttered("hello", timestamp=time.time()), 60, False),
+        (UserUttered("hello", timestamp=time.time()), 120, False),
         # there is user event
         (ActionExecuted(ACTION_LISTEN_NAME, timestamp=time.time()), 60, False),
         # Old event, but sessions are disabled

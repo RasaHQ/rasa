@@ -92,7 +92,7 @@ class TEDPolicy(Policy):
         # number of epochs
         EPOCHS: 1,
         # set random seed to any int to get reproducible results
-        RANDOM_SEED: 42,
+        RANDOM_SEED: None,
         # embedding parameters
         # dimension size of embedding vectors
         EMBED_DIM: 20,
@@ -479,6 +479,8 @@ class TED(RasaModel):
             self.config[USE_MAX_SIM_NEG],
             self.config[C_EMB],
             self.config[SCALE_LOSS],
+            # set to 1 to get deterministic behaviour
+            parallel_iterations=1 if self.random_seed is not None else 1000,
         )
         self._tf_layers["ffnn.dialogue"] = tf_layers.ReluFfn(
             self.config[HIDDEN_LAYERS_SIZES_DIALOGUE],
