@@ -277,7 +277,6 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         ]
 
     def call(self, x: tf.Tensor, pad_mask: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
-
         x_norm = self._layernorm(x)  # (batch_size, seq_len, d_model)
         attn_out, _ = self._mha(x_norm, x_norm, x_norm, pad_mask)
         attn_out = self._dropout(attn_out, training=training)
@@ -474,6 +473,8 @@ class DotProductLoss(tf.keras.layers.Layer):
         neg_lambda: float,
         scale_loss: bool,
         name: Text = None,
+        parallel_iterations: int = 1000,
+        same_sampling: bool = False,
     ) -> None:
         super().__init__(name=name)
         self.num_neg = num_neg
@@ -483,6 +484,8 @@ class DotProductLoss(tf.keras.layers.Layer):
         self.use_max_sim_neg = use_max_sim_neg
         self.neg_lambda = neg_lambda
         self.scale_loss = scale_loss
+        self.parallel_iterations = parallel_iterations
+        self.same_sampling = same_sampling
 
     @staticmethod
     def _make_flat(x: tf.Tensor) -> tf.Tensor:
@@ -498,7 +501,8 @@ class DotProductLoss(tf.keras.layers.Layer):
                 tf.random.shuffle(tf.range(total_candidates))[: self.num_neg], 0
             )
 
-        # return tf.tile(rand_idxs(), (batch_size, 1))
+        if self.same_sampling:
+            return tf.tile(rand_idxs(), (batch_size, 1))
 
         def cond(i, out):
             """Condition for while loop"""
@@ -523,7 +527,7 @@ class DotProductLoss(tf.keras.layers.Layer):
             body,
             loop_vars=[i1, out1],
             shape_invariants=[i1.shape, tf.TensorShape([None, self.num_neg])],
-            parallel_iterations=1000,
+            parallel_iterations=self.parallel_iterations,
             back_prop=False,
         )[1]
 

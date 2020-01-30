@@ -9,7 +9,8 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.constants import DOCS_URL_COMPONENTS
-from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
+
+from rasa.nlu.classifiers.DIET_classifier import DIETClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
@@ -75,7 +76,7 @@ component_classes = [
     SklearnIntentClassifier,
     MitieIntentClassifier,
     KeywordIntentClassifier,
-    EmbeddingIntentClassifier,
+    DIETClassifier,
     # selectors
     ResponseSelector,
 ]
@@ -104,7 +105,7 @@ old_style_names = {
     "intent_classifier_sklearn": "SklearnIntentClassifier",
     "intent_classifier_mitie": "MitieIntentClassifier",
     "intent_classifier_keyword": "KeywordIntentClassifier",
-    "intent_classifier_tensorflow_embedding": "EmbeddingIntentClassifier",
+    "intent_classifier_tensorflow_embedding": "DIETClassifier",
 }
 
 # To simplify usage, there are a couple of model templates, that already add
@@ -133,12 +134,12 @@ registered_pipeline_templates = {
             "min_ngram": 1,
             "max_ngram": 4,
         },
-        {"name": "EmbeddingIntentClassifier"},
+        {"name": "DIETClassifier"},
     ],
     "pretrained_embeddings_convert": [
         {"name": "ConveRTTokenizer"},
         {"name": "ConveRTFeaturizer"},
-        {"name": "EmbeddingIntentClassifier"},
+        {"name": "DIETClassifier"},
     ],
 }
 
