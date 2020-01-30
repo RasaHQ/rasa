@@ -440,11 +440,7 @@ class DIETClassifier(EntityExtractor):
         tag_ids = []
 
         for e in training_data:
-            if (
-                label_attribute is None
-                or label_attribute == INTENT_ATTRIBUTE
-                or e.get(label_attribute)
-            ):
+            if label_attribute is None or e.get(label_attribute):
                 _sparse, _dense = self._extract_and_add_features(e, TEXT_ATTRIBUTE)
                 if _sparse is not None:
                     X_sparse.append(_sparse)
@@ -513,11 +509,15 @@ class DIETClassifier(EntityExtractor):
         tag_id_dict = self._create_tag_id_dict(training_data)
         self.inverted_tag_dict = {v: k for k, v in tag_id_dict.items()}
 
+        label_attribute = (
+            INTENT_ATTRIBUTE if self.component_config[INTENT_CLASSIFICATION] else None
+        )
+
         model_data = self._create_model_data(
             training_data.training_examples,
             label_id_dict,
             tag_id_dict,
-            label_attribute=INTENT_ATTRIBUTE,
+            label_attribute=label_attribute,
         )
 
         self.num_tags = len(self.inverted_tag_dict)
