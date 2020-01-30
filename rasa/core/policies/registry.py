@@ -2,7 +2,7 @@
 # path. Don't do this in `__init__.py` to avoid importing them without need.
 
 # noinspection PyUnresolvedReferences
-from rasa.core.policies.TED_policy import TEDPolicy
+from rasa.core.policies.ted_policy import TEDPolicy
 
 # noinspection PyUnresolvedReferences
 from rasa.core.policies.fallback import FallbackPolicy

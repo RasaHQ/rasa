@@ -672,8 +672,6 @@ class DIETClassifier(EntityExtractor):
 
         tags = [self.inverted_tag_dict[p] for p in predictions[0]]
 
-        print(tags)
-
         if self.component_config[BILOU_FLAG]:
             tags = bilou_utils.remove_bilou_prefixes(tags)
 

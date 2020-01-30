@@ -1,5 +1,4 @@
 import os
-import warnings
 import logging
 import typing
 import re
@@ -8,17 +7,14 @@ from typing import Any, Dict, Optional, Text
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import utils
 from rasa.nlu.components import Component
-from rasa.nlu.training_data import Message
 from rasa.nlu.constants import INTENT_ATTRIBUTE
 from rasa.utils.common import raise_warning
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.training_data import TrainingData
+from rasa.nlu.model import Metadata
+from rasa.nlu.training_data import Message
 
 logger = logging.getLogger(__name__)
-
-if typing.TYPE_CHECKING:
-    from rasa.nlu.config import RasaNLUModelConfig
-    from rasa.nlu.training_data import TrainingData
-    from rasa.nlu.model import Metadata
-    from rasa.nlu.training_data import Message
 
 
 class KeywordIntentClassifier(Component):
@@ -47,8 +43,8 @@ class KeywordIntentClassifier(Component):
 
     def train(
         self,
-        training_data: "TrainingData",
-        cfg: Optional["RasaNLUModelConfig"] = None,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
 
@@ -145,7 +141,7 @@ class KeywordIntentClassifier(Component):
         cls,
         meta: Dict[Text, Any],
         model_dir: Optional[Text] = None,
-        model_metadata: "Metadata" = None,
+        model_metadata: Metadata = None,
         cached_component: Optional["KeywordIntentClassifier"] = None,
         **kwargs: Any,
     ) -> "KeywordIntentClassifier":
@@ -158,7 +154,7 @@ class KeywordIntentClassifier(Component):
             else:
                 raise_warning(
                     f"Failed to load key word file for `IntentKeywordClassifier`, "
-                    f"maybe {keyword_file} does not exist?",
+                    f"maybe {keyword_file} does not exist?"
                 )
                 intent_keyword_map = None
             return cls(meta, intent_keyword_map)
