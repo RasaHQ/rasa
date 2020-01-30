@@ -194,7 +194,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
                 "hidden_layer_sizes for text and label must coincide."
             )
 
-        self.component_config = train_utils.update_auto_similarity_type(
+        self.component_config = train_utils.update_similarity_type(
             self.component_config
         )
 
@@ -815,7 +815,7 @@ class EmbeddingIntentClassifier(EntityExtractor):
         ) as f:
             batch_tuple_sizes = pickle.load(f)
 
-        meta = train_utils.update_auto_similarity_type(meta)
+        meta = train_utils.update_similarity_type(meta)
 
         model = DIET.load(
             tf_model_file,

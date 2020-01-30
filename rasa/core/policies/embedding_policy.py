@@ -170,7 +170,7 @@ class EmbeddingPolicy(Policy):
         self.config = copy.deepcopy(self.defaults)
         self.config.update(kwargs)
 
-        self.config = train_utils.update_auto_similarity_type(self.config)
+        self.config = train_utils.update_similarity_type(self.config)
 
         if self.config[EVAL_NUM_EPOCHS] < 1:
             self.config[EVAL_NUM_EPOCHS] = self.config[EPOCHS]
@@ -401,7 +401,7 @@ class EmbeddingPolicy(Policy):
         with open(os.path.join(path, file_name + ".meta.pkl"), "rb") as f:
             meta = pickle.load(f)
 
-        meta = train_utils.update_auto_similarity_type(meta)
+        meta = train_utils.update_similarity_type(meta)
 
         model = TED.load(
             tf_model_file,

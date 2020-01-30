@@ -33,7 +33,7 @@ def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarr
     return new_values
 
 
-def update_auto_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
+def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
     if config[SIMILARITY_TYPE] == "auto":
         if config[LOSS_TYPE] == "softmax":
             config[SIMILARITY_TYPE] = "inner"
