@@ -572,7 +572,7 @@ class DIETClassifier(EntityExtractor):
             self.component_config[BATCH_SIZES],
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[EVAL_NUM_EPOCHS],
-            batch_strategy=self.component_config[BATCH_STRATEGY],
+            self.component_config[BATCH_STRATEGY],
         )
 
     # process helpers

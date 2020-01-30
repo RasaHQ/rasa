@@ -229,6 +229,7 @@ class TestSklearnPolicy(PolicyTestCollection):
         p = SklearnPolicy(featurizer, priority, **kwargs)
         return p
 
+    # TODO fix and test tf config
     @pytest.yield_fixture
     def mock_search(self):
         with patch("rasa.core.policies.sklearn_policy.GridSearchCV") as gs:

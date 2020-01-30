@@ -17,8 +17,8 @@ class RasaModel(tf.keras.models.Model):
     Cannot be used as tf.keras.Model
     """
 
-    def __init__(self, random_seed: Optional[int], *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, random_seed: Optional[int] = None, **kwargs):
+        super().__init__(**kwargs)
 
         self.total_loss = tf.keras.metrics.Mean(name="t_loss")
         self.metrics_to_log = ["t_loss"]
