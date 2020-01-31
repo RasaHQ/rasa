@@ -1,5 +1,4 @@
 import asyncio
-import warnings
 import logging
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
