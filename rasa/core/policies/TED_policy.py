@@ -502,7 +502,8 @@ class TED(RasaModel):
             self.config[TRANSFORMER_SIZE] * 4,
             self.config[MAX_SEQ_LENGTH],
             self.config[C2],
-            self.config[DROPRATE_DIALOGUE],
+            dropout_rate=self.config[DROPRATE_DIALOGUE],
+            attention_dropout_rate=0,
             unidirectional=True,
             name="dialogue_encoder",
         )
