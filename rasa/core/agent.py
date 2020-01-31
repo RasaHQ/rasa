@@ -1,5 +1,4 @@
 import logging
-import warnings
 import os
 import shutil
 import tempfile
