@@ -21,9 +21,10 @@ from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils import train_utils
-from rasa.utils.tensorflow import tf_layers
-from rasa.utils.tensorflow.tf_models import RasaModel
-from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
+from rasa.utils.tensorflow import layers
+from rasa.utils.tensorflow.transformer import TransformerEncoder
+from rasa.utils.tensorflow.models import RasaModel
+from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES_LABEL,
     TRANSFORMER_SIZE,
@@ -472,7 +473,7 @@ class TED(RasaModel):
         self._prepare_layers()
 
     def _prepare_layers(self) -> None:
-        self._tf_layers["loss.label"] = tf_layers.DotProductLoss(
+        self._tf_layers["loss.label"] = layers.DotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
             self.config[MU_POS],
@@ -483,19 +484,19 @@ class TED(RasaModel):
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,
         )
-        self._tf_layers["ffnn.dialogue"] = tf_layers.Ffnn(
+        self._tf_layers["ffnn.dialogue"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_DIALOGUE],
             self.config[DROPRATE_DIALOGUE],
             self.config[C2],
             layer_name_suffix="dialogue",
         )
-        self._tf_layers["ffnn.label"] = tf_layers.Ffnn(
+        self._tf_layers["ffnn.label"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_LABEL],
             self.config[DROPRATE_LABEL],
             self.config[C2],
             layer_name_suffix="label",
         )
-        self._tf_layers["transformer"] = tf_layers.TransformerEncoder(
+        self._tf_layers["transformer"] = TransformerEncoder(
             self.config[NUM_TRANSFORMER_LAYERS],
             self.config[TRANSFORMER_SIZE],
             self.config[NUM_HEADS],
@@ -507,13 +508,13 @@ class TED(RasaModel):
             unidirectional=True,
             name="dialogue_encoder",
         )
-        self._tf_layers["embed.dialogue"] = tf_layers.Embed(
+        self._tf_layers["embed.dialogue"] = layers.Embed(
             self.config[EMBED_DIM],
             self.config[C2],
             "dialogue",
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["embed.label"] = tf_layers.Embed(
+        self._tf_layers["embed.label"] = layers.Embed(
             self.config[EMBED_DIM],
             self.config[C2],
             "label",

@@ -18,9 +18,10 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import any_of
 from rasa.utils import train_utils
-from rasa.utils.tensorflow import tf_layers
-from rasa.utils.tensorflow.tf_models import RasaModel
-from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
+from rasa.utils.tensorflow import layers
+from rasa.utils.tensorflow.transformer import TransformerEncoder
+from rasa.utils.tensorflow.models import RasaModel
+from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.nlu.constants import (
     INTENT_ATTRIBUTE,
     TEXT_ATTRIBUTE,
@@ -905,7 +906,7 @@ class DIET(RasaModel):
         name: Text,
         reg_lambda: float,
         dense_dim: int,
-    ) -> Optional[tf_layers.DenseForSparse]:
+    ) -> Optional[layers.DenseForSparse]:
 
         sparse = False
         for is_sparse, shape in feature_signatures:
@@ -917,12 +918,12 @@ class DIET(RasaModel):
                 dense_dim = shape[-1]
 
         if sparse:
-            return tf_layers.DenseForSparse(
+            return layers.DenseForSparse(
                 units=dense_dim, reg_lambda=reg_lambda, name=name
             )
 
     def _prepare_sequence_layers(self) -> None:
-        self._tf_layers["sparse_dropout"] = tf_layers.SparseDropout(
+        self._tf_layers["sparse_dropout"] = layers.SparseDropout(
             rate=self.config[DROPRATE]
         )
         self._tf_layers["sparse_to_dense.text"] = self._create_sparse_dense_layer(
@@ -937,20 +938,20 @@ class DIET(RasaModel):
             self.config[C2],
             self.config[DENSE_DIM]["label"],
         )
-        self._tf_layers["ffnn.text"] = tf_layers.Ffnn(
+        self._tf_layers["ffnn.text"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_TEXT],
             self.config[DROPRATE],
             self.config[C2],
             "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "text",
         )
-        self._tf_layers["ffnn.label"] = tf_layers.Ffnn(
+        self._tf_layers["ffnn.label"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_LABEL],
             self.config[DROPRATE],
             self.config[C2],
             "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "label",
         )
         self._tf_layers["transformer"] = (
-            tf_layers.TransformerEncoder(
+            TransformerEncoder(
                 self.config[NUM_TRANSFORMER_LAYERS],
                 self.config[TRANSFORMER_SIZE],
                 self.config[NUM_HEADS],
@@ -967,20 +968,20 @@ class DIET(RasaModel):
         )
 
     def _prepare_mask_lm_layers(self) -> None:
-        self._tf_layers["input_mask"] = tf_layers.InputMask()
-        self._tf_layers["embed.lm_mask"] = tf_layers.Embed(
+        self._tf_layers["input_mask"] = layers.InputMask()
+        self._tf_layers["embed.lm_mask"] = layers.Embed(
             self.config[EMBED_DIM],
             self.config[C2],
             "lm_mask",
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["embed.golden_token"] = tf_layers.Embed(
+        self._tf_layers["embed.golden_token"] = layers.Embed(
             self.config[EMBED_DIM],
             self.config[C2],
             "golden_token",
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["loss.mask"] = tf_layers.DotProductLoss(
+        self._tf_layers["loss.mask"] = layers.DotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
             self.config[MU_POS],
@@ -993,19 +994,19 @@ class DIET(RasaModel):
         )
 
     def _prepare_intent_classification_layers(self) -> None:
-        self._tf_layers["embed.text"] = tf_layers.Embed(
+        self._tf_layers["embed.text"] = layers.Embed(
             self.config[EMBED_DIM],
             self.config[C2],
             "text",
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["embed.label"] = tf_layers.Embed(
+        self._tf_layers["embed.label"] = layers.Embed(
             self.config[EMBED_DIM],
             self.config[C2],
             "label",
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["loss.label"] = tf_layers.DotProductLoss(
+        self._tf_layers["loss.label"] = layers.DotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
             self.config[MU_POS],
@@ -1018,10 +1019,10 @@ class DIET(RasaModel):
         )
 
     def _prepare_entity_recognition_layers(self) -> None:
-        self._tf_layers["embed.logits"] = tf_layers.Embed(
+        self._tf_layers["embed.logits"] = layers.Embed(
             self._num_tags, self.config[C2], "logits"
         )
-        self._tf_layers["crf"] = tf_layers.CRF(self._num_tags, self.config[C2])
+        self._tf_layers["crf"] = layers.CRF(self._num_tags, self.config[C2])
         self._tf_layers["crf_f1_score"] = tfa.metrics.F1Score(
             num_classes=self._num_tags - 1,  # `0` prediction is not a prediction
             average="micro",

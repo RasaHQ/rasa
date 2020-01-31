@@ -47,7 +47,7 @@ from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
 )
-from rasa.utils.tensorflow.tf_model_data import RasaModelData
+from rasa.utils.tensorflow.model_data import RasaModelData
 
 
 logger = logging.getLogger(__name__)

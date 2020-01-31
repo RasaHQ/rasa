@@ -5,7 +5,7 @@ from collections import defaultdict
 from typing import List, Text, Dict, Tuple, Union, Optional, Callable
 from tqdm import tqdm
 from rasa.utils.common import is_logging_disabled
-from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
+from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 
 logger = logging.getLogger(__name__)
 
