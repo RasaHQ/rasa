@@ -20,7 +20,7 @@ def test_init_help(run: Callable[..., RunResult]):
     output = run("init", "--help")
 
     assert (
-        output.outlines[0] == "usage: rasa init [-h] [-v] [-vv] [--quiet] [--no-prompt]"
+        output.outlines[0] == "usage: rasa init [-h] [-v] [-vv] [--quiet] [--no-prompt] [--init-dir INIT_DIR]"
     )
 
 

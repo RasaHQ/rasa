@@ -31,7 +31,7 @@ def add_subparser(
     scaffold_parser.add_argument(
         "--init-dir", 
         default=".", 
-        help="Descibe init folder path."
+        help="Descibe init folder path.",
     )
 
     scaffold_parser.set_defaults(func=run)
@@ -137,6 +137,9 @@ def print_cancel() -> None:
     print_success("Ok. You can continue setting up by running 'rasa init' 🙋🏽‍♀️")
     exit(0)
 
+def print_init_path_not_found() -> None:
+    print_success("Init path not found 🙋🏽‍♀️")
+    exit(0)
 
 def _ask_create_path(path: Text) -> None:
     import questionary
@@ -199,5 +202,8 @@ def run(args: argparse.Namespace) -> None:
 
     if not args.no_prompt and len(os.listdir(path)) > 0:
         _ask_overwrite(path)
+
+    if args.no_prompt and not os.path.isdir(path):
+        print_init_path_not_found()
 
     init_project(args, path)
