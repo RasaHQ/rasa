@@ -6,7 +6,6 @@ import pickle
 import scipy.sparse
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
-import warnings
 
 from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH

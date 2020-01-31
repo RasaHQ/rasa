@@ -1,5 +1,4 @@
 import logging
-import warnings
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.constants import DOCS_URL_COMPONENTS
