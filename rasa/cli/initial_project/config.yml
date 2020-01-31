@@ -8,4 +8,5 @@ pipeline: supervised_embeddings
 policies:
   - name: MemoizationPolicy
   - name: EmbeddingPolicy
+    max_history: 5
   - name: MappingPolicy
