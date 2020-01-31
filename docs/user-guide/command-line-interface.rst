@@ -254,11 +254,11 @@ You can specify the input file, output file, and the output format with the foll
 
 
 Start Rasa X
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
 
 .. raw:: html
 
-    Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa framework.
+    Rasa X is a toolset that helps you leverage conversations to improve your assistant.
     You can find more information about it <a class="reference external" href="https://rasa.com/docs/rasa-x/" target="_blank">here</a>.
 
 You can start Rasa X locally by executing
@@ -269,8 +269,7 @@ You can start Rasa X locally by executing
 
 .. raw:: html
 
-    To be able to start Rasa X you need to have Rasa X installed (instruction can be found
-    <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/" target="_blank">here</a>)
+    To be able to start Rasa X you need to have Rasa X local mode installed
     and you need to be in a Rasa project.
 
 .. note::

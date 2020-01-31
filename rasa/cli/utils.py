@@ -1,14 +1,14 @@
-import os
-import warnings
-import sys
 import json
-from typing import Any, Optional, Text, List, Dict, TYPE_CHECKING
 import logging
+import os
+import sys
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
 
 if TYPE_CHECKING:
     from questionary import Question
 
 from rasa.constants import DEFAULT_MODELS_PATH
+from typing import NoReturn
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +41,11 @@ def get_validated_path(
             if current is None:
                 reason_str = f"Parameter '{parameter}' not set."
             else:
-                warnings.warn(
-                    f"'{current}' does not exist. Using default value '{default}' instead."
+                from rasa.utils.common import raise_warning  # avoid import cycle
+
+                raise_warning(
+                    f"The path '{current}' does not seem to exist. Using the "
+                    f"default value '{default}' instead."
                 )
 
             logger.debug(f"{reason_str} Using default location '{default}' instead.")
@@ -238,6 +241,6 @@ def print_error_and_exit(message: Text, exit_code: int = 1) -> None:
     sys.exit(exit_code)
 
 
-def signal_handler(sig, frame):
+def signal_handler(sig, frame) -> NoReturn:
     print("Goodbye 👋")
     sys.exit(0)

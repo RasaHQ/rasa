@@ -46,7 +46,7 @@ class KerasPolicy(Policy):
     }
 
     @staticmethod
-    def _standard_featurizer(max_history=None):
+    def _standard_featurizer(max_history=None) -> MaxHistoryTrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(
             BinarySingleStateFeaturizer(), max_history=max_history
         )
@@ -97,14 +97,6 @@ class KerasPolicy(Policy):
             return self.model.layers[0].batch_input_shape[1]
         else:
             return None
-
-    def _build_model(self, num_features, num_actions, max_history_len):
-        warnings.warn(
-            "Deprecated, use `model_architecture` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return
 
     def model_architecture(
         self, input_shape: Tuple[int, int], output_shape: Tuple[int, Optional[int]]
@@ -290,7 +282,7 @@ class KerasPolicy(Policy):
             with open(tf_config_file, "wb") as f:
                 pickle.dump(self._tf_config, f)
         else:
-            warnings.warn(
+            logger.debug(
                 "Method `persist(...)` was called "
                 "without a trained model present. "
                 "Nothing to persist then!"

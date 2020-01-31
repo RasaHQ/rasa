@@ -1,54 +1,31 @@
-from typing import Any, List, Text
+from typing import List, Text
 
-from rasa.nlu.components import Component
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.tokenizers import Token, Tokenizer
-from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.training_data import Message
 
-from rasa.nlu.constants import (
-    MESSAGE_TEXT_ATTRIBUTE,
-    MESSAGE_TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-)
+from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
 from rasa.utils.io import DEFAULT_ENCODING
 
 
-class MitieTokenizer(Tokenizer, Component):
+class MitieTokenizer(Tokenizer):
 
-    provides = [MESSAGE_TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
+    provides = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
+
+    defaults = {
+        # Flag to check whether to split intents
+        "intent_tokenization_flag": False,
+        # Symbol on which intent should be split
+        "intent_split_symbol": "_",
+    }
 
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["mitie"]
 
-    def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
-    ) -> None:
-
-        for example in training_data.training_examples:
-
-            for attribute in MESSAGE_ATTRIBUTES:
-
-                if example.get(attribute) is not None:
-                    example.set(
-                        MESSAGE_TOKENS_NAMES[attribute],
-                        self.tokenize(example.get(attribute)),
-                    )
-
-    def process(self, message: Message, **kwargs: Any) -> None:
-
-        message.set(
-            MESSAGE_TOKENS_NAMES[MESSAGE_TEXT_ATTRIBUTE], self.tokenize(message.text)
-        )
-
-    def _token_from_offset(self, text, offset, encoded_sentence):
-        return Token(
-            text.decode(DEFAULT_ENCODING),
-            self._byte_to_char_offset(encoded_sentence, offset),
-        )
-
-    def tokenize(self, text: Text) -> List[Token]:
+    def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         import mitie
+
+        text = message.get(attribute)
 
         encoded_sentence = text.encode(DEFAULT_ENCODING)
         tokenized = mitie.tokenize_with_offsets(encoded_sentence)
@@ -56,7 +33,16 @@ class MitieTokenizer(Tokenizer, Component):
             self._token_from_offset(token, offset, encoded_sentence)
             for token, offset in tokenized
         ]
+
         return tokens
+
+    def _token_from_offset(
+        self, text: bytes, offset: int, encoded_sentence: bytes
+    ) -> Token:
+        return Token(
+            text.decode(DEFAULT_ENCODING),
+            self._byte_to_char_offset(encoded_sentence, offset),
+        )
 
     @staticmethod
     def _byte_to_char_offset(text: bytes, byte_offset: int) -> int:

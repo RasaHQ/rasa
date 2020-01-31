@@ -11,29 +11,30 @@ from io import StringIO
 from pathlib import Path
 from typing import (
     Any,
+    Callable,
     Dict,
+    Generator,
     List,
     Optional,
     Set,
     TYPE_CHECKING,
     Text,
     Tuple,
-    Callable,
     Union,
 )
 
 import aiohttp
-from aiohttp import InvalidURL
-from sanic import Sanic
-from sanic.views import CompositionView
-
+import numpy as np
 import rasa.utils.io as io_utils
-from rasa.constants import ENV_SANIC_WORKERS, DEFAULT_SANIC_WORKERS
+from aiohttp import InvalidURL
+from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
 from rasa.core.lock_store import LockStore, RedisLockStore
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
+from sanic import Sanic
+from sanic.views import CompositionView
 
 logger = logging.getLogger(__name__)
 
@@ -87,24 +88,22 @@ def is_int(value: Any) -> bool:
         return False
 
 
-def one_hot(hot_idx, length, dtype=None):
-    import numpy
-
+def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.array:
     if hot_idx >= length:
         raise ValueError(
             "Can't create one hot. Index '{}' is out "
             "of range (length '{}')".format(hot_idx, length)
         )
-    r = numpy.zeros(length, dtype)
+    r = np.zeros(length, dtype)
     r[hot_idx] = 1
     return r
 
 
-def str_range_list(start, end):
+def str_range_list(start: int, end: int) -> List[Text]:
     return [str(e) for e in range(start, end)]
 
 
-def generate_id(prefix="", max_chars=None):
+def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text:
     import uuid
 
     gid = uuid.uuid4().hex
@@ -114,7 +113,11 @@ def generate_id(prefix="", max_chars=None):
     return f"{prefix}{gid}"
 
 
-def request_input(valid_values=None, prompt=None, max_suggested=3):
+def request_input(
+    valid_values: Optional[List[Text]] = None,
+    prompt: Optional[Text] = None,
+    max_suggested: int = 3,
+) -> Text:
     def wrong_input_message():
         print(
             "Invalid answer, only {}{} allowed\n".format(
@@ -152,7 +155,7 @@ class HashableNDArray:
     or the original object (which requires the user to be careful enough
     not to modify it)."""
 
-    def __init__(self, wrapped, tight=False):
+    def __init__(self, wrapped, tight=False) -> None:
         """Creates a new hashable object encapsulating an ndarray.
 
         wrapped
@@ -162,34 +165,30 @@ class HashableNDArray:
             Optional. If True, a copy of the input ndaray is created.
             Defaults to False.
         """
-        from numpy import array
 
         self.__tight = tight
-        self.__wrapped = array(wrapped) if tight else wrapped
+        self.__wrapped = np.array(wrapped) if tight else wrapped
         self.__hash = int(sha1(wrapped.view()).hexdigest(), 16)
 
-    def __eq__(self, other):
-        from numpy import all
+    def __eq__(self, other) -> bool:
+        return np.all(self.__wrapped == other.__wrapped)
 
-        return all(self.__wrapped == other.__wrapped)
-
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self.__hash
 
-    def unwrap(self):
+    def unwrap(self) -> np.array:
         """Returns the encapsulated ndarray.
 
         If the wrapper is "tight", a copy of the encapsulated ndarray is
         returned. Otherwise, the encapsulated ndarray itself is returned."""
-        from numpy import array
 
         if self.__tight:
-            return array(self.__wrapped)
+            return np.array(self.__wrapped)
 
         return self.__wrapped
 
 
-def _dump_yaml(obj, output):
+def _dump_yaml(obj: Dict, output: Union[Text, Path, StringIO]) -> None:
     import ruamel.yaml
 
     yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
@@ -253,7 +252,7 @@ def list_routes(app: Sanic):
     return output
 
 
-def cap_length(s, char_limit=20, append_ellipsis=True):
+def cap_length(s: Text, char_limit: int = 20, append_ellipsis: bool = True) -> Text:
     """Makes sure the string doesn't exceed the passed char limit.
 
     Appends an ellipsis if the string is too long."""
@@ -293,11 +292,13 @@ def all_subclasses(cls: Any) -> List[Any]:
     ]
 
 
-def is_limit_reached(num_messages, limit):
+def is_limit_reached(num_messages: int, limit: int) -> bool:
     return limit is not None and num_messages >= limit
 
 
-def read_lines(filename, max_line_limit=None, line_pattern=".*"):
+def read_lines(
+    filename, max_line_limit=None, line_pattern=".*"
+) -> Generator[Text, Any, None]:
     """Read messages from the command line and print bot responses."""
 
     line_filter = re.compile(line_pattern)
@@ -385,7 +386,7 @@ class AvailableEndpoints:
     """Collection of configured endpoints."""
 
     @classmethod
-    def read_endpoints(cls, endpoint_file):
+    def read_endpoints(cls, endpoint_file: Text) -> "AvailableEndpoints":
         nlg = read_endpoint_config(endpoint_file, endpoint_type="nlg")
         nlu = read_endpoint_config(endpoint_file, endpoint_type="nlu")
         action = read_endpoint_config(endpoint_file, endpoint_type="action_endpoint")
@@ -400,14 +401,14 @@ class AvailableEndpoints:
 
     def __init__(
         self,
-        nlg=None,
-        nlu=None,
-        action=None,
-        model=None,
-        tracker_store=None,
-        lock_store=None,
-        event_broker=None,
-    ):
+        nlg: Optional[EndpointConfig] = None,
+        nlu: Optional[EndpointConfig] = None,
+        action: Optional[EndpointConfig] = None,
+        model: Optional[EndpointConfig] = None,
+        tracker_store: Optional[EndpointConfig] = None,
+        lock_store: Optional[EndpointConfig] = None,
+        event_broker: Optional[EndpointConfig] = None,
+    ) -> None:
         self.model = model
         self.action = action
         self.nlu = nlu
@@ -418,7 +419,7 @@ class AvailableEndpoints:
 
 
 # noinspection PyProtectedMember
-def set_default_subparser(parser, default_subparser):
+def set_default_subparser(parser, default_subparser) -> None:
     """default subparser selection. Call after setup, just before parse_args()
 
     parser: the name of the parser you're making changes to
@@ -457,26 +458,27 @@ def create_task_error_logger(error_message: Text = "") -> Callable[[Future], Non
     return handler
 
 
-def replace_floats_with_decimals(obj: Union[List, Dict]) -> Any:
+def replace_floats_with_decimals(obj: Union[List, Dict], round_digits: int = 9) -> Any:
     """
     Utility method to recursively walk a dictionary or list converting all `float` to `Decimal` as required by DynamoDb.
 
     Args:
         obj: A `List` or `Dict` object.
+        round_digits: A int value to set the rounding precision of Decimal values.
 
-    Returns: An object with all matching values and `float` type replaced by `Decimal`.
+    Returns: An object with all matching values and `float` types replaced by `Decimal`s rounded to `round_digits` decimal places.
 
     """
     if isinstance(obj, list):
         for i in range(len(obj)):
-            obj[i] = replace_floats_with_decimals(obj[i])
+            obj[i] = replace_floats_with_decimals(obj[i], round_digits)
         return obj
     elif isinstance(obj, dict):
         for j in obj:
-            obj[j] = replace_floats_with_decimals(obj[j])
+            obj[j] = replace_floats_with_decimals(obj[j], round_digits)
         return obj
-    elif isinstance(obj, float):
-        return Decimal(obj)
+    elif isinstance(obj, float) or isinstance(obj, Decimal):
+        return round(Decimal(obj), round_digits)
     else:
         return obj
 

@@ -1,15 +1,14 @@
 import logging
-import warnings
-import asyncio
 from collections import defaultdict
 from typing import List, Set, Text
+
+from rasa.constants import DOCS_URL_DOMAINS, DOCS_URL_ACTIONS
+from rasa.core.constants import UTTER_PREFIX
 from rasa.core.domain import Domain
+from rasa.core.training.dsl import ActionExecuted, StoryStep, UserUttered
 from rasa.importers.importer import TrainingDataImporter
 from rasa.nlu.training_data import TrainingData
-from rasa.core.training.dsl import StoryStep
-from rasa.core.training.dsl import UserUttered
-from rasa.core.training.dsl import ActionExecuted
-from rasa.core.constants import UTTER_PREFIX
+from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -43,17 +42,19 @@ class Validator:
 
         for intent in self.domain.intents:
             if intent not in nlu_data_intents:
-                warnings.warn(
+                logger.debug(
                     f"The intent '{intent}' is listed in the domain file, but "
-                    "is not found in the NLU training data."
+                    f"is not found in the NLU training data."
                 )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         for intent in nlu_data_intents:
             if intent not in self.domain.intents:
-                warnings.warn(
-                    f"The intent '{intent}' is in the NLU training data, but "
-                    f"is not listed in the domain."
+                raise_warning(
+                    f"There is a message in the training data labelled with intent "
+                    f"'{intent}'. This intent is not listed in your domain. You "
+                    f"should need to add that intent to your domain file!",
+                    docs=DOCS_URL_DOMAINS,
                 )
                 everything_is_alright = False
 
@@ -76,8 +77,11 @@ class Validator:
             if len(duplication_hash[text]) > 1:
                 everything_is_alright = ignore_warnings and everything_is_alright
                 intents_string = ", ".join(sorted(intents))
-                warnings.warn(
-                    f"The example '{text}' was found in these multiples intents: {intents_string }"
+                raise_warning(
+                    f"The example '{text}' was found labeled with multiple "
+                    f"different intents in the training data. Each annotated message "
+                    f"should only appear with one intent. You should fix that "
+                    f"conflict The example is labeled with: {intents_string}."
                 )
         return everything_is_alright
 
@@ -98,15 +102,17 @@ class Validator:
 
         for story_intent in stories_intents:
             if story_intent not in self.domain.intents:
-                warnings.warn(
-                    f"The intent '{story_intent}' is used in stories, but is not "
-                    f"listed in the domain file."
+                raise_warning(
+                    f"The intent '{story_intent}' is used in your stories, but it "
+                    f"is not listed in the domain file. You should add it to your "
+                    f"domain file!",
+                    docs=DOCS_URL_DOMAINS,
                 )
                 everything_is_alright = False
 
         for intent in self.domain.intents:
             if intent not in stories_intents:
-                warnings.warn(f"The intent '{intent}' is not used in any story.")
+                logger.debug(f"The intent '{intent}' is not used in any story.")
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
@@ -120,7 +126,7 @@ class Validator:
         }
 
     def verify_utterances(self, ignore_warnings: bool = True) -> bool:
-        """Compares list of utterances in actions with utterances in templates."""
+        """Compares list of utterances in actions with utterances in responses."""
 
         actions = self.domain.action_names
         utterance_templates = set(self.domain.templates)
@@ -128,16 +134,22 @@ class Validator:
 
         for utterance in utterance_templates:
             if utterance not in actions:
-                warnings.warn(
+                logger.debug(
                     f"The utterance '{utterance}' is not listed under 'actions' in the "
-                    "domain file. It can only be used as a template."
+                    f"domain file. It can only be used as a template."
                 )
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         for action in actions:
             if action.startswith(UTTER_PREFIX):
                 if action not in utterance_templates:
-                    warnings.warn(f"There is no template for utterance '{action}'.")
+                    raise_warning(
+                        f"There is no template for the utterance action '{action}'. "
+                        f"The action is listed in your domains action list, but "
+                        f"there is no template defined with this name. You should "
+                        f"add a template with this key.",
+                        docs=DOCS_URL_ACTIONS + "#utterance-actions",
+                    )
                     everything_is_alright = False
 
         return everything_is_alright
@@ -166,16 +178,19 @@ class Validator:
                     continue
 
                 if event.action_name not in utterance_actions:
-                    warnings.warn(
-                        f"The utterance '{event.action_name}' is used in stories, but is not a "
-                        f"valid utterance."
+                    raise_warning(
+                        f"The action '{event.action_name}' is used in the stories, "
+                        f"but is not a valid utterance action. Please make sure "
+                        f"the action is listed in your domain and there is a "
+                        f"template defined with its name.",
+                        docs=DOCS_URL_ACTIONS + "#utterance-actions",
                     )
                     everything_is_alright = False
                 stories_utterances.add(event.action_name)
 
         for utterance in utterance_actions:
             if utterance not in stories_utterances:
-                warnings.warn(f"The utterance '{utterance}' is not used in any story.")
+                logger.debug(f"The utterance '{utterance}' is not used in any story.")
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
@@ -196,6 +211,8 @@ class Validator:
         return intents_are_valid and stories_are_valid and there_is_no_duplication
 
     def verify_domain_validity(self) -> bool:
-        """Checks whether the domain returned by the importer is empty, indicating an invalid domain."""
+        """Checks whether the domain returned by the importer is empty.
+
+        An empty domain is invalid."""
 
         return not self.domain.is_empty()

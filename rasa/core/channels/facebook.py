@@ -6,6 +6,7 @@ from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
 from fbmessenger.quick_replies import QuickReplies, QuickReply
+from rasa.utils.common import raise_warning
 from sanic import Blueprint, response
 from sanic.request import Request
 from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optional
@@ -169,7 +170,7 @@ class MessengerBot(OutputChannel):
 
         # buttons is a list of tuples: [(option_name,payload)]
         if len(buttons) > 3:
-            warnings.warn(
+            raise_warning(
                 "Facebook API currently allows only up to 3 buttons. "
                 "If you add more, all will be ignored."
             )
@@ -338,7 +339,9 @@ class FacebookInput(InputChannel):
         return fb_webhook
 
     @staticmethod
-    def validate_hub_signature(app_secret, request_payload, hub_signature_header):
+    def validate_hub_signature(
+        app_secret, request_payload, hub_signature_header
+    ) -> bool:
         """Make sure the incoming webhook requests are properly signed.
 
         Args:

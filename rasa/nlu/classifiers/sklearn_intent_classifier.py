@@ -1,17 +1,21 @@
 import logging
-import warnings
-import numpy as np
 import os
 import typing
+import warnings
 from typing import Any, Dict, List, Optional, Text, Tuple
 
+import numpy as np
+
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu import utils
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.constants import DENSE_FEATURE_NAMES, TEXT_ATTRIBUTE
+from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import MESSAGE_VECTOR_FEATURE_NAMES, MESSAGE_TEXT_ATTRIBUTE
+from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +28,7 @@ class SklearnIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = [MESSAGE_VECTOR_FEATURE_NAMES[MESSAGE_TEXT_ATTRIBUTE]]
+    requires = [DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]]
 
     defaults = {
         # C parameter of the svm - cross validation will select the best value
@@ -44,7 +48,7 @@ class SklearnIntentClassifier(Component):
 
     def __init__(
         self,
-        component_config: Dict[Text, Any] = None,
+        component_config: Optional[Dict[Text, Any]] = None,
         clf: "sklearn.model_selection.GridSearchCV" = None,
         le: Optional["sklearn.preprocessing.LabelEncoder"] = None,
     ) -> None:
@@ -87,29 +91,41 @@ class SklearnIntentClassifier(Component):
         labels = [e.get("intent") for e in training_data.intent_examples]
 
         if len(set(labels)) < 2:
-            warnings.warn(
-                "Can not train an intent classifier. "
-                "Need at least 2 different classes. "
-                "Skipping training of intent classifier."
+            raise_warning(
+                "Can not train an intent classifier as there are not "
+                "enough intents. Need at least 2 different intents. "
+                "Skipping training of intent classifier.",
+                docs=DOCS_URL_TRAINING_DATA_NLU,
             )
         else:
             y = self.transform_labels_str2num(labels)
             X = np.stack(
                 [
-                    example.get("text_features")
+                    sequence_to_sentence_features(
+                        example.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+                    )
                     for example in training_data.intent_examples
                 ]
             )
+            # reduce dimensionality
+            X = np.reshape(X, (len(X), -1))
 
             self.clf = self._create_classifier(num_threads, y)
 
-            self.clf.fit(X, y)
+            with warnings.catch_warnings():
+                # sklearn raises lots of
+                # "UndefinedMetricWarning: F - score is ill - defined"
+                # if there are few intent examples, this is needed to prevent it
+                warnings.simplefilter("ignore")
+                self.clf.fit(X, y)
 
-    def _num_cv_splits(self, y):
+    def _num_cv_splits(self, y) -> int:
         folds = self.component_config["max_cross_validation_folds"]
         return max(2, min(folds, np.min(np.bincount(y)) // 5))
 
-    def _create_classifier(self, num_threads, y):
+    def _create_classifier(
+        self, num_threads: int, y
+    ) -> "sklearn.model_selection.GridSearchCV":
         from sklearn.model_selection import GridSearchCV
         from sklearn.svm import SVC
 
@@ -133,6 +149,7 @@ class SklearnIntentClassifier(Component):
             cv=cv_splits,
             scoring=self.component_config["scoring_function"],
             verbose=1,
+            iid=False,
         )
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -144,7 +161,9 @@ class SklearnIntentClassifier(Component):
             intent = None
             intent_ranking = []
         else:
-            X = message.get("text_features").reshape(1, -1)
+            X = sequence_to_sentence_features(
+                message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+            ).reshape(1, -1)
             intent_ids, probabilities = self.predict(X)
             intents = self.transform_labels_num2str(np.ravel(intent_ids))
             # `predict` returns a matrix as it is supposed

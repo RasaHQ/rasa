@@ -1,7 +1,10 @@
+from typing import Text
+
 import asyncio
 import logging
 
 import pytest
+from _pytest.tmpdir import TempdirFactory
 
 import rasa.utils.io
 from rasa.test import compare_nlu_models
@@ -38,13 +41,25 @@ from rasa.nlu.test import align_entity_predictions
 from rasa.nlu.test import determine_intersection
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.tokenizers import Token
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu import utils
 import json
 import os
 from rasa.nlu import training_data, config
 from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH, NLU_DEFAULT_CONFIG_PATH
+from rasa.nlu.selectors.embedding_response_selector import ResponseSelector
+from rasa.nlu.test import is_response_selector_present
+
+
+# https://github.com/pytest-dev/pytest-asyncio/issues/68
+# this event_loop is used by pytest-asyncio, and redefining it
+# is currently the only way of changing the scope of this fixture
+@pytest.yield_fixture(scope="session")
+def event_loop(request):
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope="session")
@@ -256,7 +271,7 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
     data = DEFAULT_DATA_PATH
 
     result = run_evaluation(
-        data, os.path.join(unpacked_trained_moodbot_path, "nlu"), errors=None
+        data, os.path.join(unpacked_trained_moodbot_path, "nlu"), errors=False
     )
     assert result.get("intent_evaluation")
     assert result.get("entity_evaluation").get("CRFEntityExtractor")
@@ -267,7 +282,9 @@ def test_run_cv_evaluation():
     nlu_config = config.load("sample_configs/config_pretrained_embeddings_spacy.yml")
 
     n_folds = 2
-    intent_results, entity_results = cross_validate(td, n_folds, nlu_config)
+    intent_results, entity_results, response_selection_results = cross_validate(
+        td, n_folds, nlu_config
+    )
 
     assert len(intent_results.train["Accuracy"]) == n_folds
     assert len(intent_results.train["Precision"]) == n_folds
@@ -281,6 +298,52 @@ def test_run_cv_evaluation():
     assert len(entity_results.test["CRFEntityExtractor"]["Accuracy"]) == n_folds
     assert len(entity_results.test["CRFEntityExtractor"]["Precision"]) == n_folds
     assert len(entity_results.test["CRFEntityExtractor"]["F1-score"]) == n_folds
+
+
+def test_run_cv_evaluation_with_response_selector():
+    training_data_obj = training_data.load_data("data/examples/rasa/demo-rasa.md")
+    training_data_responses_obj = training_data.load_data(
+        "data/examples/rasa/demo-rasa-responses.md"
+    )
+    training_data_obj = training_data_obj.merge(training_data_responses_obj)
+    training_data_obj.fill_response_phrases()
+
+    nlu_config = config.load(
+        "sample_configs/config_embedding_intent_response_selector.yml"
+    )
+
+    n_folds = 2
+    intent_results, entity_results, response_selection_results = cross_validate(
+        training_data_obj, n_folds, nlu_config
+    )
+
+    assert len(intent_results.train["Accuracy"]) == n_folds
+    assert len(intent_results.train["Precision"]) == n_folds
+    assert len(intent_results.train["F1-score"]) == n_folds
+    assert len(intent_results.test["Accuracy"]) == n_folds
+    assert len(intent_results.test["Precision"]) == n_folds
+    assert len(intent_results.test["F1-score"]) == n_folds
+    assert len(response_selection_results.train["Accuracy"]) == n_folds
+    assert len(response_selection_results.train["Precision"]) == n_folds
+    assert len(response_selection_results.train["F1-score"]) == n_folds
+    assert len(response_selection_results.test["Accuracy"]) == n_folds
+    assert len(response_selection_results.test["Precision"]) == n_folds
+    assert len(response_selection_results.test["F1-score"]) == n_folds
+    # No entity extractor in pipeline
+    assert len(entity_results.train) == 0
+    assert len(entity_results.test) == 0
+
+
+def test_response_selector_present():
+    response_selector_component = ResponseSelector()
+
+    interpreter_with_response_selector = Interpreter(
+        [response_selector_component], context=None
+    )
+    interpreter_without_response_selector = Interpreter([], context=None)
+
+    assert is_response_selector_present(interpreter_with_response_selector)
+    assert not is_response_selector_present(interpreter_without_response_selector)
 
 
 def test_intent_evaluation_report(tmpdir_factory):
@@ -302,11 +365,18 @@ def test_intent_evaluation_report(tmpdir_factory):
         errors=False,
         confmat_filename=None,
         intent_hist_filename=None,
+        disable_plotting=False,
     )
 
     report = json.loads(rasa.utils.io.read_file(report_filename))
 
-    greet_results = {"precision": 1.0, "recall": 1.0, "f1-score": 1.0, "support": 1}
+    greet_results = {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 1,
+        "confused_with": {},
+    }
 
     prediction = {
         "text": "hello",
@@ -318,6 +388,63 @@ def test_intent_evaluation_report(tmpdir_factory):
     assert len(report.keys()) == 4
     assert report["greet"] == greet_results
     assert result["predictions"][0] == prediction
+
+
+def test_intent_evaluation_report_large(tmpdir_factory: TempdirFactory):
+    path = tmpdir_factory.mktemp("evaluation")
+    report_folder = path / "reports"
+    report_filename = report_folder / "intent_report.json"
+
+    rasa.utils.io.create_directory(str(report_folder))
+
+    def correct(label: Text) -> IntentEvaluationResult:
+        return IntentEvaluationResult(label, label, "", 1.0)
+
+    def incorrect(label: Text, _label: Text) -> IntentEvaluationResult:
+        return IntentEvaluationResult(label, _label, "", 1.0)
+
+    a_results = [correct("A")] * 10
+    b_results = [correct("B")] * 7 + [incorrect("B", "C")] * 3
+    c_results = [correct("C")] * 3 + [incorrect("C", "D")] + [incorrect("C", "E")]
+    d_results = [correct("D")] * 29 + [incorrect("D", "B")] * 3
+    e_results = [incorrect("E", "C")] * 5 + [incorrect("E", "")] * 5
+
+    intent_results = a_results + b_results + c_results + d_results + e_results
+
+    evaluate_intents(
+        intent_results,
+        report_folder,
+        successes=False,
+        errors=False,
+        confmat_filename=None,
+        intent_hist_filename=None,
+        disable_plotting=False,
+    )
+
+    report = json.loads(rasa.utils.io.read_file(str(report_filename)))
+
+    a_results = {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 10,
+        "confused_with": {},
+    }
+
+    e_results = {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 10,
+        "confused_with": {"C": 5, "": 5},
+    }
+
+    c_confused_with = {"D": 1, "E": 1}
+
+    assert len(report.keys()) == 8
+    assert report["A"] == a_results
+    assert report["E"] == e_results
+    assert report["C"]["confused_with"] == c_confused_with
 
 
 def test_response_evaluation_report(tmpdir_factory):

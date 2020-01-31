@@ -1,7 +1,7 @@
 from collections import defaultdict, deque
 
 import random
-from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING
+from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING, Set
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
@@ -24,7 +24,7 @@ VISUALIZATION_TEMPLATE_PATH = "/visualization.html"
 
 
 class UserMessageGenerator:
-    def __init__(self, nlu_training_data):
+    def __init__(self, nlu_training_data) -> None:
         self.nlu_training_data = nlu_training_data
         self.mapping = self._create_reverse_mapping(self.nlu_training_data)
 
@@ -43,12 +43,12 @@ class UserMessageGenerator:
         return d
 
     @staticmethod
-    def _contains_same_entity(entities, e):
+    def _contains_same_entity(entities, e) -> bool:
         return entities.get(e.get("entity")) is None or entities.get(
             e.get("entity")
         ) != e.get("value")
 
-    def message_for_data(self, structured_info):
+    def message_for_data(self, structured_info) -> Any:
         """Find a data sample with the same intent and entities.
 
         Given the parsed data from a message (intent and entities) finds a
@@ -70,7 +70,7 @@ class UserMessageGenerator:
         return structured_info.get("text")
 
 
-def _fingerprint_node(graph, node, max_history):
+def _fingerprint_node(graph, node, max_history) -> Set[Text]:
     """Fingerprint a node in a graph.
 
     Can be used to identify nodes that are similar and can be merged within the
@@ -107,20 +107,20 @@ def _fingerprint_node(graph, node, max_history):
         if empty:
             continuations.append(candidate)
     return {
-        " - ".join([graph.node[node]["label"] for node in continuation])
+        " - ".join([graph.nodes[node]["label"] for node in continuation])
         for continuation in continuations
     }
 
 
-def _incoming_edges(graph, node):
+def _incoming_edges(graph, node) -> set:
     return {(prev_node, k) for prev_node, _, k in graph.in_edges(node, keys=True)}
 
 
-def _outgoing_edges(graph, node):
+def _outgoing_edges(graph, node) -> set:
     return {(succ_node, k) for _, succ_node, k in graph.out_edges(node, keys=True)}
 
 
-def _outgoing_edges_are_similar(graph, node_a, node_b):
+def _outgoing_edges_are_similar(graph, node_a, node_b) -> bool:
     """If the outgoing edges from the two nodes are similar enough,
     it doesn't matter if you are in a or b.
 
@@ -141,9 +141,9 @@ def _outgoing_edges_are_similar(graph, node_a, node_b):
     return a_edges == b_edges or not a_edges or not b_edges
 
 
-def _nodes_are_equivalent(graph, node_a, node_b, max_history):
+def _nodes_are_equivalent(graph, node_a, node_b, max_history) -> bool:
     """Decides if two nodes are equivalent based on their fingerprints."""
-    return graph.node[node_a]["label"] == graph.node[node_b]["label"] and (
+    return graph.nodes[node_a]["label"] == graph.nodes[node_b]["label"] and (
         _outgoing_edges_are_similar(graph, node_a, node_b)
         or _incoming_edges(graph, node_a) == _incoming_edges(graph, node_b)
         or _fingerprint_node(graph, node_a, max_history)
@@ -151,7 +151,7 @@ def _nodes_are_equivalent(graph, node_a, node_b, max_history):
     )
 
 
-def _add_edge(graph, u, v, key, label=None, **kwargs):
+def _add_edge(graph, u, v, key, label=None, **kwargs) -> None:
     """Adds an edge to the graph if the edge is not already present. Uses the
     label as the key."""
 
@@ -168,7 +168,7 @@ def _add_edge(graph, u, v, key, label=None, **kwargs):
         _transfer_style(kwargs, d)
 
 
-def _transfer_style(source, target):
+def _transfer_style(source, target: Dict[Text, Any]) -> Dict[Text, Any]:
     """Copy over class names from source to target for all special classes.
 
     Used if a node is highlighted and merged with another node."""
@@ -188,7 +188,7 @@ def _transfer_style(source, target):
     return target
 
 
-def _merge_equivalent_nodes(graph, max_history):
+def _merge_equivalent_nodes(graph, max_history) -> None:
     """Searches for equivalent nodes in the graph and merges them."""
 
     changed = True
@@ -242,7 +242,7 @@ def _merge_equivalent_nodes(graph, max_history):
 
 async def _replace_edge_labels_with_nodes(
     graph, next_id, interpreter, nlu_training_data
-):
+) -> None:
     """User messages are created as edge labels. This removes the labels and
     creates nodes instead.
 

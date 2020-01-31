@@ -1,16 +1,19 @@
 import json
 import logging
-import typing
 import os
+import time
+import typing
 from collections import deque
 from threading import Thread
-from typing import Dict, Optional, Text, Union, Deque, Callable
+from typing import Callable, Deque, Dict, Optional, Text, Union
 
-import time
-
-import rasa.core.brokers.utils as rasa_broker_utils
-from rasa.constants import ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
-from rasa.core.brokers.event_channel import EventChannel
+from rasa.constants import (
+    DEFAULT_LOG_LEVEL_LIBRARIES,
+    ENV_LOG_LEVEL_LIBRARIES,
+    DOCS_URL_EVENT_BROKERS,
+)
+from rasa.core.brokers.broker import EventBroker
+from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.io import DEFAULT_ENCODING
 
@@ -18,6 +21,7 @@ if typing.TYPE_CHECKING:
     from pika.adapters.blocking_connection import BlockingChannel
     from pika import SelectConnection, BlockingConnection, BasicProperties
     from pika.channel import Channel
+    import pika
     from pika.connection import Parameters, Connection
 
 logger = logging.getLogger(__name__)
@@ -29,7 +33,7 @@ def initialise_pika_connection(
     password: Text,
     port: Union[Text, int] = 5672,
     connection_attempts: int = 20,
-    retry_delay_in_seconds: Union[int, float] = 5,
+    retry_delay_in_seconds: float = 5,
 ) -> "BlockingConnection":
     """Create a Pika `BlockingConnection`.
 
@@ -60,7 +64,7 @@ def _get_pika_parameters(
     password: Text,
     port: Union[Text, int] = 5672,
     connection_attempts: int = 20,
-    retry_delay_in_seconds: Union[int, float] = 5,
+    retry_delay_in_seconds: float = 5,
 ) -> "Parameters":
     """Create Pika `Parameters`.
 
@@ -96,7 +100,7 @@ def _get_pika_parameters(
             # it can take some time until
             # RabbitMQ comes up.
             retry_delay=retry_delay_in_seconds,
-            ssl_options=rasa_broker_utils.create_rabbitmq_ssl_options(host),
+            ssl_options=create_rabbitmq_ssl_options(host),
         )
 
     return parameters
@@ -135,7 +139,7 @@ def initialise_pika_channel(
     password: Text,
     port: Union[Text, int] = 5672,
     connection_attempts: int = 20,
-    retry_delay_in_seconds: Union[int, float] = 5,
+    retry_delay_in_seconds: float = 5,
 ) -> "BlockingChannel":
     """Initialise a Pika channel with a durable queue.
 
@@ -195,7 +199,7 @@ def close_pika_connection(connection: "Connection") -> None:
         logger.exception("Failed to close Pika connection with host.")
 
 
-class PikaProducer(EventChannel):
+class PikaEventBroker(EventBroker):
     def __init__(
         self,
         host: Text,
@@ -243,7 +247,7 @@ class PikaProducer(EventChannel):
     @classmethod
     def from_endpoint_config(
         cls, broker_config: Optional["EndpointConfig"]
-    ) -> Optional["PikaProducer"]:
+    ) -> Optional["PikaEventBroker"]:
         if broker_config is None:
             return None
 
@@ -359,3 +363,72 @@ class PikaProducer(EventChannel):
                 f"Published Pika events to queue '{self.queue}' on host "
                 f"'{self.host}':\n{body}"
             )
+
+
+def create_rabbitmq_ssl_options(
+    rabbitmq_host: Optional[Text] = None,
+) -> Optional["pika.SSLOptions"]:
+    """Create RabbitMQ SSL options.
+
+    Requires the following environment variables to be set:
+
+        RABBITMQ_SSL_CLIENT_CERTIFICATE - path to the SSL client certificate (required)
+        RABBITMQ_SSL_CLIENT_KEY - path to the SSL client key (required)
+        RABBITMQ_SSL_CA_FILE - path to the SSL CA file for verification (optional)
+        RABBITMQ_SSL_KEY_PASSWORD - SSL private key password (optional)
+
+    Details on how to enable RabbitMQ TLS support can be found here:
+    https://www.rabbitmq.com/ssl.html#enabling-tls
+
+    Args:
+        rabbitmq_host: RabbitMQ hostname
+
+    Returns:
+        Pika SSL context of type `pika.SSLOptions` if
+        the RABBITMQ_SSL_CLIENT_CERTIFICATE and RABBITMQ_SSL_CLIENT_KEY
+        environment variables are valid paths, else `None`.
+
+    """
+
+    client_certificate_path = os.environ.get("RABBITMQ_SSL_CLIENT_CERTIFICATE")
+    client_key_path = os.environ.get("RABBITMQ_SSL_CLIENT_KEY")
+
+    if client_certificate_path and client_key_path:
+        import pika
+        import rasa.server
+
+        logger.debug(f"Configuring SSL context for RabbitMQ host '{rabbitmq_host}'.")
+
+        ca_file_path = os.environ.get("RABBITMQ_SSL_CA_FILE")
+        key_password = os.environ.get("RABBITMQ_SSL_KEY_PASSWORD")
+
+        ssl_context = rasa.server.create_ssl_context(
+            client_certificate_path, client_key_path, ca_file_path, key_password
+        )
+        return pika.SSLOptions(ssl_context, rabbitmq_host)
+    else:
+        return None
+
+
+class PikaProducer(PikaEventBroker):
+    def __init__(
+        self,
+        host: Text,
+        username: Text,
+        password: Text,
+        port: Union[int, Text] = 5672,
+        queue: Text = "rasa_core_events",
+        loglevel: Union[Text, int] = os.environ.get(
+            ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
+        ),
+    ):
+        raise_warning(
+            "The `PikaProducer` class is deprecated, please inherit "
+            "from `PikaEventBroker` instead. `PikaProducer` will be "
+            "removed in future Rasa versions.",
+            FutureWarning,
+            docs=DOCS_URL_EVENT_BROKERS,
+        )
+        super(PikaProducer, self).__init__(
+            host, username, password, port, queue, loglevel
+        )

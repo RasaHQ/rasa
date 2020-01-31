@@ -1,15 +1,14 @@
 import json
-import warnings
 import logging
 import re
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
+
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+from rasa.utils.common import raise_warning
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from slackclient import SlackClient
-from typing import Text, Optional, List, Dict, Any, Callable, Awaitable
-
-from rasa.core.channels.channel import InputChannel
-from rasa.core.channels.channel import UserMessage, OutputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -80,9 +79,9 @@ class SlackBot(SlackClient, OutputChannel):
         text_block = {"type": "section", "text": {"type": "plain_text", "text": text}}
 
         if len(buttons) > 5:
-            warnings.warn(
+            raise_warning(
                 "Slack API currently allows only up to 5 buttons. "
-                "If you add more, all will be ignored."
+                "Since you added more than 5, slack will ignore all of them."
             )
             return await self.send_text_message(recipient, text, **kwargs)
 

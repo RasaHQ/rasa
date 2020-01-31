@@ -14,7 +14,7 @@ slots:
 entities:
  - name
 
-templates:
+responses:
   utter_greet:
     - text: hey there!
   utter_goodbye:
@@ -26,3 +26,7 @@ actions:
   - utter_default
   - utter_greet
   - utter_goodbye
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

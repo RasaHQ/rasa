@@ -11,6 +11,18 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+.. _migration-to-rasa-1.7:
+
+Rasa 1.6 to Rasa 1.7
+--------------------
+
+General
+~~~~~~~
+- By default, the ``EmbeddingIntentClassifier``, ``EmbeddingPolicy``, and ``ResponseSelector`` will
+  now normalize the top 10 confidence results if the ``loss_type`` is ``"softmax"`` (which has been
+  default since 1.3, see :ref:`migration-to-rasa-1.3`). This is configurable via the ``ranking_length``
+  configuration parameter; to turn off normalization to match the previous behavior, set ``ranking_length: 0``.
+
 .. _migration-to-rasa-1.3:
 
 Rasa 1.2 to Rasa 1.3
@@ -37,7 +49,7 @@ General
 - Default ``max_history`` for ``EmbeddingPolicy`` is ``None`` which means it'll use
   the ``FullDialogueTrackerFeaturizer``. We recommend to set ``max_history`` to
   some finite value in order to use ``MaxHistoryTrackerFeaturizer``
-  for **faster training**. See :ref:`featurization` for details.
+  for **faster training**. See :ref:`featurization_conversations` for details.
   We recommend to increase ``batch_size`` for ``MaxHistoryTrackerFeaturizer``
   (e.g. ``"batch_size": [32, 64]``)
 - **Compare** mode of ``rasa train core`` allows the whole core config comparison.
@@ -82,7 +94,7 @@ General
 - If you were previously importing the ``Button`` or ``Element`` classes from
   ``rasa_core.dispatcher``, these are now to be imported from ``rasa_sdk.utils``.
 
-- Rasa NLU and Core previously used `separate configuration files 
+- Rasa NLU and Core previously used `separate configuration files
   <https://legacy-docs.rasa.com/docs/nlu/0.15.1/migrations/?&_ga=2.218966814.608734414.1560704810-314462423.1543594887#id1>`_.
   These two files should be merged into a single file either named ``config.yml``, or passed via the ``--config`` parameter.
 

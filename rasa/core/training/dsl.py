@@ -7,7 +7,7 @@ import warnings
 from typing import Optional, List, Text, Any, Dict, TYPE_CHECKING, Iterable
 
 import rasa.utils.io as io_utils
-from rasa.constants import DOCS_BASE_URL
+from rasa.constants import DOCS_BASE_URL, DOCS_URL_STORIES, DOCS_URL_DOMAINS
 from rasa.core import utils
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.events import ActionExecuted, UserUttered, Event, SlotSet
@@ -23,6 +23,7 @@ from rasa.core.training.structures import (
 )
 from rasa.nlu.training_data.formats import MarkdownReader
 from rasa.core.domain import Domain
+from rasa.utils.common import raise_warning
 
 if TYPE_CHECKING:
     from rasa.nlu.training_data import Message
@@ -31,31 +32,47 @@ logger = logging.getLogger(__name__)
 
 
 class EndToEndReader(MarkdownReader):
+    def __init__(self) -> None:
+        super().__init__()
+        self._regex_interpreter = RegexInterpreter()
+
     def _parse_item(self, line: Text) -> Optional["Message"]:
-        """Parses an md list item line based on the current section type.
+        f"""Parses an md list item line based on the current section type.
 
         Matches expressions of the form `<intent>:<example>. For the
         syntax of <example> see the Rasa docs on NLU training data:
-        {}/nlu/training-data-format/#markdown-format""".format(
-            DOCS_BASE_URL
-        )
+        {DOCS_BASE_URL}/nlu/training-data-format/#markdown-format"""
 
-        item_regex = re.compile(r"\s*(.+?):\s*(.*)")
+        # Match three groups:
+        # 1) Potential "form" annotation
+        # 2) The correct intent
+        # 3) Optional entities
+        # 4) The message text
+        form_group = fr"({FORM_PREFIX}\s*)*"
+        item_regex = re.compile(r"\s*" + form_group + r"([^{}]+?)({.*})*:\s*(.*)")
         match = re.match(item_regex, line)
-        if match:
-            intent = match.group(1)
-            self.current_title = intent
-            message = match.group(2)
-            example = self._parse_training_example(message)
-            example.data["true_intent"] = intent
-            return example
 
-        raise ValueError(
-            "Encountered invalid end-to-end format for message "
-            "`{}`. Please visit the documentation page on "
-            "end-to-end evaluation at {}/user-guide/evaluating-models/"
-            "end-to-end-evaluation/".format(line, DOCS_BASE_URL)
-        )
+        if not match:
+            raise ValueError(
+                "Encountered invalid end-to-end format for message "
+                "`{}`. Please visit the documentation page on "
+                "end-to-end evaluation at {}/user-guide/evaluating-models/"
+                "#end-to-end-evaluation/".format(line, DOCS_BASE_URL)
+            )
+
+        intent = match.group(2)
+        self.current_title = intent
+        message = match.group(4)
+        example = self.parse_training_example(message)
+
+        # If the message starts with the `INTENT_MESSAGE_PREFIX` potential entities
+        # are annotated in the json format (e.g. `/greet{"name": "Rasa"})
+        if message.startswith(INTENT_MESSAGE_PREFIX):
+            parsed = self._regex_interpreter.synchronous_parse(message)
+            example.data["entities"] = parsed["entities"]
+
+        example.data["true_intent"] = intent
+        return example
 
 
 class StoryStepBuilder:
@@ -73,10 +90,11 @@ class StoryStepBuilder:
             self.start_checkpoints.append(Checkpoint(name, conditions))
         else:
             if conditions:
-                warnings.warn(
-                    "End or intermediate checkpoints "
-                    "do not support conditions! "
-                    f"(checkpoint: {name})"
+                raise_warning(
+                    f"End or intermediate checkpoints "
+                    f"do not support conditions! "
+                    f"(checkpoint: {name})",
+                    docs=DOCS_URL_STORIES + "#checkpoints",
                 )
             additional_steps = []
             for t in self.current_steps:
@@ -284,7 +302,10 @@ class StoryFileReader:
             parameters = StoryFileReader._parameters_from_json_string(slots_str, line)
             return event_name, parameters
         else:
-            warnings.warn(f"Failed to parse action line '{line}'. Ignoring this line.")
+            raise_warning(
+                f"Failed to parse action line '{line}'. Ignoring this line.",
+                docs=DOCS_URL_STORIES,
+            )
             return "", {}
 
     async def process_lines(self, lines: List[Text]) -> List[StoryStep]:
@@ -394,10 +415,12 @@ class StoryFileReader:
         )
         intent_name = utterance.intent.get("name")
         if intent_name not in self.domain.intents:
-            warnings.warn(
+            raise_warning(
                 f"Found unknown intent '{intent_name}' on line {line_num}. "
                 "Please, make sure that all intents are "
-                "listed in your domain yaml."
+                "listed in your domain yaml.",
+                UserWarning,
+                docs=DOCS_URL_DOMAINS,
             )
         return utterance
 
@@ -412,7 +435,7 @@ class StoryFileReader:
         )
         self.current_step_builder.add_user_messages(parsed_messages)
 
-    async def add_e2e_messages(self, e2e_messages, line_num):
+    async def add_e2e_messages(self, e2e_messages: List[Text], line_num: int) -> None:
         if not self.current_step_builder:
             raise StoryParseError(
                 "End-to-end message '{}' at invalid "
