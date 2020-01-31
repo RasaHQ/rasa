@@ -15,6 +15,7 @@ def test_init(run: Callable[..., RunResult]):
     assert os.path.exists("data/nlu.md")
     assert os.path.exists("data/stories.md")
 
+
 def test_init_using_init_dir_option(run: Callable[..., RunResult]):
     os.makedirs("./workspace")
     run("init", "--no-prompt", "--quiet", "--init-dir", "./workspace")
@@ -28,18 +29,19 @@ def test_init_using_init_dir_option(run: Callable[..., RunResult]):
     assert os.path.exists("./workspace/data/nlu.md")
     assert os.path.exists("./workspace/data/stories.md")
 
+
 def test_not_fount_init_path(run: Callable[..., RunResult]):
     output = run("init", "--no-prompt", "--quiet", "--init-dir", "./workspace")
 
-    assert (
-        output.outlines[0] == "Init path not found"
-    )
+    assert output.outlines[-1] == "\033[91mInit path not found\033[0m"
+
 
 def test_init_help(run: Callable[..., RunResult]):
     output = run("init", "--help")
 
     assert (
-        output.outlines[0] == "usage: rasa init [-h] [-v] [-vv] [--quiet] [--no-prompt] [--init-dir INIT_DIR]"
+        output.outlines[0]
+        == "usage: rasa init [-h] [-v] [-vv] [--quiet] [--no-prompt] [--init-dir INIT_DIR]"
     )
 
 

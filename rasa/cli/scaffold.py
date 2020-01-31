@@ -4,7 +4,7 @@ from typing import List, Text
 
 import rasa.train
 from rasa.cli.shell import shell
-from rasa.cli.utils import create_output_path, print_success
+from rasa.cli.utils import create_output_path, print_success, print_error
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
@@ -29,9 +29,7 @@ def add_subparser(
         help="Automatically choose default options for prompts and suppress warnings.",
     )
     scaffold_parser.add_argument(
-        "--init-dir", 
-        default=".", 
-        help="Descibe init folder path.",
+        "--init-dir", default=".", help="Descibe init folder path.",
     )
 
     scaffold_parser.set_defaults(func=run)
@@ -137,9 +135,11 @@ def print_cancel() -> None:
     print_success("Ok. You can continue setting up by running 'rasa init' 🙋🏽‍♀️")
     exit(0)
 
+
 def print_init_path_not_found() -> None:
-    print_success("Init path not found")
+    print_error("Init path not found")
     exit(0)
+
 
 def _ask_create_path(path: Text) -> None:
     import questionary
@@ -194,6 +194,9 @@ def run(args: argparse.Namespace) -> None:
         .ask()
     )
 
+    if args.no_prompt and not os.path.isdir(path):
+        print_init_path_not_found()
+
     if path and not os.path.isdir(path):
         _ask_create_path(path)
 
@@ -202,8 +205,5 @@ def run(args: argparse.Namespace) -> None:
 
     if not args.no_prompt and len(os.listdir(path)) > 0:
         _ask_overwrite(path)
-
-    if args.no_prompt and not os.path.isdir(path):
-        print_init_path_not_found()
 
     init_project(args, path)
