@@ -1,2 +1,0 @@
-``ReminderCancelled`` can now cancel multiple reminders if no name is given. It still cancels a single
-reminder if the reminder's name is specified.

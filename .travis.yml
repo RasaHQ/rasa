@@ -96,18 +96,13 @@ jobs:
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
     - sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster
-  - stage: docs-netlify
-    if: branch = master AND type != pull_request OR tag IS present
-    install: skip
-    script:
-    - curl -X POST -d "docs" https://api.netlify.com/build_hooks/${NETLIFY_HOOK_ID}
   - stage: deploy
     name: "Deploy to PyPI"
     python: 3.6
     if: tag IS present
     env:
       # GH_RELEASE_NOTES_TOKEN (github token on `rasabot` account. Used to publish releases to GH.)
-      - secure: "dlgHiKPl5Gk0CSZU4ZuNAx+8WqsG/RSYISN0TiiWAq5nHtKxklWfkBiyQqR92bEmh9y4s24yfgM4MHdcYpIfb+ZfDDIi0p7IXt3pZag0fsQGm075e2j4rVZf3MDd+Ybt4MbdBnwgm1u5xqLyuG7mRM8O4fPuPtLh8WH/GCIfSW/vQYUHciBNMIQGkvTicMHhGjDuSvk8dJswo8Fz9dizze2Udk8oIMV46ofGrH3k03fQ6kRsNY0rDLzNViVBPIpeAUNtL63SeBIQHCJe971S2dLCC/J08pa6y9d/qTa3/kqNe05Wpuj/Fm18ARGZTwI0OZg2CeNbb/3W2pup5hh34s+7Dgt3GGokAtV+/RPpuZXZAXkuw7Pnnr3A4GB8T4yprYixrSm/8FebX3Z3kMXJSE8nHaOYKmBfIrQZssbtnM+arq3of3gMGhYSyq+foa8fXSv1flp6PhR+1WycJDk3uN+wvBN+zoU1uQ58txZWXEhcsYD6mI7EVMi/MPJdRKFRr5+zt/sO87OfSx61cW52ZLb2kYaNVyDZ7Oeda35ZwV1cHauH5/SLp+kXMAfkz48aV6vahKO3L/Jd9Xb89iLRPY6Yek6KGFVic0GAe91uW3QAO6qXfjk6/1tdzW9VF1+KDRI7YhDdqbd03LCgJeDFdPOFAuI9bsmnqVQCIIV3eGM="
+      - secure: "UMqL+B34LYbyXmflfzkIJ1rHTBHeVz/kO2v72iRg3kw0Nj3ddZLX/0Y6re9nKQHXbWhmBIlcUd7/eDxEugTATjIW+cX7psShA58u5WqTTnqMsdi7HDnPVYWhBxIsJ9u5l7WSY2gsTEEHshDaCDVEp6GdMdosRavYNPAL2NJJJ9UWcLzajp57yG34wnW4G/jOMOzCBhwuQBm35bHQ3r6/+7RFfiT0PK6VsJkBjkvWqkCWaT/JJjY6D0EQ4FUJJvcQKG+hV6PmXRfQ2p46BXHSNkCNN99zm2lVsYO604DtmcxHOnGS4zM4VEXIOf8VfvTtanNbi/Yw4yJ9uXPkEnkR5aP8BTB4HkvHEzBirmPHcXYPoGY4zd5wnaHsH3HU0ODycaYddHO2EOAHncwIzB94LRVfZ0y7kZXvgJ7Bj0FCF8Z6ompLk3At6T7NVUGhU07oB0fNKmM7HiXwT9/t1SWSGMapkEbfwTw9aOfLye83rZdnGWdW7PxaAvVZC2Cq6BQ5/b3RjywbqKE/nClz0kX1BG6L6byPjhCFAiDl/KMVGfBnDyZRVoF/S1LedugJd6+O8E7Zv1+1UENLjZs1BhDVnZ1NP95vtoPKcWRvDE6LXNagDrlxJHNPmaTPJXPlTcM/6x9UQ0cltg9v9a4FCgQdR7PLYeobcVS5hDkTm1wOfSQ="
     addons:
       apt:
         packages:

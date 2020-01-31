@@ -1,14 +1,13 @@
 import logging
-import warnings
 import uuid
+from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text
+
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+from rasa.utils.common import raise_warning
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from socketio import AsyncServer
-from typing import Optional, Text, Any, List, Dict, Iterable, Callable, Awaitable
-
-from rasa.core.channels.channel import InputChannel
-from rasa.core.channels.channel import UserMessage, OutputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -176,8 +175,8 @@ class SocketIOInput(InputChannel):
 
             if self.session_persistence:
                 if not data.get("session_id"):
-                    warnings.warn(
-                        "A message without a valid sender_id "
+                    raise_warning(
+                        "A message without a valid session_id "
                         "was received. This message will be "
                         "ignored. Make sure to set a proper "
                         "session id using the "
