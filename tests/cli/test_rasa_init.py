@@ -32,7 +32,7 @@ def test_not_fount_init_path(run: Callable[..., RunResult]):
     output = run("init", "--no-prompt", "--quiet", "--init-dir", "./workspace")
 
     assert (
-        output.outlines[0] == "Init path not found 🙋🏽<200d>"
+        output.outlines[0] == "Init path not found"
     )
 
 def test_init_help(run: Callable[..., RunResult]):

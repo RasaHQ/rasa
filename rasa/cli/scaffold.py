@@ -138,7 +138,7 @@ def print_cancel() -> None:
     exit(0)
 
 def print_init_path_not_found() -> None:
-    print_success("Init path not found 🙋🏽‍♀️")
+    print_success("Init path not found")
     exit(0)
 
 def _ask_create_path(path: Text) -> None:
