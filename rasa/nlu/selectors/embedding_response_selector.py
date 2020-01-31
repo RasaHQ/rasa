@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, Text
 
 from rasa.nlu.training_data import TrainingData, Message
-from rasa.nlu.classifiers.DIET_classifier import DIETClassifier
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.components import any_of
 from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES_TEXT,

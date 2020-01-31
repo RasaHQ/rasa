@@ -28,7 +28,10 @@ class EntitySynonymMapper(EntityExtractor):
         self.synonyms = synonyms if synonyms else {}
 
     def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
 
         for key, value in list(training_data.entity_synonyms.items()):

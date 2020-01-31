@@ -82,7 +82,10 @@ class SklearnIntentClassifier(Component):
         return self.le.inverse_transform(y)
 
     def train(
-        self, training_data: TrainingData, cfg: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
         """Train the intent classifier on a data set."""
 
