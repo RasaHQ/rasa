@@ -15,6 +15,25 @@ def test_init(run: Callable[..., RunResult]):
     assert os.path.exists("data/nlu.md")
     assert os.path.exists("data/stories.md")
 
+def test_init_using_init_dir_option(run: Callable[..., RunResult]):
+    os.makedirs("./workspace")
+    run("init", "--no-prompt", "--quiet", "--init-dir", "./workspace")
+
+    assert os.path.exists("./workspace/actions.py")
+    assert os.path.exists("./workspace/domain.yml")
+    assert os.path.exists("./workspace/config.yml")
+    assert os.path.exists("./workspace/credentials.yml")
+    assert os.path.exists("./workspace/endpoints.yml")
+    assert os.path.exists("./workspace/models")
+    assert os.path.exists("./workspace/data/nlu.md")
+    assert os.path.exists("./workspace/data/stories.md")
+
+def test_not_fount_init_path(run: Callable[..., RunResult]):
+    output = run("init", "--no-prompt", "--quiet", "--init-dir", "./workspace")
+
+    assert (
+        output.outlines[0] == "Init path not found 🙋🏽<200d>"
+    )
 
 def test_init_help(run: Callable[..., RunResult]):
     output = run("init", "--help")
