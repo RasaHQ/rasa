@@ -345,7 +345,7 @@ It is recommended to use
     These parameters can be specified in the policy configuration file.
     The default values are defined in ``EmbeddingPolicy.defaults``:
 
-    .. literalinclude:: ../../rasa/core/policies/TED_policy.py
+    .. literalinclude:: ../../rasa/core/policies/ted_policy.py
        :dedent: 4
        :start-after: # default properties (DOC MARKER - don't remove)
        :end-before: # end default properties (DOC MARKER - don't remove)
