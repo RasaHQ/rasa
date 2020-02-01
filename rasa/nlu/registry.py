@@ -5,36 +5,36 @@ Hence, it imports all of the components. To avoid cycles, no component should
 import this in module scope."""
 
 import logging
-import warnings
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
+from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
-from rasa.nlu.selectors.embedding_response_selector import ResponseSelector
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
+from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizer
+from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
-from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
-from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
-from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
 from rasa.nlu.model import Metadata
+from rasa.nlu.selectors.embedding_response_selector import ResponseSelector
+from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
-from rasa.utils.common import class_from_module_path
-
+from rasa.utils.common import class_from_module_path, raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
@@ -53,6 +53,7 @@ component_classes = [
     MitieTokenizer,
     SpacyTokenizer,
     WhitespaceTokenizer,
+    ConveRTTokenizer,
     JiebaTokenizer,
     # extractors
     SpacyEntityExtractor,
@@ -131,7 +132,7 @@ registered_pipeline_templates = {
         {"name": "EmbeddingIntentClassifier"},
     ],
     "pretrained_embeddings_convert": [
-        {"name": "WhitespaceTokenizer"},
+        {"name": "ConveRTTokenizer"},
         {"name": "ConveRTFeaturizer"},
         {"name": "EmbeddingIntentClassifier"},
     ],
@@ -180,12 +181,13 @@ def get_component_class(component_name: Text) -> Type["Component"]:
                 raise ModuleNotFoundError(exception_message)
         else:
             # DEPRECATED ensures compatibility, remove in future versions
-            warnings.warn(
-                "Your nlu config file "
+            raise_warning(
+                f"Your nlu config file "
                 f"contains old style component name `{component_name}`, "
-                f"you should change it to its class name: "
+                f"you should change it to its new class name: "
                 f"`{old_style_names[component_name]}`.",
                 FutureWarning,
+                docs=DOCS_URL_COMPONENTS,
             )
             component_name = old_style_names[component_name]
 

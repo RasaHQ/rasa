@@ -2,13 +2,15 @@ import logging
 import typing
 from typing import Any, Dict, Text
 
+from rasa.nlu.components import any_of
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.constants import (
     RESPONSE_ATTRIBUTE,
-    TEXT_ATTRIBUTE,
-    SPARSE_FEATURE_NAMES,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     DEFAULT_OPEN_UTTERANCE_TYPE,
+    DENSE_FEATURE_NAMES,
+    TEXT_ATTRIBUTE,
+    SPARSE_FEATURE_NAMES,
 )
 
 logger = logging.getLogger(__name__)
@@ -41,9 +43,17 @@ class ResponseSelector(EmbeddingIntentClassifier):
     and additional hidden layers are added together with dropout.
     """
 
-    provides = ["response", "response_ranking"]
+    provides = [RESPONSE_ATTRIBUTE, "response_ranking"]
 
-    requires = []
+    requires = [
+        any_of(
+            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE], SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
+        ),
+        any_of(
+            DENSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE],
+            SPARSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE],
+        ),
+    ]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -77,6 +87,9 @@ class ResponseSelector(EmbeddingIntentClassifier):
         "similarity_type": "auto",  # string 'auto' or 'cosine' or 'inner'
         # the type of the loss function
         "loss_type": "softmax",  # string 'softmax' or 'margin'
+        # number of top responses to normalize scores for softmax loss_type
+        # set to 0 to turn off normalization
+        "ranking_length": 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct intent labels
         "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'

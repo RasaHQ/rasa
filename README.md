@@ -1,4 +1,4 @@
-# Rasa (formerly Rasa Core + Rasa NLU)
+# Rasa OSS
 
 [![Join the chat on Rasa Community Forum](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![PyPI version](https://badge.fury.io/py/rasa.svg)](https://badge.fury.io/py/rasa)
@@ -145,7 +145,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
 5. Once your PR is merged, tag a new release (this SHOULD always happen on master or release branches), e.g. using
     ```bash
     git tag 1.2.0 -m "next release"
-    git push origin 1.2.0 --tags
+    git push origin 1.2.0
     ```
     travis will build this tag and push a package to [pypi](https://pypi.python.org/pypi/rasa)
 6. **If this is a minor release**, a new release branch should be created pointing to the same commit as the tag to allow for future patch releases, e.g.
@@ -186,13 +186,13 @@ We use `sphinx-versioning` to build docs for tagged versions and for the master 
 The static site that gets built is pushed to the `docs` branch of this repo, which doesn't contain
 any code, only the site.
 
-We host the site on netlify. When there is a reason to update the docs (e.g. master has changed or we have
-tagged a new version) we trigger a webhook on netlify (see `.travis.yml`). 
+We host the site on netlify. On master branch builds (see `.travis.yml`), we push the built docs to the `docs`
+branch. Netlify automatically re-deploys the docs pages whenever there is a change to that branch.
 
 
 ## License
 Licensed under the Apache License, Version 2.0.
-Copyright 2019 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
+Copyright 2020 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
 
 A list of the Licenses of the dependencies of the project can be found at
 the bottom of the

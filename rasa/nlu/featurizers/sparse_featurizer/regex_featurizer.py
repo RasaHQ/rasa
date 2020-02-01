@@ -1,25 +1,27 @@
 import logging
-import warnings
-
-import numpy as np
 import os
 import re
 import typing
-import scipy.sparse
-from typing import Any, Dict, Optional, Text, Union, List
+from typing import Any, Dict, List, Optional, Text, Union
 
+import numpy as np
+
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
+import rasa.utils.io
+import rasa.utils.io
+import scipy.sparse
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers.featurizer import Featurizer
-from rasa.nlu.training_data import Message, TrainingData
-import rasa.utils.io
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
-    TEXT_ATTRIBUTE,
+    CLS_TOKEN,
     RESPONSE_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
+    TEXT_ATTRIBUTE,
+    TOKENS_NAMES,
 )
-from rasa.constants import DOCS_BASE_URL
+from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.training_data import Message, TrainingData
+from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -33,13 +35,6 @@ class RegexFeaturizer(Featurizer):
 
     requires = [TOKENS_NAMES[TEXT_ATTRIBUTE]]
 
-    defaults = {
-        # if True return a sequence of features (return vector has size
-        # token-size x feature-dimension)
-        # if False token-size will be equal to 1
-        "return_sequence": False
-    }
-
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
@@ -52,8 +47,6 @@ class RegexFeaturizer(Featurizer):
         self.known_patterns = known_patterns if known_patterns else []
         lookup_tables = lookup_tables or []
         self._add_lookup_table_regexes(lookup_tables)
-
-        self.return_sequence = self.component_config["return_sequence"]
 
     def train(
         self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
@@ -96,11 +89,7 @@ class RegexFeaturizer(Featurizer):
         message is tokenized, the function will mark all tokens with a dict
         relating the name of the regex to whether it was matched."""
         tokens = message.get(TOKENS_NAMES[attribute], [])
-
-        if self.return_sequence:
-            seq_length = len(tokens)
-        else:
-            seq_length = 1
+        seq_length = len(tokens)
 
         vec = np.zeros([seq_length, len(self.known_patterns)])
 
@@ -112,15 +101,19 @@ class RegexFeaturizer(Featurizer):
                 patterns = t.get("pattern", default={})
                 patterns[pattern["name"]] = False
 
-                if self.return_sequence:
-                    seq_index = token_index
-                else:
-                    seq_index = 0
+                if t.text == CLS_TOKEN:
+                    # make sure to set all patterns for the CLS token to False
+                    # the attribute patterns is needed later on and in the tests
+                    t.set("pattern", patterns)
+                    continue
 
                 for match in matches:
-                    if t.offset < match.end() and t.end > match.start():
+                    if t.start < match.end() and t.end > match.start():
                         patterns[pattern["name"]] = True
-                        vec[seq_index][pattern_index] = 1.0
+                        vec[token_index][pattern_index] = 1.0
+                        if attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE]:
+                            # CLS token vector should contain all patterns
+                            vec[-1][pattern_index] = 1.0
 
                 t.set("pattern", patterns)
 
@@ -136,11 +129,11 @@ class RegexFeaturizer(Featurizer):
         # if it's a list, it should be the elements directly
         if isinstance(lookup_elements, list):
             elements_to_regex = lookup_elements
-            warnings.warn(
+            raise_warning(
                 f"Directly including lookup tables as a list is deprecated since Rasa "
-                f"1.6. See {DOCS_BASE_URL}/nlu/training-data-format/#lookup-tables "
-                f"how to do so.",
+                f"1.6.",
                 FutureWarning,
+                docs=DOCS_URL_TRAINING_DATA_NLU + "#lookup-tables",
             )
 
         # otherwise it's a file path.

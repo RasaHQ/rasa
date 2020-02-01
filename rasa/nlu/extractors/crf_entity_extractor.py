@@ -1,5 +1,4 @@
 import logging
-import warnings
 import os
 import typing
 import numpy as np
@@ -17,7 +16,12 @@ from rasa.nlu.constants import (
     SPACY_DOCS,
     ENTITIES_ATTRIBUTE,
 )
-from rasa.constants import DOCS_BASE_URL
+from rasa.constants import (
+    DOCS_BASE_URL,
+    DOCS_URL_TRAINING_DATA_NLU,
+    DOCS_URL_COMPONENTS,
+)
+from rasa.utils.common import raise_warning
 
 try:
     import spacy
@@ -172,7 +176,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         return dataset
 
-    def _check_spacy_doc(self, message) -> None:
+    def _check_spacy_doc(self, message: Message) -> None:
         if self.pos_features and message.get(SPACY_DOCS[TEXT_ATTRIBUTE]) is None:
             raise InvalidConfigError(
                 "Could not find `spacy_doc` attribute for "
@@ -212,7 +216,7 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             return []
 
-    def most_likely_entity(self, idx, entities) -> Tuple[Text, Any]:
+    def most_likely_entity(self, idx: int, entities: List[Any]) -> Tuple[Text, Any]:
         if len(entities) > idx:
             entity_probs = entities[idx]
         else:
@@ -243,12 +247,12 @@ class CRFEntityExtractor(EntityExtractor):
         confidence: float,
     ) -> Dict[Text, Any]:
         if isinstance(tokens, list):  # tokens is a list of Token
-            _start = tokens[start].offset
+            _start = tokens[start].start
             _end = tokens[end].end
             value = tokens[start].text
             value += "".join(
                 [
-                    message.text[tokens[i - 1].end : tokens[i].offset] + tokens[i].text
+                    message.text[tokens[i - 1].end : tokens[i].start] + tokens[i].text
                     for i in range(start + 1, end + 1)
                 ]
             )
@@ -274,6 +278,11 @@ class CRFEntityExtractor(EntityExtractor):
         if len(label) >= 2 and label[1] == "-":
             return label[0].upper()
         return None
+
+    @staticmethod
+    def _tokens_without_cls(message: Message) -> List[Token]:
+        # [:-1] to remove the CLS token from the list of tokens
+        return message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
 
     def _find_bilou_end(self, word_idx, entities) -> Any:
         ent_word_idx = word_idx + 1
@@ -314,7 +323,9 @@ class CRFEntityExtractor(EntityExtractor):
                 )
         return ent_word_idx, confidence
 
-    def _handle_bilou_label(self, word_idx: int, entities) -> Tuple[Any, Any, Any]:
+    def _handle_bilou_label(
+        self, word_idx: int, entities: List[Any]
+    ) -> Tuple[Any, Any, Any]:
         label, confidence = self.most_likely_entity(word_idx, entities)
         entity_label = self._entity_from_label(label)
 
@@ -336,7 +347,7 @@ class CRFEntityExtractor(EntityExtractor):
         if self.pos_features:
             tokens = message.get(SPACY_DOCS[TEXT_ATTRIBUTE])
         else:
-            tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
+            tokens = self._tokens_without_cls(message)
 
         if len(tokens) != len(entities):
             raise Exception(
@@ -373,7 +384,7 @@ class CRFEntityExtractor(EntityExtractor):
         return json_ents
 
     def _convert_simple_tagging_to_entity_result(
-        self, tokens, entities
+        self, tokens: List[Union[Token, Any]], entities: List[Any]
     ) -> List[Dict[Text, Any]]:
         json_ents = []
 
@@ -381,11 +392,11 @@ class CRFEntityExtractor(EntityExtractor):
             entity_label, confidence = self.most_likely_entity(word_idx, entities)
             word = tokens[word_idx]
             if entity_label != "O":
-                if self.pos_features:
+                if self.pos_features and not isinstance(word, Token):
                     start = word.idx
                     end = word.idx + len(word)
                 else:
-                    start = word.offset
+                    start = word.start
                     end = word.end
                 ent = {
                     "start": start,
@@ -501,7 +512,7 @@ class CRFEntityExtractor(EntityExtractor):
             gold = GoldParse(doc_or_tokens, entities=entity_offsets)
             ents = [l[5] for l in gold.orig_annot]
         else:
-            doc_or_tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
+            doc_or_tokens = self._tokens_without_cls(message)
             ents = self._bilou_tags_from_offsets(doc_or_tokens, entity_offsets)
 
         # collect badly annotated examples
@@ -511,14 +522,15 @@ class CRFEntityExtractor(EntityExtractor):
                 collected.append(t)
             elif collected:
                 collected_text = " ".join([t.text for t in collected])
-                warnings.warn(
+                raise_warning(
                     f"Misaligned entity annotation for '{collected_text}' "
                     f"in sentence '{message.text}' with intent "
                     f"'{message.get('intent')}'. "
                     f"Make sure the start and end values of the "
                     f"annotated training examples end at token "
                     f"boundaries (e.g. don't include trailing "
-                    f"whitespaces or punctuation)."
+                    f"whitespaces or punctuation).",
+                    docs=DOCS_URL_TRAINING_DATA_NLU,
                 )
                 collected = []
 
@@ -533,7 +545,7 @@ class CRFEntityExtractor(EntityExtractor):
     @staticmethod
     def _bilou_tags_from_offsets(tokens, entities, missing: Text = "O") -> List[Text]:
         # From spacy.spacy.GoldParse, under MIT License
-        starts = {token.offset: i for i, token in enumerate(tokens)}
+        starts = {token.start: i for i, token in enumerate(tokens)}
         ends = {token.end: i for i, token in enumerate(tokens)}
         bilou = ["-" for _ in tokens]
         # Handle entity cases
@@ -555,7 +567,7 @@ class CRFEntityExtractor(EntityExtractor):
             for i in range(start_char, end_char):
                 entity_chars.add(i)
         for n, token in enumerate(tokens):
-            for i in range(token.offset, token.end):
+            for i in range(token.start, token.end):
                 if i in entity_chars:
                     break
             else:
@@ -564,14 +576,14 @@ class CRFEntityExtractor(EntityExtractor):
         return bilou
 
     @staticmethod
-    def __pattern_of_token(message, i):
+    def __pattern_of_token(message: Message, i: int) -> Dict:
         if message.get(TOKENS_NAMES[TEXT_ATTRIBUTE]) is not None:
             return message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[i].get("pattern", {})
         else:
             return {}
 
     @staticmethod
-    def __tag_of_token(token):
+    def __tag_of_token(token: Any) -> Text:
         if spacy.about.__version__ > "2" and token._.has("tag"):
             return token._.get("tag")
         else:
@@ -586,12 +598,13 @@ class CRFEntityExtractor(EntityExtractor):
 
         tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE], [])
         if len(tokens) != len(features):
-            warnings.warn(
+            raise_warning(
                 f"Number of features ({len(features)}) for attribute "
                 f"'{DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]}' "
                 f"does not match number of tokens ({len(tokens)}). Set "
                 f"'return_sequence' to true in the corresponding featurizer in order "
-                f"to make use of the features in 'CRFEntityExtractor'."
+                f"to make use of the features in 'CRFEntityExtractor'.",
+                docs=DOCS_URL_COMPONENTS + "#crfentityextractor",
             )
             return None
 
@@ -615,7 +628,7 @@ class CRFEntityExtractor(EntityExtractor):
         if self.pos_features:
             tokens = message.get(SPACY_DOCS[TEXT_ATTRIBUTE])
         else:
-            tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
+            tokens = self._tokens_without_cls(message)
 
         text_dense_features = self.__get_dense_features(message)
 

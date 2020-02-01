@@ -12,7 +12,7 @@ entities:
  - unrelated_recognized_entity
  - other
 
-templates:
+responses:
   utter_greet:
     - hey there!
   utter_goodbye:

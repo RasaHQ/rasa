@@ -1,5 +1,4 @@
 import asyncio
-import logging
 
 import datetime
 import pytest
@@ -8,7 +7,7 @@ import uuid
 import json
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-from typing import Optional, Text
+from typing import Optional, Text, List
 from unittest.mock import patch
 
 from rasa.core import jobs
@@ -34,6 +33,10 @@ from rasa.core.slots import Slot
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request
+
+from rasa.core.constants import EXTERNAL_MESSAGE_PREFIX, IS_EXTERNAL
+
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -75,13 +78,14 @@ async def test_log_unseen_feature(default_processor: MessageProcessor):
     with pytest.warns(UserWarning) as record:
         default_processor._log_unseen_features(parsed)
     assert len(record) == 2
+
     assert (
-        record[0].message.args[0]
-        == "Interpreter parsed an intent 'dislike' that is not defined in the domain."
+        record[0].message.args[0].startswith("Interpreter parsed an intent 'dislike'")
     )
     assert (
-        record[1].message.args[0]
-        == "Interpreter parsed an entity 'test_entity' that is not defined in the domain."
+        record[1]
+        .message.args[0]
+        .startswith("Interpreter parsed an entity 'test_entity'")
     )
 
 
@@ -152,11 +156,11 @@ async def test_reminder_scheduled(
 ):
     sender_id = uuid.uuid4().hex
 
-    reminder = ReminderScheduled("utter_greet", datetime.datetime.now())
+    reminder = ReminderScheduled("remind", datetime.datetime.now())
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     tracker.update(UserUttered("test"))
-    tracker.update(ActionExecuted("action_reminder_reminder"))
+    tracker.update(ActionExecuted("action_schedule_reminder"))
     tracker.update(reminder)
 
     default_processor.tracker_store.save(tracker)
@@ -168,18 +172,11 @@ async def test_reminder_scheduled(
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
 
-    assert t.events[-4] == UserUttered(None)
-    assert t.events[-3] == ActionExecuted("utter_greet")
-    assert t.events[-2] == BotUttered(
-        "hey there None!",
-        {
-            "elements": None,
-            "buttons": None,
-            "quick_replies": None,
-            "attachment": None,
-            "image": None,
-            "custom": None,
-        },
+    assert t.events[-5] == UserUttered("test")
+    assert t.events[-4] == ActionExecuted("action_schedule_reminder")
+    assert isinstance(t.events[-3], ReminderScheduled)
+    assert t.events[-2] == UserUttered(
+        f"{EXTERNAL_MESSAGE_PREFIX}remind", intent={"name": "remind", IS_EXTERNAL: True}
     )
     assert t.events[-1] == ActionExecuted("action_listen")
 
@@ -207,7 +204,22 @@ async def test_reminder_aborted(
     assert len(t.events) == 3  # nothing should have been executed
 
 
-async def test_reminder_cancelled(
+async def wait_until_all_jobs_were_executed(
+    timeout_after_seconds: Optional[float] = None,
+) -> None:
+    total_seconds = 0.0
+    while len((await jobs.scheduler()).get_jobs()) > 0 and (
+        not timeout_after_seconds or total_seconds < timeout_after_seconds
+    ):
+        await asyncio.sleep(0.1)
+        total_seconds += 0.1
+
+    if total_seconds >= timeout_after_seconds:
+        jobs.kill_scheduler()
+        raise TimeoutError
+
+
+async def test_reminder_cancelled_multi_user(
     default_channel: CollectingOutputChannel, default_processor: MessageProcessor
 ):
     sender_ids = [uuid.uuid4().hex, uuid.uuid4().hex]
@@ -219,13 +231,13 @@ async def test_reminder_cancelled(
         tracker.update(ActionExecuted("action_reminder_reminder"))
         tracker.update(
             ReminderScheduled(
-                "utter_greet", datetime.datetime.now(), kill_on_user_message=True
+                "greet", datetime.datetime.now(), kill_on_user_message=True
             )
         )
         trackers.append(tracker)
 
-    # cancel reminder for the first user
-    trackers[0].update(ReminderCancelled("utter_greet"))
+    # cancel all reminders (one) for the first user
+    trackers[0].update(ReminderCancelled())
 
     for tracker in trackers:
         default_processor.tracker_store.save(tracker)
@@ -241,15 +253,145 @@ async def test_reminder_cancelled(
     assert len((await jobs.scheduler()).get_jobs()) == 1
 
     # execute the jobs
-    await asyncio.sleep(5)
+    await wait_until_all_jobs_were_executed(timeout_after_seconds=5.0)
 
     tracker_0 = default_processor.tracker_store.retrieve(sender_ids[0])
     # there should be no utter_greet action
-    assert ActionExecuted("utter_greet") not in tracker_0.events
+    assert (
+        UserUttered(
+            f"{EXTERNAL_MESSAGE_PREFIX}greet",
+            intent={"name": "greet", IS_EXTERNAL: True},
+        )
+        not in tracker_0.events
+    )
 
     tracker_1 = default_processor.tracker_store.retrieve(sender_ids[1])
     # there should be utter_greet action
-    assert ActionExecuted("utter_greet") in tracker_1.events
+    assert (
+        UserUttered(
+            f"{EXTERNAL_MESSAGE_PREFIX}greet",
+            intent={"name": "greet", IS_EXTERNAL: True},
+        )
+        in tracker_1.events
+    )
+
+
+async def test_reminder_cancelled_cancels_job_with_name(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    sender_id = "][]][xy,,=+2f'[:/;>]  <0d]A[e_,02"
+
+    reminder = ReminderScheduled(
+        intent="greet", trigger_date_time=datetime.datetime.now()
+    )
+    job_name = reminder.scheduled_job_name(sender_id)
+    reminder_cancelled = ReminderCancelled()
+
+    assert reminder_cancelled.cancels_job_with_name(job_name, sender_id)
+    assert not reminder_cancelled.cancels_job_with_name(job_name.upper(), sender_id)
+
+
+async def test_reminder_cancelled_cancels_job_with_name_special_name(
+    default_channel: CollectingOutputChannel, default_processor: MessageProcessor
+):
+    sender_id = "][]][xy,,=+2f'[:/;  >]<0d]A[e_,02"
+    name = "wkjbgr,34(,*&%^^&*(OP#LKMN V#NF# # #R"
+
+    reminder = ReminderScheduled(
+        intent="greet", trigger_date_time=datetime.datetime.now(), name=name
+    )
+    job_name = reminder.scheduled_job_name(sender_id)
+    reminder_cancelled = ReminderCancelled(name)
+
+    assert reminder_cancelled.cancels_job_with_name(job_name, sender_id)
+    assert not reminder_cancelled.cancels_job_with_name(job_name.upper(), sender_id)
+
+
+async def cancel_reminder_and_check(
+    tracker: DialogueStateTracker,
+    default_processor: MessageProcessor,
+    reminder_canceled_event: ReminderCancelled,
+    num_jobs_before: int,
+    num_jobs_after: int,
+) -> None:
+    # cancel the sixth reminder
+    tracker.update(reminder_canceled_event)
+
+    # check that the jobs were added
+    assert len((await jobs.scheduler()).get_jobs()) == num_jobs_before
+
+    await default_processor._cancel_reminders(tracker.events, tracker)
+
+    # check that only one job was removed
+    assert len((await jobs.scheduler()).get_jobs()) == num_jobs_after
+
+
+async def test_reminder_cancelled_by_name(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    tracker_with_six_scheduled_reminders: DialogueStateTracker,
+):
+    tracker = tracker_with_six_scheduled_reminders
+    await default_processor._schedule_reminders(
+        tracker.events, tracker, default_channel, default_processor.nlg
+    )
+
+    # cancel the sixth reminder
+    await cancel_reminder_and_check(
+        tracker, default_processor, ReminderCancelled("special"), 6, 5
+    )
+
+
+async def test_reminder_cancelled_by_entities(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    tracker_with_six_scheduled_reminders: DialogueStateTracker,
+):
+    tracker = tracker_with_six_scheduled_reminders
+    await default_processor._schedule_reminders(
+        tracker.events, tracker, default_channel, default_processor.nlg
+    )
+
+    # cancel the fourth reminder
+    await cancel_reminder_and_check(
+        tracker,
+        default_processor,
+        ReminderCancelled(entities=[{"entity": "name", "value": "Bruce Wayne"}]),
+        6,
+        5,
+    )
+
+
+async def test_reminder_cancelled_by_intent(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    tracker_with_six_scheduled_reminders: DialogueStateTracker,
+):
+    tracker = tracker_with_six_scheduled_reminders
+    await default_processor._schedule_reminders(
+        tracker.events, tracker, default_channel, default_processor.nlg
+    )
+
+    # cancel the third, fifth, and sixth reminder
+    await cancel_reminder_and_check(
+        tracker, default_processor, ReminderCancelled(intent="default"), 6, 3
+    )
+
+
+async def test_reminder_cancelled_all(
+    default_channel: CollectingOutputChannel,
+    default_processor: MessageProcessor,
+    tracker_with_six_scheduled_reminders: DialogueStateTracker,
+):
+    tracker = tracker_with_six_scheduled_reminders
+    await default_processor._schedule_reminders(
+        tracker.events, tracker, default_channel, default_processor.nlg
+    )
+
+    # cancel all reminders
+    await cancel_reminder_and_check(
+        tracker, default_processor, ReminderCancelled(), 6, 0
+    )
 
 
 async def test_reminder_restart(

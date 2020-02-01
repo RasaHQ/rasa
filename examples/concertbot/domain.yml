@@ -16,7 +16,7 @@ intents:
 entities:
  - name
 
-templates:
+responses:
   utter_greet:
     - text: "hey there!"
   utter_goodbye:
@@ -29,12 +29,7 @@ templates:
     - text: "I am a bot, powered by Rasa."
 
 actions:
-  - utter_default
-  - utter_greet
-  - utter_goodbye
-  - utter_youarewelcome
   - action_search_concerts
   - action_search_venues
   - action_show_concert_reviews
   - action_show_venue_reviews
-  - utter_iamabot

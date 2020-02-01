@@ -91,15 +91,12 @@ As those feature vectors would normally take up a lot of memory, we store them a
 Sparse features only store the values that are non zero and their positions in the vector.
 Thus, we save a lot of memroy and are able to train on larger datasets.
 
-By default all featurizers will return a matrix of length (1 x feature-dimension).
-All featurizer (except the ``ConveRTFeaturizer``) have the option to return a sequence instead.
-In case the flag ``"return_sequence"`` is set to ``True``, the returned matrix of the featurizer will have the size
-(token-length x feature-dimension).
-So, the returned matrix will have an entry for every token.
-Otherwise, the matrix will just have one entry for the complete utterance.
-If you want to use custom features for your ``CRFEntityExtractor``, you should set ``"return_sequence"`` to ``True``.
-For more details, take a look :ref:`entity-extraction-custom-features`.
-
+By default all featurizers will return a matrix of length (number-of-tokens x feature-dimension).
+So, the returned matrix will have a feature vector for every token.
+This allows us to train sequence models.
+However, the additional token at the end (e.g. ``__CLS__``) contains features for the complete utterance.
+This feature vector can be used in any non-sequence model.
+The corresponding classifier can therefore decide what kind of features to use.
 
 MitieFeaturizer
 ~~~~~~~~~~~~~~~
@@ -151,7 +148,7 @@ ConveRTFeaturizer
 :Outputs:
     nothing, used as an input to intent classifiers and response selectors that need intent features and response
     features respectively (e.g. ``EmbeddingIntentClassifier`` and ``ResponseSelector``)
-:Requires: nothing
+:Requires: :ref:`ConveRTTokenizer`
 :Type: Dense featurizer
 :Description:
     Creates features for intent classification and response selection.
@@ -165,12 +162,6 @@ ConveRTFeaturizer
     .. note::
         To use ``ConveRTFeaturizer`` you need to install additional tensorflow libraries (``tensorflow_text`` and
         ``tensorflow_hub``). You should do a pip install of Rasa with ``pip install rasa[convert]`` to install those.
-
-    .. warning::
-        If you set the option ``"return_sequence"`` to ``True``, Rasa will raise an error informing you that this
-        option is currently not supported. Do not use this featurizer in combination with any other featurizer that
-        has the option ``"return_sequence"`` set to ``True`` as training will fail. However, you can use this
-        featurizer with any other featurizer as long as ``"return_sequence"`` is set to ``False`` for all of them.  
 
 :Configuration:
 
@@ -473,6 +464,9 @@ EmbeddingIntentClassifier
               ``inner`` for ``softmax``, ``cosine`` for ``margin``;
             - ``loss_type`` sets the type of the loss function,
               it should be either ``softmax`` or ``margin``;
+            - ``ranking_length`` defines the number of top confidences over
+              which to normalize ranking results if ``loss_type: "softmax"``;
+              to turn off normalization set it to 0
             - ``mu_pos`` controls how similar the algorithm should try
               to make embedding vectors for correct intent labels,
               used only if ``loss_type`` is set to ``margin``;
@@ -622,6 +616,17 @@ Response Selector
 Tokenizers
 ----------
 
+If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
+modeling hierarchical intent structure, use these flags with any tokenizer:
+
+- ``intent_tokenization_flag`` indicates whether to tokenize intent labels or not. By default this flag is set to
+  ``False``, intent will not be tokenized.
+- ``intent_split_symbol`` sets the delimiter string to split the intent labels, default is underscore
+  (``_``).
+
+    .. note:: All tokenizer add an additional token ``__CLS__`` to the end of the list of tokens when tokenizing
+              text and responses.
+
 WhitespaceTokenizer
 ~~~~~~~~~~~~~~~~~~~
 
@@ -632,13 +637,6 @@ WhitespaceTokenizer
     Creates a token for every whitespace separated character sequence. Can be used to define tokens for the MITIE entity
     extractor.
 :Configuration:
-
-    If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
-    modeling hierarchical intent structure, use these flags:
-
-    - tokenization of intent and response labels:
-        - ``intent_split_symbol`` sets the delimiter string to split the intent and response labels, default is whitespace.
-
     Make the tokenizer not case sensitive by adding the ``case_sensitive: false`` option. Default being ``case_sensitive: true``.
 
     .. code-block:: yaml
@@ -695,6 +693,18 @@ SpacyTokenizer
     Creates tokens using the spacy tokenizer. Can be used to define
     tokens for the MITIE entity extractor.
 
+.. _ConveRTTokenizer:
+
+ConveRTTokenizer
+~~~~~~~~~~~~~~~~
+
+:Short: Tokenizer using ConveRT
+:Outputs: nothing
+:Requires: nothing
+:Description:
+    Creates tokens using the ConveRT tokenizer. Must be used whenever the ``ConveRTFeaturizer`` is used.
+
+
 
 Entity Extractors
 -----------------
@@ -728,6 +738,8 @@ MitieEntityExtractor
 
         pipeline:
         - name: "MitieEntityExtractor"
+
+.. _SpacyEntityExtractor:
 
 SpacyEntityExtractor
 ~~~~~~~~~~~~~~~~~~~~
@@ -831,8 +843,7 @@ CRFEntityExtractor
     neighbouring entity tags: the most likely set of tags is then calculated and returned.
     If POS features are used (pos or pos2), spaCy has to be installed. If you want to use
     additional features, such as pre-trained word embeddings, from any provided dense
-    featurizer, use ``"text_dense_features"``. Make sure to set ``"return_sequence"`` to
-    ``True`` in the corresponding featurizer.
+    featurizer, use ``"text_dense_features"``.
 :Configuration:
    .. code-block:: yaml
 
@@ -927,5 +938,5 @@ DucklingHTTPExtractor
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
           # Timeout for receiving response from http url of the running duckling server
-          # if not set the default timeout of duckling http url is set to 3 seconds. 
+          # if not set the default timeout of duckling http url is set to 3 seconds.
           timeout : 3
