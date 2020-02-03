@@ -1,6 +1,5 @@
 import hashlib
 import hmac
-import warnings
 import logging
 from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
