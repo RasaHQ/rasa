@@ -201,10 +201,8 @@ class CRFEntityExtractor(DIETClassifier):
             inv_label_dict,
             inv_tag_dict,
             label_data,
-            label_key,
             meta,
-            model_data_example,
-            tf_model_file,
+            data_example,
         ) = cls._load_from_files(meta, model_dir)
 
         meta[INTENT_CLASSIFICATION] = False
@@ -214,9 +212,7 @@ class CRFEntityExtractor(DIETClassifier):
         meta[SHARE_HIDDEN_LAYERS] = False
         meta[UNIDIRECTIONAL_ENCODER] = True
 
-        model = cls._load_model(
-            inv_tag_dict, label_data, label_key, meta, model_data_example, tf_model_file
-        )
+        model = cls._load_model(inv_tag_dict, label_data, meta, data_example, model_dir)
 
         return cls(
             component_config=meta,

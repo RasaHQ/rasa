@@ -780,7 +780,7 @@ class DIETClassifier(EntityExtractor):
         cls,
         meta: Dict[Text, Any],
         model_dir: Text = None,
-        model_metadata: "Metadata" = None,
+        model_metadata: Metadata = None,
         cached_component: Optional["DIETClassifier"] = None,
         **kwargs: Any,
     ) -> "DIETClassifier":
@@ -798,17 +798,13 @@ class DIETClassifier(EntityExtractor):
             inv_label_dict,
             inv_tag_dict,
             label_data,
-            label_key,
             meta,
-            model_data_example,
-            tf_model_file,
+            data_example,
         ) = cls._load_from_files(meta, model_dir)
 
         meta = train_utils.update_similarity_type(meta)
 
-        model = cls._load_model(
-            inv_tag_dict, label_data, label_key, meta, model_data_example, tf_model_file
-        )
+        model = cls._load_model(inv_tag_dict, label_data, meta, data_example, model_dir)
 
         return cls(
             component_config=meta,
@@ -819,14 +815,11 @@ class DIETClassifier(EntityExtractor):
         )
 
     @classmethod
-    def _load_from_files(cls, meta, model_dir):
+    def _load_from_files(cls, meta: Dict[Text, Any], model_dir: Text):
         file_name = meta.get("file")
-        tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
-
-        label_key = "label_ids" if meta[INTENT_CLASSIFICATION] else "tag_ids"
 
         with open(os.path.join(model_dir, file_name + ".data_example.pkl"), "rb") as f:
-            model_data_example = RasaModelData(label_key=label_key, data=pickle.load(f))
+            data_example = pickle.load(f)
 
         with open(os.path.join(model_dir, file_name + ".label_data.pkl"), "rb") as f:
             label_data = pickle.load(f)
@@ -849,22 +842,24 @@ class DIETClassifier(EntityExtractor):
             inv_label_dict,
             inv_tag_dict,
             label_data,
-            label_key,
             meta,
-            model_data_example,
-            tf_model_file,
+            data_example,
         )
 
     @classmethod
     def _load_model(
         cls,
-        inv_tag_dict,
-        label_data,
-        label_key,
-        meta,
-        model_data_example,
-        tf_model_file,
+        inv_tag_dict: Dict[int, Text],
+        label_data: RasaModelData,
+        meta: Dict[Text, Any],
+        data_example: Dict[Text, List[np.ndarray]],
+        model_dir: Text,
     ):
+        file_name = meta.get("file")
+        tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
+
+        label_key = "label_ids" if meta[INTENT_CLASSIFICATION] else "tag_ids"
+        model_data_example = RasaModelData(label_key=label_key, data=data_example)
 
         model = DIET.load(
             tf_model_file,
