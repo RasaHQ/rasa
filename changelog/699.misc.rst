@@ -1,0 +1,6 @@
+The `EmbeddingPolicy <https://rasa.com/docs/rasa/core/policies/#embedding-policy>`_
+replaces the ``KerasPolicy`` in new Rasa projects generated with ``rasa init``.
+The `EmbeddingPolicy <https://rasa.com/docs/rasa/core/policies/#embedding-policy>`_
+is now the recommended machine learning policy. Please see the
+`migration guide <https://rasa.com/docs/rasa/migration-guide/#rasa-1-7-to-rasa-1-8>`_
+if you want to switch to this new policy in an existing project.
