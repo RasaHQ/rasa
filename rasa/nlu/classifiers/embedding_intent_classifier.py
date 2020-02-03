@@ -1,14 +1,10 @@
 import logging
-import os
-import warnings
 from typing import Any, Dict, Optional, Text
 
-from rasa.nlu.model import Metadata
 from rasa.constants import DOCS_BASE_URL
 from rasa.nlu.components import any_of
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
     TEXT_ATTRIBUTE,
     ENTITIES_ATTRIBUTE,
     DENSE_FEATURE_NAMES,
@@ -51,7 +47,6 @@ from rasa.utils.tensorflow.constants import (
 )
 from rasa.utils.common import raise_warning
 from rasa.utils.tensorflow.tf_models import RasaModel
-from rasa.utils import train_utils
 
 logger = logging.getLogger(__name__)
 
@@ -61,10 +56,9 @@ class EmbeddingIntentClassifier(DIETClassifier):
     provides = [ENTITIES_ATTRIBUTE]
 
     requires = [
-        TOKENS_NAMES[TEXT_ATTRIBUTE],
         any_of(
             DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE], SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
-        ),
+        )
     ]
 
     # default properties (DOC MARKER - don't remove)

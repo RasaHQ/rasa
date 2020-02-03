@@ -17,6 +17,7 @@ from rasa.nlu.constants import (
     ENTITIES_ATTRIBUTE,
     DENSE_FEATURE_NAMES,
     SPARSE_FEATURE_NAMES,
+    TOKENS_NAMES,
 )
 from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES_TEXT,
@@ -50,9 +51,10 @@ class CRFEntityExtractor(DIETClassifier):
     provides = [ENTITIES_ATTRIBUTE]
 
     requires = [
+        TOKENS_NAMES[TEXT_ATTRIBUTE],
         any_of(
             DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE], SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
-        )
+        ),
     ]
 
     # default properties (DOC MARKER - don't remove)
