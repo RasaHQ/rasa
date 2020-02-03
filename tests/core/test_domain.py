@@ -605,19 +605,9 @@ def test_domain_with_intents_transformed_for_file():
             {"why": {"use_entities": []}},
             {"pure_intent": {"use_entities": True}},
         ],
-        "entities": ["name", "other", "unrelated_recognized_entity"],
-        "responses": {
-            "utter_greet": [{"text": "hey there!"}],
-            "utter_goodbye": [{"text": "goodbye :("}],
-            "utter_default": [{"text": "default message"}],
-        },
-        "actions": ["utter_default", "utter_goodbye", "utter_greet"],
     }
 
-    expected = Domain.from_dict(expected)
-    actual = Domain.from_dict(transformed)
-
-    assert hash(actual) == hash(expected)
+    assert transformed["intents"] == expected["intents"]
 
 
 def test_clean_domain_for_file():
@@ -641,12 +631,13 @@ def test_clean_domain_for_file():
             "utter_default": [{"text": "default message"}],
         },
         "actions": ["utter_default", "utter_goodbye", "utter_greet"],
+        "session_config": {
+            "carry_over_slots_to_new_session": True,
+            "session_expiration_time": 0,
+        },
     }
 
-    expected = Domain.from_dict(expected)
-    actual = Domain.from_dict(cleaned)
-
-    assert hash(actual) == hash(expected)
+    assert cleaned == expected
 
 
 def test_clean_domain_deprecated_templates():
