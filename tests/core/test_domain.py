@@ -595,9 +595,9 @@ def test_is_empty():
     assert Domain.empty().is_empty()
 
 
-def test_clean_domain():
+def test_clean_domain_for_file():
     domain_path = "data/test_domains/default_unfeaturized_entities.yml"
-    cleaned = Domain.load(domain_path).cleaned_domain()
+    cleaned = Domain.load(domain_path).cleaned_domain_for_file()
 
     expected = {
         "intents": [
@@ -626,7 +626,7 @@ def test_clean_domain():
 
 def test_clean_domain_deprecated_templates():
     domain_path = "data/test_domains/default_deprecated_templates.yml"
-    cleaned = Domain.load(domain_path).cleaned_domain()
+    cleaned = Domain.load(domain_path).cleaned_domain_for_file()
 
     expected = {
         "intents": [
