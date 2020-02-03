@@ -1345,6 +1345,11 @@ div .copyable {
   -webkit-box-shadow: 0 1px 8px 0 rgba(40, 40, 40, 0.5);
 }
 
+#webchat .open-launcher {
+  width: 100%;
+  max-height: 100%;
+}
+
 #webchat .conversation-container {
   box-shadow: 0 1px 8px 0 rgba(122, 107, 107, 0.22);
   -webkit-box-shadow: 0 1px 8px 0 rgba(122, 107, 107, 0.22);
@@ -1362,6 +1367,10 @@ div .copyable {
 .conversation-container .avatar {
     width: 30px !important;
     height: 30px !important;
+}
+
+#webchat .widget-container {
+  z-index: 99;
 }
 
 #webchat .new-message {
@@ -1621,4 +1630,82 @@ div.section {
     cursor: pointer;
     border: 0;
     padding: 0.7rem 1rem;
+}
+
+.webchat-banner {
+    box-sizing: border-box;
+    position: fixed;
+    right: 58px;
+    bottom: 88px;
+    max-width: 228px;
+    background-color: white;
+    color: #6d708b;
+    padding: 30px 20px 20px;
+    border-radius: 4px;
+    box-shadow: 0 5px 22px 0 rgba(0, 0, 0, 0.1);
+    z-index: 98;
+}
+
+
+.webchat-banner {
+    position: fixed;
+    right: 58px;
+    bottom: 100px;
+    width: 90%;
+    max-width: 228px;
+    background-color: white;
+    color: #6d708b;
+    padding: 35px 22px 22px;
+    border-radius: 4px;
+    box-shadow: 0 5px 22px 0 rgba(0, 0, 0, 0.1);
+    font-size: 15px;
+}
+
+.webchat-banner--hidden {
+    display: none;
+}
+
+.webchat-banner:after {
+    position: absolute;
+    bottom: -30px;
+    right: 30px;
+    content: "";
+    display: block;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 45px 30px 0;
+    border-color: transparent white transparent transparent;
+    filter: drop-shadow(5px 10px 8px rgba(0, 0, 0, 0.1));
+}
+
+.webchat-banner__avatar {
+    position: absolute;
+    width: 43px;
+    height: 43px;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -40%);
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.webchat-banner__close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: 0;
+    padding: 5px 10px;
+    color: #6d708b;
+    font-size: 18px;
+    cursor: pointer;
+    opacity: 0.6;
+    background-color: transparent;
+}
+
+.webchat-banner__close:hover {
+    opacity: 1;
 }

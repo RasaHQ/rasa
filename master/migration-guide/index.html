@@ -11,10 +11,6 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/banner.css" />
     <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/button.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/button.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/button.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/button.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
@@ -272,10 +268,34 @@ Rasa Core and how you can migrate from one version to another." />
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/migration-guide.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
   </div><p>This page contains information about changes between major versions and
 how you can migrate from one version to another.</p>
-<div class="section" id="rasa-1-6-to-rasa-1-7">
-<span id="migration-to-rasa-1-7"></span><h2>Rasa 1.6 to Rasa 1.7<a class="headerlink" href="#rasa-1-6-to-rasa-1-7" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="rasa-1-7-to-rasa-1-8">
+<span id="migration-to-rasa-1-8"></span><h2>Rasa 1.7 to Rasa 1.8<a class="headerlink" href="#rasa-1-7-to-rasa-1-8" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="general">
 <h3>General<a class="headerlink" href="#general" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p class="first">The <a class="reference internal" href="../core/policies/#embedding-policy"><span class="std std-ref">Embedding Policy</span></a> replaced the <a class="reference internal" href="../core/policies/#keras-policy"><span class="std std-ref">Keras Policy</span></a> as recommended machine
+learning policy. New projects generated with <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code> will automatically use
+this policy. In case you want to change your existing model configuration to use the
+<a class="reference internal" href="../core/policies/#embedding-policy"><span class="std std-ref">Embedding Policy</span></a> add this to the <code class="docutils literal notranslate"><span class="pre">policies</span></code> section in your <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>
+and remove potentially existing <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> entries:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">...</span> <span class="c1"># other policies</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">EmbeddingPolicy</span>
+  <span class="l l-Scalar l-Scalar-Plain">max_history</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+  <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+</pre></div>
+</div>
+<p>The given snippet specifies default values for the parameters <code class="docutils literal notranslate"><span class="pre">max_history</span></code> and
+<code class="docutils literal notranslate"><span class="pre">epochs</span></code>. <code class="docutils literal notranslate"><span class="pre">max_history</span></code> is particularly important and strongly depends on your stories. Please see the docs of the <a class="reference internal" href="../core/policies/#embedding-policy"><span class="std std-ref">Embedding Policy</span></a> if you want to
+customize them.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="rasa-1-6-to-rasa-1-7">
+<span id="migration-to-rasa-1-7"></span><h2>Rasa 1.6 to Rasa 1.7<a class="headerlink" href="#rasa-1-6-to-rasa-1-7" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id2">
+<h3>General<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>By default, the <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code>, <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>, and <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> will
 now normalize the top 10 confidence results if the <code class="docutils literal notranslate"><span class="pre">loss_type</span></code> is <code class="docutils literal notranslate"><span class="pre">&quot;softmax&quot;</span></code> (which has been
@@ -292,8 +312,8 @@ configuration parameter; to turn off normalization to match the previous behavio
 It is not possible to load previously trained models. Please make sure to retrain a
 model before trying to use it with this improved version.</p>
 </div>
-<div class="section" id="id2">
-<h3>General<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id3">
+<h3>General<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Default parameters of <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> are changed. See <a class="reference internal" href="../nlu/components/#components"><span class="std std-ref">Components</span></a> for details.
 Architecture implementation is changed as well, so <strong>old trained models cannot be loaded</strong>.
@@ -335,8 +355,8 @@ identifier. Make sure you don’t include <code class="docutils literal notransl
 It is not possible to load previously trained models. Please make sure to retrain a
 model before trying to use it with this improved version.</p>
 </div>
-<div class="section" id="id3">
-<h3>General<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id4">
+<h3>General<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>The scripts in <code class="docutils literal notranslate"><span class="pre">rasa.core</span></code> and <code class="docutils literal notranslate"><span class="pre">rasa.nlu</span></code> can no longer be executed. To train, test, run, … an NLU or Core
 model, you should now use the command line interface <code class="docutils literal notranslate"><span class="pre">rasa</span></code>. The functionality is, for the most part, the same as before.
@@ -560,29 +580,65 @@ any kind of data files or directory to be <code class="docutils literal notransl
 
   </script>
   <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
-     <div id="webchat">
-     <script src="../_static/rasa-webchat.js"></script>
-     <script>
-      WebChat.default.init({
-          selector: "#webchat",
-          initPayload: "/greet",
-          socketUrl: "https://website-demo.rasa.com/",
-          socketPath: "/socket.io",
-          title: "Sara",
-          subtitle: "I'm still in development",
-          profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
-          showCloseButton: true,
-          fullScreenMode: false,
-          hideWhenNotConnected: false,
-          connectOn: "open",
-          autoClearCache: true,
-          customMessageDelay: (message) => {
-            return 900 + message.length;
-          },
-        params: {
-          storage: "local"
-        }})
-     </script>
-     </div>
+      <div class="webchat-banner webchat-banner--hidden">
+        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
+        👋 I can help you get started with Rasa and answer your technical questions.
+        <button class="webchat-banner__close">
+          <i class="fas fa-times"></i> 
+        </button>
+      </div>
+      <div id="webchat">
+        <script src="../_static/rasa-webchat.js"></script>
+        <script>
+          WebChat.default.init({
+            selector: "#webchat",
+            initPayload: "/greet",
+            socketUrl: "https://website-demo.rasa.com/",
+            socketPath: "/socket.io",
+            title: "Sara",
+            subtitle: "I'm still in development",
+            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
+            showCloseButton: true,
+            fullScreenMode: false,
+            hideWhenNotConnected: false,
+            connectOn: "open",
+            autoClearCache: true,
+            linksOpenTab: false,
+            openLauncherImage: "../_static/chat-icon.svg",
+            customMessageDelay: (message) => {
+              return 900 + message.length;
+            },
+            params: {
+              storage: "local"
+            },
+            onWidgetEvent: {
+              onChatOpen: () => {
+                const webchatBanner = document.querySelector('.webchat-banner');
+                if (webchatBanner) {
+                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                  webchatBanner.classList.add('webchat-banner--hidden');
+                }
+              }
+            }
+          });
+
+          try {
+            const webchatBanner = document.querySelector('.webchat-banner');
+
+            if (webchatBanner) {
+              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
+                webchatBanner.classList.remove('webchat-banner--hidden');
+              }
+
+              const webChatBannerClose = document.querySelector('.webchat-banner__close');
+
+              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
+                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
+                webchatBanner.classList.add('webchat-banner--hidden');
+              });
+            }
+          } catch (e) {}
+        </script>
+      </div>
   </body>
 </html>
