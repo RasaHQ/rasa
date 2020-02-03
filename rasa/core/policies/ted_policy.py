@@ -506,6 +506,8 @@ class TED(RasaModel):
             dropout_rate=self.config[DROPRATE_DIALOGUE],
             attention_dropout_rate=0,
             unidirectional=True,
+            use_key_relative_position=True,
+            max_relative_position=5,
             name="dialogue_encoder",
         )
         self._tf_layers["embed.dialogue"] = layers.Embed(

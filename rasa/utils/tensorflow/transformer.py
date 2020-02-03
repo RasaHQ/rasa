@@ -1,6 +1,7 @@
 from typing import List, Optional, Text, Tuple, Callable
 import tensorflow as tf
 import tensorflow_addons as tfa
+from tensorflow.python.keras.utils import tf_utils
 import numpy as np
 from rasa.utils.tensorflow.layers import DenseWithSparseWeights
 
@@ -14,7 +15,8 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         num_heads: int,
         attention_dropout_rate: float = 0.0,
         unidirectional: bool = False,
-        use_relative_position: bool = False,
+        use_key_relative_position: bool = False,
+        use_value_relative_position: bool = False,
         max_relative_position: Optional[int] = None,
         heads_share_relative_embedding: bool = False,
     ) -> None:
@@ -22,9 +24,12 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         self.num_heads = num_heads
         self.d_model = d_model
+        self.attention_dropout_rate = attention_dropout_rate
         self.unidirectional = unidirectional
-        self.use_relative_position = use_relative_position
+        self.use_key_relative_position = use_key_relative_position
+        self.use_value_relative_position = use_value_relative_position
         self.max_relative_position = max_relative_position
+        self.heads_share_relative_embedding = heads_share_relative_embedding
 
         assert d_model % self.num_heads == 0
 
@@ -34,36 +39,52 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self._wk = DenseWithSparseWeights(units=d_model, use_bias=False)
         self._wv = DenseWithSparseWeights(units=d_model, use_bias=False)
 
-        if use_relative_position:
-            if not max_relative_position:
+        self._dense = DenseWithSparseWeights(units=d_model)
+
+        self._add_relative_embeddings()
+
+    def _add_relative_embeddings(self) -> None:
+        """Instantiate relative embeddings."""
+
+        if self.use_key_relative_position or self.use_value_relative_position:
+            if not self.max_relative_position:
                 raise ValueError(
-                    f"Max relative position {max_relative_position} "
+                    f"Max relative position {self.max_relative_position} "
                     f"should be > 0 when using relative attention."
                 )
 
-            if unidirectional:
-                max_relative_position_unmasked = max_relative_position
+            if self.unidirectional:
+                max_relative_position_unmasked = self.max_relative_position
             else:
-                max_relative_position_unmasked = 2 * max_relative_position - 1
+                max_relative_position_unmasked = 2 * self.max_relative_position - 1
 
-            if heads_share_relative_embedding:
+            if self.heads_share_relative_embedding:
                 relative_embedding_shape = (max_relative_position_unmasked, self._depth)
             else:
                 relative_embedding_shape = (
-                    num_heads,
+                    self.num_heads,
                     max_relative_position_unmasked,
                     self._depth,
                 )
 
             initializer = tf.keras.initializers.TruncatedNormal(
-                stddev=self._depth ** -0.5
+                stddev=tf.math.sqrt(tf.cast(self._depth, tf.float32))
             )
+        else:
+            initializer = None
+            relative_embedding_shape = None
+
+        if self.use_key_relative_position:
             self.key_relative_embeddings = self.add_weight(
                 shape=relative_embedding_shape,
                 initializer=initializer,
                 trainable=True,
                 name="key_relative_embeddings",
             )
+        else:
+            self.key_relative_embeddings = None
+
+        if self.use_value_relative_position:
             self.value_relative_embeddings = self.add_weight(
                 shape=relative_embedding_shape,
                 initializer=initializer,
@@ -71,14 +92,145 @@ class MultiHeadAttention(tf.keras.layers.Layer):
                 name="value_relative_embeddings",
             )
         else:
-            self.key_relative_embeddings = None
             self.value_relative_embeddings = None
 
-        self._attention_dropout = tf.keras.layers.Dropout(attention_dropout_rate)
+    def _pad_relative_embeddings(self, x, length):
+        # pad the left side to length
+        pad_left = x[:, :, :, :1, :]
+        pad_left = tf.tile(pad_left, (1, 1, 1, length - self.max_relative_position, 1))
 
-        self._dense = DenseWithSparseWeights(units=d_model)
+        # pad the right side to length
+        if self.unidirectional:
+            m_right = 1  # current time
+            pad_right = tf.zeros_like(x[:, :, :, -1:, :])
+        else:
+            m_right = self.max_relative_position
+            pad_right = x[:, :, :, -1:, :]
+        pad_right = tf.tile(pad_right, (1, 1, 1, length - m_right, 1))
 
-    def _scaled_dot_product_attention(self, q, k, v, pad_mask, training):
+        return tf.concat([pad_left, x, pad_right], axis=-2)
+
+    def _slice_relative_embeddings(self, x, length):
+        if self.unidirectional:
+            # pad the right side to length
+            pad_right = tf.zeros_like(x[:, :, :, -1:, :])
+            pad_right = tf.tile(pad_right, (1, 1, 1, length - 1, 1))
+            x = tf.concat([x, pad_right], axis=-2)
+
+        dl = self.max_relative_position - length
+        m = tf.shape(x)[-2]
+        return x[:, :, :, dl : m - dl, :]
+
+    def _relative_to_absolute_position(self, x: tf.Tensor) -> tf.Tensor:
+        """Universal method to convert tensor from relative to absolute indexing.
+
+        x.shape =
+        (batch, num_heads, length, relative_length, depth)
+        or (batch, num_heads, length, relative_length)
+        "Slides" relative embeddings by 45 degree """
+
+        x_dim = len(x.shape)
+
+        if x_dim < 4 or x_dim > 5:
+            raise ValueError("Relative tensor has a wrong shape.")
+        if x_dim == 4:
+            # add fake depth dimension
+            x = tf.expand_dims(x, axis=-1)
+
+        batch = tf.shape(x)[0]
+        num_heads = tf.shape(x)[1]
+        length = tf.shape(x)[2]
+        depth = tf.shape(x)[-1]
+
+        x = tf.cond(
+            length > self.max_relative_position,
+            lambda: self._pad_relative_embeddings(x, length),
+            lambda: self._slice_relative_embeddings(x, length),
+        )
+
+        # add a column of zeros to "slide" columns to diagonals through reshape
+        pad_shift = tf.zeros_like(x[:, :, :, -1:, :])
+        x = tf.concat([x, pad_shift], axis=-2)
+
+        # flatten length dimensions
+        x = tf.reshape(x, (batch, num_heads, -1, depth))
+        width = 2 * length
+
+        # add zeros so that the result of back reshape is still a matrix
+        pad_flat = tf.zeros_like(
+            x[:, :, : (width - 1) - width * length % (width - 1), :]
+        )
+        x = tf.concat([x, pad_flat], axis=-2)
+
+        # "slide" columns to diagonals through reshape
+        x = tf.reshape(x, (batch, num_heads, -1, width - 1, depth))
+
+        # slice needed "diagonal" matrix
+        x = x[:, :, :-1, -length:, :]
+
+        if x_dim == 4:
+            # remove fake depth dimension
+            x = tf.squeeze(x, axis=-1)
+
+        return x
+
+    def _matmul_with_relative_keys(self, x: tf.Tensor) -> tf.Tensor:
+        y = self.key_relative_embeddings
+
+        if self.heads_share_relative_embedding:
+            matmul = tf.einsum("bhld,md->bhlm", x, y)
+        else:
+            matmul = tf.einsum("bhld,hmd->bhlm", x, y)
+
+        return self._relative_to_absolute_position(matmul)
+
+    def _tile_relative_embeddings(self, x: tf.Tensor, length: tf.Tensor) -> tf.Tensor:
+        if self.heads_share_relative_embedding:
+            x = tf.expand_dims(x, axis=0)  # add head dimension
+
+        x = tf.expand_dims(x, axis=1)  # add length dimension
+        x = tf.tile(x, (1, length, 1, 1))
+        return tf.expand_dims(x, axis=0)  # add batch dimension
+
+    def _squeeze_relative_embeddings(self, x: tf.Tensor) -> tf.Tensor:
+        x = tf.squeeze(x, axis=0)  # squeeze batch dimension
+        if self.heads_share_relative_embedding:
+            x = tf.squeeze(x, axis=1)  # squeeze head dimension
+        return x
+
+    def _matmul_with_relative_values(self, x: tf.Tensor) -> tf.Tensor:
+        y = self._tile_relative_embeddings(
+            self.value_relative_embeddings, tf.shape(x)[-2]
+        )
+        y = self._relative_to_absolute_position(y)
+        y = self._squeeze_relative_embeddings(y)
+
+        if self.heads_share_relative_embedding:
+            return tf.einsum("bhlm,lmd->bhld", x, y)
+        else:
+            return tf.einsum("bhlm,hlmd->bhld", x, y)
+
+    def _drop_attention_logits(
+        self, logits: tf.Tensor, pad_mask: tf.Tensor, training: tf.Tensor
+    ) -> tf.Tensor:
+        def droped_logits() -> tf.Tensor:
+            keep_prob = tf.random.uniform(tf.shape(logits), 0, 1) + pad_mask
+            drop_mask = tf.cast(
+                tf.less(keep_prob, self.attention_dropout_rate), logits.dtype
+            )
+
+            return logits + drop_mask * -1e9
+
+        return tf_utils.smart_cond(training, droped_logits, lambda: tf.identity(logits))
+
+    def _scaled_dot_product_attention(
+        self,
+        q: tf.Tensor,
+        k: tf.Tensor,
+        v: tf.Tensor,
+        pad_mask: tf.Tensor,
+        training: tf.Tensor,
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Calculate the attention weights.
         q, k, v must have matching leading dimensions.
         k, v must have matching penultimate dimension, i.e.: seq_len_k = seq_len_v.
@@ -98,7 +250,8 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         matmul_qk = tf.matmul(q, k, transpose_b=True)  # (..., seq_len_q, seq_len_k)
 
-        # TODO add key relative embeddings
+        if self.use_key_relative_position:
+            matmul_qk += self._matmul_with_relative_keys(q)
 
         # scale matmul_qk
         dk = tf.cast(tf.shape(k)[-1], tf.float32)
@@ -108,19 +261,19 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         if pad_mask is not None:
             logits += pad_mask * -1e9
 
+        # apply attention dropout before softmax to maintain attention_weights norm as 1
+        if self.attention_dropout_rate > 0:
+            logits = self._drop_attention_logits(logits, pad_mask, training)
+
         # softmax is normalized on the last axis (seq_len_k) so that the scores
         # add up to 1.
         attention_weights = tf.nn.softmax(
             logits, axis=-1
         )  # (..., seq_len_q, seq_len_k)
 
-        attention_weights = self._attention_dropout(
-            attention_weights, training=training
-        )
-
         output = tf.matmul(attention_weights, v)  # (..., seq_len_q, depth_v)
-
-        # TODO add value relative embedding to values
+        if self.use_value_relative_position:
+            output += self._matmul_with_relative_values(attention_weights)
 
         return output, attention_weights
 
@@ -188,12 +341,23 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         dropout_rate: float = 0.1,
         attention_dropout_rate: float = 0.0,
         unidirectional: bool = False,
+        use_key_relative_position: bool = False,
+        use_value_relative_position: bool = False,
+        max_relative_position: Optional[int] = None,
+        heads_share_relative_embedding: bool = False,
     ) -> None:
         super().__init__()
 
         self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
         self._mha = MultiHeadAttention(
-            d_model, num_heads, attention_dropout_rate, unidirectional
+            d_model,
+            num_heads,
+            attention_dropout_rate,
+            unidirectional,
+            use_key_relative_position,
+            use_value_relative_position,
+            max_relative_position,
+            heads_share_relative_embedding,
         )
         self._dropout = tf.keras.layers.Dropout(dropout_rate)
 
@@ -222,6 +386,54 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
 
 
 class TransformerEncoder(tf.keras.layers.Layer):
+    def __init__(
+        self,
+        num_layers: int,
+        d_model: int,
+        num_heads: int,
+        dff: int,
+        max_seq_length: int,
+        reg_lambda: float,
+        dropout_rate: float = 0.1,
+        attention_dropout_rate: float = 0.0,
+        unidirectional: bool = False,
+        use_key_relative_position: bool = True,
+        use_value_relative_position: bool = False,
+        max_relative_position: Optional[int] = 5,
+        heads_share_relative_embedding: bool = False,
+        name: Optional[Text] = None,
+    ) -> None:
+        super().__init__(name=name)
+
+        self.d_model = d_model
+        self.unidirectional = unidirectional
+
+        l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
+        self._embedding = DenseWithSparseWeights(
+            units=d_model, kernel_regularizer=l2_regularizer
+        )
+
+        self._pos_encoding = self._positional_encoding(max_seq_length, self.d_model)
+
+        self._dropout = tf.keras.layers.Dropout(dropout_rate)
+
+        self._enc_layers = [
+            TransformerEncoderLayer(
+                d_model,
+                num_heads,
+                dff,
+                dropout_rate,
+                attention_dropout_rate,
+                unidirectional,
+                use_key_relative_position,
+                use_value_relative_position,
+                max_relative_position,
+                heads_share_relative_embedding,
+            )
+            for _ in range(num_layers)
+        ]
+        self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+
     @staticmethod
     def _look_ahead_pad_mask(seq_len: int) -> tf.Tensor:
         pad_mask = 1 - tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
@@ -249,46 +461,6 @@ class TransformerEncoder(tf.keras.layers.Layer):
         pos_encoding = angle_rads[np.newaxis, ...]
 
         return tf.cast(pos_encoding, dtype=tf.float32)
-
-    def __init__(
-        self,
-        num_layers: int,
-        d_model: int,
-        num_heads: int,
-        dff: int,
-        max_seq_length: int,
-        reg_lambda: float,
-        dropout_rate: float = 0.1,
-        attention_dropout_rate: float = 0.0,
-        unidirectional: bool = False,
-        name: Optional[Text] = None,
-    ) -> None:
-        super().__init__(name=name)
-
-        self.d_model = d_model
-        self.unidirectional = unidirectional
-
-        l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
-        self._embedding = DenseWithSparseWeights(
-            units=d_model, kernel_regularizer=l2_regularizer
-        )
-
-        self._pos_encoding = self._positional_encoding(max_seq_length, self.d_model)
-
-        self._dropout = tf.keras.layers.Dropout(dropout_rate)
-
-        self._enc_layers = [
-            TransformerEncoderLayer(
-                d_model,
-                num_heads,
-                dff,
-                dropout_rate,
-                attention_dropout_rate,
-                unidirectional,
-            )
-            for _ in range(num_layers)
-        ]
-        self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
     def call(self, x: tf.Tensor, pad_mask: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
 

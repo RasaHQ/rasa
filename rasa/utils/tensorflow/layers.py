@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class SparseDropout(tf.keras.layers.Dropout):
     def call(self, inputs: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
-        def dropped_inputs():
+        def dropped_inputs() -> tf.Tensor:
             to_retain_prob = tf.random.uniform(
                 tf.shape(inputs.values), 0, 1, inputs.values.dtype
             )
