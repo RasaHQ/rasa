@@ -166,43 +166,12 @@ class TEDPolicy(Policy):
         self.config = copy.deepcopy(self.defaults)
         self.config.update(kwargs)
 
+        self.config = train_utils.check_deprecated_options(self.config)
+
         self.config = train_utils.update_similarity_type(self.config)
 
         if self.config[EVAL_NUM_EPOCHS] < 1:
             self.config[EVAL_NUM_EPOCHS] = self.config[EPOCHS]
-
-        self._check_deprecated_options()
-
-    def _check_deprecated_options(self):
-        if "hidden_layers_sizes_pre_dial" in self.config:
-            logger.warning(
-                f"Option 'hidden_layers_sizes_pre_dial' got renamed to"
-                f" {HIDDEN_LAYERS_SIZES_DIALOGUE}. Please update your configuration "
-                f"file."
-            )
-            self.config[HIDDEN_LAYERS_SIZES_DIALOGUE] = self.config[
-                "hidden_layers_sizes_pre_dial"
-            ]
-        if "hidden_layers_sizes_bot" in self.config:
-            logger.warning(
-                f"Option 'hidden_layers_sizes_bot' got renamed to "
-                f"{HIDDEN_LAYERS_SIZES_LABEL}. Please update your configuration file."
-            )
-            self.config[HIDDEN_LAYERS_SIZES_LABEL] = self.config[
-                "hidden_layers_sizes_bot"
-            ]
-        if "droprate_a" in self.config:
-            logger.warning(
-                f"Option 'droprate_a' got renamed to {DROPRATE_DIALOGUE}. Please "
-                f"update your configuration file."
-            )
-            self.config[DROPRATE_DIALOGUE] = self.config["droprate_a"]
-        if "droprate_b" in self.config:
-            logger.warning(
-                f"Option 'droprate_b' got renamed to {DROPRATE_LABEL}. Please "
-                f"update your configuration file."
-            )
-            self.config[DROPRATE_LABEL] = self.config["droprate_b"]
 
     # data helpers
     # noinspection PyPep8Naming
