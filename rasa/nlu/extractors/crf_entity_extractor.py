@@ -1,6 +1,14 @@
 import logging
+import os
+import warnings
 from typing import Any, Dict, Optional, Text
 
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
+    LexicalSyntacticFeaturizer,
+)
+from rasa.nlu.model import Metadata
+from rasa.nlu.training_data import TrainingData, Message
 from rasa.constants import DOCS_BASE_URL
 from rasa.nlu.components import any_of
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -13,10 +21,7 @@ from rasa.nlu.constants import (
 from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES_TEXT,
     SHARE_HIDDEN_LAYERS,
-    TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
-    NUM_HEADS,
-    MAX_SEQ_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
     EPOCHS,
@@ -35,6 +40,7 @@ from rasa.utils.tensorflow.constants import (
     BILOU_FLAG,
 )
 from rasa.utils.common import raise_warning
+from rasa.utils.tensorflow.tf_models import RasaModel
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +57,28 @@ class CRFEntityExtractor(DIETClassifier):
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
+        # 'features' is [before, word, after] array with before, word,
+        # after holding keys about which features to use for each word,
+        # for example, 'title' in array before will have the feature
+        # "is the preceding word in title case?"
+        # POS features require 'SpacyTokenizer'.
+        "features": [
+            ["low", "title", "upper"],
+            [
+                "BOS",
+                "EOS",
+                "low",
+                "prefix5",
+                "prefix2",
+                "suffix5",
+                "suffix3",
+                "suffix2",
+                "upper",
+                "title",
+                "digit",
+            ],
+            ["low", "title", "upper"],
+        ],
         # nn architecture
         # sizes of hidden layers before the embedding layer for input words
         # the number of hidden layers is thus equal to the length of this list
@@ -89,22 +117,112 @@ class CRFEntityExtractor(DIETClassifier):
     }
     # end default properties (DOC MARKER - don't remove)
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        featurizer: Optional[LexicalSyntacticFeaturizer] = None,
+        inverted_label_dict: Optional[Dict[int, Text]] = None,
+        inverted_tag_dict: Optional[Dict[int, Text]] = None,
+        model: Optional[RasaModel] = None,
+        batch_tuple_sizes: Optional[Dict] = None,
+    ) -> None:
         component_config[INTENT_CLASSIFICATION] = False
         component_config[ENTITY_RECOGNITION] = True
         component_config[MASKED_LM] = False
-        component_config[TRANSFORMER_SIZE] = 128
         component_config[NUM_TRANSFORMER_LAYERS] = 0
-        component_config[NUM_HEADS] = 4
         component_config[SHARE_HIDDEN_LAYERS] = False
-        component_config[MAX_SEQ_LENGTH] = 256
         component_config[UNIDIRECTIONAL_ENCODER] = True
 
-        super().__init__(component_config)
+        super().__init__(
+            component_config,
+            inverted_label_dict,
+            inverted_tag_dict,
+            model,
+            batch_tuple_sizes,
+        )
+
+        self.featurizer = featurizer or LexicalSyntacticFeaturizer(
+            self.component_config
+        )
 
         raise_warning(
             f"'CRFEntityExtractor' is deprecated. Use 'DIETClassifier' in"
-            f"combination with the 'LexicalSyntacticFeaturizer'.",
+            f"combination with 'LexicalSyntacticFeaturizer'.",
             category=DeprecationWarning,
             docs=f"{DOCS_BASE_URL}/nlu/components/",
+        )
+
+    def train(
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+
+        self.featurizer.train(training_data, **kwargs)
+
+        super().train(training_data, config, **kwargs)
+
+    def process(self, message: Message, **kwargs: Any) -> None:
+
+        self.featurizer.process(message, **kwargs)
+
+        super().process(message, **kwargs)
+
+    def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+
+        self.featurizer.persist(file_name, model_dir)
+
+        return super().persist(file_name, model_dir)
+
+    @classmethod
+    def load(
+        cls,
+        meta: Dict[Text, Any],
+        model_dir: Text = None,
+        model_metadata: Metadata = None,
+        cached_component: Optional["CRFEntityExtractor"] = None,
+        **kwargs: Any,
+    ) -> "CRFEntityExtractor":
+
+        if not model_dir or not meta.get("file"):
+            warnings.warn(
+                f"Failed to load 'CRFEntityExtractor'. "
+                f"Maybe the path '{os.path.abspath(model_dir)}' doesn't exist?"
+            )
+            return cls(component_config=meta)
+
+        featurizer = LexicalSyntacticFeaturizer.load(
+            meta, model_dir, model_metadata, cached_component, **kwargs
+        )
+
+        (
+            batch_tuple_sizes,
+            inv_label_dict,
+            inv_tag_dict,
+            label_data,
+            label_key,
+            meta,
+            model_data_example,
+            tf_model_file,
+        ) = cls._load_from_files(meta, model_dir)
+
+        meta[INTENT_CLASSIFICATION] = False
+        meta[ENTITY_RECOGNITION] = True
+        meta[MASKED_LM] = False
+        meta[NUM_TRANSFORMER_LAYERS] = 0
+        meta[SHARE_HIDDEN_LAYERS] = False
+        meta[UNIDIRECTIONAL_ENCODER] = True
+
+        model = cls._load_model(
+            inv_tag_dict, label_data, label_key, meta, model_data_example, tf_model_file
+        )
+
+        return cls(
+            component_config=meta,
+            featurizer=featurizer,
+            inverted_label_dict=inv_label_dict,
+            inverted_tag_dict=inv_tag_dict,
+            model=model,
+            batch_tuple_sizes=batch_tuple_sizes,
         )

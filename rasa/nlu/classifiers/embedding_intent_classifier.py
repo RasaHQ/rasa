@@ -1,6 +1,9 @@
 import logging
+import os
+import warnings
 from typing import Any, Dict, Optional, Text
 
+from rasa.nlu.model import Metadata
 from rasa.constants import DOCS_BASE_URL
 from rasa.nlu.components import any_of
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -47,6 +50,8 @@ from rasa.utils.tensorflow.constants import (
     BILOU_FLAG,
 )
 from rasa.utils.common import raise_warning
+from rasa.utils.tensorflow.tf_models import RasaModel
+from rasa.utils import train_utils
 
 logger = logging.getLogger(__name__)
 
@@ -136,13 +141,27 @@ class EmbeddingIntentClassifier(DIETClassifier):
     }
     # end default properties (DOC MARKER - don't remove)
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        inverted_label_dict: Optional[Dict[int, Text]] = None,
+        inverted_tag_dict: Optional[Dict[int, Text]] = None,
+        model: Optional[RasaModel] = None,
+        batch_tuple_sizes: Optional[Dict] = None,
+    ) -> None:
+
         component_config[INTENT_CLASSIFICATION] = True
         component_config[ENTITY_RECOGNITION] = False
         component_config[MASKED_LM] = False
         component_config[BILOU_FLAG] = False
 
-        super().__init__(component_config)
+        super().__init__(
+            component_config,
+            inverted_label_dict,
+            inverted_tag_dict,
+            model,
+            batch_tuple_sizes,
+        )
 
         raise_warning(
             f"'EmbeddingIntentClassifier' is deprecated. Use 'DIETClassifier' instead .",

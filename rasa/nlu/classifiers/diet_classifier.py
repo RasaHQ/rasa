@@ -554,7 +554,7 @@ class DIETClassifier(EntityExtractor):
     def train(
         self,
         training_data: TrainingData,
-        cfg: Optional[RasaNLUModelConfig] = None,
+        config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
         """Train the embedding intent classifier on a data set."""
@@ -793,6 +793,33 @@ class DIETClassifier(EntityExtractor):
             )
             return cls(component_config=meta)
 
+        (
+            batch_tuple_sizes,
+            inv_label_dict,
+            inv_tag_dict,
+            label_data,
+            label_key,
+            meta,
+            model_data_example,
+            tf_model_file,
+        ) = cls._load_from_files(meta, model_dir)
+
+        meta = train_utils.update_similarity_type(meta)
+
+        model = cls._load_model(
+            inv_tag_dict, label_data, label_key, meta, model_data_example, tf_model_file
+        )
+
+        return cls(
+            component_config=meta,
+            inverted_label_dict=inv_label_dict,
+            inverted_tag_dict=inv_tag_dict,
+            model=model,
+            batch_tuple_sizes=batch_tuple_sizes,
+        )
+
+    @classmethod
+    def _load_from_files(cls, meta, model_dir):
         file_name = meta.get("file")
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
@@ -817,7 +844,27 @@ class DIETClassifier(EntityExtractor):
         ) as f:
             batch_tuple_sizes = pickle.load(f)
 
-        meta = train_utils.update_similarity_type(meta)
+        return (
+            batch_tuple_sizes,
+            inv_label_dict,
+            inv_tag_dict,
+            label_data,
+            label_key,
+            meta,
+            model_data_example,
+            tf_model_file,
+        )
+
+    @classmethod
+    def _load_model(
+        cls,
+        inv_tag_dict,
+        label_data,
+        label_key,
+        meta,
+        model_data_example,
+        tf_model_file,
+    ):
 
         model = DIET.load(
             tf_model_file,
@@ -827,20 +874,16 @@ class DIETClassifier(EntityExtractor):
             inverted_tag_dict=inv_tag_dict,
             config=meta,
         )
+
         # build the graph for prediction
         predict_data_example = RasaModelData(
             label_key=label_key,
             data={k: vs for k, vs in model_data_example.items() if "text" in k},
         )
+
         model.build_for_predict(predict_data_example)
 
-        return cls(
-            component_config=meta,
-            inverted_label_dict=inv_label_dict,
-            inverted_tag_dict=inv_tag_dict,
-            model=model,
-            batch_tuple_sizes=batch_tuple_sizes,
-        )
+        return model
 
 
 # pytype: disable=key-error
