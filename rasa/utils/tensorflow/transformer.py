@@ -66,30 +66,19 @@ class MultiHeadAttention(tf.keras.layers.Layer):
                     max_relative_position_unmasked,
                     self._depth,
                 )
-
-            initializer = tf.keras.initializers.TruncatedNormal(
-                stddev=tf.math.sqrt(tf.cast(self._depth, tf.float32))
-            )
         else:
-            initializer = None
             relative_embedding_shape = None
 
         if self.use_key_relative_position:
             self.key_relative_embeddings = self.add_weight(
-                shape=relative_embedding_shape,
-                initializer=initializer,
-                trainable=True,
-                name="key_relative_embeddings",
+                shape=relative_embedding_shape, name="key_relative_embeddings",
             )
         else:
             self.key_relative_embeddings = None
 
         if self.use_value_relative_position:
             self.value_relative_embeddings = self.add_weight(
-                shape=relative_embedding_shape,
-                initializer=initializer,
-                trainable=True,
-                name="value_relative_embeddings",
+                shape=relative_embedding_shape, name="value_relative_embeddings",
             )
         else:
             self.value_relative_embeddings = None
@@ -397,9 +386,9 @@ class TransformerEncoder(tf.keras.layers.Layer):
         dropout_rate: float = 0.1,
         attention_dropout_rate: float = 0.0,
         unidirectional: bool = False,
-        use_key_relative_position: bool = True,
+        use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
-        max_relative_position: Optional[int] = 5,
+        max_relative_position: Optional[int] = None,
         heads_share_relative_embedding: bool = False,
         name: Optional[Text] = None,
     ) -> None:

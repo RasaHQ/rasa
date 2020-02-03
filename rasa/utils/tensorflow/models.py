@@ -127,7 +127,7 @@ class RasaModel(tf.keras.models.Model):
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
     def build_for_predict(
-        self, predict_data: RasaModelData, eager: bool = True
+        self, predict_data: RasaModelData, eager: bool = False
     ) -> None:
         def predict_dataset_function(  # to reuse the same helper method
             _batch_size: Union[tf.Tensor, int]

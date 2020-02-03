@@ -144,12 +144,8 @@ class Embed(tf.keras.layers.Layer):
 
 class InputMask(tf.keras.layers.Layer):
     def build(self, input_shape: tf.TensorShape) -> None:
-        initializer = tf.keras.initializers.GlorotUniform()
         self.mask_vector = self.add_weight(
-            shape=(1, 1, input_shape[-1]),
-            initializer=initializer,
-            trainable=True,
-            name="mask_vector",
+            shape=(1, 1, input_shape[-1]), name="mask_vector",
         )
         self.built = True
 
@@ -198,14 +194,9 @@ class CRF(tf.keras.layers.Layer):
     def __init__(self, num_tags: int, reg_lambda: float, name: Text = None) -> None:
         super().__init__(name=name)
 
-        initializer = tf.keras.initializers.GlorotUniform()
-        l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
+        regularizer = tf.keras.regularizers.l1(reg_lambda)
         self.transition_params = self.add_weight(
-            shape=(num_tags, num_tags),
-            initializer=initializer,
-            regularizer=l2_regularizer,
-            trainable=True,
-            name="transitions",
+            shape=(num_tags, num_tags), regularizer=regularizer, name="transitions",
         )
 
     def call(self, logits: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:

@@ -961,8 +961,9 @@ class DIET(RasaModel):
                 dropout_rate=self.config[DROPRATE],
                 attention_dropout_rate=0,
                 unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
-                use_key_relative_position=True,
-                max_relative_position=5,
+                use_key_relative_position=False,
+                use_value_relative_position=False,
+                max_relative_position=None,
                 name="text_encoder",
             )
             if self.config[NUM_TRANSFORMER_LAYERS] > 0
