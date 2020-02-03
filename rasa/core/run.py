@@ -155,7 +155,7 @@ def serve_application(
     ssl_keyfile: Optional[Text] = None,
     ssl_ca_file: Optional[Text] = None,
     ssl_password: Optional[Text] = None,
-    sender_id=DEFAULT_SENDER_ID,
+    conversation_id=DEFAULT_SENDER_ID,
 ):
     from rasa import server
 
@@ -174,7 +174,7 @@ def serve_application(
         port=port,
         endpoints=endpoints,
         log_file=log_file,
-        sender_id=sender_id,
+        sender_id=conversation_id,
     )
 
     ssl_context = server.create_ssl_context(

@@ -26,7 +26,7 @@ def add_subparser(
     )
     shell_parser.set_defaults(func=shell)
 
-    shell_parser.add_argument('--sender-id',
+    shell_parser.add_argument('--conversation-id',
                               action='store',
                               default="default",
                               required=False,
