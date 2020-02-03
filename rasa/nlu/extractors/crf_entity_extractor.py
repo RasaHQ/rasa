@@ -161,6 +161,9 @@ class CRFEntityExtractor(DIETClassifier):
         **kwargs: Any,
     ) -> None:
 
+        if not training_data.entity_examples:
+            return
+
         self.featurizer.train(training_data, **kwargs)
 
         super().train(training_data, config, **kwargs)

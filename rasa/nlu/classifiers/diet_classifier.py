@@ -973,13 +973,14 @@ class DIET(RasaModel):
         self._tf_layers["sparse_dropout"] = tf_layers.SparseDropout(
             rate=self.config[DROPRATE]
         )
-        self._tf_layers["sparse_to_dense.text"] = self._create_sparse_dense_layer(
-            self.data_signature["text_features"],
-            "text",
-            self.config[C2],
-            self.config[DENSE_DIM]["text"],
-        )
-        if self.config[INTENT_CLASSIFICATION]:
+        if "text_features" in self.data_signature:
+            self._tf_layers["sparse_to_dense.text"] = self._create_sparse_dense_layer(
+                self.data_signature["text_features"],
+                "text",
+                self.config[C2],
+                self.config[DENSE_DIM]["text"],
+            )
+        if "label_features" in self.data_signature:
             self._tf_layers["sparse_to_dense.label"] = self._create_sparse_dense_layer(
                 self.data_signature["label_features"],
                 "label",
