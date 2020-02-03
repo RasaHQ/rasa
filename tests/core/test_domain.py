@@ -591,6 +591,35 @@ def test_is_empty():
     assert Domain.empty().is_empty()
 
 
+def test_domain_with_intents_transformed_for_file():
+    domain_path = "data/test_domains/default_unfeaturized_entities.yml"
+    transformed = Domain.load(domain_path).domain_with_intents_transformed_for_file()
+
+    expected = {
+        "intents": [
+            {"greet": {"use_entities": ["name"]}},
+            {"default": {"ignore_entities": ["unrelated_recognized_entity"]}},
+            {"goodbye": {"use_entities": []}},
+            {"thank": {"use_entities": []}},
+            {"ask": {"use_entities": True}},
+            {"why": {"use_entities": []}},
+            {"pure_intent": {"use_entities": True}},
+        ],
+        "entities": ["name", "other", "unrelated_recognized_entity"],
+        "responses": {
+            "utter_greet": [{"text": "hey there!"}],
+            "utter_goodbye": [{"text": "goodbye :("}],
+            "utter_default": [{"text": "default message"}],
+        },
+        "actions": ["utter_default", "utter_goodbye", "utter_greet"],
+    }
+
+    expected = Domain.from_dict(expected)
+    actual = Domain.from_dict(transformed)
+
+    assert hash(actual) == hash(expected)
+
+
 def test_clean_domain_for_file():
     domain_path = "data/test_domains/default_unfeaturized_entities.yml"
     cleaned = Domain.load(domain_path).cleaned_domain_for_file()
