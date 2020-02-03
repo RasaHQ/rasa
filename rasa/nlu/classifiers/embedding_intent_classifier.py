@@ -137,20 +137,10 @@ class EmbeddingIntentClassifier(DIETClassifier):
     # end default properties (DOC MARKER - don't remove)
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
-
         component_config[INTENT_CLASSIFICATION] = True
         component_config[ENTITY_RECOGNITION] = False
         component_config[MASKED_LM] = False
         component_config[BILOU_FLAG] = False
-
-        if "hidden_layers_sizes_a" in component_config:
-            component_config[HIDDEN_LAYERS_SIZES_TEXT] = component_config[
-                "hidden_layers_sizes_a"
-            ]
-        if "hidden_layers_sizes_b" in component_config:
-            component_config[HIDDEN_LAYERS_SIZES_LABEL] = component_config[
-                "hidden_layers_sizes_b"
-            ]
 
         super().__init__(component_config)
 

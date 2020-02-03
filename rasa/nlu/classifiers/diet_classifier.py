@@ -188,6 +188,10 @@ class DIETClassifier(EntityExtractor):
 
     # init helpers
     def _check_config_parameters(self) -> None:
+        self.component_config = train_utils.check_deprecated_options(
+            self.component_config
+        )
+
         if self.component_config[INTENT_CLASSIFICATION]:
             if (
                 self.component_config[SHARE_HIDDEN_LAYERS]

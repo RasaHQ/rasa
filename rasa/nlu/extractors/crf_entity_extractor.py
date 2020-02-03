@@ -90,7 +90,6 @@ class CRFEntityExtractor(DIETClassifier):
     # end default properties (DOC MARKER - don't remove)
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
-
         component_config[INTENT_CLASSIFICATION] = False
         component_config[ENTITY_RECOGNITION] = True
         component_config[MASKED_LM] = False
