@@ -4,7 +4,7 @@ daysUntilStale: 90
 daysUntilClose: 7
 # Issues with these labels will never be considered stale
 exemptLabels:
-  - type:enhancement
+  - type:enhancement :sparkles:
   - discussion
 # Label to use when marking an issue as stale
 staleLabel: stale
