@@ -33,7 +33,7 @@ General
       epochs: 100
 
   The given snippet specifies default values for the parameters ``max_history`` and
-  ``epochs``. Please see the docs of the :ref:`embedding_policy` if you want to
+  ``epochs``. ``max_history`` is particularly important and strongly depends on your stories. Please see the docs of the :ref:`embedding_policy` if you want to
   customize them.
 
 .. _migration-to-rasa-1.7:
