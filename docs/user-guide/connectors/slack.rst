@@ -15,18 +15,16 @@ Getting Credentials
 
 **How to get the Slack credentials:** You need to set up a Slack app.
 
-  1. To create the app go to: https://api.slack.com/apps and click
+  1. To create the app go to https://api.slack.com/apps and click
      on *"Create New App"*.
   2. Activate the following features: 
-    1. [interactive components](https://api.slack.com/reference/block-kit/interactive-components) (if your bot uses any, e.g. buttons)
-    2. event subscriptions
-    3. bot users
-    4. permissions (for basic functionality you should subscribe to the 
-       following events
-       ``message.channel``,
-       ``message.groups``, 
-       ``message.im`` 
-       and ``message.mpim``)
+  
+    1. [Interactive components](https://api.slack.com/reference/block-kit/interactive-components) (if your bot uses any, e.g. buttons)
+    2. Event subscriptions
+    3. Bot users
+    4. Permissions (for basic functionality you should subscribe to the 
+       following events: ``message.channel``, ``message.groups``, 
+       ``message.im`` and ``message.mpim``)
   3. The ``slack_channel`` is the target your bot posts to.
      This can be a channel or an individual person. You can leave out
      the argument to post DMs to the bot.
@@ -55,7 +53,7 @@ e.g. using:
 
   rasa run actions
 
-you need to supply a ``credentials.yml`` with the following content:
+You need to supply a ``credentials.yml`` with the following content:
 
 .. code-block:: yaml
 
