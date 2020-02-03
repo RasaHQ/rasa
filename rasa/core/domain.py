@@ -147,6 +147,7 @@ class Domain:
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
         intents = data.get("intents", {})
+
         return cls(
             intents,
             data.get("entities", []),
@@ -299,7 +300,8 @@ class Domain:
                 )  # this should even work before setting defaults
                 included_entities = set(entities if include is True else include)
                 excluded_entities = set(properties.get("ignore_entities", []))
-                wanted_entities = included_entities - excluded_entities
+                wanted_entities = list(included_entities - excluded_entities)
+                wanted_entities.sort()
 
                 # Only print warning for ambiguous configurations if entities were included
                 # explicitly.
@@ -315,7 +317,7 @@ class Domain:
                         + "#ignoring-entities-for-certain-intents",
                     )
 
-                properties["used_entities"] = list(wanted_entities)
+                properties["used_entities"] = wanted_entities
                 properties.pop("use_entities", None)
                 properties.pop("ignore_entities")
 
@@ -374,6 +376,7 @@ class Domain:
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
+
         self.intent_properties = self.collect_intent_properties(intents, entities)
         self.entities = entities
         self.form_names = form_names

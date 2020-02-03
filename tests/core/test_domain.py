@@ -377,20 +377,22 @@ session_config:
 
 
 @pytest.mark.parametrize(
-    "intents, intent_properties",
+    "intents, entities, intent_properties",
     [
         (
             ["greet", "goodbye"],
+            ["entity", "other", "third"],
             {
-                "greet": {"use_entities": True, "ignore_entities": []},
-                "goodbye": {"use_entities": True, "ignore_entities": []},
+                "greet": {"used_entities": ["entity", "other", "third"]},
+                "goodbye": {"used_entities": ["entity", "other", "third"]},
             },
         ),
         (
             [{"greet": {"use_entities": []}}, "goodbye"],
+            ["entity", "other", "third"],
             {
-                "greet": {"use_entities": [], "ignore_entities": []},
-                "goodbye": {"use_entities": True, "ignore_entities": []},
+                "greet": {"used_entities": []},
+                "goodbye": {"used_entities": ["entity", "other", "third"]},
             },
         ),
         (
@@ -404,13 +406,10 @@ session_config:
                 },
                 "goodbye",
             ],
+            ["entity", "other", "third"],
             {
-                "greet": {
-                    "triggers": "utter_goodbye",
-                    "use_entities": ["entity"],
-                    "ignore_entities": ["other"],
-                },
-                "goodbye": {"use_entities": True, "ignore_entities": []},
+                "greet": {"triggers": "utter_goodbye", "used_entities": ["entity"],},
+                "goodbye": {"used_entities": ["entity", "other", "third"]},
             },
         ),
         (
@@ -418,19 +417,16 @@ session_config:
                 {"greet": {"triggers": "utter_goodbye", "use_entities": None}},
                 {"goodbye": {"use_entities": [], "ignore_entities": []}},
             ],
+            ["entity", "other", "third"],
             {
-                "greet": {
-                    "use_entities": [],
-                    "ignore_entities": [],
-                    "triggers": "utter_goodbye",
-                },
-                "goodbye": {"use_entities": [], "ignore_entities": []},
+                "greet": {"used_entities": [], "triggers": "utter_goodbye",},
+                "goodbye": {"used_entities": []},
             },
         ),
     ],
 )
-def test_collect_intent_properties(intents, intent_properties):
-    assert Domain.collect_intent_properties(intents) == intent_properties
+def test_collect_intent_properties(intents, entities, intent_properties):
+    assert Domain.collect_intent_properties(intents, entities) == intent_properties
 
 
 def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
