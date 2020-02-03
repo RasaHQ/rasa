@@ -425,9 +425,7 @@ class CountVectorsFeaturizer(Featurizer):
             seq_vec.sort_indices()
 
             if attribute in [TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE]:
-                tokens_text = (
-                    [" ".join(tokens_without_cls)] if tokens_without_cls else []
-                )
+                tokens_text = [" ".join(tokens_without_cls)]
                 cls_vec = self.vectorizers[attribute].transform(tokens_text)
                 cls_vec.sort_indices()
 
