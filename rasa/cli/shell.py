@@ -26,7 +26,14 @@ def add_subparser(
     )
     shell_parser.set_defaults(func=shell)
 
+    shell_parser.add_argument('--sender-id',
+                              action='store',
+                              default="default",
+                              required=False,
+                              help='Set Conversation unique identifier.')
+
     run_subparsers = shell_parser.add_subparsers()
+
     shell_nlu_subparser = run_subparsers.add_parser(
         "nlu",
         parents=parents,
@@ -34,6 +41,7 @@ def add_subparser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Interprets messages on the command line using your NLU model.",
     )
+
     shell_nlu_subparser.set_defaults(func=shell_nlu)
 
     arguments.set_shell_arguments(shell_parser)

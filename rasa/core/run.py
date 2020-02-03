@@ -10,7 +10,7 @@ import rasa.utils
 import rasa.utils.common
 import rasa.utils.io
 from rasa import model, server
-from rasa.constants import ENV_SANIC_BACKLOG
+from rasa.constants import ENV_SANIC_BACKLOG, DEFAULT_SENDER_ID
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
@@ -87,6 +87,7 @@ def configure_app(
     port: int = constants.DEFAULT_SERVER_PORT,
     endpoints: Optional[AvailableEndpoints] = None,
     log_file: Optional[Text] = None,
+    sender_id: Optional[Text] = DEFAULT_SENDER_ID,
 ):
     """Run the agent."""
     from rasa import server
@@ -125,7 +126,8 @@ def configure_app(
             """Small wrapper to shut down the server once cmd io is done."""
             await asyncio.sleep(1)  # allow server to start
             await console.record_messages(
-                server_url=constants.DEFAULT_SERVER_FORMAT.format("http", port)
+                server_url=constants.DEFAULT_SERVER_FORMAT.format("http", port),
+                sender_id=sender_id,
             )
 
             logger.info("Killing Sanic server now.")
@@ -153,6 +155,7 @@ def serve_application(
     ssl_keyfile: Optional[Text] = None,
     ssl_ca_file: Optional[Text] = None,
     ssl_password: Optional[Text] = None,
+    sender_id=DEFAULT_SENDER_ID,
 ):
     from rasa import server
 
@@ -171,6 +174,7 @@ def serve_application(
         port=port,
         endpoints=endpoints,
         log_file=log_file,
+        sender_id=sender_id,
     )
 
     ssl_context = server.create_ssl_context(
