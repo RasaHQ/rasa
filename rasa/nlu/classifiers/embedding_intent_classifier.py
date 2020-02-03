@@ -44,6 +44,7 @@ from rasa.utils.tensorflow.constants import (
     MU_NEG,
     MU_POS,
     EMBED_DIM,
+    BILOU_FLAG,
 )
 from rasa.utils.common import raise_warning
 
@@ -140,6 +141,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         component_config[INTENT_CLASSIFICATION] = True
         component_config[ENTITY_RECOGNITION] = False
         component_config[MASKED_LM] = False
+        component_config[BILOU_FLAG] = False
 
         if "hidden_layers_sizes_a" in component_config:
             component_config[HIDDEN_LAYERS_SIZES_TEXT] = component_config[
@@ -153,7 +155,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         super().__init__(component_config)
 
         raise_warning(
-            f"'EmbeddingIntentClassifier' is deprecated. Use 'DIETClassifier' instead ."
-            f" Check '{DOCS_BASE_URL}/nlu/components/' for more details.",
-            DeprecationWarning,
+            f"'EmbeddingIntentClassifier' is deprecated. Use 'DIETClassifier' instead .",
+            category=DeprecationWarning,
+            docs=f"{DOCS_BASE_URL}/nlu/components/",
         )

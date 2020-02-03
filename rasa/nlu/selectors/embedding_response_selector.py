@@ -11,7 +11,6 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    POS_ENCODING,
     MAX_SEQ_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
@@ -38,6 +37,7 @@ from rasa.utils.tensorflow.constants import (
     MU_NEG,
     MU_POS,
     EMBED_DIM,
+    BILOU_FLAG,
 )
 from rasa.nlu.constants import (
     RESPONSE_ATTRIBUTE,
@@ -101,8 +101,6 @@ class ResponseSelector(DIETClassifier):
         NUM_TRANSFORMER_LAYERS: 1,
         # number of attention heads in transformer
         NUM_HEADS: 4,
-        # type of positional encoding in transformer
-        POS_ENCODING: "timing",  # string 'timing' or 'emb'
         # max sequence length if pos_encoding='emb'
         MAX_SEQ_LENGTH: 256,
         # training parameters
@@ -165,12 +163,13 @@ class ResponseSelector(DIETClassifier):
     # end default properties (DOC MARKER - don't remove)
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None):
-        super().__init__(component_config)
-
         # ResponseSelector should not be able to set the following properties
-        self.component_config[INTENT_CLASSIFICATION] = True
-        self.component_config[ENTITY_RECOGNITION] = False
-        self.component_config[MASKED_LM] = False
+        component_config[INTENT_CLASSIFICATION] = True
+        component_config[ENTITY_RECOGNITION] = False
+        component_config[MASKED_LM] = False
+        component_config[BILOU_FLAG] = False
+
+        super().__init__(component_config)
 
     def _load_selector_params(self, config: Dict[Text, Any]) -> None:
         self.retrieval_intent = config["retrieval_intent"]
