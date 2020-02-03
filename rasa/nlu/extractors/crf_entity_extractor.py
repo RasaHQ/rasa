@@ -128,6 +128,9 @@ class CRFEntityExtractor(DIETClassifier):
         model: Optional[RasaModel] = None,
         batch_tuple_sizes: Optional[Dict] = None,
     ) -> None:
+        component_config = component_config or {}
+
+        # the following properties are fixed for the CRFEntityExtractor
         component_config[INTENT_CLASSIFICATION] = False
         component_config[ENTITY_RECOGNITION] = True
         component_config[MASKED_LM] = False

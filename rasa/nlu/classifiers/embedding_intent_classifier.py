@@ -144,6 +144,9 @@ class EmbeddingIntentClassifier(DIETClassifier):
         batch_tuple_sizes: Optional[Dict] = None,
     ) -> None:
 
+        component_config = component_config or {}
+
+        # the following properties are fixed for the EmbeddingIntentClassifier
         component_config[INTENT_CLASSIFICATION] = True
         component_config[ENTITY_RECOGNITION] = False
         component_config[MASKED_LM] = False
@@ -158,7 +161,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         )
 
         raise_warning(
-            f"'EmbeddingIntentClassifier' is deprecated. Use 'DIETClassifier' instead .",
+            f"'EmbeddingIntentClassifier' is deprecated. Use 'DIETClassifier' instead.",
             category=DeprecationWarning,
             docs=f"{DOCS_BASE_URL}/nlu/components/",
         )

@@ -170,7 +170,9 @@ class ResponseSelector(DIETClassifier):
         model: Optional[RasaModel] = None,
         batch_tuple_sizes: Optional[Dict] = None,
     ):
-        # ResponseSelector should not be able to set the following properties
+        component_config = component_config or {}
+
+        # the following properties are fixed for the ResponseSelector
         component_config[INTENT_CLASSIFICATION] = True
         component_config[ENTITY_RECOGNITION] = False
         component_config[MASKED_LM] = False
