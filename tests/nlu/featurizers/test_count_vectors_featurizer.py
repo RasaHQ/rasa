@@ -67,6 +67,8 @@ def test_count_vector_featurizer_response_attribute_featurization(
     train_message.set(INTENT_ATTRIBUTE, intent)
     train_message.set(RESPONSE_ATTRIBUTE, response)
 
+    # add a second example that has some response, so that the vocabulary for
+    # response exists
     second_message = Message("hello")
     second_message.set(RESPONSE_ATTRIBUTE, "hi")
     second_message.set(INTENT_ATTRIBUTE, "greet")
@@ -90,10 +92,7 @@ def test_count_vector_featurizer_response_attribute_featurization(
             == response_features
         )
     else:
-        assert train_message.get(SPARSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE]).shape == (
-            0,
-            1,
-        )
+        assert train_message.get(SPARSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE]) is None
 
 
 @pytest.mark.parametrize(
