@@ -1,5 +1,3 @@
-import warnings
-
 from rasa.core.brokers.broker import EventBroker
 
 

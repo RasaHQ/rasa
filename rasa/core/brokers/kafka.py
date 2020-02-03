@@ -1,6 +1,5 @@
 import json
 import logging
-import warnings
 from typing import Optional
 
 from rasa.constants import DOCS_URL_EVENT_BROKERS
