@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import pickle
-import warnings
 
 import numpy as np
 from typing import Any, List, Optional, Text, Dict, Tuple
@@ -24,6 +23,8 @@ from rasa.utils import train_utils
 import tensorflow as tf
 
 # avoid warning println on contrib import - remove for tf 2
+from rasa.utils.common import raise_warning
+
 tf.contrib._warning = None
 logger = logging.getLogger(__name__)
 
@@ -582,7 +583,7 @@ class EmbeddingPolicy(Policy):
         """Persists the policy to a storage."""
 
         if self.session is None:
-            warnings.warn(
+            logger.debug(
                 "Method `persist(...)` was called "
                 "without a trained model present. "
                 "Nothing to persist then!"

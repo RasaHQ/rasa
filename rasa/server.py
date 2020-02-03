@@ -1,40 +1,33 @@
 import asyncio
 import functools
 import logging
-import warnings
 import multiprocessing
 import os
 import tempfile
 import traceback
 import typing
-from functools import wraps, reduce
+from functools import reduce, wraps
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
 
-from sanic import Sanic, response
-from sanic.request import Request
-from sanic.response import HTTPResponse
-from sanic_cors import CORS
-from sanic_jwt import Initialize, exceptions
-
 import rasa
 import rasa.core.utils
-import rasa.utils.common
+from rasa.utils.common import raise_warning, arguments_of
 import rasa.utils.endpoints
 import rasa.utils.io
 from rasa import model
 from rasa.constants import (
-    MINIMUM_COMPATIBLE_VERSION,
-    DEFAULT_MODELS_PATH,
     DEFAULT_DOMAIN_PATH,
+    DEFAULT_MODELS_PATH,
     DOCS_BASE_URL,
+    MINIMUM_COMPATIBLE_VERSION,
 )
-from rasa.core.agent import load_agent, Agent
+from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
-    UserMessage,
     CollectingOutputChannel,
     OutputChannel,
+    UserMessage,
 )
 from rasa.core.domain import InvalidDomain
 from rasa.core.events import Event
@@ -46,6 +39,11 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
 from rasa.utils.endpoints import EndpointConfig
+from sanic import Sanic, Sanic, response, response
+from sanic.request import Request, Request
+from sanic.response import HTTPResponse
+from sanic_cors import CORS, CORS
+from sanic_jwt import Initialize, Initialize, exceptions, exceptions
 
 if typing.TYPE_CHECKING:
     from ssl import SSLContext
@@ -119,7 +117,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
 
     def decorator(f: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
         def conversation_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
-            argnames = rasa.utils.common.arguments_of(f)
+            argnames = arguments_of(f)
 
             try:
                 sender_id_arg_idx = argnames.index("conversation_id")
@@ -502,7 +500,7 @@ def create_app(
         events = [event for event in events if event]
 
         if not events:
-            warnings.warn(
+            raise_warning(
                 f"Append event called, but could not extract a valid event. "
                 f"Request JSON: {request.json}"
             )
@@ -585,9 +583,11 @@ def create_app(
             )
 
         # Deprecation warning
-        warnings.warn(
+        raise_warning(
             "Triggering actions via the execute endpoint is deprecated. "
-            "Trigger an intent via the `/conversations/<conversation_id>/trigger_intent` endpoint instead.",
+            "Trigger an intent via the "
+            "`/conversations/<conversation_id>/trigger_intent` "
+            "endpoint instead.",
             FutureWarning,
         )
 

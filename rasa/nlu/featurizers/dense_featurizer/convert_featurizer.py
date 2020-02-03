@@ -1,7 +1,7 @@
 import logging
-import warnings
 from typing import Any, Dict, List, Optional, Text, Tuple
 
+from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.config import RasaNLUModelConfig
@@ -14,6 +14,8 @@ from rasa.nlu.constants import (
 )
 import numpy as np
 import tensorflow as tf
+
+from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -174,11 +176,12 @@ class ConveRTFeaturizer(Featurizer):
     ) -> None:
 
         if config is not None and config.language != "en":
-            warnings.warn(
+            raise_warning(
                 f"Since ``ConveRT`` model is trained only on an english "
                 f"corpus of conversations, this featurizer should only be "
                 f"used if your training data is in english language. "
-                f"However, you are training in '{config.language}'."
+                f"However, you are training in '{config.language}'. ",
+                docs=DOCS_URL_COMPONENTS + "#convertfeaturizer",
             )
 
         batch_size = 64
