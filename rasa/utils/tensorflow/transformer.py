@@ -83,7 +83,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         else:
             self.value_relative_embeddings = None
 
-    def _pad_relative_embeddings(self, x, length):
+    def _pad_relative_embeddings(self, x: tf.Tensor, length: tf.Tensor) -> tf.Tensor:
         # pad the left side to length
         pad_left = x[:, :, :, :1, :]
         pad_left = tf.tile(pad_left, (1, 1, 1, length - self.max_relative_position, 1))
@@ -99,7 +99,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         return tf.concat([pad_left, x, pad_right], axis=-2)
 
-    def _slice_relative_embeddings(self, x, length):
+    def _slice_relative_embeddings(self, x: tf.Tensor, length: tf.Tensor) -> tf.Tensor:
         if self.unidirectional:
             # pad the right side to length
             pad_right = tf.zeros_like(x[:, :, :, -1:, :])
