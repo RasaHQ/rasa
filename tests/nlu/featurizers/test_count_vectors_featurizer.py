@@ -54,6 +54,50 @@ def test_count_vector_featurizer(sentence, expected, expected_cls):
 
 @pytest.mark.parametrize(
     "sentence, intent, response, intent_features, response_features",
+    [("hello", "greet", None, [[1]], None), ("hello", "greet", "hi", [[1]], [[1]])],
+)
+def test_count_vector_featurizer_response_attribute_featurization(
+    sentence, intent, response, intent_features, response_features
+):
+    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b"})
+    tk = WhitespaceTokenizer()
+
+    train_message = Message(sentence)
+    # this is needed for a valid training example
+    train_message.set(INTENT_ATTRIBUTE, intent)
+    train_message.set(RESPONSE_ATTRIBUTE, response)
+
+    second_message = Message("hello")
+    second_message.set(RESPONSE_ATTRIBUTE, "hi")
+    second_message.set(INTENT_ATTRIBUTE, "greet")
+
+    data = TrainingData([train_message, second_message])
+
+    tk.train(data)
+    ftr.train(data)
+
+    if intent_features:
+        assert (
+            train_message.get(SPARSE_FEATURE_NAMES[INTENT_ATTRIBUTE]).toarray()[0]
+            == intent_features
+        )
+    else:
+        assert train_message.get(SPARSE_FEATURE_NAMES[INTENT_ATTRIBUTE]) is None
+
+    if response_features:
+        assert (
+            train_message.get(SPARSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE]).toarray()[0]
+            == response_features
+        )
+    else:
+        assert train_message.get(SPARSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE]).shape == (
+            0,
+            1,
+        )
+
+
+@pytest.mark.parametrize(
+    "sentence, intent, response, intent_features, response_features",
     [
         ("hello hello hello hello hello ", "greet", None, [[1]], None),
         ("hello goodbye hello", "greet", None, [[1]], None),
