@@ -131,7 +131,7 @@ async def test_train(component_builder, tmpdir):
     (trained, _, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
-        data=DEFAULT_DATA_PATH,
+        data="data/examples/rasa/demo-rasa-multi-intent.md",
         component_builder=component_builder,
     )
 
