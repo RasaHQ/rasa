@@ -27,7 +27,7 @@ The recommended deployment methods described below make it easy to share your as
 Recommended Deployment Methods
 ------------------------------
 
-The recommended way to deploy an assistant is using either the Docker-Compose or Kubernetes options we support. Both deploy Rasa X and your assistant. They are the easiest ways to deploy your assistant, allow you to use Rasa X to view conversations and turn them into training data, and are production-ready.
+The recommended way to deploy an assistant is using either the Docker Compose or Kubernetes options we support. Both deploy Rasa X and your assistant. They are the easiest ways to deploy your assistant, allow you to use Rasa X to view conversations and turn them into training data, and are production-ready.
 
 Kubernetes
 ~~~~~~~~~~
