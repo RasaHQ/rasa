@@ -36,6 +36,10 @@ DENSE_FEATURE_NAMES = {
 }
 
 SPACY_DOCS = {TEXT_ATTRIBUTE: "spacy_doc", RESPONSE_ATTRIBUTE: "response_spacy_doc"}
+TRANSFORMERS_DOCS = {
+    TEXT_ATTRIBUTE: "text_transformers_doc",
+    RESPONSE_ATTRIBUTE: "response_transformers_doc",
+}
 
 DENSE_FEATURIZABLE_ATTRIBUTES = [TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE]
 

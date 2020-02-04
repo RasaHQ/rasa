@@ -1,0 +1,347 @@
+import logging
+import typing
+from typing import Any, Dict, List, Text, Tuple
+
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.components import Component
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.tokenizers.tokenizer import Token
+import numpy as np
+
+from rasa.nlu.utils.hugging_face.registry import (
+    model_class_dict,
+    model_tokenizer_dict,
+    model_weights_defaults,
+    model_special_tokens_pre_processors,
+    model_embeddings_post_processors,
+)
+
+logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    from transformers import *
+
+from rasa.nlu.constants import (
+    TEXT_ATTRIBUTE,
+    TRANSFORMERS_DOCS,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
+)
+
+
+class HuggingFaceTransformers(Component):
+    provides = [
+        TRANSFORMERS_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
+    ]
+
+    defaults = {
+        # name of the language model to load.
+        "model_name": None,
+        # Pre-Trained weights to be loaded(string)
+        "model_weights": None,
+    }
+
+    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
+
+        super(HuggingFaceTransformers, self).__init__(component_config)
+
+        self._load_model()
+        self.whitespace_tokenizer = WhitespaceTokenizer()
+
+    def _load_model(self) -> None:
+        """Try loading the model"""
+        # import transformers
+
+        self.model_name = self.component_config["model_name"]
+
+        if self.model_name not in model_class_dict:
+            logger.error(
+                f"{self.model_name} not a valid model name. Choose from {str(list(model_class_dict.keys()))}"
+            )
+            raise
+
+        self.model_weights = self.component_config["model_weights"]
+
+        if not self.model_weights:
+            logger.info(
+                f"Model weights not specified. Will choose default model weights: {model_weights_defaults[self.model_name]}"
+            )
+            self.model_weights = model_weights_defaults[self.model_name]
+
+        logger.info("Loading Tokenizer and Model for {}".format(self.model_name))
+        self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
+            self.model_weights
+        )
+        self.model = model_class_dict[self.model_name].from_pretrained(
+            self.model_weights
+        )
+
+        # TODO
+        self.pad_token = ...
+
+    @classmethod
+    def required_packages(cls) -> List[Text]:
+        return ["transformers"]
+
+    def _lm_tokenize(self, text: Text) -> Any:
+
+        split_token_ids = self.tokenizer.encode(text, add_special_tokens=False)
+
+        split_token_strings = self.tokenizer.convert_ids_to_tokens(split_token_ids)
+
+        return split_token_ids, split_token_strings
+
+    def _add_lm_specific_special_tokens(
+        self, token_ids: List[List[int]]
+    ) -> List[List[int]]:
+
+        augmented_tokens = [
+            model_special_tokens_pre_processors[self.model_name](example_token_ids)
+            for example_token_ids in token_ids
+        ]
+        return augmented_tokens
+
+    def _post_process_sequence_embeddings(
+        self, sequence_embeddings: np.array
+    ) -> Tuple[np.array, np.array]:
+
+        sentence_embeddings = []
+        post_processed_sequence_embeddings = []
+
+        for example_embedding in sequence_embeddings:
+            (
+                example_sentence_embedding,
+                example_post_processed_embedding,
+            ) = model_embeddings_post_processors[self.model_name](example_embedding)
+
+            sentence_embeddings.append(example_sentence_embedding)
+            post_processed_sequence_embeddings.append(example_post_processed_embedding)
+
+        return (
+            np.array(sentence_embeddings),
+            np.array(post_processed_sequence_embeddings),
+        )
+
+    @staticmethod
+    def _align_tokens(tokens_in: List[Text], token_end: int, token_start: int):
+        """Align sub-tokens of Language model with tokens return by the WhitespaceTokenizer.
+
+        As a language model might split a single word into multiple tokens, we need to make
+        sure that the start and end value of first and last sub-token matches the
+        start and end value of the token return by the WhitespaceTokenizer as the
+        entities are using those start and end values.
+        """
+
+        tokens_out = []
+
+        current_token_offset = token_start
+
+        for index, string in enumerate(tokens_in):
+            if index == 0:
+                if index == len(tokens_in) - 1:
+                    s_token_end = token_end
+                else:
+                    s_token_end = current_token_offset + len(string)
+                tokens_out.append(Token(string, token_start, end=s_token_end))
+            elif index == len(tokens_in) - 1:
+                tokens_out.append(Token(string, current_token_offset, end=token_end))
+            else:
+                tokens_out.append(
+                    Token(
+                        string,
+                        current_token_offset,
+                        end=current_token_offset + len(string),
+                    )
+                )
+
+            current_token_offset += len(string)
+
+        return tokens_out
+
+    def _tokenize_example(self, message: Message, attribute: Text):
+
+        tokens_in = self.whitespace_tokenizer.tokenize(message, attribute)
+
+        tokens_out = []
+
+        token_ids_out = []
+
+        for token in tokens_in:
+            token_start, token_end, token_text = token.start, token.end, token.text
+
+            # use lm specific tokenizer to further tokenize the text
+            split_token_ids, split_token_strings = self._lm_tokenize(token_text)[0]
+
+            token_ids_out += split_token_ids
+
+            _aligned_tokens = self._align_tokens(
+                split_token_strings, token_end, token_start
+            )
+            tokens_out += _aligned_tokens
+
+        return tokens_out, token_ids_out
+
+    def _get_token_ids_for_batch(
+        self, batch_examples: List[Message], attribute: Text
+    ) -> Tuple[List[List[Token]], List[List[int]]]:
+
+        batch_token_ids = []
+        batch_tokens = []
+        for example in batch_examples:
+
+            example_tokens, example_token_ids = self._tokenize_example(
+                example, attribute
+            )
+            batch_tokens.append(example_tokens)
+            batch_token_ids.append(example_token_ids)
+
+        return batch_tokens, batch_token_ids
+
+    @staticmethod
+    def _compute_attention_mask(actual_sequence_lengths):
+
+        attention_mask = []
+        max_seq_length = max(actual_sequence_lengths)
+        for index in range(len(actual_sequence_lengths)):
+            example_seq_length = actual_sequence_lengths[index]
+            attention_mask.append(
+                [1] * example_seq_length + [0] * (max_seq_length - example_seq_length)
+            )
+
+        attention_mask = np.array(attention_mask).astype(np.float32)
+
+        return attention_mask
+
+    def _add_padding_to_batch(self, batch_token_ids):
+        padded_token_ids = []
+        # Compute max length across examples
+        max_seq_len = 0
+        actual_sequence_lengths = []
+        for example_token_ids in batch_token_ids:
+            actual_sequence_lengths.append(len(example_token_ids))
+            max_seq_len = max(max_seq_len, len(example_token_ids))
+        # Add padding according to max_seq_len
+        # Some models don't contain pad token, we use unknown token as padding token.This doesn't affect the computation
+        # since we compute an attention mask anyways.
+        # pad_token_id = self.tokenizer.pad_token_id if self.contains_special_token else self.tokenizer.unk_token_id
+        for example_token_ids in batch_token_ids:
+            padded_token_ids.append(
+                example_token_ids
+                + [self.pad_token_id] * (max_seq_len - len(example_token_ids))
+            )
+        return actual_sequence_lengths, padded_token_ids
+
+    @staticmethod
+    def _extract_nonpadded_embeddings(embeddings, actual_sequence_lengths):
+
+        nonpadded_sequence_embeddings = []
+        for index, embedding in enumerate(embeddings):
+            unmasked_embedding = embedding[: actual_sequence_lengths[index]]
+            nonpadded_sequence_embeddings.append(unmasked_embedding)
+
+        return np.array(nonpadded_sequence_embeddings)
+
+    def _compute_batch_sequence_features(self, batch_attention_mask, padded_token_ids):
+        sequence_hidden_states, pooler_output = self.model(
+            padded_token_ids, attention_mask=batch_attention_mask
+        )
+        sequence_hidden_states = sequence_hidden_states.numpy()
+        return sequence_hidden_states
+
+    def _get_model_features_for_batch(
+        self, batch_token_ids: List[List[int]]
+    ) -> np.array:
+
+        # Let's first add tokenizer specific special tokens to all examples
+        batch_token_ids_augmented = self._add_lm_specific_special_tokens(
+            batch_token_ids
+        )
+
+        # Let's first add padding so that whole batch can be fed to the model
+        actual_sequence_lengths, padded_token_ids = self._add_padding_to_batch(
+            batch_token_ids_augmented
+        )
+
+        # Compute attention mask based on actual_sequence_length
+        batch_attention_mask = self._compute_attention_mask(actual_sequence_lengths)
+
+        # Get token level features from the model
+        sequence_hidden_states = self._compute_batch_sequence_features(
+            batch_attention_mask, padded_token_ids
+        )
+
+        # Extract features for only non-padding tokens
+        sequence_nonpadded_embeddings = self._extract_nonpadded_embeddings(
+            sequence_hidden_states, actual_sequence_lengths
+        )
+
+        # Extract sentence level and post-processed features
+        (
+            sentence_embeddings,
+            sequence_final_embeddings,
+        ) = self._post_process_sequence_embeddings(sequence_nonpadded_embeddings)
+
+        return sentence_embeddings, sequence_final_embeddings
+
+    def _get_docs_for_batch(
+        self, batch_examples: List[Message], attribute: Text
+    ) -> List[Dict[Text, Any]]:
+
+        batch_tokens, batch_token_ids = self._get_token_ids_for_batch(
+            batch_examples, attribute
+        )
+
+        (
+            batch_sequence_features,
+            batch_sentence_features,
+        ) = self._get_model_features_for_batch(batch_token_ids)
+
+        # A doc consists of {'token_ids': ..., 'tokens': ..., 'sequence_features': ..., 'sentence_features': ...}
+        batch_docs = []
+        for index in range(len(batch_examples)):
+            doc = {
+                "token_ids": batch_token_ids[index],
+                "tokens": batch_tokens[index],
+                "sequence_features": batch_sequence_features[index],
+                "sentence_features": batch_sentence_features[index],
+            }
+            batch_docs.append(doc)
+
+        return batch_docs
+
+    def train(
+        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+    ) -> None:
+
+        batch_size = 64
+
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+
+            non_empty_examples = list(
+                filter(lambda x: x.get(attribute), training_data.training_examples)
+            )
+
+            batch_start_index = 0
+
+            while batch_start_index < len(non_empty_examples):
+
+                batch_end_index = min(
+                    batch_start_index + batch_size, len(non_empty_examples)
+                )
+                # Collect batch examples
+                batch_messages = non_empty_examples[batch_start_index:batch_end_index]
+
+                # Construct a doc with relevant features extracted(tokens, dense_features)
+                batch_docs = self._get_docs_for_batch(batch_messages, attribute)
+
+                for index, ex in enumerate(batch_messages):
+                    ex.set(TRANSFORMERS_DOCS[attribute], batch_docs[index])
+
+                batch_start_index += batch_size
+
+    def process(self, message: Message, **kwargs: Any) -> None:
+
+        message.set(
+            TRANSFORMERS_DOCS[TEXT_ATTRIBUTE],
+            self._get_docs_for_batch([message.get(TEXT_ATTRIBUTE)])[0],
+        )
