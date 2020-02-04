@@ -28,7 +28,9 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.unidirectional = unidirectional
         self.use_key_relative_position = use_key_relative_position
         self.use_value_relative_position = use_value_relative_position
-        self.max_relative_position = max_relative_position
+        self.relative_length = max_relative_position
+        if self.relative_length is not None:
+            self.relative_length += 1  # include current time
         self.heads_share_relative_embedding = heads_share_relative_embedding
 
         assert d_model % self.num_heads == 0
@@ -41,29 +43,29 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         self._dense = DenseWithSparseWeights(units=d_model)
 
-        self._add_relative_embeddings()
+        self._create_relative_embeddings()
 
-    def _add_relative_embeddings(self) -> None:
-        """Instantiate relative embeddings."""
+    def _create_relative_embeddings(self) -> None:
+        """Create relative embeddings."""
 
         if self.use_key_relative_position or self.use_value_relative_position:
-            if not self.max_relative_position:
+            if not self.relative_length:
                 raise ValueError(
-                    f"Max relative position {self.max_relative_position} "
+                    f"Max relative position {self.relative_length} "
                     f"should be > 0 when using relative attention."
                 )
 
             if self.unidirectional:
-                max_relative_position_unmasked = self.max_relative_position
+                relative_length = self.relative_length
             else:
-                max_relative_position_unmasked = 2 * self.max_relative_position - 1
+                relative_length = 2 * self.relative_length - 1
 
             if self.heads_share_relative_embedding:
-                relative_embedding_shape = (max_relative_position_unmasked, self._depth)
+                relative_embedding_shape = (relative_length, self._depth)
             else:
                 relative_embedding_shape = (
                     self.num_heads,
-                    max_relative_position_unmasked,
+                    relative_length,
                     self._depth,
                 )
         else:
@@ -86,14 +88,14 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     def _pad_relative_embeddings(self, x: tf.Tensor, length: tf.Tensor) -> tf.Tensor:
         # pad the left side to length
         pad_left = x[:, :, :, :1, :]
-        pad_left = tf.tile(pad_left, (1, 1, 1, length - self.max_relative_position, 1))
+        pad_left = tf.tile(pad_left, (1, 1, 1, length - self.relative_length, 1))
 
         # pad the right side to length
         if self.unidirectional:
             m_right = 1  # current time
             pad_right = tf.zeros_like(x[:, :, :, -1:, :])
         else:
-            m_right = self.max_relative_position
+            m_right = self.relative_length
             pad_right = x[:, :, :, -1:, :]
         pad_right = tf.tile(pad_right, (1, 1, 1, length - m_right, 1))
 
@@ -106,7 +108,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
             pad_right = tf.tile(pad_right, (1, 1, 1, length - 1, 1))
             x = tf.concat([x, pad_right], axis=-2)
 
-        dl = self.max_relative_position - length
+        dl = self.relative_length - length
         m = tf.shape(x)[-2]
         return x[:, :, :, dl : m - dl, :]
 
@@ -132,7 +134,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         depth = tf.shape(x)[-1]
 
         x = tf.cond(
-            length > self.max_relative_position,
+            length > self.relative_length,
             lambda: self._pad_relative_embeddings(x, length),
             lambda: self._slice_relative_embeddings(x, length),
         )

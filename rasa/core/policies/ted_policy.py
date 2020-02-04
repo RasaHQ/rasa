@@ -42,8 +42,8 @@ from rasa.utils.tensorflow.constants import (
     NUM_NEG,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
-    C_EMB,
-    C2,
+    NEG_MARGIN_SCALE,
+    REGULARIZATION_CONSTANT,
     SCALE_LOSS,
     USE_MAX_SIM_NEG,
     MU_NEG,
@@ -52,6 +52,10 @@ from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES_DIALOGUE,
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
+    DROPRATE_ATTENTION,
+    KEY_RELATIVE_ATTENTION,
+    VALUE_RELATIVE_ATTENTION,
+    MAX_RELATIVE_POSITION,
 )
 
 
@@ -119,19 +123,27 @@ class TEDPolicy(Policy):
         SCALE_LOSS: True,
         # regularization
         # the scale of L2 regularization
-        C2: 0.001,
+        REGULARIZATION_CONSTANT: 0.001,
         # the scale of how important is to minimize the maximum similarity
         # between embeddings of different labels
-        C_EMB: 0.8,
+        NEG_MARGIN_SCALE: 0.8,
         # dropout rate for dial nn
         DROPRATE_DIALOGUE: 0.1,
         # dropout rate for bot nn
         DROPRATE_LABEL: 0.0,
+        # dropout rate for attention
+        DROPRATE_ATTENTION: 0,
         # visualization of accuracy
         # how often calculate validation accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for hold out validation set
         EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
+        # if true use key relative embeddings in attention
+        KEY_RELATIVE_ATTENTION: False,
+        # if true use key relative embeddings in attention
+        VALUE_RELATIVE_ATTENTION: False,
+        # max position for relative embeddings
+        MAX_RELATIVE_POSITION: None,
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -479,7 +491,7 @@ class TED(RasaModel):
             self.config[MU_POS],
             self.config[MU_NEG],
             self.config[USE_MAX_SIM_NEG],
-            self.config[C_EMB],
+            self.config[NEG_MARGIN_SCALE],
             self.config[SCALE_LOSS],
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,
@@ -487,13 +499,13 @@ class TED(RasaModel):
         self._tf_layers["ffnn.dialogue"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_DIALOGUE],
             self.config[DROPRATE_DIALOGUE],
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             layer_name_suffix="dialogue",
         )
         self._tf_layers["ffnn.label"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_LABEL],
             self.config[DROPRATE_LABEL],
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             layer_name_suffix="label",
         )
         self._tf_layers["transformer"] = TransformerEncoder(
@@ -502,24 +514,24 @@ class TED(RasaModel):
             self.config[NUM_HEADS],
             self.config[TRANSFORMER_SIZE] * 4,
             self.config[MAX_SEQ_LENGTH],
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             dropout_rate=self.config[DROPRATE_DIALOGUE],
-            attention_dropout_rate=0,
+            attention_dropout_rate=self.config[DROPRATE_ATTENTION],
             unidirectional=True,
-            use_key_relative_position=False,
-            use_value_relative_position=False,
-            max_relative_position=None,
+            use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
+            use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
+            max_relative_position=self.config[MAX_RELATIVE_POSITION],
             name="dialogue_encoder",
         )
         self._tf_layers["embed.dialogue"] = layers.Embed(
             self.config[EMBED_DIM],
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             "dialogue",
             self.config[SIMILARITY_TYPE],
         )
         self._tf_layers["embed.label"] = layers.Embed(
             self.config[EMBED_DIM],
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             "label",
             self.config[SIMILARITY_TYPE],
         )

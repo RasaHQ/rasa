@@ -31,8 +31,8 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EPOCHS,
     UNIDIRECTIONAL_ENCODER,
     DROPRATE,
-    C_EMB,
-    C2,
+    NEG_MARGIN_SCALE,
+    REGULARIZATION_CONSTANT,
     SCALE_LOSS,
     USE_MAX_SIM_NEG,
     MU_NEG,
@@ -143,10 +143,10 @@ class ResponseSelector(DIETClassifier):
         SCALE_LOSS: True,
         # regularization parameters
         # the scale of L2 regularization
-        C2: 0.002,
+        REGULARIZATION_CONSTANT: 0.002,
         # the scale of how critical the algorithm should be of minimizing the
         # maximum similarity between embeddings of different intent labels
-        C_EMB: 0.8,
+        NEG_MARGIN_SCALE: 0.8,
         # dropout rate for rnn
         DROPRATE: 0.2,
         # use a unidirectional or bidirectional encoder
