@@ -468,8 +468,9 @@ def test_slack_metadata():
 
     user = "user1"
     channel = "channel1"
+    authed_users = ["XXXXXXX", "YYYYYYY", "ZZZZZZZ"]
     direct_message_event = {
-        "authed_users": ["test"],
+        "authed_users": authed_users,
         "event": {
             "client_msg_id": "XXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
             "type": "message",
@@ -504,6 +505,50 @@ def test_slack_metadata():
     metadata = input_channel.get_metadata(request=r)
     assert metadata["sender"] == user
     assert metadata["out_channel"] == channel
+    assert metadata["users"] == authed_users
+
+
+def test_slack_metadata_missing_keys():
+    from rasa.core.channels.slack import SlackInput
+    from sanic.request import Request
+
+    channel = "channel1"
+    direct_message_event = {
+        "event": {
+            "client_msg_id": "XXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+            "type": "message",
+            "text": "hello world",
+            "ts": "1579802617.000800",
+            "team": "XXXXXXXXX",
+            "blocks": [
+                {
+                    "type": "rich_text",
+                    "block_id": "XXXXX",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [{"type": "text", "text": "hi"}],
+                        }
+                    ],
+                }
+            ],
+            "channel": channel,
+            "event_ts": "1579802617.000800",
+            "channel_type": "im",
+        },
+    }
+
+    input_channel = SlackInput(
+        slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
+    )
+
+    r = Request(None, None, None, None, None, app="test")
+    r.parsed_json = direct_message_event
+    metadata = input_channel.get_metadata(request=r)
+    assert metadata["sender"] is None
+    assert metadata["users"] is None
+    assert metadata["out_channel"] == channel
+
 
 
 def test_slack_message_sanitization():

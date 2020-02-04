@@ -336,8 +336,8 @@ class SlackInput(InputChannel):
             request: A `Request` object that contains a slack API event in the body.
 
         Returns:
-            A `dict` containing the output channel for the response, the text from the user, the sender's ID, and
-            users that have installed the bot.
+            Metadata extracted from the sent event payload. This includes the output channel for the response, the text
+            from the user and users that have installed the bot.
         """
         slack_event = request.json
         event = slack_event.get("event", {})
@@ -380,42 +380,41 @@ class SlackInput(InputChannel):
 
             elif request.json:
                 output = request.json
+                metadata = self.get_metadata(request)
                 if "challenge" in output:
                     return response.json(output.get("challenge"))
 
-                elif self._is_user_message(output):
-                    metadata = self.get_metadata(request)
-                    if (
-                        self._is_direct_message(output)
-                        or self._is_app_mention(output)
-                        or metadata["out_channel"] == self.slack_channel
-                    ):
-                        return await self.process_message(
-                            request,
-                            on_new_message,
-                            text=self._sanitize_user_message(
-                                metadata["text"], metadata["users"]
-                            ),
-                            sender_id=metadata["sender"],
-                            metadata=metadata,
-                        )
-                    else:
-                        return response.text(
-                            "Received message on unsupported channel: {}".format(
-                                metadata["out_channel"]
-                            )
-                        )
+                elif self._is_user_message(output) and self._is_supported_channel(
+                    output, metadata
+                ):
+                    return await self.process_message(
+                        request,
+                        on_new_message,
+                        text=self._sanitize_user_message(
+                            metadata["text"], metadata["users"]
+                        ),
+                        sender_id=metadata["sender"],
+                        metadata=metadata,
+                    )
+                else:
+                    logger.warning(
+                        f"Received message on unsupported channel: {metadata['out_channel']}"
+                    )
 
-            return response.text("Bot message delivered")
+            return response.text("Bot message delivered.")
 
         return slack_webhook
+
+    def _is_supported_channel(self, slack_event: Dict, metadata: Dict) -> bool:
+        return (
+            self._is_direct_message(slack_event)
+            or self._is_app_mention(slack_event)
+            or metadata["out_channel"] == self.slack_channel
+        )
 
     def get_output_channel(self, channel: Optional[Text] = None) -> OutputChannel:
         channel = channel or self.slack_channel
         return SlackBot(self.slack_token, channel)
-            return SlackBot(self.slack_token, channel)
-        else:
-            return SlackBot(self.slack_token, self.slack_channel)
 
     def set_output_channel(self, channel: Text) -> None:
         self.slack_channel = channel
