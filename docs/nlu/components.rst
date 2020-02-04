@@ -578,7 +578,7 @@ DIETClassifier
     In the config, you can specify these parameters.
     The default values are defined in ``DIETClassifier.defaults``:
 
-    .. literalinclude:: ../../rasa/nlu/classifiers/DIET_classifier.py
+    .. literalinclude:: ../../rasa/nlu/classifiers/diet_classifier.py
        :dedent: 4
        :start-after: # default properties (DOC MARKER - don't remove)
        :end-before: # end default properties (DOC MARKER - don't remove)
