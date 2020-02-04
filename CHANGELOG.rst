@@ -54,6 +54,11 @@ Features
   ``intent_tokenization_flag``: Flag to check whether to split intents (default ``False``).
   ``intent_split_symbol``: Symbol on which intent should be split (default ``_``)
 
+- `#4811 <https://github.com/RasaHQ/rasa/issues/4811>`_: Support invoking a ``SlackBot`` by direct messaging or @ mentions.
+
+  ``SlackInput`` channel will now process additional metadata from the Slack API to support direct messaging and
+  mentioning of the bot by users in addition to any configured channels.
+
 Improvements
 ------------
 - `#1988 <https://github.com/rasahq/rasa/issues/1988>`_: Remove the need of specifying utter actions in the ``actions`` section explicitly if these actions are already
