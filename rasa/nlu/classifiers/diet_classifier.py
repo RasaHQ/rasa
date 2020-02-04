@@ -616,8 +616,7 @@ class DIETClassifier(EntityExtractor):
 
         if self.model is None:
             logger.error(
-                "There is no trained tf.session: "
-                "component is either not trained or "
+                "There is no trained model: component is either not trained or "
                 "didn't receive enough training data."
             )
             return label, label_ranking
@@ -668,8 +667,7 @@ class DIETClassifier(EntityExtractor):
     ) -> List[Dict]:
         if self.model is None:
             logger.error(
-                "There is no trained tf.session: "
-                "component is either not trained or "
+                "There is no trained model: component is either not trained or "
                 "didn't receive enough training data"
             )
             return []

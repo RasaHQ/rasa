@@ -153,10 +153,18 @@ def test_gen_batch(model_data: RasaModelData):
         next(iterator)
 
 
-def test_balance_session_data(model_data: RasaModelData):
+def test_balance_model_data(model_data: RasaModelData):
     data = model_data.balanced_data(model_data.data, 2, False)
 
     assert np.all(data.get("intent_ids")[0] == np.array([0, 1, 1, 0, 1]))
+
+
+def test_not_balance_model_data(model_data: RasaModelData):
+    test_model_data = RasaModelData(label_key="tag_ids", data=model_data.data)
+
+    data = test_model_data.balanced_data(test_model_data.data, 2, False)
+
+    assert np.all(data.get("tag_ids") == test_model_data.get("tag_ids"))
 
 
 def test_get_num_of_features(model_data: RasaModelData):

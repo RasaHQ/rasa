@@ -39,18 +39,7 @@ def ner_crf_pos_feature_config():
     return {
         "features": [
             ["low", "title", "upper", "pos", "pos2"],
-            [
-                "bias",
-                "low",
-                "suffix3",
-                "suffix2",
-                "upper",
-                "title",
-                "digit",
-                "pos",
-                "pos2",
-                "pattern",
-            ],
+            ["low", "suffix3", "suffix2", "upper", "title", "digit", "pos", "pos2"],
             ["low", "title", "upper", "pos", "pos2"],
         ]
     }

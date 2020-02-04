@@ -4,10 +4,10 @@ from collections import defaultdict, OrderedDict
 import numpy as np
 import os
 import pickle
-import typing
 import scipy.sparse
 from typing import Any, Dict, Optional, Text, List
 
+from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.config import RasaNLUModelConfig
@@ -247,12 +247,18 @@ class LexicalSyntacticFeaturizer(Featurizer):
         token_idx: int,
         pointer_position: int,
         token_length: int,
-    ):
+    ) -> Any:
         if feature == "EOS":
             return token_idx + pointer_position == token_length - 1
 
         if feature == "BOS":
             return token_idx + pointer_position == 0
+
+        if feature not in self.function_dict:
+            raise ValueError(
+                f"Configured feature '{feature}' not valid. Please check "
+                f"'{DOCS_URL_COMPONENTS}' for valid configuration parameters."
+            )
 
         value = self.function_dict[feature](token)
         if value is None:

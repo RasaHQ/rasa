@@ -167,7 +167,7 @@ class RasaModelData:
             raise ValueError(f"Key '{self.label_key}' not in RasaModelData.")
 
         # skip balancing if labels are token based
-        if data[self.label_key][0].size > 2:
+        if data[self.label_key][0][0].size > 1:
             return data
 
         label_ids = self._create_label_ids(data[self.label_key][0])
