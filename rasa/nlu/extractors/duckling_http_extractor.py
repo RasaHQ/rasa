@@ -1,7 +1,6 @@
 import time
 import json
 import logging
-import warnings
 import os
 import requests
 from typing import Any, List, Optional, Text, Dict
