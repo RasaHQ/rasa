@@ -1,9 +1,9 @@
 import pytest
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
-from nlu.constants import BILOU_ENTITIES_ATTRIBUTE, ENTITIES_ATTRIBUTE
-from nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from nlu.training_data import TrainingData
+from rasa.nlu.constants import BILOU_ENTITIES_ATTRIBUTE, ENTITIES_ATTRIBUTE
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.training_data import TrainingData
 from rasa.nlu.training_data import Message
 
 

@@ -50,12 +50,7 @@ class CRFEntityExtractor(DIETClassifier):
 
     provides = [ENTITIES_ATTRIBUTE]
 
-    requires = [
-        TOKENS_NAMES[TEXT_ATTRIBUTE],
-        any_of(
-            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE], SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
-        ),
-    ]
+    requires = [TOKENS_NAMES[TEXT_ATTRIBUTE]]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {

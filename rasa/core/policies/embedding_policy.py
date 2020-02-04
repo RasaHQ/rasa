@@ -1,9 +1,9 @@
 import logging
 from typing import Any, Dict, Optional, Text
 
-from core.constants import DEFAULT_POLICY_PRIORITY
-from core.featurizers import TrackerFeaturizer
-from core.policies.ted_policy import TEDPolicy
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+from rasa.core.featurizers import TrackerFeaturizer
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.constants import DOCS_BASE_URL
 from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES_LABEL,
