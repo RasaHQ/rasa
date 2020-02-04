@@ -1,0 +1,3 @@
+Fix problem with multi-intents.
+Training with multi-intents using the ``CountVectorsFeaturizer`` together with ``EmbeddingIntentClassifier`` is
+working again.
