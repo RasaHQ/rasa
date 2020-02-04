@@ -10,6 +10,8 @@
 - bye
 - good bye
 - ciao
+- see you
+- see ya
 
 ## intent:ask_remind_call_name
 - remind me to call [John](name)
@@ -22,6 +24,8 @@
 - Please, remind me to call [vova](name)
 - please remind me to call [tanja](name)
 - I must not forget to call [santa](name)
+- I must not forget to call [Daksh](name)
+- I must not forget to call [Juste](name)
 
 ## intent:ask_id
 - what's the conversation id?
