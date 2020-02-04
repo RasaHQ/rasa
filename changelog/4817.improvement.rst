@@ -1,0 +1,2 @@
+Part of Slack sanitization: 
+Multiple garbled URL's in a string coming from slack will be converted into actual strings. ``Example: health check of <http://eemdb.net|eemdb.net> and <http://eemdb1.net|eemdb1.net> to health check of eemdb.net and eemdb1.net``
