@@ -29,7 +29,7 @@ def add_subparser(
         help="Automatically choose default options for prompts and suppress warnings.",
     )
     scaffold_parser.add_argument(
-        "--init-dir", default=".", help="Directory where your project should be initialized.",
+        "--init-dir", default=None, help="Directory where your project should be initialized.",
     )
 
     scaffold_parser.set_defaults(func=run)
@@ -183,15 +183,18 @@ def run(args: argparse.Namespace) -> None:
             "Now let's start! 👇🏽\n".format(DOCS_BASE_URL)
         )
 
-    path = (
-        questionary.text(
-            "Please enter a path where the project will be "
-            "created [default: current directory]",
-            default=".",
+    if args.init_dir is not None:
+        path = args.init_dir
+    else:
+        path = (
+            questionary.text(
+                "Please enter a path where the project will be "
+                "created [default: current directory]",
+                default=".",
+            )
+            .skip_if(args.no_prompt, default=".")
+            .ask()
         )
-        .skip_if(args.no_prompt, default=args.init_dir)
-        .ask()
-    )
 
     if args.no_prompt and not os.path.isdir(path):
         print_init_path_not_found()
