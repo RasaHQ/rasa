@@ -247,7 +247,6 @@ class HFTransformersNLP(Component):
 
     def _compute_batch_sequence_features(self, batch_attention_mask, padded_token_ids):
 
-        print(np.array(padded_token_ids).shape, np.array(batch_attention_mask).shape)
         model_outputs = self.model(
             np.array(padded_token_ids), attention_mask=np.array(batch_attention_mask)
         )
