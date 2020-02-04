@@ -53,9 +53,9 @@ e.g. using:
 
 You need to supply a ``credentials.yml`` with the following content:
 
-- The ``slack_channel`` is the target your bot posts to.
-  This can be a channel or an individual person. You can leave out
-  the argument to post DMs to the bot.
+- The ``slack_channel`` is a channel that the bot will listen to for messages
+  in addition to direct messages and app mentions, i.e. "@app_name".
+  This can be a channel or an individual person.
 
 - Use the entry for ``Bot User OAuth Access Token`` in the
   "OAuth & Permissions" tab as your ``slack_token``. It should start
