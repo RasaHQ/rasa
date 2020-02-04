@@ -550,7 +550,6 @@ def test_slack_metadata_missing_keys():
     assert metadata["out_channel"] == channel
 
 
-
 def test_slack_message_sanitization():
     from rasa.core.channels.slack import SlackInput
 
