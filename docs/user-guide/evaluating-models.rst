@@ -98,10 +98,6 @@ histogram bars to the right and the red histogram bars
 to the left of the plot.
 
 
-.. note::
-    A confusion matrix will **only** be created if you are evaluating a model on a test set.
-    In cross-validation mode, the confusion matrix will not be generated.
-
 .. warning::
     If any of your entities are incorrectly annotated, your evaluation may fail. One common problem
     is that an entity cannot stop or start inside a token.
