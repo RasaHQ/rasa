@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import scipy.sparse
 import tensorflow as tf
@@ -5,6 +7,9 @@ import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from typing import Optional, Dict, Text, List, Tuple, Any, Union, Generator, NamedTuple
 from collections import defaultdict
+
+
+logger = logging.getLogger(__name__)
 
 
 Data = Optional[Dict[Text, List[np.ndarray]]]
@@ -168,6 +173,9 @@ class RasaModelData:
 
         # skip balancing if labels are token based
         if data[self.label_key][0][0].size > 1:
+            logger.debug(
+                f"Skip balancing data for '{self.label_key}' as data is a sequence."
+            )
             return data
 
         label_ids = self._create_label_ids(data[self.label_key][0])
