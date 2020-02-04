@@ -543,7 +543,8 @@ class EmbeddingIntentClassifier(Component):
                 dense_features.append(f)
 
         output = tf.concat(dense_features, axis=-1) * mask
-        output = tf.squeeze(output, axis=1)
+        # reduce dimensionality of output
+        output = tf.reduce_sum(output, axis=1)
 
         return output
 
@@ -985,6 +986,6 @@ class EmbeddingIntentClassifier(Component):
         else:
             raise_warning(
                 f"Failed to load nlu model. "
-                f"Maybe the path '{os.path.abspath(model_dir)}' doesn't exist?",
+                f"Maybe the path '{os.path.abspath(model_dir)}' doesn't exist?"
             )
             return cls(component_config=meta)

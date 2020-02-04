@@ -116,7 +116,11 @@ def test_check_labels_features_exist(messages, expected):
 
 async def test_train(component_builder, tmpdir):
     pipeline = [
-        {"name": "ConveRTTokenizer"},
+        {
+            "name": "ConveRTTokenizer",
+            "intent_tokenization_flag": True,
+            "intent_split_symbol": "+",
+        },
         {"name": "CountVectorsFeaturizer"},
         {"name": "ConveRTFeaturizer"},
         {"name": "EmbeddingIntentClassifier"},
@@ -243,7 +247,7 @@ async def test_softmax_normalization(
     [({"loss_type": "margin", "random_seed": 42}, LABEL_RANKING_LENGTH)],
 )
 async def test_margin_loss_is_not_normalized(
-    monkeypatch, component_builder, tmpdir, classifier_params, output_length,
+    monkeypatch, component_builder, tmpdir, classifier_params, output_length
 ):
     pipeline = as_pipeline(
         "WhitespaceTokenizer", "CountVectorsFeaturizer", "EmbeddingIntentClassifier"
