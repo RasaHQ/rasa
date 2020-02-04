@@ -40,6 +40,11 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.utils.common import class_from_module_path, raise_warning
+from rasa.utils.tensorflow.constants import (
+    INTENT_CLASSIFICATION,
+    ENTITY_RECOGNITION,
+    NUM_TRANSFORMER_LAYERS,
+)
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
@@ -119,7 +124,13 @@ registered_pipeline_templates = {
         {"name": "SpacyTokenizer"},
         {"name": "SpacyFeaturizer"},
         {"name": "RegexFeaturizer"},
-        {"name": "CRFEntityExtractor"},
+        {"name": "LexicalSyntacticFeaturizer"},
+        {
+            "name": "DIETClassifier",
+            INTENT_CLASSIFICATION: False,
+            ENTITY_RECOGNITION: True,
+            NUM_TRANSFORMER_LAYERS: 0,
+        },
         {"name": "EntitySynonymMapper"},
         {"name": "SklearnIntentClassifier"},
     ],
@@ -127,8 +138,7 @@ registered_pipeline_templates = {
     "supervised_embeddings": [
         {"name": "WhitespaceTokenizer"},
         {"name": "RegexFeaturizer"},
-        {"name": "CRFEntityExtractor"},
-        {"name": "EntitySynonymMapper"},
+        {"name": "LexicalSyntacticFeaturizer"},
         {"name": "CountVectorsFeaturizer"},
         {
             "name": "CountVectorsFeaturizer",
@@ -136,12 +146,14 @@ registered_pipeline_templates = {
             "min_ngram": 1,
             "max_ngram": 4,
         },
-        {"name": "EmbeddingIntentClassifier"},
+        {"name": "DIETClassifier"},
+        {"name": "EntitySynonymMapper"},
     ],
     "pretrained_embeddings_convert": [
         {"name": "ConveRTTokenizer"},
         {"name": "ConveRTFeaturizer"},
-        {"name": "EmbeddingIntentClassifier"},
+        {"name": "LexicalSyntacticFeaturizer"},
+        {"name": "DIETClassifier"},
     ],
 }
 
