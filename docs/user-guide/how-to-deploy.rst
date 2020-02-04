@@ -1,4 +1,4 @@
-:desc: How to deploy your Rasa Assistant with Docker or Kubernetes
+:desc: How to deploy your Rasa Assistant with Docker Compose or Kubernetes
 
 .. _deploying-your-rasa-assistant:
 
