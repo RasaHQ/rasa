@@ -1,4 +1,4 @@
-# Rasa (formerly Rasa Core + Rasa NLU)
+# Rasa OSS
 
 [![Join the chat on Rasa Community Forum](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![PyPI version](https://badge.fury.io/py/rasa.svg)](https://badge.fury.io/py/rasa)
@@ -186,8 +186,8 @@ We use `sphinx-versioning` to build docs for tagged versions and for the master 
 The static site that gets built is pushed to the `docs` branch of this repo, which doesn't contain
 any code, only the site.
 
-We host the site on netlify. When there is a reason to update the docs (e.g. master has changed or we have
-tagged a new version) we trigger a webhook on netlify (see `.travis.yml`). 
+We host the site on netlify. On master branch builds (see `.travis.yml`), we push the built docs to the `docs`
+branch. Netlify automatically re-deploys the docs pages whenever there is a change to that branch.
 
 
 ## License

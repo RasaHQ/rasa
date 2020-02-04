@@ -1,5 +1,4 @@
 import logging
-import warnings
 import os
 import typing
 from typing import Any, Dict, List, Optional, Text
@@ -10,6 +9,7 @@ from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message, TrainingData
+from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -105,16 +105,21 @@ class MitieEntityExtractor(EntityExtractor):
                 # if the token is not aligned an exception will be raised
                 start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
             except ValueError as e:
-                warnings.warn(f"Example skipped: {e}")
+                raise_warning(
+                    f"Failed to use example '{text}' to train MITIE "
+                    f"entity extractor. Example will be skipped."
+                    f"Error: {e}"
+                )
                 continue
             try:
                 # mitie will raise an exception on malicious
                 # input - e.g. on overlapping entities
                 sample.add_entity(list(range(start, end)), ent["entity"])
             except Exception as e:
-                warnings.warn(
-                    "Failed to add entity example "
-                    f"'{str(e)}' of sentence '{str(text)}'. Reason: "
+                raise_warning(
+                    f"Failed to add entity example "
+                    f"'{str(e)}' of sentence '{str(text)}'. "
+                    f"Example will be ignored. Reason: "
                     f"{e}"
                 )
                 continue

@@ -1,23 +1,16 @@
-from collections import defaultdict
-
 import logging
-import warnings
 import typing
-from typing import Any, Dict, Text, Tuple
+from collections import defaultdict
+from typing import Any, Dict, Text
 
-from rasa.constants import DOCS_BASE_URL
+from rasa.constants import DOCS_BASE_URL, DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.training_data.formats.readerwriter import (
     JsonTrainingDataReader,
     TrainingDataWriter,
 )
 from rasa.nlu.training_data.util import transform_entity_synonyms
 from rasa.nlu.utils import json_to_string
-from rasa.nlu.constants import (
-    INTENT_ATTRIBUTE,
-    RESPONSE_KEY_ATTRIBUTE,
-    RESPONSE_ATTRIBUTE,
-    RESPONSE_IDENTIFIER_DELIMITER,
-)
+from rasa.utils.common import raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
@@ -43,7 +36,7 @@ class RasaReader(JsonTrainingDataReader):
         entity_synonyms = transform_entity_synonyms(entity_synonyms)
 
         if intent_examples or entity_examples:
-            warnings.warn(
+            raise_warning(
                 "Your rasa data "
                 "contains 'intent_examples' "
                 "or 'entity_examples' which will be "
@@ -51,6 +44,7 @@ class RasaReader(JsonTrainingDataReader):
                 "putting all your examples "
                 "into the 'common_examples' section.",
                 FutureWarning,
+                docs=DOCS_URL_TRAINING_DATA_NLU,
             )
 
         all_examples = common_examples + intent_examples + entity_examples
