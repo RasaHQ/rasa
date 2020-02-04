@@ -30,6 +30,68 @@ e.g. ``[entity](entity name)``.
 
 .. code-block:: md
 
+Here is the example about how to get intent of user and how to get multiple entities by using RASA lookup tables and pre-     defined entities list for specific business use cases in two simple steps 
+step 1:
+    Add some of your entities to a text file as shown below
+    
+    Dermatologist
+    heart doctor
+    cardiologist
+    cardiology
+    skin doctor
+    dermatologist
+    dermatology
+    ear
+    nose
+    ent
+    
+    then save it as service_name.txt in "data" folder.
+    
+    add below mentioned relations to a new text file 
+    
+    father
+    mother
+    sister 
+    brother
+    cousin
+    aunt
+    uncle
+    wife
+    husband
+    
+    save it as "relation.txt" in "data" folder.
+    
+    step:2
+    
+    adding new intents and entities to nlu.md file 
+    
+    open nlu.md file and add below mentioned text
+    
+    ## lookup:service_name
+      data/service_name.txt
+    ## lookup:relation 
+      data/relation.txt
+      
+    ## intent:service_request <!-- here service name is entity -->
+    - I want to order a medical service <!--  entity not found here -->
+    - I am not feeling well <!-- entity not found here  -->
+    - My [father](relation) is suffering with severe pain in ches fever I want to consult a [cardiologist](service_name)
+      <!-- in this message you will get two entities 1. Father as relation 2. cardiologist as service_name and intent as           service_request -->
+    - My [sister](relation) facing skin related issue where can i get good [dermatologist](service_name)
+      <!-- here entities are relation-sister, dermatologist as service_name, intent is service request -->
+    .
+    .
+    .
+    train atleast 5 to 10(recommended) 
+    
+    Note: You can add even thousands new separated entities like relations, medical terms.
+    train 5 to 10 training messages as shown above, RASA NLU can detect remaining thousands of new entities when a new user       types in his/her messages
+    ----------------------------------------------------------------------------------------------------------------------
+    
+    ## lookup:additional_currencies  <!-- specify lookup tables in an external file -->
+    path/to/currencies.txt
+
+
     ## intent:check_balance
     - what is my balance <!-- no entity -->
     - how much do I have on my [savings](source_account) <!-- entity "source_account" has value "savings" -->
@@ -55,6 +117,8 @@ The training data for Rasa NLU is structured into different parts:
 - synonyms
 - regex features and
 - lookup tables
+
+
 
 While common examples is the only part that is mandatory, including the others will help the NLU model
 learn the domain with fewer examples and also help it be more confident of its predictions.
