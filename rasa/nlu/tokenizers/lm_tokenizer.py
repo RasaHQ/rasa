@@ -6,7 +6,7 @@ from rasa.nlu.training_data import Message
 
 from rasa.nlu.constants import (
     TOKENS_NAMES,
-    TRANSFORMERS_DOCS,
+    HF_TRANSFORMERS_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
 )
 
@@ -16,7 +16,7 @@ class LanguageModelTokenizer(Tokenizer):
     provides = [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
 
     requires = [
-        TRANSFORMERS_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
+        HF_TRANSFORMERS_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ]
 
     defaults = {
@@ -27,7 +27,7 @@ class LanguageModelTokenizer(Tokenizer):
     }
 
     def get_doc(self, message: Message, attribute: Text) -> Dict[Text, Any]:
-        return message.get(TRANSFORMERS_DOCS[attribute])
+        return message.get(HF_TRANSFORMERS_DOCS[attribute])
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         doc = self.get_doc(message, attribute)

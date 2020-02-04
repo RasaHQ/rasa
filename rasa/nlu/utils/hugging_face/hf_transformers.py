@@ -19,19 +19,16 @@ from rasa.nlu.utils.hugging_face.registry import (
 
 logger = logging.getLogger(__name__)
 
-if typing.TYPE_CHECKING:
-    from transformers import *
-
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
-    TRANSFORMERS_DOCS,
+    HF_TRANSFORMERS_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
 )
 
 
 class HFTransformersNLP(Component):
     provides = [
-        TRANSFORMERS_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
+        HF_TRANSFORMERS_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ]
 
     defaults = {
@@ -250,9 +247,9 @@ class HFTransformersNLP(Component):
         model_outputs = self.model(
             np.array(padded_token_ids), attention_mask=np.array(batch_attention_mask)
         )
-        sequence_hidden_states = model_outputs[
-            0
-        ]  # sequence hidden states is always the first output from all models
+
+        # sequence hidden states is always the first output from all models
+        sequence_hidden_states = model_outputs[0]
 
         sequence_hidden_states = sequence_hidden_states.numpy()
         return sequence_hidden_states
@@ -346,13 +343,13 @@ class HFTransformersNLP(Component):
                 batch_docs = self._get_docs_for_batch(batch_messages, attribute)
 
                 for index, ex in enumerate(batch_messages):
-                    ex.set(TRANSFORMERS_DOCS[attribute], batch_docs[index])
+                    ex.set(HF_TRANSFORMERS_DOCS[attribute], batch_docs[index])
 
                 batch_start_index += batch_size
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set(
-            TRANSFORMERS_DOCS[TEXT_ATTRIBUTE],
+            HF_TRANSFORMERS_DOCS[TEXT_ATTRIBUTE],
             self._get_docs_for_batch([message], attribute=TEXT_ATTRIBUTE)[0],
         )

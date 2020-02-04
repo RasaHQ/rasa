@@ -3,18 +3,27 @@ from transformers import (
     TFOpenAIGPTModel,
     TFGPT2Model,
     TFXLNetModel,
-    TFXLMModel,
+    # TFXLMModel,
     TFDistilBertModel,
     TFRobertaModel,
     BertTokenizer,
     OpenAIGPTTokenizer,
     GPT2Tokenizer,
     XLNetTokenizer,
-    XLMTokenizer,
+    # XLMTokenizer,
     DistilBertTokenizer,
     RobertaTokenizer,
 )
-from rasa.nlu.utils.hugging_face.transformers_pre_post_processors import *
+from rasa.nlu.utils.hugging_face.transformers_pre_post_processors import (
+    bert_tokens_pre_processor,
+    gpt_tokens_pre_processor,
+    xlnet_tokens_pre_processor,
+    roberta_tokens_pre_processor,
+    bert_embeddings_post_processor,
+    gpt_embeddings_post_processor,
+    xlnet_embeddings_post_processor,
+    roberta_embeddings_post_processor,
+)
 
 model_class_dict = {
     "bert": TFBertModel,

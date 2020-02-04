@@ -11,7 +11,7 @@ if typing.TYPE_CHECKING:
 
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
-    TRANSFORMERS_DOCS,
+    HF_TRANSFORMERS_DOCS,
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     TOKENS_NAMES,
@@ -25,7 +25,7 @@ class LanguageModelFeaturizer(Featurizer):
     ]
 
     requires = [
-        TRANSFORMERS_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
+        HF_TRANSFORMERS_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ] + [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
 
     def train(
@@ -41,7 +41,7 @@ class LanguageModelFeaturizer(Featurizer):
 
     def get_doc(self, message: Message, attribute: Text) -> Any:
 
-        return message.get(TRANSFORMERS_DOCS[attribute])
+        return message.get(HF_TRANSFORMERS_DOCS[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
