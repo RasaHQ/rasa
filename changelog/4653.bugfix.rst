@@ -1,3 +1,0 @@
-Previously, we can not describe init folder path when using ``rasa init --no-prompt``. And init foler path was fixed ``.(relative path)``. It can be occuring permission error.
-
-So, add new option ``--init-dir`` and you can use like ``rasa init --no-prompt --init-dir <folder path>``.
