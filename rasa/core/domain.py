@@ -620,7 +620,7 @@ class Domain:
             entity["entity"] for entity in entities if "entity" in entity.keys()
         }
 
-        wanted_entities = set(intent_config.get("used_entities"))
+        wanted_entities = set(intent_config.get("used_entities", entity_names))
 
         return entity_names.intersection(wanted_entities)
 
