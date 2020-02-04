@@ -66,7 +66,7 @@ class HFTransformersNLP(Component):
             )
             self.model_weights = model_weights_defaults[self.model_name]
 
-        logger.info(f"Loading Tokenizer and Model for {self.model_name}")
+        logger.debug(f"Loading Tokenizer and Model for {self.model_name}")
         self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
             self.model_weights
         )
@@ -224,7 +224,6 @@ class HFTransformersNLP(Component):
         # Add padding according to max_seq_len
         # Some models don't contain pad token, we use unknown token as padding token.This doesn't affect the computation
         # since we compute an attention mask anyways.
-        # pad_token_id = self.tokenizer.pad_token_id if self.contains_special_token else self.tokenizer.unk_token_id
         for example_token_ids in batch_token_ids:
             padded_token_ids.append(
                 example_token_ids
