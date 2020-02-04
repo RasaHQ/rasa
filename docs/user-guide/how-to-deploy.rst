@@ -37,7 +37,7 @@ Kubernetes is the best option if you plan to serve many users. It's straightforw
     - Default: Read the docs `here <../../rasa-x/docs/installation-and-setup/openshift-kubernetes/>`_.
     - Custom: Read the docs `here <../../rasa-x/docs/installation-and-setup/openshift-kubernetes/>`_ and customize the `open source Helm charts <https://github.com/RasaHQ/rasa-x-helm>`_.
 
-Docker-Compose
+Docker Compose
 ~~~~~~~~~~~~~~
 
     - Default: Watching this video or read the docs `here <../../rasa-x/docs/installation-and-setup/docker-compose-script/>`_.
