@@ -29,7 +29,7 @@ from rasa.nlu.constants import (
 )
 
 
-class HuggingFaceTransformersNLP(Component):
+class HFTransformersNLP(Component):
     provides = [
         TRANSFORMERS_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ]
@@ -43,7 +43,7 @@ class HuggingFaceTransformersNLP(Component):
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
 
-        super(HuggingFaceTransformersNLP, self).__init__(component_config)
+        super(HFTransformersNLP, self).__init__(component_config)
 
         self._load_model()
         self.whitespace_tokenizer = WhitespaceTokenizer()

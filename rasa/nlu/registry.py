@@ -40,7 +40,7 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
-from rasa.nlu.utils.hugging_face.hf_transformers import HuggingFaceTransformersNLP
+from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.utils.common import class_from_module_path, raise_warning
 
 if typing.TYPE_CHECKING:
@@ -56,7 +56,7 @@ component_classes = [
     # utils
     SpacyNLP,
     MitieNLP,
-    HuggingFaceTransformersNLP,
+    HFTransformersNLP,
     # tokenizers
     MitieTokenizer,
     SpacyTokenizer,
