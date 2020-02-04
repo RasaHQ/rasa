@@ -27,7 +27,7 @@ intents:
  - thankyou
  - request_info
 
-templates:
+responses:
   utter_greet:
     - text: "hey there!"
   utter_goodbye:
@@ -65,18 +65,5 @@ templates:
     - text: "I'm on it"
 
 actions:
-- utter_greet
-- utter_goodbye
-- utter_default
-- utter_ack_dosearch
-- utter_ack_findalternatives
-- utter_ack_makereservation
-- utter_ask_cuisine
-- utter_ask_howcanhelp
-- utter_ask_location
-- utter_ask_moreupdates
-- utter_ask_numpeople
-- utter_ask_price
-- utter_on_it
 - action_search_restaurants
 - action_suggest

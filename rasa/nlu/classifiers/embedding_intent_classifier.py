@@ -6,7 +6,6 @@ import pickle
 import scipy.sparse
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
-import warnings
 
 from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
@@ -23,6 +22,8 @@ from rasa.nlu.constants import (
 import tensorflow as tf
 
 # avoid warning println on contrib import - remove for tf 2
+from rasa.utils.common import raise_warning
+
 tf.contrib._warning = None
 
 logger = logging.getLogger(__name__)
@@ -93,6 +94,9 @@ class EmbeddingIntentClassifier(Component):
         "similarity_type": "auto",  # string 'auto' or 'cosine' or 'inner'
         # the type of the loss function
         "loss_type": "softmax",  # string 'softmax' or 'margin'
+        # number of top intents to normalize scores for softmax loss_type
+        # set to 0 to turn off normalization
+        "ranking_length": 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct labels
         "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
@@ -128,7 +132,7 @@ class EmbeddingIntentClassifier(Component):
         ]
         for removed_param in removed_tokenization_params:
             if removed_param in config:
-                warnings.warn(
+                raise_warning(
                     f"Intent tokenization has been moved to Tokenizer components. "
                     f"Your config still mentions '{removed_param}'. "
                     f"Tokenization may fail if you specify the parameter here. "
@@ -174,6 +178,7 @@ class EmbeddingIntentClassifier(Component):
             elif self.loss_type == "margin":
                 self.similarity_type = "cosine"
 
+        self.ranking_length = config["ranking_length"]
         self.mu_pos = config["mu_pos"]
         self.mu_neg = config["mu_neg"]
         self.use_max_sim_neg = config["use_max_sim_neg"]
@@ -801,6 +806,10 @@ class EmbeddingIntentClassifier(Component):
         message_sim = message_sim.flatten()  # sim is a matrix
 
         label_ids = message_sim.argsort()[::-1]
+
+        if self.loss_type == "softmax" and self.ranking_length > 0:
+            message_sim = train_utils.normalize(message_sim, self.ranking_length)
+
         message_sim[::-1].sort()
 
         # transform sim to python list for JSON serializing
@@ -838,8 +847,13 @@ class EmbeddingIntentClassifier(Component):
                 "confidence": message_sim[0],
             }
 
+            if self.ranking_length and 0 < self.ranking_length < LABEL_RANKING_LENGTH:
+                output_length = self.ranking_length
+            else:
+                output_length = LABEL_RANKING_LENGTH
+
             ranking = list(zip(list(label_ids), message_sim))
-            ranking = ranking[:LABEL_RANKING_LENGTH]
+            ranking = ranking[:output_length]
             label_ranking = [
                 {"name": self.inverted_label_dict[label_idx], "confidence": score}
                 for label_idx, score in ranking
@@ -968,8 +982,8 @@ class EmbeddingIntentClassifier(Component):
             )
 
         else:
-            warnings.warn(
+            raise_warning(
                 f"Failed to load nlu model. "
-                f"Maybe path '{os.path.abspath(model_dir)}' doesn't exist."
+                f"Maybe the path '{os.path.abspath(model_dir)}' doesn't exist?",
             )
             return cls(component_config=meta)

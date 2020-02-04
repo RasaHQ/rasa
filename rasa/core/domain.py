@@ -1,31 +1,38 @@
 import collections
-import warnings
 import json
 import logging
 import os
 import typing
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, Set, NamedTuple
+from typing import Any, Dict, List, NamedTuple, Optional, Set, Text, Tuple, Union
 
 import rasa.core.constants
-import rasa.utils.common as common_utils
+from rasa.utils.common import (
+    raise_warning,
+    lazy_property,
+    sort_list_of_dicts_by_first_key,
+)
 import rasa.utils.io
-from rasa.cli.utils import bcolors
-from rasa.constants import DOMAIN_SCHEMA_FILE, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION
+from rasa.cli.utils import bcolors, wrap_with_color
+from rasa.constants import (
+    DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+    DOMAIN_SCHEMA_FILE,
+    DOCS_URL_DOMAINS,
+)
 from rasa.core import utils
 from rasa.core.actions import action  # pytype: disable=pyi-error
 from rasa.core.actions.action import Action  # pytype: disable=pyi-error
 from rasa.core.constants import (
-    REQUESTED_SLOT,
     DEFAULT_KNOWLEDGE_BASE_ACTION,
-    SLOT_LISTED_ITEMS,
-    SLOT_LAST_OBJECT_TYPE,
+    REQUESTED_SLOT,
     SLOT_LAST_OBJECT,
+    SLOT_LAST_OBJECT_TYPE,
+    SLOT_LISTED_ITEMS,
 )
 from rasa.core.events import SlotSet, UserUttered
 from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.utils.endpoints import EndpointConfig
-from rasa.utils.validation import validate_yaml_schema, InvalidYamlFileError
+from rasa.utils.validation import InvalidYamlFileError, validate_yaml_schema
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +55,7 @@ class InvalidDomain(Exception):
 
     def __str__(self):
         # return message in error colours
-        return bcolors.FAIL + self.message + bcolors.ENDC
+        return wrap_with_color(self.message, color=bcolors.FAIL)
 
 
 class SessionConfig(NamedTuple):
@@ -123,7 +130,18 @@ class Domain:
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Domain":
-        utter_templates = cls.collect_templates(data.get("templates", {}))
+        utter_templates = cls.collect_templates(data.get("responses", {}))
+        if "templates" in data:
+            raise_warning(
+                "Your domain file contains the key: 'templates'. This has been "
+                "deprecated and renamed to 'responses'. The 'templates' key will "
+                "no longer work in future versions of Rasa. Please replace "
+                "'templates' with 'responses'",
+                FutureWarning,
+                docs=DOCS_URL_DOMAINS,
+            )
+            utter_templates = cls.collect_templates(data.get("templates", {}))
+
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
@@ -146,12 +164,13 @@ class Domain:
 
         # TODO: 2.0 reconsider how to apply sessions to old projects and legacy trackers
         if session_expiration_time is None:
-            warnings.warn(
+            raise_warning(
                 "No tracker session configuration was found in the loaded domain. "
                 "Domains without a session config will automatically receive a "
                 "session expiration time of 60 minutes in Rasa version 2.0 if not "
                 "configured otherwise.",
                 FutureWarning,
+                docs=DOCS_URL_DOMAINS + "#session-configuration",
             )
             session_expiration_time = 0
 
@@ -226,7 +245,7 @@ class Domain:
         for key in ["entities", "actions", "forms"]:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
-        for key in ["templates", "slots"]:
+        for key in ["responses", "slots"]:
             combined[key] = merge_dicts(combined[key], domain_dict[key], override)
 
         return self.__class__.from_dict(combined)
@@ -293,11 +312,13 @@ class Domain:
 
                 # templates should be a dict with options
                 if isinstance(t, str):
-                    warnings.warn(
+                    raise_warning(
                         f"Templates should not be strings anymore. "
-                        f"Utterance template '{template_key}' should contain either '- text: ' or "
-                        f"'- custom: ' attribute to be a proper template.",
+                        f"Utterance template '{template_key}' should contain "
+                        f"either a '- text: ' or a '- custom: ' "
+                        f"attribute to be a proper template.",
                         FutureWarning,
+                        docs=DOCS_URL_DOMAINS + "#utterance-templates",
                     )
                     validated_variations.append({"text": t})
                 elif "text" not in t and "custom" not in t:
@@ -332,17 +353,17 @@ class Domain:
         self.session_config = session_config
 
         # only includes custom actions and utterance actions
-        self.user_actions = action_names
+        self.user_actions = action.combine_with_templates(action_names, templates)
+
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = (
-            action.combine_user_with_default_actions(action_names) + form_names
+            action.combine_user_with_default_actions(self.user_actions) + form_names
         )
-        self.store_entities_as_slots = store_entities_as_slots
 
+        self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
 
     def __hash__(self) -> int:
-        from rasa.utils.common import sort_list_of_dicts_by_first_key
 
         self_as_dict = self.as_dict()
         self_as_dict["intents"] = sort_list_of_dicts_by_first_key(
@@ -353,20 +374,20 @@ class Domain:
 
         return int(text_hash, 16)
 
-    @common_utils.lazy_property
+    @lazy_property
     def user_actions_and_forms(self):
         """Returns combination of user actions and forms"""
 
         return self.user_actions + self.form_names
 
-    @common_utils.lazy_property
+    @lazy_property
     def num_actions(self):
         """Returns the number of available actions."""
 
         # noinspection PyTypeChecker
         return len(self.action_names)
 
-    @common_utils.lazy_property
+    @lazy_property
     def num_states(self):
         """Number of used input states for the action prediction."""
 
@@ -465,7 +486,7 @@ class Domain:
             return None
 
     # noinspection PyTypeChecker
-    @common_utils.lazy_property
+    @lazy_property
     def slot_states(self) -> List[Text]:
         """Returns all available slot state strings."""
 
@@ -476,28 +497,28 @@ class Domain:
         ]
 
     # noinspection PyTypeChecker
-    @common_utils.lazy_property
+    @lazy_property
     def prev_action_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return [PREV_PREFIX + a for a in self.action_names]
 
     # noinspection PyTypeChecker
-    @common_utils.lazy_property
+    @lazy_property
     def intent_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return [f"intent_{i}" for i in self.intents]
 
     # noinspection PyTypeChecker
-    @common_utils.lazy_property
+    @lazy_property
     def entity_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return [f"entity_{e}" for e in self.entities]
 
     # noinspection PyTypeChecker
-    @common_utils.lazy_property
+    @lazy_property
     def form_states(self) -> List[Text]:
         return [f"active_form_{f}" for f in self.form_names]
 
@@ -506,12 +527,12 @@ class Domain:
 
         return self.input_state_map.get(state_name)
 
-    @common_utils.lazy_property
+    @lazy_property
     def input_state_map(self) -> Dict[Text, int]:
         """Provides a mapping from state names to indices."""
         return {f: i for i, f in enumerate(self.input_states)}
 
-    @common_utils.lazy_property
+    @lazy_property
     def input_states(self) -> List[Text]:
         """Returns all available states."""
 
@@ -580,11 +601,12 @@ class Domain:
         explicitly_included = isinstance(include, list)
         ambiguous_entities = included_entities.intersection(excluded_entities)
         if explicitly_included and ambiguous_entities:
-            warnings.warn(
+            raise_warning(
                 f"Entities: '{ambiguous_entities}' are explicitly included and"
                 f" excluded for intent '{intent_name}'."
                 f"Excluding takes precedence in this case. "
-                f"Please resolve that ambiguity."
+                f"Please resolve that ambiguity.",
+                docs=DOCS_URL_DOMAINS + "#ignoring-entities-for-certain-intents",
             )
 
         return entity_names.intersection(wanted_entities)
@@ -600,13 +622,6 @@ class Domain:
             if prev_action_name in self.input_state_map:
                 return {prev_action_name: 1.0}
             else:
-                warnings.warn(
-                    f"Failed to use action '{latest_action}' in history. "
-                    f"Please make sure all actions are listed in the "
-                    f"domains action list. If you recently removed an "
-                    f"action, don't worry about this warning. It "
-                    f"should stop appearing after a while."
-                )
                 return {}
         else:
             return {}
@@ -706,7 +721,7 @@ class Domain:
             "intents": [{k: v} for k, v in self.intent_properties.items()],
             "entities": self.entities,
             "slots": self._slot_definitions(),
-            "templates": self.templates,
+            "responses": self.templates,
             "actions": self.user_actions,  # class names of the actions
             "forms": self.form_names,
         }
@@ -766,7 +781,7 @@ class Domain:
         """Return the configuration for an intent."""
         return self.intent_properties.get(intent_name, {})
 
-    @common_utils.lazy_property
+    @lazy_property
     def intents(self):
         return sorted(self.intent_properties.keys())
 
@@ -955,11 +970,12 @@ class Domain:
 
         if missing_templates:
             for template in missing_templates:
-                warnings.warn(
+                raise_warning(
                     f"Utterance '{template}' is listed as an "
                     f"action in the domain file, but there is "
                     f"no matching utterance template. Please "
-                    f"check your domain."
+                    f"check your domain.",
+                    docs=DOCS_URL_DOMAINS + "#utterance-templates",
                 )
 
     def is_empty(self) -> bool:

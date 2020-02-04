@@ -37,7 +37,7 @@ install_requires = [
     "pymongo[tls,srv]~=3.8",
     "numpy~=1.16",
     "scipy~=1.2",
-    "tensorflow~=1.15.0",
+    "tensorflow-cpu~=1.15.0",
     # absl is a tensorflow dependency, but produces double logging before 0.8
     # should be removed once tensorflow requires absl > 0.8 on its own
     "absl-py>=0.8.0",
@@ -48,7 +48,7 @@ install_requires = [
     "tensor2tensor~=1.14.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
-    "networkx~=2.3.0",
+    "networkx~=2.4.0",
     "fbmessenger~=6.0",
     "pykwalify~=1.7.0",
     "coloredlogs~=10.0",
@@ -68,7 +68,7 @@ install_requires = [
     "gevent~=1.4",
     "pytz~=2019.1",
     "python-dateutil~=2.8",
-    "rasa-sdk~=1.6.0",
+    "rasa-sdk~=1.7.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
     "sanic~=19.9.0",
@@ -78,6 +78,8 @@ install_requires = [
     "multidict==4.6.1",
     "aiohttp~=3.5",
     "questionary>=1.1.0",
+    # needed because of https://github.com/prompt-toolkit/python-prompt-toolkit/issues/951
+    "prompt-toolkit<3.0",
     "python-socketio>=4.3.1",
     # the below can be unpinned when python-socketio pins >=3.9.3
     "python-engineio>=3.9.3",

@@ -1,5 +1,4 @@
 import importlib
-import warnings
 import json
 import logging
 import os
@@ -10,7 +9,7 @@ from typing import Text, Optional, Any, List, Dict, Tuple, Set
 
 import rasa.core
 import rasa.utils.io
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL, DOCS_URL_POLICIES
 
 from rasa.core import utils, training
 from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
@@ -28,7 +27,7 @@ from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
-from rasa.utils.common import class_from_module_path
+from rasa.utils.common import class_from_module_path, raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -107,12 +106,12 @@ class PolicyEnsemble:
 
         for k, v in priority_dict.items():
             if len(v) > 1:
-                warnings.warn(
+                raise_warning(
                     f"Found policies {v} with same priority {k} "
-                    "in PolicyEnsemble. When personalizing "
-                    "priorities, be sure to give all policies "
-                    "different priorities. More information: "
-                    f"{DOCS_BASE_URL}/core/policies/"
+                    f"in PolicyEnsemble. When personalizing "
+                    f"priorities, be sure to give all policies "
+                    f"different priorities.",
+                    docs=DOCS_URL_POLICIES,
                 )
 
     def train(

@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import pickle
-import warnings
 
 import numpy as np
 from typing import Any, List, Optional, Text, Dict, Tuple
@@ -24,6 +23,8 @@ from rasa.utils import train_utils
 import tensorflow as tf
 
 # avoid warning println on contrib import - remove for tf 2
+from rasa.utils.common import raise_warning
+
 tf.contrib._warning = None
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,9 @@ class EmbeddingPolicy(Policy):
         "similarity_type": "auto",  # string 'auto' or 'cosine' or 'inner'
         # the type of the loss function
         "loss_type": "softmax",  # string 'softmax' or 'margin'
+        # number of top actions to normalize scores for softmax loss_type
+        # set to 0 to turn off normalization
+        "ranking_length": 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct labels
         "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
@@ -192,6 +196,7 @@ class EmbeddingPolicy(Policy):
                 self.similarity_type = "inner"
             elif self.loss_type == "margin":
                 self.similarity_type = "cosine"
+        self.ranking_length = config["ranking_length"]
 
         self.mu_pos = config["mu_pos"]
         self.mu_neg = config["mu_neg"]
@@ -567,14 +572,18 @@ class EmbeddingPolicy(Policy):
         tf_feed_dict = self.tf_feed_dict_for_prediction(tracker, domain)
 
         confidence = self.session.run(self.pred_confidence, feed_dict=tf_feed_dict)
+        confidence = confidence[0, -1, :]
 
-        return confidence[0, -1, :].tolist()
+        if self.loss_type == "softmax" and self.ranking_length > 0:
+            confidence = train_utils.normalize(confidence, self.ranking_length)
+
+        return confidence.tolist()
 
     def persist(self, path: Text) -> None:
         """Persists the policy to a storage."""
 
         if self.session is None:
-            warnings.warn(
+            logger.debug(
                 "Method `persist(...)` was called "
                 "without a trained model present. "
                 "Nothing to persist then!"
@@ -583,7 +592,11 @@ class EmbeddingPolicy(Policy):
 
         self.featurizer.persist(path)
 
-        meta = {"priority": self.priority}
+        meta = {
+            "priority": self.priority,
+            "loss_type": self.loss_type,
+            "ranking_length": self.ranking_length,
+        }
 
         meta_file = os.path.join(path, "embedding_policy.json")
         rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
@@ -665,7 +678,7 @@ class EmbeddingPolicy(Policy):
 
         return cls(
             featurizer=featurizer,
-            priority=meta["priority"],
+            priority=meta.pop("priority"),
             graph=graph,
             session=session,
             user_placeholder=a_in,
@@ -677,4 +690,5 @@ class EmbeddingPolicy(Policy):
             bot_embed=bot_embed,
             all_bot_embed=all_bot_embed,
             attention_weights=attention_weights,
+            **meta,
         )

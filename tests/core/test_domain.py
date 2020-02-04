@@ -14,7 +14,11 @@ from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain, SessionConfig
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.slots import TextSlot, UnfeaturizedSlot
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
+from tests.core.conftest import (
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
+    DEFAULT_STORIES_FILE,
+)
 from rasa.utils import io as io_utils
 
 
@@ -157,7 +161,16 @@ def test_domain_from_template():
 
     assert not domain.is_empty()
     assert len(domain.intents) == 10
-    assert len(domain.action_names) == 12
+    assert len(domain.action_names) == 13
+
+
+def test_avoid_action_repetition():
+    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+    domain_with_no_actions = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS)
+
+    assert not domain.is_empty() and not domain_with_no_actions.is_empty()
+    assert len(domain.intents) == len(domain_with_no_actions.intents)
+    assert len(domain.action_names) == len(domain_with_no_actions.action_names)
 
 
 def test_utter_templates():
@@ -181,7 +194,7 @@ def test_custom_slot_type(tmpdir: Path):
          custom:
            type: tests.core.conftest.CustomSlot
 
-       templates:
+       responses:
          utter_greet:
            - text: hey there!
 
@@ -200,7 +213,7 @@ def test_custom_slot_type(tmpdir: Path):
         custom:
          type: tests.core.conftest.Unknown
 
-    templates:
+    responses:
         utter_greet:
          - text: hey there!
 
@@ -211,7 +224,7 @@ def test_custom_slot_type(tmpdir: Path):
         custom:
          type: blubblubblub
 
-    templates:
+    responses:
         utter_greet:
          - text: hey there!
 
@@ -234,18 +247,56 @@ config:
 entities: []
 forms: []
 intents: []
+responses:
+  utter_greet:
+  - text: hey there!
 session_config:
   carry_over_slots_to_new_session: true
   session_expiration_time: 60
-slots: {}
-templates:
-  utter_greet:
-  - text: hey there!"""
+slots: {}"""
 
     domain = Domain.from_yaml(test_yaml)
     # python 3 and 2 are different here, python 3 will have a leading set
     # of --- at the beginning of the yml
     assert domain.as_yaml().strip().endswith(test_yaml.strip())
+    assert Domain.from_yaml(domain.as_yaml()) is not None
+
+
+def test_domain_to_yaml_deprecated_templates():
+    test_yaml = """actions:
+- utter_greet
+config:
+  store_entities_as_slots: true
+entities: []
+forms: []
+intents: []
+templates:
+  utter_greet:
+  - text: hey there!
+session_config:
+  carry_over_slots_to_new_session: true
+  session_expiration_time: 60
+slots: {}"""
+
+    target_yaml = """actions:
+- utter_greet
+config:
+  store_entities_as_slots: true
+entities: []
+forms: []
+intents: []
+responses:
+  utter_greet:
+  - text: hey there!
+session_config:
+  carry_over_slots_to_new_session: true
+  session_expiration_time: 60
+slots: {}"""
+
+    domain = Domain.from_yaml(test_yaml)
+    # python 3 and 2 are different here, python 3 will have a leading set
+    # of --- at the beginning of the yml
+    assert domain.as_yaml().strip().endswith(target_yaml.strip())
     assert Domain.from_yaml(domain.as_yaml()) is not None
 
 
@@ -257,7 +308,7 @@ config:
 entities: []
 intents: []
 slots: {}
-templates:
+responses:
   utter_greet:
   - text: hey there!"""
 
@@ -276,7 +327,7 @@ intents:
 slots:
   cuisine:
     type: text
-templates:
+responses:
   utter_greet:
   - text: hey you!"""
 
@@ -559,7 +610,36 @@ def test_clean_domain():
             "pure_intent",
         ],
         "entities": ["name", "other", "unrelated_recognized_entity"],
-        "templates": {
+        "responses": {
+            "utter_greet": [{"text": "hey there!"}],
+            "utter_goodbye": [{"text": "goodbye :("}],
+            "utter_default": [{"text": "default message"}],
+        },
+        "actions": ["utter_default", "utter_goodbye", "utter_greet"],
+    }
+
+    expected = Domain.from_dict(expected)
+    actual = Domain.from_dict(cleaned)
+
+    assert hash(actual) == hash(expected)
+
+
+def test_clean_domain_deprecated_templates():
+    domain_path = "data/test_domains/default_deprecated_templates.yml"
+    cleaned = Domain.load(domain_path).cleaned_domain()
+
+    expected = {
+        "intents": [
+            {"greet": {"use_entities": ["name"]}},
+            {"default": {"ignore_entities": ["unrelated_recognized_entity"]}},
+            {"goodbye": {"use_entities": []}},
+            {"thank": {"use_entities": []}},
+            "ask",
+            {"why": {"use_entities": []}},
+            "pure_intent",
+        ],
+        "entities": ["name", "other", "unrelated_recognized_entity"],
+        "responses": {
             "utter_greet": [{"text": "hey there!"}],
             "utter_goodbye": [{"text": "goodbye :("}],
             "utter_default": [{"text": "default message"}],

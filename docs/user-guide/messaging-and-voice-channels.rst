@@ -8,12 +8,6 @@ Messaging and Voice Channels
 
 .. edit-link::
 
-If you're testing this on your local computer (i.e. not a server), you
-will need to use `ngrok <https://rasa.com/docs/rasa-x/get-feedback-from-test-users/#use-ngrok-for-local-testing>`_.
-This gives your machine a domain name so that Facebook, Slack, etc. know where to send messages to
-reach your local machine.
-
-
 To make your assistant available on a messaging platform you need to provide credentials
 in a ``credentials.yml`` file.
 An example file is created when you run ``rasa init``, so it's easiest to edit that file
@@ -44,3 +38,31 @@ Learn how to make your assistant available on:
    connectors/rocketchat
    connectors/mattermost
    connectors/custom-connectors
+
+
+.. _using-ngrok:
+
+Testing Channels on Your Local Machine with Ngrok
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can use `ngrok <https://ngrok.com/>`_ to create a connection to your local
+computer that is publicly available on the internet.
+You don't need this when running Rasa on a server because, you can set up a domain
+name to point to that server's IP address, or use the IP address itself.
+
+After installing ngrok, run:
+
+.. copyable::
+
+   ngrok http 5005; rasa run
+
+Your webhook address will look like the following:
+
+- ``https://yyyyyy.ngrok.io/webhooks/<CHANNEL>/webhook``, e.g.
+- ``https://yyyyyy.ngrok.io/webhooks/facebook/webhook``
+
+.. warning::
+
+  With the free-tier of ngrok, you can run into limits on how many connections you can make per minute.
+  As of writing this, it is set to 40 connections / minute.
+

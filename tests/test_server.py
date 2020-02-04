@@ -1,16 +1,21 @@
 import os
+from multiprocessing.managers import DictProxy
+
+import requests
 import time
 import tempfile
 import uuid
-from multiprocessing import Process, Manager
-from typing import List, Text, Type
+
+from typing import List, Text, Type, Generator, NoReturn
 from contextlib import ExitStack
 
+from _pytest import pathlib
 from aioresponses import aioresponses
 
 import pytest
 from freezegun import freeze_time
 from mock import MagicMock
+from multiprocessing import Process, Manager
 
 import rasa
 import rasa.constants
@@ -23,7 +28,7 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.model import unpack_model
 from rasa.utils.endpoints import EndpointConfig
 from sanic import Sanic
-from sanic.testing import SanicTestClient, PORT
+from sanic.testing import SanicTestClient
 from tests.nlu.utilities import ResponseTest
 from tests.conftest import get_test_client
 
@@ -133,49 +138,113 @@ def test_status_not_ready_agent(rasa_app: SanicTestClient):
 
 
 @pytest.fixture
-def formbot_data():
-    return dict(
-        domain="examples/formbot/domain.yml",
-        config="examples/formbot/config.yml",
-        stories="examples/formbot/data/stories.md",
-        nlu="examples/formbot/data/nlu.md",
-    )
+def shared_statuses() -> DictProxy:
+    return Manager().dict()
 
 
-def test_train_status(rasa_server, rasa_app, formbot_data):
-    with ExitStack() as stack:
-        payload = {
-            key: stack.enter_context(open(path)).read()
-            for key, path in formbot_data.items()
-        }
+@pytest.fixture
+def background_server(
+    shared_statuses: DictProxy, tmpdir: pathlib.Path
+) -> Generator[Process, None, None]:
+    # Create a fake model archive which the mocked train function can return
+    from pathlib import Path
 
-    def train(results):
-        client1 = SanicTestClient(rasa_server, port=PORT + 1)
-        _, train_resp = client1.post("/model/train", json=payload)
-        results["train_response_code"] = train_resp.status
+    fake_model = Path(tmpdir) / "fake_model.tar.gz"
+    fake_model.touch()
+    fake_model_path = str(fake_model)
 
-    # Run training process in the background
-    manager = Manager()
-    results = manager.dict()
-    p1 = Process(target=train, args=(results,))
-    p1.start()
+    # Fake training function which blocks until we tell it to stop blocking
+    # If we can send a status request while this is blocking, we can be sure that the
+    # actual training is also not blocking
+    def mocked_training_function(*_, **__) -> Text:
+        # Tell the others that we are now blocking
+        shared_statuses["started_training"] = True
+        # Block until somebody tells us to not block anymore
+        while shared_statuses.get("stop_training") is not True:
+            time.sleep(1)
 
-    # Query the status endpoint a few times to ensure the test does
-    # not fail prematurely due to mismatched timing of a single query.
-    for i in range(10):
+        return fake_model_path
+
+    def run_server() -> NoReturn:
+        import rasa
+
+        rasa.train = mocked_training_function
+
+        from rasa import __main__
+        import sys
+
+        sys.argv = ["rasa", "run", "--enable-api"]
+        __main__.main()
+
+    server = Process(target=run_server)
+    yield server
+    server.terminate()
+
+
+@pytest.fixture()
+def training_request(shared_statuses: DictProxy) -> Generator[Process, None, None]:
+    def send_request() -> None:
+
+        with ExitStack() as stack:
+            formbot_data = dict(
+                domain="examples/formbot/domain.yml",
+                config="examples/formbot/config.yml",
+                stories="examples/formbot/data/stories.md",
+                nlu="examples/formbot/data/nlu.md",
+            )
+            payload = {
+                key: stack.enter_context(open(path)).read()
+                for key, path in formbot_data.items()
+            }
+            payload["force"] = True
+
+        response = requests.post("http://localhost:5005/model/train", json=payload)
+        shared_statuses["training_result"] = response.status_code
+
+    train_request = Process(target=send_request)
+    yield train_request
+    train_request.terminate()
+
+
+def test_train_status_is_not_blocked_by_training(
+    background_server: Process, shared_statuses: DictProxy, training_request: Process
+):
+    background_server.start()
+
+    def is_server_ready() -> bool:
+        try:
+            return requests.get("http://localhost:5005/status").status_code == 200
+        except Exception:
+            return False
+
+    # wait until server is up before sending train request and status test loop
+    while not is_server_ready():
         time.sleep(1)
-        _, status_resp = rasa_app.get("/status")
-        assert status_resp.status == 200
-        if status_resp.json["num_active_training_jobs"] == 1:
-            break
-    assert status_resp.json["num_active_training_jobs"] == 1
 
-    p1.join()
-    assert results["train_response_code"] == 200
+    training_request.start()
 
-    _, status_resp = rasa_app.get("/status")
-    assert status_resp.status == 200
-    assert status_resp.json["num_active_training_jobs"] == 0
+    # Wait until the blocking training function was called
+    while shared_statuses.get("started_training") is not True:
+        time.sleep(1)
+
+    # Check if the number of currently running trainings was incremented
+    response = requests.get("http://localhost:5005/status")
+    assert response.status_code == 200
+    assert response.json()["num_active_training_jobs"] == 1
+
+    # Tell the blocking training function to stop
+    shared_statuses["stop_training"] = True
+
+    while shared_statuses.get("training_result") is None:
+        time.sleep(1)
+
+    # Check that the training worked correctly
+    assert shared_statuses["training_result"] == 200
+
+    # Check if the number of currently running trainings was decremented
+    response = requests.get("http://localhost:5005/status")
+    assert response.status_code == 200
+    assert response.json()["num_active_training_jobs"] == 0
 
 
 @pytest.mark.parametrize(
@@ -706,6 +775,7 @@ def test_list_routes(default_agent: Agent):
         "replace_events",
         "retrieve_story",
         "execute_action",
+        "trigger_intent",
         "predict",
         "add_message",
         "train",
@@ -738,7 +808,7 @@ def test_get_domain(rasa_app: SanicTestClient):
     assert "intents" in content
     assert "entities" in content
     assert "slots" in content
-    assert "templates" in content
+    assert "responses" in content
     assert "actions" in content
 
 
@@ -849,6 +919,40 @@ def test_execute_with_not_existing_action(rasa_app: SanicTestClient):
     _, response = rasa_app.post(f"/conversations/{test_sender}/execute", json=data)
 
     assert response.status == 500
+
+
+def test_trigger_intent(rasa_app: SanicTestClient):
+    data = {"name": "greet"}
+    _, response = rasa_app.post("/conversations/test_trigger/trigger_intent", json=data)
+
+    assert response.status == 200
+
+    parsed_content = response.json
+    assert parsed_content["tracker"]
+    assert parsed_content["messages"]
+
+
+def test_trigger_intent_with_missing_intent_name(rasa_app: SanicTestClient):
+    test_sender = "test_trigger_intent_with_missing_action_name"
+
+    data = {"wrong-key": "greet"}
+    _, response = rasa_app.post(
+        f"/conversations/{test_sender}/trigger_intent", json=data
+    )
+
+    assert response.status == 400
+
+
+def test_trigger_intent_with_not_existing_intent(rasa_app: SanicTestClient):
+    test_sender = "test_trigger_intent_with_not_existing_intent"
+    _create_tracker_for_sender(rasa_app, test_sender)
+
+    data = {"name": "ka[pa[opi[opj[oj[oija"}
+    _, response = rasa_app.post(
+        f"/conversations/{test_sender}/trigger_intent", json=data
+    )
+
+    assert response.status == 404
 
 
 @pytest.mark.parametrize(

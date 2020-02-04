@@ -24,6 +24,7 @@ DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 
 # start of special user message section
 INTENT_MESSAGE_PREFIX = "/"
+EXTERNAL_MESSAGE_PREFIX = "EXTERNAL: "
 
 USER_INTENT_RESTART = "restart"
 
@@ -36,6 +37,9 @@ USER_INTENT_OUT_OF_SCOPE = "out_of_scope"
 ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
 
 BEARER_TOKEN_PREFIX = "Bearer "
+
+# Key to access data in the event metadata which specifies if an event was caused by an external entity (e.g. a sensor).
+IS_EXTERNAL = "is_external"
 
 # the lowest priority intended to be used by machine learning policies
 DEFAULT_POLICY_PRIORITY = 1

@@ -1,16 +1,19 @@
 import json
 import logging
-import typing
 import os
-import warnings
+import time
+import typing
 from collections import deque
 from threading import Thread
-from typing import Dict, Optional, Text, Union, Deque, Callable
+from typing import Callable, Deque, Dict, Optional, Text, Union
 
-import time
-
-from rasa.constants import ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
+from rasa.constants import (
+    DEFAULT_LOG_LEVEL_LIBRARIES,
+    ENV_LOG_LEVEL_LIBRARIES,
+    DOCS_URL_EVENT_BROKERS,
+)
 from rasa.core.brokers.broker import EventBroker
+from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.io import DEFAULT_ENCODING
 
@@ -419,12 +422,12 @@ class PikaProducer(PikaEventBroker):
             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
         ),
     ):
-        warnings.warn(
+        raise_warning(
             "The `PikaProducer` class is deprecated, please inherit "
             "from `PikaEventBroker` instead. `PikaProducer` will be "
             "removed in future Rasa versions.",
-            DeprecationWarning,
-            stacklevel=2,
+            FutureWarning,
+            docs=DOCS_URL_EVENT_BROKERS,
         )
         super(PikaProducer, self).__init__(
             host, username, password, port, queue, loglevel

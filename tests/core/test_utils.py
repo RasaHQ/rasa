@@ -98,6 +98,8 @@ def test_float_conversion_to_decimal():
     d = {
         "int": -1,
         "float": 2.1,
+        "float_round": 1579507733.1107571125030517578125,
+        "decimal_round": Decimal("0.92383747394838437473739439744"),
         "list": ["one", "two"],
         "list_of_floats": [1.0, -2.1, 3.2],
         "nested_dict_with_floats": {"list_with_floats": [4.5, -5.6], "float": 6.7},
@@ -106,6 +108,8 @@ def test_float_conversion_to_decimal():
 
     assert isinstance(d_replaced["int"], int)
     assert isinstance(d_replaced["float"], Decimal)
+    assert d_replaced["float_round"] == Decimal("1579507733.110757113")
+    assert d_replaced["decimal_round"] == Decimal("0.923837474")
     for t in d_replaced["list"]:
         assert isinstance(t, str)
     for f in d_replaced["list_of_floats"]:

@@ -11,6 +11,43 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+.. _migration-to-rasa-1.8:
+
+Rasa 1.7 to Rasa 1.8
+--------------------
+
+General
+~~~~~~~
+- The :ref:`embedding_policy` replaced the :ref:`keras_policy` as recommended machine
+  learning policy. New projects generated with ``rasa init`` will automatically use
+  this policy. In case you want to change your existing model configuration to use the
+  :ref:`embedding_policy` add this to the ``policies`` section in your ``config.yml``
+  and remove potentially existing ``KerasPolicy`` entries:
+
+  .. code-block:: yaml
+
+    policies:
+    - ... # other policies
+    - name: EmbeddingPolicy
+      max_history: 5
+      epochs: 100
+
+  The given snippet specifies default values for the parameters ``max_history`` and
+  ``epochs``. ``max_history`` is particularly important and strongly depends on your stories. Please see the docs of the :ref:`embedding_policy` if you want to
+  customize them.
+
+.. _migration-to-rasa-1.7:
+
+Rasa 1.6 to Rasa 1.7
+--------------------
+
+General
+~~~~~~~
+- By default, the ``EmbeddingIntentClassifier``, ``EmbeddingPolicy``, and ``ResponseSelector`` will
+  now normalize the top 10 confidence results if the ``loss_type`` is ``"softmax"`` (which has been
+  default since 1.3, see :ref:`migration-to-rasa-1.3`). This is configurable via the ``ranking_length``
+  configuration parameter; to turn off normalization to match the previous behavior, set ``ranking_length: 0``.
+
 .. _migration-to-rasa-1.3:
 
 Rasa 1.2 to Rasa 1.3
@@ -82,7 +119,7 @@ General
 - If you were previously importing the ``Button`` or ``Element`` classes from
   ``rasa_core.dispatcher``, these are now to be imported from ``rasa_sdk.utils``.
 
-- Rasa NLU and Core previously used `separate configuration files 
+- Rasa NLU and Core previously used `separate configuration files
   <https://legacy-docs.rasa.com/docs/nlu/0.15.1/migrations/?&_ga=2.218966814.608734414.1560704810-314462423.1543594887#id1>`_.
   These two files should be merged into a single file either named ``config.yml``, or passed via the ``--config`` parameter.
 
