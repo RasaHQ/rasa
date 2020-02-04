@@ -29,7 +29,7 @@ def add_subparser(
         help="Automatically choose default options for prompts and suppress warnings.",
     )
     scaffold_parser.add_argument(
-        "--init-dir", default=".", help="Descibe init folder path.",
+        "--init-dir", default=".", help="Directory where your project should be initialized.",
     )
 
     scaffold_parser.set_defaults(func=run)
