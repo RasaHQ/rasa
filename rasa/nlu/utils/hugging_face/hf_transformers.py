@@ -66,7 +66,7 @@ class HFTransformersNLP(Component):
             )
             self.model_weights = model_weights_defaults[self.model_name]
 
-        logger.info("Loading Tokenizer and Model for {}".format(self.model_name))
+        logger.info(f"Loading Tokenizer and Model for {self.model_name}")
         self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
             self.model_weights
         )
