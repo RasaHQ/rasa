@@ -54,7 +54,7 @@ def xlm_tokens_pre_processor(token_ids: List[int]):
     return token_ids
 
 
-def bert_embeddings_post_process(
+def bert_embeddings_post_processor(
     sequence_embeddings: np.array,
 ) -> Tuple[np.array, np.array]:
     """Post process embeddings from BERT by removing CLS and SEP embeddings and returning CLS
@@ -67,7 +67,7 @@ def bert_embeddings_post_process(
     return post_processed_embedding, sentence_embedding
 
 
-def gpt_embeddings_post_process(
+def gpt_embeddings_post_processor(
     sequence_embeddings: np.array,
 ) -> Tuple[np.array, np.array]:
     """Post process embeddings from GPT models by taking a mean over sequence embeddings and
@@ -80,7 +80,7 @@ def gpt_embeddings_post_process(
     return post_processed_embedding, sentence_embedding
 
 
-def xlnet_embeddings_post_process(
+def xlnet_embeddings_post_processor(
     sequence_embeddings: np.array,
 ) -> Tuple[np.array, np.array]:
     """Post process embeddings from XLNet models by taking a mean over sequence embeddings and
@@ -94,7 +94,7 @@ def xlnet_embeddings_post_process(
     return post_processed_embedding, sentence_embedding
 
 
-def roberta_embeddings_post_process(
+def roberta_embeddings_post_processor(
     sequence_embeddings: np.array,
 ) -> Tuple[np.array, np.array]:
     """Post process embeddings from Roberta models by taking a mean over sequence embeddings and
@@ -108,7 +108,7 @@ def roberta_embeddings_post_process(
     return post_processed_embedding, sentence_embedding
 
 
-def xlm_embeddings_post_process(
+def xlm_embeddings_post_processor(
     sequence_embeddings: np.array,
 ) -> Tuple[np.array, np.array]:
     """Post process embeddings from XLM models by taking a mean over sequence embeddings and

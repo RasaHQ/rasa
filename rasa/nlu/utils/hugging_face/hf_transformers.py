@@ -29,7 +29,7 @@ from rasa.nlu.constants import (
 )
 
 
-class HuggingFaceTransformers(Component):
+class HuggingFaceTransformersNLP(Component):
     provides = [
         TRANSFORMERS_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ]
@@ -43,14 +43,13 @@ class HuggingFaceTransformers(Component):
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
 
-        super(HuggingFaceTransformers, self).__init__(component_config)
+        super(HuggingFaceTransformersNLP, self).__init__(component_config)
 
         self._load_model()
         self.whitespace_tokenizer = WhitespaceTokenizer()
 
     def _load_model(self) -> None:
         """Try loading the model"""
-        # import transformers
 
         self.model_name = self.component_config["model_name"]
 
@@ -58,7 +57,9 @@ class HuggingFaceTransformers(Component):
             logger.error(
                 f"{self.model_name} not a valid model name. Choose from {str(list(model_class_dict.keys()))}"
             )
-            raise
+            raise KeyError(
+                f"{self.model_name} not a valid model name. Choose from {str(list(model_class_dict.keys()))}"
+            )
 
         self.model_weights = self.component_config["model_weights"]
 
@@ -76,8 +77,11 @@ class HuggingFaceTransformers(Component):
             self.model_weights
         )
 
-        # TODO
-        self.pad_token = ...
+        # Use a universal pad token since all transformer architectures do not have a consistent token.
+        # Instead of pad_token_id we use unk_token_id because pad_token_id is not set for all architectures.
+        # We can't add a new token as well since vocabulary resizing is not yet supported for TF classes.
+        # Also, this does not hurt the model predictions since we use an attention mask while feeding input.
+        self.pad_token_id = self.tokenizer.unk_token_id
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -170,7 +174,7 @@ class HuggingFaceTransformers(Component):
             token_start, token_end, token_text = token.start, token.end, token.text
 
             # use lm specific tokenizer to further tokenize the text
-            split_token_ids, split_token_strings = self._lm_tokenize(token_text)[0]
+            split_token_ids, split_token_strings = self._lm_tokenize(token_text)
 
             token_ids_out += split_token_ids
 
@@ -242,9 +246,15 @@ class HuggingFaceTransformers(Component):
         return np.array(nonpadded_sequence_embeddings)
 
     def _compute_batch_sequence_features(self, batch_attention_mask, padded_token_ids):
-        sequence_hidden_states, pooler_output = self.model(
-            padded_token_ids, attention_mask=batch_attention_mask
+
+        print(np.array(padded_token_ids).shape, np.array(batch_attention_mask).shape)
+        model_outputs = self.model(
+            np.array(padded_token_ids), attention_mask=np.array(batch_attention_mask)
         )
+        sequence_hidden_states = model_outputs[
+            0
+        ]  # sequence hidden states is always the first output from all models
+
         sequence_hidden_states = sequence_hidden_states.numpy()
         return sequence_hidden_states
 
@@ -303,7 +313,9 @@ class HuggingFaceTransformers(Component):
                 "token_ids": batch_token_ids[index],
                 "tokens": batch_tokens[index],
                 "sequence_features": batch_sequence_features[index],
-                "sentence_features": batch_sentence_features[index],
+                "sentence_features": np.reshape(
+                    batch_sentence_features[index], (1, -1)
+                ),
             }
             batch_docs.append(doc)
 
@@ -343,5 +355,5 @@ class HuggingFaceTransformers(Component):
 
         message.set(
             TRANSFORMERS_DOCS[TEXT_ATTRIBUTE],
-            self._get_docs_for_batch([message.get(TEXT_ATTRIBUTE)])[0],
+            self._get_docs_for_batch([message], attribute=TEXT_ATTRIBUTE)[0],
         )
