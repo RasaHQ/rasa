@@ -269,17 +269,23 @@ Once you have them you can add these to your <code class="docutils literal notra
 <p><strong>How to get the Slack credentials:</strong> You need to set up a Slack app.</p>
 <blockquote>
 <div><ol class="arabic simple">
-<li>To create the app go to: <a class="reference external" href="https://api.slack.com/apps">https://api.slack.com/apps</a> and click
-on <em>“Create New App”</em>.</li>
-<li>Activate the following features: interactive components, event
-subscriptions, bot users, permissions (for basic functionality
-you should subscribe to the <code class="docutils literal notranslate"><span class="pre">message.channel</span></code>,
-<code class="docutils literal notranslate"><span class="pre">message.groups</span></code>, <code class="docutils literal notranslate"><span class="pre">message.im</span></code> and <code class="docutils literal notranslate"><span class="pre">message.mpim</span></code> events)</li>
-<li>The <code class="docutils literal notranslate"><span class="pre">slack_channel</span></code> is the target your bot posts to.
-This can be a channel or an individual person. You can leave out
-the argument to post DMs to the bot.</li>
-<li>Use the entry for <code class="docutils literal notranslate"><span class="pre">Bot</span> <span class="pre">User</span> <span class="pre">OAuth</span> <span class="pre">Access</span> <span class="pre">Token</span></code> in the
-“OAuth &amp; Permissions” tab as your <code class="docutils literal notranslate"><span class="pre">slack_token</span></code>. It should start
+<li>To create the app go to <a class="reference external" href="https://api.slack.com/apps">https://api.slack.com/apps</a> and click
+on <strong>Create New App</strong>.</li>
+<li>Activate the following features:</li>
+</ol>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="https://api.slack.com/reference/block-kit/interactive-components">Interactive Components</a> (if your bot uses any, e.g. buttons)</li>
+<li>Event subscriptions</li>
+<li>Bot users</li>
+<li>Permissions (for basic functionality you should subscribe to the
+following events: <code class="docutils literal notranslate"><span class="pre">message.channel</span></code>, <code class="docutils literal notranslate"><span class="pre">message.groups</span></code>,
+<code class="docutils literal notranslate"><span class="pre">message.im</span></code> and <code class="docutils literal notranslate"><span class="pre">message.mpim</span></code>)</li>
+</ul>
+</div></blockquote>
+<ol class="arabic simple" start="3">
+<li>Get the <code class="docutils literal notranslate"><span class="pre">Bot</span> <span class="pre">User</span> <span class="pre">OAuth</span> <span class="pre">Access</span> <span class="pre">Token</span></code> from the OAuth &amp; Permissions page. You will need
+to provide this value in your credentials later in these instructions. It should start
 with <code class="docutils literal notranslate"><span class="pre">xoxb</span></code>.</li>
 </ol>
 </div></blockquote>
@@ -293,19 +299,33 @@ script, e.g. using:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run
 </pre></div>
 </div>
-<p>you need to supply a <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code> with the following content:</p>
+<p>Do not forget to run the action server if this is required by your bot,
+e.g. using:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run actions
+</pre></div>
+</div>
+<p>You need to supply a <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code> with the following content:</p>
+<ul class="simple">
+<li>The <code class="docutils literal notranslate"><span class="pre">slack_channel</span></code> is the target your bot posts to.
+This can be a channel or an individual person. You can leave out
+the argument to post DMs to the bot.</li>
+<li>Use the entry for <code class="docutils literal notranslate"><span class="pre">Bot</span> <span class="pre">User</span> <span class="pre">OAuth</span> <span class="pre">Access</span> <span class="pre">Token</span></code> in the
+“OAuth &amp; Permissions” tab as your <code class="docutils literal notranslate"><span class="pre">slack_token</span></code>. It should start
+with <code class="docutils literal notranslate"><span class="pre">xoxb</span></code>.</li>
+</ul>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">slack</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">slack_token</span><span class="p p-Indicator">:</span> <span class="s">&quot;xoxb-286425452756-safjasdf7sl38KLls&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">slack_channel</span><span class="p p-Indicator">:</span> <span class="s">&quot;#my_channel&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">slack_retry_reason_header</span><span class="p p-Indicator">:</span> <span class="s">&quot;x-slack-retry-reason&quot;</span> <span class="c1">#Slack HTTP header name indicating reason that slack send retry request. This configuration is optional.</span>
-  <span class="l l-Scalar l-Scalar-Plain">slack_retry_number_header</span><span class="p p-Indicator">:</span> <span class="s">&quot;x-slack-retry-num&quot;</span> <span class="c1">#Slack HTTP header name indicating the attempt number. This configuration is optional.</span>
-  <span class="l l-Scalar l-Scalar-Plain">errors_ignore_retry</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span> <span class="c1">#Any error codes given by Slack included in this list will be ignored. Error codes are listed `here &lt;https://api.slack.com/events-api#errors&gt;`_.</span>
+  <span class="l l-Scalar l-Scalar-Plain">slack_retry_reason_header</span><span class="p p-Indicator">:</span> <span class="s">&quot;x-slack-retry-reason&quot;</span>  <span class="c1"># Slack HTTP header name indicating reason that slack send retry request. This configuration is optional.</span>
+  <span class="l l-Scalar l-Scalar-Plain">slack_retry_number_header</span><span class="p p-Indicator">:</span> <span class="s">&quot;x-slack-retry-num&quot;</span>  <span class="c1"># Slack HTTP header name indicating the attempt number. This configuration is optional.</span>
+  <span class="l l-Scalar l-Scalar-Plain">errors_ignore_retry</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>  <span class="c1"># Any error codes given by Slack included in this list will be ignored. Error codes are listed `here &lt;https://api.slack.com/events-api#errors&gt;`_.</span>
 </pre></div>
 </div>
 <p>The endpoint for receiving slack messages is
 <code class="docutils literal notranslate"><span class="pre">http://localhost:5005/webhooks/slack/webhook</span></code>, replacing
 the host and port with the appropriate values. This is the URL
-you should add in the OAuth &amp; Permissions section.</p>
+you should add in the “OAuth &amp; Permissions” section as well as
+the “Event Subscriptions”.</p>
 </div>
 </div>
 
