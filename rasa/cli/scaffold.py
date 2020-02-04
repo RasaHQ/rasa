@@ -4,7 +4,7 @@ from typing import List, Text
 
 import rasa.train
 from rasa.cli.shell import shell
-from rasa.cli.utils import create_output_path, print_success, print_error
+from rasa.cli.utils import create_output_path, print_success, print_error_and_exit
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
@@ -137,8 +137,7 @@ def print_cancel() -> None:
 
 
 def print_init_path_not_found() -> None:
-    print_error("Init path not found")
-    exit(0)
+    print_error_and_exit("Init path not found")
 
 
 def _ask_create_path(path: Text) -> None:
