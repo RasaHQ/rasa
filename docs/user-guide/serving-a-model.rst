@@ -1,10 +1,10 @@
 :desc: Find out how to use Rasa's HTTP API to integrate Rasa
        with your backend components.
 
-.. _serving-a-model:
+.. _configuring-http-api:
 
-Serving a Model
-==================
+Configuring HTTP API
+=====================
 
 .. edit-link::
 
