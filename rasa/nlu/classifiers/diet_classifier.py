@@ -163,7 +163,7 @@ class DIETClassifier(EntityExtractor):
         # dropout rate for rnn
         DROPRATE: 0.2,
         # use a unidirectional or bidirectional encoder
-        UNIDIRECTIONAL_ENCODER: True,
+        UNIDIRECTIONAL_ENCODER: False,
         # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: True,
         # visualization of accuracy
@@ -182,7 +182,7 @@ class DIETClassifier(EntityExtractor):
         # BILOU_flag determines whether to use BILOU tagging or not.
         # More rigorous however requires more examples per entity
         # rule of thumb: use only if more than 100 egs. per entity
-        BILOU_FLAG: False,
+        BILOU_FLAG: True,
     }
     # end default properties (DOC MARKER - don't remove)
 

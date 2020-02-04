@@ -14,10 +14,7 @@ from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES_TEXT,
     HIDDEN_LAYERS_SIZES_LABEL,
     SHARE_HIDDEN_LAYERS,
-    TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
-    NUM_HEADS,
-    MAX_SEQ_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
     EPOCHS,
@@ -34,7 +31,6 @@ from rasa.utils.tensorflow.constants import (
     INTENT_CLASSIFICATION,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
-    UNIDIRECTIONAL_ENCODER,
     DROPRATE,
     C_EMB,
     C2,
@@ -66,20 +62,12 @@ class EmbeddingIntentClassifier(DIETClassifier):
         # nn architecture
         # sizes of hidden layers before the embedding layer for input words
         # the number of hidden layers is thus equal to the length of this list
-        HIDDEN_LAYERS_SIZES_TEXT: [],
+        HIDDEN_LAYERS_SIZES_TEXT: [256, 128],
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
         HIDDEN_LAYERS_SIZES_LABEL: [],
         # Whether to share the hidden layer weights between input words and labels
         SHARE_HIDDEN_LAYERS: False,
-        # number of units in transformer
-        TRANSFORMER_SIZE: 256,
-        # number of transformer layers
-        NUM_TRANSFORMER_LAYERS: 2,
-        # number of attention heads in transformer
-        NUM_HEADS: 4,
-        # max sequence length if pos_encoding='emb'
-        MAX_SEQ_LENGTH: 256,
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
@@ -123,10 +111,8 @@ class EmbeddingIntentClassifier(DIETClassifier):
         C_EMB: 0.8,
         # dropout rate for rnn
         DROPRATE: 0.2,
-        # use a unidirectional or bidirectional encoder
-        UNIDIRECTIONAL_ENCODER: True,
         # if true apply dropout to sparse tensors
-        SPARSE_INPUT_DROPOUT: True,
+        SPARSE_INPUT_DROPOUT: False,
         # visualization of accuracy
         # how often to calculate training accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
@@ -151,6 +137,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         component_config[ENTITY_RECOGNITION] = False
         component_config[MASKED_LM] = False
         component_config[BILOU_FLAG] = False
+        component_config[NUM_TRANSFORMER_LAYERS] = 0
 
         super().__init__(
             component_config,

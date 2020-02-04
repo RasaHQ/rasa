@@ -136,7 +136,6 @@ class CRFEntityExtractor(DIETClassifier):
         component_config[MASKED_LM] = False
         component_config[NUM_TRANSFORMER_LAYERS] = 0
         component_config[SHARE_HIDDEN_LAYERS] = False
-        component_config[UNIDIRECTIONAL_ENCODER] = True
 
         super().__init__(
             component_config,
@@ -218,7 +217,6 @@ class CRFEntityExtractor(DIETClassifier):
         meta[MASKED_LM] = False
         meta[NUM_TRANSFORMER_LAYERS] = 0
         meta[SHARE_HIDDEN_LAYERS] = False
-        meta[UNIDIRECTIONAL_ENCODER] = True
 
         model = cls._load_model(inv_tag_dict, label_data, meta, data_example, model_dir)
 
