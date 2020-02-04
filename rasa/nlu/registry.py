@@ -41,7 +41,7 @@ from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.utils.common import class_from_module_path, raise_warning
 from rasa.utils.tensorflow.constants import (
-    INTENT_CLASSIFICATION,
+    LABEL_CLASSIFICATION,
     ENTITY_RECOGNITION,
     NUM_TRANSFORMER_LAYERS,
 )
@@ -127,7 +127,7 @@ registered_pipeline_templates = {
         {"name": "LexicalSyntacticFeaturizer"},
         {
             "name": "DIETClassifier",
-            INTENT_CLASSIFICATION: False,
+            LABEL_CLASSIFICATION: False,
             ENTITY_RECOGNITION: True,
             NUM_TRANSFORMER_LAYERS: 0,
         },

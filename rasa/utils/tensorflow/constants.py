@@ -38,7 +38,7 @@ DROPRATE_LABEL = "droprate_label"
 EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
 EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"
 
-INTENT_CLASSIFICATION = "intent_classification"
+LABEL_CLASSIFICATION = "label_classification"
 ENTITY_RECOGNITION = "entity_recognition"
 MASKED_LM = "use_masked_language_model"
 

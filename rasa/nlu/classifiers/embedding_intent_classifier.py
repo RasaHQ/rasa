@@ -28,7 +28,7 @@ from rasa.utils.tensorflow.constants import (
     SPARSE_INPUT_DROPOUT,
     MASKED_LM,
     ENTITY_RECOGNITION,
-    INTENT_CLASSIFICATION,
+    LABEL_CLASSIFICATION,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
     DROPRATE,
@@ -133,7 +133,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         component_config = component_config or {}
 
         # the following properties are fixed for the EmbeddingIntentClassifier
-        component_config[INTENT_CLASSIFICATION] = True
+        component_config[LABEL_CLASSIFICATION] = True
         component_config[ENTITY_RECOGNITION] = False
         component_config[MASKED_LM] = False
         component_config[BILOU_FLAG] = False

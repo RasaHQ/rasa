@@ -54,7 +54,7 @@ from rasa.utils.tensorflow.constants import (
     SPARSE_INPUT_DROPOUT,
     MASKED_LM,
     ENTITY_RECOGNITION,
-    INTENT_CLASSIFICATION,
+    LABEL_CLASSIFICATION,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
     UNIDIRECTIONAL_ENCODER,
@@ -173,7 +173,7 @@ class DIETClassifier(EntityExtractor):
         EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
         # model config
         # if true intent classification is trained and intent predicted
-        INTENT_CLASSIFICATION: True,
+        LABEL_CLASSIFICATION: True,
         # if true named entity recognition is trained and entities predicted
         ENTITY_RECOGNITION: True,
         # if true random tokens of the input message will be masked and the model
@@ -192,7 +192,7 @@ class DIETClassifier(EntityExtractor):
             self.component_config
         )
 
-        if self.component_config[INTENT_CLASSIFICATION]:
+        if self.component_config[LABEL_CLASSIFICATION]:
             if (
                 self.component_config[SHARE_HIDDEN_LAYERS]
                 and self.component_config[HIDDEN_LAYERS_SIZES_TEXT]
@@ -247,7 +247,7 @@ class DIETClassifier(EntityExtractor):
         self.data_example = None
 
         self.label_key = (
-            "label_ids" if self.component_config[INTENT_CLASSIFICATION] else "tag_ids"
+            "label_ids" if self.component_config[LABEL_CLASSIFICATION] else "tag_ids"
         )
 
     # training data helpers:
@@ -531,7 +531,7 @@ class DIETClassifier(EntityExtractor):
         self.inverted_tag_dict = {v: k for k, v in tag_id_dict.items()}
 
         label_attribute = (
-            INTENT_ATTRIBUTE if self.component_config[INTENT_CLASSIFICATION] else None
+            INTENT_ATTRIBUTE if self.component_config[LABEL_CLASSIFICATION] else None
         )
 
         model_data = self._create_model_data(
@@ -566,7 +566,7 @@ class DIETClassifier(EntityExtractor):
 
         model_data = self.preprocess_train_data(training_data)
 
-        if self.component_config[INTENT_CLASSIFICATION]:
+        if self.component_config[LABEL_CLASSIFICATION]:
             possible_to_train = self._check_enough_labels(model_data)
 
             if not possible_to_train:
@@ -726,7 +726,7 @@ class DIETClassifier(EntityExtractor):
 
         out = self._predict(message)
 
-        if self.component_config[INTENT_CLASSIFICATION]:
+        if self.component_config[LABEL_CLASSIFICATION]:
             label, label_ranking = self._predict_label(out)
 
             message.set("intent", label, add_to_output=True)
@@ -856,7 +856,7 @@ class DIETClassifier(EntityExtractor):
         file_name = meta.get("file")
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
-        label_key = "label_ids" if meta[INTENT_CLASSIFICATION] else "tag_ids"
+        label_key = "label_ids" if meta[LABEL_CLASSIFICATION] else "tag_ids"
         model_data_example = RasaModelData(label_key=label_key, data=data_example)
 
         model = DIET.load(
@@ -917,6 +917,23 @@ class DIET(RasaModel):
 
         self.all_labels_embed = None  # needed for efficient prediction
 
+        self._check_data()
+
+    def _check_data(self):
+        if "text_features" not in self.data_signature:
+            raise ValueError(
+                "No text features specified. Cannot train 'DIETClassifier'."
+            )
+        if (
+            self.config[LABEL_CLASSIFICATION]
+            and "label_features" not in self.data_signature
+        ):
+            raise ValueError(
+                "No label features specified. Cannot train 'DIETClassifier'."
+            )
+        if self.config[ENTITY_RECOGNITION] and "tag_ids" not in self.data_signature:
+            raise ValueError("No tag ids present. Cannot train 'DIETClassifier'.")
+
     def _create_metrics(self):
         # self.metrics preserve order
         # output losses first
@@ -931,7 +948,7 @@ class DIET(RasaModel):
     def _update_metrics_to_log(self) -> None:
         if self.config[MASKED_LM]:
             self.metrics_to_log += ["m_loss", "m_acc"]
-        if self.config[INTENT_CLASSIFICATION]:
+        if self.config[LABEL_CLASSIFICATION]:
             self.metrics_to_log += ["i_loss", "i_acc"]
         if self.config[ENTITY_RECOGNITION]:
             self.metrics_to_log += ["e_loss", "e_f1"]
@@ -940,7 +957,7 @@ class DIET(RasaModel):
         self._prepare_sequence_layers()
         if self.config[MASKED_LM]:
             self._prepare_mask_lm_layers()
-        if self.config[INTENT_CLASSIFICATION]:
+        if self.config[LABEL_CLASSIFICATION]:
             self._prepare_intent_classification_layers()
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
@@ -971,14 +988,13 @@ class DIET(RasaModel):
         self._tf_layers["sparse_dropout"] = tf_layers.SparseDropout(
             rate=self.config[DROPRATE]
         )
-        if "text_features" in self.data_signature:
-            self._tf_layers["sparse_to_dense.text"] = self._create_sparse_dense_layer(
-                self.data_signature["text_features"],
-                "text",
-                self.config[C2],
-                self.config[DENSE_DIM]["text"],
-            )
-        if "label_features" in self.data_signature:
+        self._tf_layers["sparse_to_dense.text"] = self._create_sparse_dense_layer(
+            self.data_signature["text_features"],
+            "text",
+            self.config[C2],
+            self.config[DENSE_DIM]["text"],
+        )
+        if self.config[LABEL_CLASSIFICATION]:
             self._tf_layers["sparse_to_dense.label"] = self._create_sparse_dense_layer(
                 self.data_signature["label_features"],
                 "label",
@@ -991,7 +1007,7 @@ class DIET(RasaModel):
             self.config[C2],
             "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "text",
         )
-        if self.config[INTENT_CLASSIFICATION]:
+        if self.config[LABEL_CLASSIFICATION]:
             self._tf_layers["ffnn.label"] = tf_layers.Ffnn(
                 self.config[HIDDEN_LAYERS_SIZES_LABEL],
                 self.config[DROPRATE],
@@ -1228,7 +1244,7 @@ class DIET(RasaModel):
             self.mask_acc.update_state(acc)
             losses.append(loss)
 
-        if self.config[INTENT_CLASSIFICATION]:
+        if self.config[LABEL_CLASSIFICATION]:
             # get _cls_ vector for intent classification
             cls = self._last_token(text_transformed, sequence_lengths)
 
@@ -1267,7 +1283,7 @@ class DIET(RasaModel):
         )
 
         out = {}
-        if self.config[INTENT_CLASSIFICATION]:
+        if self.config[LABEL_CLASSIFICATION]:
             if self.all_labels_embed is None:
                 _, self.all_labels_embed = self._create_all_labels()
 

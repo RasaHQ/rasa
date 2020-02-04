@@ -32,7 +32,7 @@ from rasa.utils.tensorflow.constants import (
     SPARSE_INPUT_DROPOUT,
     MASKED_LM,
     ENTITY_RECOGNITION,
-    INTENT_CLASSIFICATION,
+    LABEL_CLASSIFICATION,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
     UNIDIRECTIONAL_ENCODER,
@@ -126,7 +126,7 @@ class CRFEntityExtractor(DIETClassifier):
         component_config = component_config or {}
 
         # the following properties are fixed for the CRFEntityExtractor
-        component_config[INTENT_CLASSIFICATION] = False
+        component_config[LABEL_CLASSIFICATION] = False
         component_config[ENTITY_RECOGNITION] = True
         component_config[MASKED_LM] = False
         component_config[NUM_TRANSFORMER_LAYERS] = 0
@@ -207,7 +207,7 @@ class CRFEntityExtractor(DIETClassifier):
             data_example,
         ) = cls._load_from_files(meta, model_dir)
 
-        meta[INTENT_CLASSIFICATION] = False
+        meta[LABEL_CLASSIFICATION] = False
         meta[ENTITY_RECOGNITION] = True
         meta[MASKED_LM] = False
         meta[NUM_TRANSFORMER_LAYERS] = 0
