@@ -82,7 +82,7 @@ class Ffnn(tf.keras.layers.Layer):
     def __init__(
         self,
         layer_sizes: List[int],
-        droprate: float,
+        dropout_rate: float,
         reg_lambda: float,
         layer_name_suffix: Text,
     ) -> None:
@@ -99,7 +99,7 @@ class Ffnn(tf.keras.layers.Layer):
                     name=f"hidden_layer_{layer_name_suffix}_{i}",
                 )
             )
-            self._ffn_layers.append(tf.keras.layers.Dropout(rate=droprate))
+            self._ffn_layers.append(tf.keras.layers.Dropout(dropout_rate))
 
     def call(self, x: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
         for layer in self._ffn_layers:
@@ -146,10 +146,8 @@ class Embed(tf.keras.layers.Layer):
 # from https://www.tensorflow.org/tutorials/text/transformer
 # and https://github.com/tensorflow/tensor2tensor
 # TODO implement relative attention
-# TODO save attention weights
 class MultiHeadAttention(tf.keras.layers.Layer):
-    @staticmethod
-    def _scaled_dot_product_attention(q, k, v, pad_mask):
+    def _scaled_dot_product_attention(self, q, k, v, pad_mask, training):
         """Calculate the attention weights.
         q, k, v must have matching leading dimensions.
         k, v must have matching penultimate dimension, i.e.: seq_len_k = seq_len_v.
@@ -183,11 +181,17 @@ class MultiHeadAttention(tf.keras.layers.Layer):
             logits, axis=-1
         )  # (..., seq_len_q, seq_len_k)
 
+        attention_weights = self._attention_dropout(
+            attention_weights, training=training
+        )
+
         output = tf.matmul(attention_weights, v)  # (..., seq_len_q, depth_v)
 
         return output, attention_weights
 
-    def __init__(self, d_model: int, num_heads: int) -> None:
+    def __init__(
+        self, d_model: int, num_heads: int, attention_dropout_rate: float
+    ) -> None:
         super().__init__()
 
         self.num_heads = num_heads
@@ -200,6 +204,9 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self._wq = DenseWithSparseWeights(units=d_model, use_bias=False)
         self._wk = DenseWithSparseWeights(units=d_model, use_bias=False)
         self._wv = DenseWithSparseWeights(units=d_model, use_bias=False)
+
+        self._attention_dropout = tf.keras.layers.Dropout(attention_dropout_rate)
+
         self._dense = DenseWithSparseWeights(units=d_model)
 
     def _split_heads(self, x: tf.Tensor) -> tf.Tensor:
@@ -234,7 +241,8 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         v: tf.Tensor,
         k: tf.Tensor,
         q: tf.Tensor,
-        pad_mask: Optional[tf.Tensor] = None,
+        pad_mask: Optional[tf.Tensor],
+        training: tf.Tensor,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         q = self._wq(q)  # (batch_size, seq_len_q, d_model)
         k = self._wk(k)  # (batch_size, seq_len_k, d_model)
@@ -245,7 +253,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         v = self._split_heads(v)  # (batch_size, num_heads, seq_len_v, depth)
 
         attention, attention_weights = self._scaled_dot_product_attention(
-            q, k, v, pad_mask
+            q, k, v, pad_mask, training
         )
         # attention.shape == (batch_size, num_heads, seq_len_q, depth)
         # attention_weights.shape == (batch_size, num_heads, seq_len_q, seq_len_k)
@@ -258,27 +266,32 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
 class TransformerEncoderLayer(tf.keras.layers.Layer):
     def __init__(
-        self, d_model: int, num_heads: int, dff: int, rate: float = 0.1
+        self,
+        d_model: int,
+        num_heads: int,
+        dff: int,
+        dropout_rate: float = 0.1,
+        attention_dropout_rate: float = 0.0,
     ) -> None:
         super().__init__()
 
         self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
-        self._mha = MultiHeadAttention(d_model, num_heads)
-        self._dropout = tf.keras.layers.Dropout(rate)
+        self._mha = MultiHeadAttention(d_model, num_heads, attention_dropout_rate)
+        self._dropout = tf.keras.layers.Dropout(dropout_rate)
 
         self._ffn_layers = [
             tf.keras.layers.LayerNormalization(epsilon=1e-6),
             DenseWithSparseWeights(
                 units=dff, activation=tfa.activations.gelu
             ),  # (batch_size, seq_len, dff)
-            tf.keras.layers.Dropout(rate),
+            tf.keras.layers.Dropout(dropout_rate),
             DenseWithSparseWeights(units=d_model),  # (batch_size, seq_len, d_model)
-            tf.keras.layers.Dropout(rate),
+            tf.keras.layers.Dropout(dropout_rate),
         ]
 
     def call(self, x: tf.Tensor, pad_mask: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
         x_norm = self._layernorm(x)  # (batch_size, seq_len, d_model)
-        attn_out, _ = self._mha(x_norm, x_norm, x_norm, pad_mask)
+        attn_out, _ = self._mha(x_norm, x_norm, x_norm, pad_mask, training=training)
         attn_out = self._dropout(attn_out, training=training)
         x += attn_out
 
@@ -298,8 +311,8 @@ class TransformerEncoder(tf.keras.layers.Layer):
 
     @staticmethod
     def _get_angles(pos: np.ndarray, i: np.ndarray, d_model: int) -> np.ndarray:
-        angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
-        return pos * angle_rates
+        angle_dropout_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
+        return pos * angle_dropout_rates
 
     @classmethod
     def _positional_encoding(cls, max_position: int, d_model: int) -> tf.Tensor:
@@ -327,7 +340,8 @@ class TransformerEncoder(tf.keras.layers.Layer):
         dff: int,
         max_seq_length: int,
         reg_lambda: float,
-        rate: float = 0.1,
+        dropout_rate: float = 0.1,
+        attention_dropout_rate: float = 0.0,
         unidirectional: bool = False,
         name: Optional[Text] = None,
     ) -> None:
@@ -343,10 +357,12 @@ class TransformerEncoder(tf.keras.layers.Layer):
 
         self._pos_encoding = self._positional_encoding(max_seq_length, self.d_model)
 
-        self._dropout = tf.keras.layers.Dropout(rate)
+        self._dropout = tf.keras.layers.Dropout(dropout_rate)
 
         self._enc_layers = [
-            TransformerEncoderLayer(d_model, num_heads, dff, rate)
+            TransformerEncoderLayer(
+                d_model, num_heads, dff, dropout_rate, attention_dropout_rate
+            )
             for _ in range(num_layers)
         ]
         self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
