@@ -1,6 +1,5 @@
 import logging
-import typing
-from typing import Any, Dict, List, Text, Tuple
+from typing import Any, Dict, List, Text, Tuple, Optional
 
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.components import Component
@@ -15,6 +14,7 @@ from rasa.nlu.utils.hugging_face.registry import (
     model_weights_defaults,
     model_special_tokens_pre_processors,
     model_embeddings_post_processors,
+    model_tokens_cleaners,
 )
 
 logger = logging.getLogger(__name__)
@@ -102,6 +102,9 @@ class HFTransformersNLP(Component):
         ]
         return augmented_tokens
 
+    def _lm_specific_token_cleanup(self, token_strings: List[Text]) -> List[Text]:
+        return model_tokens_cleaners[self.model_name](token_strings)
+
     def _post_process_sequence_embeddings(
         self, sequence_embeddings: np.array
     ) -> Tuple[np.array, np.array]:
@@ -172,6 +175,8 @@ class HFTransformersNLP(Component):
 
             # use lm specific tokenizer to further tokenize the text
             split_token_ids, split_token_strings = self._lm_tokenize(token_text)
+
+            split_token_strings = self._lm_specific_token_cleanup(split_token_strings)
 
             token_ids_out += split_token_ids
 
@@ -317,12 +322,13 @@ class HFTransformersNLP(Component):
         return batch_docs
 
     def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
 
         batch_size = 64
-
-        all_docs = []
 
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
@@ -346,13 +352,8 @@ class HFTransformersNLP(Component):
                 for index, ex in enumerate(batch_messages):
 
                     ex.set(LANGUAGE_MODEL_DOCS[attribute], batch_docs[index])
-                    all_docs.append((ex.get(TEXT_ATTRIBUTE), batch_docs[index]))
 
                 batch_start_index += batch_size
-
-        # import pickle
-        # with open('inside_rasa_scaffold.pkl','wb') as f:
-        #     pickle.dump(all_docs, f)
 
     def process(self, message: Message, **kwargs: Any) -> None:
 

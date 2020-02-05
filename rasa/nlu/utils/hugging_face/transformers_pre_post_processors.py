@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Text
 import numpy as np
 
 
@@ -122,3 +122,31 @@ def xlm_embeddings_post_processor(
     sentence_embedding = np.mean(post_processed_embedding, axis=0)
 
     return sentence_embedding, post_processed_embedding
+
+
+def bert_tokens_cleaner(token_strings: List[Text]) -> List[Text]:
+    """Clean up tokens with the extra delimiters(##) BERT adds while breaking a token into sub-tokens"""
+
+    tokens = [string.replace("##", "") for string in token_strings]
+    return [string for string in tokens if string]
+
+
+def openaigpt_tokens_cleaner(token_strings: List[Text]) -> List[Text]:
+    """Clean up tokens with the extra delimiters(</w>) OpenAIGPT adds while breaking a token into sub-tokens"""
+
+    tokens = [string.replace("</w>", "") for string in token_strings]
+    return [string for string in tokens if string]
+
+
+def gpt2_tokens_cleaner(token_strings: List[Text]) -> List[Text]:
+    """Clean up tokens with the extra delimiters(</w>) GPT2 adds while breaking a token into sub-tokens"""
+
+    tokens = [string.replace("Ġ", "") for string in token_strings]
+    return [string for string in tokens if string]
+
+
+def xlnet_tokens_cleaner(token_strings: List[Text]) -> List[Text]:
+    """Clean up tokens with the extra delimiters(▁) XLNet adds while breaking a token into sub-tokens"""
+
+    tokens = [string.replace("▁", "") for string in token_strings]
+    return [string for string in tokens if string]
