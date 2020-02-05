@@ -1,8 +1,17 @@
 [tool.poetry]
 name = "rasa"
-version = "1.6.2b1"
+version = "1.7.0"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = ["Rasa Technologies GmbH <hi@rasa.com>"]
+maintainers = []
+homepage = ""
+repository = ""
+documentation = ""
+classifiers = []
+keywords = []
+include = []
+readme = "README.md"
+license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "^3.6"
@@ -38,10 +47,10 @@ gevent = "==1.4.0"
 pytz = "==2019.1"
 colorclass = "==2.2.0"
 terminaltables = "==3.1.0"
-sanic = "^19.12.2"
-sanic-cors = "0.10.0b1"
+sanic = "^19.9.0"
+sanic-cors = "==0.9.9.post1"
 sanic-jwt = "==1.3.2"
-sanic-plugins-framework = "0.9.0.b1"
+sanic-plugins-framework = "==0.8.2"
 multidict = "==4.6.1"
 aiohttp = "==3.5.4"
 questionary = "==1.1.1"
@@ -56,6 +65,7 @@ PyJWT = "==1.7.1"
 gast = "==0.2.2"
 python-dateutil = "==2.8.0"
 tensor2tensor = "^1.15.4"
+rasa-sdk = "^1.7.0"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.8.1"
@@ -134,6 +144,9 @@ towncrier = "^19.2.0"
         directory = "misc"
         name = "Miscellaneous internal changes"
         showcontent = false
+
+[tool.poetry.scripts]
+rasa = 'rasa.__main__:main'
 
 [build-system]
 requires = ["poetry>=0.12"]
