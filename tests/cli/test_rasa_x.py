@@ -148,7 +148,5 @@ async def test_pull_runtime_config_from_server():
             config_url, 1, 0
         )
 
-        with open(endpoints_path) as f:
-            assert f.read() == endpoint_config
-        with open(credentials_path) as f:
-            assert f.read() == credentials
+        assert io_utils.read_file(endpoints_path) == endpoint_config
+        assert io_utils.read_file(credentials_path) == credentials
