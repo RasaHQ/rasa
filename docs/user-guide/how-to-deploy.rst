@@ -1,4 +1,4 @@
-:desc: How to deploy your Rasa Assistant with Docker or Kubernetes/Openshift
+:desc: How to deploy your Rasa Assistant with Docker Compose or Kubernetes/Openshift
 
 .. _deploying-your-rasa-assistant:
 
