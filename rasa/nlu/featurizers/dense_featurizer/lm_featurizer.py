@@ -1,17 +1,13 @@
 import numpy as np
-import typing
 from typing import Any, Optional, Text
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
 
-if typing.TYPE_CHECKING:
-    from spacy.tokens import Doc
-
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
-    HF_TRANSFORMERS_DOCS,
+    LANGUAGE_MODEL_DOCS,
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     TOKENS_NAMES,
@@ -25,7 +21,7 @@ class LanguageModelFeaturizer(Featurizer):
     ]
 
     requires = [
-        HF_TRANSFORMERS_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
+        LANGUAGE_MODEL_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ] + [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
 
     def train(
@@ -41,7 +37,7 @@ class LanguageModelFeaturizer(Featurizer):
 
     def get_doc(self, message: Message, attribute: Text) -> Any:
 
-        return message.get(HF_TRANSFORMERS_DOCS[attribute])
+        return message.get(LANGUAGE_MODEL_DOCS[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
@@ -50,11 +46,11 @@ class LanguageModelFeaturizer(Featurizer):
     def _set_lm_features(self, message: Message, attribute: Text = TEXT_ATTRIBUTE):
         """Adds the precomputed word vectors to the messages features."""
 
-        message_attribute_doc = self.get_doc(message, attribute)
+        doc = self.get_doc(message, attribute)
 
-        if message_attribute_doc is not None:
-            sequence_features = message_attribute_doc["sequence_features"]
-            sentence_features = message_attribute_doc["sentence_features"]
+        if doc is not None:
+            sequence_features = doc["sequence_features"]
+            sentence_features = doc["sentence_features"]
 
             features = np.concatenate([sequence_features, sentence_features])
 

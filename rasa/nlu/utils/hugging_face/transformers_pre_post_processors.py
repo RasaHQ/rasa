@@ -8,10 +8,12 @@ def bert_tokens_pre_processor(token_ids: List[int]):
     BERT_CLS_ID = 101
     BERT_SEP_ID = 102
 
-    token_ids.insert(0, BERT_CLS_ID)
-    token_ids.append(BERT_SEP_ID)
+    processed_tokens = token_ids
 
-    return token_ids
+    processed_tokens.insert(0, BERT_CLS_ID)
+    processed_tokens.append(BERT_SEP_ID)
+
+    return processed_tokens
 
 
 def gpt_tokens_pre_processor(token_ids: List[int]):
@@ -64,7 +66,7 @@ def bert_embeddings_post_processor(
     sentence_embedding = sequence_embeddings[0]
     post_processed_embedding = sequence_embeddings[1:-1]
 
-    return post_processed_embedding, sentence_embedding
+    return sentence_embedding, post_processed_embedding
 
 
 def gpt_embeddings_post_processor(
@@ -77,7 +79,7 @@ def gpt_embeddings_post_processor(
     sentence_embedding = np.mean(sequence_embeddings, axis=0)
     post_processed_embedding = sequence_embeddings
 
-    return post_processed_embedding, sentence_embedding
+    return sentence_embedding, post_processed_embedding
 
 
 def xlnet_embeddings_post_processor(
@@ -91,7 +93,7 @@ def xlnet_embeddings_post_processor(
     post_processed_embedding = sequence_embeddings[:-2]
     sentence_embedding = np.mean(post_processed_embedding, axis=0)
 
-    return post_processed_embedding, sentence_embedding
+    return sentence_embedding, post_processed_embedding
 
 
 def roberta_embeddings_post_processor(
@@ -105,7 +107,7 @@ def roberta_embeddings_post_processor(
     post_processed_embedding = sequence_embeddings[1:-1]
     sentence_embedding = np.mean(post_processed_embedding, axis=0)
 
-    return post_processed_embedding, sentence_embedding
+    return sentence_embedding, post_processed_embedding
 
 
 def xlm_embeddings_post_processor(
@@ -119,4 +121,4 @@ def xlm_embeddings_post_processor(
     post_processed_embedding = sequence_embeddings[1:-1]
     sentence_embedding = np.mean(post_processed_embedding, axis=0)
 
-    return post_processed_embedding, sentence_embedding
+    return sentence_embedding, post_processed_embedding

@@ -39,9 +39,9 @@ SPACY_DOCS = {
     TEXT_ATTRIBUTE: "text_spacy_doc",
     RESPONSE_ATTRIBUTE: "response_spacy_doc",
 }
-HF_TRANSFORMERS_DOCS = {
-    TEXT_ATTRIBUTE: "text_hf_transformers_doc",
-    RESPONSE_ATTRIBUTE: "response_hf_transformers_doc",
+LANGUAGE_MODEL_DOCS = {
+    TEXT_ATTRIBUTE: "text_language_model_doc",
+    RESPONSE_ATTRIBUTE: "response_language_model_doc",
 }
 
 DENSE_FEATURIZABLE_ATTRIBUTES = [TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE]

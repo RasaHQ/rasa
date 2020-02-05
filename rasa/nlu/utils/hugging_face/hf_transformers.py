@@ -21,14 +21,14 @@ logger = logging.getLogger(__name__)
 
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
-    HF_TRANSFORMERS_DOCS,
+    LANGUAGE_MODEL_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
 )
 
 
 class HFTransformersNLP(Component):
     provides = [
-        HF_TRANSFORMERS_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
+        LANGUAGE_MODEL_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ]
 
     defaults = {
@@ -297,8 +297,8 @@ class HFTransformersNLP(Component):
         )
 
         (
-            batch_sequence_features,
             batch_sentence_features,
+            batch_sequence_features,
         ) = self._get_model_features_for_batch(batch_token_ids)
 
         # A doc consists of {'token_ids': ..., 'tokens': ..., 'sequence_features': ..., 'sentence_features': ...}
@@ -322,6 +322,8 @@ class HFTransformersNLP(Component):
 
         batch_size = 64
 
+        all_docs = []
+
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
             non_empty_examples = list(
@@ -342,13 +344,19 @@ class HFTransformersNLP(Component):
                 batch_docs = self._get_docs_for_batch(batch_messages, attribute)
 
                 for index, ex in enumerate(batch_messages):
-                    ex.set(HF_TRANSFORMERS_DOCS[attribute], batch_docs[index])
+
+                    ex.set(LANGUAGE_MODEL_DOCS[attribute], batch_docs[index])
+                    all_docs.append((ex.get(TEXT_ATTRIBUTE), batch_docs[index]))
 
                 batch_start_index += batch_size
+
+        # import pickle
+        # with open('inside_rasa_scaffold.pkl','wb') as f:
+        #     pickle.dump(all_docs, f)
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set(
-            HF_TRANSFORMERS_DOCS[TEXT_ATTRIBUTE],
+            LANGUAGE_MODEL_DOCS[TEXT_ATTRIBUTE],
             self._get_docs_for_batch([message], attribute=TEXT_ATTRIBUTE)[0],
         )
