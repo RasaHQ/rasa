@@ -13,7 +13,6 @@ from rasa.cli.utils import (
     parse_last_positional_argument_as_model_path,
     get_validated_path,
 )
-from tests.conftest import assert_log_emitted
 
 
 @contextlib.contextmanager
@@ -98,31 +97,9 @@ def test_validate_with_invalid_directory_if_default_is_valid(caplog: LogCaptureF
     with pytest.warns(UserWarning) as record:
         assert get_validated_path(invalid_directory, "out", tempdir) == tempdir
     assert len(record) == 1
-    assert "does not exist" in record[0].message.args[0]
+    assert "does not seem to exist" in record[0].message.args[0]
 
 
 def test_print_error_and_exit():
     with pytest.raises(SystemExit):
         rasa.cli.utils.print_error_and_exit("")
-
-
-def test_logging_capture(caplog: LogCaptureFixture):
-    logger = logging.getLogger(__name__)
-
-    # make a random INFO log and ensure it passes decorator
-    info_text = "SOME INFO"
-    logger.info(info_text)
-    with assert_log_emitted(caplog, logger.name, logging.INFO, info_text):
-        pass
-
-
-def test_logging_capture_failure(caplog: LogCaptureFixture):
-    logger = logging.getLogger(__name__)
-
-    # make a random INFO log
-    logger.info("SOME INFO")
-
-    # test for string in log that wasn't emitted
-    with pytest.raises(AssertionError):
-        with assert_log_emitted(caplog, logger.name, logging.INFO, "NONONO"):
-            pass

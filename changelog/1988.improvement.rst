@@ -1,2 +1,0 @@
-Remove the need of specifying utter actions in the ``actions`` section explicitly if these actions are already
-listed in the ``templates`` section.

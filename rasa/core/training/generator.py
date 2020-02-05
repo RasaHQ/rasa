@@ -1,12 +1,12 @@
 from collections import defaultdict, namedtuple, deque
 
 import copy
-import warnings
 import logging
 import random
 from tqdm import tqdm
 from typing import Optional, List, Text, Set, Dict, Tuple
 
+from rasa.constants import DOCS_URL_STORIES
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.events import (
@@ -24,7 +24,7 @@ from rasa.core.training.structures import (
     StoryStep,
     GENERATED_CHECKPOINT_PREFIX,
 )
-from rasa.utils.common import is_logging_disabled
+from rasa.utils.common import is_logging_disabled, raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -653,12 +653,13 @@ class TrainingDataGenerator:
         that no one provided."""
 
         if STORY_START in unused_checkpoints:
-            warnings.warn(
+            raise_warning(
                 "There is no starting story block "
                 "in the training data. "
                 "All your story blocks start with some checkpoint. "
                 "There should be at least one story block "
-                "that starts without any checkpoint."
+                "that starts without any checkpoint.",
+                docs=DOCS_URL_STORIES + "#stories",
             )
 
         # running through the steps first will result in only one warning
@@ -680,20 +681,22 @@ class TrainingDataGenerator:
 
         for cp, block_name in collected_start:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
-                warnings.warn(
+                raise_warning(
                     f"Unsatisfied start checkpoint '{cp}' "
                     f"in block '{block_name}'. "
-                    "Remove this checkpoint or add "
-                    "story blocks that end "
-                    "with this checkpoint."
+                    f"Remove this checkpoint or add "
+                    f"story blocks that end "
+                    f"with this checkpoint.",
+                    docs=DOCS_URL_STORIES + "#checkpoints",
                 )
 
         for cp, block_name in collected_end:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
-                warnings.warn(
+                raise_warning(
                     f"Unsatisfied end checkpoint '{cp}' "
                     f"in block '{block_name}'. "
-                    "Remove this checkpoint or add "
-                    "story blocks that start "
-                    "with this checkpoint."
+                    f"Remove this checkpoint or add "
+                    f"story blocks that start "
+                    f"with this checkpoint.",
+                    docs=DOCS_URL_STORIES + "#checkpoints",
                 )

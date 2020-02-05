@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import warnings
 from typing import Any, Dict, Optional, Text
 
 import rasa.utils.io as io_utils
@@ -10,6 +9,7 @@ from rasa.nlu.constants import (
     EXTRACTOR_ATTRIBUTE,
     PRETRAINED_EXTRACTORS,
 )
+from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ def check_duplicate_synonym(
     entity_synonyms: Dict[Text, Any], text: Text, syn: Text, context_str: Text = ""
 ) -> None:
     if text in entity_synonyms and entity_synonyms[text] != syn:
-        warnings.warn(
+        raise_warning(
             f"Found inconsistent entity synonyms while {context_str}, "
             f"overwriting {text}->{entity_synonyms[text]} "
             f"with {text}->{syn} during merge."

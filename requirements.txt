@@ -8,7 +8,7 @@ redis==3.3.5
 pymongo[tls,srv]==3.8.0
 numpy==1.16.3
 scipy==1.2.1
-tensorflow==1.15.0
+tensorflow-cpu==1.15.0
 absl-py>=0.8.0
 # setuptools comes from tensorboard requirement:
 # https://github.com/tensorflow/tensorboard/blob/1.14/tensorboard/pip_package/setup.py#L33
@@ -35,7 +35,7 @@ jsonschema==3.0.2
 packaging==19.0
 gevent==1.4.0
 pytz==2019.1
-rasa-sdk~=1.6.0
+rasa-sdk~=1.7.0
 colorclass==2.2.0
 terminaltables==3.1.0
 sanic==19.9.0
@@ -47,6 +47,8 @@ sanic-plugins-framework==0.8.2
 multidict==4.6.1
 aiohttp==3.5.4
 questionary==1.1.1
+# needed because of https://github.com/prompt-toolkit/python-prompt-toolkit/issues/951
+prompt-toolkit==2.0.10
 python-socketio==4.3.1
 # the below can be unpinned when python-socketio pins >=3.9.3
 python-engineio==3.9.3
