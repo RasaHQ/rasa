@@ -22,10 +22,8 @@ Using Rasa's HTTP API
     configuring how a model is run within a Docker container, or for testing 
     the HTTP API locally.
 
-You can use Rasa's HTTP API to integrate Rasa with your backend components.
-
-To do this, you can run a simple HTTP server that handles requests using your
-trained Rasa model with:
+You can run a simple HTTP server that handles requests using your trained Rasa 
+model with:
 
 .. code-block:: bash
 
