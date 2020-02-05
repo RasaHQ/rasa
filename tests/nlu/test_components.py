@@ -19,15 +19,7 @@ from rasa.nlu.training_data import TrainingData, Message
                 [Message("", {"entities": [{"start": 0, "end": 7, "entity": "snake"}]})]
             ),
         )
-    ],
-    [
-        (
-            [DucklingHTTPExtractor()],
-            TrainingData(
-                [Message("", {"entities": [{"start": 0, "end": 7, "entity": "snake"}]})]
-            ),
-        )
-    ],
+    ]
 )
 def test_validate_required_components_from_data_missing(
     components_list, training_data

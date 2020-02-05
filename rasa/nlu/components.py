@@ -117,10 +117,12 @@ def validate_required_components_from_data(
     pipeline: List["Component"], data: TrainingData
 ):
     # Check for entity examples but no CRFEntityExtractor
+    
     if data.entity_examples and not any(
         [component.name == "CRFEntityExtractor" for component in pipeline]
     ):
-        warnings.warn(
+        logger.debug("Made it to line 124")
+        raise_warning(
             "You have defined training data consisting of entity examples, but "
             "your NLU pipeline does not include a CRFEntityExtractor. "
             "To extract entity examples, add a CRFEntityExtractor to your pipeline."
@@ -130,7 +132,7 @@ def validate_required_components_from_data(
     if data.regex_features and not any(
         [component.name == "RegexFeaturizer" for component in pipeline]
     ):
-        warnings.warn(
+        raise_warning(
             "You have defined training data with regexes, but "
             "your NLU pipeline does not include an RegexFeaturizer. "
             "To featurize regexes for entity extraction, you need to have RegexFeaturizer in your pipeline."
@@ -144,7 +146,7 @@ def validate_required_components_from_data(
             if component.name == "CRFEntityExtractor"
         ]
         if not crf_components:
-            warnings.warn(
+            raise_warning(
                 "You have defined training data consisting of lookup tables, but "
                 "your NLU pipeline does not include a CRFEntityExtractor. "
                 "To featurize lookup tables, add a CRFEntityExtractor to your pipeline."
@@ -159,7 +161,7 @@ def validate_required_components_from_data(
                 feature for feature in component_list if "pattern" in feature
             ]
             if not pattern_feature:
-                warnings.warn(
+                raise_warning(
                     "You have defined training data consisting of lookup tables, but "
                     "your NLU pipeline CRFEntityExtractor does not include pattern feature. "
                     "To featurize lookup tables, add pattern feature to pipeline."
@@ -169,7 +171,7 @@ def validate_required_components_from_data(
     if data.lookup_tables and not any(
         [component.name == "RegexFeaturizer" for component in pipeline]
     ):
-        warnings.warn(
+        raise_warning(
             "You have defined training data consisting of lookup tables, but "
             "your NLU pipeline does not include a RegexFeaturizer. "
             "To featurize lookup tables, add a RegexFeaturizer to your pipeline."
@@ -179,7 +181,7 @@ def validate_required_components_from_data(
     if data.entity_synonyms and not any(
         [component.name == "EntitySynonymMapper" for component in pipeline]
     ):
-        warnings.warn(
+        raise_warning(
             "You have defined training data consisting of synonyms, but "
             "your NLU pipeline does not include an EntitySynonymMapper. "
             "To map synonyms, add an EntitySynonymMapper to your pipeline."
@@ -189,7 +191,7 @@ def validate_required_components_from_data(
     if data.response_examples and not any(
         [MESSAGE_ATTRIBUTES in component.provides for component in pipeline]
     ):
-        warnings.warn(
+        raise_warning(
             "Your training data includes examples for training a response selector, but "
             "your NLU pipeline does not include a ResponseSelector component. "
             "Either add a ResponseSelector to your pipeline or "
