@@ -1,8 +1,8 @@
 :desc: Rasa OSS Changelog
 
 
-Rasa OSS Change Log
-===================
+Rasa Open Source Change Log
+===========================
 
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
