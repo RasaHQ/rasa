@@ -105,7 +105,7 @@ def test_spacy_featurizer_sequence(sentence, expected, spacy_nlp):
     greet = {"intent": "greet", "text_features": [0.5]}
 
     message = Message(sentence, greet)
-    message.set("spacy_doc", doc)
+    message.set("text_spacy_doc", doc)
 
     ftr._set_spacy_features(message)
 

@@ -15,7 +15,7 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
                 "entities": [
                     {"start": 16, "end": 20, "value": "west", "entity": "location"}
                 ],
-                "spacy_doc": spacy_nlp("anywhere in the west"),
+                "text_spacy_doc": spacy_nlp("anywhere in the west"),
             },
         ),
         Message(
@@ -38,7 +38,7 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
                         "extractor": "CRFEntityExtractor",
                     },
                 ],
-                "spacy_doc": spacy_nlp("central indian restaurant"),
+                "text_spacy_doc": spacy_nlp("central indian restaurant"),
             },
         ),
     ]
@@ -46,7 +46,7 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
     # uses BILOU and the default features
     ext.train(TrainingData(training_examples=examples), RasaNLUModelConfig())
     sentence = "anywhere in the west"
-    doc = {"spacy_doc": spacy_nlp(sentence)}
+    doc = {"text_spacy_doc": spacy_nlp(sentence)}
     crf_format = ext._from_text_to_crf(Message(sentence, doc))
     assert [word[0] for word in crf_format] == ["anywhere", "in", "the", "west"]
     feats = ext._sentence_to_features(crf_format)
@@ -54,7 +54,7 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
     assert "EOS" in feats[-1]
     assert feats[1]["0:low"] == "in"
     sentence = "anywhere in the west"
-    ext.extract_entities(Message(sentence, {"spacy_doc": spacy_nlp(sentence)}))
+    ext.extract_entities(Message(sentence, {"text_spacy_doc": spacy_nlp(sentence)}))
     filtered = ext.filter_trainable_entities(examples)
     assert filtered[0].get("entities") == [
         {"start": 16, "end": 20, "value": "west", "entity": "location"}
@@ -82,7 +82,7 @@ def test_crf_json_from_BILOU(spacy_nlp, ner_crf_pos_feature_config):
 
     ext = CRFEntityExtractor(component_config=ner_crf_pos_feature_config)
     sentence = "I need a home cleaning close-by"
-    doc = {"spacy_doc": spacy_nlp(sentence)}
+    doc = {"text_spacy_doc": spacy_nlp(sentence)}
     r = ext._from_crf_to_json(
         Message(sentence, doc),
         [
@@ -113,7 +113,7 @@ def test_crf_json_from_non_BILOU(spacy_nlp, ner_crf_pos_feature_config):
     ner_crf_pos_feature_config.update({"BILOU_flag": False})
     ext = CRFEntityExtractor(component_config=ner_crf_pos_feature_config)
     sentence = "I need a home cleaning close-by"
-    doc = {"spacy_doc": spacy_nlp(sentence)}
+    doc = {"text_spacy_doc": spacy_nlp(sentence)}
     rs = ext._from_crf_to_json(
         Message(sentence, doc),
         [
@@ -173,7 +173,7 @@ def test_crf_create_entity_dict(spacy_nlp):
                             },
                         }
                     ],
-                    "spacy_doc": spacy_nlp("where is St. Michael's Hospital?"),
+                    "text_spacy_doc": spacy_nlp("where is St. Michael's Hospital?"),
                 },
             )
         },
@@ -198,7 +198,7 @@ def test_crf_create_entity_dict(spacy_nlp):
                             },
                         }
                     ],
-                    "spacy_doc": spacy_nlp("where is Children's Hospital?"),
+                    "text_spacy_doc": spacy_nlp("where is Children's Hospital?"),
                 },
             )
         },
@@ -244,7 +244,7 @@ def test_crf_use_dense_features(ner_crf_pos_feature_config, spacy_nlp):
 
     text = "Rasa is a company in Berlin"
     message = Message(text)
-    message.set("spacy_doc", spacy_nlp(text))
+    message.set("text_spacy_doc", spacy_nlp(text))
 
     white_space_tokenizer.process(message)
     spacy_featurizer.process(message)

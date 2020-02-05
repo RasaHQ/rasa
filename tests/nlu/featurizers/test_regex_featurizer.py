@@ -141,7 +141,7 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     component_config = {"name": "SpacyTokenizer"}
     tokenizer = SpacyTokenizer(component_config)
     message = Message(sentence)
-    message.set("spacy_doc", spacy_nlp(sentence))
+    message.set("text_spacy_doc", spacy_nlp(sentence))
     tokenizer.process(message)
 
     result = ftr._features_for_patterns(message, TEXT_ATTRIBUTE)
