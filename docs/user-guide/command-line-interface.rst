@@ -161,7 +161,7 @@ The following arguments can be used to configure your Rasa server:
 
 .. program-output:: rasa run --help
 
-For more information on the additional parameters, see :ref:`serving-a-model`.
+For more information on the additional parameters, see :ref:`configuring-http-api`.
 See the Rasa :ref:`http-api` docs for detailed documentation of all the endpoints.
 
 .. _run-action-server:
