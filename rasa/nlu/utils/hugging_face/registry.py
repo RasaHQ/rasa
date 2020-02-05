@@ -32,7 +32,7 @@ from rasa.nlu.utils.hugging_face.transformers_pre_post_processors import (
 
 model_class_dict = {
     "bert": TFBertModel,
-    "openaigpt": TFOpenAIGPTModel,
+    "gpt": TFOpenAIGPTModel,
     "gpt2": TFGPT2Model,
     "xlnet": TFXLNetModel,
     # "xlm": TFXLMModel, # Currently doesn't work because of a bug in transformers library https://github.com/huggingface/transformers/issues/2729
@@ -41,7 +41,7 @@ model_class_dict = {
 }
 model_tokenizer_dict = {
     "bert": BertTokenizer,
-    "openaigpt": OpenAIGPTTokenizer,
+    "gpt": OpenAIGPTTokenizer,
     "gpt2": GPT2Tokenizer,
     "xlnet": XLNetTokenizer,
     # "xlm": XLMTokenizer,
@@ -50,7 +50,7 @@ model_tokenizer_dict = {
 }
 model_weights_defaults = {
     "bert": "bert-base-uncased",
-    "openaigpt": "openai-gpt",
+    "gpt": "openai-gpt",
     "gpt2": "gpt2",
     "xlnet": "xlnet-base-cased",
     # "xlm": "xlm-mlm-enfr-1024",
@@ -60,7 +60,7 @@ model_weights_defaults = {
 
 model_special_tokens_pre_processors = {
     "bert": bert_tokens_pre_processor,
-    "openaigpt": gpt_tokens_pre_processor,
+    "gpt": gpt_tokens_pre_processor,
     "gpt2": gpt_tokens_pre_processor,
     "xlnet": xlnet_tokens_pre_processor,
     # "xlm": xlm_tokens_pre_processor,
@@ -70,7 +70,7 @@ model_special_tokens_pre_processors = {
 
 model_tokens_cleaners = {
     "bert": bert_tokens_cleaner,
-    "openaigpt": openaigpt_tokens_cleaner,
+    "gpt": openaigpt_tokens_cleaner,
     "gpt2": gpt2_tokens_cleaner,
     "xlnet": xlnet_tokens_cleaner,
     # "xlm": xlm_tokens_pre_processor,
@@ -80,7 +80,7 @@ model_tokens_cleaners = {
 
 model_embeddings_post_processors = {
     "bert": bert_embeddings_post_processor,
-    "openaigpt": gpt_embeddings_post_processor,
+    "gpt": gpt_embeddings_post_processor,
     "gpt2": gpt_embeddings_post_processor,
     "xlnet": xlnet_embeddings_post_processor,
     # "xlm": xlm_embeddings_post_processor,

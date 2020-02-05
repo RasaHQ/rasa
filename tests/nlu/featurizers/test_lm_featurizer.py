@@ -32,7 +32,7 @@ from rasa.nlu.training_data import Message
             ],
         ),
         (
-            "openaigpt",
+            "gpt",
             ["Good evening.", "here is the sentence I want embeddings for."],
             [(3, 768), (10, 768)],
             [
@@ -225,3 +225,7 @@ def test_lm_featurizer_shape_values(
         assert np.allclose(
             computed_sentence_vec[:5], expected_cls_vec[index], atol=1e-5
         )
+
+        intent_vec = messages[index].get(DENSE_FEATURE_NAMES[INTENT_ATTRIBUTE])
+
+        assert intent_vec is None

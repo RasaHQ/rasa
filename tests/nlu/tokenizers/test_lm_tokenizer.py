@@ -58,7 +58,7 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
             ],
         ),
         (
-            "openaigpt",
+            "gpt",
             [
                 "Good evening.",
                 "hello",
