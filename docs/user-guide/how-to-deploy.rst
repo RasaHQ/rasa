@@ -20,7 +20,7 @@ When to deploy your assistant
 
 .. raw:: html
 
-    The best time to deploy your assistant and make it available to test users is once it can handle the most important happy paths, or is what we call a <a style="text-decoration: none" href="https://rasa.com/docs/rasa/glossary">minimum viable assistant</a>.
+    The best time to deploy your assistant and make it available to test users is once it can handle the most important happy paths or is what we call a <a style="text-decoration: none" href="https://rasa.com/docs/rasa/glossary">minimum viable assistant</a>.
 
 The recommended deployment methods described below make it easy to share your assistant with test users via the `share your assistant feature in Rasa X <../../rasa-x/docs/user-guide/enable-workflows#conversations-with-test-users>`_. Then, when you’re ready to make your assistant available via one or more :ref:`messaging-and-voice-channels`, you can easily add them to your existing deployment set up.
 
