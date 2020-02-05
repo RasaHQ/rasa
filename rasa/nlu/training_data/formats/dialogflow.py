@@ -1,7 +1,6 @@
 import logging
 import os
 import typing
-import warnings
 from typing import Any, Dict, Optional, Text, List, Tuple
 
 from rasa.constants import DOCS_URL_MIGRATE_GOOGLE

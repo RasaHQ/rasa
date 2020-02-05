@@ -1,6 +1,5 @@
 import aiohttp
 
-import warnings
 import json
 import logging
 import re
