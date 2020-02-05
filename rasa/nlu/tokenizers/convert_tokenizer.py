@@ -4,6 +4,7 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import Message
 from rasa.nlu.constants import MESSAGE_ATTRIBUTES, TOKENS_NAMES
+from rasa.utils.train_utils import align_tokens
 import tensorflow as tf
 
 
@@ -69,9 +70,7 @@ class ConveRTTokenizer(WhitespaceTokenizer):
             # clean tokens (remove special chars and empty tokens)
             split_token_strings = self._clean_tokens(split_token_strings)
 
-            _aligned_tokens = self._align_tokens(
-                split_token_strings, token_end, token_start
-            )
+            _aligned_tokens = align_tokens(split_token_strings, token_end, token_start)
             tokens_out += _aligned_tokens
 
         return tokens_out
@@ -81,38 +80,3 @@ class ConveRTTokenizer(WhitespaceTokenizer):
 
         tokens = [string.decode("utf-8").replace("﹏", "") for string in tokens]
         return [string for string in tokens if string]
-
-    def _align_tokens(self, tokens_in: List[Text], token_end: int, token_start: int):
-        """Align sub-tokens of ConveRT with tokens return by the WhitespaceTokenizer.
-
-        As ConveRT might split a single word into multiple tokens, we need to make
-        sure that the start and end value of first and last sub-token matches the
-        start and end value of the token return by the WhitespaceTokenizer as the
-        entities are using those start and end values.
-        """
-
-        tokens_out = []
-
-        current_token_offset = token_start
-
-        for index, string in enumerate(tokens_in):
-            if index == 0:
-                if index == len(tokens_in) - 1:
-                    s_token_end = token_end
-                else:
-                    s_token_end = current_token_offset + len(string)
-                tokens_out.append(Token(string, token_start, end=s_token_end))
-            elif index == len(tokens_in) - 1:
-                tokens_out.append(Token(string, current_token_offset, end=token_end))
-            else:
-                tokens_out.append(
-                    Token(
-                        string,
-                        current_token_offset,
-                        end=current_token_offset + len(string),
-                    )
-                )
-
-            current_token_offset += len(string)
-
-        return tokens_out

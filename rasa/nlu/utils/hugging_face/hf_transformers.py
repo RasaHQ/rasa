@@ -6,6 +6,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.utils.train_utils import align_tokens
 import numpy as np
 
 from rasa.nlu.utils.hugging_face.registry import (
@@ -52,10 +53,12 @@ class HFTransformersNLP(Component):
 
         if self.model_name not in model_class_dict:
             logger.error(
-                f"{self.model_name} not a valid model name. Choose from {str(list(model_class_dict.keys()))}"
+                f"{self.model_name} not a valid model name. Choose from {str(list(model_class_dict.keys()))} or create"
+                f"a new class inheriting from this class to support your model."
             )
             raise KeyError(
-                f"{self.model_name} not a valid model name. Choose from {str(list(model_class_dict.keys()))}"
+                f"{self.model_name} not a valid model name. Choose from {str(list(model_class_dict.keys()))}or create"
+                f"a new class inheriting from this class to support your model."
             )
 
         self.model_weights = self.component_config["model_weights"]
@@ -126,42 +129,6 @@ class HFTransformersNLP(Component):
             np.array(post_processed_sequence_embeddings),
         )
 
-    @staticmethod
-    def _align_tokens(tokens_in: List[Text], token_end: int, token_start: int):
-        """Align sub-tokens of Language model with tokens return by the WhitespaceTokenizer.
-
-        As a language model might split a single word into multiple tokens, we need to make
-        sure that the start and end value of first and last sub-token matches the
-        start and end value of the token return by the WhitespaceTokenizer as the
-        entities are using those start and end values.
-        """
-
-        tokens_out = []
-
-        current_token_offset = token_start
-
-        for index, string in enumerate(tokens_in):
-            if index == 0:
-                if index == len(tokens_in) - 1:
-                    s_token_end = token_end
-                else:
-                    s_token_end = current_token_offset + len(string)
-                tokens_out.append(Token(string, token_start, end=s_token_end))
-            elif index == len(tokens_in) - 1:
-                tokens_out.append(Token(string, current_token_offset, end=token_end))
-            else:
-                tokens_out.append(
-                    Token(
-                        string,
-                        current_token_offset,
-                        end=current_token_offset + len(string),
-                    )
-                )
-
-            current_token_offset += len(string)
-
-        return tokens_out
-
     def _tokenize_example(self, message: Message, attribute: Text):
 
         tokens_in = self.whitespace_tokenizer.tokenize(message, attribute)
@@ -180,9 +147,7 @@ class HFTransformersNLP(Component):
 
             token_ids_out += split_token_ids
 
-            _aligned_tokens = self._align_tokens(
-                split_token_strings, token_end, token_start
-            )
+            _aligned_tokens = align_tokens(split_token_strings, token_end, token_start)
             tokens_out += _aligned_tokens
 
         return tokens_out, token_ids_out
