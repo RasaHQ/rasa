@@ -1,4 +1,4 @@
-:desc: Rasa OSS Changelog
+:desc: Rasa Open Source Changelog
 
 
 Rasa Open Source Change Log
