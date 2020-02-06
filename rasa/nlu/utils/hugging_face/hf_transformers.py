@@ -34,7 +34,7 @@ class HFTransformersNLP(Component):
 
     defaults = {
         # name of the language model to load.
-        "model_name": None,
+        "model_name": "bert",
         # Pre-Trained weights to be loaded(string)
         "model_weights": None,
     }
