@@ -1,0 +1,4 @@
+Add default value ``__other__`` to ``values`` of a ``CategoricalSlot``. 
+
+All values not mentioned in the list of values of a ``CategoricalSlot``
+will be mapped to ``__other__`` for featurization.
