@@ -1,17 +1,64 @@
+[build-system]
+requires = [ "poetry>=0.12",]
+build-backend = "poetry.masonry.api"
+
 [tool.poetry]
 name = "rasa"
 version = "1.7.0"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
-authors = ["Rasa Technologies GmbH <hi@rasa.com>"]
-maintainers = []
-homepage = ""
-repository = ""
-documentation = ""
-classifiers = []
-keywords = []
-include = []
+authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
+maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
+homepage = "https://rasa.com"
+repository = "https://github.com/rasahq/rasa"
+documentation = "https://rasa.com/docs"
+classifiers = [ "Development Status :: 4 - Beta", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Programming Language :: Python", "Programming Language :: Python :: 3.6", "Programming Language :: Python :: 3.7", "Topic :: Software Development :: Libraries",]
+keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
+include = [ "LICENSE.txt", "README.md", "rasa/core/schemas/*", "rasa/core/training/visualization.html", "rasa/nlu/schemas/*", "rasa/cli/default_config.yml",]
 readme = "README.md"
 license = "Apache-2.0"
+
+[tool.black]
+line-length = 88
+target-version = [ "py36", "py37",]
+exclude = "((.eggs | .git | .pytype | .pytest_cache | build | dist))"
+
+[tool.towncrier]
+package = "rasa"
+package_dir = "rasa"
+filename = "CHANGELOG.rst"
+directory = "./changelog"
+underlines = "^-_"
+title_format = "[{version}] - {project_date}"
+template = "./changelog/_template.jinja2"
+[[tool.towncrier.type]]
+directory = "removal"
+name = "Deprecations and Removals"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "feature"
+name = "Features"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "improvement"
+name = "Improvements"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "bugfix"
+name = "Bugfixes"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "doc"
+name = "Improved Documentation"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "misc"
+name = "Miscellaneous internal changes"
+showcontent = false
 
 [tool.poetry.dependencies]
 python = "^3.6"
@@ -21,7 +68,6 @@ matplotlib = "==3.0.3"
 attrs = "==19.1.0"
 jsonpickle = "==1.1"
 redis = "==3.3.5"
-pymongo = {version = "==3.8.0", extras = ["tls", "srv"]}
 numpy = "==1.16.3"
 scipy = "==1.2.1"
 absl-py = ">=0.8.0"
@@ -89,65 +135,11 @@ azure-storage-blob = "^12.1.0"
 coveralls = "^1.10.0"
 semantic_version = "^2.8.4"
 towncrier = "^19.2.0"
-
-[tool.black]
-    line-length = 88
-    target-version = ['py36', 'py37']
-    exclude = '''
-    (
-      /(
-          \.eggs
-        | \.git
-        | \.pytype
-        | \.pytest_cache
-        | build
-        | dist
-      )/
-    )
-    '''
-
-[tool.towncrier]
-    package = "rasa"
-    package_dir = "rasa"
-    filename = "CHANGELOG.rst"
-    directory = "./changelog"
-    underlines = "^-_"
-    title_format = "[{version}] - {project_date}"
-    template = "./changelog/_template.jinja2"
-
-    [[tool.towncrier.type]]
-        directory = "removal"
-        name = "Deprecations and Removals"
-        showcontent = true
-
-    [[tool.towncrier.type]]
-        directory = "feature"
-        name = "Features"
-        showcontent = true
-
-    [[tool.towncrier.type]]
-        directory = "improvement"
-        name = "Improvements"
-        showcontent = true
-
-    [[tool.towncrier.type]]
-        directory = "bugfix"
-        name = "Bugfixes"
-        showcontent = true
-
-    [[tool.towncrier.type]]
-        directory = "doc"
-        name = "Improved Documentation"
-        showcontent = true
-
-    [[tool.towncrier.type]]
-        directory = "misc"
-        name = "Miscellaneous internal changes"
-        showcontent = false
+toml = "^0.10.0"
 
 [tool.poetry.scripts]
-rasa = 'rasa.__main__:main'
+rasa = "rasa.__main__:main"
 
-[build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
+[tool.poetry.dependencies.pymongo]
+version = "==3.8.0"
+extras = [ "tls", "srv",]
