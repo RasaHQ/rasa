@@ -1,4 +1,3 @@
-import warnings
 import logging
 import typing
 from typing import Any, Dict, Text

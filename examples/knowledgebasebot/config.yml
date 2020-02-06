@@ -3,4 +3,6 @@ pipeline: supervised_embeddings
 
 policies:
   - name: MemoizationPolicy
-  - name: KerasPolicy
+  - name: EmbeddingPolicy
+    max_history: 5
+    epochs: 100
