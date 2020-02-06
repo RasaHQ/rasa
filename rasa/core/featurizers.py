@@ -13,6 +13,8 @@ from rasa.core.domain import PREV_PREFIX, Domain
 from rasa.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
+from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import CountVectorsFeaturizer
+from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import is_logging_disabled
 
 logger = logging.getLogger(__name__)
@@ -75,6 +77,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         """Use Domain to prepare featurizer."""
 
         self.num_features = domain.num_states
+        print('NUM features in domain: ' + str(self.num_features))
         self.input_state_map = domain.input_state_map
 
     def encode(self, state: Dict[Text, float]) -> np.ndarray:
@@ -131,6 +134,64 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         """Create matrix with all actions from domain encoded in rows as bag of words"""
 
         return np.eye(domain.num_actions)
+
+class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
+    def prepare_training_data_and_train(self, trackers_as_states, delimiter = '_'):
+        training_data = []
+        for tracker in trackers_as_states:
+            for state in tracker:
+                if state:
+                    state_keys = list(state.keys())
+                    # print(state_keys)
+                    state_keys = [Message(key.replace(delimiter, ' ') + ' CLS') for key in state_keys]
+                     # if key.startswith('intent_') or 'action_' in key or 'utter_' in key] 
+
+                    # print([key.text for key in state_keys])
+                    training_data += state_keys
+        
+        training_data = TrainingData(training_examples = training_data)
+        # print([ex.text for ex in training_data.training_examples])
+        self.train(training_data)
+        print('VOCABULARY INFO')
+        print(len(self.vectorizers['text'].vocabulary_))
+        print(self.vectorizers['text'].vocabulary_)
+
+    def prepare_from_domain(self, domain: Domain, delimiter = '_')  -> None:
+
+        training_data = domain.input_states
+        training_data = [Message(key.replace(delimiter, ' ') + ' CLS') for key in training_data]
+        training_data = TrainingData(training_examples = training_data)
+        self.train(training_data)
+        print('VOCABULARY INFO')
+        print(len(self.vectorizers['text'].vocabulary_))
+        print(self.vectorizers['text'].vocabulary_)
+
+
+
+    def encode(self, state: Dict[Text, float], delimiter = '_', type_output = 'numpyarray'):
+
+        if state is None:
+            return np.ones(len(self.vectorizers['text'].vocabulary_), dtype=np.int32) * -1
+
+        state_keys = [key.replace('_', ' ') for key in list(state.keys())]
+        attribute = 'text'        
+        message = Message(' '.join(state_keys))
+        message_tokens = self._get_processed_message_tokens_by_attribute(
+            message, attribute
+        )
+
+        message_tokens = ' '.join(message_tokens)
+        # features shape (1, seq, dim)
+        features = self._create_sequence(attribute, [[message_tokens, 'CLS']])
+
+        if type_output == 'numpyarray':
+            return features[0].A[0]
+        else:
+            return features[0].getrow(0)
+
+
+
+
 
 
 class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
@@ -329,6 +390,8 @@ class TrackerFeaturizer:
         features = []
         true_lengths = []
 
+        # self.state_featurizer.collect_training_data_and_train(trackers_as_states)
+
         for tracker_states in trackers_as_states:
             dialogue_len = len(tracker_states)
 
@@ -348,6 +411,7 @@ class TrackerFeaturizer:
 
         # noinspection PyPep8Naming
         X = np.array(features)
+        # print(X.shape)
 
         return X, true_lengths
 
@@ -376,6 +440,33 @@ class TrackerFeaturizer:
 
         return y
 
+    def _postprocess_trackers_as_states(self, trackers_as_states: List[List[Text]]
+        ) -> List[List[Text]]:
+
+        for i in range(len(trackers_as_states)):
+            # print('NEW DIALOG')
+            previous_intent = None
+            # print(tracker_states)
+            for j in range(len(trackers_as_states[i])):
+
+                if trackers_as_states[i][j]:
+                    # print('BEFORE')
+                    # print(state)
+                    state_keys = list(trackers_as_states[i][j].keys())
+                    current_intent  = [key for key in state_keys if key.startswith('intent_')]
+
+                    # print(current_intent)
+                    if not current_intent == []:
+                        current_intent = current_intent[0]
+                        if current_intent == previous_intent:
+                            del trackers_as_states[i][j][current_intent]
+                        else:
+                            previous_intent = current_intent
+                    # print('AFTER')
+                    # print(state)
+                    # print('AFTER')
+                    # print(state)
+
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> Tuple[List[List[Dict]], List[List[Text]]]:
@@ -401,9 +492,14 @@ class TrackerFeaturizer:
         (trackers_as_states, trackers_as_actions) = self.training_states_and_actions(
             trackers, domain
         )
+        # print([len(list(state.keys())) for state in trackers_as_states[27]])
+        self._postprocess_trackers_as_states(trackers_as_states)
+        # print(trackers_as_states[27])
 
         # noinspection PyPep8Naming
         X, true_lengths = self._featurize_states(trackers_as_states)
+        print('INPUT SHAPE')
+        print(np.sum(X[27], axis=1))
         y = self._featurize_labels(trackers_as_actions, domain)
 
         return DialogueTrainingData(X, y, true_lengths)
@@ -598,6 +694,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         Training data is padded up to the max_history with -1.
         """
+        print(domain.intent_states)
+        print(domain.intent_states)
 
         trackers_as_states = []
         trackers_as_actions = []
