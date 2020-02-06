@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import pickle
-import warnings
 
 import numpy as np
 from typing import Any, List, Optional, Text, Dict, Tuple
