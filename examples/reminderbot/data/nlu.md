@@ -13,7 +13,7 @@
 - see you
 - see ya
 
-## intent:ask_remind_call_name
+## intent:ask_remind_call
 - remind me to call [John](name)
 - remind me to call [Lis](name)
 - remind me to call [Albert](name)

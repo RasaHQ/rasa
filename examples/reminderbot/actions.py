@@ -57,7 +57,7 @@ class ActionReactToReminder(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
 
-        name = next(tracker.get_latest_entity_values("name"), None) or ""
+        name = next(tracker.get_latest_entity_values("name"), None) or "someone"
         dispatcher.utter_message(f"Remember to call {name}!")
 
         return []
@@ -82,8 +82,8 @@ class ActionTellID(Action):
         dispatcher.utter_message(
             f"Trigger an intent with "
             f'curl -H "Content-Type: application/json" '
-            f'-X POST -d \'{{"name": "EXTERNAL_pizza_ready", '
-            f'"entities": {{"topping": "Hawaii"}}}}\' '
+            f'-X POST -d \'{{"name": "EXTERNAL_dry_plant", '
+            f'"entities": {{"plant": "Orchid"}}}}\' '
             f"http://localhost:5005/conversations/{conversation_id}/"
             f"trigger_intent"
         )
@@ -91,10 +91,11 @@ class ActionTellID(Action):
         return []
 
 
-class ActionPizzaReady(Action):
-    """Informs the user that pizza is ready."""
+class ActionWarnDry(Action):
+    """Informs the user that a plant needs water."""
+
     def name(self) -> Text:
-        return "action_pizza_ready"
+        return "action_warn_dry"
 
     def run(
         self,
@@ -103,9 +104,8 @@ class ActionPizzaReady(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
 
-        topping = next(tracker.get_latest_entity_values("topping"), None) or ""
-        print(topping)
-        dispatcher.utter_message(f"Your Pizza {topping} is ready!")
+        plant = next(tracker.get_latest_entity_values("plant"), None) or "plant"
+        dispatcher.utter_message(f"Your {plant} needs some water!")
 
         return []
 

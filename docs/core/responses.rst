@@ -180,6 +180,8 @@ channel should be used to communicate the assistant's responses back to the user
 Any messages that are dispatched in the custom action will be forwarded to the specified output channel.
 Set this parameter to ``"latest"`` if you want to use the latest input channel that the user has used.
 
+To learn more, check out `reminderbot` in the Rasa examples directory, or the `user guide on this topic <../../user-guide/external-events-and-reminders>`_.
+
 .. note::
 
    Proactively reaching out to the user is dependent on the abilities of a channel and
