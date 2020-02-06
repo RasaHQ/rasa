@@ -19,7 +19,7 @@ Using Rasa's HTTP API
     Running a model locally as described below is not a scalable approach to 
     serving your assistant to users. If you want to deploy your assistant,
     see `how-to-deploy`_. The instructions below are relevant for  
-    configuring how a model is run within a Docker container, or for testing 
+    configuring how a model is run within a Docker container or for testing 
     the HTTP API locally.
 
 You can run a simple HTTP server that handles requests using your trained Rasa 
