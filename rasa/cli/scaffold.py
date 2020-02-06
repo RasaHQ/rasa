@@ -138,10 +138,6 @@ def print_cancel() -> None:
     exit(0)
 
 
-def print_init_path_not_found() -> None:
-    print_error_and_exit("Init path not found")
-
-
 def _ask_create_path(path: Text) -> None:
     import questionary
 
@@ -199,7 +195,7 @@ def run(args: argparse.Namespace) -> None:
         )
 
     if args.no_prompt and not os.path.isdir(path):
-        print_init_path_not_found()
+        print_error_and_exit(f"Project init path '{path}' not found.")
 
     if path and not os.path.isdir(path):
         _ask_create_path(path)
