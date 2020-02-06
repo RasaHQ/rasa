@@ -280,7 +280,7 @@ class Domain:
 
             if name in intent_properties.keys():
                 raise InvalidDomain(
-                    f"Intents are not unique! Found two intents with name '{name}'."
+                    f"Intents are not unique! Found two intents with name '{name}'. "
                     f"Either rename or remove one of them."
                 )
 
