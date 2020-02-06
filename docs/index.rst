@@ -28,7 +28,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    user-guide/command-line-interface
    user-guide/architecture
    user-guide/messaging-and-voice-channels
-   user-guide/external-events-and-reminders
+   user-guide/reminders-and-external-events
    user-guide/evaluating-models
    user-guide/validate-files
    user-guide/running-the-server

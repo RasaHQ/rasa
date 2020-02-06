@@ -1,11 +1,22 @@
 :desc: Learn how to use external events and schedule reminders.
 
-.. external-events:
+.. _reminders-and-external-events:
 
-External events
-=================================================
+Reminders and external events
+=============================
 
 .. edit-link::
+
+In this guide, you will learn how to let your assistant respond to external events (other applications, sensors, etc.) or to remind you about things after a given period of time.
+
+.. contents::
+   :local:
+
+
+.. _external-events:
+
+External events
+---------------
 
 Let's say you want to send a message from some other device to change the course of an ongoing conversation.
 For example, some moisture-sensor attached to a Raspberry Pi should inform your personal assistant that your favourite
@@ -103,10 +114,10 @@ Now, when you are in a conversation with id ``38cc25d7e23e4dde800353751b7c2d3e``
 in the terminal will cause your assistant to say "Your Orchid needs some water!".
 
 
-.. reminders:
+.. _reminders:
 
 Reminders
-=================================================
+---------
 
 Instead of an external sensor, you might just want to be reminded about something after a certain amount of time.
 For this, Rasa provides the special event ``ReminderScheduled``.
@@ -198,6 +209,7 @@ But here we want to make use of the fact that the reminder can carry entities, a
 .. warning::
 
   Reminders are cancelled whenever you shutdown rasa.
+
 
 .. warning::
 
