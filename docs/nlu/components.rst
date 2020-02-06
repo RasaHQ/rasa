@@ -88,7 +88,7 @@ SpacyNLP
 HFTransformersNLP
 ~~~~~~~~~~~~~~~~~
 
-:Short: Transformers based pre-trained language model initializer
+:Short: HuggingFace's Transformers based pre-trained language model initializer
 :Outputs: nothing
 :Requires: nothing
 :Description:
