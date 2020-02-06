@@ -13,7 +13,7 @@ In this guide, you will learn how to let your assistant respond to external even
    :local:
 
 
-.. _external-events:
+.. _external-event-guide:
 
 External events
 ---------------
@@ -120,7 +120,13 @@ Reminders
 ---------
 
 Instead of an external sensor, you might just want to be reminded about something after a certain amount of time.
-For this, Rasa provides the special event ``ReminderScheduled``.
+For this, Rasa provides the special event ``ReminderScheduled``, and another event, ``ReminderCancelled``, to unschedule a reminder.
+
+
+.. _scheduling-reminders-guide:
+
+Scheduling reminders
+^^^^^^^^^^^^^^^^^^^^
 
 Let's say you want your assistant to remind you to call a friend in 5 seconds.
 (You probably want some longer time span, but for the sake of testing, let it be 5 seconds.)
@@ -217,3 +223,35 @@ But here we want to make use of the fact that the reminder can carry entities, a
   Use `rasa x` instead.
 
 Check out the ``reminderbot`` example project under ``rasa/examples/reminderbot``, and feel free to customize things for your own assistant!
+
+
+.. _cancelling-reminders-guide:
+
+Cancelling reminders
+^^^^^^^^^^^^^^^^^^^^
+
+Sometimes the user may want to cancel a reminder that he has scheduled earlier.
+A simple way of adding this functionality to your assistant is to create an intent ``ask_forget_reminders`` and let your assistant respond to it with a custom action such as
+
+.. code-block:: python
+
+  class ForgetReminders(Action):
+    """Cancels all reminders."""
+
+    def name(self) -> Text:
+        return "action_forget_reminders"
+
+    def run(
+        self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
+    ) -> List[Dict[Text, Any]]:
+
+        # Cancel all reminders
+        return [ReminderCancelled()]
+
+Here, ``ReminderCancelled()`` simply cancels all the reminders that are currently scheduled.
+Alternatively, you may provide some parameters to narrow down the types of reminders that you want to cancel.
+For example,
+
+    - ``ReminderCancelled(intent="greet")`` cancels all reminders with intent ``greet``
+    - ``ReminderCancelled(entities={...})`` cancels all reminders with the given entities
+    - ``ReminderCancelled("...")`` cancels the one unique reminder with the given name
