@@ -22,7 +22,7 @@ RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-
 ENV PATH "/root/.poetry/bin:/opt/venv/bin:${PATH}"
 
 # install dependencies
-COPY poetry.lock pyproject.toml /opt/rasa/
+COPY README.md poetry.lock pyproject.toml setup.cfg /opt/rasa/
 RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
   pip install -U pip && \
@@ -30,7 +30,9 @@ RUN python -m venv /opt/venv && \
   poetry install --no-dev --no-interaction
 
 # build and install rasa
-COPY . /opt/rasa
+COPY rasa /opt/rasa/rasa
+RUN ls /opt/rasa
+RUN ls /opt/rasa/rasa
 RUN . /opt/venv/bin/activate && \
   cd /opt/rasa && \
   poetry install --no-dev --no-interaction
