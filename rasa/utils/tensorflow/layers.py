@@ -1,14 +1,20 @@
 import logging
-from typing import List, Optional, Text, Tuple, Callable
+from typing import List, Optional, Text, Tuple, Callable, Union
 import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.python.keras.utils import tf_utils
+from tensorflow.python.keras import backend as K
 
 logger = logging.getLogger(__name__)
 
 
 class SparseDropout(tf.keras.layers.Dropout):
-    def call(self, inputs: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
+    def call(
+        self, inputs: tf.Tensor, training: Optional[Union[tf.Tensor, bool]] = None
+    ) -> tf.Tensor:
+        if training is None:
+            training = K.learning_phase()
+
         def dropped_inputs() -> tf.Tensor:
             to_retain_prob = tf.random.uniform(
                 tf.shape(inputs.values), 0, 1, inputs.values.dtype
@@ -100,7 +106,12 @@ class Ffnn(tf.keras.layers.Layer):
             )
             self._ffn_layers.append(tf.keras.layers.Dropout(dropout_rate))
 
-    def call(self, x: tf.Tensor, training: tf.Tensor) -> tf.Tensor:
+    def call(
+        self, x: tf.Tensor, training: Optional[Union[tf.Tensor, bool]] = None
+    ) -> tf.Tensor:
+        if training is None:
+            training = K.learning_phase()
+
         for layer in self._ffn_layers:
             x = layer(x, training=training)
 
@@ -126,11 +137,11 @@ class Embed(tf.keras.layers.Layer):
                 f"should be 'cosine' or 'inner'"
             )
 
-        l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
+        regularizer = tf.keras.regularizers.l2(reg_lambda)
         self._dense = tf.keras.layers.Dense(
             units=embed_dim,
             activation=None,
-            kernel_regularizer=l2_regularizer,
+            kernel_regularizer=regularizer,
             name=f"embed_layer_{layer_name_suffix}",
         )
 
@@ -150,9 +161,14 @@ class InputMask(tf.keras.layers.Layer):
         self.built = True
 
     def call(
-        self, x: tf.Tensor, mask: tf.Tensor, training: tf.Tensor
+        self,
+        x: tf.Tensor,
+        mask: tf.Tensor,
+        training: Optional[Union[tf.Tensor, bool]] = None,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Randomly mask input sequences."""
+        if training is None:
+            training = K.learning_phase()
 
         lm_mask_prob = tf.random.uniform(tf.shape(mask), 0, 1, mask.dtype) * mask
         lm_mask_bool = tf.greater_equal(lm_mask_prob, 0.85)
