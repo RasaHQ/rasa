@@ -612,7 +612,7 @@ def test_domain_with_intents_transformed_for_file():
 
 def test_clean_domain_for_file():
     domain_path = "data/test_domains/default_unfeaturized_entities.yml"
-    cleaned = Domain.load(domain_path).cleaned_domain_for_file()
+    cleaned = Domain.load(domain_path).cleaned_domain()
 
     expected = {
         "intents": [
@@ -642,7 +642,7 @@ def test_clean_domain_for_file():
 
 def test_clean_domain_deprecated_templates():
     domain_path = "data/test_domains/default_deprecated_templates.yml"
-    cleaned = Domain.load(domain_path).cleaned_domain_for_file()
+    cleaned = Domain.load(domain_path).cleaned_domain()
 
     expected = {
         "intents": [

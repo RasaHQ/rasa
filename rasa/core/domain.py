@@ -267,6 +267,10 @@ class Domain:
     def collect_intent_properties(
         intents: List[Union[Text, Dict[Text, Any]]], entities: List[Text]
     ) -> Dict[Text, Dict[Text, Union[bool, List]]]:
+        """Transform the intent properties `use_entities` and `ignore_entities` that are
+        used in domain files into one internal property `used_entities`. Use default
+        values where the intent properties are not explicitly provided.
+        """
         intent_properties = {}
         for intent in intents:
             if not isinstance(intent, dict):
@@ -276,8 +280,8 @@ class Domain:
 
             if name in intent_properties.keys():
                 raise InvalidDomain(
-                    "Intents are not unique! Found two intents with name '{}'. "
-                    "Either rename or remove one of them.".format(name)
+                    f"Intents are not unique! Found two intents with name '{name}'."
+                    f"Either rename or remove one of them."
                 )
 
             if (
@@ -294,17 +298,17 @@ class Domain:
 
                 # `use_entities` is either a list of explicitly included entities
                 # or `True` if all should be included
-                include = properties.get(
-                    "use_entities", True
-                )  # this should even work before setting defaults
-                included_entities = set(entities if include is True else include)
-                excluded_entities = set(properties.get("ignore_entities", []))
-                wanted_entities = list(included_entities - excluded_entities)
-                wanted_entities.sort()
+                if properties["use_entities"] is True:
+                    included_entities = set(entities)
+                else:
+                    included_entities = set(properties["use_entities"])
+                excluded_entities = set(properties["ignore_entities"])
+                used_entities = list(included_entities - excluded_entities)
+                used_entities.sort()
 
                 # Only print warning for ambiguous configurations if entities were included
                 # explicitly.
-                explicitly_included = isinstance(include, list)
+                explicitly_included = isinstance(properties["use_entities"], list)
                 ambiguous_entities = included_entities.intersection(excluded_entities)
                 if explicitly_included and ambiguous_entities:
                     raise_warning(
@@ -316,8 +320,8 @@ class Domain:
                         + "#ignoring-entities-for-certain-intents",
                     )
 
-                properties["used_entities"] = wanted_entities
-                properties.pop("use_entities", None)
+                properties["used_entities"] = used_entities
+                properties.pop("use_entities")
                 properties.pop("ignore_entities")
 
             intent_properties.update(intent)
@@ -746,7 +750,9 @@ class Domain:
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
 
     def domain_with_intents_transformed_for_file(self) -> Dict[Text, Any]:
-        """Replace the internal `used_entities` property by `use_entities` or `ignore_entities`."""
+        """Replace the internal `used_entities` property by `use_entities` or
+        `ignore_entities`.
+        """
         domain_data = self.as_dict()
         for idx, intent_info in enumerate(domain_data["intents"]):
             for name, intent in intent_info.items():
@@ -760,9 +766,10 @@ class Domain:
                     intent["ignore_entities"] = list(ignore_entities)
         return domain_data
 
-    def cleaned_domain_for_file(self) -> Dict[Text, Any]:
-        """Fetch cleaned domain, replacing redundant keys with default values and replacing the internal
-        `used_entities` property by `use_entities` or `ignore_entities`.
+    def cleaned_domain(self) -> Dict[Text, Any]:
+        """Fetch cleaned domain, replacing redundant keys with default values and
+        replacing the internal `used_entities` property by `use_entities` or
+        `ignore_entities`.
         """
         domain_data = self.domain_with_intents_transformed_for_file()
 
@@ -796,12 +803,12 @@ class Domain:
     def persist_clean(self, filename: Text) -> None:
         """Write cleaned domain to a file."""
 
-        cleaned_domain_data = self.cleaned_domain_for_file()
+        cleaned_domain_data = self.cleaned_domain()
         utils.dump_obj_as_yaml_to_file(filename, cleaned_domain_data)
 
     def as_yaml(self, clean_before_dump: bool = False) -> Text:
         if clean_before_dump:
-            domain_data = self.cleaned_domain_for_file()
+            domain_data = self.cleaned_domain()
         else:
             domain_data = self.domain_with_intents_transformed_for_file()
 
