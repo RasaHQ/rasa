@@ -505,7 +505,12 @@ Otherwise the feature will be set to <code class="docutils literal notranslate">
 </div>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first last">Creates a one-hot encoding describing which of the <code class="docutils literal notranslate"><span class="pre">values</span></code> matched.</p>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first last">Creates a one-hot encoding describing which of the <code class="docutils literal notranslate"><span class="pre">values</span></code> matched.
+A default value <code class="docutils literal notranslate"><span class="pre">__other__</span></code> is automatically added to the user-defined
+values. All values encountered which are not explicitly defined in the
+domain are mapped to <code class="docutils literal notranslate"><span class="pre">__other__</span></code> for featurization. The value
+<code class="docutils literal notranslate"><span class="pre">__other__</span></code> should not be used as a user-defined value; if it is, it
+will still behave as the default to which all unseen values are mapped.</p>
 </td>
 </tr>
 </tbody>
