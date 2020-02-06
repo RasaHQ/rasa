@@ -137,6 +137,14 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
 
 class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
     def prepare_training_data_and_train(self, trackers_as_states, delimiter = '_'):
+        """
+        Trains the vertorizers from real data;
+
+        Preliminary for when the featurizer is to be used for raw text; 
+        Args:
+             - trackers_as_states: real data as a dictionary
+             - delimiter: symbol to be used to divide into words
+        """
         training_data = []
         for tracker in trackers_as_states:
             for state in tracker:
@@ -152,23 +160,31 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         training_data = TrainingData(training_examples = training_data)
         # print([ex.text for ex in training_data.training_examples])
         self.train(training_data)
-        print('VOCABULARY INFO')
-        print(len(self.vectorizers['text'].vocabulary_))
-        print(self.vectorizers['text'].vocabulary_)
 
     def prepare_from_domain(self, domain: Domain, delimiter = '_')  -> None:
+        """
+        Train the fecturizers based on the inputs gotten from the domain;
+        Args:
+            - domain: domain file
+        """
 
         training_data = domain.input_states
         training_data = [Message(key.replace(delimiter, ' ') + ' CLS') for key in training_data]
         training_data = TrainingData(training_examples = training_data)
         self.train(training_data)
-        print('VOCABULARY INFO')
-        print(len(self.vectorizers['text'].vocabulary_))
-        print(self.vectorizers['text'].vocabulary_)
 
 
 
     def encode(self, state: Dict[Text, float], delimiter = '_', type_output = 'numpyarray'):
+        """
+        Encode the state into a numpy array or a sparse sklearn
+
+        Input:
+            - state: dictionary describing current state
+            - type output: type to return the features as (numpyarray or sklearn coo_matrix)
+        Output:
+            - nparray(vocab_size,) or coo_matrix(1, vocab_size) 
+        """
 
         if state is None:
             return np.ones(len(self.vectorizers['text'].vocabulary_), dtype=np.int32) * -1
