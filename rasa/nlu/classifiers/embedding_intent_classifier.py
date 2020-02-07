@@ -821,7 +821,7 @@ class EmbeddingIntentClassifier(Component):
     def _text_features_present(session_data: SessionDataType) -> bool:
         return np.array(
             [
-                f.toarray().any() if isinstance(f, scipy.sparse.spmatrix) else f.any()
+                f.nnz != 0 if isinstance(f, scipy.sparse.spmatrix) else f.any()
                 for features in session_data["text_features"]
                 for f in features
             ]
@@ -849,6 +849,8 @@ class EmbeddingIntentClassifier(Component):
             session_data, tuple_sizes=self.batch_tuple_sizes
         )
 
+        # if no text-features are present (e.g. incoming message is not in the
+        # vocab), do not predict any random intent
         if not self._text_features_present(session_data):
             return label, label_ranking
 

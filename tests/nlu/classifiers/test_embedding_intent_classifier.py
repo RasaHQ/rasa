@@ -299,6 +299,7 @@ async def test_margin_loss_is_not_normalized(
         ),
         ({"text_features": [np.array([0, 0, 0])]}, False),
         ({"text_features": [scipy.sparse.csr_matrix([0, 0, 0])]}, False),
+        ({"text_features": [scipy.sparse.csr_matrix([0, 31, 0])]}, True),
     ],
 )
 def test_text_features_present(session_data, expected):
