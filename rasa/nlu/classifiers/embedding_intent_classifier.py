@@ -845,14 +845,15 @@ class EmbeddingIntentClassifier(Component):
 
         # create session data from message and convert it into a batch of 1
         session_data = self._create_session_data([message])
+
+        # if no text-features are present (e.g. incoming message is not in the
+        # vocab), do not predict a random intent
+        if not self._text_features_present(session_data):
+            return label, label_ranking
+
         batch = train_utils.prepare_batch(
             session_data, tuple_sizes=self.batch_tuple_sizes
         )
-
-        # if no text-features are present (e.g. incoming message is not in the
-        # vocab), do not predict any random intent
-        if not self._text_features_present(session_data):
-            return label, label_ranking
 
         # load tf graph and session
         label_ids, message_sim = self._calculate_message_sim(batch)
