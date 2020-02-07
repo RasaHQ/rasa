@@ -817,6 +817,16 @@ class EmbeddingIntentClassifier(Component):
         # transform sim to python list for JSON serializing
         return label_ids, message_sim.tolist()
 
+    @staticmethod
+    def _text_features_present(session_data: SessionDataType) -> bool:
+        return np.array(
+            [
+                f.toarray().any() if isinstance(f, scipy.sparse.spmatrix) else f.any()
+                for features in session_data["text_features"]
+                for f in features
+            ]
+        ).any()
+
     def predict_label(
         self, message: "Message"
     ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
@@ -838,6 +848,9 @@ class EmbeddingIntentClassifier(Component):
         batch = train_utils.prepare_batch(
             session_data, tuple_sizes=self.batch_tuple_sizes
         )
+
+        if not self._text_features_present(session_data):
+            return label, label_ranking
 
         # load tf graph and session
         label_ids, message_sim = self._calculate_message_sim(batch)
