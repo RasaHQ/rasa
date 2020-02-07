@@ -70,6 +70,62 @@ SQLTrackerStore
     - ``login_db`` (default: ``None``): Alternative database name to which initially  connect, and create the database specified by `db` (PostgreSQL only)
     - ``query`` (default: ``None``): Dictionary of options to be passed to the dialect and/or the DBAPI upon connect
 
+
+:Supported Databases:
+    - PostgreSQL
+    - Oracle > 11.0
+    - SQLite
+
+
+:Oracle Configuration:
+
+
+      To use the SQLTrackerStore with Oracle, there are a few additional steps.
+      First, create a database "tracker" in your Oracle database and create a user with access to it.
+      Create a sequence in the database with the following command:
+
+      .. sql::
+
+          CREATE SEQUENCE {username}.events_seq;
+
+      Next you have to extend the Rasa Open Source image to include the necessary drivers and clients.
+
+      First download the Oracle Instant Client from `here <https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html>`_,
+      rename it to `oracle.rpm` and store it in the directory from where you'll be building the docker image.
+
+      Copy this into a file called ``Dockerfile``:
+
+      .. bash::
+
+          FROM rasa/rasa:|version|-full
+          # Switch to root user to install packages
+          USER root
+          RUN apt-get update -qq \
+          && apt-get install -y --no-install-recommends \
+          alien \
+          libaio1 \
+          && apt-get clean \
+          && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+          # Copy in oracle instaclient
+          # https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html
+          COPY oracle.rpm oracle.rpm
+          # Install the Python wrapper library for the Oracle drivers
+          RUN pip install cx-Oracle
+          # Install Oracle client libraries
+          RUN alien -i oracle.rpm
+
+      Then build the docker image:
+
+      .. bash::
+
+          docker build . -t rasa-oracle:latest
+
+      Now you can configure the tracker store in the ``endpoints.yml`` as described above,
+      and start the container. Read more about :ref:`running-rasa-with-docker`.
+
+
+
+
 RedisTrackerStore
 ~~~~~~~~~~~~~~~~~~
 
