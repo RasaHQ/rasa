@@ -540,6 +540,7 @@ def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) 
     )
     return _log_and_get_default_number_of_workers()
 
+
 def create_sequence(table_name: Text) -> Sequence:
     """Creates a sequence object"""
 

@@ -1,0 +1,4 @@
+Fixed incompatibility with Oracle, integer primary key is now a sequence and so can
+be used with Oracle.
+
+Added docs for setting up Oracle.
