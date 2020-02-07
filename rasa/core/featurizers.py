@@ -157,13 +157,9 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
                         Message(key.replace(delimiter, " ") + " CLS")
                         for key in state_keys
                     ]
-                    # if key.startswith('intent_') or 'action_' in key or 'utter_' in key]
-
-                    # print([key.text for key in state_keys])
                     training_data += state_keys
 
         training_data = TrainingData(training_examples=training_data)
-        # print([ex.text for ex in training_data.training_examples])
         self.train(training_data)
 
     def prepare_from_domain(self, domain: Domain, delimiter="_") -> None:
@@ -196,7 +192,7 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
                 np.ones(len(self.vectorizers["text"].vocabulary_), dtype=np.int32) * -1
             )
 
-        state_keys = [key.replace("_", " ") for key in list(state.keys())]
+        state_keys = [key.replace(delimiter, " ") for key in list(state.keys())]
         attribute = "text"
         message = Message(" ".join(state_keys))
         message_tokens = self._get_processed_message_tokens_by_attribute(
