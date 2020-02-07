@@ -3,7 +3,7 @@
 .. _deploying-your-rasa-assistant:
 
 Deploying your Rasa Assistant
-===============================
+=============================
 
 .. edit-link::
 
@@ -16,7 +16,7 @@ It will allow you to make your assistant available to users and set you up with 
 
 
 When to deploy your assistant
---------------------------------
+-----------------------------
 
 .. raw:: html
 
@@ -36,14 +36,14 @@ Kubernetes/Openshift
 
 Kubernetes/Openshift is the best option if you plan to serve many users. It's straightforward to deploy if you use the helm charts we provide. However, you can also customize the Helm charts if you have specific requirements.
 
-    - Default: Read the docs `here <../../rasa-x/docs/installation-and-setup/openshift-kubernetes/>`_.
-    - Custom: Read the docs `here <../../rasa-x/docs/installation-and-setup/openshift-kubernetes/>`_ and customize the `open source Helm charts <https://github.com/RasaHQ/rasa-x-helm>`_.
+    - Default: Read the docs `here <../../rasa-x/docs/installation-and-setup/openshift-kubernetes/>`__.
+    - Custom: Read the docs `here <../../rasa-x/docs/installation-and-setup/openshift-kubernetes/>`__ and customize the `open source Helm charts <https://github.com/RasaHQ/rasa-x-helm>`_.
 
 Docker Compose
 ~~~~~~~~~~~~~~
 
-    - Default: Watching this `video <https://www.youtube.com/watch?v=IUYdwy8HPVc>`_ or read the docs `here <../../rasa-x/docs/installation-and-setup/docker-compose-script/>`_.
-    - Custom: Read the docs `here <../../rasa-x/docs/installation-and-setup/docker-compose-manual/>`_.
+    - Default: Watching this `video <https://www.youtube.com/watch?v=IUYdwy8HPVc>`__ or read the docs `here <../../rasa-x/docs/installation-and-setup/docker-compose-script/>`__.
+    - Custom: Read the docs `here <../../rasa-x/docs/installation-and-setup/docker-compose-manual/>`__.
 
 
 .. _rasa-only-deployment:
@@ -419,7 +419,7 @@ If you want to persist your conversations, you can use a different
 :ref:`Tracker Store <tracker-stores>`.
 
 Using PostgreSQL as Tracker Store
-**********************************
+*********************************
 
 Start by adding PostgreSQL to your docker-compose file:
 
