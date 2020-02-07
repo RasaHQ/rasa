@@ -1,7 +1,7 @@
 from rasa.core.featurizers import (
     TrackerFeaturizer,
-    BinarySingleStateFeaturizer,
-    LabelTokenizerSingleStateFeaturizer,
+    # BinarySingleStateFeaturizer,
+    # LabelTokenizerSingleStateFeaturizer,
     BOWSingleStateFeaturizer,
 )
 from rasa.core.domain import Domain
@@ -135,7 +135,7 @@ def test_bow_tokenizer_featurizer_outputs_numpy_as_required():
     d = Domain
     d.input_states = ['ab_cd', 'ef_gh_kl']
     f.prepare_from_domain(d)
-    encoded = f.encode({"ab_cd": 1.0, "prev_cd_ab": 0.0, "kl": 1.0, "prev_action_listen": 1.0}, type_output="numpyarray")
+    encoded = f.encode({"ab_cd": 1.0, "prev_cd_ab": 0.0, "kl": 1.0, "prev_action_listen": 1.0})
     assert type(encoded) == np.ndarray
 
 def test_bow_tokenizer_featurizer_outputs_sparse_matrix_as_required():
@@ -143,5 +143,36 @@ def test_bow_tokenizer_featurizer_outputs_sparse_matrix_as_required():
     d = Domain
     d.input_states = ['ab_cd', 'ef_gh_kl']
     f.prepare_from_domain(d)
-    encoded = f.encode({"ab_cd": 1.0, "prev_cd_ab": 0.0, "kl": 1.0, "prev_action_listen": 1.0}, type_output="sparse_matrix")
+    encoded = f.encode({"ab_cd": 1.0, "prev_cd_ab": 0.0, "kl": 1.0, "prev_action_listen": 1.0}, type_output="sparse")
     assert type(encoded) == scipy.sparse.csr.csr_matrix
+
+def test_bow_tokenizer_featurizer_none_input_sparse():
+    f = BOWSingleStateFeaturizer()
+    d = Domain
+    d.input_states = ['ab_cd', 'ef_gh_kl']
+    f.prepare_from_domain(d)
+    encoded = f.encode(None, type_output="sparse")
+    assert type(encoded) == scipy.sparse.csr.csr_matrix
+
+def test_bow_tokenizer_featurizer_none_input_dense():
+    f = BOWSingleStateFeaturizer()
+    d = Domain
+    d.input_states = ['ab_cd', 'ef_gh_kl']
+    f.prepare_from_domain(d)
+    encoded = f.encode(None, type_output="dense")
+    assert type(encoded) == np.ndarray and encoded.dtype == np.int32
+
+def main():
+    test_bow_tokenizer_featurizer_handles_on_non_existing_features()
+    test_bow_tokenizer_featurizer_uses_correct_dtype_int()
+    test_bow_tokenizer_featurizer_outputs_numpy_as_required()
+    test_bow_tokenizer_featurizer_outputs_sparse_matrix_as_required()
+    test_bow_tokenizer_featurizer_none_input_sparse()
+    test_bow_tokenizer_featurizer_none_input_dense()
+
+
+main()
+
+
+
+
