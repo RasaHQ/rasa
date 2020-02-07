@@ -79,7 +79,6 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         """Use Domain to prepare featurizer."""
 
         self.num_features = domain.num_states
-        print("NUM features in domain: " + str(self.num_features))
         self.input_state_map = domain.input_state_map
 
     def encode(self, state: Dict[Text, float]) -> np.ndarray:
@@ -152,7 +151,6 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
             for state in tracker:
                 if state:
                     state_keys = list(state.keys())
-                    # print(state_keys)
                     state_keys = [
                         Message(key.replace(delimiter, " ") + " CLS")
                         for key in state_keys
@@ -426,7 +424,6 @@ class TrackerFeaturizer:
 
         # noinspection PyPep8Naming
         X = np.array(features)
-        # print(X.shape)
 
         return X, true_lengths
 
@@ -460,30 +457,22 @@ class TrackerFeaturizer:
     ) -> List[List[Text]]:
 
         for i in range(len(trackers_as_states)):
-            # print('NEW DIALOG')
             previous_intent = None
-            # print(tracker_states)
             for j in range(len(trackers_as_states[i])):
 
                 if trackers_as_states[i][j]:
-                    # print('BEFORE')
-                    # print(state)
                     state_keys = list(trackers_as_states[i][j].keys())
                     current_intent = [
                         key for key in state_keys if key.startswith("intent_")
                     ]
 
-                    # print(current_intent)
                     if not current_intent == []:
                         current_intent = current_intent[0]
                         if current_intent == previous_intent:
                             del trackers_as_states[i][j][current_intent]
                         else:
                             previous_intent = current_intent
-                    # print('AFTER')
-                    # print(state)
-                    # print('AFTER')
-                    # print(state)
+
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
@@ -510,14 +499,11 @@ class TrackerFeaturizer:
         (trackers_as_states, trackers_as_actions) = self.training_states_and_actions(
             trackers, domain
         )
-        # print([len(list(state.keys())) for state in trackers_as_states[27]])
+
         self._postprocess_trackers_as_states(trackers_as_states)
-        # print(trackers_as_states[27])
 
         # noinspection PyPep8Naming
         X, true_lengths = self._featurize_states(trackers_as_states)
-        print("INPUT SHAPE")
-        print(np.sum(X[27], axis=1))
         y = self._featurize_labels(trackers_as_actions, domain)
 
         return DialogueTrainingData(X, y, true_lengths)
@@ -712,8 +698,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         Training data is padded up to the max_history with -1.
         """
-        print(domain.intent_states)
-        print(domain.intent_states)
 
         trackers_as_states = []
         trackers_as_actions = []
