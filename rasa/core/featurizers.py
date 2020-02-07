@@ -5,6 +5,7 @@ import numpy as np
 import os
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Any
+from scipy.sparse import csr_matrix
 
 import rasa.utils.io
 from rasa.core import utils
@@ -16,6 +17,7 @@ from rasa.core.training.data import DialogueTrainingData
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
+from rasa.nlu.constants import CLS_TOKEN
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import is_logging_disabled
 
@@ -62,7 +64,14 @@ class SingleStateFeaturizer:
 
 
 class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
-    def prepare_training_data_and_train(self, trackers_as_states, delimiter="_"):
+    def __init__(
+        self
+    ) -> None:
+
+        super().__init__()
+        self.delimiter = '_'
+
+    def prepare_training_data_and_train(self, trackers_as_states):
         """
         Trains the vertorizers from real data;
         Preliminary for when the featurizer is to be used for raw text; 
@@ -70,13 +79,17 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
              - trackers_as_states: real data as a dictionary
              - delimiter: symbol to be used to divide into words
         """
+        # TODO: 
+        # - no delimiter
+        # - how to avoid using NLU pipeline? 
+
         training_data = []
         for tracker in trackers_as_states:
             for state in tracker:
                 if state:
                     state_keys = list(state.keys())
                     state_keys = [
-                        Message(key.replace(delimiter, " ") + " CLS")
+                        Message(key.replace(self.delimiter, " ") + " CLS")
                         for key in state_keys
                     ]
                     training_data += state_keys
@@ -84,7 +97,7 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         training_data = TrainingData(training_examples=training_data)
         self.train(training_data)
 
-    def prepare_from_domain(self, domain: Domain, delimiter="_") -> None:
+    def prepare_from_domain(self, domain: Domain) -> None:
         """
         Train the fecturizers based on the inputs gotten from the domain;
         Args:
@@ -93,12 +106,12 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
 
         training_data = domain.input_states
         training_data = [
-            Message(key.replace(delimiter, " ") + " CLS") for key in training_data
+            Message(key.replace(self.delimiter, " ") + " "+ CLS_TOKEN) for key in training_data
         ]
         training_data = TrainingData(training_examples=training_data)
         self.train(training_data)
 
-    def encode(self, state: Dict[Text, float], delimiter="_", type_output="numpyarray"):
+    def encode(self, state: Dict[Text, float], type_output="dense"):
         """
         Encode the state into a numpy array or a sparse sklearn
 
@@ -110,25 +123,29 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         """
 
         if state is None:
-            return (
-                np.ones(len(self.vectorizers["text"].vocabulary_), dtype=np.int32) * -1
-            )
+            if type_output == "sparse":
+                return csr_matrix(
+                    np.ones(len(self.vectorizers["text"].vocabulary_), dtype=np.int32) * -1
+                )
+            else:
+                return (
+                    np.ones(len(self.vectorizers["text"].vocabulary_), dtype=np.int32) * -1
+                )
 
-        state_keys = [key.replace(delimiter, " ") for key in list(state.keys())]
+
+        state_keys = [key.replace(self.delimiter, " ") for key in list(state.keys())]
         attribute = "text"
         message = Message(" ".join(state_keys))
         message_tokens = self._get_processed_message_tokens_by_attribute(
             message, attribute
         )
-
-        message_tokens = " ".join(message_tokens)
         # features shape (1, seq, dim)
-        features = self._create_sequence(attribute, [[message_tokens, "CLS"]])
+        features = self._create_sequence(attribute, [message_tokens + [CLS_TOKEN]])
 
-        if type_output == "numpyarray":
-            return features[0].A[0].astype(np.int32)
+        if type_output == "dense":
+            return features[0].A[-1].astype(np.int32)
         else:
-            return features[0].getrow(0)
+            return features[0].getrow(-1)
 
 class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
