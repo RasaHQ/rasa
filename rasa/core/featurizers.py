@@ -202,7 +202,7 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         features = self._create_sequence(attribute, [[message_tokens, "CLS"]])
 
         if type_output == "numpyarray":
-            return features[0].A[0]
+            return features[0].A[0].astype(np.int32)
         else:
             return features[0].getrow(0)
 
@@ -472,7 +472,6 @@ class TrackerFeaturizer:
                             del trackers_as_states[i][j][current_intent]
                         else:
                             previous_intent = current_intent
-
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
