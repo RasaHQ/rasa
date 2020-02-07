@@ -8,15 +8,6 @@ from rasa.utils.tensorflow.constants import SIMILARITY_TYPE, LOSS_TYPE
 logger = logging.getLogger(__name__)
 
 
-def load_tf_config(config: Dict[Text, Any]) -> Optional[tf.compat.v1.ConfigProto]:
-    """Prepare `tf.compat.v1.ConfigProto` for training"""
-
-    if config.get("tf_config") is not None:
-        return tf.compat.v1.ConfigProto(**config.pop("tf_config"))
-    else:
-        return None
-
-
 def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
     """Normalizes an array of positive numbers over the top `ranking_length` values.
     Other values will be set to 0.
