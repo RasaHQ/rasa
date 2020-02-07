@@ -82,11 +82,11 @@ SQLTrackerStore
 
       To use the SQLTrackerStore with Oracle, there are a few additional steps.
       First, create a database ``tracker`` in your Oracle database and create a user with access to it.
-      Create a sequence in the database with the following command:
+      Create a sequence in the database with the following command (where username is the user you created):
 
       .. code-block:: sql
 
-          CREATE SEQUENCE {username}.events_seq;
+          CREATE SEQUENCE username.events_seq;
 
       Next you have to extend the Rasa Open Source image to include the necessary drivers and clients.
 
