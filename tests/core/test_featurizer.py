@@ -2,8 +2,11 @@ from rasa.core.featurizers import (
     TrackerFeaturizer,
     BinarySingleStateFeaturizer,
     LabelTokenizerSingleStateFeaturizer,
+    BOWSingleStateFeaturizer,
 )
+from rasa.core.domain import Domain
 import numpy as np
+import scipy
 
 
 def test_fail_to_load_non_existent_featurizer():
@@ -109,3 +112,36 @@ def test_label_tokenizer_featurizer_handles_probabilistic_intents():
         {"intent_a": 0.5, "prev_b": 0.2, "intent_d": 1.0, "prev_action_listen": 1.0}
     )
     assert (encoded == np.array([0.5, 1.0, 1.5, 0.0, 0.2])).all()
+
+def test_bow_tokenizer_featurizer_handles_on_non_existing_features():
+    f = BOWSingleStateFeaturizer()
+    d = Domain
+    d.input_states = ['ab_cd', 'ef_gh_kl']
+    f.prepare_from_domain(d)
+    encoded = f.encode({"ab_cd": 1.0, "prev_cd_ab": 0.0, "kl": 1.0, "prev_action_listen": 1.0}
+        )
+    assert (encoded == np.array([2, 2, 0, 0, 1])).all()
+
+def test_bow_tokenizer_featurizer_uses_correct_dtype_int():
+    f = BOWSingleStateFeaturizer()
+    d = Domain
+    d.input_states = ['ab_cd', 'ef_gh_kl']
+    f.prepare_from_domain(d)
+    encoded = f.encode({"ab_cd": 1.0, "prev_cd_ab": 0.0, "kl": 1.0, "prev_action_listen": 1.0})
+    assert encoded.dtype == np.int32
+
+def test_bow_tokenizer_featurizer_outputs_numpy_as_required():
+    f = BOWSingleStateFeaturizer()
+    d = Domain
+    d.input_states = ['ab_cd', 'ef_gh_kl']
+    f.prepare_from_domain(d)
+    encoded = f.encode({"ab_cd": 1.0, "prev_cd_ab": 0.0, "kl": 1.0, "prev_action_listen": 1.0}, type_output="numpyarray")
+    assert type(encoded) == np.ndarray
+
+def test_bow_tokenizer_featurizer_outputs_sparse_matrix_as_required():
+    f = BOWSingleStateFeaturizer()
+    d = Domain
+    d.input_states = ['ab_cd', 'ef_gh_kl']
+    f.prepare_from_domain(d)
+    encoded = f.encode({"ab_cd": 1.0, "prev_cd_ab": 0.0, "kl": 1.0, "prev_action_listen": 1.0}, type_output="sparse_matrix")
+    assert type(encoded) == scipy.sparse.csr.csr_matrix
