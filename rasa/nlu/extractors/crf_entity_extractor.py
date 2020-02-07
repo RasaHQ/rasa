@@ -207,12 +207,6 @@ class CRFEntityExtractor(DIETClassifier):
             data_example,
         ) = cls._load_from_files(meta, model_dir)
 
-        meta[LABEL_CLASSIFICATION] = False
-        meta[ENTITY_RECOGNITION] = True
-        meta[MASKED_LM] = False
-        meta[NUM_TRANSFORMER_LAYERS] = 0
-        meta[SHARE_HIDDEN_LAYERS] = False
-
         model = cls._load_model(inv_tag_dict, label_data, meta, data_example, model_dir)
 
         return cls(

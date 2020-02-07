@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 class EmbeddingIntentClassifier(DIETClassifier):
 
-    provides = [ENTITIES_ATTRIBUTE]
+    provides = ["intent", "intent_ranking"]
 
     requires = [
         any_of(
