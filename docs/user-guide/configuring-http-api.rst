@@ -3,8 +3,8 @@
 
 .. _configuring-http-api:
 
-Configuring HTTP API
-=====================
+Configuring the HTTP API
+========================
 
 .. edit-link::
 
@@ -12,15 +12,13 @@ Configuring HTTP API
    :local:
 
 Using Rasa's HTTP API
---------------------------
+---------------------
 
 .. note:: 
 
-    Running a model locally as described below is not a scalable approach to 
-    serving your assistant to users. If you want to deploy your assistant,
-    see `how-to-deploy`_. The instructions below are relevant for  
-    configuring how a model is run within a Docker container or for testing 
-    the HTTP API locally.
+    The instructions below are relevant for configuring how a model is run 
+    within a Docker container or for testing the HTTP API locally. If you 
+    want to deploy your assistant to users, see :ref:how-to-deploy.
 
 You can run a simple HTTP server that handles requests using your trained Rasa 
 model with:
