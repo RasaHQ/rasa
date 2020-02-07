@@ -13,7 +13,9 @@ from rasa.core.domain import PREV_PREFIX, Domain
 from rasa.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
-from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import CountVectorsFeaturizer
+from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    CountVectorsFeaturizer,
+)
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import is_logging_disabled
 
@@ -77,7 +79,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         """Use Domain to prepare featurizer."""
 
         self.num_features = domain.num_states
-        print('NUM features in domain: ' + str(self.num_features))
+        print("NUM features in domain: " + str(self.num_features))
         self.input_state_map = domain.input_state_map
 
     def encode(self, state: Dict[Text, float]) -> np.ndarray:
@@ -135,11 +137,11 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
 
         return np.eye(domain.num_actions)
 
+
 class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
-    def prepare_training_data_and_train(self, trackers_as_states, delimiter = '_'):
+    def prepare_training_data_and_train(self, trackers_as_states, delimiter="_"):
         """
         Trains the vertorizers from real data;
-
         Preliminary for when the featurizer is to be used for raw text; 
         Args:
              - trackers_as_states: real data as a dictionary
@@ -151,17 +153,20 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
                 if state:
                     state_keys = list(state.keys())
                     # print(state_keys)
-                    state_keys = [Message(key.replace(delimiter, ' ') + ' CLS') for key in state_keys]
-                     # if key.startswith('intent_') or 'action_' in key or 'utter_' in key] 
+                    state_keys = [
+                        Message(key.replace(delimiter, " ") + " CLS")
+                        for key in state_keys
+                    ]
+                    # if key.startswith('intent_') or 'action_' in key or 'utter_' in key]
 
                     # print([key.text for key in state_keys])
                     training_data += state_keys
-        
-        training_data = TrainingData(training_examples = training_data)
+
+        training_data = TrainingData(training_examples=training_data)
         # print([ex.text for ex in training_data.training_examples])
         self.train(training_data)
 
-    def prepare_from_domain(self, domain: Domain, delimiter = '_')  -> None:
+    def prepare_from_domain(self, domain: Domain, delimiter="_") -> None:
         """
         Train the fecturizers based on the inputs gotten from the domain;
         Args:
@@ -169,45 +174,43 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         """
 
         training_data = domain.input_states
-        training_data = [Message(key.replace(delimiter, ' ') + ' CLS') for key in training_data]
-        training_data = TrainingData(training_examples = training_data)
+        training_data = [
+            Message(key.replace(delimiter, " ") + " CLS") for key in training_data
+        ]
+        training_data = TrainingData(training_examples=training_data)
         self.train(training_data)
 
-
-
-    def encode(self, state: Dict[Text, float], delimiter = '_', type_output = 'numpyarray'):
+    def encode(self, state: Dict[Text, float], delimiter="_", type_output="numpyarray"):
         """
         Encode the state into a numpy array or a sparse sklearn
 
-        Input:
+        Args:
             - state: dictionary describing current state
             - type output: type to return the features as (numpyarray or sklearn coo_matrix)
-        Output:
+        Returns:
             - nparray(vocab_size,) or coo_matrix(1, vocab_size) 
         """
 
         if state is None:
-            return np.ones(len(self.vectorizers['text'].vocabulary_), dtype=np.int32) * -1
+            return (
+                np.ones(len(self.vectorizers["text"].vocabulary_), dtype=np.int32) * -1
+            )
 
-        state_keys = [key.replace('_', ' ') for key in list(state.keys())]
-        attribute = 'text'        
-        message = Message(' '.join(state_keys))
+        state_keys = [key.replace("_", " ") for key in list(state.keys())]
+        attribute = "text"
+        message = Message(" ".join(state_keys))
         message_tokens = self._get_processed_message_tokens_by_attribute(
             message, attribute
         )
 
-        message_tokens = ' '.join(message_tokens)
+        message_tokens = " ".join(message_tokens)
         # features shape (1, seq, dim)
-        features = self._create_sequence(attribute, [[message_tokens, 'CLS']])
+        features = self._create_sequence(attribute, [[message_tokens, "CLS"]])
 
-        if type_output == 'numpyarray':
+        if type_output == "numpyarray":
             return features[0].A[0]
         else:
             return features[0].getrow(0)
-
-
-
-
 
 
 class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
@@ -456,8 +459,9 @@ class TrackerFeaturizer:
 
         return y
 
-    def _postprocess_trackers_as_states(self, trackers_as_states: List[List[Text]]
-        ) -> List[List[Text]]:
+    def _postprocess_trackers_as_states(
+        self, trackers_as_states: List[List[Text]]
+    ) -> List[List[Text]]:
 
         for i in range(len(trackers_as_states)):
             # print('NEW DIALOG')
@@ -469,7 +473,9 @@ class TrackerFeaturizer:
                     # print('BEFORE')
                     # print(state)
                     state_keys = list(trackers_as_states[i][j].keys())
-                    current_intent  = [key for key in state_keys if key.startswith('intent_')]
+                    current_intent = [
+                        key for key in state_keys if key.startswith("intent_")
+                    ]
 
                     # print(current_intent)
                     if not current_intent == []:
@@ -514,7 +520,7 @@ class TrackerFeaturizer:
 
         # noinspection PyPep8Naming
         X, true_lengths = self._featurize_states(trackers_as_states)
-        print('INPUT SHAPE')
+        print("INPUT SHAPE")
         print(np.sum(X[27], axis=1))
         y = self._featurize_labels(trackers_as_actions, domain)
 
