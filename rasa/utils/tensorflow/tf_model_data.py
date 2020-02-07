@@ -82,20 +82,31 @@ class RasaModelData:
 
         self._check_label_key()
 
-        label_ids = self._create_label_ids(self.data[self.label_key][0])
-        label_counts = dict(zip(*np.unique(label_ids, return_counts=True, axis=0)))
+        if self.label_key is None:
+            multi_values = [v for values in self.data.values() for v in values]
+            solo_values = [[] for values in self.data.values() for v in values]
+            stratify = None
+        else:
+            label_ids = self._create_label_ids(self.data[self.label_key][0])
+            label_counts = dict(zip(*np.unique(label_ids, return_counts=True, axis=0)))
 
-        self._check_train_test_sizes(number_of_test_examples, label_counts)
+            self._check_train_test_sizes(number_of_test_examples, label_counts)
 
-        counts = np.array([label_counts[label] for label in label_ids])
-        multi_values = [v[counts > 1] for values in self.data.values() for v in values]
-        solo_values = [v[counts == 1] for values in self.data.values() for v in values]
+            counts = np.array([label_counts[label] for label in label_ids])
+            multi_values = [
+                v[counts > 1] for values in self.data.values() for v in values
+            ]
+            solo_values = [
+                v[counts == 1] for values in self.data.values() for v in values
+            ]
+
+            stratify = label_ids[counts > 1]
 
         output_values = train_test_split(
             *multi_values,
             test_size=number_of_test_examples,
             random_state=random_seed,
-            stratify=label_ids[counts > 1],
+            stratify=stratify,
         )
 
         return self._convert_train_test_split(output_values, solo_values)

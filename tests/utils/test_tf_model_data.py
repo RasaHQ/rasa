@@ -77,7 +77,7 @@ def test_shuffle_session_data(model_data: RasaModelData):
     assert np.all(np.array(model_data.values()) != np.array(data.values()))
 
 
-def test_split_session_data_by_label(model_data: RasaModelData):
+def test_split_data_by_label(model_data: RasaModelData):
     split_model_data = model_data._split_by_label_ids(
         model_data.data, model_data.get("intent_ids")[0], np.array([0, 1])
     )
@@ -85,6 +85,22 @@ def test_split_session_data_by_label(model_data: RasaModelData):
     assert len(split_model_data) == 2
     for s in split_model_data:
         assert len(set(s.get("intent_ids")[0])) == 1
+
+
+def test_split_data_by_none_label(model_data: RasaModelData):
+    model_data.label_key = None
+
+    split_model_data = model_data.split(2, 42)
+
+    assert len(split_model_data) == 2
+
+    train_data = split_model_data[0]
+    test_data = split_model_data[1]
+
+    # train data should have 3 examples
+    assert len(train_data.get("intent_ids")[0]) == 3
+    # test data should have 2 examples
+    assert len(test_data.get("intent_ids")[0]) == 2
 
 
 def test_train_val_split(model_data: RasaModelData):
