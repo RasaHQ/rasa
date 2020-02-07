@@ -530,10 +530,11 @@ class SQLTrackerStore(TrackerStore):
         """Represents an event in the SQL Tracker Store"""
 
         from sqlalchemy import Column, Integer, String, Float, Text
+        from rasa.core.utils import create_sequence
 
         __tablename__ = "events"
 
-        id = Column(Integer, primary_key=True)
+        id = Column(Integer, create_sequence(__tablename__), primary_key=True)
         sender_id = Column(String(255), nullable=False, index=True)
         type_name = Column(String(255), nullable=False)
         timestamp = Column(Float)

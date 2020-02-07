@@ -35,6 +35,7 @@ from rasa.core.lock_store import LockStore, RedisLockStore
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from sanic import Sanic
 from sanic.views import CompositionView
+from sqlalchemy import Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -538,3 +539,12 @@ def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) 
         f"no `RedisLockStore` endpoint configuration has been found."
     )
     return _log_and_get_default_number_of_workers()
+
+def create_sequence(table_name: Text) -> Sequence:
+    """Creates a sequence object"""
+
+    from sqlalchemy.ext.declarative import declarative_base
+
+    sequence_name = f"{table_name}_seq"
+    Base = declarative_base()
+    return Sequence(sequence_name, metadata=Base.metadata, optional=True)
