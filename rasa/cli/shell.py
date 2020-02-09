@@ -26,11 +26,13 @@ def add_subparser(
     )
     shell_parser.set_defaults(func=shell)
 
-    shell_parser.add_argument('--conversation-id',
-                              action='store',
-                              default="default",
-                              required=False,
-                              help='Set Conversation unique identifier.')
+    shell_parser.add_argument(
+        "--conversation-id",
+        action="store",
+        default="default",
+        required=False,
+        help="Set Conversation unique identifier.",
+    )
 
     run_subparsers = shell_parser.add_subparsers()
 
