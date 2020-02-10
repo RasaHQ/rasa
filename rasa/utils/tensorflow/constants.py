@@ -10,7 +10,6 @@ NUM_TRANSFORMER_LAYERS = "number_of_transformer_layers"
 NUM_HEADS = "number_of_attention_heads"
 UNIDIRECTIONAL_ENCODER = "unidirectional_encoder"
 
-POS_ENCODING = "positional_encoding"
 MAX_SEQ_LENGTH = "maximum_sequence_length"
 
 BATCH_SIZES = "batch_sizes"
@@ -19,7 +18,7 @@ EPOCHS = "epochs"
 RANDOM_SEED = "random_seed"
 LEARNING_RATE = "learning_rate"
 
-DENSE_DIM = "dense_dimensions"
+DENSE_DIM = "dense_dimension"
 EMBED_DIM = "embedding_dimension"
 
 SIMILARITY_TYPE = "similarity_type"
@@ -40,8 +39,8 @@ DROPRATE_LABEL = "droprate_label"
 EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
 EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"
 
-INTENT_CLASSIFICATION = "perform_intent_classification"
-ENTITY_RECOGNITION = "perform_entity_recognition"
+LABEL_CLASSIFICATION = "label_classification"
+ENTITY_RECOGNITION = "entity_recognition"
 MASKED_LM = "use_masked_language_model"
 
 SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
