@@ -127,7 +127,7 @@ def configure_app(
             await asyncio.sleep(1)  # allow server to start
             await console.record_messages(
                 server_url=constants.DEFAULT_SERVER_FORMAT.format("http", port),
-                sender_id=sender_id,
+                sender_id=conversation_id,
             )
 
             logger.info("Killing Sanic server now.")
