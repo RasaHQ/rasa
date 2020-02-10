@@ -27,6 +27,8 @@ InMemoryTrackerStore (default)
 :Configuration:
     To use the `InMemoryTrackerStore` no configuration is needed.
 
+.. _sql-tracker-store:
+
 SQLTrackerStore
 ~~~~~~~~~~~~~~~
 
@@ -76,7 +78,7 @@ SQLTrackerStore
     - Oracle > 11.0
     - SQLite
 
-
+.. _oracle-configuration:
 :Oracle Configuration:
 
 
