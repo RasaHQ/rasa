@@ -155,7 +155,7 @@ def serve_application(
     ssl_keyfile: Optional[Text] = None,
     ssl_ca_file: Optional[Text] = None,
     ssl_password: Optional[Text] = None,
-    conversation_id=DEFAULT_SENDER_ID,
+    conversation_id: Optional[Text] = DEFAULT_SENDER_ID,
 ):
     from rasa import server
 
