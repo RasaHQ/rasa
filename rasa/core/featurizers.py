@@ -89,7 +89,7 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
                 if state:
                     state_keys = list(state.keys())
                     state_keys = [
-                        Message(key.replace(self.delimiter, " ") + " CLS")
+                        Message(key.replace(self.delimiter, " ") + " " + CLS_TOKEN)
                         for key in state_keys
                     ]
                     training_data += state_keys
