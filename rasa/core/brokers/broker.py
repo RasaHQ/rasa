@@ -1,5 +1,4 @@
 import logging
-import warnings
 from typing import Any, Dict, Text, Optional, Union
 
 from rasa.utils import common
