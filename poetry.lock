@@ -423,6 +423,17 @@ python-versions = "*"
 version = "1.0.2"
 
 [[package]]
+category = "main"
+description = "A drop-in replacement for argparse that allows options to also be set via config files and/or environment variables."
+name = "configargparse"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+version = "1.0"
+
+[package.extras]
+yaml = ["pyyaml"]
+
+[[package]]
 category = "dev"
 description = "Code coverage measurement for Python"
 name = "coverage"
@@ -918,7 +929,7 @@ description = "The OpenAI Gym: A toolkit for developing and comparing your reinf
 name = "gym"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-version = "0.15.6"
+version = "0.16.0"
 
 [package.dependencies]
 cloudpickle = ">=1.2.0,<1.3.0"
@@ -948,10 +959,10 @@ description = "HTTP/2 State-Machine based protocol implementation"
 name = "h2"
 optional = false
 python-versions = "*"
-version = "3.1.1"
+version = "3.2.0"
 
 [package.dependencies]
-hpack = ">=2.3,<4"
+hpack = ">=3.0,<4"
 hyperframe = ">=5.2.0,<6"
 
 [[package]]
@@ -1015,7 +1026,7 @@ description = "Human friendly output for text interfaces using Python"
 name = "humanfriendly"
 optional = false
 python-versions = "*"
-version = "5.0"
+version = "6.0"
 
 [package.dependencies]
 pyreadline = "*"
@@ -1906,40 +1917,6 @@ srv = ["dnspython (>=1.8.0,<2.0.0)"]
 tls = ["ipaddress"]
 
 [[package]]
-category = "dev"
-description = "Python<->ObjC Interoperability Module"
-marker = "sys_platform == \"darwin\""
-name = "pyobjc-core"
-optional = false
-python-versions = ">=3.6"
-version = "6.1"
-
-[[package]]
-category = "dev"
-description = "Wrappers for the Cocoa frameworks on macOS"
-marker = "sys_platform == \"darwin\""
-name = "pyobjc-framework-cocoa"
-optional = false
-python-versions = ">=3.6"
-version = "6.1"
-
-[package.dependencies]
-pyobjc-core = ">=6.1"
-
-[[package]]
-category = "dev"
-description = "Wrappers for the framework FSEvents on macOS"
-marker = "sys_platform == \"darwin\""
-name = "pyobjc-framework-fsevents"
-optional = false
-python-versions = ">=3.6"
-version = "6.1"
-
-[package.dependencies]
-pyobjc-core = ">=6.1"
-pyobjc-framework-Cocoa = ">=6.1"
-
-[[package]]
 category = "main"
 description = "Python parsing module"
 name = "pyparsing"
@@ -2245,6 +2222,24 @@ prompt-toolkit = ">=2.0,<3.0"
 test = ["pytest (>=4.0,<5.0)", "pytest-pycodestyle (>=1.3,<2.0)", "pytest-cov (>=2.6,<3.0)", "coveralls (>=1.3,<2.0)"]
 
 [[package]]
+category = "main"
+description = "Machine learning based dialogue engine for conversational software."
+name = "rasa-sdk"
+optional = false
+python-versions = ">=3.6"
+version = "1.7.0"
+
+[package.dependencies]
+ConfigArgParse = ">=0.14"
+coloredlogs = ">=10.0,<11.0"
+multidict = "4.6.1"
+sanic = ">=19.9.0,<19.10.0"
+sanic-cors = "0.9.9.post1"
+
+[package.extras]
+test = ["pytest (>=4.0,<5.0)", "pytest-cov (>=2.0,<3.0)"]
+
+[[package]]
 category = "dev"
 description = "A configurable sidebar-enabled Sphinx theme"
 name = "rasabaster"
@@ -2259,6 +2254,7 @@ version = "0.7.23"
 reference = ""
 type = "url"
 url = "https://storage.googleapis.com/docs-theme/rasabaster-0.7.23.tar.gz"
+
 [[package]]
 category = "main"
 description = "Python client for Redis key-value store"
@@ -2629,6 +2625,7 @@ version = "0.2.5b1"
 reference = "6b89a7c13bba2a7100d7093ed5007b2abf67f277"
 type = "git"
 url = "https://github.com/RasaHQ/sphinx_rtd_theme.git"
+
 [[package]]
 category = "dev"
 description = "Tab views for Sphinx"
@@ -2691,6 +2688,7 @@ sphinx = "*"
 reference = "3bbcb826165faea670e8e7a83706c9d611b90d6f"
 type = "git"
 url = "https://github.com/RasaHQ/sphinxcontrib-versioning.git"
+
 [[package]]
 category = "dev"
 description = "Sphinx API for Web Apps"
@@ -3147,12 +3145,10 @@ description = "Filesystem events monitoring"
 name = "watchdog"
 optional = false
 python-versions = "*"
-version = "0.10.1"
+version = "0.10.2"
 
 [package.dependencies]
 pathtools = ">=0.1.1"
-pyobjc-framework-Cocoa = ">=4.2.2"
-pyobjc-framework-FSEvents = ">=4.2.2"
 
 [package.extras]
 watchmedo = ["PyYAML (>=3.10)", "argh (>=0.24.1)"]
@@ -3271,7 +3267,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools"]
 
 [metadata]
-content-hash = "4812566571455371465306d05254afa08bd93ea91556d43707f8b41a902e31d8"
+content-hash = "49beea02d5b088409d14bd0d1f236b04d7c7492d6399f9383e740295247daa42"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -3461,6 +3457,9 @@ colorhash = [
     {file = "colorhash-1.0.2-py2.py3-none-any.whl", hash = "sha256:f5a0019b7364fb12b0ed52e3fe05f69fe8c2d77622e6abf2f869e711308e14e1"},
     {file = "colorhash-1.0.2.tar.bz2", hash = "sha256:e0f925c3d82d5ed6e5fe8039492325263b5b75490bddf38e24a221467c3ee764"},
     {file = "colorhash-1.0.2.zip", hash = "sha256:5eeb6b490cbbf3545f50d39cf46993a1335b392b339cec6053f857e2785f83d8"},
+]
+configargparse = [
+    {file = "ConfigArgParse-1.0.tar.gz", hash = "sha256:bf378245bc9cdc403a527e5b7406b991680c2a530e7e81af747880b54eb57133"},
 ]
 coverage = [
     {file = "coverage-5.0.3-cp27-cp27m-macosx_10_12_x86_64.whl", hash = "sha256:cc1109f54a14d940b8512ee9f1c3975c181bbb200306c6d8b87d93376538782f"},
@@ -3734,15 +3733,15 @@ gunicorn = [
     {file = "gunicorn-20.0.4.tar.gz", hash = "sha256:1904bb2b8a43658807108d59c3f3d56c2b6121a701161de0ddf9ad140073c626"},
 ]
 gym = [
-    {file = "gym-0.15.6.tar.gz", hash = "sha256:ed7ddc4d3a07da80f7865b0fa2a0659d2d898588269329994d4b0b320d27fd62"},
+    {file = "gym-0.16.0.tar.gz", hash = "sha256:c5da331c6d9234dfe8edc64b34cfbe654783ea8b7bc85089aff0579b8659051a"},
 ]
 h11 = [
     {file = "h11-0.8.1-py2.py3-none-any.whl", hash = "sha256:f2b1ca39bfed357d1f19ac732913d5f9faa54a5062eca7d2ec3a916cfb7ae4c7"},
     {file = "h11-0.8.1.tar.gz", hash = "sha256:acca6a44cb52a32ab442b1779adf0875c443c689e9e028f8d831a3769f9c5208"},
 ]
 h2 = [
-    {file = "h2-3.1.1-py2.py3-none-any.whl", hash = "sha256:ac377fcf586314ef3177bfd90c12c7826ab0840edeb03f0f24f511858326049e"},
-    {file = "h2-3.1.1.tar.gz", hash = "sha256:b8a32bd282594424c0ac55845377eea13fa54fe4a8db012f3a198ed923dc3ab4"},
+    {file = "h2-3.2.0-py2.py3-none-any.whl", hash = "sha256:61e0f6601fa709f35cdb730863b4e5ec7ad449792add80d1410d4174ed139af5"},
+    {file = "h2-3.2.0.tar.gz", hash = "sha256:875f41ebd6f2c44781259005b157faed1a5031df3ae5aa7bcb4628a6c0782f14"},
 ]
 h5py = [
     {file = "h5py-2.10.0-cp27-cp27m-macosx_10_6_intel.whl", hash = "sha256:ecf4d0b56ee394a0984de15bceeb97cbe1fe485f1ac205121293fc44dcf3f31f"},
@@ -3801,8 +3800,8 @@ httptools = [
     {file = "httptools-0.1.1.tar.gz", hash = "sha256:41b573cf33f64a8f8f3400d0a7faf48e1888582b6f6e02b82b9bd4f0bf7497ce"},
 ]
 humanfriendly = [
-    {file = "humanfriendly-5.0-py2.py3-none-any.whl", hash = "sha256:eee2e57dea6185fee19914c7d8ba8bc3e488aee2a3c96a7668ce355e2ae275ae"},
-    {file = "humanfriendly-5.0.tar.gz", hash = "sha256:b166d90b0fd2e7deafc5d20f64ddfdd4251189a1a6bdc5ed32c6678c79b546d5"},
+    {file = "humanfriendly-6.0-py2.py3-none-any.whl", hash = "sha256:d112bb6d6f7859c5cda7233fdebadb82636730b25738c15ba44ce4c4dc023f77"},
+    {file = "humanfriendly-6.0.tar.gz", hash = "sha256:c2c4b442e8bb8b92b45b36b10e403765093d9178a112291686b37f175f2fe19d"},
 ]
 hyperframe = [
     {file = "hyperframe-5.2.0-py2.py3-none-any.whl", hash = "sha256:5187962cb16dcc078f23cb5a4b110098d546c3f41ff2d4038a9896893bbd0b40"},
@@ -4352,24 +4351,6 @@ pymongo = [
     {file = "pymongo-3.8.0-py2.7-win32.egg", hash = "sha256:c3e813b1bd0b883639e30170dc9daccb9b6ef7e81836188b88d3fc7364892b35"},
     {file = "pymongo-3.8.0.tar.gz", hash = "sha256:9d50c99c6388863cbfdc5db9bad62e3a7c2e5fc151554a07c7f3c2530334a34f"},
 ]
-pyobjc-core = [
-    {file = "pyobjc-core-6.1.tar.gz", hash = "sha256:1a0fbf012fb575e0adf8c18cfd4453e657cc2c0deb2660c529bf524ba4c9149a"},
-    {file = "pyobjc_core-6.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:470ccd754efb468a59426942673dfc3c5c59f33a5b8cae8a7fc1be975c2d4128"},
-    {file = "pyobjc_core-6.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:751cdeb436cb181af2e2413015b072075590577c410c7f345080a38dd028b8ec"},
-    {file = "pyobjc_core-6.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:8ccf44511cbe438fa6562c423c0c5f1dad7cfc0eadd6d8f112840f8845b44fda"},
-]
-pyobjc-framework-cocoa = [
-    {file = "pyobjc-framework-Cocoa-6.1.tar.gz", hash = "sha256:c4077d2e6f96e4f3fd9780d66778cf51d27f414822498b24410e9df7a6a4d531"},
-    {file = "pyobjc_framework_Cocoa-6.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:32ba4d0ce811e2088bf0fc360c9545c06586934e895f7133655b8f2182e7019a"},
-    {file = "pyobjc_framework_Cocoa-6.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:245e19156739f8068db474ad9561079cc698f08ef525e299b8eedc5531e02801"},
-    {file = "pyobjc_framework_Cocoa-6.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:1dc428f867d35007ddf9de5b24eff5bfdf65c58b1d610abcb08bebd94c343312"},
-]
-pyobjc-framework-fsevents = [
-    {file = "pyobjc-framework-FSEvents-6.1.tar.gz", hash = "sha256:7a635c86af744a1d17f0c6c3913bef87b5fd146e0311c03229eba9e512b81520"},
-    {file = "pyobjc_framework_FSEvents-6.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:94c6953774b6d69e59d9781951f05ef57e352b3c530d4c236f463444852c3a88"},
-    {file = "pyobjc_framework_FSEvents-6.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:3a403ce5997cc01f23f1a70f8b4c919311b9a6b1fdd3c3d02d19079d711f954c"},
-    {file = "pyobjc_framework_FSEvents-6.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:d2ae8748d1791dc9e3d19b41d3873283ac34ed17ff8fca70f1a199336a0477b5"},
-]
 pyparsing = [
     {file = "pyparsing-2.4.6-py2.py3-none-any.whl", hash = "sha256:c342dccb5250c08d45fd6f8b4a559613ca603b57498511740e65cd11a2e7dcec"},
     {file = "pyparsing-2.4.6.tar.gz", hash = "sha256:4c830582a84fb022400b85429791bc551f1f4871c33f23e44f353119e92f969f"},
@@ -4518,6 +4499,10 @@ pyyaml = [
 questionary = [
     {file = "questionary-1.1.1-py3-none-any.whl", hash = "sha256:382893ae127a5f29f0974044c109d138581f4f9745899b93041d2d7830f9aa50"},
     {file = "questionary-1.1.1.tar.gz", hash = "sha256:35450047873b7800ee41afc877ce51d2ad965444cd191dc4c481b8452d13d068"},
+]
+rasa-sdk = [
+    {file = "rasa-sdk-1.7.0.tar.gz", hash = "sha256:4b29951fcb17276345004506c30b1b408986d49416ae27b3ad3a359dfb414f99"},
+    {file = "rasa_sdk-1.7.0-py2.py3-none-any.whl", hash = "sha256:d28e037d0314292285cfc7dac852b3fce29ecc908c3f76d640d84877e2b9c561"},
 ]
 rasabaster = []
 redis = [
@@ -4893,7 +4878,7 @@ uvloop = [
     {file = "uvloop-0.14.0.tar.gz", hash = "sha256:123ac9c0c7dd71464f58f1b4ee0bbd81285d96cdda8bc3519281b8973e3a461e"},
 ]
 watchdog = [
-    {file = "watchdog-0.10.1.tar.gz", hash = "sha256:d64786787b14c8c6a71a8cc014056776ba6b52e85d1164ef2ab50aec02723a3d"},
+    {file = "watchdog-0.10.2.tar.gz", hash = "sha256:c560efb643faed5ef28784b2245cf8874f939569717a4a12826a173ac644456b"},
 ]
 wcwidth = [
     {file = "wcwidth-0.1.8-py2.py3-none-any.whl", hash = "sha256:8fd29383f539be45b20bd4df0dc29c20ba48654a41e661925e612311e9f3c603"},

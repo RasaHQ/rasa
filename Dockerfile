@@ -17,23 +17,16 @@ RUN apt-get update -qq && \
   curl
 
 # install poetry
+# keep this in sync with the version in pyproject.toml and Dockerfile
 ENV POETRY_VERSION 1.0.3
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
 ENV PATH "/root/.poetry/bin:/opt/venv/bin:${PATH}"
 
 # install dependencies
-COPY README.md poetry.lock pyproject.toml setup.cfg /opt/rasa/
+COPY . /opt/rasa/
 RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
-  pip install -U pip && \
-  cd /opt/rasa && \
-  poetry install --no-dev --no-interaction
-
-# build and install rasa
-COPY rasa /opt/rasa/rasa
-RUN ls /opt/rasa
-RUN ls /opt/rasa/rasa
-RUN . /opt/venv/bin/activate && \
+  pip install --no-cache-dir -U pip && \
   cd /opt/rasa && \
   poetry install --no-dev --no-interaction
 
