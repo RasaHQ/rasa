@@ -134,14 +134,15 @@ def find_story_conflicts(
     domain: Domain,
     max_history: Optional[int] = None,
 ) -> List[StoryConflict]:
-    """Generates a list of `StoryConflict` objects, describing conflicts in the given trackers.
+    """Generates `StoryConflict` objects, describing conflicts in the given trackers.
 
     Args:
         trackers: Trackers in which to search for conflicts.
         domain: The domain.
         max_history: The maximum history length to be taken into account.
+
     Returns:
-        List of conflicts.
+        StoryConflict objects.
     """
     # Use the length of the longest story for `max_history` if not specified otherwise
     if not max_history:
