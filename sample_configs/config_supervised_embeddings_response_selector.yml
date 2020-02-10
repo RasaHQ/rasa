@@ -1,0 +1,8 @@
+language: en
+pipeline: 
+- name: "WhitespaceTokenizer"
+- name: "CountVectorsFeaturizer"
+- name: "EmbeddingIntentClassifier"
+- name: "ResponseSelector"
+  epochs: 2
+  retrieval_intent: out_of_scope
