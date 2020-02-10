@@ -31,7 +31,7 @@ def add_subparser(
         action="store",
         default="default",
         required=False,
-        help="Set Conversation unique identifier.",
+        help="Set the conversation ID.",
     )
 
     run_subparsers = shell_parser.add_subparsers()
