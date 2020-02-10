@@ -737,7 +737,9 @@ class Domain:
                 SESSION_EXPIRATION_TIME_KEY: self.session_config.session_expiration_time,
                 CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
             },
-            "intents": self._transform_intents_for_file(),
+            "intents": self._transform_intents_for_file(
+                self.intent_properties, self.entities
+            ),
             "entities": self.entities,
             "slots": self._slot_definitions(),
             "responses": self.templates,
@@ -751,23 +753,29 @@ class Domain:
         domain_data = self.as_dict()
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
 
-    def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
+    @staticmethod
+    def _transform_intents_for_file(
+        intent_properties: Dict[Text, Dict[Text, Union[bool, List]]],
+        entities: List[Text],
+    ) -> List[Union[Text, Dict[Text, Any]]]:
         """Replace the internal `used_entities` property by `use_entities` or
         `ignore_entities`.
         """
-        intents_data = [{k: v} for k, v in self.intent_properties.items()]
+        intent_properties_for_file = []
 
-        for idx, intent_info in enumerate(intents_data):
-            for name, intent in intent_info.items():
-                use_entities = set(intent.pop("used_entities"))
-                ignore_entities = set(self.entities) - use_entities
-                if len(use_entities) == len(self.entities):
-                    intent["use_entities"] = True
-                elif len(use_entities) <= len(self.entities) / 2:
-                    intent["use_entities"] = list(use_entities)
-                else:
-                    intent["ignore_entities"] = list(ignore_entities)
-        return intents_data
+        for intent_name, intent_props_internal in intent_properties.items():
+            intent_for_file = {}
+            use_entities = set(intent_props_internal["used_entities"])
+            ignore_entities = set(entities) - use_entities
+            if len(use_entities) == len(entities):
+                intent_for_file["use_entities"] = True
+            elif len(use_entities) <= len(entities) / 2:
+                intent_for_file["use_entities"] = list(use_entities)
+            else:
+                intent_for_file["ignore_entities"] = list(ignore_entities)
+            intent_properties_for_file.append({intent_name: intent_for_file})
+
+        return intent_properties_for_file
 
     def cleaned_domain(self) -> Dict[Text, Any]:
         """Fetch cleaned domain, replacing redundant keys with default values and
