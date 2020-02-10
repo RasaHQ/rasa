@@ -144,7 +144,7 @@ class RegexFeaturizer(Featurizer):
             except OSError:
                 raise ValueError(
                     "Could not load lookup table {}"
-                    " Make sure you've provided the correct path".format(lookup_elements)
+                    f"Please make sure you've provided the correct path."
                 )
 
             with f:
