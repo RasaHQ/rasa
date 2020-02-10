@@ -10,13 +10,10 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.constants import DOCS_BASE_URL
-from rasa.nlu.components import any_of
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     ENTITIES_ATTRIBUTE,
-    DENSE_FEATURE_NAMES,
-    SPARSE_FEATURE_NAMES,
     TOKENS_NAMES,
 )
 from rasa.utils.tensorflow.constants import (
@@ -37,11 +34,11 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EPOCHS,
     UNIDIRECTIONAL_ENCODER,
     DROPRATE,
-    C2,
+    REGULARIZATION_CONSTANT,
     BILOU_FLAG,
 )
 from rasa.utils.common import raise_warning
-from rasa.utils.tensorflow.tf_models import RasaModel
+from rasa.utils.tensorflow.models import RasaModel
 
 logger = logging.getLogger(__name__)
 
@@ -96,8 +93,8 @@ class CRFEntityExtractor(DIETClassifier):
         # default dense dimension used if no dense features are present
         DENSE_DIM: {"text": 512, "label": 20},
         # regularization parameters
-        # the scale of L2 regularization
-        C2: 0.002,
+        # the scale of regularization
+        REGULARIZATION_CONSTANT: 0.002,
         # dropout rate for rnn
         DROPRATE: 0.2,
         # if true apply dropout to sparse tensors
@@ -131,6 +128,7 @@ class CRFEntityExtractor(DIETClassifier):
         component_config[MASKED_LM] = False
         component_config[NUM_TRANSFORMER_LAYERS] = 0
         component_config[SHARE_HIDDEN_LAYERS] = False
+        component_config[UNIDIRECTIONAL_ENCODER] = False
 
         super().__init__(
             component_config,

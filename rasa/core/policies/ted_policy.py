@@ -119,7 +119,7 @@ class TEDPolicy(Policy):
         # scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
         # regularization
-        # the scale of L2 regularization
+        # the scale of regularization
         REGULARIZATION_CONSTANT: 0.001,
         # the scale of how important is to minimize the maximum similarity
         # between embeddings of different labels

@@ -18,8 +18,8 @@ from rasa.utils.tensorflow.constants import (
     NUM_NEG,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
-    C_EMB,
-    C2,
+    NEG_MARGIN_SCALE,
+    REGULARIZATION_CONSTANT,
     SCALE_LOSS,
     USE_MAX_SIM_NEG,
     MU_NEG,
@@ -33,7 +33,7 @@ from rasa.utils.tensorflow.constants import (
     DROPRATE_LABEL,
 )
 from rasa.utils.common import raise_warning
-from rasa.utils.tensorflow.tf_models import RasaModel
+from rasa.utils.tensorflow.models import RasaModel
 
 logger = logging.getLogger(__name__)
 
@@ -94,11 +94,11 @@ class EmbeddingPolicy(TEDPolicy):
         # scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
         # regularization
-        # the scale of L2 regularization
-        C2: 0.001,
+        # the scale of regularization
+        REGULARIZATION_CONSTANT: 0.001,
         # the scale of how important is to minimize the maximum similarity
         # between embeddings of different labels
-        C_EMB: 0.8,
+        NEG_MARGIN_SCALE: 0.8,
         # dropout rate for dial nn
         DROPRATE_DIALOGUE: 0.1,
         # dropout rate for bot nn
