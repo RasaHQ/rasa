@@ -274,7 +274,7 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
         data, os.path.join(unpacked_trained_moodbot_path, "nlu"), errors=False
     )
     assert result.get("intent_evaluation")
-    assert result.get("entity_evaluation").get("CRFEntityExtractor")
+    assert result.get("entity_evaluation").get("DIETClassifier")
 
 
 def test_run_cv_evaluation():
@@ -292,12 +292,12 @@ def test_run_cv_evaluation():
     assert len(intent_results.test["Accuracy"]) == n_folds
     assert len(intent_results.test["Precision"]) == n_folds
     assert len(intent_results.test["F1-score"]) == n_folds
-    assert len(entity_results.train["CRFEntityExtractor"]["Accuracy"]) == n_folds
-    assert len(entity_results.train["CRFEntityExtractor"]["Precision"]) == n_folds
-    assert len(entity_results.train["CRFEntityExtractor"]["F1-score"]) == n_folds
-    assert len(entity_results.test["CRFEntityExtractor"]["Accuracy"]) == n_folds
-    assert len(entity_results.test["CRFEntityExtractor"]["Precision"]) == n_folds
-    assert len(entity_results.test["CRFEntityExtractor"]["F1-score"]) == n_folds
+    assert len(entity_results.train["DIETClassifier"]["Accuracy"]) == n_folds
+    assert len(entity_results.train["DIETClassifier"]["Precision"]) == n_folds
+    assert len(entity_results.train["DIETClassifier"]["F1-score"]) == n_folds
+    assert len(entity_results.test["DIETClassifier"]["Accuracy"]) == n_folds
+    assert len(entity_results.test["DIETClassifier"]["Precision"]) == n_folds
+    assert len(entity_results.test["DIETClassifier"]["F1-score"]) == n_folds
 
 
 def test_run_cv_evaluation_with_response_selector():

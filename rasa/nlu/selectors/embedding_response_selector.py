@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Text
+from typing import Any, Dict, Text, Optional
 
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -11,7 +11,6 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    POS_ENCODING,
     MAX_SEQ_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
@@ -26,7 +25,7 @@ from rasa.utils.tensorflow.constants import (
     SPARSE_INPUT_DROPOUT,
     MASKED_LM,
     ENTITY_RECOGNITION,
-    INTENT_CLASSIFICATION,
+    LABEL_CLASSIFICATION,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
     UNIDIRECTIONAL_ENCODER,
@@ -38,6 +37,7 @@ from rasa.utils.tensorflow.constants import (
     MU_NEG,
     MU_POS,
     EMBED_DIM,
+    BILOU_FLAG,
 )
 from rasa.nlu.constants import (
     RESPONSE_ATTRIBUTE,
@@ -48,7 +48,7 @@ from rasa.nlu.constants import (
     SPARSE_FEATURE_NAMES,
 )
 from rasa.utils.tensorflow.tf_model_data import RasaModelData
-
+from rasa.utils.tensorflow.tf_models import RasaModel
 
 logger = logging.getLogger(__name__)
 
@@ -101,8 +101,6 @@ class ResponseSelector(DIETClassifier):
         NUM_TRANSFORMER_LAYERS: 1,
         # number of attention heads in transformer
         NUM_HEADS: 4,
-        # type of positional encoding in transformer
-        POS_ENCODING: "timing",  # string 'timing' or 'emb'
         # max sequence length if pos_encoding='emb'
         MAX_SEQ_LENGTH: 256,
         # training parameters
@@ -159,27 +157,43 @@ class ResponseSelector(DIETClassifier):
         # selector config
         # name of the intent for which this response selector is to be trained
         "retrieval_intent": None,
-        # if true intent classification is trained and intent predicted
-        INTENT_CLASSIFICATION: True,
-        # if true named entity recognition is trained and entities predicted
-        # (should always be false)
-        ENTITY_RECOGNITION: False,
-        # if true random tokens of the input message will be masked and the model
-        # should predict those tokens
-        MASKED_LM: False,
         # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: False,
     }
-
     # end default properties (DOC MARKER - don't remove)
+
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        inverted_label_dict: Optional[Dict[int, Text]] = None,
+        inverted_tag_dict: Optional[Dict[int, Text]] = None,
+        model: Optional[RasaModel] = None,
+        batch_tuple_sizes: Optional[Dict] = None,
+    ):
+        component_config = component_config or {}
+
+        # the following properties are fixed for the ResponseSelector
+        component_config[LABEL_CLASSIFICATION] = True
+        component_config[ENTITY_RECOGNITION] = False
+        component_config[MASKED_LM] = False
+        component_config[BILOU_FLAG] = False
+
+        super().__init__(
+            component_config,
+            inverted_label_dict,
+            inverted_tag_dict,
+            model,
+            batch_tuple_sizes,
+        )
 
     def _load_selector_params(self, config: Dict[Text, Any]) -> None:
         self.retrieval_intent = config["retrieval_intent"]
         if not self.retrieval_intent:
             # retrieval intent was left to its default value
             logger.info(
-                "Retrieval intent parameter was left to its default value. This response selector will be trained"
-                "on training examples combining all retrieval intents."
+                "Retrieval intent parameter was left to its default value. This "
+                "response selector will be trained on training examples combining "
+                "all retrieval intents."
             )
 
     def _check_config_parameters(self) -> None:

@@ -40,7 +40,6 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    POS_ENCODING,
     MAX_SEQ_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
@@ -55,7 +54,7 @@ from rasa.utils.tensorflow.constants import (
     SPARSE_INPUT_DROPOUT,
     MASKED_LM,
     ENTITY_RECOGNITION,
-    INTENT_CLASSIFICATION,
+    LABEL_CLASSIFICATION,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
     UNIDIRECTIONAL_ENCODER,
@@ -118,8 +117,6 @@ class DIETClassifier(EntityExtractor):
         NUM_TRANSFORMER_LAYERS: 2,
         # number of attention heads in transformer
         NUM_HEADS: 4,
-        # type of positional encoding in transformer
-        POS_ENCODING: "timing",  # string 'timing' or 'emb'
         # max sequence length if pos_encoding='emb'
         MAX_SEQ_LENGTH: 256,
         # training parameters
@@ -167,6 +164,8 @@ class DIETClassifier(EntityExtractor):
         DROPRATE: 0.2,
         # use a unidirectional or bidirectional encoder
         UNIDIRECTIONAL_ENCODER: False,
+        # if true apply dropout to sparse tensors
+        SPARSE_INPUT_DROPOUT: True,
         # visualization of accuracy
         # how often to calculate training accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
@@ -174,34 +173,39 @@ class DIETClassifier(EntityExtractor):
         EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
         # model config
         # if true intent classification is trained and intent predicted
-        INTENT_CLASSIFICATION: True,
+        LABEL_CLASSIFICATION: True,
         # if true named entity recognition is trained and entities predicted
         ENTITY_RECOGNITION: True,
         # if true random tokens of the input message will be masked and the model
         # should predict those tokens
         MASKED_LM: False,
-        # if true apply dropout to sparse tensors
-        SPARSE_INPUT_DROPOUT: True,
-        # if true BILOU schema is used for entities
-        BILOU_FLAG: False,
+        # BILOU_flag determines whether to use BILOU tagging or not.
+        # More rigorous however requires more examples per entity
+        # rule of thumb: use only if more than 100 egs. per entity
+        BILOU_FLAG: True,
     }
     # end default properties (DOC MARKER - don't remove)
 
     # init helpers
     def _check_config_parameters(self) -> None:
-        if (
-            self.component_config[SHARE_HIDDEN_LAYERS]
-            and self.component_config[HIDDEN_LAYERS_SIZES_TEXT]
-            != self.component_config[HIDDEN_LAYERS_SIZES_LABEL]
-        ):
-            raise ValueError(
-                "If hidden layer weights are shared,"
-                "hidden_layer_sizes for text and label must coincide."
-            )
-
-        self.component_config = train_utils.update_similarity_type(
+        self.component_config = train_utils.check_deprecated_options(
             self.component_config
         )
+
+        if self.component_config[LABEL_CLASSIFICATION]:
+            if (
+                self.component_config[SHARE_HIDDEN_LAYERS]
+                and self.component_config[HIDDEN_LAYERS_SIZES_TEXT]
+                != self.component_config[HIDDEN_LAYERS_SIZES_LABEL]
+            ):
+                raise ValueError(
+                    "If hidden layer weights are shared,"
+                    "hidden_layer_sizes for text and label must coincide."
+                )
+
+            self.component_config = train_utils.update_similarity_type(
+                self.component_config
+            )
 
         if self.component_config[EVAL_NUM_EPOCHS] < 1:
             self.component_config[EVAL_NUM_EPOCHS] = self.component_config[EPOCHS]
@@ -241,6 +245,10 @@ class DIETClassifier(EntityExtractor):
         self.num_tags = 0
 
         self.data_example = None
+
+        self.label_key = (
+            "label_ids" if self.component_config[LABEL_CLASSIFICATION] else None
+        )
 
     # training data helpers:
     @staticmethod
@@ -339,8 +347,7 @@ class DIETClassifier(EntityExtractor):
 
             if num_text_features != num_intent_features:
                 raise ValueError(
-                    "If embeddings are shared "
-                    "text features and label features "
+                    "If embeddings are shared text features and label features "
                     "must coincide. Check the output dimensions of previous components."
                 )
 
@@ -483,7 +490,7 @@ class DIETClassifier(EntityExtractor):
         label_ids = np.array(label_ids)
         tag_ids = np.array(tag_ids)
 
-        model_data = RasaModelData(label_key="label_ids")
+        model_data = RasaModelData(label_key=self.label_key)
         model_data.add_features("text_features", [X_sparse, X_dense])
         model_data.add_features("label_features", [Y_sparse, Y_dense])
         if label_attribute and model_data.feature_not_exists("label_features"):
@@ -524,7 +531,7 @@ class DIETClassifier(EntityExtractor):
         self.inverted_tag_dict = {v: k for k, v in tag_id_dict.items()}
 
         label_attribute = (
-            INTENT_ATTRIBUTE if self.component_config[INTENT_CLASSIFICATION] else None
+            INTENT_ATTRIBUTE if self.component_config[LABEL_CLASSIFICATION] else None
         )
 
         model_data = self._create_model_data(
@@ -547,7 +554,7 @@ class DIETClassifier(EntityExtractor):
     def train(
         self,
         training_data: TrainingData,
-        cfg: Optional[RasaNLUModelConfig] = None,
+        config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
         """Train the embedding intent classifier on a data set."""
@@ -559,7 +566,7 @@ class DIETClassifier(EntityExtractor):
 
         model_data = self.preprocess_train_data(training_data)
 
-        if self.component_config[INTENT_CLASSIFICATION]:
+        if self.component_config[LABEL_CLASSIFICATION]:
             possible_to_train = self._check_enough_labels(model_data)
 
             if not possible_to_train:
@@ -609,8 +616,7 @@ class DIETClassifier(EntityExtractor):
 
         if self.model is None:
             logger.error(
-                "There is no trained tf.session: "
-                "component is either not trained or "
+                "There is no trained model: component is either not trained or "
                 "didn't receive enough training data."
             )
             return label, label_ranking
@@ -661,8 +667,7 @@ class DIETClassifier(EntityExtractor):
     ) -> List[Dict]:
         if self.model is None:
             logger.error(
-                "There is no trained tf.session: "
-                "component is either not trained or "
+                "There is no trained model: component is either not trained or "
                 "didn't receive enough training data"
             )
             return []
@@ -721,7 +726,7 @@ class DIETClassifier(EntityExtractor):
 
         out = self._predict(message)
 
-        if self.component_config[INTENT_CLASSIFICATION]:
+        if self.component_config[LABEL_CLASSIFICATION]:
             label, label_ranking = self._predict_label(out)
 
             message.set("intent", label, add_to_output=True)
@@ -773,7 +778,7 @@ class DIETClassifier(EntityExtractor):
         cls,
         meta: Dict[Text, Any],
         model_dir: Text = None,
-        model_metadata: "Metadata" = None,
+        model_metadata: Metadata = None,
         cached_component: Optional["DIETClassifier"] = None,
         **kwargs: Any,
     ) -> "DIETClassifier":
@@ -786,13 +791,33 @@ class DIETClassifier(EntityExtractor):
             )
             return cls(component_config=meta)
 
+        (
+            batch_tuple_sizes,
+            inv_label_dict,
+            inv_tag_dict,
+            label_data,
+            meta,
+            data_example,
+        ) = cls._load_from_files(meta, model_dir)
+
+        meta = train_utils.update_similarity_type(meta)
+
+        model = cls._load_model(inv_tag_dict, label_data, meta, data_example, model_dir)
+
+        return cls(
+            component_config=meta,
+            inverted_label_dict=inv_label_dict,
+            inverted_tag_dict=inv_tag_dict,
+            model=model,
+            batch_tuple_sizes=batch_tuple_sizes,
+        )
+
+    @classmethod
+    def _load_from_files(cls, meta: Dict[Text, Any], model_dir: Text):
         file_name = meta.get("file")
-        tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
         with open(os.path.join(model_dir, file_name + ".data_example.pkl"), "rb") as f:
-            model_data_example = RasaModelData(
-                label_key="label_ids", data=pickle.load(f)
-            )
+            data_example = pickle.load(f)
 
         with open(os.path.join(model_dir, file_name + ".label_data.pkl"), "rb") as f:
             label_data = pickle.load(f)
@@ -810,7 +835,29 @@ class DIETClassifier(EntityExtractor):
         ) as f:
             batch_tuple_sizes = pickle.load(f)
 
-        meta = train_utils.update_similarity_type(meta)
+        return (
+            batch_tuple_sizes,
+            inv_label_dict,
+            inv_tag_dict,
+            label_data,
+            meta,
+            data_example,
+        )
+
+    @classmethod
+    def _load_model(
+        cls,
+        inv_tag_dict: Dict[int, Text],
+        label_data: RasaModelData,
+        meta: Dict[Text, Any],
+        data_example: Dict[Text, List[np.ndarray]],
+        model_dir: Text,
+    ):
+        file_name = meta.get("file")
+        tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
+
+        label_key = "label_ids" if meta[LABEL_CLASSIFICATION] else None
+        model_data_example = RasaModelData(label_key=label_key, data=data_example)
 
         model = DIET.load(
             tf_model_file,
@@ -820,20 +867,16 @@ class DIETClassifier(EntityExtractor):
             inverted_tag_dict=inv_tag_dict,
             config=meta,
         )
+
         # build the graph for prediction
         predict_data_example = RasaModelData(
-            label_key="label_ids",
+            label_key=label_key,
             data={k: vs for k, vs in model_data_example.items() if "text" in k},
         )
+
         model.build_for_predict(predict_data_example)
 
-        return cls(
-            component_config=meta,
-            inverted_label_dict=inv_label_dict,
-            inverted_tag_dict=inv_tag_dict,
-            model=model,
-            batch_tuple_sizes=batch_tuple_sizes,
-        )
+        return model
 
 
 # pytype: disable=key-error
@@ -874,6 +917,23 @@ class DIET(RasaModel):
 
         self.all_labels_embed = None  # needed for efficient prediction
 
+        self._check_data()
+
+    def _check_data(self):
+        if "text_features" not in self.data_signature:
+            raise ValueError(
+                "No text features specified. Cannot train 'DIETClassifier'."
+            )
+        if (
+            self.config[LABEL_CLASSIFICATION]
+            and "label_features" not in self.data_signature
+        ):
+            raise ValueError(
+                "No label features specified. Cannot train 'DIETClassifier'."
+            )
+        if self.config[ENTITY_RECOGNITION] and "tag_ids" not in self.data_signature:
+            raise ValueError("No tag ids present. Cannot train 'DIETClassifier'.")
+
     def _create_metrics(self):
         # self.metrics preserve order
         # output losses first
@@ -888,16 +948,19 @@ class DIET(RasaModel):
     def _update_metrics_to_log(self) -> None:
         if self.config[MASKED_LM]:
             self.metrics_to_log += ["m_loss", "m_acc"]
-        if self.config[INTENT_CLASSIFICATION]:
+        if self.config[LABEL_CLASSIFICATION]:
             self.metrics_to_log += ["i_loss", "i_acc"]
         if self.config[ENTITY_RECOGNITION]:
             self.metrics_to_log += ["e_loss", "e_f1"]
 
     def _prepare_layers(self) -> None:
         self._prepare_sequence_layers()
-        self._prepare_mask_lm_layers()
-        self._prepare_intent_classification_layers()
-        self._prepare_entity_recognition_layers()
+        if self.config[MASKED_LM]:
+            self._prepare_mask_lm_layers()
+        if self.config[LABEL_CLASSIFICATION]:
+            self._prepare_intent_classification_layers()
+        if self.config[ENTITY_RECOGNITION]:
+            self._prepare_entity_recognition_layers()
 
     @staticmethod
     def _create_sparse_dense_layer(
@@ -931,24 +994,26 @@ class DIET(RasaModel):
             self.config[C2],
             self.config[DENSE_DIM]["text"],
         )
-        self._tf_layers["sparse_to_dense.label"] = self._create_sparse_dense_layer(
-            self.data_signature["label_features"],
-            "label",
-            self.config[C2],
-            self.config[DENSE_DIM]["label"],
-        )
+        if self.config[LABEL_CLASSIFICATION]:
+            self._tf_layers["sparse_to_dense.label"] = self._create_sparse_dense_layer(
+                self.data_signature["label_features"],
+                "label",
+                self.config[C2],
+                self.config[DENSE_DIM]["label"],
+            )
         self._tf_layers["ffnn.text"] = tf_layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_TEXT],
             self.config[DROPRATE],
             self.config[C2],
             "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "text",
         )
-        self._tf_layers["ffnn.label"] = tf_layers.Ffnn(
-            self.config[HIDDEN_LAYERS_SIZES_LABEL],
-            self.config[DROPRATE],
-            self.config[C2],
-            "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "label",
-        )
+        if self.config[LABEL_CLASSIFICATION]:
+            self._tf_layers["ffnn.label"] = tf_layers.Ffnn(
+                self.config[HIDDEN_LAYERS_SIZES_LABEL],
+                self.config[DROPRATE],
+                self.config[C2],
+                "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "label",
+            )
         self._tf_layers["transformer"] = (
             tf_layers.TransformerEncoder(
                 self.config[NUM_TRANSFORMER_LAYERS],
@@ -1179,7 +1244,7 @@ class DIET(RasaModel):
             self.mask_acc.update_state(acc)
             losses.append(loss)
 
-        if self.config[INTENT_CLASSIFICATION]:
+        if self.config[LABEL_CLASSIFICATION]:
             # get _cls_ vector for intent classification
             cls = self._last_token(text_transformed, sequence_lengths)
 
@@ -1218,7 +1283,7 @@ class DIET(RasaModel):
         )
 
         out = {}
-        if self.config[INTENT_CLASSIFICATION]:
+        if self.config[LABEL_CLASSIFICATION]:
             if self.all_labels_embed is None:
                 _, self.all_labels_embed = self._create_all_labels()
 

@@ -29,7 +29,6 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    POS_ENCODING,
     MAX_SEQ_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
@@ -60,7 +59,7 @@ logger = logging.getLogger(__name__)
 class TEDPolicy(Policy):
     """Transformer Embedding Dialogue Policy (TEDP)
 
-    Transformer version of the REDP used in our paper https://arxiv.org/abs/1811.11707
+    The policy used in our paper https://arxiv.org/abs/1910.00486
     """
 
     SUPPORTS_ONLINE_TRAINING = True
@@ -78,8 +77,6 @@ class TEDPolicy(Policy):
         TRANSFORMER_SIZE: 128,
         # number of transformer layers
         NUM_TRANSFORMER_LAYERS: 1,
-        # type of positional encoding in transformer
-        POS_ENCODING: "timing",  # string 'timing' or 'emb'
         # max sequence length if pos_encoding='emb'
         MAX_SEQ_LENGTH: 256,
         # number of attention heads in transformer
@@ -168,6 +165,8 @@ class TEDPolicy(Policy):
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         self.config = copy.deepcopy(self.defaults)
         self.config.update(kwargs)
+
+        self.config = train_utils.check_deprecated_options(self.config)
 
         self.config = train_utils.update_similarity_type(self.config)
 
