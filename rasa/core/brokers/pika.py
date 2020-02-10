@@ -434,6 +434,8 @@ class PikaProducer(PikaEventBroker):
         password: Text,
         port: Union[int, Text] = 5672,
         queue: Text = "rasa_core_events",
+        should_keep_unpublished_messages: bool = True,
+        raise_on_failure: bool = False,
         loglevel: Union[Text, int] = os.environ.get(
             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
         ),
@@ -446,5 +448,12 @@ class PikaProducer(PikaEventBroker):
             docs=DOCS_URL_EVENT_BROKERS,
         )
         super(PikaProducer, self).__init__(
-            host, username, password, port, queue, loglevel
+            host,
+            username,
+            password,
+            port,
+            queue,
+            should_keep_unpublished_messages,
+            raise_on_failure,
+            loglevel,
         )
