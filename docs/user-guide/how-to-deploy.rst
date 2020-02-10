@@ -1,21 +1,64 @@
-:desc: Run and ship your Rasa assistant with Docker containers on any
-       Docker-compatible machine or cluster.
+:desc: How to deploy your Rasa Assistant with Docker Compose or Kubernetes/Openshift
 
-.. _running-rasa-with-docker:
+.. _deploying-your-rasa-assistant:
 
-Running Rasa with Docker
-========================
+Deploying your Rasa Assistant
+=============================
 
 .. edit-link::
 
-This is a guide on how to build a Rasa assistant with Docker.
-If you haven't used Rasa before, we'd recommend that you start with the :ref:`rasa-tutorial`.
+This page explains when and how to deploy an assistant built with Rasa. 
+It will allow you to make your assistant available to users and set you up with a production-ready environment.
 
 .. contents::
    :local:
+   :depth: 2
+
+
+When to deploy your assistant
+-----------------------------
+
+.. raw:: html
+
+    The best time to deploy your assistant and make it available to test users is once it can handle the most important happy paths or is what we call a <a style="text-decoration: none" href="https://rasa.com/docs/rasa/glossary">minimum viable assistant</a>.
+
+The recommended deployment methods described below make it easy to share your assistant with test users via the `share your assistant feature in Rasa X <../../rasa-x/docs/user-guide/enable-workflows#conversations-with-test-users>`_. Then, when you’re ready to make your assistant available via one or more :ref:`messaging-and-voice-channels`, you can easily add them to your existing deployment set up.
+
+.. _recommended-deployment-methods:
+
+Recommended Deployment Methods
+------------------------------
+
+The recommended way to deploy an assistant is using either the Docker Compose or Kubernetes/Openshift options we support. Both deploy Rasa X and your assistant. They are the easiest ways to deploy your assistant, allow you to use Rasa X to view conversations and turn them into training data, and are production-ready.
+
+Kubernetes/Openshift
+~~~~~~~~~~~~~~~~~~~~
+
+Kubernetes/Openshift is the best option if you need a scalable architecture. It's straightforward to deploy if you use the helm charts we provide. However, you can also customize the Helm charts if you have specific requirements.
+
+    - Default: Read the docs `here <../../rasa-x/docs/installation-and-setup/openshift-kubernetes/>`__.
+    - Custom: Read the docs `here <../../rasa-x/docs/installation-and-setup/openshift-kubernetes/>`__ and customize the `open source Helm charts <https://github.com/RasaHQ/rasa-x-helm>`_.
+
+Docker Compose
+~~~~~~~~~~~~~~
+
+    - Default: Watching this `video <https://www.youtube.com/watch?v=IUYdwy8HPVc>`__ or read the docs `here <../../rasa-x/docs/installation-and-setup/docker-compose-script/>`__.
+    - Custom: Read the docs `here <../../rasa-x/docs/installation-and-setup/docker-compose-manual/>`__.
+
+
+.. _rasa-only-deployment:
+
+Rasa-Only Deployment with Docker Compose
+----------------------------------------
+
+It is also possible to deploy a Rasa assistant using Docker Compose without Rasa X.
+
+.. contents::
+   :local:
+   
 
 Installing Docker
------------------
+~~~~~~~~~~~~~~~~~
 
 If you're not sure if you have Docker installed, you can check by running:
 
@@ -31,7 +74,7 @@ install Docker.
 See `Docker Installation <https://docs.docker.com/install/>`_ for details.
 
 Building an Assistant with Rasa and Docker
-------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This section will cover the following:
 
@@ -44,7 +87,7 @@ This section will cover the following:
 
 
 Setup
-~~~~~
+*****
 
 Just like in the :ref:`tutorial <rasa-tutorial>`, you'll use the ``rasa init`` command to create a project.
 The only difference is that you'll be running Rasa inside a Docker container, using
@@ -87,7 +130,7 @@ The initial project files should all be there, as well as a ``models`` directory
    run the containers with a different user.
 
 Talking to Your Assistant
-~~~~~~~~~~~~~~~~~~~~~~~~~
+*************************
 
 To talk to your newly-trained assistant, run this command:
 
@@ -104,10 +147,10 @@ you need to pass the ``-it`` flags.
 
 
 Customizing your Model
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
 Choosing a Tag
-~~~~~~~~~~~~~~
+**************
 
 To keep images as small as possible, we publish different tags of the ``rasa/rasa`` image
 with different dependencies installed. See :ref:`choosing-a-pipeline` for more information
@@ -135,7 +178,7 @@ Alternatively, you can use the ``-full`` tag, which includes all pipeline depend
 .. _model_training_docker:
 
 Training a Custom Rasa Model with Docker
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+****************************************
 
 Edit the ``config.yml`` file to use the pipeline you want, and place
 your NLU and Core data into the ``data/`` directory.
@@ -173,7 +216,7 @@ You can also leave these out since we are passing the default values.
 
 
 Running the Rasa Server
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 
 To run your AI assistant in production, configure your required
 :ref:`messaging-and-voice-channels` in ``credentials.yml``. If this file does not
@@ -203,7 +246,7 @@ Command Description:
 
 
 Using Docker Compose to Run Multiple Services
----------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To run Rasa together with other services, such as a server for custom actions, it is
 recommend to use `Docker Compose <https://docs.docker.com/compose/>`_.
@@ -257,14 +300,14 @@ To run the services configured in your ``docker-compose.yml`` execute:
 
 
 Adding Custom Actions
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 To create more sophisticated assistants, you will want to use :ref:`custom-actions`.
 Continuing the example from above, you might want to add an action which tells
 the user a joke to cheer them up.
 
 Creating a Custom Action
-~~~~~~~~~~~~~~~~~~~~~~~~
+************************
 
 Start by creating the custom actions in a directory ``actions``:
 
@@ -301,7 +344,7 @@ Continuing with the example bot from ``rasa init``, replace ``utter_cheer_up`` i
 ``action_joke`` to the actions in the domain file.
 
 Adding the Action Server
-~~~~~~~~~~~~~~~~~~~~~~~~
+************************
 
 The custom actions are run by the action server.
 To spin it up together with the Rasa instance, add a service
@@ -340,7 +383,7 @@ Run ``docker-compose up`` to start the action server together
 with Rasa.
 
 Adding Custom Dependencies
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+**************************
 
 If your custom action has additional dependencies of systems or Python libraries,
 you can add these by extending the official image.
@@ -368,7 +411,7 @@ You can then build the image via the following command, and use it in your
   docker build . -t <name of your custom image>:<tag of your custom image>
 
 Adding a Custom Tracker Store
------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By default, all conversations are saved in memory. This means that all
 conversations are lost as soon as you restart the Rasa server.
@@ -376,7 +419,7 @@ If you want to persist your conversations, you can use a different
 :ref:`Tracker Store <tracker-stores>`.
 
 Using PostgreSQL as Tracker Store
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*********************************
 
 Start by adding PostgreSQL to your docker-compose file:
 
@@ -397,7 +440,7 @@ configuration ``config/endpoints.yml``:
     db: rasa
 
 Using MongoDB as Tracker Store
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+******************************
 
 Start by adding MongoDB to your docker-compose file. The following example
 adds the MongoDB as well as a UI (you can skip this), which will be available
@@ -433,7 +476,7 @@ configuration ``endpoints.yml``:
 Then start all components with ``docker-compose up``.
 
 Using Redis as Tracker Store
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+****************************
 
 Start by adding Redis to your docker-compose file:
 
@@ -452,7 +495,7 @@ configuration ``endpoints.yml``:
     url: redis
 
 Using a Custom Tracker Store Implementation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*******************************************
 
 If you have a custom implementation of a tracker store you have two options
 to add this store to Rasa:
