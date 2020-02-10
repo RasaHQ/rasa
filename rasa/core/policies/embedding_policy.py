@@ -44,8 +44,6 @@ class EmbeddingPolicy(TEDPolicy):
     The policy used in our paper https://arxiv.org/abs/1910.00486
     """
 
-    SUPPORTS_ONLINE_TRAINING = True
-
     # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture

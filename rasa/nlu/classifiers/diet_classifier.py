@@ -247,7 +247,7 @@ class DIETClassifier(EntityExtractor):
         self.data_example = None
 
         self.label_key = (
-            "label_ids" if self.component_config[LABEL_CLASSIFICATION] else "tag_ids"
+            "label_ids" if self.component_config[LABEL_CLASSIFICATION] else None
         )
 
     # training data helpers:
@@ -856,7 +856,7 @@ class DIETClassifier(EntityExtractor):
         file_name = meta.get("file")
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
-        label_key = "label_ids" if meta[LABEL_CLASSIFICATION] else "tag_ids"
+        label_key = "label_ids" if meta[LABEL_CLASSIFICATION] else None
         model_data_example = RasaModelData(label_key=label_key, data=data_example)
 
         model = DIET.load(
