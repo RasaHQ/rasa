@@ -79,7 +79,7 @@ def test_list_models_method_in_GCSPersistor():
     # noinspection PyUnusedLocal
     def mocked_init(self, *args, **kwargs):
         self._model_dir_and_model_from_filename = lambda x: {
-            "blob_name": ("project", "model_class")
+            "blob_name": ("project", "model_name")
         }[x]
         self.bucket = Object()
 
@@ -93,7 +93,7 @@ def test_list_models_method_in_GCSPersistor():
     with patch.object(persistor.GCSPersistor, "__init__", mocked_init):
         result = persistor.GCSPersistor("").list_models()
 
-    assert result == ["model_class"]
+    assert result == ["model_name"]
 
 
 # noinspection PyPep8Naming
@@ -101,7 +101,7 @@ def test_list_models_method_raise_exeception_in_GCSPersistor():
     # noinspection PyUnusedLocal
     def mocked_init(self, *args, **kwargs):
         self._model_dir_and_model_from_filename = lambda x: {
-            "blob_name": ("project", "model_class")
+            "blob_name": ("project", "model_name")
         }[x]
         self.bucket = Object()
 
@@ -121,7 +121,7 @@ def test_list_models_method_in_AzurePersistor():
     # noinspection PyUnusedLocal
     def mocked_init(self, *args, **kwargs):
         self._model_dir_and_model_from_filename = lambda x: {
-            "blob_name": ("project", "model_class")
+            "blob_name": ("project", "model_name")
         }[x]
         self.blob_client = Object()
         self.container_name = "test"
@@ -137,7 +137,7 @@ def test_list_models_method_in_AzurePersistor():
     with patch.object(persistor.AzurePersistor, "__init__", mocked_init):
         result = persistor.AzurePersistor("", "", "").list_models()
 
-    assert result == ["model_class"]
+    assert result == ["model_name"]
 
 
 # noinspection PyPep8Naming

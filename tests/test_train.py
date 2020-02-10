@@ -16,9 +16,9 @@ from tests.core.test_model import _fingerprint
 @pytest.mark.parametrize(
     "parameters",
     [
-        {"model_class": "test-1234", "prefix": None},
-        {"model_class": None, "prefix": "core-"},
-        {"model_class": None, "prefix": None},
+        {"model_name": "test-1234", "prefix": None},
+        {"model_name": None, "prefix": "core-"},
+        {"model_name": None, "prefix": None},
     ],
 )
 def test_package_model(trained_rasa_model, parameters):
@@ -29,7 +29,7 @@ def test_package_model(trained_rasa_model, parameters):
         _fingerprint(),
         output_path,
         train_path,
-        parameters["model_class"],
+        parameters["model_name"],
         parameters["prefix"],
     )
 
@@ -37,8 +37,8 @@ def test_package_model(trained_rasa_model, parameters):
 
     file_name = os.path.basename(model_path)
 
-    if parameters["model_class"]:
-        assert parameters["model_class"] in file_name
+    if parameters["model_name"]:
+        assert parameters["model_name"] in file_name
 
     if parameters["prefix"]:
         assert parameters["prefix"] in file_name
