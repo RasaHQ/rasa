@@ -143,7 +143,7 @@ class RegexFeaturizer(Featurizer):
                 f = open(lookup_elements, "r", encoding=rasa.utils.io.DEFAULT_ENCODING)
             except OSError:
                 raise ValueError(
-                    "Could not load lookup table {}"
+                    f"Could not load lookup table {lookup_elements}."
                     f"Please make sure you've provided the correct path."
                 )
 
