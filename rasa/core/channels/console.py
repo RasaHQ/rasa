@@ -1,6 +1,5 @@
 # this builtin is needed so we can overwrite in test
 import json
-import uuid
 import logging
 import asyncio
 from typing import Text, Optional, Dict, List
