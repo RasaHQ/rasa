@@ -124,6 +124,6 @@ class EmbeddingPolicy(TEDPolicy):
 
         raise_warning(
             f"'EmbeddingPolicy' is deprecated. Use 'TEDPolicy' instead.",
-            category=DeprecationWarning,
+            category=FutureWarning,
             docs=f"{DOCS_BASE_URL}/core/policies/",
         )

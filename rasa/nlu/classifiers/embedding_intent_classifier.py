@@ -149,6 +149,6 @@ class EmbeddingIntentClassifier(DIETClassifier):
 
         raise_warning(
             f"'EmbeddingIntentClassifier' is deprecated. Use 'DIETClassifier' instead.",
-            category=DeprecationWarning,
+            category=FutureWarning,
             docs=f"{DOCS_BASE_URL}/nlu/components/",
         )

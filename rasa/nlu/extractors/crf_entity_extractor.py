@@ -145,9 +145,9 @@ class CRFEntityExtractor(DIETClassifier):
         )
 
         raise_warning(
-            f"'CRFEntityExtractor' is deprecated. Use 'DIETClassifier' in"
+            f"'CRFEntityExtractor' is deprecated. Use 'DIETClassifier' in "
             f"combination with 'LexicalSyntacticFeaturizer' instead.",
-            category=DeprecationWarning,
+            category=FutureWarning,
             docs=f"{DOCS_BASE_URL}/nlu/components/",
         )
 
