@@ -179,9 +179,10 @@ class ResponseSelector(DIETClassifier):
     ):
         component_config = component_config or {}
 
-        # the following properties don't exist for the ResponseSelector
-        component_config[INTENT_CLASSIFICATION] = True
+        # the following properties cannot be used for the ResponseSelector
+        component_config[INTENT_CLASSIFICATION] = None
         component_config[ENTITY_RECOGNITION] = None
+        component_config[MASKED_LM] = None
         component_config[BILOU_FLAG] = None
 
         super().__init__(

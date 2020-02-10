@@ -69,7 +69,7 @@ def _replace_deprecated_option(
 ) -> Dict[Text, Any]:
     if old_option in config:
         logger.warning(
-            f"Option '{old_option}' got renamed to {new_option}. "
+            f"Option '{old_option}' got renamed to '{new_option}'. "
             f"Please update your configuration file."
         )
         config[new_option] = config[old_option]

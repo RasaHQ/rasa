@@ -23,7 +23,7 @@ class FeatureSignature(NamedTuple):
 class RasaModelData:
     def __init__(self, label_key: Optional[Text] = None, data: Data = None):
         self.data = data or {}
-        self.label_key = label_key or ""
+        self.label_key = label_key
         # will be updated when features are added
         self.num_examples = self.get_number_of_examples()
 
@@ -80,22 +80,33 @@ class RasaModelData:
     ) -> Tuple["RasaModelData", "RasaModelData"]:
         """Create random hold out test set using stratified split."""
 
-        self._check_label_key(self.label_key)
+        self._check_label_key()
 
-        label_ids = self._create_label_ids(self.data[self.label_key][0])
-        label_counts = dict(zip(*np.unique(label_ids, return_counts=True, axis=0)))
+        if self.label_key is None:
+            multi_values = [v for values in self.data.values() for v in values]
+            solo_values = [[] for values in self.data.values() for v in values]
+            stratify = None
+        else:
+            label_ids = self._create_label_ids(self.data[self.label_key][0])
+            label_counts = dict(zip(*np.unique(label_ids, return_counts=True, axis=0)))
 
-        self._check_train_test_sizes(number_of_test_examples, label_counts)
+            self._check_train_test_sizes(number_of_test_examples, label_counts)
 
-        counts = np.array([label_counts[label] for label in label_ids])
-        multi_values = [v[counts > 1] for values in self.data.values() for v in values]
-        solo_values = [v[counts == 1] for values in self.data.values() for v in values]
+            counts = np.array([label_counts[label] for label in label_ids])
+            multi_values = [
+                v[counts > 1] for values in self.data.values() for v in values
+            ]
+            solo_values = [
+                v[counts == 1] for values in self.data.values() for v in values
+            ]
+
+            stratify = label_ids[counts > 1]
 
         output_values = train_test_split(
             *multi_values,
             test_size=number_of_test_examples,
             random_state=random_seed,
-            stratify=label_ids[counts > 1],
+            stratify=stratify,
         )
 
         return self._convert_train_test_split(output_values, solo_values)
@@ -168,11 +179,10 @@ class RasaModelData:
         that more populated classes should appear more often.
         """
 
-        if self.label_key not in data or len(data[self.label_key]) > 1:
-            raise ValueError(f"Key '{self.label_key}' not in RasaModelData.")
+        self._check_label_key()
 
         # skip balancing if labels are token based
-        if data[self.label_key][0][0].size > 1:
+        if self.label_key is None or data[self.label_key][0][0].size > 1:
             logger.debug(
                 f"Skip balancing data for '{self.label_key}' as data is a sequence."
             )
@@ -412,9 +422,11 @@ class RasaModelData:
             )
         return label_data
 
-    def _check_label_key(self, label_key: Text):
-        if label_key not in self.data or len(self.data[label_key]) > 1:
-            raise ValueError(f"Key '{label_key}' not in RasaModelData.")
+    def _check_label_key(self):
+        if self.label_key is not None and (
+            self.label_key not in self.data or len(self.data[self.label_key]) > 1
+        ):
+            raise ValueError(f"Key '{self.label_key}' not in RasaModelData.")
 
     def _convert_train_test_split(
         self, output_values: List[Any], solo_values: List[Any]

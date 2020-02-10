@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 class EmbeddingIntentClassifier(DIETClassifier):
 
-    provides = [ENTITIES_ATTRIBUTE]
+    provides = ["intent", "intent_ranking"]
 
     requires = [
         any_of(
@@ -149,6 +149,6 @@ class EmbeddingIntentClassifier(DIETClassifier):
 
         raise_warning(
             f"'EmbeddingIntentClassifier' is deprecated. Use 'DIETClassifier' instead.",
-            category=DeprecationWarning,
+            category=FutureWarning,
             docs=f"{DOCS_BASE_URL}/nlu/components/",
         )

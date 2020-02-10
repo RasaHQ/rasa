@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 class TEDPolicy(Policy):
     """Transformer Embedding Dialogue Policy (TEDP)
 
-    Transformer version of the REDP used in our paper https://arxiv.org/abs/1811.11707
+    The policy used in our paper https://arxiv.org/abs/1910.00486
     """
 
     SUPPORTS_ONLINE_TRAINING = True

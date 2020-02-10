@@ -201,20 +201,19 @@ class DIETClassifier(EntityExtractor):
                 "'use_masked_language_model' option should be 'False'."
             )
 
-        if self.component_config[INTENT_CLASSIFICATION]:
-            if (
-                self.component_config[SHARE_HIDDEN_LAYERS]
-                and self.component_config[HIDDEN_LAYERS_SIZES_TEXT]
-                != self.component_config[HIDDEN_LAYERS_SIZES_LABEL]
-            ):
-                raise ValueError(
-                    "If hidden layer weights are shared,"
-                    "hidden_layer_sizes for text and label must coincide."
-                )
-
-            self.component_config = train_utils.update_similarity_type(
-                self.component_config
+        if (
+            self.component_config[SHARE_HIDDEN_LAYERS]
+            and self.component_config[HIDDEN_LAYERS_SIZES_TEXT]
+            != self.component_config[HIDDEN_LAYERS_SIZES_LABEL]
+        ):
+            raise ValueError(
+                "If hidden layer weights are shared,"
+                "hidden_layer_sizes for text and label must coincide."
             )
+
+        self.component_config = train_utils.update_similarity_type(
+            self.component_config
+        )
 
         if self.component_config[EVAL_NUM_EPOCHS] < 1:
             self.component_config[EVAL_NUM_EPOCHS] = self.component_config[EPOCHS]
@@ -256,7 +255,7 @@ class DIETClassifier(EntityExtractor):
         self.data_example = None
 
         self.label_key = (
-            "label_ids" if self.component_config[INTENT_CLASSIFICATION] else "tag_ids"
+            "label_ids" if self.component_config[INTENT_CLASSIFICATION] else None
         )
 
     @staticmethod
@@ -875,7 +874,7 @@ class DIETClassifier(EntityExtractor):
         file_name = meta.get("file")
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
-        label_key = "label_ids" if meta[INTENT_CLASSIFICATION] else "tag_ids"
+        label_key = "label_ids" if meta[INTENT_CLASSIFICATION] else None
         model_data_example = RasaModelData(label_key=label_key, data=data_example)
 
         model = cls.model_name().load(
@@ -941,6 +940,23 @@ class DIET(RasaModel):
         self._update_metrics_to_log()
 
         self.all_labels_embed = None  # needed for efficient prediction
+
+        self._check_data()
+
+    def _check_data(self):
+        if "text_features" not in self.data_signature:
+            raise ValueError(
+                "No text features specified. Cannot train 'DIETClassifier'."
+            )
+        if (
+            self.config[INTENT_CLASSIFICATION]
+            and "label_features" not in self.data_signature
+        ):
+            raise ValueError(
+                "No label features specified. Cannot train 'DIETClassifier'."
+            )
+        if self.config[ENTITY_RECOGNITION] and "tag_ids" not in self.data_signature:
+            raise ValueError("No tag ids present. Cannot train 'DIETClassifier'.")
 
     def _create_metrics(self):
         # self.metrics preserve order

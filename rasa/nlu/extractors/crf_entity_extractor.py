@@ -145,9 +145,9 @@ class CRFEntityExtractor(DIETClassifier):
         )
 
         raise_warning(
-            f"'CRFEntityExtractor' is deprecated. Use 'DIETClassifier' in"
-            f"combination with 'LexicalSyntacticFeaturizer'.",
-            category=DeprecationWarning,
+            f"'CRFEntityExtractor' is deprecated. Use 'DIETClassifier' in "
+            f"combination with 'LexicalSyntacticFeaturizer' instead.",
+            category=FutureWarning,
             docs=f"{DOCS_BASE_URL}/nlu/components/",
         )
 
@@ -173,7 +173,7 @@ class CRFEntityExtractor(DIETClassifier):
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
 
-        self.featurizer.persist(file_name, model_dir)
+        self.featurizer.persist(file_name + ".featurizer", model_dir)
 
         return super().persist(file_name, model_dir)
 
@@ -194,8 +194,10 @@ class CRFEntityExtractor(DIETClassifier):
             )
             return cls(component_config=meta)
 
+        featurizer_meta = meta.copy()
+        featurizer_meta["file"] += ".featurizer"
         featurizer = LexicalSyntacticFeaturizer.load(
-            meta, model_dir, model_metadata, cached_component, **kwargs
+            featurizer_meta, model_dir, model_metadata, cached_component, **kwargs
         )
 
         (
@@ -206,12 +208,6 @@ class CRFEntityExtractor(DIETClassifier):
             meta,
             data_example,
         ) = cls._load_from_files(meta, model_dir)
-
-        meta[INTENT_CLASSIFICATION] = False
-        meta[ENTITY_RECOGNITION] = True
-        meta[MASKED_LM] = False
-        meta[NUM_TRANSFORMER_LAYERS] = 0
-        meta[SHARE_HIDDEN_LAYERS] = False
 
         model = cls._load_model(inv_tag_dict, label_data, meta, data_example, model_dir)
 

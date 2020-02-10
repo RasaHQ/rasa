@@ -41,10 +41,8 @@ logger = logging.getLogger(__name__)
 class EmbeddingPolicy(TEDPolicy):
     """Transformer Embedding Dialogue Policy (TEDP)
 
-    Transformer version of the REDP used in our paper https://arxiv.org/abs/1811.11707
+    The policy used in our paper https://arxiv.org/abs/1910.00486
     """
-
-    SUPPORTS_ONLINE_TRAINING = True
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -126,6 +124,6 @@ class EmbeddingPolicy(TEDPolicy):
 
         raise_warning(
             f"'EmbeddingPolicy' is deprecated. Use 'TEDPolicy' instead.",
-            category=DeprecationWarning,
+            category=FutureWarning,
             docs=f"{DOCS_BASE_URL}/core/policies/",
         )
