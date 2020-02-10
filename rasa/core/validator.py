@@ -1,7 +1,7 @@
 import logging
 import warnings
 from collections import defaultdict
-from typing import Set, Text
+from typing import Set, Text, Optional
 from rasa.core.domain import Domain
 from rasa.core.training.generator import TrainingDataGenerator
 from rasa.importers.importer import TrainingDataImporter
@@ -191,7 +191,7 @@ class Validator:
         return everything_is_alright
 
     def verify_story_structure(
-        self, ignore_warnings: bool = True, max_history: int = 5
+        self, ignore_warnings: bool = True, max_history: Optional[int] = None
     ) -> bool:
         """Verifies that the bot behaviour in stories is deterministic.
 
@@ -205,9 +205,6 @@ class Validator:
         """
 
         logger.info("Story structure validation...")
-        logger.info(
-            f"Considering the preceding {max_history} turns for conflict analysis."
-        )
 
         trackers = TrainingDataGenerator(
             self.story_graph,

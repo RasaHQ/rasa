@@ -150,12 +150,6 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
 
     if stories_only:
         all_good = _validate_story_structure(validator, args)
-    elif not args.max_history:
-        logger.info(
-            "Will not test for inconsistencies in stories since "
-            "you did not provide a value for `--max-history`."
-        )
-        all_good = _validate_domain(validator) and _validate_nlu(validator, args)
     else:
         all_good = (
             _validate_domain(validator)
@@ -182,10 +176,10 @@ def _validate_nlu(validator: Validator, args: argparse.Namespace) -> bool:
 
 def _validate_story_structure(validator: Validator, args: argparse.Namespace) -> bool:
     # Check if a valid setting for `max_history` was given
-    if not isinstance(args.max_history, int) or args.max_history < 1:
+    if isinstance(args.max_history, int) and args.max_history < 1:
         raise argparse.ArgumentError(
             args.max_history,
-            "You have to provide a positive integer for `--max-history`.",
+            f"The value of `--max-history {args.max_history}` is not a positive integer.",
         )
 
     return validator.verify_story_structure(

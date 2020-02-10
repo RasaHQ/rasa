@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict, namedtuple
 from typing import List, Optional, Dict, Text, Tuple, Generator, NamedTuple
 
@@ -7,6 +8,8 @@ from rasa.core.events import ActionExecuted, Event
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.nlu.constants import INTENT_ATTRIBUTE
 from rasa.core.training.generator import TrackerWithCachedStates
+
+logger = logging.getLogger(__name__)
 
 
 class StoryConflict:
@@ -122,7 +125,9 @@ class TrackerEventStateTuple(NamedTuple):
 
 
 def find_story_conflicts(
-    trackers: List[TrackerWithCachedStates], domain: Domain, max_history: int
+    trackers: List[TrackerWithCachedStates],
+    domain: Domain,
+    max_history: Optional[int] = None,
 ) -> List[StoryConflict]:
     """Generates a list of `StoryConflict` objects, describing conflicts in the given trackers.
 
@@ -133,6 +138,12 @@ def find_story_conflicts(
     Returns:
         List of conflicts.
     """
+    # Use the length of the longest story for `max_history` if not specified otherwise
+    if not max_history:
+        max_history = max([len(tracker.past_states(domain)) for tracker in trackers])
+
+    logger.info(f"Considering the preceding {max_history} turns for conflict analysis.")
+
     # We do this in two steps, to reduce memory consumption:
 
     # Create a 'state -> list of actions' dict, where the state is
