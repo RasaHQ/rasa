@@ -1,4 +1,0 @@
-Fix bug ``ValueError: Cannot concatenate sparse features as sequence dimension does not match``.
-
-When training a Rasa model that contains responses for just some of the intents, training was failing.
-Fixed the featurizers to return a consistent feature vector in case no response was given for a specific message.
