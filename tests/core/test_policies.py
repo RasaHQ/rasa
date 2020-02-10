@@ -520,9 +520,11 @@ class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
         p = TEDPolicy(
             featurizer=featurizer,
             priority=priority,
-            **{KEY_RELATIVE_ATTENTION: True,
-               VALUE_RELATIVE_ATTENTION: True,
-               MAX_RELATIVE_POSITION:5},
+            **{
+                KEY_RELATIVE_ATTENTION: True,
+                VALUE_RELATIVE_ATTENTION: True,
+                MAX_RELATIVE_POSITION: 5,
+            },
         )
         return p
 
