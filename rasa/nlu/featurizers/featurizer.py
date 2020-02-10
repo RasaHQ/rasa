@@ -53,6 +53,9 @@ class Featurizer(Component):
         additional_features: Any,
         feature_name: Text = SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE],
     ) -> Any:
+        if additional_features is None:
+            return
+
         if message.get(feature_name) is not None:
             from scipy.sparse import hstack
 

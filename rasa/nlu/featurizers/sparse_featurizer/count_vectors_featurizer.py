@@ -269,9 +269,9 @@ class CountVectorsFeaturizer(Featurizer):
         """Get processed text of attribute of a message"""
 
         if message.get(attribute) is None:
-            # return empty string since sklearn countvectorizer does not like None
+            # return empty list since sklearn countvectorizer does not like None
             # object while training and predicting
-            return [""]
+            return []
 
         tokens = self._get_message_tokens_by_attribute(message, attribute)
         tokens = self._process_tokens(tokens, attribute)
@@ -404,10 +404,14 @@ class CountVectorsFeaturizer(Featurizer):
 
     def _create_sequence(
         self, attribute: Text, all_tokens: List[List[Text]]
-    ) -> List[scipy.sparse.coo_matrix]:
+    ) -> List[Optional[scipy.sparse.coo_matrix]]:
         X = []
 
         for i, tokens in enumerate(all_tokens):
+            if not tokens:
+                # nothing to featurize
+                X.append(None)
+
             # vectorizer.transform returns a sparse matrix of size
             # [n_samples, n_features]
             # set input to list of tokens if sequence should be returned
@@ -434,7 +438,7 @@ class CountVectorsFeaturizer(Featurizer):
 
     def _get_featurized_attribute(
         self, attribute: Text, all_tokens: List[List[Text]]
-    ) -> Optional[List[scipy.sparse.coo_matrix]]:
+    ) -> Optional[List[Optional[scipy.sparse.coo_matrix]]]:
         """Return features of a particular attribute for complete data"""
 
         if self._check_attribute_vocabulary(attribute):
