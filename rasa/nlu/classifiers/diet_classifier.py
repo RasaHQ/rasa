@@ -980,7 +980,7 @@ class DIET(RasaModel):
     def _prepare_layers(self) -> None:
         self._prepare_sequence_layers(self.text_name)
         if self.config[MASKED_LM]:
-            self._prepare_mask_lm_layers("text")
+            self._prepare_mask_lm_layers(self.text_name)
         if self.config[INTENT_CLASSIFICATION]:
             self._prepare_input_layers(self.label_name)
             self._prepare_label_classification_layers()
