@@ -183,9 +183,6 @@ class RasaModelData:
 
         # skip balancing if labels are token based
         if self.label_key is None or data[self.label_key][0][0].size > 1:
-            logger.debug(
-                f"Skip balancing data for '{self.label_key}' as data is a sequence."
-            )
             return data
 
         label_ids = self._create_label_ids(data[self.label_key][0])
