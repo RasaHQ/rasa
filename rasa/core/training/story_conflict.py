@@ -80,7 +80,9 @@ class StoryConflict:
 
         # List which stories are in conflict with one another
         for action, stories in self._conflicting_actions.items():
-            conflict_message += f"  {self._summarize_conflicting_actions(action, stories)}"
+            conflict_message += (
+                f"  {self._summarize_conflicting_actions(action, stories)}"
+            )
 
         return conflict_message
 
@@ -107,7 +109,10 @@ class StoryConflict:
         elif len(stories) == 1:
             conflict_description = f"'{stories[0]}'"
         else:
-            raise ValueError("Trying to summarize conflict without stories.")
+            raise ValueError(
+                "An internal error occurred while trying to summarise a conflict without stories. "
+                "Please file a bug report at https://github.com/RasaHQ/rasa."
+            )
 
         return f"{action} predicted in {conflict_description}\n"
 
