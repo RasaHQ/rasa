@@ -87,7 +87,7 @@ def configure_app(
     port: int = constants.DEFAULT_SERVER_PORT,
     endpoints: Optional[AvailableEndpoints] = None,
     log_file: Optional[Text] = None,
-    sender_id: Optional[Text] = DEFAULT_SENDER_ID,
+    conversation_id: Optional[Text] = DEFAULT_SENDER_ID,
 ):
     """Run the agent."""
     from rasa import server
