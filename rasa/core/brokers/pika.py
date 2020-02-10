@@ -356,7 +356,7 @@ class PikaEventBroker(EventBroker):
             "",
             self.queue,
             body.encode(DEFAULT_ENCODING),
-            properties=self._message_properties
+            properties=self._message_properties,
         )
 
         logger.debug(
