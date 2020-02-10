@@ -55,7 +55,7 @@ def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarr
 
 
 def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    if config[SIMILARITY_TYPE] == "auto":
+    if config.get(SIMILARITY_TYPE) == "auto":
         if config[LOSS_TYPE] == "softmax":
             config[SIMILARITY_TYPE] = "inner"
         elif config[LOSS_TYPE] == "margin":
