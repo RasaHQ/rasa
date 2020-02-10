@@ -80,12 +80,12 @@ class StoryConflict:
 
         # List which stories are in conflict with one another
         for action, stories in self._conflicting_actions.items():
-            conflict_message += f"  {self._summarize_action_occurence(action, stories)}"
+            conflict_message += f"  {self._summarize_conflicting_actions(action, stories)}"
 
         return conflict_message
 
     @staticmethod
-    def _summarize_action_occurence(action: Text, stories: List[Text]) -> Text:
+    def _summarize_conflicting_actions(action: Text, stories: List[Text]) -> Text:
         """Gives a summarized textual description of where one action occurs.
 
         Args:
