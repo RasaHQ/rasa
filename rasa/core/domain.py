@@ -284,45 +284,40 @@ class Domain:
                     f"Either rename or remove one of them."
                 )
 
+            properties.setdefault("use_entities", True)
+            properties.setdefault("ignore_entities", [])
             if (
-                properties.get("used_entities") is None
-            ):  # important to differentiate between None and [] here
+                properties["use_entities"] is None
+                or properties["use_entities"] is False
+            ):
+                properties["use_entities"] = []
 
-                properties.setdefault("use_entities", True)
-                properties.setdefault("ignore_entities", [])
-                if (
-                    properties["use_entities"] is None
-                    or properties["use_entities"] is False
-                ):
-                    properties["use_entities"] = []
+            # `use_entities` is either a list of explicitly included entities
+            # or `True` if all should be included
+            if properties["use_entities"] is True:
+                included_entities = set(entities)
+            else:
+                included_entities = set(properties["use_entities"])
+            excluded_entities = set(properties["ignore_entities"])
+            used_entities = list(included_entities - excluded_entities)
+            used_entities.sort()
 
-                # `use_entities` is either a list of explicitly included entities
-                # or `True` if all should be included
-                if properties["use_entities"] is True:
-                    included_entities = set(entities)
-                else:
-                    included_entities = set(properties["use_entities"])
-                excluded_entities = set(properties["ignore_entities"])
-                used_entities = list(included_entities - excluded_entities)
-                used_entities.sort()
+            # Only print warning for ambiguous configurations if entities were included
+            # explicitly.
+            explicitly_included = isinstance(properties["use_entities"], list)
+            ambiguous_entities = included_entities.intersection(excluded_entities)
+            if explicitly_included and ambiguous_entities:
+                raise_warning(
+                    f"Entities: '{ambiguous_entities}' are explicitly included and"
+                    f" excluded for intent '{name}'."
+                    f"Excluding takes precedence in this case. "
+                    f"Please resolve that ambiguity.",
+                    docs=DOCS_URL_DOMAINS + "#ignoring-entities-for-certain-intents",
+                )
 
-                # Only print warning for ambiguous configurations if entities were included
-                # explicitly.
-                explicitly_included = isinstance(properties["use_entities"], list)
-                ambiguous_entities = included_entities.intersection(excluded_entities)
-                if explicitly_included and ambiguous_entities:
-                    raise_warning(
-                        f"Entities: '{ambiguous_entities}' are explicitly included and"
-                        f" excluded for intent '{name}'."
-                        f"Excluding takes precedence in this case. "
-                        f"Please resolve that ambiguity.",
-                        docs=DOCS_URL_DOMAINS
-                        + "#ignoring-entities-for-certain-intents",
-                    )
-
-                properties["used_entities"] = used_entities
-                properties.pop("use_entities")
-                properties.pop("ignore_entities")
+            properties["used_entities"] = used_entities
+            properties.pop("use_entities")
+            properties.pop("ignore_entities")
 
             intent_properties.update(intent)
         return intent_properties
@@ -735,7 +730,7 @@ class Domain:
                 SESSION_EXPIRATION_TIME_KEY: self.session_config.session_expiration_time,
                 CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
             },
-            "intents": [{k: v} for k, v in self.intent_properties.items()],
+            "intents": self.intents_transformed_for_file(),
             "entities": self.entities,
             "slots": self._slot_definitions(),
             "responses": self.templates,
@@ -746,32 +741,33 @@ class Domain:
     def persist(self, filename: Union[Text, Path]) -> None:
         """Write domain to a file."""
 
-        domain_data = self.domain_with_intents_transformed_for_file()
+        domain_data = self.as_dict()
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
 
-    def domain_with_intents_transformed_for_file(self) -> Dict[Text, Any]:
+    def intents_transformed_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
         """Replace the internal `used_entities` property by `use_entities` or
         `ignore_entities`.
         """
-        domain_data = self.as_dict()
-        for idx, intent_info in enumerate(domain_data["intents"]):
+        intents_data = [{k: v} for k, v in self.intent_properties.items()]
+
+        for idx, intent_info in enumerate(intents_data):
             for name, intent in intent_info.items():
                 use_entities = set(intent.pop("used_entities"))
-                ignore_entities = set(domain_data["entities"]) - use_entities
-                if len(use_entities) == len(domain_data["entities"]):
+                ignore_entities = set(self.entities) - use_entities
+                if len(use_entities) == len(self.entities):
                     intent["use_entities"] = True
-                elif len(use_entities) <= len(domain_data["entities"]) / 2:
+                elif len(use_entities) <= len(self.entities) / 2:
                     intent["use_entities"] = list(use_entities)
                 else:
                     intent["ignore_entities"] = list(ignore_entities)
-        return domain_data
+        return intents_data
 
     def cleaned_domain(self) -> Dict[Text, Any]:
         """Fetch cleaned domain, replacing redundant keys with default values and
         replacing the internal `used_entities` property by `use_entities` or
         `ignore_entities`.
         """
-        domain_data = self.domain_with_intents_transformed_for_file()
+        domain_data = self.as_dict()
 
         for idx, intent_info in enumerate(domain_data["intents"]):
             for name, intent in intent_info.items():
@@ -810,7 +806,7 @@ class Domain:
         if clean_before_dump:
             domain_data = self.cleaned_domain()
         else:
-            domain_data = self.domain_with_intents_transformed_for_file()
+            domain_data = self.as_dict()
 
         return utils.dump_obj_as_yaml_to_string(domain_data)
 

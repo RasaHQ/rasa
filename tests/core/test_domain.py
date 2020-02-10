@@ -591,23 +591,21 @@ def test_is_empty():
     assert Domain.empty().is_empty()
 
 
-def test_domain_with_intents_transformed_for_file():
+def test_intents_transformed_for_file():
     domain_path = "data/test_domains/default_unfeaturized_entities.yml"
-    transformed = Domain.load(domain_path).domain_with_intents_transformed_for_file()
+    transformed = Domain.load(domain_path).intents_transformed_for_file()
 
-    expected = {
-        "intents": [
-            {"greet": {"use_entities": ["name"]}},
-            {"default": {"ignore_entities": ["unrelated_recognized_entity"]}},
-            {"goodbye": {"use_entities": []}},
-            {"thank": {"use_entities": []}},
-            {"ask": {"use_entities": True}},
-            {"why": {"use_entities": []}},
-            {"pure_intent": {"use_entities": True}},
-        ],
-    }
+    expected = [
+        {"greet": {"use_entities": ["name"]}},
+        {"default": {"ignore_entities": ["unrelated_recognized_entity"]}},
+        {"goodbye": {"use_entities": []}},
+        {"thank": {"use_entities": []}},
+        {"ask": {"use_entities": True}},
+        {"why": {"use_entities": []}},
+        {"pure_intent": {"use_entities": True}},
+    ]
 
-    assert transformed["intents"] == expected["intents"]
+    assert transformed == expected
 
 
 def test_clean_domain_for_file():
