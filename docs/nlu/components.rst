@@ -89,7 +89,7 @@ Text featurizers are divided into two different categories: sparse featurizers a
 Sparse featurizers are featurizers that return feature vectors with a lot of missing values, e.g. zeros.
 As those feature vectors would normally take up a lot of memory, we store them as sparse features.
 Sparse features only store the values that are non zero and their positions in the vector.
-Thus, we save a lot of memroy and are able to train on larger datasets.
+Thus, we save a lot of memory and are able to train on larger datasets.
 
 By default all featurizers will return a matrix of length (number-of-tokens x feature-dimension).
 So, the returned matrix will have a feature vector for every token.
