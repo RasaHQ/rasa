@@ -71,7 +71,7 @@ SQLTrackerStore
     - ``query`` (default: ``None``): Dictionary of options to be passed to the dialect and/or the DBAPI upon connect
 
 
-:Supported Databases:
+:Officially Supported Databases:
     - PostgreSQL
     - Oracle > 11.0
     - SQLite
@@ -119,7 +119,7 @@ SQLTrackerStore
 
       .. code-block:: bash
 
-          docker build . -t rasa-oracle:latest
+          docker build . -t rasa-oracle:|version|-oracle-full
 
       Now you can configure the tracker store in the ``endpoints.yml`` as described above,
       and start the container. Read more about :ref:`running-rasa-with-docker`.
