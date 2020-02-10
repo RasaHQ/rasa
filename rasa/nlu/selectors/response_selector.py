@@ -195,7 +195,7 @@ class ResponseSelector(DIETClassifier):
         self.label_key = "label_ids"
 
     @staticmethod
-    def model_name():
+    def model_class():
         return DIET2DIET
 
     def _load_selector_params(self, config: Dict[Text, Any]) -> None:

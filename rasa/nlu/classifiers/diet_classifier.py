@@ -259,7 +259,7 @@ class DIETClassifier(EntityExtractor):
         )
 
     @staticmethod
-    def model_name():
+    def model_class() -> Any:
         return DIET
 
     # training data helpers:
@@ -598,7 +598,7 @@ class DIETClassifier(EntityExtractor):
         # keep one example for persisting and loading
         self.data_example = {k: [v[:1] for v in vs] for k, vs in model_data.items()}
 
-        self.model = self.model_name()(
+        self.model = self.model_class()(
             model_data.get_signature(),
             self._label_data,
             self.inverted_tag_dict,
@@ -877,7 +877,7 @@ class DIETClassifier(EntityExtractor):
         label_key = "label_ids" if meta[INTENT_CLASSIFICATION] else None
         model_data_example = RasaModelData(label_key=label_key, data=data_example)
 
-        model = cls.model_name().load(
+        model = cls.model_class().load(
             tf_model_file,
             model_data_example,
             data_signature=model_data_example.get_signature(),
