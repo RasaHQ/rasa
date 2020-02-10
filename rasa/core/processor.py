@@ -1,7 +1,6 @@
 import logging
 import os
 import time
-import warnings
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 

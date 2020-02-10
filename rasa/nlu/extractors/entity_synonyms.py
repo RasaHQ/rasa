@@ -1,5 +1,4 @@
 import os
-import warnings
 from typing import Any, Dict, Optional, Text
 
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU

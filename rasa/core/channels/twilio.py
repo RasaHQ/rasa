@@ -56,6 +56,18 @@ class TwilioOutput(Client, OutputChannel):
             message_data.update({"body": message_part})
             await self._send_message(message_data)
 
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
+        """Sends an image."""
+
+        message_data = {
+            "to": recipient_id,
+            "from_": self.twilio_number,
+            "media_url": [image],
+        }
+        await self._send_message(message_data)
+
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:

@@ -1,15 +1,12 @@
 import logging
-from typing import Any, Dict, Optional, Text
 
 from rasa.constants import DOCS_BASE_URL
-from rasa.nlu.components import any_of
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-from rasa.nlu.constants import (
-    TEXT_ATTRIBUTE,
-    ENTITIES_ATTRIBUTE,
-    DENSE_FEATURE_NAMES,
-    SPARSE_FEATURE_NAMES,
-)
+from typing import Any, Dict, Optional, Text
+
+from rasa.nlu.components import any_of
+
+from rasa.nlu.constants import TEXT_ATTRIBUTE, DENSE_FEATURE_NAMES, SPARSE_FEATURE_NAMES
 from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES_TEXT,
     HIDDEN_LAYERS_SIZES_LABEL,
