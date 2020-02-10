@@ -272,12 +272,26 @@ class ResponseSelector(DIETClassifier):
 
 
 class DIET2DIET(DIET):
+    def _create_metrics(self):
+        # self.metrics preserve order
+        # output losses first
+        self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
+        self.response_loss = tf.keras.metrics.Mean(name="r_loss")
+        # output accuracies second
+        self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
+        self.response_acc = tf.keras.metrics.Mean(name="r_acc")
+
+    def _update_metrics_to_log(self) -> None:
+        if self.config[MASKED_LM]:
+            self.metrics_to_log += ["m_loss", "m_acc"]
+
+        self.metrics_to_log += ["r_loss", "r_acc"]
+
     def _prepare_layers(self) -> None:
         self._prepare_sequence_layers(self.text_name)
         self._prepare_sequence_layers(self.label_name)
         if self.config[MASKED_LM]:
             self._prepare_mask_lm_layers(self.text_name)
-            self._prepare_mask_lm_layers(self.label_name)
         self._prepare_label_classification_layers()
 
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
@@ -344,8 +358,8 @@ class DIET2DIET(DIET):
         label_ids = tf_batch_data["label_ids"][0]
 
         loss, acc = self._label_loss(cls_text, cls_label, label_ids)
-        self.intent_loss.update_state(loss)
-        self.intent_acc.update_state(acc)
+        self.response_loss.update_state(loss)
+        self.response_acc.update_state(acc)
         losses.append(loss)
 
         return tf.math.add_n(losses)

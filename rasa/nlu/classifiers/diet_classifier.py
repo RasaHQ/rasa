@@ -197,8 +197,8 @@ class DIETClassifier(EntityExtractor):
             and self.component_config[NUM_TRANSFORMER_LAYERS] == 0
         ):
             raise ValueError(
-                "If number of transformer layers is 0,"
-                "'use_masked_language_model' option should be 'False'."
+                f"If number of transformer layers is 0, "
+                f"'{MASKED_LM}' option should be 'False'."
             )
 
         if (
@@ -207,7 +207,7 @@ class DIETClassifier(EntityExtractor):
             != self.component_config[HIDDEN_LAYERS_SIZES_LABEL]
         ):
             raise ValueError(
-                "If hidden layer weights are shared,"
+                "If hidden layer weights are shared, "
                 "hidden_layer_sizes for text and label must coincide."
             )
 
@@ -962,11 +962,11 @@ class DIET(RasaModel):
         # self.metrics preserve order
         # output losses first
         self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
-        self.intent_loss = tf.keras.metrics.Mean(name="i_loss")
+        self.response_loss = tf.keras.metrics.Mean(name="i_loss")
         self.entity_loss = tf.keras.metrics.Mean(name="e_loss")
         # output accuracies second
         self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
-        self.intent_acc = tf.keras.metrics.Mean(name="i_acc")
+        self.response_acc = tf.keras.metrics.Mean(name="i_acc")
         self.entity_f1 = tf.keras.metrics.Mean(name="e_f1")
 
     def _update_metrics_to_log(self) -> None:
@@ -1336,8 +1336,8 @@ class DIET(RasaModel):
                 self.label_name,
             )
             loss, acc = self._label_loss(cls, label, label_ids)
-            self.intent_loss.update_state(loss)
-            self.intent_acc.update_state(acc)
+            self.response_loss.update_state(loss)
+            self.response_acc.update_state(acc)
             losses.append(loss)
 
         if self.config[ENTITY_RECOGNITION]:
