@@ -264,60 +264,67 @@ class Domain:
         return slots
 
     @staticmethod
-    def collect_intent_properties(
-        intents: List[Union[Text, Dict[Text, Any]]], entities: List[Text]
-    ) -> Dict[Text, Dict[Text, Union[bool, List]]]:
+    def _transform_intent_properties_for_internal_use(
+        intent: Dict[Text, Any], entities: List
+    ) -> Dict[Text, Any]:
         """Transform the intent properties `use_entities` and `ignore_entities` that are
         used in domain files into one internal property `used_entities`. Use default
         values where the intent properties are not explicitly provided.
         """
+        name, properties = list(intent.items())[0]
+
+        properties.setdefault("use_entities", True)
+        properties.setdefault("ignore_entities", [])
+        if properties["use_entities"] is None or properties["use_entities"] is False:
+            properties["use_entities"] = []
+
+        # `use_entities` is either a list of explicitly included entities
+        # or `True` if all should be included
+        if properties["use_entities"] is True:
+            included_entities = set(entities)
+        else:
+            included_entities = set(properties["use_entities"])
+        excluded_entities = set(properties["ignore_entities"])
+        used_entities = list(included_entities - excluded_entities)
+        used_entities.sort()
+
+        # Only print warning for ambiguous configurations if entities were included
+        # explicitly.
+        explicitly_included = isinstance(properties["use_entities"], list)
+        ambiguous_entities = included_entities.intersection(excluded_entities)
+        if explicitly_included and ambiguous_entities:
+            raise_warning(
+                f"Entities: '{ambiguous_entities}' are explicitly included and"
+                f" excluded for intent '{name}'."
+                f"Excluding takes precedence in this case. "
+                f"Please resolve that ambiguity.",
+                docs=DOCS_URL_DOMAINS + "#ignoring-entities-for-certain-intents",
+            )
+
+        properties["used_entities"] = used_entities
+        properties.pop("use_entities")
+        properties.pop("ignore_entities")
+
+        return intent
+
+    @classmethod
+    def collect_intent_properties(
+        cls, intents: List[Union[Text, Dict[Text, Any]]], entities: List[Text]
+    ) -> Dict[Text, Dict[Text, Union[bool, List]]]:
+
         intent_properties = {}
         for intent in intents:
             if not isinstance(intent, dict):
                 intent = {intent: {"use_entities": True, "ignore_entities": []}}
 
-            name, properties = list(intent.items())[0]
-
+            name = list(intent.keys())[0]
             if name in intent_properties.keys():
                 raise InvalidDomain(
                     f"Intents are not unique! Found two intents with name '{name}'. "
                     f"Either rename or remove one of them."
                 )
 
-            properties.setdefault("use_entities", True)
-            properties.setdefault("ignore_entities", [])
-            if (
-                properties["use_entities"] is None
-                or properties["use_entities"] is False
-            ):
-                properties["use_entities"] = []
-
-            # `use_entities` is either a list of explicitly included entities
-            # or `True` if all should be included
-            if properties["use_entities"] is True:
-                included_entities = set(entities)
-            else:
-                included_entities = set(properties["use_entities"])
-            excluded_entities = set(properties["ignore_entities"])
-            used_entities = list(included_entities - excluded_entities)
-            used_entities.sort()
-
-            # Only print warning for ambiguous configurations if entities were included
-            # explicitly.
-            explicitly_included = isinstance(properties["use_entities"], list)
-            ambiguous_entities = included_entities.intersection(excluded_entities)
-            if explicitly_included and ambiguous_entities:
-                raise_warning(
-                    f"Entities: '{ambiguous_entities}' are explicitly included and"
-                    f" excluded for intent '{name}'."
-                    f"Excluding takes precedence in this case. "
-                    f"Please resolve that ambiguity.",
-                    docs=DOCS_URL_DOMAINS + "#ignoring-entities-for-certain-intents",
-                )
-
-            properties["used_entities"] = used_entities
-            properties.pop("use_entities")
-            properties.pop("ignore_entities")
+            intent = cls._transform_intent_properties_for_internal_use(intent, entities)
 
             intent_properties.update(intent)
         return intent_properties
@@ -730,7 +737,7 @@ class Domain:
                 SESSION_EXPIRATION_TIME_KEY: self.session_config.session_expiration_time,
                 CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
             },
-            "intents": self.intents_transformed_for_file(),
+            "intents": self._transform_intents_for_file(),
             "entities": self.entities,
             "slots": self._slot_definitions(),
             "responses": self.templates,
@@ -744,7 +751,7 @@ class Domain:
         domain_data = self.as_dict()
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
 
-    def intents_transformed_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
+    def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
         """Replace the internal `used_entities` property by `use_entities` or
         `ignore_entities`.
         """
