@@ -16,6 +16,7 @@ from rasa.core.brokers.broker import EventBroker
 from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.io import DEFAULT_ENCODING
+from pika.exceptions import UnroutableError
 
 if typing.TYPE_CHECKING:
     from pika.adapters.blocking_connection import BlockingChannel
@@ -207,6 +208,8 @@ class PikaEventBroker(EventBroker):
         password: Text,
         port: Union[int, Text] = 5672,
         queue: Text = "rasa_core_events",
+        should_keep_unpublished_messages: bool = True,
+        raise_on_failure: bool = False,
         loglevel: Union[Text, int] = os.environ.get(
             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
         ),
@@ -219,6 +222,11 @@ class PikaEventBroker(EventBroker):
             password: Password for authentication with Pika host.
             port: port of the Pika host.
             queue: Pika queue to declare.
+            should_keep_unpublished_messages: Whether or not the event broker should
+                maintain a queue of unpublished messages to be published later in
+                case of errors.
+            raise_on_failure: Whether to raise an exception if publishing fails. If
+                `False` (default), keep retrying.
             loglevel: Logging level.
 
         """
@@ -230,6 +238,8 @@ class PikaEventBroker(EventBroker):
         self.password = password
         self.port = port
         self.channel: Optional["Channel"] = None
+        self.should_keep_unpublished_messages = should_keep_unpublished_messages
+        self.raise_on_failure = raise_on_failure
 
         # List to store unpublished messages which hopefully will be published later
         self._unpublished_messages: Deque[Text] = deque()
@@ -314,6 +324,8 @@ class PikaEventBroker(EventBroker):
                     "{}".format(self.host, e)
                 )
                 self.channel = None
+                if self.raise_on_failure:
+                    raise e
 
             retries -= 1
             time.sleep(retry_delay_in_seconds)
@@ -339,11 +351,25 @@ class PikaEventBroker(EventBroker):
 
         return BasicProperties(**kwargs)
 
+    def _basic_publish(self, body: Text) -> None:
+        self.channel.basic_publish(
+            "",
+            self.queue,
+            body.encode(DEFAULT_ENCODING),
+            properties=self._message_properties
+        )
+
+        logger.debug(
+            f"Published Pika events to queue '{self.queue}' on host "
+            f"'{self.host}':\n{body}"
+        )
+
     def _publish(self, body: Text) -> None:
         if self._pika_connection.is_closed:
             # Try to reset connection
             self._run_pika()
-        elif not self.channel:
+            self._basic_publish(body)
+        elif not self.channel and self.should_keep_unpublished_messages:
             logger.warning(
                 f"RabbitMQ channel has not been assigned. Adding message to "
                 f"list of unpublished messages and trying to publish them "
@@ -352,17 +378,7 @@ class PikaEventBroker(EventBroker):
             )
             self._unpublished_messages.append(body)
         else:
-            self.channel.basic_publish(
-                "",
-                self.queue,
-                body.encode(DEFAULT_ENCODING),
-                properties=self._message_properties,
-            )
-
-            logger.debug(
-                f"Published Pika events to queue '{self.queue}' on host "
-                f"'{self.host}':\n{body}"
-            )
+            self._basic_publish(body)
 
 
 def create_rabbitmq_ssl_options(
