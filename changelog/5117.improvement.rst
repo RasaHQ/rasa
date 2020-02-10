@@ -1,2 +1,2 @@
-New conversation ID will be generated for each shell session.
-Previously the conversation ID was always ``default``.
+New command-line argument --conversation-id will be added and wiil give the ability to
+set custom conversation ID for each shell session.
