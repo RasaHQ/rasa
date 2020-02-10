@@ -3,6 +3,7 @@
 .. _deploying-your-rasa-assistant:
 
 Deploying your Rasa Assistant
+=============================
 
 .. edit-link::
 
