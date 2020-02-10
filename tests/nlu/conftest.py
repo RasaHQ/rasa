@@ -12,6 +12,8 @@ NLU_DEFAULT_CONFIG_PATH = "sample_configs/config_pretrained_embeddings_mitie.yml
 
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
+NLU_NLG_DATA_PATH = "data/test_evaluations/nlu_nlg"
+
 NLU_MODEL_NAME = "nlu_model.tar.gz"
 
 MOODBOT_MODEL_PATH = "examples/moodbot/models/"
