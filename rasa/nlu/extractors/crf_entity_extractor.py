@@ -173,7 +173,7 @@ class CRFEntityExtractor(DIETClassifier):
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
 
-        self.featurizer.persist(file_name, model_dir)
+        self.featurizer.persist(file_name + ".featurizer", model_dir)
 
         return super().persist(file_name, model_dir)
 
@@ -194,8 +194,10 @@ class CRFEntityExtractor(DIETClassifier):
             )
             return cls(component_config=meta)
 
+        featurizer_meta = meta.copy()
+        featurizer_meta["file"] += ".featurizer"
         featurizer = LexicalSyntacticFeaturizer.load(
-            meta, model_dir, model_metadata, cached_component, **kwargs
+            featurizer_meta, model_dir, model_metadata, cached_component, **kwargs
         )
 
         (
