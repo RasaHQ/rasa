@@ -192,6 +192,7 @@ class ResponseSelector(DIETClassifier):
             model,
             batch_tuple_sizes,
         )
+        self.label_key = "label_ids"
 
     @staticmethod
     def model_name():
