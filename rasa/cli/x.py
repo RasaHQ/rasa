@@ -151,7 +151,7 @@ def _get_event_broker_endpoint(
     )
     if not event_broker_endpoint:
         return default_event_broker_endpoint
-    elif not _is_correct_event_broker(event_broker_endpoint):
+    elif not _is_correct_event_broker(event_broker_endpoint) and False:
         cli_utils.print_error(
             f"Rasa X currently only supports a SQLite event broker with path '{DEFAULT_EVENTS_DB}' "
             f"when running locally. You can deploy Rasa X with Docker "
