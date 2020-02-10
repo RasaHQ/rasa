@@ -1,8 +1,12 @@
 import logging
-from typing import Any, Dict, Text, Optional
+
+import numpy as np
+import tensorflow as tf
+
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 from rasa.nlu.training_data import TrainingData, Message
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier, DIET
 from rasa.nlu.components import any_of
 from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES_TEXT,
@@ -89,16 +93,16 @@ class ResponseSelector(DIETClassifier):
         # nn architecture
         # sizes of hidden layers before the embedding layer for input words
         # the number of hidden layers is thus equal to the length of this list
-        HIDDEN_LAYERS_SIZES_TEXT: [256, 128],
+        HIDDEN_LAYERS_SIZES_TEXT: [],
         # sizes of hidden layers before the embedding layer for intent labels
         # the number of hidden layers is thus equal to the length of this list
-        HIDDEN_LAYERS_SIZES_LABEL: [256, 128],
+        HIDDEN_LAYERS_SIZES_LABEL: [],
         # Whether to share the hidden layer weights between input words and intent labels
         SHARE_HIDDEN_LAYERS: False,
         # number of units in transformer
-        TRANSFORMER_SIZE: 128,
+        TRANSFORMER_SIZE: 256,
         # number of transformer layers
-        NUM_TRANSFORMER_LAYERS: 1,
+        NUM_TRANSFORMER_LAYERS: 2,
         # number of attention heads in transformer
         NUM_HEADS: 4,
         # max sequence length if pos_encoding='emb'
@@ -148,17 +152,20 @@ class ResponseSelector(DIETClassifier):
         # dropout rate for rnn
         DROPRATE: 0.2,
         # use a unidirectional or bidirectional encoder
-        UNIDIRECTIONAL_ENCODER: True,
+        UNIDIRECTIONAL_ENCODER: False,
+        # if true apply dropout to sparse tensors
+        SPARSE_INPUT_DROPOUT: True,
         # visualization of accuracy
         # how often to calculate training accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
         EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance,
+        # if true random tokens of the input message will be masked and the model
+        # should predict those tokens
+        MASKED_LM: False,
         # selector config
         # name of the intent for which this response selector is to be trained
         "retrieval_intent": None,
-        # if true apply dropout to sparse tensors
-        SPARSE_INPUT_DROPOUT: False,
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -172,11 +179,10 @@ class ResponseSelector(DIETClassifier):
     ):
         component_config = component_config or {}
 
-        # the following properties are fixed for the ResponseSelector
+        # the following properties don't exist for the ResponseSelector
         component_config[INTENT_CLASSIFICATION] = True
-        component_config[ENTITY_RECOGNITION] = False
-        component_config[MASKED_LM] = False
-        component_config[BILOU_FLAG] = False
+        component_config[ENTITY_RECOGNITION] = None
+        component_config[BILOU_FLAG] = None
 
         super().__init__(
             component_config,
@@ -185,6 +191,10 @@ class ResponseSelector(DIETClassifier):
             model,
             batch_tuple_sizes,
         )
+
+    @staticmethod
+    def model_name():
+        return DIET2DIET
 
     def _load_selector_params(self, config: Dict[Text, Any]) -> None:
         self.retrieval_intent = config["retrieval_intent"]
@@ -257,3 +267,116 @@ class ResponseSelector(DIETClassifier):
         prediction_dict = {"response": label, "ranking": label_ranking}
 
         self._set_message_property(message, prediction_dict, selector_key)
+
+
+class DIET2DIET(DIET):
+    def _prepare_layers(self) -> None:
+        self._prepare_sequence_layers(self.text_name)
+        self._prepare_sequence_layers(self.label_name)
+        if self.config[MASKED_LM]:
+            self._prepare_mask_lm_layers(self.text_name)
+            self._prepare_mask_lm_layers(self.label_name)
+        self._prepare_label_classification_layers()
+
+    def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
+        all_label_ids = self.tf_label_data["label_ids"][0]
+
+        mask_label = self.tf_label_data["label_mask"][0]
+        sequence_lengths_label = self._get_sequence_lengths(mask_label)
+
+        label_transformed, _, _, _ = self._create_sequence(
+            self.tf_label_data["label_features"], mask_label, self.label_name,
+        )
+        cls_label = self._last_token(label_transformed, sequence_lengths_label)
+
+        all_labels_embed = self._tf_layers["embed.label"](cls_label)
+
+        return all_label_ids, all_labels_embed
+
+    def batch_loss(
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+    ) -> tf.Tensor:
+        tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
+
+        mask_text = tf_batch_data["text_mask"][0]
+        sequence_lengths_text = self._get_sequence_lengths(mask_text)
+
+        (
+            text_transformed,
+            text_in,
+            text_seq_ids,
+            lm_mask_bool_text,
+        ) = self._create_sequence(
+            tf_batch_data["text_features"],
+            mask_text,
+            self.text_name,
+            self.config[MASKED_LM],
+            sequence_ids=True,
+        )
+
+        mask_label = tf_batch_data["label_mask"][0]
+        sequence_lengths_label = self._get_sequence_lengths(mask_label)
+
+        label_transformed, _, _, _ = self._create_sequence(
+            tf_batch_data["label_features"], mask_label, self.label_name,
+        )
+
+        losses = []
+
+        if self.config[MASKED_LM]:
+            loss, acc = self._mask_loss(
+                text_transformed,
+                text_in,
+                text_seq_ids,
+                lm_mask_bool_text,
+                self.text_name,
+            )
+
+            self.mask_loss.update_state(loss)
+            self.mask_acc.update_state(acc)
+            losses.append(loss)
+
+        # get _cls_ vector for label classification
+        cls_text = self._last_token(text_transformed, sequence_lengths_text)
+        cls_label = self._last_token(label_transformed, sequence_lengths_label)
+        label_ids = tf_batch_data["label_ids"][0]
+
+        loss, acc = self._label_loss(cls_text, cls_label, label_ids)
+        self.intent_loss.update_state(loss)
+        self.intent_acc.update_state(acc)
+        losses.append(loss)
+
+        return tf.math.add_n(losses)
+
+    def batch_predict(
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+    ) -> Dict[Text, tf.Tensor]:
+        tf_batch_data = self.batch_to_model_data_format(
+            batch_in, self.predict_data_signature
+        )
+
+        mask_text = tf_batch_data["text_mask"][0]
+        sequence_lengths_text = self._get_sequence_lengths(mask_text)
+
+        text_transformed, _, _, _ = self._create_sequence(
+            tf_batch_data["text_features"], mask_text, self.text_name
+        )
+
+        out = {}
+
+        if self.all_labels_embed is None:
+            _, self.all_labels_embed = self._create_all_labels()
+
+        # get _cls_ vector for intent classification
+        cls = self._last_token(text_transformed, sequence_lengths_text)
+        cls_embed = self._tf_layers["embed.text"](cls)
+
+        sim_all = self._tf_layers["loss.label"].sim(
+            cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :]
+        )
+        scores = self._tf_layers["loss.label"].confidence_from_sim(
+            sim_all, self.config[SIMILARITY_TYPE]
+        )
+        out["i_scores"] = scores
+
+        return out

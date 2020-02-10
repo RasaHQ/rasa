@@ -31,7 +31,7 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
 )
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.model import Metadata
-from rasa.nlu.selectors.embedding_response_selector import ResponseSelector
+from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer

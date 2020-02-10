@@ -499,7 +499,7 @@ class RasaModelData:
 
         if array_of_dense[0].ndim < 2:
             # data doesn't contain a sequence
-            return array_of_dense
+            return array_of_dense.astype(np.float32)
 
         data_size = len(array_of_dense)
         max_seq_len = max([x.shape[0] for x in array_of_dense])
