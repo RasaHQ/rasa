@@ -278,3 +278,29 @@ async def test_margin_loss_is_not_normalized(
 
     # make sure top ranking is reflected in intent prediction
     assert parse_data.get("intent") == intent_ranking[0]
+
+
+@pytest.mark.parametrize(
+    "session_data, expected",
+    [
+        (
+            {
+                "text_features": [
+                    np.array(
+                        [
+                            np.random.rand(5, 14),
+                            np.random.rand(2, 14),
+                            np.random.rand(3, 14),
+                        ]
+                    )
+                ]
+            },
+            True,
+        ),
+        ({"text_features": [np.array([0, 0, 0])]}, False),
+        ({"text_features": [scipy.sparse.csr_matrix([0, 0, 0])]}, False),
+        ({"text_features": [scipy.sparse.csr_matrix([0, 31, 0])]}, True),
+    ],
+)
+def test_text_features_present(session_data, expected):
+    assert EmbeddingIntentClassifier._text_features_present(session_data) == expected
