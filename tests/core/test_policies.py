@@ -39,6 +39,9 @@ from rasa.utils.tensorflow.constants import (
     SCALE_LOSS,
     EVAL_NUM_EXAMPLES,
     EPOCHS,
+    KEY_RELATIVE_ATTENTION,
+    VALUE_RELATIVE_ATTENTION,
+    MAX_RELATIVE_POSITION,
 )
 from rasa.utils import train_utils
 from tests.core.conftest import (
@@ -510,6 +513,18 @@ class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
         assert isinstance(
             loaded.featurizer.state_featurizer, LabelTokenizerSingleStateFeaturizer
         )
+
+
+class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
+    def create_policy(self, featurizer, priority):
+        p = TEDPolicy(
+            featurizer=featurizer,
+            priority=priority,
+            **{KEY_RELATIVE_ATTENTION: True,
+               VALUE_RELATIVE_ATTENTION: True,
+               MAX_RELATIVE_POSITION:5},
+        )
+        return p
 
 
 class TestTEDPolicyWithTfConfig(TestTEDPolicy):

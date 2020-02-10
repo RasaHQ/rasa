@@ -31,6 +31,7 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EPOCHS,
     UNIDIRECTIONAL_ENCODER,
     DROPRATE,
+    DROPRATE_ATTENTION,
     NEG_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
@@ -149,6 +150,8 @@ class ResponseSelector(DIETClassifier):
         NEG_MARGIN_SCALE: 0.8,
         # dropout rate for rnn
         DROPRATE: 0.2,
+        # dropout rate for attention
+        DROPRATE_ATTENTION: 0,
         # use a unidirectional or bidirectional encoder
         UNIDIRECTIONAL_ENCODER: True,
         # visualization of accuracy
