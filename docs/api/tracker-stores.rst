@@ -79,23 +79,21 @@ SQLTrackerStore
     - SQLite
 
 .. _oracle-configuration:
+
 :Oracle Configuration:
-
-
       To use the SQLTrackerStore with Oracle, there are a few additional steps.
       First, create a database ``tracker`` in your Oracle database and create a user with access to it.
-      Create a sequence in the database with the following command (where username is the user you created):
+      Create a sequence in the database with the following command, where username is the user you created
+      (read more about creating sequences `here <https://docs.oracle.com/cd/B28359_01/server.111/b28310/views002.htm#ADMIN11794>`__):
 
       .. code-block:: sql
 
           CREATE SEQUENCE username.events_seq;
 
       Next you have to extend the Rasa Open Source image to include the necessary drivers and clients.
-
-      First download the Oracle Instant Client from `here <https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html>`_,
+      First download the Oracle Instant Client from `here <https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html>`__,
       rename it to ``oracle.rpm`` and store it in the directory from where you'll be building the docker image.
-
-      Copy this into a file called ``Dockerfile``:
+      Copy the following into a file called ``Dockerfile``:
 
       .. code-block:: bash
 
@@ -124,10 +122,8 @@ SQLTrackerStore
           docker build . -t rasa-oracle:|version|-oracle-full
 
       Now you can configure the tracker store in the ``endpoints.yml`` as described above,
-      and start the container. Read more about :ref:`running-rasa-with-docker`.
-
-
-
+      and start the container. The ``dialect`` parameter with this setup will be ``oracle+cx_oracle``.
+      Read more about :ref:`running-rasa-with-docker`.
 
 RedisTrackerStore
 ~~~~~~~~~~~~~~~~~~
