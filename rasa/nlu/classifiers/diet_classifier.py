@@ -962,7 +962,7 @@ class DIET(RasaModel):
         # self.metrics preserve order
         # output losses first
         self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
-        self.response_loss = tf.keras.metrics.Mean(name="i_loss")
+        self.intent_loss = tf.keras.metrics.Mean(name="i_loss")
         self.entity_loss = tf.keras.metrics.Mean(name="e_loss")
         # output accuracies second
         self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
@@ -1020,8 +1020,8 @@ class DIET(RasaModel):
     def _prepare_input_layers(self, name: Text) -> None:
         if f"{name}_features" not in self.data_signature:
             raise KeyError(
-                f"Features for {name} are not present "
-                f"in data signature {self.data_signature}"
+                f"Features for '{name}' are not present "
+                f"in data signature: {self.data_signature}."
             )
 
         self._tf_layers[f"sparse_dropout.{name}"] = tf_layers.SparseDropout(
@@ -1336,7 +1336,7 @@ class DIET(RasaModel):
                 self.label_name,
             )
             loss, acc = self._label_loss(cls, label, label_ids)
-            self.response_loss.update_state(loss)
+            self.intent_loss.update_state(loss)
             self.response_acc.update_state(acc)
             losses.append(loss)
 
