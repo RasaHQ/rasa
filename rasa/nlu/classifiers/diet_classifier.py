@@ -194,7 +194,7 @@ class DIETClassifier(EntityExtractor):
 
         if (
             self.component_config[MASKED_LM]
-            and not self.component_config[NUM_TRANSFORMER_LAYERS]
+            and self.component_config[NUM_TRANSFORMER_LAYERS] == 0
         ):
             raise ValueError(
                 "If number of transformer layers is 0,"
