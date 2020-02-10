@@ -158,8 +158,7 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
         )
 
     if not all_good:
-        rasa.cli.utils.print_error("Project validation completed with errors.")
-        sys.exit(1)
+        rasa.cli.utils.print_error_and_exit("Project validation completed with errors.")
 
 
 def validate_stories(args: argparse.Namespace) -> None:
