@@ -6,7 +6,6 @@ import pickle
 import scipy.sparse
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
-import warnings
 
 from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
@@ -23,6 +22,8 @@ from rasa.nlu.constants import (
 import tensorflow as tf
 
 # avoid warning println on contrib import - remove for tf 2
+from rasa.utils.common import raise_warning
+
 tf.contrib._warning = None
 
 logger = logging.getLogger(__name__)
@@ -131,7 +132,7 @@ class EmbeddingIntentClassifier(Component):
         ]
         for removed_param in removed_tokenization_params:
             if removed_param in config:
-                warnings.warn(
+                raise_warning(
                     f"Intent tokenization has been moved to Tokenizer components. "
                     f"Your config still mentions '{removed_param}'. "
                     f"Tokenization may fail if you specify the parameter here. "
@@ -981,8 +982,8 @@ class EmbeddingIntentClassifier(Component):
             )
 
         else:
-            warnings.warn(
+            raise_warning(
                 f"Failed to load nlu model. "
-                f"Maybe path '{os.path.abspath(model_dir)}' doesn't exist."
+                f"Maybe the path '{os.path.abspath(model_dir)}' doesn't exist?",
             )
             return cls(component_config=meta)

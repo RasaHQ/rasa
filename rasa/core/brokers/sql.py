@@ -1,11 +1,12 @@
+import contextlib
 import json
 import logging
-import warnings
 from typing import Any, Dict, Optional, Text
 
+from rasa.constants import DOCS_URL_EVENT_BROKERS
 from rasa.core.brokers.broker import EventBroker
+from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
-import contextlib
 
 logger = logging.getLogger(__name__)
 
@@ -85,11 +86,11 @@ class SQLProducer(SQLEventBroker):
         username: Optional[Text] = None,
         password: Optional[Text] = None,
     ):
-        warnings.warn(
+        raise_warning(
             "The `SQLProducer` class is deprecated, please inherit "
             "from `SQLEventBroker` instead. `SQLProducer` will be "
             "removed in future Rasa versions.",
-            DeprecationWarning,
-            stacklevel=2,
+            FutureWarning,
+            docs=DOCS_URL_EVENT_BROKERS,
         )
         super(SQLProducer, self).__init__(dialect, host, port, db, username, password)

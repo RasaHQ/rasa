@@ -1,26 +1,27 @@
 import logging
-import warnings
-
-import numpy as np
 import os
 import re
 import typing
-import scipy.sparse
-from typing import Any, Dict, Optional, Text, Union, List
+from typing import Any, Dict, List, Optional, Text, Union
 
+import numpy as np
+
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
+import rasa.utils.io
+import rasa.utils.io
+import scipy.sparse
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers.featurizer import Featurizer
-from rasa.nlu.training_data import Message, TrainingData
-import rasa.utils.io
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
-    TEXT_ATTRIBUTE,
+    CLS_TOKEN,
     RESPONSE_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
-    CLS_TOKEN,
+    TEXT_ATTRIBUTE,
+    TOKENS_NAMES,
 )
-from rasa.constants import DOCS_BASE_URL
+from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.training_data import Message, TrainingData
+from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -128,11 +129,11 @@ class RegexFeaturizer(Featurizer):
         # if it's a list, it should be the elements directly
         if isinstance(lookup_elements, list):
             elements_to_regex = lookup_elements
-            warnings.warn(
+            raise_warning(
                 f"Directly including lookup tables as a list is deprecated since Rasa "
-                f"1.6. See {DOCS_BASE_URL}/nlu/training-data-format/#lookup-tables "
-                f"how to do so.",
+                f"1.6.",
                 FutureWarning,
+                docs=DOCS_URL_TRAINING_DATA_NLU + "#lookup-tables",
             )
 
         # otherwise it's a file path.
@@ -142,8 +143,8 @@ class RegexFeaturizer(Featurizer):
                 f = open(lookup_elements, "r", encoding=rasa.utils.io.DEFAULT_ENCODING)
             except OSError:
                 raise ValueError(
-                    "Could not load lookup table {}"
-                    "Make sure you've provided the correct path".format(lookup_elements)
+                    f"Could not load lookup table {lookup_elements}. "
+                    f"Please make sure you've provided the correct path."
                 )
 
             with f:
