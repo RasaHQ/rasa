@@ -166,7 +166,7 @@ parameters. Example:
 
 
 All other parameters have either been moved to the scripts
-for training, :ref:`serving models <configuring http-api>`, or put into the
+for training, :ref:`serving models <running-the-server>`, or put into the
 :ref:`pipeline configuration <components>`.
 
 persistors:
