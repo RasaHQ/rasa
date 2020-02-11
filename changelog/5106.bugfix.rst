@@ -1,2 +1,0 @@
-Fixed file loading of non proper UTF-8 story files, failing properly when checking for
-story files.
