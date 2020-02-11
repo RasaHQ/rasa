@@ -573,14 +573,18 @@ class DIETClassifier(EntityExtractor):
         np.random.seed(self.component_config[RANDOM_SEED])
 
         model_data = self.preprocess_train_data(training_data)
+        if model_data.is_empty():
+            logger.error(
+                "Can not train DIET classifier. No data was provided. "
+                "Skipping training of the classifier."
+            )
+            return
 
         if self.component_config[INTENT_CLASSIFICATION]:
-            possible_to_train = self._check_enough_labels(model_data)
-
-            if not possible_to_train:
+            if not self._check_enough_labels(model_data):
                 logger.error(
                     "Can not train intent classifier. "
-                    "Need at least 2 different classes. "
+                    "Need at least 2 different intent classes. "
                     "Skipping training of classifier."
                 )
                 return
@@ -607,6 +611,10 @@ class DIETClassifier(EntityExtractor):
     # process helpers
     def _predict(self, message: Message) -> Optional[Dict[Text, tf.Tensor]]:
         if self.model is None:
+            logger.error(
+                "There is no trained model: component is either not trained or "
+                "didn't receive enough training data."
+            )
             return
 
         # create session data from message and convert it into a batch of 1
@@ -615,21 +623,17 @@ class DIETClassifier(EntityExtractor):
         return self.model.predict(model_data)
 
     def _predict_label(
-        self, out: Dict[Text, tf.Tensor]
+        self, predict_out: Optional[Dict[Text, tf.Tensor]]
     ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
         """Predicts the intent of the provided message."""
 
         label = {"name": None, "confidence": 0.0}
         label_ranking = []
 
-        if self.model is None:
-            logger.error(
-                "There is no trained model: component is either not trained or "
-                "didn't receive enough training data."
-            )
+        if predict_out is None:
             return label, label_ranking
 
-        message_sim = out["i_scores"].numpy()
+        message_sim = predict_out["i_scores"].numpy()
 
         message_sim = message_sim.flatten()  # sim is a matrix
 
@@ -671,17 +675,13 @@ class DIETClassifier(EntityExtractor):
         return label, label_ranking
 
     def _predict_entities(
-        self, out: Dict[Text, tf.Tensor], message: Message
+        self, predict_out: Optional[Dict[Text, tf.Tensor]], message: Message
     ) -> List[Dict]:
-        if self.model is None:
-            logger.error(
-                "There is no trained model: component is either not trained or "
-                "didn't receive enough training data"
-            )
+        if predict_out is None:
             return []
 
         # load tf graph and session
-        predictions = out["e_ids"].numpy()
+        predictions = predict_out["e_ids"].numpy()
 
         tags = [self.inverted_tag_dict[p] for p in predictions[0]]
 
@@ -902,6 +902,8 @@ class DIET(RasaModel):
 
         # data
         self.data_signature = data_signature
+        self._check_data()
+
         self.predict_data_signature = {
             k: vs for k, vs in data_signature.items() if "text" in k
         }
@@ -925,22 +927,27 @@ class DIET(RasaModel):
 
         self.all_labels_embed = None  # needed for efficient prediction
 
-        self._check_data()
-
     def _check_data(self):
         if "text_features" not in self.data_signature:
             raise ValueError(
-                "No text features specified. Cannot train 'DIETClassifier'."
+                f"No text features specified. "
+                f"Cannot train '{self.__class__.__name__}' model."
             )
-        if (
-            self.config[INTENT_CLASSIFICATION]
-            and "label_features" not in self.data_signature
-        ):
-            raise ValueError(
-                "No label features specified. Cannot train 'DIETClassifier'."
-            )
+        if self.config[INTENT_CLASSIFICATION]:
+            if "label_features" not in self.data_signature:
+                raise ValueError(
+                    f"No label features specified. "
+                    f"Cannot train '{self.__class__.__name__}' model."
+                )
+            if self.config[SHARE_HIDDEN_LAYERS] and self.data_signature["text_features"] != self.data_signature["label_features"]:
+                raise ValueError(
+                    "If hidden layer weights are shared, data signatures "
+                    "for text_features and label_features must coincide."
+                )
+
         if self.config[ENTITY_RECOGNITION] and "tag_ids" not in self.data_signature:
-            raise ValueError("No tag ids present. Cannot train 'DIETClassifier'.")
+            raise ValueError(f"No tag ids present. "
+                             f"Cannot train '{self.__class__.__name__}' model.")
 
     def _create_metrics(self):
         # self.metrics preserve order
@@ -1004,12 +1011,6 @@ class DIET(RasaModel):
                 )
 
     def _prepare_input_layers(self, name: Text) -> None:
-        if f"{name}_features" not in self.data_signature:
-            raise KeyError(
-                f"Features for '{name}' are not present "
-                f"in data signature: {self.data_signature}."
-            )
-
         self._tf_layers[f"sparse_dropout.{name}"] = tf_layers.SparseDropout(
             rate=self.config[DROPRATE]
         )

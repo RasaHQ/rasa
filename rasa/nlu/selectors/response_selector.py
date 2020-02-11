@@ -261,6 +261,23 @@ class ResponseSelector(DIETClassifier):
 
 
 class DIET2DIET(DIET):
+    def _check_data(self):
+        if "text_features" not in self.data_signature:
+            raise ValueError(
+                f"No text features specified. "
+                f"Cannot train '{self.__class__.__name__}' model."
+            )
+        if "label_features" not in self.data_signature:
+            raise ValueError(
+                f"No label features specified. "
+                f"Cannot train '{self.__class__.__name__}' model."
+            )
+        if self.config[SHARE_HIDDEN_LAYERS] and self.data_signature["text_features"] != self.data_signature["label_features"]:
+            raise ValueError(
+                "If hidden layer weights are shared, data signatures "
+                "for text_features and label_features must coincide."
+            )
+
     def _create_metrics(self):
         # self.metrics preserve order
         # output losses first

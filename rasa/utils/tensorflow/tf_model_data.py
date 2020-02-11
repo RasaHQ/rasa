@@ -45,6 +45,9 @@ class RasaModelData:
     def feature_not_exists(self, key: Text) -> bool:
         return key not in self.data or not self.data[key]
 
+    def is_empty(self):
+        return not self.data
+
     def get_number_of_examples(self) -> int:
         """Obtain number of examples in data.
 

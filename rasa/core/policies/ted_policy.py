@@ -266,6 +266,12 @@ class TEDPolicy(Policy):
 
         # extract actual training data to feed to model
         model_data = self._create_model_data(training_data.X, training_data.y)
+        if model_data.is_empty():
+            logger.error(
+                "Can not train TED policy. No data was provided. "
+                "Skipping training of the policy."
+            )
+            return
 
         # keep one example for persisting and loading
         self.data_example = {k: [v[:1] for v in vs] for k, vs in model_data.items()}
@@ -444,6 +450,8 @@ class TED(RasaModel):
 
         # data
         self.data_signature = data_signature
+        self._check_data()
+
         self.predict_data_signature = {
             k: vs for k, vs in data_signature.items() if "dialogue" in k
         }
@@ -466,6 +474,18 @@ class TED(RasaModel):
         # set up tf layers
         self._tf_layers = {}
         self._prepare_layers()
+
+    def _check_data(self):
+        if "dialogue_features" not in self.data_signature:
+            raise ValueError(
+                f"No text features specified. "
+                f"Cannot train '{self.__class__.__name__}' model."
+            )
+        if "label_features" not in self.data_signature:
+            raise ValueError(
+                f"No label features specified. "
+                f"Cannot train '{self.__class__.__name__}' model."
+            )
 
     def _prepare_layers(self) -> None:
         self._tf_layers["loss.label"] = tf_layers.DotProductLoss(
