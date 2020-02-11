@@ -33,7 +33,7 @@ class SparseDropout(tf.keras.layers.Dropout):
 
 
 class DenseForSparse(tf.keras.layers.Dense):
-    """Dense layer for sparse input tensor"""
+    """Dense layer for sparse input tensor."""
 
     def __init__(self, reg_lambda: float = 0, **kwargs) -> None:
         if reg_lambda > 0:
@@ -171,6 +171,7 @@ class InputMask(tf.keras.layers.Layer):
         training: Optional[Union[tf.Tensor, bool]] = None,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Randomly mask input sequences."""
+
         if training is None:
             training = K.learning_phase()
 
@@ -279,6 +280,7 @@ class DotProductLoss(tf.keras.layers.Layer):
     def _random_indices(self, batch_size: tf.Tensor, total_candidates: tf.Tensor):
         def rand_idxs():
             """Create random tensor of indices"""
+
             # (1, num_neg)
             return tf.expand_dims(
                 tf.random.shuffle(tf.range(total_candidates))[: self.num_neg], 0
@@ -450,7 +452,7 @@ class DotProductLoss(tf.keras.layers.Layer):
 
     @staticmethod
     def _calc_accuracy(sim_pos: tf.Tensor, sim_neg: tf.Tensor) -> tf.Tensor:
-        """Calculate accuracy"""
+        """Calculate accuracy."""
 
         max_all_sim = tf.reduce_max(tf.concat([sim_pos, sim_neg], -1), -1)
         return tf.reduce_mean(
