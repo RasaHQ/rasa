@@ -59,10 +59,10 @@ prepare-tests-ubuntu: prepare-tests-files
 	sudo apt-get -y install graphviz graphviz-dev python3-tk
 
 prepare-tests-files:
-	pip3 install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir -q
-	python3 -m spacy link en_core_web_md en --force
-	pip3 install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir -q
-	python3 -m spacy link de_core_news_sm de --force
+	sudo pip3 install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir -q
+	sudo python3 -m spacy link en_core_web_md en --force
+	sudo pip3 install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir -q
+	sudo python3 -m spacy link de_core_news_sm de --force
 	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 
 test: clean

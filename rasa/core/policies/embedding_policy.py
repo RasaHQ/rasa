@@ -7,7 +7,10 @@ from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.constants import DOCS_BASE_URL
 from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES_LABEL,
+    TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
+    NUM_HEADS,
+    MAX_SEQ_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
     EPOCHS,
@@ -26,11 +29,12 @@ from rasa.utils.tensorflow.constants import (
     MU_POS,
     EMBED_DIM,
     HIDDEN_LAYERS_SIZES_DIALOGUE,
-    TRANSFORMER_SIZE,
-    MAX_SEQ_LENGTH,
-    NUM_HEADS,
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
+    DROPRATE_ATTENTION,
+    KEY_RELATIVE_ATTENTION,
+    VALUE_RELATIVE_ATTENTION,
+    MAX_RELATIVE_POSITION,
 )
 from rasa.utils.common import raise_warning
 from rasa.utils.tensorflow.models import RasaModel
@@ -103,11 +107,19 @@ class EmbeddingPolicy(TEDPolicy):
         DROPRATE_DIALOGUE: 0.1,
         # dropout rate for bot nn
         DROPRATE_LABEL: 0.0,
+        # dropout rate for attention
+        DROPRATE_ATTENTION: 0,
         # visualization of accuracy
         # how often calculate validation accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for hold out validation set
         EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
+        # if true use key relative embeddings in attention
+        KEY_RELATIVE_ATTENTION: False,
+        # if true use key relative embeddings in attention
+        VALUE_RELATIVE_ATTENTION: False,
+        # max position for relative embeddings
+        MAX_RELATIVE_POSITION: None,
     }
     # end default properties (DOC MARKER - don't remove)
 
