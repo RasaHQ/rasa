@@ -155,6 +155,8 @@ jobs:
       env:
         GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
         SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
+        GITHUB_TAG: ${{ github.ref }}
+        GITHUB_REPO_SLUG: ${{ github.repository }}
       # python3 scripts/publish_gh_release_notes.py
       run: |
         sudo apt-get -y install pandoc
