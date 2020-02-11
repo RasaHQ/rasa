@@ -4,7 +4,7 @@ from rasa.constants import DEFAULT_RESULTS_PATH, RESULTS_FILE
 from rasa.utils.io import list_files, write_yaml_file
 from typing import Callable
 from _pytest.pytester import RunResult
-
+import pytest
 
 def test_test_core(run_in_default_project: Callable[..., RunResult]):
     run_in_default_project("test", "core", "--stories", "data")
@@ -58,6 +58,7 @@ def test_test_nlu_cross_validation(run_in_default_project: Callable[..., RunResu
     assert os.path.exists("results/confmat.png")
 
 
+@pytest.mark.skip(reason="Takes forever.")  # TODO remove
 def test_test_nlu_comparison(run_in_default_project: Callable[..., RunResult]):
     copyfile("config.yml", "nlu-config.yml")
 
@@ -69,6 +70,7 @@ def test_test_nlu_comparison(run_in_default_project: Callable[..., RunResult]):
     assert os.path.exists("results/run_2")
 
 
+@pytest.mark.skip(reason="Takes forever.")  # TODO remove
 def test_test_core_comparison(run_in_default_project: Callable[..., RunResult]):
     files = list_files("models")
     copyfile(files[0], "models/copy-model.tar.gz")
@@ -86,6 +88,7 @@ def test_test_core_comparison(run_in_default_project: Callable[..., RunResult]):
     assert os.path.exists(os.path.join(DEFAULT_RESULTS_PATH, RESULTS_FILE))
 
 
+@pytest.mark.skip(reason="Takes forever.")  # TODO remove
 def test_test_core_comparison_after_train(
     run_in_default_project: Callable[..., RunResult]
 ):
