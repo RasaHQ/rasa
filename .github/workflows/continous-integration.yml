@@ -90,7 +90,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update -qq
-        python -m pip install --upgrade pip
+        python -m pip install -U 'pip<20'
         pip install -r requirements-dev.txt
         pip install -e .
         make prepare-tests-ubuntu
