@@ -39,6 +39,9 @@ from rasa.utils.tensorflow.constants import (
     MU_POS,
     EMBED_DIM,
     BILOU_FLAG,
+    KEY_RELATIVE_ATTENTION,
+    VALUE_RELATIVE_ATTENTION,
+    MAX_RELATIVE_POSITION,
 )
 from rasa.nlu.constants import (
     RESPONSE_ATTRIBUTE,
@@ -163,6 +166,12 @@ class ResponseSelector(DIETClassifier):
         "retrieval_intent": None,
         # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: False,
+        # if true use key relative embeddings in attention
+        KEY_RELATIVE_ATTENTION: False,
+        # if true use key relative embeddings in attention
+        VALUE_RELATIVE_ATTENTION: False,
+        # max position for relative embeddings
+        MAX_RELATIVE_POSITION: None,
     }
     # end default properties (DOC MARKER - don't remove)
 
