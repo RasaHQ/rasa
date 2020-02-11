@@ -1,0 +1,2 @@
+Added a new CLI command ``rasa export`` to publish tracker events from a persistent
+tracker store using an event broker.

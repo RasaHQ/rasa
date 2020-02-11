@@ -1,13 +1,13 @@
-import argparse
 import random
+
+import argparse
+import pytest
 import uuid
+from _pytest.monkeypatch import MonkeyPatch
+from _pytest.pytester import RunResult
 from pathlib import Path
 from typing import Callable, Optional, Dict, Any, Text, List
 from unittest.mock import Mock, patch
-
-import pytest
-from _pytest.monkeypatch import MonkeyPatch
-from _pytest.pytester import RunResult
 
 import rasa.utils.io as io_utils
 from rasa.cli import export
@@ -159,7 +159,7 @@ def test_get_conversation_ids_to_process(
     _available_ids = [str(_id) for _id in available_ids]
     _expected = [str(_id) for _id in expected] if expected else None
 
-    # create and mock tracker store contain `available_ids` as keys
+    # create and mock tracker store containing `available_ids` as keys
     tracker_store = TrackerStore(None, None)
     monkeypatch.setattr(tracker_store, "keys", lambda: _available_ids)
 
@@ -180,14 +180,14 @@ def test_get_conversation_ids_to_process(
 )
 def test_get_conversation_ids_to_process_error_exit(
     requested_ids: Optional[List[int]],
-    available_ids: Optional[List[int]],
+    available_ids: List[int],
     monkeypatch: MonkeyPatch,
 ):
     # convert ids to strings
     _requested_ids = [str(_id) for _id in requested_ids] if requested_ids else None
     _available_ids = [str(_id) for _id in available_ids]
 
-    # create and mock tracker store contain `available_ids` as keys
+    # create and mock tracker store containing `available_ids` as keys
     tracker_store = TrackerStore(None, None)
     monkeypatch.setattr(tracker_store, "keys", lambda: _available_ids)
 
@@ -338,3 +338,75 @@ def test_sort_and_select_events_by_timestamp_error_exit():
     events = [random_user_uttered_event(3).as_dict()]
     with pytest.raises(SystemExit):
         export._sort_and_select_events_by_timestamp(events, minimum_timestamp=3.1)
+
+
+def _add_conversation_id_to_event(event: Dict, conversation_id: Text):
+    event["sender_id"] = conversation_id
+
+
+# noinspection PyProtectedMember
+def test_export_events(tmp_path: Path, monkeypatch: MonkeyPatch):
+    endpoints_path = _write_endpoint_config_to_yaml(
+        tmp_path, {"event_broker": {"type": "pika"}, "tracker_store": {"type": "sql"}}
+    )
+
+    # export these conversation IDs
+    all_conversation_ids = ["id-1", "id-2", "id-3"]
+
+    requested_conversation_ids = ["id-1", "id-2"]
+
+    # create namespace with a set of cmdline arguments
+    namespace = argparse.Namespace(
+        endpoints=endpoints_path,
+        conversation_ids=",".join(requested_conversation_ids),
+        minimum_timestamp=1.0,
+        maximum_timestamp=10.0,
+    )
+
+    # prepare events with from different senders and different timestamps
+    event_1 = random_user_uttered_event(1)
+    event_2 = random_user_uttered_event(2)
+    event_3 = random_user_uttered_event(3)
+    event_4 = random_user_uttered_event(4)
+    event_5 = random_user_uttered_event(11)
+    event_6 = random_user_uttered_event(5)
+    events = {
+        all_conversation_ids[0]: [event_1, event_2],
+        all_conversation_ids[1]: [event_3, event_4, event_5],
+        all_conversation_ids[2]: [event_6],
+    }
+
+    def _get_tracker(conversation_id: Text) -> DialogueStateTracker:
+        return DialogueStateTracker.from_events(
+            conversation_id, events[conversation_id]
+        )
+
+    # mock tracker store
+    tracker_store = Mock()
+    tracker_store.keys = Mock(return_value=all_conversation_ids)
+    tracker_store.retrieve.side_effect = _get_tracker
+    monkeypatch.setattr(export, "_get_rasa_tracker_store", lambda _: tracker_store)
+
+    # mock event broker so we can check its `publish` method is called
+    event_broker = Mock()
+    event_broker.publish = Mock()
+    monkeypatch.setattr(export, "_get_event_broker", lambda _: event_broker)
+
+    # run the export function
+    export.export_trackers(namespace)
+
+    # check that only events 1, 2, 3, and 4 have been published
+    # event 6 was sent by `id-3` which was not requested, and event 5
+    # lies outside the requested time range
+    calls = event_broker.publish.mock_calls
+
+    # only four events were published (i.e. `publish()` method was called four times)
+    assert len(calls) == 4
+
+    # call objects are tuples of (name, pos. args, kwargs)
+    # args itself is a tuple, and we want to access the first one, hence `call[1][0]`
+    # check that events 1-4 were published
+    assert all(
+        any(call[1][0]["text"] == event.text for call in calls)
+        for event in [event_1, event_2, event_3, event_4]
+    )
