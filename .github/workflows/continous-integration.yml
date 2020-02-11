@@ -69,10 +69,11 @@ jobs:
       run: |
         rasa --help
     - name: Test Docs
-      run: |
-        pip install -r requirements-docs.txt
-        pip install -e .[sql]
-        cd docs && make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
+      uses: ammaraskar/sphinx-action@0.3
+      with:
+        docs-folder: "docs/"
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+        build-command: "make SPHINXOPTS=\"-W --keep-going -A html_theme=rasabaster\" html"
 
   test:
     name: Run Tests
