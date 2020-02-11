@@ -2,7 +2,7 @@ import json
 import logging
 import urllib.parse
 from typing import Dict
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, Mock
 
 import pytest
 import responses
@@ -500,8 +500,8 @@ def test_slack_metadata():
         slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
     )
 
-    r = Request(None, None, None, None, None, app="test")
-    r.parsed_json = direct_message_event
+    r = Mock()
+    r.json = direct_message_event
     metadata = input_channel.get_metadata(request=r)
     assert metadata["sender"] == user
     assert metadata["out_channel"] == channel
@@ -542,8 +542,8 @@ def test_slack_metadata_missing_keys():
         slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
     )
 
-    r = Request(None, None, None, None, None, app="test")
-    r.parsed_json = direct_message_event
+    r = Mock()
+    r.json = direct_message_event
     metadata = input_channel.get_metadata(request=r)
     assert metadata["sender"] is None
     assert metadata["users"] is None
