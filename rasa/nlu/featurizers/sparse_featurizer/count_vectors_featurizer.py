@@ -411,6 +411,7 @@ class CountVectorsFeaturizer(Featurizer):
             if not tokens:
                 # nothing to featurize
                 X.append(None)
+                continue
 
             # vectorizer.transform returns a sparse matrix of size
             # [n_samples, n_features]
