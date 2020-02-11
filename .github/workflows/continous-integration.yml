@@ -14,13 +14,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - id: file_changes
-      uses: trilom/file-changes-action@v1
-      with:
-        githubToken: ${{ secrets.GITHUB_TOKEN }}
-    - name: test changed files
-      run: |
-        cat $HOME/files.json
     - name: Checkout git repository
       uses: actions/checkout@v2
     - uses: actions/setup-node@v1
