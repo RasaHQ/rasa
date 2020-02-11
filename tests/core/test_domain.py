@@ -10,6 +10,11 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
 )
+from rasa.core.domain import (
+    USED_ENTITIES_KEY,
+    USE_ENTITIES_KEY,
+    IGNORE_ENTITIES_KEY,
+)
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain, SessionConfig
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
@@ -383,16 +388,16 @@ session_config:
             ["greet", "goodbye"],
             ["entity", "other", "third"],
             {
-                "greet": {"used_entities": ["entity", "other", "third"]},
-                "goodbye": {"used_entities": ["entity", "other", "third"]},
+                "greet": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
+                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
             },
         ),
         (
-            [{"greet": {"use_entities": []}}, "goodbye"],
+            [{"greet": {USE_ENTITIES_KEY: []}}, "goodbye"],
             ["entity", "other", "third"],
             {
-                "greet": {"used_entities": []},
-                "goodbye": {"used_entities": ["entity", "other", "third"]},
+                "greet": {USED_ENTITIES_KEY: []},
+                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
             },
         ),
         (
@@ -400,27 +405,27 @@ session_config:
                 {
                     "greet": {
                         "triggers": "utter_goodbye",
-                        "use_entities": ["entity"],
-                        "ignore_entities": ["other"],
+                        USE_ENTITIES_KEY: ["entity"],
+                        IGNORE_ENTITIES_KEY: ["other"],
                     }
                 },
                 "goodbye",
             ],
             ["entity", "other", "third"],
             {
-                "greet": {"triggers": "utter_goodbye", "used_entities": ["entity"],},
-                "goodbye": {"used_entities": ["entity", "other", "third"]},
+                "greet": {"triggers": "utter_goodbye", USED_ENTITIES_KEY: ["entity"],},
+                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
             },
         ),
         (
             [
-                {"greet": {"triggers": "utter_goodbye", "use_entities": None}},
-                {"goodbye": {"use_entities": [], "ignore_entities": []}},
+                {"greet": {"triggers": "utter_goodbye", USE_ENTITIES_KEY: None}},
+                {"goodbye": {USE_ENTITIES_KEY: [], IGNORE_ENTITIES_KEY: []}},
             ],
             ["entity", "other", "third"],
             {
-                "greet": {"used_entities": [], "triggers": "utter_goodbye",},
-                "goodbye": {"used_entities": []},
+                "greet": {USED_ENTITIES_KEY: [], "triggers": "utter_goodbye",},
+                "goodbye": {USED_ENTITIES_KEY: []},
             },
         ),
     ],
@@ -599,13 +604,13 @@ def test_transform_intents_for_file():
     )
 
     expected = [
-        {"greet": {"use_entities": ["name"]}},
-        {"default": {"ignore_entities": ["unrelated_recognized_entity"]}},
-        {"goodbye": {"use_entities": []}},
-        {"thank": {"use_entities": []}},
-        {"ask": {"use_entities": True}},
-        {"why": {"use_entities": []}},
-        {"pure_intent": {"use_entities": True}},
+        {"greet": {USE_ENTITIES_KEY: ["name"]}},
+        {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
+        {"goodbye": {USE_ENTITIES_KEY: []}},
+        {"thank": {USE_ENTITIES_KEY: []}},
+        {"ask": {USE_ENTITIES_KEY: True}},
+        {"why": {USE_ENTITIES_KEY: []}},
+        {"pure_intent": {USE_ENTITIES_KEY: True}},
     ]
 
     assert transformed == expected
@@ -617,12 +622,12 @@ def test_clean_domain_for_file():
 
     expected = {
         "intents": [
-            {"greet": {"use_entities": ["name"]}},
-            {"default": {"ignore_entities": ["unrelated_recognized_entity"]}},
-            {"goodbye": {"use_entities": []}},
-            {"thank": {"use_entities": []}},
+            {"greet": {USE_ENTITIES_KEY: ["name"]}},
+            {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
+            {"goodbye": {USE_ENTITIES_KEY: []}},
+            {"thank": {USE_ENTITIES_KEY: []}},
             "ask",
-            {"why": {"use_entities": []}},
+            {"why": {USE_ENTITIES_KEY: []}},
             "pure_intent",
         ],
         "entities": ["name", "other", "unrelated_recognized_entity"],
@@ -647,12 +652,12 @@ def test_clean_domain_deprecated_templates():
 
     expected = {
         "intents": [
-            {"greet": {"use_entities": ["name"]}},
-            {"default": {"ignore_entities": ["unrelated_recognized_entity"]}},
-            {"goodbye": {"use_entities": []}},
-            {"thank": {"use_entities": []}},
+            {"greet": {USE_ENTITIES_KEY: ["name"]}},
+            {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
+            {"goodbye": {USE_ENTITIES_KEY: []}},
+            {"thank": {USE_ENTITIES_KEY: []}},
             "ask",
-            {"why": {"use_entities": []}},
+            {"why": {USE_ENTITIES_KEY: []}},
             "pure_intent",
         ],
         "entities": ["name", "other", "unrelated_recognized_entity"],

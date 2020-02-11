@@ -42,6 +42,9 @@ ACTIVE_FORM_PREFIX = "active_form_"
 CARRY_OVER_SLOTS_KEY = "carry_over_slots_to_new_session"
 SESSION_EXPIRATION_TIME_KEY = "session_expiration_time"
 SESSION_CONFIG_KEY = "session_config"
+USED_ENTITIES_KEY = "used_entities"
+USE_ENTITIES_KEY = "use_entities"
+IGNORE_ENTITIES_KEY = "ignore_entities"
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker
@@ -273,24 +276,24 @@ class Domain:
         """
         name, properties = list(intent.items())[0]
 
-        properties.setdefault("use_entities", True)
-        properties.setdefault("ignore_entities", [])
-        if properties["use_entities"] is None or properties["use_entities"] is False:
-            properties["use_entities"] = []
+        properties.setdefault(USE_ENTITIES_KEY, True)
+        properties.setdefault(IGNORE_ENTITIES_KEY, [])
+        if not properties[USE_ENTITIES_KEY]:  # this covers False, None and []
+            properties[USE_ENTITIES_KEY] = []
 
         # `use_entities` is either a list of explicitly included entities
         # or `True` if all should be included
-        if properties["use_entities"] is True:
+        if properties[USE_ENTITIES_KEY] is True:
             included_entities = set(entities)
         else:
-            included_entities = set(properties["use_entities"])
-        excluded_entities = set(properties["ignore_entities"])
+            included_entities = set(properties[USE_ENTITIES_KEY])
+        excluded_entities = set(properties[IGNORE_ENTITIES_KEY])
         used_entities = list(included_entities - excluded_entities)
         used_entities.sort()
 
         # Only print warning for ambiguous configurations if entities were included
         # explicitly.
-        explicitly_included = isinstance(properties["use_entities"], list)
+        explicitly_included = isinstance(properties[USE_ENTITIES_KEY], list)
         ambiguous_entities = included_entities.intersection(excluded_entities)
         if explicitly_included and ambiguous_entities:
             raise_warning(
@@ -298,12 +301,12 @@ class Domain:
                 f" excluded for intent '{name}'."
                 f"Excluding takes precedence in this case. "
                 f"Please resolve that ambiguity.",
-                docs=DOCS_URL_DOMAINS + "#ignoring-entities-for-certain-intents",
+                docs=f"{DOCS_URL_DOMAINS}#ignoring-entities-for-certain-intents",
             )
 
-        properties["used_entities"] = used_entities
-        properties.pop("use_entities")
-        properties.pop("ignore_entities")
+        properties[USED_ENTITIES_KEY] = used_entities
+        properties.pop(USE_ENTITIES_KEY)
+        properties.pop(IGNORE_ENTITIES_KEY)
 
         return intent
 
@@ -315,7 +318,7 @@ class Domain:
         intent_properties = {}
         for intent in intents:
             if not isinstance(intent, dict):
-                intent = {intent: {"use_entities": True, "ignore_entities": []}}
+                intent = {intent: {USE_ENTITIES_KEY: True, IGNORE_ENTITIES_KEY: []}}
 
             name = list(intent.keys())[0]
             if name in intent_properties.keys():
@@ -635,7 +638,7 @@ class Domain:
             entity["entity"] for entity in entities if "entity" in entity.keys()
         }
 
-        wanted_entities = set(intent_config.get("used_entities", entity_names))
+        wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
 
         return entity_names.intersection(wanted_entities)
 
@@ -774,31 +777,31 @@ class Domain:
 
         for intent_name, intent_props_internal in intent_properties.items():
             intent_for_file = {}
-            use_entities = set(intent_props_internal["used_entities"])
+            use_entities = set(intent_props_internal[USED_ENTITIES_KEY])
             ignore_entities = set(entities) - use_entities
             if len(use_entities) == len(entities):
-                intent_for_file["use_entities"] = True
+                intent_for_file[USE_ENTITIES_KEY] = True
             elif len(use_entities) <= len(entities) / 2:
-                intent_for_file["use_entities"] = list(use_entities)
+                intent_for_file[USE_ENTITIES_KEY] = list(use_entities)
             else:
-                intent_for_file["ignore_entities"] = list(ignore_entities)
+                intent_for_file[IGNORE_ENTITIES_KEY] = list(ignore_entities)
             intent_properties_for_file.append({intent_name: intent_for_file})
 
         return intent_properties_for_file
 
     def cleaned_domain(self) -> Dict[Text, Any]:
-        """Fetch cleaned domain, replacing redundant keys with default values and
-        replacing the internal `used_entities` property by `use_entities` or
-        `ignore_entities`.
+        """Fetch cleaned domain to display or write into a file.
+        The internal `used_entities` property is replaced by `use_entities` or
+        `ignore_entities`. Redundant keys are replaced with default values.
         """
         domain_data = self.as_dict()
 
         for idx, intent_info in enumerate(domain_data["intents"]):
             for name, intent in intent_info.items():
-                if intent.get("use_entities") is True:
-                    intent.pop("use_entities")
-                if not intent.get("ignore_entities"):
-                    intent.pop("ignore_entities", None)
+                if intent.get(USE_ENTITIES_KEY) is True:
+                    intent.pop(USE_ENTITIES_KEY)
+                if not intent.get(IGNORE_ENTITIES_KEY):
+                    intent.pop(IGNORE_ENTITIES_KEY, None)
                 if len(intent) == 0:
                     domain_data["intents"][idx] = name
 
