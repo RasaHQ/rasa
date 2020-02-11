@@ -77,13 +77,19 @@ jobs:
       # trying to run the `rasa` command once before the docs build.
       run: |
         rasa --help
+# DOES NOT WORK YET DUE TO TENSORFLOW 1.5 -> should work with 2.0
+#    - name: Test Docs
+#      uses: ammaraskar/sphinx-action@0.3
+#      with:
+#        docs-folder: "docs/"
+#        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+#        build-command: "make SPHINXOPTS=\"-W --keep-going -A html_theme=rasabaster\" html"
+#        pre-build-command: "apt-get update -y && apt-get install -y git"
     - name: Test Docs
-      uses: ammaraskar/sphinx-action@0.3
-      with:
-        docs-folder: "docs/"
-        repo-token: "${{ secrets.GITHUB_TOKEN }}"
-        build-command: "make SPHINXOPTS=\"-W --keep-going -A html_theme=rasabaster\" html"
-        pre-build-command: "apt-get update -y && apt-get install -y git"
+      run: |
+        pip install -r requirements-docs.txt
+        pip install -e .[sql]
+        cd docs && make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
 
   test:
     name: Run Tests
