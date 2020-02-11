@@ -261,7 +261,7 @@ class ResponseSelector(DIETClassifier):
 
 
 class DIET2DIET(DIET):
-    def _check_data(self):
+    def _check_data(self) -> None:
         if "text_features" not in self.data_signature:
             raise ValueError(
                 f"No text features specified. "
@@ -282,7 +282,7 @@ class DIET2DIET(DIET):
                 "for text_features and label_features must coincide."
             )
 
-    def _create_metrics(self):
+    def _create_metrics(self) -> None:
         # self.metrics preserve order
         # output losses first
         self.mask_loss = tf.keras.metrics.Mean(name="m_loss")

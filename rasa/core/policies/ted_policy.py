@@ -442,7 +442,7 @@ class TED(RasaModel):
         config: Dict[Text, Any],
         max_history_tracker_featurizer_used: bool,
         label_data: RasaModelData,
-    ):
+    ) -> None:
         super().__init__(name="TED", random_seed=config[RANDOM_SEED])
 
         self.config = config
@@ -475,7 +475,7 @@ class TED(RasaModel):
         self._tf_layers = {}
         self._prepare_layers()
 
-    def _check_data(self):
+    def _check_data(self) -> None:
         if "dialogue_features" not in self.data_signature:
             raise ValueError(
                 f"No text features specified. "

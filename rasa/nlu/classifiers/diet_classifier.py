@@ -900,7 +900,8 @@ class DIET(RasaModel):
     ) -> None:
         super().__init__(name="DIET", random_seed=config[RANDOM_SEED])
 
-        # data
+        self.config = config
+
         self.data_signature = data_signature
         self._check_data()
 
@@ -914,8 +915,6 @@ class DIET(RasaModel):
         )
         self._num_tags = len(inverted_tag_dict) if inverted_tag_dict is not None else 0
 
-        self.config = config
-
         # tf objects
         self._tf_layers = {}
         self._prepare_layers()
@@ -927,7 +926,7 @@ class DIET(RasaModel):
 
         self.all_labels_embed = None  # needed for efficient prediction
 
-    def _check_data(self):
+    def _check_data(self) -> None:
         if "text_features" not in self.data_signature:
             raise ValueError(
                 f"No text features specified. "
@@ -955,7 +954,7 @@ class DIET(RasaModel):
                 f"Cannot train '{self.__class__.__name__}' model."
             )
 
-    def _create_metrics(self):
+    def _create_metrics(self) -> None:
         # self.metrics preserve order
         # output losses first
         self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
