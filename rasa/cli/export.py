@@ -62,7 +62,7 @@ def _get_rasa_tracker_store(endpoints: AvailableEndpoints) -> TrackerStore:
     return TrackerStore.create(endpoints.tracker_store)
 
 
-def _get_event_broker(endpoints: AvailableEndpoints) -> EventBroker:
+def _get_event_broker(endpoints: AvailableEndpoints) -> Optional[EventBroker]:
     """Get event broker from `endpoints`.
 
     Prints an error and exits if no event broker could be loaded.
