@@ -176,7 +176,7 @@ class ResponseSelector(DIETClassifier):
     # end default properties (DOC MARKER - don't remove)
 
     @property
-    def label_key(self):
+    def label_key(self) -> Text:
         return "label_ids"
 
     @staticmethod

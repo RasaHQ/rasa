@@ -262,7 +262,7 @@ class DIETClassifier(EntityExtractor):
         self.data_example = None
 
     @property
-    def label_key(self):
+    def label_key(self) -> Text:
         return "label_ids" if self.component_config[INTENT_CLASSIFICATION] else None
 
     @staticmethod
