@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2-beta
+    - uses: actions/checkout@v2
     - uses: actions/setup-node@v1
       with:
         node-version: '10.x'
@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2-beta
+    - uses: actions/checkout@v2
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
@@ -62,10 +62,6 @@ jobs:
         pip install -r requirements-docs.txt
         pip install -e .[sql]
         cd docs && make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
-    - name: Cleanup
-      run: |
-        # tries to reduce package install folder - makes sure cache limit of 400MB is not exceeded
-        rm -rf ~/.cache/pip/http
 
   test:
     name: Run Tests
@@ -76,7 +72,7 @@ jobs:
         python-version: [3.6, 3.7]
 
     steps:
-    - uses: actions/checkout@v2-beta
+    - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
@@ -98,7 +94,3 @@ jobs:
     - name: Test code
       run: |
         make test
-    - name: Cleanup
-      run: |
-        # tries to reduce package install folder - makes sure cache limit of 400MB is not exceeded
-        rm -rf ~/.cache/pip/http
