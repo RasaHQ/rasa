@@ -643,18 +643,11 @@ class SQLTrackerStore(TrackerStore):
         from sqlalchemy.engine.url import URL
 
         # Users might specify a url in the host
-        if host and "//" not in host:
-            # Having '//' in the beginning of the endpoint enforce
-            # urlsplit to consider the endpoint as a netloc according
-            # to this quote in docs.python.org/3/library/urllib.parse.html:
-            host = "//" + host
-
-        parsed = urlsplit(host or "")
-
-        if parsed.scheme:
+        if host and "://" in host:
+            # assumes this is a complete database host name including
+            # e.g. `postgres://...`
             return host
-
-        if host:
+        elif host:
             # add fake scheme to properly parse components
             parsed = urlsplit("schema://" + host)
 
