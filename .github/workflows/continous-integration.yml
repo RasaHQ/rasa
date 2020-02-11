@@ -56,16 +56,18 @@ jobs:
         python -m pip install -U 'pip<20'
         pip install -r requirements-dev.txt
         pip install -e .
-    - name: Lint code
-      run: |
-        make lint
-    - name: Check types
-      run: |
-        make types
+#    - name: Lint code
+#      run: |
+#        make lint
+#    - name: Check types
+#      run: |
+#        make types
     - name: Test Docs
       run: |
         pip install -r requirements-docs.txt
         pip install -e .[sql]
+        which rasa
+        rasa --help
         cd docs && make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
 
   test:
