@@ -41,6 +41,8 @@ terminaltables==3.1.0
 sanic==19.9.0
 sanic-cors==0.9.9.post1
 sanic-jwt==1.3.2
+# needed because of https://github.com/RasaHQ/rasa/issues/5216
+cloudpickle==1.2.2
 # https://github.com/RasaHQ/rasa/pull/5064
 sanic-plugins-framework==0.8.2
 # needed because of https://github.com/huge-success/sanic/issues/1729
