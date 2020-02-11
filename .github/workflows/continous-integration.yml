@@ -43,13 +43,6 @@ jobs:
         key: ${{ runner.os }}-3.7-pip-${{ hashFiles('**/requirements-dev.txt') }}
         restore-keys: |
           ${{ runner.os }}-3.7-pip-
-    - name: Load Pytype Cached Artifacts
-      uses: actions/cache@v1
-      with:
-        path: .pytype
-        key: pytype-${{ hashFiles('rasa/**') }}
-        restore-keys: |
-          pytype-
     - name: Install Dependencies
       run: |
         sudo apt-get -y install libpq-dev
