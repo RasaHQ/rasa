@@ -115,3 +115,34 @@ jobs:
       #  COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
       run: |
         coveralls
+
+  deploy:
+    name: Deploy to PyPI
+    runs-on: ubuntu-latest
+    # if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+
+    steps:
+    - name: Checkout git repository
+      uses: actions/checkout@v2
+    - name: Set up Python 3.6
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6
+    - name: Build Distributions
+        run: |
+          python setup.py sdist bdist_wheel
+    - name: Publish 📦 to Test PyPI
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        user: tmbo
+        password: ${{ secrets.TEST_PYPI_TOKEN }}
+        repository_url: https://test.pypi.org/legacy/
+    - name: Notify Slack & Publish Release Notes
+      env:
+        GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
+        SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
+      # python3 scripts/publish_gh_release_notes.py
+      run: |
+        sudo apt-get -y install pandoc
+        pip install -U github3.py pypandoc
+        ./scripts/ping_slack_about_package_release.sh
