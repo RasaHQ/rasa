@@ -106,9 +106,9 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
     def _slice_relative_embeddings(self, x: tf.Tensor, length: tf.Tensor) -> tf.Tensor:
         if self.unidirectional:
-            # pad the right side to length
+            # pad the right side to relative_length
             pad_right = tf.zeros_like(x[:, :, :, -1:, :])
-            pad_right = tf.tile(pad_right, (1, 1, 1, length - 1, 1))
+            pad_right = tf.tile(pad_right, (1, 1, 1, self.relative_length - 1, 1))
             x = tf.concat([x, pad_right], axis=-2)
 
         dl = self.relative_length - length
