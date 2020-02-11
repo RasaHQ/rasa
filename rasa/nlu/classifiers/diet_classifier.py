@@ -939,15 +939,21 @@ class DIET(RasaModel):
                     f"No label features specified. "
                     f"Cannot train '{self.__class__.__name__}' model."
                 )
-            if self.config[SHARE_HIDDEN_LAYERS] and self.data_signature["text_features"] != self.data_signature["label_features"]:
+            if (
+                self.config[SHARE_HIDDEN_LAYERS]
+                and self.data_signature["text_features"]
+                != self.data_signature["label_features"]
+            ):
                 raise ValueError(
                     "If hidden layer weights are shared, data signatures "
                     "for text_features and label_features must coincide."
                 )
 
         if self.config[ENTITY_RECOGNITION] and "tag_ids" not in self.data_signature:
-            raise ValueError(f"No tag ids present. "
-                             f"Cannot train '{self.__class__.__name__}' model.")
+            raise ValueError(
+                f"No tag ids present. "
+                f"Cannot train '{self.__class__.__name__}' model."
+            )
 
     def _create_metrics(self):
         # self.metrics preserve order

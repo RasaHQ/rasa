@@ -398,8 +398,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
 class InputMask(tf.keras.layers.Layer):
     def build(self, input_shape: tf.TensorShape) -> None:
         self.mask_vector = self.add_weight(
-            shape=(1, 1, input_shape[-1]),
-            name="mask_vector",
+            shape=(1, 1, input_shape[-1]), name="mask_vector",
         )
         self.built = True
 
