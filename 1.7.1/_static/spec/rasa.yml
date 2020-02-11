@@ -1,0 +1,1659 @@
+openapi: 3.0.1
+info:
+  title: "Rasa - Server Endpoints"
+  version: "1.0.0"
+  description: >-
+    The Rasa server provides endpoints to retrieve trackers of
+    conversations as well as endpoints to modify them. Additionally,
+    endpoints for training and testing models are provided.
+servers:
+  - url: "http://localhost:5005"
+    description: "Local development server"
+
+paths:
+  /:
+    get:
+      tags:
+      - Server Information
+      summary: Health endpoint of Rasa Server
+      operationId: getHealth
+      description: >-
+        This URL can be used as an endpoint to run
+        health checks against. When the server is running
+        this will return 200.
+      responses:
+        200:
+          description: Up and running
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: Welcome text of Rasa Server
+              example: >-
+                Hello from Rasa: 1.0.0
+
+  /version:
+    get:
+      tags:
+      - Server Information
+      operationId: getVersion
+      summary: Version of Rasa
+      description: >-
+        Returns the version of Rasa.
+      responses:
+        200:
+          description: Version of Rasa
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                    description: >-
+                      Rasa version number
+                  minimum_compatible_version:
+                    type: string
+                    description: >-
+                      Minimum version this Rasa version is
+                      able to load models from
+              example:
+                version: 1.0.0
+                minimum_compatible_version: 1.0.0
+
+  /status:
+    get:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: getStatus
+      tags:
+      - Server Information
+      summary: Status of the Rasa server
+      description: >-
+        Information about the server and the currently loaded Rasa model.
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fingerprint:
+                    type: object
+                    description: Fingerprint of the loaded model
+                    example:
+                      config:
+                        - 7625d69d93053ac8520a544d0852c626
+                      domain:
+                        - 229b51e41876bbcbbbfbeddf79548d5a
+                      messages:
+                        - cf7eda7edcae128a75ee8c95d3bbd680
+                      stories:
+                        - b5facea681fd00bc7ecc6818c70d9639
+                      trained_at: 1556527123.42784
+                      version: 1.0.0
+                  model_file:
+                    type: string
+                    description: Path of the loaded model
+                    example: 20190429-103105.tar.gz
+                  num_active_training_jobs:
+                    type: integer
+                    description: Number of running training processes
+                    example: 2
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
+
+
+  /conversations/{conversation_id}/tracker:
+    get:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: getConversationTracker
+      tags:
+      - Tracker
+      summary: Retrieve a conversations tracker
+      description: >-
+        The tracker represents the state of the conversation.
+        The state of the tracker is created by applying a
+        sequence of events, which modify the state. These
+        events can optionally be included in the response.
+      parameters:
+      - $ref: '#/components/parameters/conversation_id'
+      - $ref: '#/components/parameters/include_events'
+      - $ref: '#/components/parameters/until'
+      responses:
+        200:
+          $ref: '#/components/responses/200Tracker'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+  /conversations/{conversation_id}/tracker/events:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: addConversationTrackerEvents
+      tags:
+      - Tracker
+      summary: Append events to a tracker
+      description: >-
+        Appends one or multiple new events to the tracker state of the conversation.
+        Any existing events will be kept and the new events will be
+        appended, updating the existing state.
+      parameters:
+      - $ref: '#/components/parameters/conversation_id'
+      - $ref: '#/components/parameters/include_events'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - $ref: '#/components/schemas/Event'
+              - type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+      responses:
+        200:
+          $ref: '#/components/responses/200Tracker'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+    put:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: replaceConversationTrackerEvents
+      tags:
+      - Tracker
+      summary: Replace a trackers events
+      description: >-
+        Replaces all events of a tracker with the passed
+        list of events. This endpoint should not be used to
+        modify trackers in a production setup, but rather
+        for creating training data.
+      parameters:
+      - $ref: '#/components/parameters/conversation_id'
+      - $ref: '#/components/parameters/include_events'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventList'
+      responses:
+        200:
+          $ref: '#/components/responses/200Tracker'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+  /conversations/{conversation_id}/story:
+    get:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: getConversationStory
+      tags:
+      - Tracker
+      summary: Retrieve an end-to-end story corresponding to a conversation
+      description: >-
+        The story represents the whole conversation in end-to-end
+        format. This can be posted to the '/test/stories' endpoint and used
+        as a test.
+      parameters:
+      - $ref: '#/components/parameters/conversation_id'
+      - $ref: '#/components/parameters/until'
+      responses:
+        200:
+          $ref: '#/components/responses/200Story'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+  /conversations/{conversation_id}/execute:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: executeConversationAction
+      tags:
+      - Tracker
+      summary: Run an action in a conversation
+      deprecated: true
+      description: >-
+        DEPRECATED. Runs the action, calling the action server if necessary.
+        Any responses sent by the executed action will be forwarded
+        to the channel specified in the output_channel parameter.
+        If no output channel is specified, any messages that should be
+        sent to the user will be included in the response of this endpoint.
+      parameters:
+      - $ref: '#/components/parameters/conversation_id'
+      - $ref: '#/components/parameters/include_events'
+      - $ref: '#/components/parameters/output_channel'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActionRequest'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tracker:
+                    $ref: '#/components/schemas/Tracker'
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BotMessage'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+  /conversations/{conversation_id}/trigger_intent:
+    post:
+      security:
+        - TokenAuth: []
+        - JWT: []
+      operationId: triggerConversationIntent
+      tags:
+        - Tracker
+      summary: Inject an intent into a conversation
+      description: >-
+        Sends a specified intent and list of entities in place of a
+        user message. The bot then predicts and executes a response action.
+        Any responses sent by the executed action will be forwarded
+        to the channel specified in the ``output_channel`` parameter.
+        If no output channel is specified, any messages that should be
+        sent to the user will be included in the response of this endpoint.
+      parameters:
+        - $ref: '#/components/parameters/conversation_id'
+        - $ref: '#/components/parameters/include_events'
+        - $ref: '#/components/parameters/output_channel'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntentTriggerRequest'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tracker:
+                    $ref: '#/components/schemas/Tracker'
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BotMessage'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+  /conversations/{conversation_id}/predict:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: predictConversationAction
+      tags:
+      - Tracker
+      summary: Predict the next action
+      description: >-
+        Runs the conversations tracker through the model's
+        policies to predict the scores of all actions present
+        in the model's domain. Actions are returned in the
+        'scores' array, sorted on their 'score' values.
+        The state of the tracker is not modified.
+      parameters:
+      - $ref: '#/components/parameters/conversation_id'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictResult'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+
+  /conversations/{conversation_id}/messages:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: addConversationMessage
+      tags:
+      - Tracker
+      summary: Add a message to a tracker
+      description: >-
+        Adds a message to a tracker. This doesn't trigger
+        the prediction loop. It will log the message
+        on the tracker and return, no actions will be
+        predicted or run. This is often used together with the
+        predict endpoint.
+      parameters:
+      - $ref: '#/components/parameters/conversation_id'
+      - $ref: '#/components/parameters/include_events'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+      responses:
+        200:
+          $ref: '#/components/responses/200Tracker'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+  /model/train:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: trainModel
+      tags:
+      - Model
+      summary: Train a Rasa model
+      description: >-
+        Trains a new Rasa model. Depending on the data given only a dialogue model,
+        only a NLU model, or a model combining a trained dialogue model with an
+        NLU model will be trained. The new model is not loaded by default.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingRequest'
+      responses:
+        200:
+          description: Zipped Rasa model
+          headers:
+            filename:
+              schema:
+                type: string
+              description: File name of the trained model.
+          content:
+            application/octet-stream:
+              schema:
+                $ref: '#/components/schemas/TrainingResult'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+  /model/test/stories:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: testModelStories
+      tags:
+      - Model
+      summary: Evaluate stories
+      description: >-
+        Evaluates one or multiple stories against the currently
+        loaded Rasa model.
+      parameters:
+      - $ref: '#/components/parameters/e2e'
+      requestBody:
+        required: true
+        content:
+          text/markdown:
+            schema:
+              $ref: '#/components/schemas/StoriesTrainingData'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationStoriesResult'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+  /model/test/intents:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: testModelIntent
+      tags:
+      - Model
+      summary: Perform an intent evaluation
+      description: >-
+        Evaluates intents against the currently loaded Rasa model or the model specified in the query.
+      parameters:
+      - $ref: '#/components/parameters/model'
+      requestBody:
+        required: true
+        content:
+          text/markdown:
+            schema:
+              $ref: '#/components/schemas/NLUTrainingData'
+      responses:
+        200:
+          description: Intent evaluation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationIntentsResult'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+  /model/predict:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: predictModelAction
+      tags:
+      - Model
+      summary: Predict an action on a temporary state
+      description: >-
+        Predicts the next action on the tracker state as it is
+        posted to this endpoint. Rasa will create a temporary
+        tracker from the provided events and will use it to
+        predict an action. No messages will be sent and no
+        action will be run.
+      parameters:
+      - $ref: '#/components/parameters/include_events'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventList'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictResult'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        409:
+          $ref: '#/components/responses/409Conflict'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+  /model/parse:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: parseModelMessage
+      tags:
+      - Model
+      summary: Parse a message using the Rasa model
+      description: >-
+        Predicts the intent and entities of the message
+        posted to this endpoint. No messages will be stored
+        to a conversation and no action will be run. This will
+        just retrieve the NLU parse results.
+      parameters:
+      - $ref: '#/components/parameters/emulation_mode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: Message to be parsed
+                  example: "Hello, I am Rasa!"
+                message_id:
+                  type: string
+                  description: Optional ID for message to be parsed
+                  example: "b2831e73-1407-4ba0-a861-0f30a42a2a5a"
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParseResult'
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+  /model:
+    put:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: replaceModel
+      tags:
+      - Model
+      summary: Replace the currently loaded model
+      description: >-
+        Updates the currently loaded model.
+        First, tries to load the model from the local storage system.
+        Secondly, tries to load the model from the provided model server configuration.
+        Last, tries to load the model from the provided remote storage.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelRequest'
+      responses:
+        204:
+          description: Model was successfully replaced.
+        400:
+          $ref: '#/components/responses/400BadRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+    delete:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: unloadModel
+      tags:
+      - Model
+      summary: Unload the trained model
+      description: >-
+        Unloads the currently loaded trained model from the server.
+      responses:
+        204:
+          description: Model was sucessfully unloaded.
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+
+  /domain:
+    get:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      operationId: getDomain
+      tags:
+      - Domain
+      summary: Retrieve the loaded domain
+      description: >-
+        Returns the domain specification the currently loaded
+        model is using.
+      responses:
+        200:
+          description: Domain was successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain'
+            application/yaml:
+              schema:
+                $ref: '#/components/schemas/Domain'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        406:
+          $ref: '#/components/responses/406InvalidHeader'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
+
+components:
+
+  securitySchemes:
+
+    TokenAuth:
+      type: apiKey
+      in: query
+      name: token
+    JWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+
+  parameters:
+
+    conversation_id:
+      in: path
+      name: conversation_id
+      description: Id of the conversation
+      example: default
+      schema:
+        type: string
+      required: true
+    batch_size:
+      in: query
+      name: batch_size
+      description: Batch size to use for training.
+      example: 5
+      schema:
+        type: number
+        default: 5
+      required: false
+    epochs:
+      in: query
+      name: epochs
+      description: Number of epochs to train.
+      example: 30
+      schema:
+        type: number
+        default: 30
+      required: false
+    e2e:
+      in: query
+      name: e2e
+      description: Perform an end-to-end evaluation on the posted stories.
+      example: false
+      schema:
+        type: boolean
+        default: false
+      required: false
+    model:
+      in: query
+      name: model
+      description: >-
+        Model that should be used for evaluation.
+        If the parameter is set, the model will be
+        fetched with the currently loaded configuration
+        setup. However, the currently loaded model
+        will not be updated. The state of the server
+        will not change. If the parameter is not set,
+        the currently loaded model will be used for
+        the evaluation.
+      example: rasa-model.tar.gz
+      schema:
+        type: string
+      required: false
+    include_events:
+      in: query
+      name: include_events
+      description: >-
+        Specify which events of the tracker the response
+        should contain.
+      example: AFTER_RESTART
+      schema:
+        type: string
+        default: AFTER_RESTART
+        enum:
+          - AFTER_RESTART
+          - ALL
+          - APPLIED
+          - NONE
+    emulation_mode:
+      in: query
+      name: emulation_mode
+      description: >-
+        Specify the emulation mode.
+      example: LUIS
+      schema:
+        type: string
+        enum:
+          - WIT
+          - LUIS
+          - DIALOGFLOW
+    until:
+      in: query
+      name: until
+      description: >-
+        All events previous to the passed timestamp will be replayed.
+        Events that occur exactly at the target time will be included.
+      example: 1559744410
+      schema:
+        type: number
+        default: None
+      required: false
+    output_channel:
+      in: query
+      name: output_channel
+      description: >-
+        The bot's utterances will be forwarded to this channel. It uses the credentials
+        listed in `credentials.yml` to connect. In case the channel does
+        not support this, the utterances will be returned in the response body. Use
+        `latest` to try to send the messages to the latest channel the user used.
+        Currently supported channels are listed in the permitted values for the
+        parameter.
+      example: "slack"
+      schema:
+        type: string
+        enum:
+          - latest
+          - slack
+          - callback
+          - facebook
+          - rocketchat
+          - telegram
+          - twilio
+          - webexteams
+
+  responses:
+
+    200Tracker:
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Tracker'
+    200Story:
+      description: Success
+      content:
+        text/markdown:
+          example: >-
+            ## story_00055028
+
+            * greet: hello
+             - utter_ask_howcanhelp
+            * inform: I'm looking for a [moderately priced](price:moderate)
+            [Indian](cuisine) restaurant for [two](people) people
+             - utter_on_it
+             - utter_ask_location
+    400BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "1.0.0"
+            status: "failure"
+            reason: "BadRequest"
+            code: 400
+    401NotAuthenticated:
+      description: User is not authenticated.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "1.0.0"
+            status: "failure"
+            reason: "NotAuthenticated"
+            message: >-
+              User is not authenticated to access resource.
+            code: 401
+    403NotAuthorized:
+      description: User has insufficient permission.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "1.0.0"
+            status: "failure"
+            reason: "NotAuthorized"
+            message: >-
+              User has insufficient permission to access resource.
+            code: 403
+    406InvalidHeader:
+      description: Invalid header provided.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "1.0.0"
+            status: "failure"
+            reason: "InvalidHeader"
+            message: >-
+              Invalid header was provided with the request.
+            code: 406
+    409Conflict:
+      description: The request conflicts with the currently loaded model.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "1.0.0"
+            status: "failure"
+            reason: "Conflict"
+            message: >-
+              The request conflicts with the currently loaded model.
+            code: 409
+    500ServerError:
+      description: An unexpected error occurred.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "1.0.0"
+            status: "ServerError"
+            message: >-
+              An unexpected error occurred.
+            code: 500
+
+
+  schemas:
+
+    ModelRequest:
+      type: object
+      properties:
+        model_file:
+          type: string
+          description: Path to model file
+          example: "/models/20190512.tar.gz"
+        model_server:
+          $ref: '#/components/schemas/EndpointConfig'
+        remote_storage:
+          description: Name of remote storage system
+          type: string
+          example: "aws"
+          enum:
+            - aws
+            - gcs
+            - azure
+
+    ActionRequest:
+      type: object
+      properties:
+        name:
+          description: Name of the action to be executed.
+          type: string
+          example: utter_greet
+        policy:
+          description: Name of the policy that predicted the action.
+          type: string
+          nullable: true
+        confidence:
+          description: Confidence of the prediction.
+          type: number
+          nullable: true
+          example: 0.987232
+      required: ["name"]
+
+    IntentTriggerRequest:
+      type: object
+      properties:
+        name:
+          description: Name of the intent to be executed.
+          type: string
+          example: greet
+        entities:
+          description: Entities to be passed on.
+          type: object
+          nullable: true
+          example: {"temperature": "high"}
+      required: ["name"]
+
+    Message:
+      type: object
+      properties:
+        text:
+          type: string
+          description: >-
+            Message text
+          example: Hello!
+        sender:
+          type: string
+          description: >-
+            Origin of the message - who sent it
+          example: user
+          enum:
+            - user
+        parse_data:
+          $ref: '#/components/schemas/ParseResult'
+      required: ["text", "sender"]
+
+    Entity:
+      type: object
+      description: Entities within a message
+      properties:
+        start:
+          type: integer
+          description: Char offset of the start
+        end:
+          type: integer
+          description: Char offset of the end
+        value:
+          type: string
+          description: Found value for entity
+        entity:
+          type: string
+          description: Type of the entity
+        confidence:
+          type: number
+      required: ["start", "end", "value", "entity"]
+
+    Intent:
+      type: object
+      description: Intent of the text
+      properties:
+        confidence:
+          type: number
+          description: Confidence of the intent
+          example: 0.6323
+        name:
+          type: string
+          description: Intent name
+          example: greet
+      required: ["confidence", "name"]
+
+    ParseResult:
+      type: object
+      properties:
+        entities:
+          type: array
+          description: Parsed entities
+          items:
+            $ref: '#/components/schemas/Entity'
+        intent:
+          $ref: '#/components/schemas/Intent'
+        intent_ranking:
+          type: array
+          description: Scores of all intents
+          items:
+            $ref: '#/components/schemas/Intent'
+        text:
+          type: string
+          description: Text of the message
+          example: "Hello!"
+      description: >-
+        NLU parser information. If set, message
+        will not be passed through NLU, but instead
+        this parsing information will be used.
+      required: ["text"]
+
+    Event:
+      type: object
+      properties:
+        event:
+          type: string
+          description: Event name
+          example: "slot"
+        timestamp:
+          type: integer
+          description: Time of application
+          example: 1559744410
+      required: ["event"]
+
+    EventList:
+      type: array
+      items:
+        $ref: '#/components/schemas/Event'
+
+    Domain:
+      type: object
+      description: The bot's domain.
+      properties:
+        config:
+          type: object
+          description: Addional option
+          properties:
+            store_entities_as_slots:
+              type: boolean
+              description: Store all entites as slot when found
+              example: false
+        intents:
+          type: array
+          description: All intent names and properties
+          items:
+            $ref: '#/components/schemas/IntentDescription'
+        entities:
+          type: array
+          description: All entity names
+          items:
+            type: string
+          example: ['person', 'location']
+        slots:
+          description: Slot names and configuration
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/SlotDescription'
+        responses:
+          description: Bot response templates
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TemplateDescription'
+        actions:
+          description: Available action names
+          type: array
+          items:
+            type: string
+          example: ['utter_greet', 'utter_goodbye', 'action_listen']
+
+    BotMessage:
+      type: object
+      properties:
+        recipient_id:
+          type: string
+          description: Id of the message receiver
+        text:
+          type: string
+          description: Message
+        image:
+          type: string
+          description: Image URL
+        buttons:
+          type: array
+          description: Quick reply buttons
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+                description: Button caption
+              payload:
+                type: string
+                description: Payload to be sent if button is clicked
+        attachement:
+          type: array
+          description: Additional information
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+                description: Attachement caption
+              payload:
+                type: string
+                description: Attachement payload
+
+    Tracker:
+      type: object
+      description: Conversation tracker which stores the conversation state.
+      properties:
+        conversation_id:
+          type: string
+          description: Id of the conversation
+          example: default
+        slots:
+          type: array
+          description: Slot values
+          items:
+            $ref: '#/components/schemas/Slot'
+        latest_message:
+          $ref: '#/components/schemas/ParseResult'
+        latest_event_time:
+          type: number
+          description: Most recent event time
+          example: 1537645578.314389
+        followup_action:
+          type: string
+          description: Deterministic scheduled next action
+        paused:
+          type: boolean
+          description: Bot is pasued
+          example: false
+        events:
+          type: array
+          description: Event history
+          items:
+            $ref: '#/components/schemas/Event'
+        latest_input_channel:
+          type: string
+          description: Communication channel
+          example: rest
+        latest_action_name:
+          type: string
+          description: Name of last bot action
+          example: action_listen
+        active_form:
+          type: object
+          description: Name of the active form
+          properties:
+            name:
+              type: string
+              description: Name of the acive form
+              example: restaurant_form
+
+    Error:
+      type: object
+      properties:
+        version:
+          type: string
+          description: Rasa version
+        status:
+          type: string
+          enum: ["failure"]
+          description: Status of the requested action
+        message:
+          type: string
+          description: Error message
+        reason:
+          type: string
+          description: Error category
+        details:
+          type: object
+          description: Additional error information
+        help:
+          type: string
+          description: Optional URL to additonal material
+        code:
+          type: number
+          description: HTTP status code
+
+    PredictResult:
+      type: object
+      properties:
+        scores:
+          type: array
+          description: Prediction results
+          items:
+            type: object
+            properties:
+              action:
+                type: string
+                description: Action name
+                example: utter_greet
+              score:
+                type: number
+                description: Assigned score
+                example: 1.0
+        policy:
+          type: string
+          description: >-
+            Policy which predicted the most likely action
+          example: policy_2_KerasPolicy
+        tracker:
+          $ref: '#/components/schemas/Tracker'
+
+    EndpointConfig:
+      type: object
+      properties:
+        url:
+          type: string
+          description: URL pointing to model
+        params:
+          type: object
+          description: Parameters of request
+        headers:
+          type: object
+          description: HTTP headers
+        basic_auth:
+          description: Basic authentification data
+          type: object
+        token:
+          description: Token
+          type: string
+        token_name:
+          description: Name of token
+          type: string
+        wait_time_between_pulls:
+          type: integer
+          description: Time to wait between pulls from model server
+
+    TrainingRequest:
+      type: object
+      properties:
+        domain:
+          $ref: '#/components/schemas/DomainFile'
+        config:
+          $ref: '#/components/schemas/ConfigFile'
+        nlu:
+          $ref: '#/components/schemas/NLUTrainingData'
+        stories:
+          $ref: '#/components/schemas/StoriesTrainingData'
+        force:
+          type: boolean
+          description: >-
+            Force a model training even if the data has not changed
+          example: false
+        save_to_default_model_directory:
+          type: boolean
+          description:  >-
+            If `true` (default) the trained model will be saved in the default model
+            directory, if `false` it will be saved in a temporary directory
+      required: ["config"]
+
+    NLUTrainingData:
+      type: string
+      description: Rasa NLU training data in markdown format
+      example:  >-
+        ## intent:greet
+
+        - hey
+
+        - hello
+
+        - hi
+
+        ## intent:goodbye
+
+        - bye
+
+        - goodbye
+
+        - have a nice day
+
+        - see you
+
+        ## intent:affirm
+
+        - yes
+
+        - indeed
+
+        ## intent:deny
+
+        - no
+
+        - never
+
+        ## intent:mood_great
+
+        - perfect
+
+        - very good
+
+        - great
+
+        ## intent:mood_unhappy
+
+        - sad
+
+        - not good
+
+        - unhappy
+
+
+    StoriesTrainingData:
+      type: string
+      description: Rasa Core stories in markdown format
+      example: >-
+        ## happy path
+
+        * greet
+
+          - utter_greet
+
+        * mood_great
+
+          - utter_happy
+
+        ## sad path 1
+
+        * greet
+
+          - utter_greet
+
+        * mood_unhappy
+
+          - utter_cheer_up
+
+          - utter_did_that_help
+
+        * affirm
+
+          - utter_happy
+
+        ## sad path 2
+
+        * greet
+
+          - utter_greet
+
+        * mood_unhappy
+
+          - utter_cheer_up
+
+          - utter_did_that_help
+
+        * deny
+
+          - utter_goodbye
+
+        ## say goodbye
+
+        * goodbye
+
+          - utter_goodbye
+
+    DomainFile:
+      type: string
+      description: Rasa domain in plain text
+      example: >-
+        intents:
+          - greet
+          - goodbye
+          - affirm
+          - deny
+          - mood_great
+          - mood_unhappy
+
+        actions:
+          - utter_greet
+          - utter_cheer_up
+          - utter_did_that_help
+          - utter_happy
+          - utter_goodbye
+
+        responses:
+          utter_greet:
+          - text: "Hey! How are you?"
+
+          utter_cheer_up:
+          - text: "Here is something to cheer you up:"
+            image: "https://i.imgur.com/nGF1K8f.jpg"
+
+          utter_did_that_help:
+          - text: "Did that help you?"
+
+          utter_happy:
+          - text: "Great carry on!"
+
+          utter_goodbye:
+          - text: "Bye"
+
+    ConfigFile:
+      type: string
+      description: Rasa config in plain text
+      example: >-
+        language: en
+
+        pipeline: supervised_embeddings
+
+        policies:
+          - name: MemoizationPolicy
+          - name: KerasPolicy
+
+    TrainingResult:
+      type: string
+      format: binary
+
+    EvaluationIntentsResult:
+      type: object
+      properties:
+        intent_evaluation:
+          type: object
+          description: Rasa NLU intent evaluation
+          properties:
+            report:
+              type: string
+              example:  >-
+                # intent evaluation report
+                          precision    recall  f1-score   support
+
+                goodbye        1.00      1.00      1.00         4
+                greet          1.00      1.00      1.00         6
+                affirm         1.00      1.00      1.00         5
+                deny           1.00      1.00      1.00         6
+                mood_great     1.00      1.00      1.00         8
+                mood_unhappy   1.00      1.00      1.00        10
+
+                micro avg      1.00      1.00      1.00        39
+                macro avg      1.00      1.00      1.00        39
+                weighted avg   1.00      1.00      1.00        39
+            accuracy:
+              type: number
+              example: 0.19047619047619047
+            f1_score:
+              type: number
+              example: 0.06095238095238095
+            precision:
+              type: number
+              example: 0.036281179138321996
+            predictions:
+              type: array
+              items:
+                type: object
+                properties:
+                  intent:
+                    type: string
+                    example: greet
+                  predicted:
+                    type: string
+                    example: greet
+                  text:
+                    type: string
+                    example: "hey"
+                  confidence:
+                    type: number
+                    example: 0.9973567
+        entity_evaluation:
+          type: object
+          description: Rasa NLU entity evaluation
+          properties:
+            extractor_name:
+              type: object
+              description: Entity evaluation result for entity extractor
+              example: CRFEntityExtractor
+              properties:
+                report:
+                  type: string
+                  example: >-
+                    # entity evaluation report
+                               precision     recall  f1-score   support
+
+                    no_entity       1.00      1.00      1.00        70
+
+                    micro avg       1.00      1.00      1.00        70
+                    macro avg       1.00      1.00      1.00        70
+                    weighted avg    1.00      1.00      1.00        70
+                precision:
+                  type: number
+                  example: 0.9769792
+                f1_score:
+                  type: number
+                  example: 0.967869
+                accuracy:
+                  type: number
+                  example: 0.978567
+
+    EvaluationStoriesResult:
+      type: object
+      properties:
+        actions:
+          type: array
+          items:
+            type: object
+            properties:
+              action:
+                type: string
+                description: Name of the actual action
+                example: utter_ask_howcanhelp
+              predicted:
+                type: string
+                description: Name of the predicted action
+                example: utter_ask_howcanhelp
+              policy:
+                type: string
+                description: Machine-learning policy used in the prediction
+                example: policy_0_MemoizationPolicy
+              confidence:
+                type: string
+                description: Confidence score of the prediction
+                example: 1.0
+          description: >-
+            Accuracy of the classification,
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html
+        is_end_to_end_evaluation:
+          type: boolean
+          description: True if evaluation is end-to-end, false otherwise
+          example: true
+        precision:
+          type: number
+          description: >-
+            Precision of the classification, see
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html
+          example: 1.0
+        f1:
+          type: number
+          description: >-
+            F1 score of the classification,
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html
+          example: 0.9333333333333333
+        accuracy:
+          type: number
+          description: >-
+            Accuracy of the classification,
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html
+          example: 0.9
+        in_training_data_fraction:
+          type: number
+          description: >-
+            Fraction of stories that are present in the training data of the
+            model loaded at evaluation time.
+          example: 0.8571428571428571
+        report:
+          type: string
+          description: >-
+            Sklearn classifcation report, see
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
+          example:  >-
+            # classification report
+                                   precision    recall  f1-score   support
+                    action_listen       1.00      1.00      1.00         3
+                            greet       1.00      1.00      1.00         1
+                           inform       1.00      1.00      1.00         2
+             utter_ask_howcanhelp       1.00      1.00      1.00         1
+               utter_ask_location       1.00      1.00      1.00         1
+              utter_ask_numpeople       0.00      0.00      0.00         0
+                      utter_on_it       1.00      0.50      0.67         2
+
+                      avg / total       1.00      0.90      0.93        10
+
+    Slot:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/SlotValue'
+      example:
+        slot_name: slot_value
+
+    SlotValue:
+      oneOf:
+        - type: string
+        - type: array
+          items:
+            type: string
+
+    SlotDescription:
+      type: object
+      properties:
+        auto_fill:
+          type: boolean
+        initial_value:
+          type: string
+          nullable: true
+        type:
+          type: string
+        values:
+          type: array
+          items:
+            type: string
+      required: ['type', 'auto_fill']
+
+    TemplateDescription:
+      type: object
+      properties:
+        text:
+          type: string
+          description: Template text
+      required: ['text']
+
+    IntentDescription:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          use_entities:
+            type: boolean

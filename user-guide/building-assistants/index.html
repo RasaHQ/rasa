@@ -139,7 +139,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../evaluating-models/">Evaluating Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../validate-files/">Validate Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../running-the-server/">Running the Server</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../running-rasa-with-docker/">Running Rasa with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../how-to-deploy/">Deploying your Rasa Assistant</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../cloud-storage/">Cloud Storage</a></li>
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
@@ -209,12 +209,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.7.0
+          viewing: 1.7.1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.7.1/user-guide/building-assistants/">1.7.1</a>
               <a href="../.././1.7.0/user-guide/building-assistants/">1.7.0</a>
               <a href="../.././1.6.2/index/">1.6.2</a>
               <a href="../.././1.6.1/index/">1.6.1</a>
@@ -439,7 +440,7 @@ include NLU data, so that both components of Rasa can be tested.  Create a file 
 called <code class="docutils literal notranslate"><span class="pre">failed_stories.md</span></code>, where any test cases that failed will be printed. It will
 also specify whether it was an NLU or Core prediction that went wrong.  As part of a
 CI/CD pipeline, the test option <code class="docutils literal notranslate"><span class="pre">--fail-on-prediction-errors</span></code> can be used to throw
-an exception that and stop the pipeline.</p>
+an exception that stops the pipeline.</p>
 </div>
 <div class="section" id="response-selectors">
 <h3><a class="toc-backref" href="#id6">Response Selectors</a><a class="headerlink" href="#response-selectors" title="Permalink to this headline">¶</a></h3>
@@ -786,10 +787,10 @@ therefore doesn’t need to be covered in your stories.</p>
  <span class="l l-Scalar l-Scalar-Plain">url</span><span class="p p-Indicator">:</span> <span class="s">&quot;http://localhost:5055/webhook&quot;</span>
 </pre></div>
 </div>
-<p>Then start the action server in a new terminal window:
-.. code-block:: bash</p>
-<blockquote>
-<div>rasa run actions</div></blockquote>
+<p>Then start the action server in a new terminal window:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run actions
+</pre></div>
+</div>
 <p>Then you can retrain and talk to your bot:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa train
 rasa shell
@@ -1029,7 +1030,7 @@ the bot respond with a default message like “Sorry, I can’t handle that requ
   utter_out_of_scope
 </pre></div>
 </div>
-<p>We’ll need to add NLU data for the <cite>out_of_scope</cite> intent as well:</p>
+<p>We’ll need to add NLU data for the <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent as well:</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:out_of_scope
 <span class="k">-</span> I want to order food
 <span class="k">-</span> What is 2 + 2?
