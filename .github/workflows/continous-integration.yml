@@ -14,7 +14,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout git repository
+      uses: actions/checkout@v2
     - uses: actions/setup-node@v1
       with:
         node-version: '10.x'
@@ -29,12 +30,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout git repository
+      uses: actions/checkout@v2
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
-    - uses: actions/cache@v1
+    - name: Load Cached artifacts
+      uses: actions/cache@v1
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-3.7-pip-${{ hashFiles('**/requirements-dev.txt') }}
@@ -72,12 +75,14 @@ jobs:
         python-version: [3.6, 3.7]
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout git repository
+      uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
-    - uses: actions/cache@v1
+    - name: Load Cached artifacts
+      uses: actions/cache@v1
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('**/requirements-dev.txt') }}
