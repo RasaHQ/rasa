@@ -36,14 +36,15 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
-    - name: Load Cached artifacts
+    - name: Load PIP Cached artifacts
       uses: actions/cache@v1
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-3.7-pip-${{ hashFiles('**/requirements-dev.txt') }}
         restore-keys: |
           ${{ runner.os }}-3.7-pip-
-    - uses: actions/cache@v1
+    - name: Load Pytype Cached artifacts
+      uses: actions/cache@v1
       with:
         path: .pytype
         key: pytype-${{ hashFiles('rasa/**') }}
@@ -51,7 +52,8 @@ jobs:
           pytype-
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
+        sudo apt-get -y install libpq-dev
+        python -m pip install -U 'pip<20'
         pip install -r requirements-dev.txt
         pip install -e .
     - name: Lint code
