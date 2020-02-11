@@ -643,7 +643,7 @@ class SQLTrackerStore(TrackerStore):
         from sqlalchemy.engine.url import URL
 
         # Users might specify a url in the host
-        if "//" not in host:
+        if host and "//" not in host:
             # Having '//' in the beginning of the endpoint enforce
             # urlsplit to consider the endpoint as a netloc according
             # to this quote in docs.python.org/3/library/urllib.parse.html:
