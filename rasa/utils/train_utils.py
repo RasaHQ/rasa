@@ -15,7 +15,7 @@ from rasa.utils.tensorflow.constants import (
     NUM_NEG,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
-    C2,
+    REGULARIZATION_CONSTANT,
     USE_MAX_SIM_NEG,
     MU_NEG,
     MU_POS,
@@ -104,7 +104,7 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     config = _replace_deprecated_option("mu_pos", MU_POS, config)
     config = _replace_deprecated_option("mu_neg", MU_NEG, config)
     config = _replace_deprecated_option("use_max_sim_neg", USE_MAX_SIM_NEG, config)
-    config = _replace_deprecated_option("C2", C2, config)
+    config = _replace_deprecated_option("C2", REGULARIZATION_CONSTANT, config)
     config = _replace_deprecated_option(
         "evaluate_every_num_epochs", EVAL_NUM_EPOCHS, config
     )

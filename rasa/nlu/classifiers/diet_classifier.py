@@ -18,9 +18,10 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import any_of
 from rasa.utils import train_utils
-from rasa.utils.tensorflow import tf_layers
-from rasa.utils.tensorflow.tf_models import RasaModel
-from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
+from rasa.utils.tensorflow import layers
+from rasa.utils.tensorflow.transformer import TransformerEncoder
+from rasa.utils.tensorflow.models import RasaModel
+from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.nlu.constants import (
     INTENT_ATTRIBUTE,
     TEXT_ATTRIBUTE,
@@ -59,14 +60,18 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EPOCHS,
     UNIDIRECTIONAL_ENCODER,
     DROPRATE,
-    C_EMB,
-    C2,
+    DROPRATE_ATTENTION,
+    NEG_MARGIN_SCALE,
+    REGULARIZATION_CONSTANT,
     SCALE_LOSS,
     USE_MAX_SIM_NEG,
     MU_NEG,
     MU_POS,
     EMBED_DIM,
     BILOU_FLAG,
+    KEY_RELATIVE_ATTENTION,
+    VALUE_RELATIVE_ATTENTION,
+    MAX_RELATIVE_POSITION,
 )
 
 
@@ -156,12 +161,14 @@ class DIETClassifier(EntityExtractor):
         SCALE_LOSS: True,
         # regularization parameters
         # the scale of L2 regularization
-        C2: 0.002,
+        REGULARIZATION_CONSTANT: 0.002,
         # the scale of how critical the algorithm should be of minimizing the
         # maximum similarity between embeddings of different labels
-        C_EMB: 0.8,
-        # dropout rate for rnn
+        NEG_MARGIN_SCALE: 0.8,
+        # dropout rate for encoder
         DROPRATE: 0.2,
+        # dropout rate for attention
+        DROPRATE_ATTENTION: 0,
         # use a unidirectional or bidirectional encoder
         UNIDIRECTIONAL_ENCODER: False,
         # if true apply dropout to sparse tensors
@@ -179,6 +186,12 @@ class DIETClassifier(EntityExtractor):
         # if true random tokens of the input message will be masked and the model
         # should predict those tokens
         MASKED_LM: False,
+        # if true use key relative embeddings in attention
+        KEY_RELATIVE_ATTENTION: False,
+        # if true use key relative embeddings in attention
+        VALUE_RELATIVE_ATTENTION: False,
+        # max position for relative embeddings
+        MAX_RELATIVE_POSITION: None,
         # BILOU_flag determines whether to use BILOU tagging or not.
         # More rigorous however requires more examples per entity
         # rule of thumb: use only if more than 100 egs. per entity
@@ -968,7 +981,7 @@ class DIET(RasaModel):
         name: Text,
         reg_lambda: float,
         dense_dim: int,
-    ) -> Optional[tf_layers.DenseForSparse]:
+    ) -> Optional[layers.DenseForSparse]:
 
         sparse = False
         for is_sparse, shape in feature_signatures:
@@ -980,51 +993,54 @@ class DIET(RasaModel):
                 dense_dim = shape[-1]
 
         if sparse:
-            return tf_layers.DenseForSparse(
+            return layers.DenseForSparse(
                 units=dense_dim, reg_lambda=reg_lambda, name=name
             )
 
     def _prepare_sequence_layers(self) -> None:
-        self._tf_layers["sparse_dropout"] = tf_layers.SparseDropout(
+        self._tf_layers["sparse_dropout"] = layers.SparseDropout(
             rate=self.config[DROPRATE]
         )
         self._tf_layers["sparse_to_dense.text"] = self._create_sparse_dense_layer(
             self.data_signature["text_features"],
             "text",
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             self.config[DENSE_DIM]["text"],
         )
         if self.config[LABEL_CLASSIFICATION]:
             self._tf_layers["sparse_to_dense.label"] = self._create_sparse_dense_layer(
                 self.data_signature["label_features"],
                 "label",
-                self.config[C2],
+                self.config[REGULARIZATION_CONSTANT],
                 self.config[DENSE_DIM]["label"],
             )
-        self._tf_layers["ffnn.text"] = tf_layers.Ffnn(
+        self._tf_layers["ffnn.text"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES_TEXT],
             self.config[DROPRATE],
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "text",
         )
         if self.config[LABEL_CLASSIFICATION]:
-            self._tf_layers["ffnn.label"] = tf_layers.Ffnn(
+            self._tf_layers["ffnn.label"] = layers.Ffnn(
                 self.config[HIDDEN_LAYERS_SIZES_LABEL],
                 self.config[DROPRATE],
-                self.config[C2],
+                self.config[REGULARIZATION_CONSTANT],
                 "text_intent" if self.config[SHARE_HIDDEN_LAYERS] else "label",
             )
         self._tf_layers["transformer"] = (
-            tf_layers.TransformerEncoder(
+            TransformerEncoder(
                 self.config[NUM_TRANSFORMER_LAYERS],
                 self.config[TRANSFORMER_SIZE],
                 self.config[NUM_HEADS],
                 self.config[TRANSFORMER_SIZE] * 4,
                 self.config[MAX_SEQ_LENGTH],
-                self.config[C2],
+                self.config[REGULARIZATION_CONSTANT],
                 dropout_rate=self.config[DROPRATE],
-                attention_dropout_rate=self.config[DROPRATE],
+                attention_dropout_rate=self.config[DROPRATE_ATTENTION],
                 unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
+                use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
+                use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
+                max_relative_position=self.config[MAX_RELATIVE_POSITION],
                 name="text_encoder",
             )
             if self.config[NUM_TRANSFORMER_LAYERS] > 0
@@ -1032,61 +1048,63 @@ class DIET(RasaModel):
         )
 
     def _prepare_mask_lm_layers(self) -> None:
-        self._tf_layers["input_mask"] = tf_layers.InputMask()
-        self._tf_layers["embed.lm_mask"] = tf_layers.Embed(
+        self._tf_layers["input_mask"] = layers.InputMask()
+        self._tf_layers["embed.lm_mask"] = layers.Embed(
             self.config[EMBED_DIM],
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             "lm_mask",
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["embed.golden_token"] = tf_layers.Embed(
+        self._tf_layers["embed.golden_token"] = layers.Embed(
             self.config[EMBED_DIM],
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             "golden_token",
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["loss.mask"] = tf_layers.DotProductLoss(
+        self._tf_layers["loss.mask"] = layers.DotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
             self.config[MU_POS],
             self.config[MU_NEG],
             self.config[USE_MAX_SIM_NEG],
-            self.config[C_EMB],
+            self.config[NEG_MARGIN_SCALE],
             self.config[SCALE_LOSS],
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,
         )
 
     def _prepare_intent_classification_layers(self) -> None:
-        self._tf_layers["embed.text"] = tf_layers.Embed(
+        self._tf_layers["embed.text"] = layers.Embed(
             self.config[EMBED_DIM],
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             "text",
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["embed.label"] = tf_layers.Embed(
+        self._tf_layers["embed.label"] = layers.Embed(
             self.config[EMBED_DIM],
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             "label",
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["loss.label"] = tf_layers.DotProductLoss(
+        self._tf_layers["loss.label"] = layers.DotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
             self.config[MU_POS],
             self.config[MU_NEG],
             self.config[USE_MAX_SIM_NEG],
-            self.config[C_EMB],
+            self.config[NEG_MARGIN_SCALE],
             self.config[SCALE_LOSS],
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,
         )
 
     def _prepare_entity_recognition_layers(self) -> None:
-        self._tf_layers["embed.logits"] = tf_layers.Embed(
-            self._num_tags, self.config[C2], "logits"
+        self._tf_layers["embed.logits"] = layers.Embed(
+            self._num_tags, self.config[REGULARIZATION_CONSTANT], "logits"
         )
-        self._tf_layers["crf"] = tf_layers.CRF(self._num_tags, self.config[C2])
+        self._tf_layers["crf"] = layers.CRF(
+            self._num_tags, self.config[REGULARIZATION_CONSTANT]
+        )
         self._tf_layers["crf_f1_score"] = tfa.metrics.F1Score(
             num_classes=self._num_tags - 1,  # `0` prediction is not a prediction
             average="micro",
@@ -1127,7 +1145,8 @@ class DIET(RasaModel):
     ) -> tf.Tensor:
 
         x = self._combine_sparse_dense_features(features, mask, name, sparse_dropout)
-        return self._tf_layers[f"ffnn.{name}"](tf.reduce_sum(x, 1), self._training)
+        x = tf.reduce_sum(x, axis=1)
+        return self._tf_layers[f"ffnn.{name}"](x, self._training)
 
     def _create_sequence(
         self,
@@ -1207,8 +1226,9 @@ class DIET(RasaModel):
 
         logits = self._tf_layers["embed.logits"](a)
 
-        loss = self._tf_layers["crf"].loss(logits, c, sequence_lengths)
+        # should call first to build weights
         pred_ids = self._tf_layers["crf"](logits, sequence_lengths)
+        loss = self._tf_layers["crf"].loss(logits, c, sequence_lengths)
 
         # TODO check that f1 calculation is correct
         # calculate f1 score for train predictions

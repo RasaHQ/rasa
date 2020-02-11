@@ -30,14 +30,18 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EPOCHS,
     UNIDIRECTIONAL_ENCODER,
     DROPRATE,
-    C_EMB,
-    C2,
+    DROPRATE_ATTENTION,
+    NEG_MARGIN_SCALE,
+    REGULARIZATION_CONSTANT,
     SCALE_LOSS,
     USE_MAX_SIM_NEG,
     MU_NEG,
     MU_POS,
     EMBED_DIM,
     BILOU_FLAG,
+    KEY_RELATIVE_ATTENTION,
+    VALUE_RELATIVE_ATTENTION,
+    MAX_RELATIVE_POSITION,
 )
 from rasa.nlu.constants import (
     RESPONSE_ATTRIBUTE,
@@ -47,8 +51,9 @@ from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     SPARSE_FEATURE_NAMES,
 )
-from rasa.utils.tensorflow.tf_model_data import RasaModelData
-from rasa.utils.tensorflow.tf_models import RasaModel
+from rasa.utils.tensorflow.model_data import RasaModelData
+from rasa.utils.tensorflow.models import RasaModel
+
 
 logger = logging.getLogger(__name__)
 
@@ -141,12 +146,14 @@ class ResponseSelector(DIETClassifier):
         SCALE_LOSS: True,
         # regularization parameters
         # the scale of L2 regularization
-        C2: 0.002,
+        REGULARIZATION_CONSTANT: 0.002,
         # the scale of how critical the algorithm should be of minimizing the
         # maximum similarity between embeddings of different intent labels
-        C_EMB: 0.8,
+        NEG_MARGIN_SCALE: 0.8,
         # dropout rate for rnn
         DROPRATE: 0.2,
+        # dropout rate for attention
+        DROPRATE_ATTENTION: 0,
         # use a unidirectional or bidirectional encoder
         UNIDIRECTIONAL_ENCODER: True,
         # visualization of accuracy
@@ -159,6 +166,12 @@ class ResponseSelector(DIETClassifier):
         "retrieval_intent": None,
         # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: False,
+        # if true use key relative embeddings in attention
+        KEY_RELATIVE_ATTENTION: False,
+        # if true use key relative embeddings in attention
+        VALUE_RELATIVE_ATTENTION: False,
+        # max position for relative embeddings
+        MAX_RELATIVE_POSITION: None,
     }
     # end default properties (DOC MARKER - don't remove)
 

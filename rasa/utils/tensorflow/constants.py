@@ -29,9 +29,10 @@ MU_NEG = "maximum_negative_similarity"
 USE_MAX_SIM_NEG = "use_maximum_negative_similarity"
 
 SCALE_LOSS = "scale_loss"
-C2 = "l2_regularization"
-C_EMB = "c_emb"
+REGULARIZATION_CONSTANT = "regularization_constant"
+NEG_MARGIN_SCALE = "neg_margin_scale"
 DROPRATE = "droprate"
+DROPRATE_ATTENTION = "droprate_attention"
 DROPRATE_DIALOGUE = "droprate_dialogue"
 DROPRATE_LABEL = "droprate_label"
 
@@ -47,3 +48,7 @@ SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
 RANKING_LENGTH = "ranking_length"
 
 BILOU_FLAG = "BILOU_flag"
+
+KEY_RELATIVE_ATTENTION = "use_key_relative_attention"
+VALUE_RELATIVE_ATTENTION = "use_value_relative_attention"
+MAX_RELATIVE_POSITION = "max_relative_position"

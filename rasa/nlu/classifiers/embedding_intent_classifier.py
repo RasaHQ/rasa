@@ -1,12 +1,11 @@
 import logging
-
-from rasa.constants import DOCS_BASE_URL
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from typing import Any, Dict, Optional, Text
 
+from rasa.constants import DOCS_BASE_URL
 from rasa.nlu.components import any_of
-
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.constants import TEXT_ATTRIBUTE, DENSE_FEATURE_NAMES, SPARSE_FEATURE_NAMES
+
 from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES_TEXT,
     HIDDEN_LAYERS_SIZES_LABEL,
@@ -29,8 +28,8 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
     DROPRATE,
-    C_EMB,
-    C2,
+    NEG_MARGIN_SCALE,
+    REGULARIZATION_CONSTANT,
     SCALE_LOSS,
     USE_MAX_SIM_NEG,
     MU_NEG,
@@ -39,7 +38,7 @@ from rasa.utils.tensorflow.constants import (
     BILOU_FLAG,
 )
 from rasa.utils.common import raise_warning
-from rasa.utils.tensorflow.tf_models import RasaModel
+from rasa.utils.tensorflow.models import RasaModel
 
 logger = logging.getLogger(__name__)
 
@@ -101,11 +100,11 @@ class EmbeddingIntentClassifier(DIETClassifier):
         # scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
         # regularization parameters
-        # the scale of L2 regularization
-        C2: 0.002,
+        # the scale of regularization
+        REGULARIZATION_CONSTANT: 0.002,
         # the scale of how critical the algorithm should be of minimizing the
         # maximum similarity between embeddings of different labels
-        C_EMB: 0.8,
+        NEG_MARGIN_SCALE: 0.8,
         # dropout rate for rnn
         DROPRATE: 0.2,
         # if true apply dropout to sparse tensors
