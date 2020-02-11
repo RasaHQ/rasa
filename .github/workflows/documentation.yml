@@ -39,17 +39,16 @@ jobs:
         pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
         pip install -e .
         pip list
-    - name: Prepare Git Configuration
+    - name: Build & Publish Docs
       env:
         GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
       run: |
         eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
         echo "$GITHUB_DOCS_KEY" > "docs_key"
         ssh-add docs_key
+
         git config --global user.email "builds@github-ci.com"
         git config --global user.name "GitHub CI"
         git remote set-url --push origin "git@github.com:${{github.repository}}"
-    - name: Build & Publish Docs
-      run: |
-        ssh-add docs_key
+
         sphinx-versioning push docs docs-gh . -- -b dirhtml -A html_theme=rasabaster
