@@ -1226,8 +1226,9 @@ class DIET(RasaModel):
 
         logits = self._tf_layers["embed.logits"](a)
 
-        loss = self._tf_layers["crf"].loss(logits, c, sequence_lengths)
+        # should call first to build weights
         pred_ids = self._tf_layers["crf"](logits, sequence_lengths)
+        loss = self._tf_layers["crf"].loss(logits, c, sequence_lengths)
 
         # TODO check that f1 calculation is correct
         # calculate f1 score for train predictions

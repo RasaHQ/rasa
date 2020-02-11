@@ -155,14 +155,10 @@ class Embed(tf.keras.layers.Layer):
 
 
 class InputMask(tf.keras.layers.Layer):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.mask_initializer = initializers.get("glorot_uniform")
 
     def build(self, input_shape: tf.TensorShape) -> None:
         self.mask_vector = self.add_weight(
             shape=(1, 1, input_shape[-1]),
-            initializer=self.mask_initializer,
             name="mask_vector",
         )
         self.built = True
@@ -216,14 +212,17 @@ class InputMask(tf.keras.layers.Layer):
 class CRF(tf.keras.layers.Layer):
     def __init__(self, num_tags: int, reg_lambda: float, name: Text = None) -> None:
         super().__init__(name=name)
-        initializer = initializers.get("glorot_uniform")
-        regularizer = tf.keras.regularizers.l1(reg_lambda)
+        self.num_tags = num_tags
+        self.regularizer = tf.keras.regularizers.l1(reg_lambda)
+
+    def build(self, input_shape: tf.TensorShape) -> None:
+        # should be created in `build` to apply random_seed
         self.transition_params = self.add_weight(
-            shape=(num_tags, num_tags),
-            initializer=initializer,
-            regularizer=regularizer,
+            shape=(self.num_tags, self.num_tags),
+            regularizer=self.regularizer,
             name="transitions",
         )
+        self.built = True
 
     def call(self, logits: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
         pred_ids, _ = tfa.text.crf.crf_decode(
