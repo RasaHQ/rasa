@@ -6,6 +6,7 @@ from typing import Callable
 from _pytest.pytester import RunResult
 import pytest
 
+
 def test_test_core(run_in_default_project: Callable[..., RunResult]):
     run_in_default_project("test", "core", "--stories", "data")
 
@@ -88,7 +89,6 @@ def test_test_core_comparison(run_in_default_project: Callable[..., RunResult]):
     assert os.path.exists(os.path.join(DEFAULT_RESULTS_PATH, RESULTS_FILE))
 
 
-@pytest.mark.skip(reason="Takes forever.")  # TODO remove
 def test_test_core_comparison_after_train(
     run_in_default_project: Callable[..., RunResult]
 ):
