@@ -1,6 +1,5 @@
 import logging
 import typing
-import warnings
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple
 
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults

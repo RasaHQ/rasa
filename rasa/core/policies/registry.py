@@ -27,3 +27,6 @@ from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 
 # noinspection PyUnresolvedReferences
 from rasa.core.policies.mapping_policy import MappingPolicy
+
+# noinspection PyUnresolvedReferences
+from rasa.core.policies.embedding_policy import EmbeddingPolicy

@@ -164,6 +164,8 @@ learning policies.
     but we **do not recommend** changing them outside of specific cases such as custom policies.
     Doing so can lead to unexpected and undesired bot behavior.
 
+.. _keras_policy:
+
 Keras Policy
 ^^^^^^^^^^^^
 
