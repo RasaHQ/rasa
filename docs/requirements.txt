@@ -1,0 +1,2 @@
+-r ../requirements-docs.txt
+-e .[sql]
