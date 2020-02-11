@@ -1,2 +1,2 @@
-New command-line argument --conversation-id will be added and wiil give the ability to
+New command-line argument ``--conversation-id`` will be added to ``rasa shell``
 set custom conversation ID for each shell session.
