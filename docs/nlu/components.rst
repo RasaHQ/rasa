@@ -631,11 +631,6 @@ EmbeddingIntentClassifier
     additional hidden layers are added together with dropout.
     This algorithm also provides similarity rankings of the labels that did not "win".
 
-    The ``EmbeddingIntentClassifier`` needs to be preceded by a featurizer in the pipeline.
-    This featurizer creates the features used for the embeddings.
-    It is recommended to use ``CountVectorsFeaturizer`` that can be optionally preceded
-    by ``SpacyNLP`` and ``SpacyTokenizer``.
-
     .. note:: If during prediction time a message contains **only** words unseen during training,
               and no Out-Of-Vacabulary preprocessor was used,
               empty intent ``None`` is predicted with confidence ``0.0``.
@@ -643,7 +638,6 @@ EmbeddingIntentClassifier
     .. warning::
         ``EmbeddingIntentClassifier`` is deprecated and should be replaced by ``DIETClassifier``. See
         `migration guide <https://rasa.com/docs/rasa/migration-guide/#rasa-1-7-to-rasa-1-8>`_ for more details.
-
 
 :Configuration:
 
@@ -675,7 +669,7 @@ EmbeddingIntentClassifier
 
         - embedding:
 
-            - ``dense_dimension`` sets the dimensions
+            - ``dense_dimension`` sets the dense dimensions to use for sparse tensors if no dense features are present
             - ``embedding_dimension`` sets the dimension of embedding space;
             - ``number_of_negative_examples`` sets the number of incorrect intent labels,
               the algorithm will minimize their similarity to the user
@@ -712,7 +706,8 @@ EmbeddingIntentClassifier
               would drop out ``10%`` of input units;
             - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not
 
-    .. note:: For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should be between ``-1`` and ``1``.
+    .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
+              be between ``-1`` and ``1``.
 
     .. note:: There is an option to use linearly increasing batch size. The idea comes from
               `<https://arxiv.org/abs/1711.00489>`_.
@@ -731,132 +726,6 @@ EmbeddingIntentClassifier
               starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity`` and
               ``use_maximum_negative_similarity = False``.
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
-
-
-DIETClassifier
-~~~~~~~~~~~~~~
-
-:Short: Dual Intent Entity Transformer used for intent classification and entity extraction
-:Outputs: ``intent`` and ``intent_ranking``
-:Requires: ``dense_features`` and/or ``sparse_features`` for user message and intent (optional)
-:Output-Example:
-
-    .. code-block:: json
-
-        {
-            "intent": {"name": "greet", "confidence": 0.8343},
-            "intent_ranking": [
-                {
-                    "confidence": 0.385910906220309,
-                    "name": "goodbye"
-                },
-                {
-                    "confidence": 0.28161531595656784,
-                    "name": "restaurant_search"
-                }
-            ]
-        }
-
-:Description:
-    The ``DIETClassifier`` embeds user inputs and intent labels into the same space.
-    Supervised embeddings are trained by maximizing similarity between them.
-    This algorithm is based on `StarSpace <https://arxiv.org/abs/1709.03856>`_.
-    However, in this implementation the loss function is slightly different and
-    additional hidden layers are added together with dropout.
-    This algorithm also provides similarity rankings of the labels that did not "win".
-
-    The ``DIETClassifier`` needs to be preceded by a featurizer in the pipeline.
-    This featurizer creates the features used for the embeddings.
-    It is recommended to use ``CountVectorsFeaturizer`` that can be optionally preceded
-    by ``SpacyNLP`` and ``SpacyTokenizer``.
-
-    .. note:: If during prediction time a message contains **only** words unseen during training,
-              and no Out-Of-Vacabulary preprocessor was used,
-              empty intent ``None`` is predicted with confidence ``0.0``.
-
-:Configuration:
-
-    The algorithm also has hyperparameters to control:
-
-        - neural network's architecture:
-
-            - ``hidden_layers_sizes_a`` sets a list of hidden layer sizes before
-              the embedding layer for user inputs, the number of hidden layers
-              is equal to the length of the list
-            - ``hidden_layers_sizes_b`` sets a list of hidden layer sizes before
-              the embedding layer for intent labels, the number of hidden layers
-              is equal to the length of the list
-            - ``share_hidden`` if set to True, shares the hidden layers between user inputs and intent label
-
-        - training:
-
-            - ``batch_size`` sets the number of training examples in one
-              forward/backward pass, the higher the batch size, the more
-              memory space you'll need;
-            - ``batch_strategy`` sets the type of batching strategy,
-              it should be either ``sequence`` or ``balanced``;
-            - ``epochs`` sets the number of times the algorithm will see
-              training data, where one ``epoch`` equals one forward pass and
-              one backward pass of all the training examples;
-            - ``random_seed`` if set to any int will get reproducible
-              training results for the same inputs;
-
-        - embedding:
-
-            - ``embed_dim`` sets the dimension of embedding space;
-            - ``num_neg`` sets the number of incorrect intent labels,
-              the algorithm will minimize their similarity to the user
-              input during training;
-            - ``similarity_type`` sets the type of the similarity,
-              it should be either ``auto``, ``cosine`` or ``inner``,
-              if ``auto``, it will be set depending on ``loss_type``,
-              ``inner`` for ``softmax``, ``cosine`` for ``margin``;
-            - ``loss_type`` sets the type of the loss function,
-              it should be either ``softmax`` or ``margin``;
-            - ``ranking_length`` defines the number of top confidences over
-              which to normalize ranking results if ``loss_type: "softmax"``;
-              to turn off normalization set it to 0
-            - ``mu_pos`` controls how similar the algorithm should try
-              to make embedding vectors for correct intent labels,
-              used only if ``loss_type`` is set to ``margin``;
-            - ``mu_neg`` controls maximum negative similarity for
-              incorrect intents,
-              used only if ``loss_type`` is set to ``margin``;
-            - ``use_max_sim_neg`` if ``true`` the algorithm only
-              minimizes maximum similarity over incorrect intent labels,
-              used only if ``loss_type`` is set to ``margin``;
-            - ``scale_loss`` if ``true`` the algorithm will downscale the loss
-              for examples where correct label is predicted with high confidence,
-              used only if ``loss_type`` is set to ``softmax``;
-
-        - regularization:
-
-            - ``C2`` sets the scale of L2 regularization
-            - ``C_emb`` sets the scale of how important is to minimize
-              the maximum similarity between embeddings of different intent labels;
-            - ``droprate`` sets the dropout rate, it should be
-              between ``0`` and ``1``, e.g. ``droprate=0.1``
-              would drop out ``10%`` of input units;
-
-    .. note:: For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should be between ``-1`` and ``1``.
-
-    .. note:: There is an option to use linearly increasing batch size. The idea comes from
-              `<https://arxiv.org/abs/1711.00489>`_.
-              In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
-              If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
-
-    In the config, you can specify these parameters.
-    The default values are defined in ``DIETClassifier.defaults``:
-
-    .. literalinclude:: ../../rasa/nlu/classifiers/diet_classifier.py
-       :dedent: 4
-       :start-after: # default properties (DOC MARKER - don't remove)
-       :end-before: # end default properties (DOC MARKER - don't remove)
-
-    .. note:: Parameter ``mu_neg`` is set to a negative value to mimic the original
-              starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
-              See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
-
 
 .. _keyword_intent_classifier:
 
@@ -904,20 +773,13 @@ Response Selector
 
 :Short: Response Selector
 :Outputs: A dictionary with key as ``direct_response_intent`` and value containing ``response`` and ``ranking``
-:Requires: A featurizer
+:Requires: ``dense_features`` and/or ``sparse_features`` for user message and response
 
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "text": "What is the recommend python version to install?",
-            "entities": [],
-            "intent": {"confidence": 0.6485910906220309, "name": "faq"},
-            "intent_ranking": [
-                {"confidence": 0.6485910906220309, "name": "faq"},
-                {"confidence": 0.1416153159565678, "name": "greet"}
-            ],
             "response_selector": {
               "faq": {
                 "response": {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
@@ -936,11 +798,6 @@ Response Selector
     It embeds user inputs and response labels into the same space and follows the exact same
     neural network architecture and optimization as the ``DIETClassifier``.
 
-    The response selector needs to be preceded by a featurizer in the pipeline.
-    This featurizer creates the features used for the embeddings.
-    It is recommended to use ``CountVectorsFeaturizer`` that can be optionally preceded
-    by ``SpacyNLP``.
-
     .. note:: If during prediction time a message contains **only** words unseen during training,
               and no Out-Of-Vacabulary preprocessor was used,
               empty response ``None`` is predicted with confidence ``0.0``.
@@ -950,7 +807,8 @@ Response Selector
     The algorithm includes all the hyperparameters that ``DIETClassifier`` uses.
     In addition, the component can also be configured to train a response selector for a particular retrieval intent
 
-        - ``retrieval_intent``: sets the name of the intent for which this response selector model is trained. Default ``None``
+        - ``retrieval_intent``: sets the name of the intent for which this response selector model is trained.
+          Default ``None``
 
     In the config, you can specify these parameters.
     The default values are defined in ``ResponseSelector.defaults``:
@@ -968,23 +826,25 @@ MitieEntityExtractor
 ~~~~~~~~~~~~~~~~~~~~
 
 :Short: MITIE entity extraction (using a `MITIE NER trainer <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/ner_trainer.cpp>`_)
-:Outputs: appends ``entities``
-:Requires: :ref:`MitieNLP`
+:Outputs: ``entities``
+:Requires: :ref:`MitieNLP` and ``tokens``
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "entities": [{"value": "New York City",
-                          "start": 20,
-                          "end": 33,
-                          "confidence": null,
-                          "entity": "city",
-                          "extractor": "MitieEntityExtractor"}]
+            "entities": [{
+                "value": "New York City",
+                "start": 20,
+                "end": 33,
+                "confidence": null,
+                "entity": "city",
+                "extractor": "MitieEntityExtractor"
+            }]
         }
 
 :Description:
-    This uses the MITIE entity extraction to find entities in a message. The underlying classifier
+    ``MitieEntityExtractor`` uses the MITIE entity extraction to find entities in a message. The underlying classifier
     is using a multi class linear SVM with a sparse linear kernel and custom features.
     The MITIE component does not provide entity confidence values.
 :Configuration:
@@ -1000,28 +860,30 @@ SpacyEntityExtractor
 ~~~~~~~~~~~~~~~~~~~~
 
 :Short: spaCy entity extraction
-:Outputs: appends ``entities``
+:Outputs: ``entities``
 :Requires: :ref:`SpacyNLP`
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "entities": [{"value": "New York City",
-                          "start": 20,
-                          "end": 33,
-                          "entity": "city",
-                          "confidence": null,
-                          "extractor": "SpacyEntityExtractor"}]
+            "entities": [{
+                "value": "New York City",
+                "start": 20,
+                "end": 33,
+                "confidence": null,
+                "entity": "city",
+                "extractor": "SpacyEntityExtractor"
+            }]
         }
 
 :Description:
-    Using spaCy this component predicts the entities of a message. spacy uses a statistical BILOU transition model.
-    As of now, this component can only use the spacy builtin entity extraction models and can not be retrained.
+    Using spaCy this component predicts the entities of a message. spaCy uses a statistical BILOU transition model.
+    As of now, this component can only use the spaCy builtin entity extraction models and can not be retrained.
     This extractor does not provide any confidence scores.
 
 :Configuration:
-    Configure which dimensions, i.e. entity types, the spacy component
+    Configure which dimensions, i.e. entity types, the spaCy component
     should extract. A full list of available dimensions can be found in
     the `spaCy documentation <https://spacy.io/api/annotation#section-named-entities>`_.
     Leaving the dimensions option unspecified will extract all available dimensions.
@@ -1037,7 +899,6 @@ SpacyEntityExtractor
 EntitySynonymMapper
 ~~~~~~~~~~~~~~~~~~~
 
-
 :Short: Maps synonymous entity values to the same value.
 :Outputs: modifies existing entities that previous entity extraction components found
 :Requires: nothing
@@ -1048,46 +909,59 @@ EntitySynonymMapper
 
     .. code-block:: json
 
-        [{
-          "text": "I moved to New York City",
-          "intent": "inform_relocation",
-          "entities": [{"value": "nyc",
-                        "start": 11,
-                        "end": 24,
-                        "entity": "city",
-                       }]
-        },
-        {
-          "text": "I got a new flat in NYC.",
-          "intent": "inform_relocation",
-          "entities": [{"value": "nyc",
-                        "start": 20,
-                        "end": 23,
-                        "entity": "city",
-                       }]
-        }]
+        [
+            {
+              "text": "I moved to New York City",
+              "intent": "inform_relocation",
+              "entities": [{
+                "value": "nyc",
+                "start": 11,
+                "end": 24,
+                "entity": "city",
+              }]
+            },
+            {
+              "text": "I got a new flat in NYC.",
+              "intent": "inform_relocation",
+              "entities": [{
+                "value": "nyc",
+                "start": 20,
+                "end": 23,
+                "entity": "city",
+              }]
+            }
+        ]
 
-    This component will allow you to map the entities ``New York City`` and ``NYC`` to ``nyc``. The entitiy
+    This component will allow you to map the entities ``New York City`` and ``NYC`` to ``nyc``. The entity
     extraction will return ``nyc`` even though the message contains ``NYC``. When this component changes an
-    exisiting entity, it appends itself to the processor list of this entity.
+    existing entity, it appends itself to the processor list of this entity.
+
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "EntitySynonymMapper"
 
 CRFEntityExtractor
 ~~~~~~~~~~~~~~~~~~
 
-:Short: conditional random field entity extraction
-:Outputs: appends ``entities``
-:Requires: A tokenizer
+:Short: CRF (conditional random field) entity extraction
+:Outputs: ``entities``
+:Requires: ``tokens`` and ``dense_features`` (optional)
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "entities": [{"value":"New York City",
-                          "start": 20,
-                          "end": 33,
-                          "entity": "city",
-                          "confidence": 0.874,
-                          "extractor": "CRFEntityExtractor"}]
+            "entities": [{
+                "value":"New York City",
+                "start": 20,
+                "end": 33,
+                "entity": "city",
+                "confidence": 0.874,
+                "extractor": "CRFEntityExtractor"
+            }]
         }
 
 :Description:
@@ -1099,6 +973,11 @@ CRFEntityExtractor
     If POS features are used (pos or pos2), spaCy has to be installed. If you want to use
     additional features, such as pre-trained word embeddings, from any provided dense
     featurizer, use ``"text_dense_features"``.
+
+    .. warning::
+        ``CRFEntityExtractor`` is deprecated and should be replaced by ``DIETClassifier``. See
+        `migration guide <https://rasa.com/docs/rasa/migration-guide/#rasa-1-7-to-rasa-1-8>`_ for more details.
+
 :Configuration:
    .. code-block:: yaml
 
@@ -1195,3 +1074,130 @@ DucklingHTTPExtractor
           # Timeout for receiving response from http url of the running duckling server
           # if not set the default timeout of duckling http url is set to 3 seconds.
           timeout : 3
+
+
+Combined Entity Extraction and Intent Classification
+----------------------------------------------------
+
+DIETClassifier
+~~~~~~~~~~~~~~
+
+:Short: Dual Intent Entity Transformer used for intent classification and entity extraction
+:Outputs: ``entities``, ``intent`` and ``intent_ranking``
+:Requires: ``dense_features`` and/or ``sparse_features`` for user message and intent (optional)
+:Output-Example:
+
+    .. code-block:: json
+
+        {
+            "intent": {"name": "greet", "confidence": 0.8343},
+            "intent_ranking": [
+                {
+                    "confidence": 0.385910906220309,
+                    "name": "goodbye"
+                },
+                {
+                    "confidence": 0.28161531595656784,
+                    "name": "restaurant_search"
+                }
+            ],
+            "entities": [{
+                "end": 53,
+                "entity": "time",
+                "start": 48,
+                "value": "2017-04-10T00:00:00.000+02:00",
+                "confidence": 1.0,
+                "extractor": "DIETClassifier"
+            }]
+        }
+
+:Description:
+    TODO
+
+    .. note:: If during prediction time a message contains **only** words unseen during training,
+              and no Out-Of-Vacabulary preprocessor was used,
+              empty intent ``None`` is predicted with confidence ``0.0``.
+
+:Configuration:
+
+    The algorithm also has hyperparameters to control:
+
+        - neural network's architecture:
+
+            - ``hidden_layers_sizes_a`` sets a list of hidden layer sizes before
+              the embedding layer for user inputs, the number of hidden layers
+              is equal to the length of the list
+            - ``hidden_layers_sizes_b`` sets a list of hidden layer sizes before
+              the embedding layer for intent labels, the number of hidden layers
+              is equal to the length of the list
+            - ``share_hidden`` if set to True, shares the hidden layers between user inputs and intent label
+
+        - training:
+
+            - ``batch_size`` sets the number of training examples in one
+              forward/backward pass, the higher the batch size, the more
+              memory space you'll need;
+            - ``batch_strategy`` sets the type of batching strategy,
+              it should be either ``sequence`` or ``balanced``;
+            - ``epochs`` sets the number of times the algorithm will see
+              training data, where one ``epoch`` equals one forward pass and
+              one backward pass of all the training examples;
+            - ``random_seed`` if set to any int will get reproducible
+              training results for the same inputs;
+
+        - embedding:
+
+            - ``embed_dim`` sets the dimension of embedding space;
+            - ``num_neg`` sets the number of incorrect intent labels,
+              the algorithm will minimize their similarity to the user
+              input during training;
+            - ``similarity_type`` sets the type of the similarity,
+              it should be either ``auto``, ``cosine`` or ``inner``,
+              if ``auto``, it will be set depending on ``loss_type``,
+              ``inner`` for ``softmax``, ``cosine`` for ``margin``;
+            - ``loss_type`` sets the type of the loss function,
+              it should be either ``softmax`` or ``margin``;
+            - ``ranking_length`` defines the number of top confidences over
+              which to normalize ranking results if ``loss_type: "softmax"``;
+              to turn off normalization set it to 0
+            - ``mu_pos`` controls how similar the algorithm should try
+              to make embedding vectors for correct intent labels,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``mu_neg`` controls maximum negative similarity for
+              incorrect intents,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``use_max_sim_neg`` if ``true`` the algorithm only
+              minimizes maximum similarity over incorrect intent labels,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``scale_loss`` if ``true`` the algorithm will downscale the loss
+              for examples where correct label is predicted with high confidence,
+              used only if ``loss_type`` is set to ``softmax``;
+
+        - regularization:
+
+            - ``C2`` sets the scale of L2 regularization
+            - ``C_emb`` sets the scale of how important is to minimize
+              the maximum similarity between embeddings of different intent labels;
+            - ``droprate`` sets the dropout rate, it should be
+              between ``0`` and ``1``, e.g. ``droprate=0.1``
+              would drop out ``10%`` of input units;
+
+    .. note:: For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should be between ``-1`` and ``1``.
+
+    .. note:: There is an option to use linearly increasing batch size. The idea comes from
+              `<https://arxiv.org/abs/1711.00489>`_.
+              In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
+              If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
+
+    In the config, you can specify these parameters.
+    The default values are defined in ``DIETClassifier.defaults``:
+
+    .. literalinclude:: ../../rasa/nlu/classifiers/diet_classifier.py
+       :dedent: 4
+       :start-after: # default properties (DOC MARKER - don't remove)
+       :end-before: # end default properties (DOC MARKER - don't remove)
+
+    .. note:: Parameter ``mu_neg`` is set to a negative value to mimic the original
+              starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
+              See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+
