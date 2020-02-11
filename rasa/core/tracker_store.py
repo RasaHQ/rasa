@@ -643,10 +643,15 @@ class SQLTrackerStore(TrackerStore):
         from sqlalchemy.engine.url import URL
 
         # Users might specify a url in the host
+        if "//" not in host:
+            # Having '//' in the beginning of the endpoint enforce
+            # urlsplit to consider the endpoint as a netloc according
+            # to this quote in docs.python.org/3/library/urllib.parse.html:
+            host = "//" + host
+
         parsed = urlsplit(host or "")
-        print(f"URLSPLIT: {parsed}")
+
         if parsed.scheme:
-            print(f"RETURNING SCHEME!")
             return host
 
         if host:
@@ -666,7 +671,6 @@ class SQLTrackerStore(TrackerStore):
             database=login_db if login_db else db,
             query=query,
         )
-        print(f"RETURNING URL: {url}")
         return url
 
     def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):
