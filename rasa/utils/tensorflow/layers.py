@@ -4,6 +4,7 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
+from tensorflow.python.keras import initializers
 
 logger = logging.getLogger(__name__)
 
@@ -154,9 +155,15 @@ class Embed(tf.keras.layers.Layer):
 
 
 class InputMask(tf.keras.layers.Layer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.mask_initializer = initializers.get("glorot_uniform")
+
     def build(self, input_shape: tf.TensorShape) -> None:
         self.mask_vector = self.add_weight(
-            shape=(1, 1, input_shape[-1]), name="mask_vector",
+            shape=(1, 1, input_shape[-1]),
+            initializer=self.mask_initializer,
+            name="mask_vector",
         )
         self.built = True
 
@@ -209,10 +216,13 @@ class InputMask(tf.keras.layers.Layer):
 class CRF(tf.keras.layers.Layer):
     def __init__(self, num_tags: int, reg_lambda: float, name: Text = None) -> None:
         super().__init__(name=name)
-
+        initializer = initializers.get("glorot_uniform")
         regularizer = tf.keras.regularizers.l1(reg_lambda)
         self.transition_params = self.add_weight(
-            shape=(num_tags, num_tags), regularizer=regularizer, name="transitions",
+            shape=(num_tags, num_tags),
+            initializer=initializer,
+            regularizer=regularizer,
+            name="transitions",
         )
 
     def call(self, logits: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
