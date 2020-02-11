@@ -83,9 +83,7 @@ def test_data_validate_stories_with_max_history_zero(
     output = run_in_default_project_with_info(
         "data", "validate", "stories", "--max-history", "0"
     )
-    assert _text_is_part_of_output_error(
-        "is not a positive integer", output
-    )
+    assert _text_is_part_of_output_error("is not a positive integer", output)
 
 
 def test_validate_files_exit_early():
