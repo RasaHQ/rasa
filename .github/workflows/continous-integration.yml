@@ -43,26 +43,26 @@ jobs:
         key: ${{ runner.os }}-3.7-pip-${{ hashFiles('**/requirements-dev.txt') }}
         restore-keys: |
           ${{ runner.os }}-3.7-pip-
-    - name: Load Pytype Cached artifacts
+    - name: Load Pytype Cached Artifacts
       uses: actions/cache@v1
       with:
         path: .pytype
         key: pytype-${{ hashFiles('rasa/**') }}
         restore-keys: |
           pytype-
-    - name: Install dependencies
+    - name: Install Dependencies
       run: |
         sudo apt-get -y install libpq-dev
         python -m pip install -U 'pip<20'
         pip install -r requirements-dev.txt
         pip install -e .
-    - name: Lint code
+    - name: Lint Code
       run: |
         make lint
-    - name: Check types
+    - name: Check Types
       run: |
         make types
-    - name: Make sure the CLI is running
+    - name: Test CLI
       # makes sure we catch any dependency error early. they will create strange
       # errors during the docs build, so easier to catch them early on by
       # trying to run the `rasa` command once before the docs build.
@@ -89,14 +89,14 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Load Cached artifacts
+    - name: Load Pip Cached Artifacts
       uses: actions/cache@v1
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('**/requirements-dev.txt') }}
         restore-keys: |
           ${{ runner.os }}-${{ matrix.python-version }}-pip-
-    - name: Install dependencies
+    - name: Install Dependencies
       run: |
         sudo apt-get update -qq
         python -m pip install -U 'pip<20'
@@ -104,6 +104,6 @@ jobs:
         pip install -e .
         make prepare-tests-ubuntu
         pip list
-    - name: Test code
+    - name: Test Code
       run: |
         make test
