@@ -599,9 +599,7 @@ def test_is_empty():
 def test_transform_intents_for_file():
     domain_path = "data/test_domains/default_unfeaturized_entities.yml"
     domain = Domain.load(domain_path)
-    transformed = domain._transform_intents_for_file(
-        domain.intent_properties, domain.entities
-    )
+    transformed = domain._transform_intents_for_file()
 
     expected = [
         {"greet": {USE_ENTITIES_KEY: ["name"]}},

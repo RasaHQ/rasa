@@ -1,4 +1,5 @@
 import collections
+import copy
 import json
 import logging
 import os
@@ -749,9 +750,7 @@ class Domain:
                 SESSION_EXPIRATION_TIME_KEY: self.session_config.session_expiration_time,
                 CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
             },
-            "intents": self._transform_intents_for_file(
-                self.intent_properties, self.entities
-            ),
+            "intents": self._transform_intents_for_file(),
             "entities": self.entities,
             "slots": self._slot_definitions(),
             "responses": self.templates,
@@ -765,29 +764,26 @@ class Domain:
         domain_data = self.as_dict()
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
 
-    @staticmethod
-    def _transform_intents_for_file(
-        intent_properties: Dict[Text, Dict[Text, Union[bool, List]]],
-        entities: List[Text],
-    ) -> List[Union[Text, Dict[Text, Any]]]:
+    def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
         """Replace the internal `used_entities` property by `use_entities` or
         `ignore_entities`.
         """
-        intent_properties_for_file = []
+        intent_properties = copy.deepcopy(self.intent_properties)
+        intents_for_file = []
 
-        for intent_name, intent_props_internal in intent_properties.items():
-            intent_for_file = {}
-            use_entities = set(intent_props_internal[USED_ENTITIES_KEY])
-            ignore_entities = set(entities) - use_entities
-            if len(use_entities) == len(entities):
-                intent_for_file[USE_ENTITIES_KEY] = True
-            elif len(use_entities) <= len(entities) / 2:
-                intent_for_file[USE_ENTITIES_KEY] = list(use_entities)
+        for intent_name, intent_props in intent_properties.items():
+            use_entities = set(intent_props[USED_ENTITIES_KEY])
+            ignore_entities = set(self.entities) - use_entities
+            if len(use_entities) == len(self.entities):
+                intent_props[USE_ENTITIES_KEY] = True
+            elif len(use_entities) <= len(self.entities) / 2:
+                intent_props[USE_ENTITIES_KEY] = list(use_entities)
             else:
-                intent_for_file[IGNORE_ENTITIES_KEY] = list(ignore_entities)
-            intent_properties_for_file.append({intent_name: intent_for_file})
+                intent_props[IGNORE_ENTITIES_KEY] = list(ignore_entities)
+            intent_props.pop(USED_ENTITIES_KEY)
+            intents_for_file.append({intent_name: intent_props})
 
-        return intent_properties_for_file
+        return intents_for_file
 
     def cleaned_domain(self) -> Dict[Text, Any]:
         """Fetch cleaned domain to display or write into a file.
