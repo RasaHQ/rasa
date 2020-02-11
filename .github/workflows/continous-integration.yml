@@ -107,3 +107,9 @@ jobs:
     - name: Test Code
       run: |
         make test
+    - name: Send Coverage Report
+      if: matrix.python-version == 3.7
+      #env:
+      #  COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      run: |
+        coveralls
