@@ -32,11 +32,13 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
     DROPRATE,
-    C2,
+    REGULARIZATION_CONSTANT,
     BILOU_FLAG,
+    SHARE_HIDDEN_LAYERS,
+    UNIDIRECTIONAL_ENCODER,
 )
 from rasa.utils.common import raise_warning
-from rasa.utils.tensorflow.tf_models import RasaModel
+from rasa.utils.tensorflow.models import RasaModel
 
 logger = logging.getLogger(__name__)
 
@@ -91,8 +93,8 @@ class CRFEntityExtractor(DIETClassifier):
         # default dense dimension used if no dense features are present
         DENSE_DIM: {TEXT: 512},
         # regularization parameters
-        # the scale of L2 regularization
-        C2: 0.002,
+        # the scale of regularization
+        REGULARIZATION_CONSTANT: 0.002,
         # dropout rate for rnn
         DROPRATE: 0.2,
         # if true apply dropout to sparse tensors

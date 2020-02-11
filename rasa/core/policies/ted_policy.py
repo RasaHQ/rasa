@@ -21,9 +21,10 @@ from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils import train_utils
-from rasa.utils.tensorflow import tf_layers
-from rasa.utils.tensorflow.tf_models import RasaModel
-from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
+from rasa.utils.tensorflow import layers
+from rasa.utils.tensorflow.transformer import TransformerEncoder
+from rasa.utils.tensorflow.models import RasaModel
+from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -41,8 +42,8 @@ from rasa.utils.tensorflow.constants import (
     NUM_NEG,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
-    C_EMB,
-    C2,
+    NEG_MARGIN_SCALE,
+    REGULARIZATION_CONSTANT,
     SCALE_LOSS,
     USE_MAX_SIM_NEG,
     MU_NEG,
@@ -50,6 +51,10 @@ from rasa.utils.tensorflow.constants import (
     EMBED_DIM,
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
+    DROPRATE_ATTENTION,
+    KEY_RELATIVE_ATTENTION,
+    VALUE_RELATIVE_ATTENTION,
+    MAX_RELATIVE_POSITION,
 )
 
 
@@ -111,20 +116,28 @@ class TEDPolicy(Policy):
         # scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
         # regularization
-        # the scale of L2 regularization
-        C2: 0.001,
+        # the scale of regularization
+        REGULARIZATION_CONSTANT: 0.001,
         # the scale of how important is to minimize the maximum similarity
         # between embeddings of different labels
-        C_EMB: 0.8,
+        NEG_MARGIN_SCALE: 0.8,
         # dropout rate for dial nn
         DROPRATE_DIALOGUE: 0.1,
         # dropout rate for bot nn
         DROPRATE_LABEL: 0.0,
+        # dropout rate for attention
+        DROPRATE_ATTENTION: 0,
         # visualization of accuracy
         # how often calculate validation accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for hold out validation set
         EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
+        # if true use key relative embeddings in attention
+        KEY_RELATIVE_ATTENTION: False,
+        # if true use key relative embeddings in attention
+        VALUE_RELATIVE_ATTENTION: False,
+        # max position for relative embeddings
+        MAX_RELATIVE_POSITION: None,
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -246,8 +259,6 @@ class TEDPolicy(Policy):
     ) -> None:
         """Train the policy on given training trackers."""
 
-        logger.debug("Started training embedding policy.")
-
         # set numpy random seed
         np.random.seed(self.config[RANDOM_SEED])
 
@@ -268,8 +279,8 @@ class TEDPolicy(Policy):
         model_data = self._create_model_data(training_data.X, training_data.y)
         if model_data.is_empty():
             logger.error(
-                "Can not train TED policy. No data was provided. "
-                "Skipping training of the policy."
+                f"Can not train '{self.__class__.__name__}'. No data was provided. "
+                f"Skipping training of the policy."
             )
             return
 
@@ -488,50 +499,53 @@ class TED(RasaModel):
             )
 
     def _prepare_layers(self) -> None:
-        self._tf_layers["loss.label"] = tf_layers.DotProductLoss(
+        self._tf_layers["loss.label"] = layers.DotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
             self.config[MU_POS],
             self.config[MU_NEG],
             self.config[USE_MAX_SIM_NEG],
-            self.config[C_EMB],
+            self.config[NEG_MARGIN_SCALE],
             self.config[SCALE_LOSS],
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,
         )
-        self._tf_layers["ffnn.dialogue"] = tf_layers.Ffnn(
+        self._tf_layers["ffnn.dialogue"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
             self.config[DROPRATE_DIALOGUE],
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             layer_name_suffix=DIALOGUE,
         )
-        self._tf_layers["ffnn.label"] = tf_layers.Ffnn(
+        self._tf_layers["ffnn.label"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES][LABEL],
             self.config[DROPRATE_LABEL],
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             layer_name_suffix=LABEL,
         )
-        self._tf_layers["transformer"] = tf_layers.TransformerEncoder(
+        self._tf_layers["transformer"] = TransformerEncoder(
             self.config[NUM_TRANSFORMER_LAYERS],
             self.config[TRANSFORMER_SIZE],
             self.config[NUM_HEADS],
             self.config[TRANSFORMER_SIZE] * 4,
             self.config[MAX_SEQ_LENGTH],
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             dropout_rate=self.config[DROPRATE_DIALOGUE],
-            attention_dropout_rate=0,
+            attention_dropout_rate=self.config[DROPRATE_ATTENTION],
             unidirectional=True,
+            use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
+            use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
+            max_relative_position=self.config[MAX_RELATIVE_POSITION],
             name=DIALOGUE + "_encoder",
         )
-        self._tf_layers["embed.dialogue"] = tf_layers.Embed(
+        self._tf_layers["embed.dialogue"] = layers.Embed(
             self.config[EMBED_DIM],
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             DIALOGUE,
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["embed.label"] = tf_layers.Embed(
+        self._tf_layers["embed.label"] = layers.Embed(
             self.config[EMBED_DIM],
-            self.config[C2],
+            self.config[REGULARIZATION_CONSTANT],
             LABEL,
             self.config[SIMILARITY_TYPE],
         )

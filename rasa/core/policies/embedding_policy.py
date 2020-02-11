@@ -8,7 +8,10 @@ from rasa.constants import DOCS_BASE_URL
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
+    TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
+    NUM_HEADS,
+    MAX_SEQ_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
     EPOCHS,
@@ -19,21 +22,22 @@ from rasa.utils.tensorflow.constants import (
     NUM_NEG,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
-    C_EMB,
-    C2,
+    NEG_MARGIN_SCALE,
+    REGULARIZATION_CONSTANT,
     SCALE_LOSS,
     USE_MAX_SIM_NEG,
     MU_NEG,
     MU_POS,
     EMBED_DIM,
-    TRANSFORMER_SIZE,
-    MAX_SEQ_LENGTH,
-    NUM_HEADS,
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
+    DROPRATE_ATTENTION,
+    KEY_RELATIVE_ATTENTION,
+    VALUE_RELATIVE_ATTENTION,
+    MAX_RELATIVE_POSITION,
 )
 from rasa.utils.common import raise_warning
-from rasa.utils.tensorflow.tf_models import RasaModel
+from rasa.utils.tensorflow.models import RasaModel
 
 logger = logging.getLogger(__name__)
 
@@ -91,20 +95,28 @@ class EmbeddingPolicy(TEDPolicy):
         # scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
         # regularization
-        # the scale of L2 regularization
-        C2: 0.001,
+        # the scale of regularization
+        REGULARIZATION_CONSTANT: 0.001,
         # the scale of how important is to minimize the maximum similarity
         # between embeddings of different labels
-        C_EMB: 0.8,
+        NEG_MARGIN_SCALE: 0.8,
         # dropout rate for dial nn
         DROPRATE_DIALOGUE: 0.1,
         # dropout rate for bot nn
         DROPRATE_LABEL: 0.0,
+        # dropout rate for attention
+        DROPRATE_ATTENTION: 0,
         # visualization of accuracy
         # how often calculate validation accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for hold out validation set
         EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
+        # if true use key relative embeddings in attention
+        KEY_RELATIVE_ATTENTION: False,
+        # if true use key relative embeddings in attention
+        VALUE_RELATIVE_ATTENTION: False,
+        # max position for relative embeddings
+        MAX_RELATIVE_POSITION: None,
     }
     # end default properties (DOC MARKER - don't remove)
 
