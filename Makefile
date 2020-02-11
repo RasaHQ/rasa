@@ -40,14 +40,14 @@ clean:
 	rm -rf docs/_build
 
 formatter:
-	black rasa tests
+	poetry run black rasa tests
 
 lint:
-	flake8 rasa tests
-	black --check rasa tests
+	poetry run flake8 rasa tests
+	poetry run black --check rasa tests
 
 types:
-	pytype --keep-going rasa -j 16
+	poetry run pytype --keep-going rasa -j 16
 
 prepare-tests-macos: prepare-wget-macos prepare-tests-files
 	brew install graphviz || true
@@ -59,25 +59,24 @@ prepare-tests-ubuntu: prepare-tests-files
 	sudo apt-get -y install graphviz graphviz-dev python-tk
 
 prepare-tests-files:
-	pip3 install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir -q
-	python3 -m spacy link en_core_web_md en --force
-	pip3 install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir -q
-	python3 -m spacy link de_core_news_sm de --force
+	poetry install --extras spacy-models
+	poetry run python3 -m spacy link en_core_web_md en --force
+	poetry run python3 -m spacy link de_core_news_sm de --force
 	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 
 test: clean
 	# OMP_NUM_THREADS can improve overral performance using one thread by process (on tensorflow), avoiding overload
-	OMP_NUM_THREADS=1 pytest tests -n $(JOBS) --cov rasa
+	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa
 
 doctest: clean
-	cd docs && make doctest
+	cd docs && poetry run make doctest
 
 livedocs:
-	cd docs && make livehtml
+	cd docs && poetry run make livehtml
 
-# if this runs through we can be sure the readme is properly shown on pypi
+# TODO(alwx): if this runs through we can be sure the readme is properly shown on pypi
 check-readme:
 	python3 setup.py check --restructuredtext --strict
 
 release:
-	python3 scripts/release.py
+	poetry run python scripts/release.py
