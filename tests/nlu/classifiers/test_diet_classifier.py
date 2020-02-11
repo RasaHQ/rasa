@@ -7,10 +7,10 @@ from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
-    TEXT_ATTRIBUTE,
+    TEXT,
     SPARSE_FEATURE_NAMES,
     DENSE_FEATURE_NAMES,
-    INTENT_ATTRIBUTE,
+    INTENT,
 )
 from rasa.utils.tensorflow.constants import LOSS_TYPE, RANDOM_SEED, RANKING_LENGTH
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -47,15 +47,15 @@ def test_compute_default_label_features():
                 Message(
                     "test a",
                     data={
-                        SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]: np.zeros(1),
-                        DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]: np.zeros(1),
+                        SPARSE_FEATURE_NAMES[TEXT]: np.zeros(1),
+                        DENSE_FEATURE_NAMES[TEXT]: np.zeros(1),
                     },
                 ),
                 Message(
                     "test b",
                     data={
-                        SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]: np.zeros(1),
-                        DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]: np.zeros(1),
+                        SPARSE_FEATURE_NAMES[TEXT]: np.zeros(1),
+                        DENSE_FEATURE_NAMES[TEXT]: np.zeros(1),
                     },
                 ),
             ],
@@ -66,8 +66,8 @@ def test_compute_default_label_features():
                 Message(
                     "test a",
                     data={
-                        SPARSE_FEATURE_NAMES[INTENT_ATTRIBUTE]: np.zeros(1),
-                        DENSE_FEATURE_NAMES[INTENT_ATTRIBUTE]: np.zeros(1),
+                        SPARSE_FEATURE_NAMES[INTENT]: np.zeros(1),
+                        DENSE_FEATURE_NAMES[INTENT]: np.zeros(1),
                     },
                 )
             ],
@@ -76,7 +76,7 @@ def test_compute_default_label_features():
     ],
 )
 def test_check_labels_features_exist(messages, expected):
-    attribute = TEXT_ATTRIBUTE
+    attribute = TEXT
 
     assert DIETClassifier._check_labels_features_exist(messages, attribute) == expected
 

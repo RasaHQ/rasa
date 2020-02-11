@@ -1,12 +1,13 @@
 import logging
 from typing import Any, Dict, Optional, Text
 
-from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.constants import DOCS_BASE_URL
 from rasa.utils.tensorflow.constants import (
-    HIDDEN_LAYERS_SIZES_LABEL,
+    LABEL,
+    HIDDEN_LAYERS_SIZES,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
@@ -28,7 +29,6 @@ from rasa.utils.tensorflow.constants import (
     MU_NEG,
     MU_POS,
     EMBED_DIM,
-    HIDDEN_LAYERS_SIZES_DIALOGUE,
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
     DROPRATE_ATTENTION,
@@ -51,12 +51,9 @@ class EmbeddingPolicy(TEDPolicy):
     # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
-        # a list of hidden layers sizes before user embed layer
+        # a list of hidden layers sizes before dialogue and action embed layers
         # number of hidden layers is equal to the length of this list
-        HIDDEN_LAYERS_SIZES_DIALOGUE: [],
-        # a list of hidden layers sizes before bot embed layer
-        # number of hidden layers is equal to the length of this list
-        HIDDEN_LAYERS_SIZES_LABEL: [],
+        HIDDEN_LAYERS_SIZES: {DIALOGUE: [], LABEL: []},
         # number of units in transformer
         TRANSFORMER_SIZE: 128,
         # number of transformer layers

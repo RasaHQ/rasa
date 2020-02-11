@@ -48,7 +48,7 @@ import os
 from rasa.nlu import training_data, config
 from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH, NLU_DEFAULT_CONFIG_PATH
-from rasa.nlu.selectors.embedding_response_selector import ResponseSelector
+from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import is_response_selector_present
 
 

@@ -18,7 +18,7 @@ from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.core.policies.policy import Policy
-from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
@@ -26,7 +26,8 @@ from rasa.utils.tensorflow.transformer import TransformerEncoder
 from rasa.utils.tensorflow.models import RasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import (
-    HIDDEN_LAYERS_SIZES_LABEL,
+    LABEL,
+    HIDDEN_LAYERS_SIZES,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
@@ -48,7 +49,6 @@ from rasa.utils.tensorflow.constants import (
     MU_NEG,
     MU_POS,
     EMBED_DIM,
-    HIDDEN_LAYERS_SIZES_DIALOGUE,
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
     DROPRATE_ATTENTION,
@@ -72,12 +72,9 @@ class TEDPolicy(Policy):
     # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
-        # a list of hidden layers sizes before user embed layer
+        # a list of hidden layers sizes before dialogue and action embed layers
         # number of hidden layers is equal to the length of this list
-        HIDDEN_LAYERS_SIZES_DIALOGUE: [],
-        # a list of hidden layers sizes before bot embed layer
-        # number of hidden layers is equal to the length of this list
-        HIDDEN_LAYERS_SIZES_LABEL: [],
+        HIDDEN_LAYERS_SIZES: {DIALOGUE: [], LABEL: []},
         # number of units in transformer
         TRANSFORMER_SIZE: 128,
         # number of transformer layers
@@ -262,8 +259,6 @@ class TEDPolicy(Policy):
     ) -> None:
         """Train the policy on given training trackers."""
 
-        logger.debug("Started training embedding policy.")
-
         # set numpy random seed
         np.random.seed(self.config[RANDOM_SEED])
 
@@ -282,6 +277,12 @@ class TEDPolicy(Policy):
 
         # extract actual training data to feed to model
         model_data = self._create_model_data(training_data.X, training_data.y)
+        if model_data.is_empty():
+            logger.error(
+                f"Can not train '{self.__class__.__name__}'. No data was provided. "
+                f"Skipping training of the policy."
+            )
+            return
 
         # keep one example for persisting and loading
         self.data_example = {k: [v[:1] for v in vs] for k, vs in model_data.items()}
@@ -452,7 +453,7 @@ class TED(RasaModel):
         config: Dict[Text, Any],
         max_history_tracker_featurizer_used: bool,
         label_data: RasaModelData,
-    ):
+    ) -> None:
         super().__init__(name="TED", random_seed=config[RANDOM_SEED])
 
         self.config = config
@@ -460,6 +461,8 @@ class TED(RasaModel):
 
         # data
         self.data_signature = data_signature
+        self._check_data()
+
         self.predict_data_signature = {
             k: vs for k, vs in data_signature.items() if "dialogue" in k
         }
@@ -475,13 +478,25 @@ class TED(RasaModel):
         )
 
         # metrics
-        self.metric_loss = tf.keras.metrics.Mean(name="loss")
-        self.metric_acc = tf.keras.metrics.Mean(name="acc")
+        self.action_loss = tf.keras.metrics.Mean(name="loss")
+        self.action_acc = tf.keras.metrics.Mean(name="acc")
         self.metrics_to_log += ["loss", "acc"]
 
         # set up tf layers
         self._tf_layers = {}
         self._prepare_layers()
+
+    def _check_data(self) -> None:
+        if "dialogue_features" not in self.data_signature:
+            raise ValueError(
+                f"No text features specified. "
+                f"Cannot train '{self.__class__.__name__}' model."
+            )
+        if "label_features" not in self.data_signature:
+            raise ValueError(
+                f"No label features specified. "
+                f"Cannot train '{self.__class__.__name__}' model."
+            )
 
     def _prepare_layers(self) -> None:
         self._tf_layers["loss.label"] = layers.DotProductLoss(
@@ -496,16 +511,16 @@ class TED(RasaModel):
             parallel_iterations=1 if self.random_seed is not None else 1000,
         )
         self._tf_layers["ffnn.dialogue"] = layers.Ffnn(
-            self.config[HIDDEN_LAYERS_SIZES_DIALOGUE],
+            self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
             self.config[DROPRATE_DIALOGUE],
             self.config[REGULARIZATION_CONSTANT],
-            layer_name_suffix="dialogue",
+            layer_name_suffix=DIALOGUE,
         )
         self._tf_layers["ffnn.label"] = layers.Ffnn(
-            self.config[HIDDEN_LAYERS_SIZES_LABEL],
+            self.config[HIDDEN_LAYERS_SIZES][LABEL],
             self.config[DROPRATE_LABEL],
             self.config[REGULARIZATION_CONSTANT],
-            layer_name_suffix="label",
+            layer_name_suffix=LABEL,
         )
         self._tf_layers["transformer"] = TransformerEncoder(
             self.config[NUM_TRANSFORMER_LAYERS],
@@ -520,18 +535,18 @@ class TED(RasaModel):
             use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
             use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
             max_relative_position=self.config[MAX_RELATIVE_POSITION],
-            name="dialogue_encoder",
+            name=DIALOGUE + "_encoder",
         )
         self._tf_layers["embed.dialogue"] = layers.Embed(
             self.config[EMBED_DIM],
             self.config[REGULARIZATION_CONSTANT],
-            "dialogue",
+            DIALOGUE,
             self.config[SIMILARITY_TYPE],
         )
         self._tf_layers["embed.label"] = layers.Embed(
             self.config[EMBED_DIM],
             self.config[REGULARIZATION_CONSTANT],
-            "label",
+            LABEL,
             self.config[SIMILARITY_TYPE],
         )
 
@@ -588,8 +603,8 @@ class TED(RasaModel):
             dialogue_embed, label_embed, label_in, all_labels_embed, all_labels, mask
         )
 
-        self.metric_loss.update_state(loss)
-        self.metric_acc.update_state(acc)
+        self.action_loss.update_state(loss)
+        self.action_acc.update_state(acc)
 
         return loss
 

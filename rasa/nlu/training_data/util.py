@@ -5,8 +5,8 @@ from typing import Any, Dict, Optional, Text
 
 import rasa.utils.io as io_utils
 from rasa.nlu.constants import (
-    ENTITIES_ATTRIBUTE,
-    EXTRACTOR_ATTRIBUTE,
+    ENTITIES,
+    EXTRACTOR,
     PRETRAINED_EXTRACTORS,
 )
 from rasa.utils.common import raise_warning
@@ -67,7 +67,7 @@ def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:
         example: Serialised training example to inspect.
     """
 
-    example_entities = example.get(ENTITIES_ATTRIBUTE)
+    example_entities = example.get(ENTITIES)
 
     if not example_entities:
         # example contains no entities, so there's nothing to do
@@ -76,7 +76,7 @@ def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:
     trainable_entities = []
 
     for entity in example_entities:
-        if entity.get(EXTRACTOR_ATTRIBUTE) in PRETRAINED_EXTRACTORS:
+        if entity.get(EXTRACTOR) in PRETRAINED_EXTRACTORS:
             logger.debug(
                 f"Excluding entity '{json.dumps(entity)}' from training data. "
                 f"Entity examples extracted by the following classes are not "
@@ -86,4 +86,4 @@ def remove_untrainable_entities_from(example: Dict[Text, Any]) -> None:
         else:
             trainable_entities.append(entity)
 
-    example[ENTITIES_ATTRIBUTE] = trainable_entities
+    example[ENTITIES] = trainable_entities

@@ -1,8 +1,7 @@
 # constants - configuration parameters
 
-HIDDEN_LAYERS_SIZES_TEXT = "hidden_layers_sizes_text"
-HIDDEN_LAYERS_SIZES_LABEL = "hidden_layers_sizes_label"
-HIDDEN_LAYERS_SIZES_DIALOGUE = "hidden_layers_sizes_dialogue"
+LABEL = "label"
+HIDDEN_LAYERS_SIZES = "hidden_layers_sizes"
 SHARE_HIDDEN_LAYERS = "share_hidden_layers"
 
 TRANSFORMER_SIZE = "transformer_size"
@@ -39,7 +38,7 @@ DROPRATE_LABEL = "droprate_label"
 EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
 EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"
 
-LABEL_CLASSIFICATION = "label_classification"
+INTENT_CLASSIFICATION = "intent_classification"
 ENTITY_RECOGNITION = "entity_recognition"
 MASKED_LM = "use_masked_language_model"
 

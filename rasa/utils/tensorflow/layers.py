@@ -35,10 +35,13 @@ class SparseDropout(tf.keras.layers.Dropout):
 class DenseForSparse(tf.keras.layers.Dense):
     """Dense layer for sparse input tensor"""
 
-    def __init__(self, reg_lambda: float, **kwargs) -> None:
-        l1_regularizer = tf.keras.regularizers.l1(reg_lambda)
+    def __init__(self, reg_lambda: float = 0, **kwargs) -> None:
+        if reg_lambda > 0:
+            regularizer = tf.keras.regularizers.l1(reg_lambda)
+        else:
+            regularizer = None
 
-        super().__init__(kernel_regularizer=l1_regularizer, **kwargs)
+        super().__init__(kernel_regularizer=regularizer, **kwargs)
 
     def call(self, inputs: tf.SparseTensor) -> tf.Tensor:
         if not isinstance(inputs, tf.SparseTensor):

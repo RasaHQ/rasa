@@ -4,11 +4,14 @@ from typing import Any, Dict, Optional, Text
 from rasa.constants import DOCS_BASE_URL
 from rasa.nlu.components import any_of
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-from rasa.nlu.constants import TEXT_ATTRIBUTE, DENSE_FEATURE_NAMES, SPARSE_FEATURE_NAMES
-
+from rasa.nlu.constants import (
+    TEXT,
+    DENSE_FEATURE_NAMES,
+    SPARSE_FEATURE_NAMES,
+)
 from rasa.utils.tensorflow.constants import (
-    HIDDEN_LAYERS_SIZES_TEXT,
-    HIDDEN_LAYERS_SIZES_LABEL,
+    LABEL,
+    HIDDEN_LAYERS_SIZES,
     SHARE_HIDDEN_LAYERS,
     NUM_TRANSFORMER_LAYERS,
     BATCH_SIZES,
@@ -24,7 +27,7 @@ from rasa.utils.tensorflow.constants import (
     SPARSE_INPUT_DROPOUT,
     MASKED_LM,
     ENTITY_RECOGNITION,
-    LABEL_CLASSIFICATION,
+    INTENT_CLASSIFICATION,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
     DROPRATE,
@@ -47,21 +50,15 @@ class EmbeddingIntentClassifier(DIETClassifier):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = [
-        any_of(
-            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE], SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
-        )
-    ]
+    requires = [any_of(DENSE_FEATURE_NAMES[TEXT], SPARSE_FEATURE_NAMES[TEXT])]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
-        # sizes of hidden layers before the embedding layer for input words
+        # sizes of hidden layers before the embedding layer
+        # for input words and intent labels,
         # the number of hidden layers is thus equal to the length of this list
-        HIDDEN_LAYERS_SIZES_TEXT: [256, 128],
-        # sizes of hidden layers before the embedding layer for intent labels
-        # the number of hidden layers is thus equal to the length of this list
-        HIDDEN_LAYERS_SIZES_LABEL: [],
+        HIDDEN_LAYERS_SIZES: {TEXT: [256, 128], LABEL: []},
         # Whether to share the hidden layer weights between input words and labels
         SHARE_HIDDEN_LAYERS: False,
         # training parameters
@@ -78,7 +75,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         LEARNING_RATE: 0.001,
         # embedding parameters
         # default dense dimension used if no dense features are present
-        DENSE_DIM: {"text": 512, "label": 20},
+        DENSE_DIM: {TEXT: 512, LABEL: 20},
         # dimension size of embedding vectors
         EMBED_DIM: 20,
         # the type of the similarity
@@ -129,7 +126,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         component_config = component_config or {}
 
         # the following properties are fixed for the EmbeddingIntentClassifier
-        component_config[LABEL_CLASSIFICATION] = True
+        component_config[INTENT_CLASSIFICATION] = True
         component_config[ENTITY_RECOGNITION] = False
         component_config[MASKED_LM] = False
         component_config[BILOU_FLAG] = False

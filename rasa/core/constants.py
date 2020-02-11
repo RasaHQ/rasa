@@ -57,4 +57,5 @@ FORM_POLICY_PRIORITY = 5
 UTTER_PREFIX = "utter_"
 RESPOND_PREFIX = "respond_"
 
+DIALOGUE = "dialogue"
 DEFAULT_CATEGORICAL_SLOT_VALUE = "__other__"
