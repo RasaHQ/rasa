@@ -13,7 +13,6 @@ if typing.TYPE_CHECKING:
 from rasa.nlu.constants import (
     TEXT_ATTRIBUTE,
     TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
 )
@@ -21,11 +20,13 @@ from rasa.nlu.constants import (
 
 class MitieFeaturizer(Featurizer):
 
-    provides = [DENSE_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
-
-    requires = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES] + [
-        "mitie_feature_extractor"
+    provides = [
+        DENSE_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ]
+
+    requires = [
+        TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
+    ] + ["mitie_feature_extractor"]
 
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of

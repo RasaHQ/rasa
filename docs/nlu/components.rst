@@ -57,15 +57,15 @@ MitieNLP
 SpacyNLP
 ~~~~~~~~
 
-:Short: spacy language initializer
+:Short: spaCy language initializer
 :Outputs: nothing
 :Requires: nothing
 :Description:
-    Initializes spacy structures. Every spacy component relies on this, hence this should be put at the beginning
-    of every pipeline that uses any spacy components.
+    Initializes spacy structures. Every spaCy component relies on this, hence this should be put at the beginning
+    of every pipeline that uses any spaCy components.
 :Configuration:
     Language model, default will use the configured language.
-    If the spacy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
+    If the spaCy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
     the model name can be specified using this configuration variable. The name will be passed to ``spacy.load(name)``.
 
     .. code-block:: yaml
@@ -81,6 +81,139 @@ SpacyNLP
           # applications and models it makes sense to differentiate
           # between these two words, therefore setting this to `true`.
           case_sensitive: false
+
+    For more information on how to obtain the spaCy models, head over to
+    :ref:`installing SpaCy <install-spacy>`.
+
+.. _tokenizers:
+
+Tokenizers
+----------
+
+Tokenizers split text into tokens.
+If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
+modeling hierarchical intent structure, use these flags with any tokenizer:
+
+- ``intent_tokenization_flag`` indicates whether to tokenize intent labels or not. By default this flag is set to
+  ``False``, intent will not be tokenized.
+- ``intent_split_symbol`` sets the delimiter string to split the intent labels, default is underscore
+  (``_``).
+
+    .. note:: All tokenizer add an additional token ``__CLS__`` to the end of the list of tokens when tokenizing
+              text and responses.
+
+WhitespaceTokenizer
+~~~~~~~~~~~~~~~~~~~
+
+:Short: Tokenizer using whitespaces as a separator
+:Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
+:Requires: nothing
+:Description:
+    Creates a token for every whitespace separated character sequence.
+:Configuration:
+    Make the tokenizer not case sensitive by adding the ``case_sensitive: False`` option.
+    Default being ``case_sensitive: True``.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "WhitespaceTokenizer"
+          # Flag to check whether to split intents
+          "intent_tokenization_flag": False
+          # Symbol on which intent should be split
+          "intent_split_symbol": "_"
+          # Text will be tokenized with case sensitive as default
+          "case_sensitive": True
+
+
+JiebaTokenizer
+~~~~~~~~~~~~~~
+
+:Short: Tokenizer using Jieba for Chinese language
+:Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
+:Requires: nothing
+:Description:
+    Creates tokens using the Jieba tokenizer specifically for Chinese
+    language. For language other than Chinese, Jieba will work as
+    ``WhitespaceTokenizer``.
+
+    .. note::
+        To use ``JiebaTokenizer`` you need to install Jieba with ``pip install jieba``.
+
+:Configuration:
+    User's custom dictionary files can be auto loaded by specifying the files' directory path via ``dictionary_path``.
+    If the ``dictionary_path`` is ``None`` (the default), then no custom dictionary will be used.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "JiebaTokenizer"
+          dictionary_path: "path/to/custom/dictionary/dir"
+          # Flag to check whether to split intents
+          "intent_tokenization_flag": False
+          # Symbol on which intent should be split
+          "intent_split_symbol": "_"
+
+
+MitieTokenizer
+~~~~~~~~~~~~~~
+
+:Short: Tokenizer using MITIE
+:Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
+:Requires: :ref:`MitieNLP`
+:Description: Creates tokens using the MITIE tokenizer.
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "MitieTokenizer"
+          # Flag to check whether to split intents
+          "intent_tokenization_flag": False
+          # Symbol on which intent should be split
+          "intent_split_symbol": "_"
+
+SpacyTokenizer
+~~~~~~~~~~~~~~
+
+:Short: Tokenizer using spaCy
+:Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
+:Requires: :ref:`SpacyNLP`
+:Description:
+    Creates tokens using the spaCy tokenizer.
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "SpacyTokenizer"
+          # Flag to check whether to split intents
+          "intent_tokenization_flag": False
+          # Symbol on which intent should be split
+          "intent_split_symbol": "_"
+
+.. _ConveRTTokenizer:
+
+ConveRTTokenizer
+~~~~~~~~~~~~~~~~
+
+:Short: Tokenizer using ConveRT
+:Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
+:Requires: nothing
+:Description:
+    Creates tokens using the ConveRT tokenizer. Must be used whenever the ``ConveRTFeaturizer`` is used.
+:Configuration:
+    Make the tokenizer not case sensitive by adding the ``case_sensitive: False`` option.
+    Default being ``case_sensitive: True``.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "SpacyTokenizer"
+          # Flag to check whether to split intents
+          "intent_tokenization_flag": False
+          # Symbol on which intent should be split
+          "intent_split_symbol": "_"
 
 Text Featurizers
 ----------------
@@ -101,17 +234,18 @@ The corresponding classifier can therefore decide what kind of features to use.
 MitieFeaturizer
 ~~~~~~~~~~~~~~~
 
-:Short: MITIE intent featurizer
-:Outputs: nothing, used as an input to intent classifiers that need intent features (e.g. ``SklearnIntentClassifier``)
+:Short:
+    Creates a vector representation of user message and response (if specified) using the spaCy featurizer.
+:Outputs: ``dense_features`` for texts and responses
 :Requires: :ref:`MitieNLP`
 :Type: Dense featurizer
 :Description:
-    Creates feature for intent classification using the MITIE featurizer.
+    Creates features for entity extraction, intent classification, and response classification using the MITIE
+    featurizer.
 
     .. note::
 
-        NOT used by the ``MitieIntentClassifier`` component. Currently, only ``SklearnIntentClassifier`` is able
-        to use precomputed features.
+        NOT used by the ``MitieIntentClassifier`` component.
 
 :Configuration:
     The sentence vector, e.g. the vector of the ``CLS`` token can be calculated in two different ways, either via
@@ -123,19 +257,21 @@ MitieFeaturizer
         pipeline:
         - name: "MitieFeaturizer"
           # Specify what pooling operation should be used to calculate the vector of
-          # the CLS token. Available options: 'mean' and 'max'
+          # the CLS token. Available options: 'mean' and 'max'.
           "pooling": "mean"
 
 
 SpacyFeaturizer
 ~~~~~~~~~~~~~~~
 
-:Short: spacy intent featurizer
-:Outputs: nothing, used as an input to intent classifiers that need intent features (e.g. ``SklearnIntentClassifier``)
+:Short:
+    Creates a vector representation of user message and response (if specified) using the spaCy featurizer.
+:Outputs: ``dense_features`` for texts and responses
 :Requires: :ref:`SpacyNLP`
 :Type: Dense featurizer
 :Description:
-    Creates feature for intent classification using the spacy featurizer.
+    Creates features for entity extraction, intent classification, and response classification using the spaCy
+    featurizer.
 :Configuration:
     The sentence vector, e.g. the vector of the ``CLS`` token can be calculated in two different ways, either via
     mean or via max pooling. You can specify the pooling method in your configuration file with the option ``pooling``.
@@ -146,7 +282,7 @@ SpacyFeaturizer
         pipeline:
         - name: "SpacyFeaturizer"
           # Specify what pooling operation should be used to calculate the vector of
-          # the CLS token. Available options: 'mean' and 'max'
+          # the CLS token. Available options: 'mean' and 'max'.
           "pooling": "mean"
 
 
@@ -156,13 +292,11 @@ ConveRTFeaturizer
 :Short:
     Creates a vector representation of user message and response (if specified) using
     `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model.
-:Outputs:
-    nothing, used as an input to intent classifiers and response selectors that need intent features and response
-    features respectively (e.g. ``DIETClassifier`` and ``ResponseSelector``)
+:Outputs: ``dense_features`` for texts and responses
 :Requires: :ref:`ConveRTTokenizer`
 :Type: Dense featurizer
 :Description:
-    Creates features for intent classification and response selection.
+    Creates features for entity extraction, intent classification, and response selection.
     Uses the `default signature <https://github.com/PolyAI-LDN/polyai-models#tfhub-signatures>`_ to compute vector
     representations of input text.
 
@@ -185,35 +319,36 @@ ConveRTFeaturizer
 RegexFeaturizer
 ~~~~~~~~~~~~~~~
 
-:Short: regex feature creation to support intent and entity classification
-:Outputs: ``text_features`` and ``tokens.pattern``
-:Requires: nothing
+:Short: Creates a vector representation of user message using regular expressions.
+:Outputs: ``sparse_features`` for texts and ``tokens.pattern``
+:Requires: ``tokens``
 :Type: Sparse featurizer
 :Description:
     Creates features for entity extraction and intent classification.
-    During training, the regex intent featurizer creates a list of `regular expressions` defined in the training
+    During training ``RegexFeaturizer`` creates a list of `regular expressions` defined in the training
     data format.
     For each regex, a feature will be set marking whether this expression was found in the input, which will later
     be fed into intent classifier / entity extractor to simplify classification (assuming the classifier has learned
-    during the training phase, that this set feature indicates a certain intent).
+    during the training phase, that this set feature indicates a certain intent / entity).
     Regex features for entity extraction are currently only supported by the ``CRFEntityExtractor`` component!
 
-    .. note:: There needs to be a tokenizer previous to this featurizer in the pipeline!
+:Configuration:
 
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "RegexFeaturizer"
 
 CountVectorsFeaturizer
 ~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: Creates bag-of-words representation of user message and label (intent and response) features
-:Outputs:
-   nothing, used as an input to intent classifiers that
-   need bag-of-words representation of intent features
-   (e.g. ``DIETClassifier``)
-:Requires: nothing
+:Short: Creates bag-of-words representation of user messages, intents, and responses.
+:Outputs: ``sparse_features`` for texts, intents, and responses
+:Requires: ``tokens``
 :Type: Sparse featurizer
 :Description:
     Creates features for intent classification and response selection.
-    Creates bag-of-words representation of user message and label features using
+    Creates bag-of-words representation of user message, intent, and response using
     `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_.
     All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
@@ -250,7 +385,7 @@ CountVectorsFeaturizer
         In this case during prediction all unknown words will be treated as this generic word ``OOV_token``.
 
         For example, one might create separate intent ``outofscope`` in the training data containing messages of
-        different number of ``OOV_token`` s and maybe some additional general words.
+        different number of ``OOV_token``s and maybe some additional general words.
         Then an algorithm will likely classify a message with unknown words as this intent ``outofscope``.
 
         .. note::
@@ -319,9 +454,8 @@ CountVectorsFeaturizer
 LexicalSyntacticFeaturizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: Lexical and syntactic feature creation to support entity extraction.
-:Outputs:
-   ``text_sparse_features``
+:Short: Creates lexical and syntactic features for user message to support entity extraction.
+:Outputs: ``sparse_features`` for texts
 :Requires: ``tokens``
 :Type: Sparse featurizer
 :Description:
@@ -339,7 +473,8 @@ LexicalSyntacticFeaturizer
     EOS             Checks if the token is at the end of the sentence.
     low             Checks if the token is lower case.
     upper           Checks if the token is upper case.
-    title           Checks if the token starts with an uppercase character and all remaining characters are lowercased.
+    title           Checks if the token starts with an uppercase character and all remaining characters are
+                    lowercased.
     digit           Checks if the token contains just digits.
     prefix5         Take the first five characters of the token.
     prefix2         Take the first two characters of the token.
@@ -352,7 +487,7 @@ LexicalSyntacticFeaturizer
     ==============  =============================================================================================
 
     As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
-    previous words, the current word in the sliding window, and the next words.
+    previous words, the current word, and the next words in the sliding window.
     You define the features as [before, token, after] array.
     If you, for example, want to define features for the token before, the current token, and the token after,
     your features configuration could look like this:
@@ -387,6 +522,7 @@ LexicalSyntacticFeaturizer
 Intent Classifiers
 ------------------
 
+Intent classifiers assign one of the intents defined in the domain file to incoming user messages.
 
 MitieIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~
@@ -395,7 +531,7 @@ MitieIntentClassifier
     MITIE intent classifier (using a
     `text categorizer <https://github.com/mit-nlp/MITIE/blob/master/examples/python/text_categorizer_pure_model.py>`_)
 :Outputs: ``intent``
-:Requires: A tokenizer and a featurizer
+:Requires: ``tokens`` for user message
 :Output-Example:
 
     .. code-block:: json
@@ -419,9 +555,9 @@ MitieIntentClassifier
 SklearnIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: sklearn intent classifier
+:Short: Sklearn intent classifier
 :Outputs: ``intent`` and ``intent_ranking``
-:Requires: A featurizer
+:Requires: ``dense_features`` for user message
 :Output-Example:
 
     .. code-block:: json
@@ -442,14 +578,14 @@ SklearnIntentClassifier
 
 :Description:
     The sklearn intent classifier trains a linear SVM which gets optimized using a grid search. In addition
-    to other classifiers it also provides rankings of the labels that did not "win". The spacy intent classifier
-    needs to be preceded by a featurizer in the pipeline. This featurizer creates the features used for the
-    classification.
+    to other classifiers it also provides rankings of the labels that did not "win". The ``SklearnIntentClassifier``
+    needs to be preceded by a dense featurizer in the pipeline. This dense featurizer creates the features used for
+    the classification.
 
 :Configuration:
     During the training of the SVM a hyperparameter search is run to
     find the best parameter set. In the config, you can specify the parameters
-    that will get tried
+    that will get tried.
 
     .. code-block:: yaml
 
@@ -463,12 +599,146 @@ SklearnIntentClassifier
           # This is used with the ``C`` hyperparameter in GridSearchCV.
           kernels: ["linear"]
 
+EmbeddingIntentClassifier
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Short: Dual Intent Entity Transformer used for intent classification
+:Outputs: ``intent`` and ``intent_ranking``
+:Requires: ``dense_features`` and/or ``sparse_features`` for user message and intent (optional)
+:Output-Example:
+
+    .. code-block:: json
+
+        {
+            "intent": {"name": "greet", "confidence": 0.78343},
+            "intent_ranking": [
+                {
+                    "confidence": 0.1485910906220309,
+                    "name": "goodbye"
+                },
+                {
+                    "confidence": 0.08161531595656784,
+                    "name": "restaurant_search"
+                }
+            ]
+        }
+
+:Description:
+    The ``EmbeddingIntentClassifier`` embeds user inputs and intent labels into the same space.
+    Supervised embeddings are trained by maximizing similarity between them.
+    This algorithm is based on `StarSpace <https://arxiv.org/abs/1709.03856>`_.
+    However, in this implementation the loss function is slightly different and
+    additional hidden layers are added together with dropout.
+    This algorithm also provides similarity rankings of the labels that did not "win".
+
+    The ``EmbeddingIntentClassifier`` needs to be preceded by a featurizer in the pipeline.
+    This featurizer creates the features used for the embeddings.
+    It is recommended to use ``CountVectorsFeaturizer`` that can be optionally preceded
+    by ``SpacyNLP`` and ``SpacyTokenizer``.
+
+    .. note:: If during prediction time a message contains **only** words unseen during training,
+              and no Out-Of-Vacabulary preprocessor was used,
+              empty intent ``None`` is predicted with confidence ``0.0``.
+
+    .. warning::
+        ``EmbeddingIntentClassifier`` is deprecated and should be replaced by ``DIETClassifier``. See
+        `migration guide <https://rasa.com/docs/rasa/migration-guide/#rasa-1-7-to-rasa-1-8>`_ for more details.
+
+
+:Configuration:
+
+    The algorithm has hyperparameters to control:
+
+        - neural network's architecture:
+
+            - ``hidden_layers_sizes_text`` sets a list of hidden layer sizes before
+              the embedding layer for user inputs, the number of hidden layers
+              is equal to the length of the list
+            - ``hidden_layers_sizes_label`` sets a list of hidden layer sizes before
+              the embedding layer for intent labels, the number of hidden layers
+              is equal to the length of the list
+            - ``share_hidden_layers`` if set to True, shares the hidden layers between user inputs and intent label
+
+        - training:
+
+            - ``batch_size`` sets the number of training examples in one
+              forward/backward pass, the higher the batch size, the more
+              memory space you'll need;
+            - ``batch_strategy`` sets the type of batching strategy,
+              it should be either ``sequence`` or ``balanced``;
+            - ``epochs`` sets the number of times the algorithm will see
+              training data, where one ``epoch`` equals one forward pass and
+              one backward pass of all the training examples;
+            - ``random_seed`` if set to any int will get reproducible
+              training results for the same inputs;
+            - ``learning_rate`` to set the learning rate of the optimizer
+
+        - embedding:
+
+            - ``dense_dimension`` sets the dimensions
+            - ``embedding_dimension`` sets the dimension of embedding space;
+            - ``number_of_negative_examples`` sets the number of incorrect intent labels,
+              the algorithm will minimize their similarity to the user
+              input during training;
+            - ``similarity_type`` sets the type of the similarity,
+              it should be either ``auto``, ``cosine`` or ``inner``,
+              if ``auto``, it will be set depending on ``loss_type``,
+              ``inner`` for ``softmax``, ``cosine`` for ``margin``;
+            - ``loss_type`` sets the type of the loss function,
+              it should be either ``softmax`` or ``margin``;
+            - ``ranking_length`` defines the number of top confidences over
+              which to normalize ranking results if ``loss_type: "softmax"``;
+              to turn off normalization set it to 0
+            - ``maximum_positive_similarity`` controls how similar the algorithm should try
+              to make embedding vectors for correct intent labels,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``maximum_negative_similarity`` controls maximum negative similarity for
+              incorrect intents,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``use_maximum_negative_similarity`` if ``true`` the algorithm only
+              minimizes maximum similarity over incorrect intent labels,
+              used only if ``loss_type`` is set to ``margin``;
+            - ``scale_loss`` if ``true`` the algorithm will downscale the loss
+              for examples where correct label is predicted with high confidence,
+              used only if ``loss_type`` is set to ``softmax``;
+
+        - regularization:
+
+            - ``l2_regularization`` sets the scale of L2 regularization
+            - ``C_emb`` sets the scale of how important is to minimize
+              the maximum similarity between embeddings of different intent labels;
+            - ``droprate`` sets the dropout rate, it should be
+              between ``0`` and ``1``, e.g. ``droprate=0.1``
+              would drop out ``10%`` of input units;
+            - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not
+
+    .. note:: For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should be between ``-1`` and ``1``.
+
+    .. note:: There is an option to use linearly increasing batch size. The idea comes from
+              `<https://arxiv.org/abs/1711.00489>`_.
+              In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
+              If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
+
+    In the config, you can specify these parameters.
+    The default values are defined in ``EmbeddingIntentClassifier.defaults``:
+
+    .. literalinclude:: ../../rasa/nlu/classifiers/embedding_intent_classifier.py
+       :dedent: 4
+       :start-after: # default properties (DOC MARKER - don't remove)
+       :end-before: # end default properties (DOC MARKER - don't remove)
+
+    .. note:: Parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original
+              starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity`` and
+              ``use_maximum_negative_similarity = False``.
+              See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+
+
 DIETClassifier
 ~~~~~~~~~~~~~~
 
 :Short: Dual Intent Entity Transformer used for intent classification and entity extraction
 :Outputs: ``intent`` and ``intent_ranking``
-:Requires: A featurizer
+:Requires: ``dense_features`` and/or ``sparse_features`` for user message and intent (optional)
 :Output-Example:
 
     .. code-block:: json
@@ -488,14 +758,14 @@ DIETClassifier
         }
 
 :Description:
-    The embedding intent classifier embeds user inputs and intent labels into the same space.
+    The ``DIETClassifier`` embeds user inputs and intent labels into the same space.
     Supervised embeddings are trained by maximizing similarity between them.
     This algorithm is based on `StarSpace <https://arxiv.org/abs/1709.03856>`_.
     However, in this implementation the loss function is slightly different and
     additional hidden layers are added together with dropout.
     This algorithm also provides similarity rankings of the labels that did not "win".
 
-    The embedding intent classifier needs to be preceded by a featurizer in the pipeline.
+    The ``DIETClassifier`` needs to be preceded by a featurizer in the pipeline.
     This featurizer creates the features used for the embeddings.
     It is recommended to use ``CountVectorsFeaturizer`` that can be optionally preceded
     by ``SpacyNLP`` and ``SpacyTokenizer``.
@@ -689,100 +959,6 @@ Response Selector
        :dedent: 4
        :start-after: # default properties (DOC MARKER - don't remove)
        :end-before: # end default properties (DOC MARKER - don't remove)
-
-.. _tokenizers:
-
-Tokenizers
-----------
-
-If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
-modeling hierarchical intent structure, use these flags with any tokenizer:
-
-- ``intent_tokenization_flag`` indicates whether to tokenize intent labels or not. By default this flag is set to
-  ``False``, intent will not be tokenized.
-- ``intent_split_symbol`` sets the delimiter string to split the intent labels, default is underscore
-  (``_``).
-
-    .. note:: All tokenizer add an additional token ``__CLS__`` to the end of the list of tokens when tokenizing
-              text and responses.
-
-WhitespaceTokenizer
-~~~~~~~~~~~~~~~~~~~
-
-:Short: Tokenizer using whitespaces as a separator
-:Outputs: nothing
-:Requires: nothing
-:Description:
-    Creates a token for every whitespace separated character sequence. Can be used to define tokens for the MITIE entity
-    extractor.
-:Configuration:
-    Make the tokenizer not case sensitive by adding the ``case_sensitive: false`` option. Default being ``case_sensitive: true``.
-
-    .. code-block:: yaml
-
-        pipeline:
-        - name: "WhitespaceTokenizer"
-          case_sensitive: false
-
-JiebaTokenizer
-~~~~~~~~~~~~~~
-
-:Short: Tokenizer using Jieba for Chinese language
-:Outputs: nothing
-:Requires: nothing
-:Description:
-    Creates tokens using the Jieba tokenizer specifically for Chinese
-    language. For language other than Chinese, Jieba will work as
-    ``WhitespaceTokenizer``. Can be used to define tokens for the
-    MITIE entity extractor. Make sure to install Jieba, ``pip install jieba``.
-:Configuration:
-    User's custom dictionary files can be auto loaded by specific the files' directory path via ``dictionary_path``
-
-    .. code-block:: yaml
-
-        pipeline:
-        - name: "JiebaTokenizer"
-          dictionary_path: "path/to/custom/dictionary/dir"
-
-If the ``dictionary_path`` is ``None`` (the default), then no custom dictionary will be used.
-
-MitieTokenizer
-~~~~~~~~~~~~~~
-
-:Short: Tokenizer using MITIE
-:Outputs: nothing
-:Requires: :ref:`MitieNLP`
-:Description:
-    Creates tokens using the MITIE tokenizer. Can be used to define
-    tokens for the MITIE entity extractor.
-:Configuration:
-
-    .. code-block:: yaml
-
-        pipeline:
-        - name: "MitieTokenizer"
-
-SpacyTokenizer
-~~~~~~~~~~~~~~
-
-:Short: Tokenizer using spacy
-:Outputs: nothing
-:Requires: :ref:`SpacyNLP`
-:Description:
-    Creates tokens using the spacy tokenizer. Can be used to define
-    tokens for the MITIE entity extractor.
-
-.. _ConveRTTokenizer:
-
-ConveRTTokenizer
-~~~~~~~~~~~~~~~~
-
-:Short: Tokenizer using ConveRT
-:Outputs: nothing
-:Requires: nothing
-:Description:
-    Creates tokens using the ConveRT tokenizer. Must be used whenever the ``ConveRTFeaturizer`` is used.
-
 
 
 Entity Extractors

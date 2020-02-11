@@ -12,7 +12,7 @@ UNIDIRECTIONAL_ENCODER = "unidirectional_encoder"
 
 MAX_SEQ_LENGTH = "maximum_sequence_length"
 
-BATCH_SIZES = "batch_sizes"
+BATCH_SIZES = "batch_size"
 BATCH_STRATEGY = "batch_strategy"
 EPOCHS = "epochs"
 RANDOM_SEED = "random_seed"
