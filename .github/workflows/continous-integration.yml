@@ -129,8 +129,8 @@ jobs:
       with:
         python-version: 3.6
     - name: Build Distributions
-        run: |
-          python setup.py sdist bdist_wheel
+      run: |
+        python setup.py sdist bdist_wheel
     - name: Publish 📦 to Test PyPI
       uses: pypa/gh-action-pypi-publish@master
       with:
