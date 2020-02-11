@@ -644,7 +644,7 @@ class SQLTrackerStore(TrackerStore):
 
         # Users might specify a url in the host
         parsed = urlsplit(host or "")
-        if parsed.scheme:
+        if parsed.scheme and parsed.hostname:
             return host
 
         if host:
