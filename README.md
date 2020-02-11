@@ -3,7 +3,7 @@
 [![Join the chat on Rasa Community Forum](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![PyPI version](https://badge.fury.io/py/rasa.svg)](https://badge.fury.io/py/rasa)
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/rasa.svg)](https://pypi.python.org/pypi/rasa)
-[![Build Status](https://travis-ci.com/RasaHQ/rasa.svg?branch=master)](https://travis-ci.com/RasaHQ/rasa)
+[![Build Status](https://github.com/RasaHQ/rasa/workflows/Continous%20Integration/badge.svg?event=push)](https://github.com/RasaHQ/rasa/actions/runs/)
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa?branch=master)
 [![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs)
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git.svg?type=shield)](https://app.fossa.com/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git?ref=badge_shield)
@@ -130,7 +130,7 @@ JOBS=[n] make test
 Where `[n]` is the number of jobs desired. If omitted, `[n]` will be automatically chosen by pytest.
 
 ### Steps to release a new version
-Releasing a new version is quite simple, as the packages are build and distributed by travis.
+Releasing a new version is quite simple, as the packages are build and distributed by GitHub Actions.
 
 *Terminology*:
 * patch release (third version part increases): 1.1.2 -> 1.1.3
@@ -147,7 +147,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
     git tag 1.2.0 -m "next release"
     git push origin 1.2.0
     ```
-    travis will build this tag and push a package to [pypi](https://pypi.python.org/pypi/rasa)
+    GitHub will build this tag and push a package to [pypi](https://pypi.python.org/pypi/rasa)
 6. **If this is a minor release**, a new release branch should be created pointing to the same commit as the tag to allow for future patch releases, e.g.
     ```bash
     git checkout -b 1.2.x
@@ -158,7 +158,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
 
 To ensure a standardized code style we use the formatter [black](https://github.com/ambv/black).
 To ensure our type annotations are correct we use the type checker [pytype](https://github.com/google/pytype). 
-If your code is not formatted properly or doesn't type check, travis will fail to build.
+If your code is not formatted properly or doesn't type check, GitHub will fail to build.
 
 #### Formatting
 
@@ -186,7 +186,7 @@ We use `sphinx-versioning` to build docs for tagged versions and for the master 
 The static site that gets built is pushed to the `docs` branch of this repo, which doesn't contain
 any code, only the site.
 
-We host the site on netlify. On master branch builds (see `.travis.yml`), we push the built docs to the `docs`
+We host the site on netlify. On master branch builds (see `.github/workflows/documentation.yml`), we push the built docs to the `docs`
 branch. Netlify automatically re-deploys the docs pages whenever there is a change to that branch.
 
 
