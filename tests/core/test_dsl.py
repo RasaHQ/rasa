@@ -25,6 +25,7 @@ from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
     BinarySingleStateFeaturizer,
 )
+from rasa.utils.io import DEFAULT_ENCODING
 
 
 async def test_can_read_test_story(default_domain):
@@ -73,7 +74,7 @@ async def test_persist_and_read_test_story_graph(tmpdir, default_domain):
         "data/test_stories/stories.md", default_domain
     )
     out_path = tmpdir.join("persisted_story.md")
-    with open(out_path.strpath, "w", encoding="utf-8") as f:
+    with open(out_path.strpath, "w", encoding=DEFAULT_ENCODING) as f:
         f.write(graph.as_story_string())
 
     recovered_trackers = await training.load_data(
