@@ -56,18 +56,22 @@ jobs:
         python -m pip install -U 'pip<20'
         pip install -r requirements-dev.txt
         pip install -e .
-#    - name: Lint code
-#      run: |
-#        make lint
-#    - name: Check types
-#      run: |
-#        make types
+    - name: Lint code
+      run: |
+        make lint
+    - name: Check types
+      run: |
+        make types
+    - name: Make sure the CLI is running
+      # makes sure we catch any dependency error early. they will create strange
+      # errors during the docs build, so easier to catch them early on by
+      # trying to run the `rasa` command once before the docs build.
+      run: |
+        rasa --help
     - name: Test Docs
       run: |
         pip install -r requirements-docs.txt
         pip install -e .[sql]
-        which rasa
-        rasa --help
         cd docs && make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
 
   test:
