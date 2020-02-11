@@ -639,17 +639,17 @@ class SQLTrackerStore(TrackerStore):
             URL ready to be used with an SQLAlchemy `Engine` object.
 
         """
-        from urllib.parse import urlsplit
+        from urllib import parse
         from sqlalchemy.engine.url import URL
 
         # Users might specify a url in the host
-        parsed = urlsplit(host or "")
+        parsed = parse.urlsplit(host or "")
         if parsed.scheme and parsed.hostname:
             return host
 
         if host:
             # add fake scheme to properly parse components
-            parsed = urlsplit("schema://" + host)
+            parsed = parse.urlsplit("schema://" + host)
 
             # users might include the port in the url
             port = parsed.port or port
