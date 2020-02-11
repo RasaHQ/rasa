@@ -152,10 +152,10 @@ sphinx-autodoc-typehints = "==1.6.0"
 rasa = "rasa.__main__:main"
 
 [tool.poetry.extras]
-spacy-models = [ "en_core_web_md de_core_news_sm",]
+spacy-models = [ "en_core_web_md", "de_core_news_sm",]
 mitie = [ "mitie",]
-spacie = [ "spacie",]
-full = [ "mitie", "spacie", "tensorflow_text",]
+spacy = [ "spacy",]
+full = [ "mitie", "spacy", "tensorflow_text",]
 gh-release-notes = [ "pypandoc", "github3.py",]
 
 [tool.poetry.dependencies.en_core_web_md]

@@ -22,23 +22,26 @@ ENV POETRY_VERSION 1.0.3
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
 ENV PATH "/root/.poetry/bin:/opt/venv/bin:${PATH}"
 
+# copy files
+COPY . /app/
+
 # install dependencies
-COPY . /opt/rasa/
 RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
   pip install --no-cache-dir -U pip && \
-  cd /opt/rasa && \
-  poetry install --no-dev --no-interaction
+  cd /app && \
+  poetry install --no-interaction
 
 # start a new build stage
 FROM python:3.6-slim
 
 # copy everything from /opt
-COPY --from=python_builder /opt /opt
+COPY --from=python_builder /opt/venv /opt/venv
+COPY --from=python_builder /app /app
 ENV PATH="/opt/venv/bin:$PATH"
 
-# change user
-RUN chgrp -R 0 /opt/rasa && chmod -R g=u /opt/rasa
+# update permissions & change user
+RUN chgrp -R 0 /app && chmod -R g=u /app
 USER 1001
 
 # Create a volume for temporary data
