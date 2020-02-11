@@ -132,8 +132,8 @@ jobs:
   deploy:
     name: Deploy to PyPI
     runs-on: ubuntu-latest
-    # if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
-
+    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+    needs: [quality, test, api]
     steps:
     - name: Checkout git repository
       uses: actions/checkout@v2
@@ -157,8 +157,8 @@ jobs:
         SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
         GITHUB_TAG: ${{ github.ref }}
         GITHUB_REPO_SLUG: ${{ github.repository }}
-      # python3 scripts/publish_gh_release_notes.py
       run: |
         sudo apt-get -y install pandoc
         pip install -U github3.py pypandoc
+        python3 scripts/publish_gh_release_notes.py
         ./scripts/ping_slack_about_package_release.sh
