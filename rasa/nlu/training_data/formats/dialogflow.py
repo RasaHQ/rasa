@@ -1,13 +1,14 @@
 import logging
-import warnings
 import os
 import typing
-from typing import Any, Text, Optional
+from typing import Any, Dict, Optional, Text, List, Tuple
 
+from rasa.constants import DOCS_URL_MIGRATE_GOOGLE
+import rasa.utils.io
 from rasa.nlu import utils
 from rasa.nlu.training_data.formats.readerwriter import TrainingDataReader
 from rasa.nlu.training_data.util import transform_entity_synonyms
-import rasa.utils.io
+from rasa.utils.common import raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
@@ -40,14 +41,19 @@ class DialogflowReader(TrainingDataReader):
         examples_js = self._read_examples_js(fn, language, fformat)
 
         if not examples_js:
-            warnings.warn(f"No training examples found for dialogflow file {fn}!")
+            raise_warning(
+                f"No training examples found for dialogflow file {fn}!",
+                docs=DOCS_URL_MIGRATE_GOOGLE,
+            )
             return TrainingData()
         elif fformat == DIALOGFLOW_INTENT:
             return self._read_intent(root_js, examples_js)
         else:  # path for DIALOGFLOW_ENTITIES
             return self._read_entities(root_js, examples_js)
 
-    def _read_intent(self, intent_js, examples_js):
+    def _read_intent(
+        self, intent_js: Dict[Text, Any], examples_js: List[Dict[Text, Any]]
+    ) -> "TrainingData":
         """Reads the intent and examples from respective jsons."""
         from rasa.nlu.training_data import Message, TrainingData
 
@@ -60,7 +66,9 @@ class DialogflowReader(TrainingDataReader):
 
         return TrainingData(training_examples)
 
-    def _join_text_chunks(self, chunks):
+    def _join_text_chunks(
+        self, chunks: List[Dict[Text, Any]]
+    ) -> Tuple[Text, List[Dict[Text, Any]]]:
         """Combines text chunks and extracts entities."""
 
         utterance = ""
@@ -74,7 +82,9 @@ class DialogflowReader(TrainingDataReader):
         return utterance, entities
 
     @staticmethod
-    def _extract_entity(chunk, current_offset):
+    def _extract_entity(
+        chunk: Dict[Text, Any], current_offset: int
+    ) -> Optional[Dict[Text, Any]]:
         """Extract an entity from a chunk if present."""
 
         entity = None
@@ -89,18 +99,20 @@ class DialogflowReader(TrainingDataReader):
         return entity
 
     @staticmethod
-    def _flatten(list_of_lists):
+    def _flatten(list_of_lists: List[List[Any]]) -> List[Any]:
         return [item for items in list_of_lists for item in items]
 
     @staticmethod
-    def _extract_lookup_tables(name, examples):
+    def _extract_lookup_tables(
+        name: Text, examples: List[Dict[Text, Any]]
+    ) -> Optional[List[Dict[Text, Any]]]:
         """Extract the lookup table from the entity synonyms"""
         synonyms = [e["synonyms"] for e in examples if "synonyms" in e]
         synonyms = DialogflowReader._flatten(synonyms)
         elements = [synonym for synonym in synonyms if "@" not in synonym]
 
         if len(elements) == 0:
-            return False
+            return None
         return [{"name": name, "elements": elements}]
 
     @staticmethod
@@ -114,7 +126,7 @@ class DialogflowReader(TrainingDataReader):
         return TrainingData([], entity_synonyms, [], lookup_tables)
 
     @staticmethod
-    def _read_examples_js(fn: Text, language: Text, fformat: Text) -> Optional[Text]:
+    def _read_examples_js(fn: Text, language: Text, fformat: Text) -> Any:
         """Infer and load the example file based on the root
         filename and root format."""
 

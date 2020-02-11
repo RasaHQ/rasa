@@ -1,14 +1,21 @@
+import logging
+from typing import Optional, Text
+
 import pytest
 import tempfile
 from jsonschema import ValidationError
 
+from rasa.nlu.constants import TEXT_ATTRIBUTE
 from rasa.nlu import training_data
 from rasa.nlu.convert import convert_training_data
+from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.training_data.formats import MarkdownReader
-from rasa.nlu.training_data.formats.rasa import validate_rasa_nlu_data
+from rasa.nlu.training_data.formats import MarkdownReader, MarkdownWriter
+from rasa.nlu.training_data.formats.rasa import validate_rasa_nlu_data, RasaReader
 from rasa.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.nlu.training_data.util import get_file_format
 import rasa.utils.io as io_utils
@@ -48,7 +55,7 @@ def test_validation_is_throwing_exceptions(invalid_data):
 
 
 def test_luis_data():
-    td = training_data.load_data("data/examples/luis/demo-restaurants.json")
+    td = training_data.load_data("data/examples/luis/demo-restaurants_v5.json")
 
     assert not td.is_empty()
     assert len(td.entity_examples) == 8
@@ -188,6 +195,27 @@ def test_train_test_split(filepaths):
 
 
 @pytest.mark.parametrize(
+    "filepaths",
+    [["data/examples/rasa/demo-rasa.md", "data/examples/rasa/demo-rasa-responses.md"]],
+)
+def test_train_test_split_with_random_seed(filepaths):
+    from rasa.importers.utils import training_data_from_paths
+
+    td = training_data_from_paths(filepaths, language="en")
+
+    td_train_1, td_test_1 = td.train_test_split(train_frac=0.8, random_seed=1)
+    td_train_2, td_test_2 = td.train_test_split(train_frac=0.8, random_seed=1)
+    train_1_intent_examples = [e.text for e in td_train_1.intent_examples]
+    train_2_intent_examples = [e.text for e in td_train_2.intent_examples]
+
+    test_1_intent_examples = [e.text for e in td_test_1.intent_examples]
+    test_2_intent_examples = [e.text for e in td_test_2.intent_examples]
+
+    assert train_1_intent_examples == train_2_intent_examples
+    assert test_1_intent_examples == test_2_intent_examples
+
+
+@pytest.mark.parametrize(
     "files",
     [
         ("data/examples/rasa/demo-rasa.json", "data/test/multiple_files_json"),
@@ -247,7 +275,7 @@ def test_repeated_entities():
         example = td.entity_examples[0]
         entities = example.get("entities")
         assert len(entities) == 1
-        tokens = WhitespaceTokenizer().tokenize(example.text)
+        tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT_ATTRIBUTE)
         start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
         assert start == 9
         assert end == 10
@@ -281,7 +309,7 @@ def test_multiword_entities():
         example = td.entity_examples[0]
         entities = example.get("entities")
         assert len(entities) == 1
-        tokens = WhitespaceTokenizer().tokenize(example.text)
+        tokens = WhitespaceTokenizer().tokenize(example, attribute=TEXT_ATTRIBUTE)
         start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
         assert start == 4
         assert end == 7
@@ -290,7 +318,7 @@ def test_multiword_entities():
 def test_nonascii_entities():
     data = """
 {
-  "luis_schema_version": "2.0",
+  "luis_schema_version": "5.0",
   "utterances" : [
     {
       "text": "I am looking for a ßäæ ?€ö) item",
@@ -394,7 +422,7 @@ def cmp_dict_list(firsts, seconds):
             None,
         ),
         (
-            "data/examples/luis/demo-restaurants.json",
+            "data/examples/luis/demo-restaurants_v5.json",
             "data/test/luis_converted_to_rasa.json",
             "json",
             None,
@@ -539,7 +567,7 @@ def test_markdown_entity_regex():
 
 
 def test_get_file_format():
-    fformat = get_file_format("data/examples/luis/demo-restaurants.json")
+    fformat = get_file_format("data/examples/luis/demo-restaurants_v5.json")
 
     assert fformat == "json"
 
@@ -639,3 +667,41 @@ def test_dump_nlu_with_responses():
 
     dumped = nlu_data.nlu_as_markdown()
     assert dumped == md
+
+
+@pytest.mark.parametrize(
+    "entity_extractor,expected_output",
+    [
+        (None, "- [test](word:random)"),
+        ("", "- [test](word:random)"),
+        ("random-extractor", "- [test](word:random)"),
+        (CRFEntityExtractor.__name__, "- [test](word:random)"),
+        (DucklingHTTPExtractor.__name__, "- test"),
+        (SpacyEntityExtractor.__name__, "- test"),
+        (MitieEntityExtractor.__name__, "- [test](word:random)"),
+    ],
+)
+def test_dump_trainable_entities(
+    entity_extractor: Optional[Text], expected_output: Text
+):
+    training_data_json = {
+        "rasa_nlu_data": {
+            "common_examples": [
+                {
+                    "text": "test",
+                    "intent": "greet",
+                    "entities": [
+                        {"start": 0, "end": 4, "value": "random", "entity": "word"}
+                    ],
+                }
+            ]
+        }
+    }
+    if entity_extractor is not None:
+        training_data_json["rasa_nlu_data"]["common_examples"][0]["entities"][0][
+            "extractor"
+        ] = entity_extractor
+
+    training_data_object = RasaReader().read_from_json(training_data_json)
+    md_dump = MarkdownWriter().dumps(training_data_object)
+    assert md_dump.splitlines()[1] == expected_output

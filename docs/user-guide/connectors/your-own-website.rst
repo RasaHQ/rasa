@@ -9,7 +9,7 @@ Your Own Website
 
 If you just want an easy way for users to test your bot, the best option
 is usually the chat interface that ships with Rasa X, where you can `invite users
-to test your bot <../../rasa-x/docs/get-feedback-from-test-users>`_.
+to test your bot <../../rasa-x/docs/user-guide/enable-workflows#conversations-with-test-users>`_.
 
 If you already have an existing website and want to add a Rasa assistant to it,
 you have a couple of options:

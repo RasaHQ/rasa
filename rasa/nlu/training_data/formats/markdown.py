@@ -11,11 +11,8 @@ from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataWriter,
 )
 from rasa.nlu.utils import build_entity
-from rasa.nlu.constants import (
-    MESSAGE_INTENT_ATTRIBUTE,
-    MESSAGE_RESPONSE_KEY_ATTRIBUTE,
-    RESPONSE_IDENTIFIER_DELIMITER,
-)
+from rasa.nlu.constants import INTENT_ATTRIBUTE
+
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
@@ -116,7 +113,7 @@ class MarkdownReader(TrainingDataReader):
         if match:
             item = match.group(1)
             if self.current_section == INTENT:
-                parsed = self._parse_training_example(item)
+                parsed = self.parse_training_example(item)
                 self.training_examples.append(parsed)
             elif self.current_section == SYNONYM:
                 self._add_synonym(item, self.current_title)
@@ -172,7 +169,7 @@ class MarkdownReader(TrainingDataReader):
             if e_text != e["value"]:
                 self._add_synonym(e_text, e["value"])
 
-    def _parse_training_example(self, example: Text) -> "Message":
+    def parse_training_example(self, example: Text) -> "Message":
         """Extract entities and synonyms, and convert to plain text."""
         from rasa.nlu.training_data import Message
 
@@ -214,11 +211,14 @@ class MarkdownWriter(TrainingDataWriter):
     def _generate_training_examples_md(self, training_data: "TrainingData") -> Text:
         """Generates markdown training examples."""
 
+        import rasa.nlu.training_data.util as rasa_nlu_training_data_utils
+
         training_examples = OrderedDict()
 
         # Sort by intent while keeping basic intent order
         for example in [e.as_dict_nlu() for e in training_data.training_examples]:
-            intent = example[MESSAGE_INTENT_ATTRIBUTE]
+            rasa_nlu_training_data_utils.remove_untrainable_entities_from(example)
+            intent = example[INTENT_ATTRIBUTE]
             training_examples.setdefault(intent, [])
             training_examples[intent].append(example)
 
@@ -234,7 +234,7 @@ class MarkdownWriter(TrainingDataWriter):
             prepend_newline = True
 
             lines += [
-                self._generate_item_md(self._generate_message_md(example))
+                self._generate_item_md(self.generate_message_md(example))
                 for example in examples
             ]
 
@@ -308,7 +308,8 @@ class MarkdownWriter(TrainingDataWriter):
 
         return f"  {encode_string(text)}\n"
 
-    def _generate_message_md(self, message: Dict[Text, Any]) -> Text:
+    @staticmethod
+    def generate_message_md(message: Dict[Text, Any]) -> Text:
         """Generates markdown for a message object."""
 
         md = ""
@@ -325,7 +326,7 @@ class MarkdownWriter(TrainingDataWriter):
 
             for entity in entities:
                 md += text[pos : entity["start"]]
-                md += self._generate_entity_md(text, entity)
+                md += MarkdownWriter.generate_entity_md(text, entity)
                 pos = entity["end"]
 
         md += text[pos:]
@@ -333,7 +334,7 @@ class MarkdownWriter(TrainingDataWriter):
         return md
 
     @staticmethod
-    def _generate_entity_md(text: Text, entity: Dict) -> Text:
+    def generate_entity_md(text: Text, entity: Dict) -> Text:
         """Generates markdown for an entity object."""
 
         entity_text = text[entity["start"] : entity["end"]]

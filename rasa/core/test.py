@@ -12,18 +12,25 @@ from rasa.core.events import ActionExecuted, UserUttered
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.io import DEFAULT_ENCODING
-import matplotlib
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
 
-try:
-    # If the `tkinter` package is available, we can use the `TkAgg` backend
-    import tkinter
+import matplotlib
 
-    matplotlib.use("TkAgg")
-except ImportError:
-    matplotlib.use("agg")
+# At first, matplotlib will be initialized with default OS-specific available backend
+# if that didn't happen, we'll try to set it up manually
+if matplotlib.get_backend() is not None:
+    pass
+else:  # pragma: no cover
+    try:
+        # If the `tkinter` package is available, we can use the `TkAgg` backend
+        import tkinter
+
+        matplotlib.use("TkAgg")
+    except ImportError:
+        matplotlib.use("agg")
+
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +102,7 @@ class EvaluationStore:
             self.action_targets
             + self.intent_targets
             + [
-                MarkdownWriter._generate_entity_md(gold.get("text"), gold)
+                MarkdownWriter.generate_entity_md(gold.get("text"), gold)
                 for gold in self.entity_targets
             ]
         )
@@ -103,7 +110,7 @@ class EvaluationStore:
             self.action_predictions
             + self.intent_predictions
             + [
-                MarkdownWriter._generate_entity_md(predicted.get("text"), predicted)
+                MarkdownWriter.generate_entity_md(predicted.get("text"), predicted)
                 for predicted in self.entity_predictions
             ]
         )
@@ -481,6 +488,7 @@ async def test(
     out_directory: Optional[Text] = None,
     fail_on_prediction_errors: bool = False,
     e2e: bool = False,
+    disable_plotting: bool = False,
 ):
     """Run the evaluation of the stories, optionally plot the results."""
     from rasa.nlu.test import get_evaluation_metrics
@@ -511,6 +519,7 @@ async def test(
             accuracy,
             story_evaluation.in_training_data_fraction,
             out_directory,
+            disable_plotting,
         )
 
     log_failed_stories(story_evaluation.failed_stories, out_directory)
@@ -559,6 +568,7 @@ def plot_story_evaluation(
     accuracy,
     in_training_data_fraction,
     out_directory,
+    disable_plotting,
 ):
     """Plot the results of story evaluation"""
     from sklearn.metrics import confusion_matrix
@@ -576,6 +586,9 @@ def plot_story_evaluation(
         in_training_data_fraction,
         include_report=True,
     )
+
+    if disable_plotting:
+        return
 
     cnf_matrix = confusion_matrix(test_y, predictions)
 

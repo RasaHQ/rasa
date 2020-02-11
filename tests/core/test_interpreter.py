@@ -102,7 +102,7 @@ async def test_http_interpreter(endpoint_url, joined_url):
         mocked.post(joined_url)
 
         endpoint = EndpointConfig(endpoint_url)
-        interpreter = RasaNLUHttpInterpreter(endpoint=endpoint)
+        interpreter = RasaNLUHttpInterpreter(endpoint_config=endpoint)
         await interpreter.parse(text="message_text", message_id="message_id")
 
         r = latest_request(mocked, "POST", joined_url)

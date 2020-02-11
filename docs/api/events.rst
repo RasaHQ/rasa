@@ -88,7 +88,7 @@ Reset all Slots
 Schedule a reminder
 ~~~~~~~~~~~~~~~~~~~
 
-:Short: Schedule an action to be executed in the future.
+:Short: Schedule an intent to be triggered in the future.
 :JSON:
     .. literalinclude:: ../../tests/core/test_events.py
       :lines: 1-
@@ -99,8 +99,33 @@ Schedule a reminder
     .. autoclass:: rasa.core.events.ReminderScheduled
 
 :Effect:
-    When added to a tracker, core will schedule the action to be
-    run in the future.
+    When added to a tracker, Rasa Core will schedule the intent (and entities) to be
+    triggered in the future, in place of a user input. You can link
+    this intent to an action of your choice using the :ref:`mapping-policy`.
+
+
+Cancel a reminder
+~~~~~~~~~~~~~~~~~~~
+
+:Short: Cancel one or more reminders.
+:JSON:
+    .. literalinclude:: ../../tests/core/test_events.py
+      :lines: 1-
+      :start-after: # DOCS MARKER ReminderCancelled
+      :dedent: 4
+      :end-before: # DOCS END
+:Class:
+    .. autoclass:: rasa.core.events.ReminderCancelled
+
+:Effect:
+    When added to a tracker, Rasa Core will cancel any outstanding reminders that
+    match the ``ReminderCancelled`` event. For example,
+
+    - ``ReminderCancelled(intent="greet")`` cancels all reminders with intent ``greet``
+    - ``ReminderCancelled(entities={...})`` cancels all reminders with the given entities
+    - ``ReminderCancelled("...")`` cancels the one unique reminder with the given name
+    - ``ReminderCancelled()`` cancels all reminders
+
 
 Pause a conversation
 ~~~~~~~~~~~~~~~~~~~~
@@ -271,3 +296,25 @@ Log an executed action
     .. literalinclude:: ../../rasa/core/events/__init__.py
       :dedent: 4
       :pyobject: ActionExecuted.apply_to
+
+Start a new conversation session
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Short: Marks the beginning of a new conversation session. Resets the tracker and
+        triggers an ``ActionSessionStart`` which by default applies the existing
+        ``SlotSet`` events to the new session.
+
+:JSON:
+    .. literalinclude:: ../../tests/core/test_events.py
+      :start-after: # DOCS MARKER SessionStarted
+      :dedent: 4
+      :end-before: # DOCS END
+:Class:
+    .. autoclass:: rasa.core.events.SessionStarted
+
+:Effect:
+    When added to a tracker, this is the code used to update the tracker:
+
+    .. literalinclude:: ../../rasa/core/events/__init__.py
+      :dedent: 4
+      :pyobject: SessionStarted.apply_to

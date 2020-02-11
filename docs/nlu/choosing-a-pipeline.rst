@@ -66,7 +66,7 @@ examples are already very similar, the intent classified for both is highly like
 large enough training data.
 
     .. note::
-        To use ``pretrained_embeddings_convert`` pipeline, you should install ``tensorflow_text==1.15.1`` and ``tensorflow_hub==0.6.0``. Otherwise, you can also pip install Rasa with ``pip install rasa[convert]``
+        To use ``pretrained_embeddings_convert`` pipeline, you should install ``tensorflow-text==1.15.1`` and ``tensorflow-hub==0.6.0``. Otherwise, you can also pip install Rasa with ``pip install rasa[convert]``. Please also note that tensorflow-text is only currently supported on Linux platforms.
 
 supervised_embeddings
 ~~~~~~~~~~~~~~~~~~~~~
@@ -304,6 +304,27 @@ featurizes text based on words. The second one featurizes text based on characte
 n-grams, preserving word boundaries. We empirically found the second featurizer 
 to be more powerful, but we decided to keep the first featurizer as well to make
 featurization more robust.
+
+.. _section_pretrained_embeddings_convert_pipeline:
+
+pretrained_embeddings_convert
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To use the ``pretrained_embeddings_convert`` template:
+
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_convert.yml
+    :language: yaml
+
+To use the components and configure them separately:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "ConveRTTokenizer"
+    - name: "ConveRTFeaturizer"
+    - name: "EmbeddingIntentClassifier"
 
 .. _section_pretrained_embeddings_spacy_pipeline:
 

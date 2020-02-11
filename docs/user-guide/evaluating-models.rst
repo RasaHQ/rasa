@@ -35,7 +35,7 @@ If you've done this, you can see how well your NLU model predicts the test cases
 
 .. code-block:: bash
 
-   rasa test nlu -u test_set.md --model models/nlu-20180323-145833.tar.gz
+   rasa test nlu -u train_test_split/test_data.md --model models/nlu-20180323-145833.tar.gz
 
 
 If you don't want to create a separate test set, you can
@@ -97,10 +97,6 @@ Improving the quality of your training data will move the blue
 histogram bars to the right and the red histogram bars
 to the left of the plot.
 
-
-.. note::
-    A confusion matrix will **only** be created if you are evaluating a model on a test set.
-    In cross-validation mode, the confusion matrix will not be generated.
 
 .. warning::
     If any of your entities are incorrectly annotated, your evaluation may fail. One common problem

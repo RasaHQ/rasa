@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import pickle
-import warnings
 
 import numpy as np
 from typing import Any, List, Optional, Text, Dict, Tuple
@@ -24,6 +23,8 @@ from rasa.utils import train_utils
 import tensorflow as tf
 
 # avoid warning println on contrib import - remove for tf 2
+from rasa.utils.common import raise_warning
+
 tf.contrib._warning = None
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,9 @@ class EmbeddingPolicy(Policy):
         "similarity_type": "auto",  # string 'auto' or 'cosine' or 'inner'
         # the type of the loss function
         "loss_type": "softmax",  # string 'softmax' or 'margin'
+        # number of top actions to normalize scores for softmax loss_type
+        # set to 0 to turn off normalization
+        "ranking_length": 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct labels
         "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
@@ -192,6 +196,7 @@ class EmbeddingPolicy(Policy):
                 self.similarity_type = "inner"
             elif self.loss_type == "margin":
                 self.similarity_type = "cosine"
+        self.ranking_length = config["ranking_length"]
 
         self.mu_pos = config["mu_pos"]
         self.mu_neg = config["mu_neg"]
@@ -252,25 +257,25 @@ class EmbeddingPolicy(Policy):
     # noinspection PyPep8Naming
     def _create_session_data(
         self, data_X: "np.ndarray", data_Y: Optional["np.ndarray"] = None
-    ) -> "train_utils.SessionData":
-        """Combine all tf session related data into a named tuple"""
-
+    ) -> "train_utils.SessionDataType":
+        """Combine all tf session related data into dict."""
         if data_Y is not None:
             # training time
             label_ids = self._label_ids_for_Y(data_Y)
             Y = self._label_features_for_Y(label_ids)
-
-            # idea taken from sklearn's stratify split
-            if label_ids.ndim == 2:
-                # for multi-label y, map each distinct row to a string repr
-                # using join because str(row) uses an ellipsis if len(row) > 1000
-                label_ids = np.array([" ".join(row.astype("str")) for row in label_ids])
+            # explicitly add last dimension to label_ids
+            # to track correctly dynamic sequences
+            label_ids = np.expand_dims(label_ids, -1)
         else:
             # prediction time
             label_ids = None
             Y = None
 
-        return train_utils.SessionData(X=data_X, Y=Y, label_ids=label_ids)
+        return {
+            "dialogue_features": [data_X],
+            "bot_features": [Y],
+            "action_ids": [label_ids],
+        }
 
     def _create_tf_bot_embed(self, b_in: "tf.Tensor") -> "tf.Tensor":
         """Create embedding bot vector."""
@@ -331,9 +336,9 @@ class EmbeddingPolicy(Policy):
 
     def _build_tf_train_graph(self) -> Tuple["tf.Tensor", "tf.Tensor"]:
         """Bulid train graph using iterator."""
+        # iterator returns a_in, b_in, action_ids
+        self.a_in, self.b_in, _ = self._iterator.get_next()
 
-        # session data are int counts but we need a float tensors
-        self.a_in, self.b_in = self._iterator.get_next()
         if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer):
             # add time dimension if max history featurizer is used
             self.b_in = self.b_in[:, tf.newaxis, :]
@@ -364,23 +369,25 @@ class EmbeddingPolicy(Policy):
         )
 
     # prepare for prediction
-    def _create_tf_placeholders(self, session_data: "train_utils.SessionData") -> None:
+    def _create_tf_placeholders(
+        self, session_data: "train_utils.SessionDataType"
+    ) -> None:
         """Create placeholders for prediction."""
 
         dialogue_len = None  # use dynamic time
         self.a_in = tf.placeholder(
             dtype=tf.float32,
-            shape=(None, dialogue_len, session_data.X.shape[-1]),
+            shape=(None, dialogue_len, session_data["dialogue_features"][0].shape[-1]),
             name="a",
         )
         self.b_in = tf.placeholder(
             dtype=tf.float32,
-            shape=(None, dialogue_len, None, session_data.Y.shape[-1]),
+            shape=(None, dialogue_len, None, session_data["bot_features"][0].shape[-1]),
             name="b",
         )
 
     def _build_tf_pred_graph(
-        self, session_data: "train_utils.SessionData"
+        self, session_data: "train_utils.SessionDataType"
     ) -> "tf.Tensor":
         """Rebuild tf graph for prediction."""
 
@@ -440,7 +447,10 @@ class EmbeddingPolicy(Policy):
 
         if self.evaluate_on_num_examples:
             session_data, eval_session_data = train_utils.train_val_split(
-                session_data, self.evaluate_on_num_examples, self.random_seed
+                session_data,
+                self.evaluate_on_num_examples,
+                self.random_seed,
+                label_key="action_ids",
             )
         else:
             eval_session_data = None
@@ -458,7 +468,11 @@ class EmbeddingPolicy(Policy):
                 train_init_op,
                 eval_init_op,
             ) = train_utils.create_iterator_init_datasets(
-                session_data, eval_session_data, batch_size_in, self.batch_strategy
+                session_data,
+                eval_session_data,
+                batch_size_in,
+                self.batch_strategy,
+                label_key="action_ids",
             )
 
             self._is_training = tf.placeholder_with_default(False, shape=())
@@ -512,7 +526,9 @@ class EmbeddingPolicy(Policy):
                 session_data = self._create_session_data(
                     training_data.X, training_data.y
                 )
-                train_dataset = train_utils.create_tf_dataset(session_data, batch_size)
+                train_dataset = train_utils.create_tf_dataset(
+                    session_data, batch_size, label_key="action_ids"
+                )
                 train_init_op = self._iterator.make_initializer(train_dataset)
                 self.session.run(train_init_op)
 
@@ -535,7 +551,7 @@ class EmbeddingPolicy(Policy):
         data_X = self.featurizer.create_X([tracker], domain)
         session_data = self._create_session_data(data_X)
 
-        return {self.a_in: session_data.X}
+        return {self.a_in: session_data["dialogue_features"][0]}
 
     def predict_action_probabilities(
         self, tracker: "DialogueStateTracker", domain: "Domain"
@@ -556,14 +572,18 @@ class EmbeddingPolicy(Policy):
         tf_feed_dict = self.tf_feed_dict_for_prediction(tracker, domain)
 
         confidence = self.session.run(self.pred_confidence, feed_dict=tf_feed_dict)
+        confidence = confidence[0, -1, :]
 
-        return confidence[0, -1, :].tolist()
+        if self.loss_type == "softmax" and self.ranking_length > 0:
+            confidence = train_utils.normalize(confidence, self.ranking_length)
+
+        return confidence.tolist()
 
     def persist(self, path: Text) -> None:
         """Persists the policy to a storage."""
 
         if self.session is None:
-            warnings.warn(
+            logger.debug(
                 "Method `persist(...)` was called "
                 "without a trained model present. "
                 "Nothing to persist then!"
@@ -572,7 +592,11 @@ class EmbeddingPolicy(Policy):
 
         self.featurizer.persist(path)
 
-        meta = {"priority": self.priority}
+        meta = {
+            "priority": self.priority,
+            "loss_type": self.loss_type,
+            "ranking_length": self.ranking_length,
+        }
 
         meta_file = os.path.join(path, "embedding_policy.json")
         rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
@@ -654,7 +678,7 @@ class EmbeddingPolicy(Policy):
 
         return cls(
             featurizer=featurizer,
-            priority=meta["priority"],
+            priority=meta.pop("priority"),
             graph=graph,
             session=session,
             user_placeholder=a_in,
@@ -666,4 +690,5 @@ class EmbeddingPolicy(Policy):
             bot_embed=bot_embed,
             all_bot_embed=all_bot_embed,
             attention_weights=attention_weights,
+            **meta,
         )

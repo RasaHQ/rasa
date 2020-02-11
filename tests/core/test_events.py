@@ -1,12 +1,12 @@
-import time
-from typing import Type
-
-import pytz
-from datetime import datetime
 import copy
 
 import pytest
+import pytz
+import time
+from datetime import datetime
 from dateutil import parser
+from typing import Type
+
 from rasa.core import utils
 from rasa.core.events import (
     Event,
@@ -16,6 +16,7 @@ from rasa.core.events import (
     ActionExecuted,
     AllSlotsReset,
     ReminderScheduled,
+    ReminderCancelled,
     ConversationResumed,
     ConversationPaused,
     StoryExported,
@@ -24,6 +25,7 @@ from rasa.core.events import (
     FollowupAction,
     UserUtteranceReverted,
     AgentUttered,
+    SessionStarted,
 )
 
 
@@ -42,6 +44,7 @@ from rasa.core.events import (
         (StoryExported(), None),
         (ActionReverted(), None),
         (UserUtteranceReverted(), None),
+        (SessionStarted(), None),
         (ActionExecuted("my_action"), ActionExecuted("my_other_action")),
         (FollowupAction("my_action"), FollowupAction("my_other_action")),
         (
@@ -53,8 +56,8 @@ from rasa.core.events import (
             AgentUttered("my_other_test", "my_other_data"),
         ),
         (
-            ReminderScheduled("my_action", datetime.now()),
-            ReminderScheduled("my_other_action", datetime.now()),
+            ReminderScheduled("my_intent", datetime.now()),
+            ReminderScheduled("my_other_intent", datetime.now()),
         ),
     ],
 )
@@ -93,13 +96,14 @@ def test_event_has_proper_implementation(one_event, another_event):
         StoryExported(),
         ActionReverted(),
         UserUtteranceReverted(),
+        SessionStarted(),
         ActionExecuted("my_action"),
         ActionExecuted("my_action", "policy_1_KerasPolicy", 0.8),
         FollowupAction("my_action"),
         BotUttered("my_text", {"my_data": 1}),
         AgentUttered("my_text", "my_data"),
-        ReminderScheduled("my_action", datetime.now()),
-        ReminderScheduled("my_action", datetime.now(pytz.timezone("US/Central"))),
+        ReminderScheduled("my_intent", datetime.now()),
+        ReminderScheduled("my_intent", datetime.now(pytz.timezone("US/Central"))),
     ],
 )
 def test_dict_serialisation(one_event):
@@ -122,6 +126,13 @@ def test_json_parse_restarted():
     assert Event.from_parameters(evt) == Restarted()
 
 
+def test_json_parse_session_started():
+    # DOCS MARKER SessionStarted
+    evt = {"event": "session_started"}
+    # DOCS END
+    assert Event.from_parameters(evt) == SessionStarted()
+
+
 def test_json_parse_reset():
     # DOCS MARKER AllSlotsReset
     evt = {"event": "reset_slots"}
@@ -132,18 +143,18 @@ def test_json_parse_reset():
 def test_json_parse_user():
     # fmt: off
     # DOCS MARKER UserUttered
-    evt={
-          "event": "user",
-          "text": "Hey",
-          "parse_data": {
+    evt = {
+        "event": "user",
+        "text": "Hey",
+        "parse_data": {
             "intent": {
-              "name": "greet",
-              "confidence": 0.9
+                "name": "greet",
+                "confidence": 0.9
             },
             "entities": []
-          },
-          "metadata": {},
-        }
+        },
+        "metadata": {},
+    }
     # DOCS END
     # fmt: on
     assert Event.from_parameters(evt) == UserUttered(
@@ -172,20 +183,47 @@ def test_json_parse_rewind():
 def test_json_parse_reminder():
     # fmt: off
     # DOCS MARKER ReminderScheduled
-    evt={
-          "event": "reminder",
-          "action": "my_action",
-          "date_time": "2018-09-03T11:41:10.128172",
-          "name": "my_reminder",
-          "kill_on_user_msg": True,
-        }
+    evt = {
+      "event": "reminder",
+      "intent": "my_intent",
+      "entities": {"entity1": "value1", "entity2": "value2"},
+      "date_time": "2018-09-03T11:41:10.128172",
+      "name": "my_reminder",
+      "kill_on_user_msg": True,
+    }
     # DOCS END
     # fmt: on
     assert Event.from_parameters(evt) == ReminderScheduled(
-        "my_action",
+        "my_intent",
         parser.parse("2018-09-03T11:41:10.128172"),
         name="my_reminder",
         kill_on_user_message=True,
+    )
+
+
+def test_json_parse_reminder_cancelled():
+    # fmt: off
+    # DOCS MARKER ReminderCancelled
+    evt = {
+      "event": "cancel_reminder",
+      "name": "my_reminder",
+      "intent": "my_intent",
+      "entities": [
+            {"entity": "entity1", "value": "value1"},
+            {"entity": "entity2", "value": "value2"},
+        ],
+      "date_time": "2018-09-03T11:41:10.128172",
+    }
+    # DOCS END
+    # fmt: on
+    assert Event.from_parameters(evt) == ReminderCancelled(
+        name="my_reminder",
+        intent="my_intent",
+        entities=[
+            {"entity": "entity1", "value": "value1"},
+            {"entity": "entity2", "value": "value2"},
+        ],
+        timestamp=parser.parse("2018-09-03T11:41:10.128172"),
     )
 
 
@@ -290,7 +328,6 @@ def test_event_metadata_dict(event_class: Type[Event]):
 
 @pytest.mark.parametrize("event_class", utils.all_subclasses(Event))
 def test_event_default_metadata(event_class: Type[Event]):
-
     # Create an event without metadata. When converting the `Event` to a
     # `dict`, it should not include a `metadata` property - unless it's a
     # `UserUttered` or a `BotUttered` event (or subclasses of them), in which

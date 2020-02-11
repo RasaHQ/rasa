@@ -1,9 +1,9 @@
 import asyncio
-import warnings
 import logging
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pytz import UnknownTimeZoneError, utc
+from rasa.utils.common import raise_warning
 
 __scheduler = None
 
@@ -23,7 +23,7 @@ async def scheduler() -> AsyncIOScheduler:
             __scheduler.start()
             return __scheduler
         except UnknownTimeZoneError:
-            warnings.warn(
+            raise_warning(
                 "apscheduler could not find a timezone and is "
                 "defaulting to utc. This is probably because "
                 "your system timezone is not set. "
@@ -51,7 +51,7 @@ async def scheduler() -> AsyncIOScheduler:
         return __scheduler
 
 
-def kill_scheduler():
+def kill_scheduler() -> None:
     """Terminate the scheduler if started.
 
     Another call to `scheduler` will create a new scheduler."""

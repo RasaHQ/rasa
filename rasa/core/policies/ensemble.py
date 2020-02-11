@@ -1,16 +1,15 @@
 import importlib
-import warnings
 import json
 import logging
 import os
 import sys
 from collections import defaultdict
 from datetime import datetime
-from typing import Text, Optional, Any, List, Dict, Tuple
+from typing import Text, Optional, Any, List, Dict, Tuple, Set
 
 import rasa.core
 import rasa.utils.io
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL, DOCS_URL_POLICIES
 
 from rasa.core import utils, training
 from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
@@ -20,7 +19,7 @@ from rasa.core.actions.action import (
     ACTION_RESTART_NAME,
 )
 from rasa.core.domain import Domain
-from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected
+from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected, Event
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
@@ -28,7 +27,7 @@ from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
-from rasa.utils.common import class_from_module_path
+from rasa.utils.common import class_from_module_path, raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +50,7 @@ class PolicyEnsemble:
         self._check_priorities()
         self._check_for_important_policies()
 
-    def _check_for_important_policies(self):
+    def _check_for_important_policies(self) -> None:
         from rasa.core.policies.mapping_policy import MappingPolicy
 
         if not any(isinstance(policy, MappingPolicy) for policy in self.policies):
@@ -67,7 +66,7 @@ class PolicyEnsemble:
             )
 
     @staticmethod
-    def _training_events_from_trackers(training_trackers):
+    def _training_events_from_trackers(training_trackers) -> Dict[Text, Set[Event]]:
         events_metadata = defaultdict(set)
 
         for t in training_trackers:
@@ -107,12 +106,12 @@ class PolicyEnsemble:
 
         for k, v in priority_dict.items():
             if len(v) > 1:
-                warnings.warn(
+                raise_warning(
                     f"Found policies {v} with same priority {k} "
-                    "in PolicyEnsemble. When personalizing "
-                    "priorities, be sure to give all policies "
-                    "different priorities. More information: "
-                    f"{DOCS_BASE_URL}/core/policies/"
+                    f"in PolicyEnsemble. When personalizing "
+                    f"priorities, be sure to give all policies "
+                    f"different priorities.",
+                    docs=DOCS_URL_POLICIES,
                 )
 
     def train(
@@ -146,7 +145,9 @@ class PolicyEnsemble:
         return max_histories
 
     @staticmethod
-    def _create_action_fingerprints(training_events):
+    def _create_action_fingerprints(
+        training_events: Dict[Text, Set[Event]]
+    ) -> Optional[Dict[Any, Dict[Text, List]]]:
         """Fingerprint each action using the events it created during train.
 
         This allows us to emit warnings when the model is used
@@ -216,13 +217,13 @@ class PolicyEnsemble:
             policy.persist(policy_path)
 
     @classmethod
-    def load_metadata(cls, path):
+    def load_metadata(cls, path) -> Any:
         metadata_path = os.path.join(path, "metadata.json")
         metadata = json.loads(rasa.utils.io.read_file(os.path.abspath(metadata_path)))
         return metadata
 
     @staticmethod
-    def ensure_model_compatibility(metadata, version_to_check=None):
+    def ensure_model_compatibility(metadata, version_to_check=None) -> None:
         from packaging import version
 
         if version_to_check is None:
@@ -316,7 +317,10 @@ class PolicyEnsemble:
 
             try:
                 constr_func = registry.policy_from_module_path(policy_name)
-                policy_object = constr_func(**policy)
+                try:
+                    policy_object = constr_func(**policy)
+                except TypeError as e:
+                    raise Exception(f"Could not initialize {policy_name}. {e}")
                 parsed_policies.append(policy_object)
             except (ImportError, AttributeError):
                 raise InvalidPolicyConfig(
@@ -329,7 +333,7 @@ class PolicyEnsemble:
         return parsed_policies
 
     @classmethod
-    def get_featurizer_from_dict(cls, policy):
+    def get_featurizer_from_dict(cls, policy) -> Tuple[Any, Any]:
         # policy can have only 1 featurizer
         if len(policy["featurizer"]) > 1:
             raise InvalidPolicyConfig("policy can have only 1 featurizer")
@@ -340,7 +344,7 @@ class PolicyEnsemble:
         return featurizer_func, featurizer_config
 
     @classmethod
-    def get_state_featurizer_from_dict(cls, featurizer_config):
+    def get_state_featurizer_from_dict(cls, featurizer_config) -> Tuple[Any, Any]:
         # featurizer can have only 1 state featurizer
         if len(featurizer_config["state_featurizer"]) > 1:
             raise InvalidPolicyConfig("featurizer can have only 1 state featurizer")
@@ -363,7 +367,7 @@ class PolicyEnsemble:
 
 class SimplePolicyEnsemble(PolicyEnsemble):
     @staticmethod
-    def is_not_memo_policy(best_policy_name):
+    def is_not_memo_policy(best_policy_name) -> bool:
         is_memo = best_policy_name.endswith("_" + MemoizationPolicy.__name__)
         is_augmented = best_policy_name.endswith(
             "_" + AugmentedMemoizationPolicy.__name__

@@ -39,8 +39,8 @@ which has the following methods:
 
 **verify_intents_in_stories():** Verification for intents in the stories, to check if they are valid.
 
-**verify_utterances():** Checks domain file for consistency between utterance templates and utterances listed under
-actions.
+**verify_utterances():** Checks domain file for consistency between responses listed in the `responses` section 
+and the utterance actions you have defined.
 
 **verify_utterances_in_stories():** Verification for utterances in stories, to check if they are valid.
 

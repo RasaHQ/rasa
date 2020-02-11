@@ -2,7 +2,18 @@ import copy
 import logging
 from collections import deque
 from enum import Enum
-from typing import Dict, Text, Any, Optional, Iterator, Generator, Type, List
+from typing import (
+    Dict,
+    Text,
+    Any,
+    Optional,
+    Iterator,
+    Generator,
+    Type,
+    List,
+    Deque,
+    Iterable,
+)
 
 from rasa.core import events  # pytype: disable=pyi-error
 from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
@@ -17,6 +28,7 @@ from rasa.core.events import (  # pytype: disable=pyi-error
     UserUtteranceReverted,
     BotUttered,
     Form,
+    SessionStarted,
 )
 from rasa.core.domain import Domain  # pytype: disable=pyi-error
 from rasa.core.slots import Slot
@@ -49,11 +61,11 @@ class AnySlotDict(dict):
     This only uses the generic slot type! This means certain functionality wont work,
     e.g. properly featurizing the slot."""
 
-    def __missing__(self, key):
+    def __missing__(self, key) -> Slot:
         value = self[key] = Slot(key)
         return value
 
-    def __contains__(self, key):
+    def __contains__(self, key) -> bool:
         return True
 
 
@@ -92,7 +104,12 @@ class DialogueStateTracker:
             tracker.update(e)
         return tracker
 
-    def __init__(self, sender_id, slots, max_event_history=None):
+    def __init__(
+        self,
+        sender_id: Text,
+        slots: Optional[Iterable[Slot]],
+        max_event_history: Optional[int] = None,
+    ) -> None:
         """Initialize the tracker.
 
         A set of events can be stored externally, and we will run through all
@@ -266,8 +283,7 @@ class DialogueStateTracker:
     ) -> Generator["DialogueStateTracker", None, None]:
         """Returns a generator of the previous trackers of this tracker.
 
-        The resulting array is representing
-        the trackers before each action."""
+        The resulting array is representing the trackers before each action."""
 
         tracker = self.init_copy()
 
@@ -344,7 +360,7 @@ class DialogueStateTracker:
 
         applied_events = []
         for event in self.events:
-            if isinstance(event, Restarted):
+            if isinstance(event, (Restarted, SessionStarted)):
                 applied_events = []
             elif isinstance(event, ActionReverted):
                 undo_till_previous(ActionExecuted, applied_events)
@@ -357,6 +373,7 @@ class DialogueStateTracker:
                 undo_till_previous(ActionExecuted, applied_events)
             else:
                 applied_events.append(event)
+
         return applied_events
 
     def replay_events(self) -> None:
@@ -383,7 +400,7 @@ class DialogueStateTracker:
         self.events.extend(dialogue.events)
         self.replay_events()
 
-    def copy(self):
+    def copy(self) -> "DialogueStateTracker":
         """Creates a duplicate of this tracker"""
         return self.travel_back_in_time(float("inf"))
 
@@ -466,10 +483,10 @@ class DialogueStateTracker:
         def filter_function(e: Event):
             has_instance = isinstance(e, event_type)
             excluded = isinstance(e, ActionExecuted) and e.action_name in to_exclude
-
             return has_instance and not excluded
 
         filtered = filter(filter_function, reversed(self.applied_events()))
+
         for i in range(skip):
             next(filtered, None)
 
@@ -486,7 +503,7 @@ class DialogueStateTracker:
             `True` if last executed action had name `name`, otherwise `False`.
         """
 
-        last = self.get_last_event_for(
+        last: Optional[ActionExecuted] = self.get_last_event_for(
             ActionExecuted, action_names_to_exclude=[ACTION_LISTEN_NAME], skip=skip
         )
         return last is not None and last.action_name == name
@@ -525,19 +542,19 @@ class DialogueStateTracker:
                 "".format(key)
             )
 
-    def _create_events(self, evts: List[Event]) -> deque:
+    def _create_events(self, evts: List[Event]) -> Deque[Event]:
 
         if evts and not isinstance(evts[0], Event):  # pragma: no cover
             raise ValueError("events, if given, must be a list of events")
         return deque(evts, self._max_event_history)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(self, type(other)):
             return other.events == self.events and self.sender_id == other.sender_id
         else:
             return False
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
     def trigger_followup_action(self, action: Text) -> None:

@@ -63,7 +63,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
     All features should be either on or off, denoting them with 1 or 0.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Declares instant variables."""
 
         super().__init__()
@@ -165,7 +165,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         self.user_vocab = None
 
     @staticmethod
-    def _create_label_token_dict(labels, split_symbol="_"):
+    def _create_label_token_dict(labels, split_symbol="_") -> Dict[Text, int]:
         """Splits labels into tokens by using provided symbol.
 
         Creates the lookup dictionary for this tokens.
@@ -427,7 +427,7 @@ class TrackerFeaturizer:
         X, _ = self._featurize_states(trackers_as_states)
         return X
 
-    def persist(self, path):
+    def persist(self, path) -> None:
         featurizer_file = os.path.join(path, "featurizer.json")
         rasa.utils.io.create_directory_for_file(featurizer_file)
 
@@ -435,7 +435,7 @@ class TrackerFeaturizer:
         rasa.utils.io.write_text_file(str(jsonpickle.encode(self)), featurizer_file)
 
     @staticmethod
-    def load(path):
+    def load(path) -> Optional["TrackerFeaturizer"]:
         """Loads the featurizer from file."""
 
         featurizer_file = os.path.join(path, "featurizer.json")
@@ -466,7 +466,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         self.max_len = None
 
     @staticmethod
-    def _calculate_max_len(trackers_as_actions):
+    def _calculate_max_len(trackers_as_actions) -> Optional[int]:
         """Calculate the length of the longest dialogue."""
 
         if trackers_as_actions:
@@ -557,7 +557,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     def __init__(
         self,
         state_featurizer: Optional[SingleStateFeaturizer] = None,
-        max_history: int = None,
+        max_history: Optional[int] = None,
         remove_duplicates: bool = True,
         use_intent_probabilities: bool = False,
     ) -> None:
@@ -584,7 +584,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         return state_features
 
     @staticmethod
-    def _hash_example(states, action):
+    def _hash_example(states, action) -> int:
         """Hash states for efficient deduplication."""
 
         frozen_states = tuple(s if s is None else frozenset(s.items()) for s in states)

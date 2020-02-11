@@ -1,5 +1,4 @@
 import logging
-import warnings
 import os
 import shutil
 import tempfile
@@ -46,7 +45,7 @@ from rasa.model import (
     get_model,
 )
 from rasa.nlu.utils import is_url
-from rasa.utils.common import update_sanic_log_level
+from rasa.utils.common import raise_warning, update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -273,7 +272,7 @@ async def load_agent(
             )
 
         else:
-            warnings.warn("No valid configuration given to load agent.")
+            raise_warning("No valid configuration given to load agent.")
             return None
 
     except Exception as e:
@@ -310,6 +309,7 @@ class Agent:
         if self.domain is not None:
             self.domain.add_requested_slot()
             self.domain.add_knowledge_base_slots()
+            self.domain.add_categorical_slot_default_value()
 
         PolicyEnsemble.check_domain_ensemble_compatibility(
             self.policy_ensemble, self.domain
@@ -336,7 +336,7 @@ class Agent:
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         model_directory: Optional[Text] = None,
     ) -> None:
-        self.domain = domain
+        self.domain = self._create_domain(domain)
         self.policy_ensemble = policy_ensemble
 
         if interpreter:
@@ -410,17 +410,17 @@ class Agent:
             path_to_model_archive=path_to_model_archive,
         )
 
-    def is_core_ready(self):
+    def is_core_ready(self) -> bool:
         """Check if all necessary components and policies are ready to use the agent.
         """
-        return self.is_ready() and self.policy_ensemble
+        return self.is_ready() and self.policy_ensemble is not None
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         """Check if all necessary components are instantiated to use agent.
 
         Policies might not be available, if this is an NLU only agent."""
 
-        return self.tracker_store and self.interpreter
+        return self.tracker_store is not None and self.interpreter is not None
 
     async def parse_message_using_nlu_interpreter(
         self, message_data: Text, tracker: DialogueStateTracker = None
@@ -463,7 +463,7 @@ class Agent:
         """Handle a single message."""
 
         if not isinstance(message, UserMessage):
-            warnings.warn(
+            raise_warning(
                 "Passing a text to `agent.handle_message(...)` is "
                 "deprecated. Rather use `agent.handle_text(...)`.",
                 DeprecationWarning,
@@ -486,11 +486,13 @@ class Agent:
             return await processor.handle_message(message)
 
     # noinspection PyUnusedLocal
-    def predict_next(self, sender_id: Text, **kwargs: Any) -> Optional[Dict[Text, Any]]:
+    async def predict_next(
+        self, sender_id: Text, **kwargs: Any
+    ) -> Optional[Dict[Text, Any]]:
         """Handle a single message."""
 
         processor = self.create_processor()
-        return processor.predict_next(sender_id)
+        return await processor.predict_next(sender_id)
 
     # noinspection PyUnusedLocal
     async def log_message(
@@ -517,6 +519,20 @@ class Agent:
         processor = self.create_processor()
         return await processor.execute_action(
             sender_id, action, output_channel, self.nlg, policy, confidence
+        )
+
+    async def trigger_intent(
+        self,
+        intent_name: Text,
+        entities: List[Dict[Text, Any]],
+        output_channel: OutputChannel,
+        tracker: DialogueStateTracker,
+    ) -> None:
+        """Trigger a user intent, e.g. triggered by an external event."""
+
+        processor = self.create_processor()
+        await processor.trigger_external_user_uttered(
+            intent_name, entities, tracker, output_channel,
         )
 
     async def handle_text(
@@ -577,6 +593,11 @@ class Agent:
     def continue_training(
         self, trackers: List[DialogueStateTracker], **kwargs: Any
     ) -> None:
+        raise_warning(
+            "Continue training will be removed in the 2.0 release. It won't be "
+            "possible to continue the training, you should probably retrain instead.",
+            FutureWarning,
+        )
 
         if not self.is_core_ready():
             raise AgentNotReady("Can't continue training without a policy ensemble.")
@@ -584,7 +605,7 @@ class Agent:
         self.policy_ensemble.continue_training(trackers, self.domain, **kwargs)
         self._set_fingerprint()
 
-    def _max_history(self):
+    def _max_history(self) -> int:
         """Find maximum max_history."""
 
         max_histories = [
@@ -595,7 +616,7 @@ class Agent:
 
         return max(max_histories or [0])
 
-    def _are_all_featurizers_using_a_max_history(self):
+    def _are_all_featurizers_using_a_max_history(self) -> bool:
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
         def has_max_history_featurizer(policy):
@@ -630,7 +651,7 @@ class Agent:
                 unique_last_num_states = max_history
         elif unique_last_num_states < max_history:
             # possibility of data loss
-            warnings.warn(
+            raise_warning(
                 f"unique_last_num_states={unique_last_num_states} but "
                 f"maximum max_history={max_history}. "
                 f"Possibility of data loss. "
@@ -712,7 +733,7 @@ class Agent:
 
         from rasa.core import run
 
-        warnings.warn(
+        raise_warning(
             "Using `handle_channels` is deprecated. "
             "Please use `rasa.run(...)` or see "
             "`rasa.core.run.configure_app(...)` if you want to implement "
@@ -775,6 +796,14 @@ class Agent:
 
     def persist(self, model_path: Text, dump_flattened_stories: bool = False) -> None:
         """Persists this agent into a directory for later loading and usage."""
+
+        if dump_flattened_stories:
+            raise_warning(
+                "The `dump_flattened_stories` argument will be removed from "
+                "`Agent.persist` in the 2.0 release. Please dump your "
+                "training data separately if you need it to be part of the model.",
+                FutureWarning,
+            )
 
         if not self.is_core_ready():
             raise AgentNotReady("Can't persist without a policy ensemble.")
@@ -843,7 +872,7 @@ class Agent:
         )
 
     @staticmethod
-    def _create_domain(domain: Union[Domain, Text]) -> Domain:
+    def _create_domain(domain: Union[Domain, Text, None]) -> Domain:
 
         if isinstance(domain, str):
             domain = Domain.load(domain)
@@ -914,7 +943,7 @@ class Agent:
             model_archive = get_latest_model(model_path)
 
         if model_archive is None:
-            warnings.warn(f"Could not load local model in '{model_path}'.")
+            raise_warning(f"Could not load local model in '{model_path}'.")
             return Agent()
 
         working_directory = tempfile.mkdtemp()

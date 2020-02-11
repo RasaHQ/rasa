@@ -2,12 +2,11 @@ import argparse
 import asyncio
 import importlib.util
 import logging
-import warnings
 import os
 import signal
 import traceback
 from multiprocessing import get_context
-from typing import List, Text, Optional, Tuple, Union, Iterable
+from typing import List, Text, Optional, Tuple, Iterable
 
 import aiohttp
 import ruamel.yaml as yaml
@@ -154,10 +153,10 @@ def _get_event_broker_endpoint(
         return default_event_broker_endpoint
     elif not _is_correct_event_broker(event_broker_endpoint):
         cli_utils.print_error(
-            "Rasa X currently only supports a SQLite event broker with path '{}' "
-            "when running locally. You can deploy Rasa X with Docker "
-            "(https://rasa.com/docs/rasa-x/deploy/) if you want to use "
-            "other event broker configurations.".format(DEFAULT_EVENTS_DB)
+            f"Rasa X currently only supports a SQLite event broker with path '{DEFAULT_EVENTS_DB}' "
+            f"when running locally. You can deploy Rasa X with Docker "
+            f"(https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-quick-install/) "
+            f"if you want to use other event broker configurations."
         )
         continue_with_default_event_broker = questionary.confirm(
             "Do you want to continue with the default SQLite event broker?"
@@ -209,7 +208,7 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
     return p
 
 
-def is_rasa_x_installed():
+def is_rasa_x_installed() -> bool:
     """Check if Rasa X is installed."""
 
     # we could also do something like checking if `import rasax` works,
@@ -271,7 +270,7 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
             "Rasa X is not installed. The `rasa x` "
             "command requires an installation of Rasa X. "
             "Instructions on how to install Rasa X can be found here: "
-            "https://rasa.com/docs/rasa-x/installation-and-setup/."
+            "https://rasa.com/docs/rasa-x/."
         )
 
     if args.port == args.rasa_x_port:
@@ -328,7 +327,7 @@ def rasa_x(args: argparse.Namespace):
 async def _pull_runtime_config_from_server(
     config_endpoint: Optional[Text],
     attempts: int = 60,
-    wait_time_between_pulls: Union[int, float] = 5,
+    wait_time_between_pulls: float = 5,
     keys: Iterable[Text] = ("endpoints", "credentials"),
 ) -> Optional[List[Text]]:
     """Pull runtime config from `config_endpoint`.

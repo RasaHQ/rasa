@@ -1,8 +1,8 @@
-:desc: Rasa OSS Changelog
+:desc: Rasa Open Source Changelog
 
 
-Rasa OSS Change Log
-===================
+Rasa Open Source Change Log
+===========================
 
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
@@ -16,6 +16,261 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
     https://github.com/RasaHQ/rasa/tree/master/changelog/ .
 
 .. towncrier release notes start
+
+[1.7.0] - 2020-01-29
+^^^^^^^^^^^^^^^^^^^^
+
+Deprecations and Removals
+-------------------------
+- `#4964 <https://github.com/rasahq/rasa/issues/4964>`_: The endpoint ``/conversations/<conversation_id>/execute`` is now deprecated. Instead, users should use
+  the ``/conversations/<conversation_id>/trigger_intent`` endpoint and thus trigger intents instead of actions.
+- `#4978 <https://github.com/rasahq/rasa/issues/4978>`_: Remove option ``use_cls_token`` from tokenizers and option ``return_sequence`` from featurizers.
+
+  By default all tokenizer add a special token (``__CLS__``) to the end of the list of tokens.
+  This token will be used to capture the features of the whole utterance.
+
+  The featurizers will return a matrix of size (number-of-tokens x feature-dimension) by default.
+  This allows to train sequence models.
+  However, the feature vector of the ``__CLS__`` token can be used to train non-sequence models.
+  The corresponding classifier can decide what kind of features to use.
+
+Features
+--------
+- `#400 <https://github.com/rasahq/rasa/issues/400>`_: Rename ``templates`` key in domain to ``responses``.
+
+  ``templates`` key will still work for backwards compatibility but will raise a future warning.
+- `#4902 <https://github.com/rasahq/rasa/issues/4902>`_: Added a new configuration parameter, ``ranking_length`` to the ``EmbeddingPolicy``, ``EmbeddingIntentClassifier``,
+  and ``ResponseSelector`` classes.
+- `#4964 <https://github.com/rasahq/rasa/issues/4964>`_: External events and reminders now trigger intents (and entities) instead of actions.
+
+  Add new endpoint ``/conversations/<conversation_id>/trigger_intent``, which lets the user specify an intent and a
+  list of entities that is injected into the conversation in place of a user message. The bot then predicts and
+  executes a response action.
+- `#4978 <https://github.com/rasahq/rasa/issues/4978>`_: Add ``ConveRTTokenizer``.
+
+  The tokenizer should be used whenever the ``ConveRTFeaturizer`` is used.
+
+  Every tokenizer now supports the following configuration options:
+  ``intent_tokenization_flag``: Flag to check whether to split intents (default ``False``).
+  ``intent_split_symbol``: Symbol on which intent should be split (default ``_``)
+
+Improvements
+------------
+- `#1988 <https://github.com/rasahq/rasa/issues/1988>`_: Remove the need of specifying utter actions in the ``actions`` section explicitly if these actions are already
+  listed in the ``templates`` section.
+- `#4877 <https://github.com/rasahq/rasa/issues/4877>`_: Entity examples that have been extracted using an external extractor are excluded
+  from Markdown dumping in ``MarkdownWriter.dumps()``. The excluded external extractors
+  are ``DucklingHTTPExtractor`` and ``SpacyEntityExtractor``.
+- `#4902 <https://github.com/rasahq/rasa/issues/4902>`_: The ``EmbeddingPolicy``, ``EmbeddingIntentClassifier``, and ``ResponseSelector`` now by default normalize confidence
+  levels over the top 10 results. See :ref:`migration-to-rasa-1.7` for more details.
+- `#4964 <https://github.com/rasahq/rasa/issues/4964>`_: ``ReminderCancelled`` can now cancel multiple reminders if no name is given. It still cancels a single
+  reminder if the reminder's name is specified.
+
+Bugfixes
+--------
+- `#4774 <https://github.com/rasahq/rasa/issues/4774>`_: Requests to ``/model/train`` do not longer block other requests to the Rasa server.
+- `#4896 <https://github.com/rasahq/rasa/issues/4896>`_: Fixed default behavior of ``rasa test core --evaluate-model-directory`` when called without ``--model``. Previously, the latest model file was used as ``--model``. Now the default model directory is used instead.
+
+  New behavior of ``rasa test core --evaluate-model-directory`` when given an existing file as argument for ``--model``: Previously, this led to an error. Now a warning is displayed and the directory containing the given file is used as ``--model``.
+- `#5040 <https://github.com/rasahq/rasa/issues/5040>`_: Updated the dependency ``networkx`` from 2.3.0 to 2.4.0. The old version created incompatibilities when using pip. 
+
+  There is an imcompatibility between Rasa dependecy requests 2.22.0 and the own depedency from Rasa for networkx raising errors upon pip install. There is also a bug corrected in ``requirements.txt`` which used ``~=`` instead of ``==``. All of these are fixed using networkx 2.4.0.
+- `#5057 <https://github.com/rasahq/rasa/issues/5057>`_: Fixed compatibility issue with Microsoft Bot Framework Emulator if ``service_url`` lacked a trailing ``/``.
+- `#5092 <https://github.com/rasahq/rasa/issues/5092>`_: DynamoDB tracker store decimal values will now be rounded on save. Previously values exceeding 38 digits caused an unhandled error.
+
+Miscellaneous internal changes
+------------------------------
+- #4458, #4664, #4780, #5029
+
+
+[1.6.2] - 2020-01-28
+^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#4994 <https://github.com/rasahq/rasa/issues/4994>`_: Switching back to a TensorFlow release which only includes CPU support to reduce the
+  size of the dependencies. If you want to use the TensorFlow package with GPU support,
+  please run ``pip install tensorflow-gpu==1.15.0``.
+
+Bugfixes
+--------
+- `#5111 <https://github.com/rasahq/rasa/issues/5111>`_: Fixes ``Exception 'Loop' object has no attribute '_ready'`` error when running 
+  ``rasa init``.
+- `#5126 <https://github.com/rasahq/rasa/issues/5126>`_: Updated the end-to-end ValueError you recieve when you have a invalid story format to point
+  to the updated doc link.
+
+
+[1.6.1] - 2020-01-07
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#4989 <https://github.com/rasahq/rasa/issues/4989>`_: Use an empty domain in case a model is loaded which has no domain
+  (avoids errors when accessing ``agent.doman.<some attribute>``).
+- `#4995 <https://github.com/rasahq/rasa/issues/4995>`_: Replace error message with warning in tokenizers and featurizers if default parameter not set.
+- `#5019 <https://github.com/rasahq/rasa/issues/5019>`_: Pin sanic patch version instead of minor version. Fixes sanic ``_run_request_middleware()`` error.
+- `#5032 <https://github.com/rasahq/rasa/issues/5032>`_: Fix wrong calculation of additional conversation events when saving the conversation.
+  This led to conversation events not being saved.
+- `#5032 <https://github.com/rasahq/rasa/issues/5032>`_: Fix wrong order of conversation events when pushing events to conversations via
+  ``POST /conversations/<conversation_id>/tracker/events``.
+
+
+[1.6.0] - 2019-12-18
+^^^^^^^^^^^^^^^^^^^^
+
+Deprecations and Removals
+-------------------------
+- `#4935 <https://github.com/rasahq/rasa/issues/4935>`_: Removed ``ner_features`` as a feature name from ``CRFEntityExtractor``, use ``text_dense_features`` instead.
+
+  The following settings match the previous ``NGramFeaturizer``:
+
+  .. code-block:: yaml
+
+      - name: 'CountVectorsFeaturizer'
+          analyzer: 'char_wb'
+          min_ngram: 3
+          max_ngram: 17
+          max_features: 10
+          min_df: 5
+- `#4957 <https://github.com/rasahq/rasa/issues/4957>`_: To use custom features in the ``CRFEntityExtractor`` use ``text_dense_features`` instead of ``ner_features``. If
+  ``text_dense_features`` are present in the feature set, the ``CRFEntityExtractor`` will automatically make use of
+  them. Just make sure to add a dense featurizer in front of the ``CRFEntityExtractor`` in your pipeline and set the
+  flag ``return_sequence`` to ``True`` for that featurizer.
+  See https://rasa.com/docs/rasa/nlu/entity-extraction/#passing-custom-features-to-crfentityextractor.
+- `#4990 <https://github.com/rasahq/rasa/issues/4990>`_: Deprecated ``Agent.continue_training``. Instead, a model should be retrained.
+- `#684 <https://github.com/rasahq/rasa/issues/684>`_: Specifying lookup tables directly in the NLU file is now deprecated. Please specify
+  them in an external file.
+
+Features
+--------
+- `#4795 <https://github.com/rasahq/rasa/issues/4795>`_: Replaced the warnings about missing templates, intents etc. in validator.py by debug messages.
+- `#4830 <https://github.com/rasahq/rasa/issues/4830>`_: Added conversation sessions to trackers.
+
+  A conversation session represents the dialog between the assistant and a user.
+  Conversation sessions can begin in three ways: 1. the user begins the conversation
+  with the assistant, 2. the user sends their first message after a configurable period
+  of inactivity, or 3. a manual session start is triggered with the ``/session_start``
+  intent message. The period of inactivity after which a new conversation session is
+  triggered is defined in the domain using the ``session_expiration_time`` key in the
+  ``session_config`` section. The introduction of conversation sessions comprises the
+  following changes:
+
+  - Added a new event ``SessionStarted`` that marks the beginning of a new conversation
+    session.
+  - Added a new default action ``ActionSessionStart``. This action takes all
+    ``SlotSet`` events from the previous session and applies it to the next session.
+  - Added a new default intent ``session_start`` which triggers the start of a new
+    conversation session.
+  - ``SQLTrackerStore`` and ``MongoTrackerStore`` only retrieve
+    events from the last session from the database.
+
+
+  .. note::
+
+    The session behaviour is disabled for existing projects, i.e. existing domains
+    without session config section.
+- `#4935 <https://github.com/rasahq/rasa/issues/4935>`_: Preparation for an upcoming change in the ``EmbeddingIntentClassifier``:
+
+  Add option ``use_cls_token`` to all tokenizers. If it is set to ``True``, the token ``__CLS__`` will be added to
+  the end of the list of tokens. Default is set to ``False``. No need to change the default value for now.
+
+  Add option ``return_sequence`` to all featurizers. By default all featurizers return a matrix of size
+  (1 x feature-dimension). If the option ``return_sequence`` is set to ``True``, the corresponding featurizer will return
+  a matrix of size (token-length x feature-dimension). See https://rasa.com/docs/rasa/nlu/components/#featurizers.
+  Default value is set to ``False``. However, you might want to set it to ``True`` if you want to use custom features
+  in the ``CRFEntityExtractor``.
+  See https://rasa.com/docs/rasa/nlu/entity-extraction/#passing-custom-features-to-crfentityextractor.
+
+  .. warning::
+
+      These changes break model compatibility. You will need to retrain your old models!
+
+Improvements
+------------
+- `#3549 <https://github.com/rasahq/rasa/issues/3549>`_: Added ``--no-plot`` option for ``rasa test`` command, which disables rendering of confusion matrix and histogram. By default plots will be rendered.
+- `#4086 <https://github.com/rasahq/rasa/issues/4086>`_: If matplotlib couldn't set up a default backend, it will be set automatically to TkAgg/Agg one
+- `#4647 <https://github.com/rasahq/rasa/issues/4647>`_: Add the option ```random_seed``` to the ```rasa data split nlu``` command to generate
+  reproducible train/test splits.
+- `#4734 <https://github.com/rasahq/rasa/issues/4734>`_: Changed ``url`` ``__init__()`` arguments for custom tracker stores to ``host`` to reflect the ``__init__`` arguments of 
+  currently supported tracker stores. Note that in ``endpoints.yml``, these are still declared as ``url``.
+- `#4751 <https://github.com/rasahq/rasa/issues/4751>`_: The ``kafka-python`` dependency has become as an "extra" dependency. To use the
+  ``KafkaEventConsumer``, ``rasa`` has to be installed with the ``[kafka]`` option, i.e.
+
+  .. code-block:: bash
+
+    $ pip install rasa[kafka]
+- `#4801 <https://github.com/rasahq/rasa/issues/4801>`_: Allow creation of natural language interpreter and generator by classname reference
+  in ``endpoints.yml``.
+- `#4834 <https://github.com/rasahq/rasa/issues/4834>`_: Made it explicit that interactive learning does not work with NLU-only models.
+
+  Interactive learning no longer trains NLU-only models if no model is provided
+  and no core data is provided.
+- `#4899 <https://github.com/rasahq/rasa/issues/4899>`_: The ``intent_report.json`` created by ``rasa test`` now creates an extra field 
+  ``confused_with`` for each intent. This is a dictionary containing the names of
+  the most common false positives when this intent should be predicted, and the 
+  number of such false positives.
+- `#4976 <https://github.com/rasahq/rasa/issues/4976>`_: ``rasa test nlu --cross-validation`` now also includes an evaluation of the response selector.
+  As a result, the train and test F1-score, accuracy and precision is logged for the response selector.
+  A report is also generated in the ``results`` folder by the name ``response_selection_report.json``
+
+Bugfixes
+--------
+- `#4635 <https://github.com/rasahq/rasa/issues/4635>`_: If a ``wait_time_between_pulls`` is configured for the model server in ``endpoints.yml``,
+  this will be used instead of the default one when running Rasa X.
+- `#4759 <https://github.com/rasahq/rasa/issues/4759>`_: Training Luis data with ``luis_schema_version`` higher than 4.x.x will show a warning instead of throwing an exception.
+- `#4799 <https://github.com/rasahq/rasa/issues/4799>`_: Running ``rasa interactive`` with no NLU data now works, with the functionality of ``rasa interactive core``.
+- `#4917 <https://github.com/rasahq/rasa/issues/4917>`_: When loading models from S3, namespaces (folders within a bucket) are now respected. 
+  Previously, this would result in an error upon loading the model.
+- `#4925 <https://github.com/rasahq/rasa/issues/4925>`_: "rasa init" will ask if user wants to train a model
+- `#4942 <https://github.com/rasahq/rasa/issues/4942>`_: Pin ``multidict`` dependency to 4.6.1 to prevent sanic from breaking,
+  see https://github.com/huge-success/sanic/issues/1729
+- `#4985 <https://github.com/rasahq/rasa/issues/4985>`_: Fix errors during training and testing of ``ResponseSelector``.
+
+
+[1.5.3] - 2019-12-11
+^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#4933 <https://github.com/rasahq/rasa/issues/4933>`_: Improved error message that appears when an incorrect parameter is passed to a policy.
+
+Bugfixes
+--------
+- `#4914 <https://github.com/rasahq/rasa/issues/4914>`_: Added ``rasa/nlu/schemas/config.yml`` to wheel package
+- `#4942 <https://github.com/rasahq/rasa/issues/4942>`_: Pin ``multidict`` dependency to 4.6.1 to prevent sanic from breaking,
+  see https://github.com/huge-success/sanic/issues/1729
+
+
+[1.5.2] - 2019-12-09
+^^^^^^^^^^^^^^^^^^^^
+
+Improvements
+------------
+- `#3684 <https://github.com/rasahq/rasa/issues/3684>`_: ``rasa interactive`` will skip the story visualization of training stories in case
+  there are more than 200 stories. Stories created during interactive learning will be
+  visualized as before.
+- `#4792 <https://github.com/rasahq/rasa/issues/4792>`_: The log level for SocketIO loggers, including ``websockets.protocol``, ``engineio.server``,
+  and ``socketio.server``, is now handled by the ``LOG_LEVEL_LIBRARIES`` environment variable,
+  where the default log level is ``ERROR``.
+- `#4873 <https://github.com/rasahq/rasa/issues/4873>`_: Updated all example bots and documentation to use the updated ``dispatcher.utter_message()`` method from `rasa-sdk==1.5.0`.
+
+Bugfixes
+--------
+- `#3684 <https://github.com/rasahq/rasa/issues/3684>`_: ``rasa interactive`` will not load training stories in case the visualization is
+  skipped.
+- `#4789 <https://github.com/rasahq/rasa/issues/4789>`_: Fixed error where spacy models where not found in the docker images.
+- `#4802 <https://github.com/rasahq/rasa/issues/4802>`_: Fixed unnecessary ``kwargs`` unpacking in ``rasa.test.test_core`` call in ``rasa.test.test`` function.
+- `#4898 <https://github.com/rasahq/rasa/issues/4898>`_: Training data files now get loaded in the same order (especially relevant to subdirectories) each time to ensure training consistency when using a random seed.
+- `#4918 <https://github.com/rasahq/rasa/issues/4918>`_: Locks for tickets in ``LockStore`` are immediately issued without a redundant
+  check for their availability.
+
+Improved Documentation
+----------------------
+- `#4844 <https://github.com/rasahq/rasa/issues/4844>`_: Added ``towncrier`` to automatically collect changelog entries.
+- `#4869 <https://github.com/rasahq/rasa/issues/4869>`_: Document the pipeline for ``pretrained_embeddings_convert`` in the pre-configured pipelines section.
+- `#4894 <https://github.com/rasahq/rasa/issues/4894>`_: ``Proactively Reaching Out to the User Using Actions`` now correctly links to the
+  endpoint specification.
+
 
 [1.5.1] - 2019-11-27
 ^^^^^^^^^^^^^^^^^^^^
@@ -300,7 +555,7 @@ Bugfixes
 - Default one-hot representation for label featurization inside ``EmbeddingIntentClassifier`` if label features don't exist.
 - Policy ensemble no longer incorrectly wrings "missing mapping policy" when
   mapping policy is present.
-- "test" from ``utter_custom_json`` now correctly saved to tracker when using telegram channel
+- "text" from ``utter_custom_json`` now correctly saved to tracker when using telegram channel
 
 Deprecations and Removals
 -------------------------
