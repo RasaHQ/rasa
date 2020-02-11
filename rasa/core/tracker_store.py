@@ -644,7 +644,9 @@ class SQLTrackerStore(TrackerStore):
 
         # Users might specify a url in the host
         parsed = urlsplit(host or "")
+        print(f"URLSPLIT: {parsed}")
         if parsed.scheme:
+            print(f"RETURNING SCHEME!")
             return host
 
         if host:
@@ -655,7 +657,7 @@ class SQLTrackerStore(TrackerStore):
             port = parsed.port or port
             host = parsed.hostname or host
 
-        return URL(
+        url = URL(
             dialect,
             username,
             password,
@@ -664,6 +666,8 @@ class SQLTrackerStore(TrackerStore):
             database=login_db if login_db else db,
             query=query,
         )
+        print(f"RETURNING URL: {url}")
+        return url
 
     def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):
         """Create databse `db` and update engine to reflect the updated `engine_url`."""
