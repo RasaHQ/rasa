@@ -10,18 +10,14 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.constants import DOCS_BASE_URL
-from rasa.nlu.components import any_of
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.constants import (
-    TEXT_ATTRIBUTE,
-    ENTITIES_ATTRIBUTE,
-    DENSE_FEATURE_NAMES,
-    SPARSE_FEATURE_NAMES,
+    TEXT,
+    ENTITIES,
     TOKENS_NAMES,
 )
 from rasa.utils.tensorflow.constants import (
-    HIDDEN_LAYERS_SIZES_TEXT,
-    SHARE_HIDDEN_LAYERS,
+    HIDDEN_LAYERS_SIZES,
     NUM_TRANSFORMER_LAYERS,
     BATCH_SIZES,
     BATCH_STRATEGY,
@@ -35,7 +31,6 @@ from rasa.utils.tensorflow.constants import (
     INTENT_CLASSIFICATION,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
-    UNIDIRECTIONAL_ENCODER,
     DROPRATE,
     C2,
     BILOU_FLAG,
@@ -48,9 +43,9 @@ logger = logging.getLogger(__name__)
 
 class CRFEntityExtractor(DIETClassifier):
 
-    provides = [ENTITIES_ATTRIBUTE]
+    provides = [ENTITIES]
 
-    requires = [TOKENS_NAMES[TEXT_ATTRIBUTE]]
+    requires = [TOKENS_NAMES[TEXT]]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
@@ -79,7 +74,7 @@ class CRFEntityExtractor(DIETClassifier):
         # nn architecture
         # sizes of hidden layers before the embedding layer for input words
         # the number of hidden layers is thus equal to the length of this list
-        HIDDEN_LAYERS_SIZES_TEXT: [256, 128],
+        HIDDEN_LAYERS_SIZES: {TEXT: [256, 128]},
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
@@ -94,7 +89,7 @@ class CRFEntityExtractor(DIETClassifier):
         LEARNING_RATE: 0.001,
         # embedding parameters
         # default dense dimension used if no dense features are present
-        DENSE_DIM: {"text": 512, "label": 20},
+        DENSE_DIM: {TEXT: 512},
         # regularization parameters
         # the scale of L2 regularization
         C2: 0.002,
@@ -130,7 +125,6 @@ class CRFEntityExtractor(DIETClassifier):
         component_config[ENTITY_RECOGNITION] = True
         component_config[MASKED_LM] = False
         component_config[NUM_TRANSFORMER_LAYERS] = 0
-        component_config[SHARE_HIDDEN_LAYERS] = False
 
         super().__init__(
             component_config,

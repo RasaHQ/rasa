@@ -14,13 +14,13 @@ from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    TEXT_ATTRIBUTE,
+    TEXT,
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     SPARSE_FEATURE_NAMES,
-    INTENT_ATTRIBUTE,
+    INTENT,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    RESPONSE_ATTRIBUTE,
+    RESPONSE,
 )
 
 logger = logging.getLogger(__name__)
@@ -222,12 +222,10 @@ class CountVectorsFeaturizer(Featurizer):
 
         return message.get(attribute).split()
 
-    def _process_tokens(
-        self, tokens: List[Text], attribute: Text = TEXT_ATTRIBUTE
-    ) -> List[Text]:
+    def _process_tokens(self, tokens: List[Text], attribute: Text = TEXT) -> List[Text]:
         """Apply processing and cleaning steps to text"""
 
-        if attribute == INTENT_ATTRIBUTE:
+        if attribute == INTENT:
             # Don't do any processing for intent attribute. Treat them as whole labels
             return tokens
 
@@ -264,7 +262,7 @@ class CountVectorsFeaturizer(Featurizer):
         return tokens
 
     def _get_processed_message_tokens_by_attribute(
-        self, message: Message, attribute: Text = TEXT_ATTRIBUTE
+        self, message: Message, attribute: Text = TEXT
     ) -> List[Text]:
         """Get processed text of attribute of a message"""
 
@@ -327,7 +325,7 @@ class CountVectorsFeaturizer(Featurizer):
 
         for attribute in attribute_tokens.keys():
             list_of_tokens = attribute_tokens[attribute]
-            if attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE]:
+            if attribute in [RESPONSE, TEXT]:
                 # vocabulary should not contain CLS token
                 list_of_tokens = [tokens[:-1] for tokens in list_of_tokens]
             attribute_texts[attribute] = [" ".join(tokens) for tokens in list_of_tokens]
@@ -357,7 +355,7 @@ class CountVectorsFeaturizer(Featurizer):
             combined_cleaned_texts += attribute_texts[attribute]
 
         try:
-            self.vectorizers[TEXT_ATTRIBUTE].fit(combined_cleaned_texts)
+            self.vectorizers[TEXT].fit(combined_cleaned_texts)
         except ValueError:
             logger.warning(
                 "Unable to train a shared CountVectorizer. "
@@ -418,13 +416,13 @@ class CountVectorsFeaturizer(Featurizer):
             # set input to list of tokens if sequence should be returned
             # otherwise join all tokens to a single string and pass that as a list
             tokens_without_cls = tokens
-            if attribute in [TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE]:
+            if attribute in [TEXT, RESPONSE]:
                 tokens_without_cls = tokens[:-1]
 
             seq_vec = self.vectorizers[attribute].transform(tokens_without_cls)
             seq_vec.sort_indices()
 
-            if attribute in [TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE]:
+            if attribute in [TEXT, RESPONSE]:
                 tokens_text = [" ".join(tokens_without_cls)]
                 cls_vec = self.vectorizers[attribute].transform(tokens_text)
                 cls_vec.sort_indices()
@@ -515,7 +513,7 @@ class CountVectorsFeaturizer(Featurizer):
             )
             return
 
-        attribute = TEXT_ATTRIBUTE
+        attribute = TEXT
         message_tokens = self._get_processed_message_tokens_by_attribute(
             message, attribute
         )
@@ -566,7 +564,7 @@ class CountVectorsFeaturizer(Featurizer):
                 if self.use_shared_vocab:
                     # Only persist vocabulary from one attribute. Can be loaded and
                     # distributed to all attributes.
-                    vocab = attribute_vocabularies[TEXT_ATTRIBUTE]
+                    vocab = attribute_vocabularies[TEXT]
                 else:
                     vocab = attribute_vocabularies
 

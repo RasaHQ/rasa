@@ -22,9 +22,9 @@ from rasa.utils.tensorflow import tf_layers
 from rasa.utils.tensorflow.tf_models import RasaModel
 from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
 from rasa.nlu.constants import (
-    INTENT_ATTRIBUTE,
-    TEXT_ATTRIBUTE,
-    ENTITIES_ATTRIBUTE,
+    INTENT,
+    TEXT,
+    ENTITIES,
     SPARSE_FEATURE_NAMES,
     DENSE_FEATURE_NAMES,
     TOKENS_NAMES,
@@ -34,8 +34,8 @@ from rasa.nlu.training_data import TrainingData
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message
 from rasa.utils.tensorflow.constants import (
-    HIDDEN_LAYERS_SIZES_TEXT,
-    HIDDEN_LAYERS_SIZES_LABEL,
+    LABEL,
+    HIDDEN_LAYERS_SIZES,
     SHARE_HIDDEN_LAYERS,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
@@ -94,21 +94,15 @@ class DIETClassifier(EntityExtractor):
 
     provides = ["intent", "intent_ranking", "entities"]
 
-    requires = [
-        any_of(
-            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE], SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
-        )
-    ]
+    requires = [any_of(DENSE_FEATURE_NAMES[TEXT], SPARSE_FEATURE_NAMES[TEXT])]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
-        # sizes of hidden layers before the embedding layer for input words
+        # sizes of hidden layers before the embedding layer
+        # for input words and intent labels,
         # the number of hidden layers is thus equal to the length of this list
-        HIDDEN_LAYERS_SIZES_TEXT: [],
-        # sizes of hidden layers before the embedding layer for intent labels
-        # the number of hidden layers is thus equal to the length of this list
-        HIDDEN_LAYERS_SIZES_LABEL: [],
+        HIDDEN_LAYERS_SIZES: {TEXT: [], LABEL: []},
         # Whether to share the hidden layer weights between input words and labels
         SHARE_HIDDEN_LAYERS: False,
         # number of units in transformer
@@ -133,7 +127,7 @@ class DIETClassifier(EntityExtractor):
         LEARNING_RATE: 0.001,
         # embedding parameters
         # default dense dimension used if no dense features are present
-        DENSE_DIM: {"text": 512, "label": 20},
+        DENSE_DIM: {TEXT: 512, LABEL: 20},
         # dimension size of embedding vectors
         EMBED_DIM: 20,
         # the type of the similarity
@@ -201,15 +195,15 @@ class DIETClassifier(EntityExtractor):
                 f"'{MASKED_LM}' option should be 'False'."
             )
 
-        if (
-            self.component_config[SHARE_HIDDEN_LAYERS]
-            and self.component_config[HIDDEN_LAYERS_SIZES_TEXT]
-            != self.component_config[HIDDEN_LAYERS_SIZES_LABEL]
-        ):
-            raise ValueError(
-                "If hidden layer weights are shared, "
-                "hidden_layer_sizes for text and label must coincide."
-            )
+        if self.component_config.get(SHARE_HIDDEN_LAYERS):
+            v1 = next(iter(self.component_config[HIDDEN_LAYERS_SIZES].values()))
+            if any(
+                v != v1 for v in self.component_config[HIDDEN_LAYERS_SIZES].values()
+            ):
+                raise ValueError(
+                    f"If hidden layer weights are shared, "
+                    f"{HIDDEN_LAYERS_SIZES} must coincide."
+                )
 
         self.component_config = train_utils.update_similarity_type(
             self.component_config
@@ -286,7 +280,7 @@ class DIETClassifier(EntityExtractor):
             [
                 e["entity"]
                 for example in training_data.entity_examples
-                for e in example.get(ENTITIES_ATTRIBUTE)
+                for e in example.get(ENTITIES)
             ]
         ) - {None}
 
@@ -353,7 +347,7 @@ class DIETClassifier(EntityExtractor):
         return sparse_features, dense_features
 
     def check_input_dimension_consistency(self, model_data: RasaModelData):
-        if self.component_config[SHARE_HIDDEN_LAYERS]:
+        if self.component_config.get(SHARE_HIDDEN_LAYERS):
             num_text_features = model_data.get_feature_dimension("text_features")
             num_label_features = model_data.get_feature_dimension("label_features")
 
@@ -364,7 +358,7 @@ class DIETClassifier(EntityExtractor):
                 )
 
     def _extract_labels_precomputed_features(
-        self, label_examples: List[Message], attribute: Text = INTENT_ATTRIBUTE
+        self, label_examples: List[Message], attribute: Text = INTENT
     ) -> List[np.ndarray]:
         """Collect precomputed encodings"""
 
@@ -472,7 +466,7 @@ class DIETClassifier(EntityExtractor):
 
         for e in training_data:
             if label_attribute is None or e.get(label_attribute):
-                _sparse, _dense = self._extract_and_add_features(e, TEXT_ATTRIBUTE)
+                _sparse, _dense = self._extract_and_add_features(e, TEXT)
                 if _sparse is not None:
                     X_sparse.append(_sparse)
                 if _dense is not None:
@@ -493,10 +487,8 @@ class DIETClassifier(EntityExtractor):
                     _tags = bilou_utils.tags_to_ids(e, tag_id_dict)
                 else:
                     _tags = []
-                    for t in e.get(TOKENS_NAMES[TEXT_ATTRIBUTE]):
-                        _tag = determine_token_labels(
-                            t, e.get(ENTITIES_ATTRIBUTE), None
-                        )
+                    for t in e.get(TOKENS_NAMES[TEXT]):
+                        _tag = determine_token_labels(t, e.get(ENTITIES), None)
                         _tags.append(tag_id_dict[_tag])
                 # transpose to have seq_len x 1
                 tag_ids.append(np.array([_tags]).T)
@@ -536,20 +528,18 @@ class DIETClassifier(EntityExtractor):
         if self.component_config[BILOU_FLAG]:
             bilou_utils.apply_bilou_schema(training_data)
 
-        label_id_dict = self._create_label_id_dict(
-            training_data, attribute=INTENT_ATTRIBUTE
-        )
+        label_id_dict = self._create_label_id_dict(training_data, attribute=INTENT)
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
 
         self._label_data = self._create_label_data(
-            training_data, label_id_dict, attribute=INTENT_ATTRIBUTE
+            training_data, label_id_dict, attribute=INTENT
         )
 
         tag_id_dict = self._create_tag_id_dict(training_data)
         self.inverted_tag_dict = {v: k for k, v in tag_id_dict.items()}
 
         label_attribute = (
-            INTENT_ATTRIBUTE if self.component_config[INTENT_CLASSIFICATION] else None
+            INTENT if self.component_config[INTENT_CLASSIFICATION] else None
         )
 
         model_data = self._create_model_data(
@@ -923,12 +913,6 @@ class DIET(RasaModel):
         self._num_tags = len(inverted_tag_dict) if inverted_tag_dict is not None else 0
 
         self.config = config
-        if self.config[SHARE_HIDDEN_LAYERS]:
-            self.text_name = "text_label"
-            self.label_name = "text_label"
-        else:
-            self.text_name = "text"
-            self.label_name = "label"
 
         # tf objects
         self._tf_layers = {}
@@ -978,10 +962,12 @@ class DIET(RasaModel):
             self.metrics_to_log += ["e_loss", "e_f1"]
 
     def _prepare_layers(self) -> None:
+        self.text_name = TEXT
         self._prepare_sequence_layers(self.text_name)
         if self.config[MASKED_LM]:
             self._prepare_mask_lm_layers(self.text_name)
         if self.config[INTENT_CLASSIFICATION]:
+            self.label_name = TEXT if self.config[SHARE_HIDDEN_LAYERS] else LABEL
             self._prepare_input_layers(self.label_name)
             self._prepare_label_classification_layers()
         if self.config[ENTITY_RECOGNITION]:
@@ -1034,7 +1020,7 @@ class DIET(RasaModel):
             self.config[DENSE_DIM][name],
         )
         self._tf_layers[f"ffnn.{name}"] = tf_layers.Ffnn(
-            self.config[HIDDEN_LAYERS_SIZES_LABEL],
+            self.config[HIDDEN_LAYERS_SIZES][name],
             self.config[DROPRATE],
             self.config[C2],
             name,

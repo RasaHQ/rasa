@@ -1,8 +1,7 @@
 # constants - configuration parameters
 
-HIDDEN_LAYERS_SIZES_TEXT = "hidden_layers_sizes_text"
-HIDDEN_LAYERS_SIZES_LABEL = "hidden_layers_sizes_label"
-HIDDEN_LAYERS_SIZES_DIALOGUE = "hidden_layers_sizes_dialogue"
+LABEL = "label"
+HIDDEN_LAYERS_SIZES = "hidden_layers_sizes"
 SHARE_HIDDEN_LAYERS = "share_hidden_layers"
 
 TRANSFORMER_SIZE = "transformer_size"

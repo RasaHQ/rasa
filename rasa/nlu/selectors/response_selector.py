@@ -9,8 +9,8 @@ from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier, DIET
 from rasa.nlu.components import any_of
 from rasa.utils.tensorflow.constants import (
-    HIDDEN_LAYERS_SIZES_TEXT,
-    HIDDEN_LAYERS_SIZES_LABEL,
+    LABEL,
+    HIDDEN_LAYERS_SIZES,
     SHARE_HIDDEN_LAYERS,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
@@ -44,11 +44,11 @@ from rasa.utils.tensorflow.constants import (
     BILOU_FLAG,
 )
 from rasa.nlu.constants import (
-    RESPONSE_ATTRIBUTE,
+    RESPONSE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     DEFAULT_OPEN_UTTERANCE_TYPE,
     DENSE_FEATURE_NAMES,
-    TEXT_ATTRIBUTE,
+    TEXT,
     SPARSE_FEATURE_NAMES,
 )
 from rasa.utils.tensorflow.tf_model_data import RasaModelData
@@ -76,27 +76,20 @@ class ResponseSelector(DIETClassifier):
     and additional hidden layers are added together with dropout.
     """
 
-    provides = [RESPONSE_ATTRIBUTE, "response_ranking"]
+    provides = [RESPONSE, "response_ranking"]
 
     requires = [
-        any_of(
-            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE], SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
-        ),
-        any_of(
-            DENSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE],
-            SPARSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE],
-        ),
+        any_of(DENSE_FEATURE_NAMES[TEXT], SPARSE_FEATURE_NAMES[TEXT]),
+        any_of(DENSE_FEATURE_NAMES[RESPONSE], SPARSE_FEATURE_NAMES[RESPONSE],),
     ]
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
-        # sizes of hidden layers before the embedding layer for input words
+        # sizes of hidden layers before the embedding layer
+        # for input words and responses
         # the number of hidden layers is thus equal to the length of this list
-        HIDDEN_LAYERS_SIZES_TEXT: [],
-        # sizes of hidden layers before the embedding layer for intent labels
-        # the number of hidden layers is thus equal to the length of this list
-        HIDDEN_LAYERS_SIZES_LABEL: [],
+        HIDDEN_LAYERS_SIZES: {TEXT: [], LABEL: []},
         # Whether to share the hidden layer weights between input words and intent labels
         SHARE_HIDDEN_LAYERS: False,
         # number of units in transformer
@@ -121,7 +114,7 @@ class ResponseSelector(DIETClassifier):
         LEARNING_RATE: 0.001,
         # embedding parameters
         # default dense dimension used if no dense features are present
-        DENSE_DIM: {"text": 512, "label": 20},
+        DENSE_DIM: {TEXT: 512, LABEL: 512},
         # dimension size of embedding vectors
         EMBED_DIM: 20,
         # the type of the similarity
@@ -231,19 +224,15 @@ class ResponseSelector(DIETClassifier):
         if self.retrieval_intent:
             training_data = training_data.filter_by_intent(self.retrieval_intent)
 
-        label_id_dict = self._create_label_id_dict(
-            training_data, attribute=RESPONSE_ATTRIBUTE
-        )
+        label_id_dict = self._create_label_id_dict(training_data, attribute=RESPONSE)
         self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
 
         self._label_data = self._create_label_data(
-            training_data, label_id_dict, attribute=RESPONSE_ATTRIBUTE
+            training_data, label_id_dict, attribute=RESPONSE
         )
 
         model_data = self._create_model_data(
-            training_data.intent_examples,
-            label_id_dict,
-            label_attribute=RESPONSE_ATTRIBUTE,
+            training_data.intent_examples, label_id_dict, label_attribute=RESPONSE,
         )
 
         self.check_input_dimension_consistency(model_data)
@@ -288,6 +277,9 @@ class DIET2DIET(DIET):
         self.metrics_to_log += ["r_loss", "r_acc"]
 
     def _prepare_layers(self) -> None:
+        self.text_name = TEXT
+        self.label_name = TEXT if self.config[SHARE_HIDDEN_LAYERS] else LABEL
+
         self._prepare_sequence_layers(self.text_name)
         self._prepare_sequence_layers(self.label_name)
         if self.config[MASKED_LM]:

@@ -8,7 +8,7 @@ from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
-    TEXT_ATTRIBUTE,
+    TEXT,
     TOKENS_NAMES,
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
@@ -53,7 +53,7 @@ class ConveRTFeaturizer(Featurizer):
         return ["tensorflow_text", "tensorflow_hub"]
 
     def _compute_features(
-        self, batch_examples: List[Message], attribute: Text = TEXT_ATTRIBUTE
+        self, batch_examples: List[Message], attribute: Text = TEXT
     ) -> np.ndarray:
 
         sentence_encodings = self._compute_sentence_encodings(batch_examples, attribute)
@@ -68,7 +68,7 @@ class ConveRTFeaturizer(Featurizer):
         )
 
     def _compute_sentence_encodings(
-        self, batch_examples: List[Message], attribute: Text = TEXT_ATTRIBUTE
+        self, batch_examples: List[Message], attribute: Text = TEXT
     ) -> np.ndarray:
         # Get text for attribute of each example
         batch_attribute_text = [ex.get(attribute) for ex in batch_examples]
@@ -78,7 +78,7 @@ class ConveRTFeaturizer(Featurizer):
         return np.reshape(sentence_encodings, (len(batch_examples), 1, -1))
 
     def _compute_sequence_encodings(
-        self, batch_examples: List[Message], attribute: Text = TEXT_ATTRIBUTE
+        self, batch_examples: List[Message], attribute: Text = TEXT
     ) -> Tuple[np.ndarray, List[int]]:
         list_of_tokens = [
             example.get(TOKENS_NAMES[attribute]) for example in batch_examples
@@ -215,8 +215,8 @@ class ConveRTFeaturizer(Featurizer):
 
         features = self._compute_features([message])[0]
         message.set(
-            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE],
+            DENSE_FEATURE_NAMES[TEXT],
             self._combine_with_existing_dense_features(
-                message, features, DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
+                message, features, DENSE_FEATURE_NAMES[TEXT]
             ),
         )

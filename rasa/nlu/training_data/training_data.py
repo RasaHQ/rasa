@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
 import rasa.nlu.utils
 from rasa.utils.common import raise_warning, lazy_property
-from rasa.nlu.constants import RESPONSE_ATTRIBUTE, RESPONSE_KEY_ATTRIBUTE
+from rasa.nlu.constants import RESPONSE, RESPONSE_KEY_ATTRIBUTE
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.utils import list_to_str
@@ -186,7 +186,7 @@ class TrainingData:
                 assistant_utterances = self.nlg_stories.get(story_lookup_intent, [])
                 if assistant_utterances:
                     # selecting only first assistant utterance for now
-                    example.set(RESPONSE_ATTRIBUTE, assistant_utterances[0])
+                    example.set(RESPONSE, assistant_utterances[0])
                 else:
                     raise ValueError(
                         "No response phrases found for {}. Check training data "
@@ -384,10 +384,8 @@ class TrainingData:
 
         nlg_stories = {}
         for ex in examples:
-            if ex.get(RESPONSE_KEY_ATTRIBUTE) and ex.get(RESPONSE_ATTRIBUTE):
-                nlg_stories[ex.get_combined_intent_response_key()] = [
-                    ex.get(RESPONSE_ATTRIBUTE)
-                ]
+            if ex.get(RESPONSE_KEY_ATTRIBUTE) and ex.get(RESPONSE):
+                nlg_stories[ex.get_combined_intent_response_key()] = [ex.get(RESPONSE)]
         return nlg_stories
 
     def split_nlu_examples(

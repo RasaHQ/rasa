@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Text
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import utils
 from rasa.nlu.components import Component
-from rasa.nlu.constants import INTENT_ATTRIBUTE
+from rasa.nlu.constants import INTENT
 from rasa.utils.common import raise_warning
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData
@@ -26,7 +26,7 @@ class KeywordIntentClassifier(Component):
 
     """
 
-    provides = [INTENT_ATTRIBUTE]
+    provides = [INTENT]
 
     defaults = {"case_sensitive": True}
 
@@ -52,19 +52,19 @@ class KeywordIntentClassifier(Component):
         for ex in training_data.training_examples:
             if (
                 ex.text in self.intent_keyword_map.keys()
-                and ex.get(INTENT_ATTRIBUTE) != self.intent_keyword_map[ex.text]
+                and ex.get(INTENT) != self.intent_keyword_map[ex.text]
             ):
                 duplicate_examples.add(ex.text)
                 raise_warning(
                     f"Keyword '{ex.text}' is a keyword to trigger intent "
                     f"'{self.intent_keyword_map[ex.text]}' and also "
-                    f"intent '{ex.get(INTENT_ATTRIBUTE)}', it will be removed "
+                    f"intent '{ex.get(INTENT)}', it will be removed "
                     f"from the list of keywords for both of them. "
                     f"Remove (one of) the duplicates from the training data.",
                     docs=DOCS_URL_COMPONENTS + "#keyword-intent-classifier",
                 )
             else:
-                self.intent_keyword_map[ex.text] = ex.get(INTENT_ATTRIBUTE)
+                self.intent_keyword_map[ex.text] = ex.get(INTENT)
         for keyword in duplicate_examples:
             self.intent_keyword_map.pop(keyword)
             logger.debug(
@@ -107,8 +107,8 @@ class KeywordIntentClassifier(Component):
         confidence = 0.0 if intent_name is None else 1.0
         intent = {"name": intent_name, "confidence": confidence}
 
-        if message.get(INTENT_ATTRIBUTE) is None or intent is not None:
-            message.set(INTENT_ATTRIBUTE, intent, add_to_output=True)
+        if message.get(INTENT) is None or intent is not None:
+            message.set(INTENT, intent, add_to_output=True)
 
     def _map_keyword_to_intent(self, text: Text) -> Optional[Text]:
         re_flag = 0 if self.case_sensitive else re.IGNORECASE

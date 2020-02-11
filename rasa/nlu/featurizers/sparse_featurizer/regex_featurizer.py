@@ -14,9 +14,9 @@ from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
     CLS_TOKEN,
-    RESPONSE_ATTRIBUTE,
+    RESPONSE,
     SPARSE_FEATURE_NAMES,
-    TEXT_ATTRIBUTE,
+    TEXT,
     TOKENS_NAMES,
 )
 from rasa.nlu.featurizers.featurizer import Featurizer
@@ -29,9 +29,9 @@ logger = logging.getLogger(__name__)
 
 class RegexFeaturizer(Featurizer):
 
-    provides = [SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]]
+    provides = [SPARSE_FEATURE_NAMES[TEXT]]
 
-    requires = [TOKENS_NAMES[TEXT_ATTRIBUTE]]
+    requires = [TOKENS_NAMES[TEXT]]
 
     def __init__(
         self,
@@ -57,11 +57,11 @@ class RegexFeaturizer(Featurizer):
         self._add_lookup_table_regexes(training_data.lookup_tables)
 
         for example in training_data.training_examples:
-            for attribute in [TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE]:
+            for attribute in [TEXT, RESPONSE]:
                 self._text_features_with_regex(example, attribute)
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        self._text_features_with_regex(message, TEXT_ATTRIBUTE)
+        self._text_features_with_regex(message, TEXT)
 
     def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
         if self.known_patterns:
@@ -116,7 +116,7 @@ class RegexFeaturizer(Featurizer):
                     if t.start < match.end() and t.end > match.start():
                         patterns[pattern["name"]] = True
                         vec[token_index][pattern_index] = 1.0
-                        if attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE]:
+                        if attribute in [RESPONSE, TEXT]:
                             # CLS token vector should contain all patterns
                             vec[-1][pattern_index] = 1.0
 

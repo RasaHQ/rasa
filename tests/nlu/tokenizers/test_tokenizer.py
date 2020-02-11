@@ -2,9 +2,9 @@ import pytest
 
 from rasa.nlu.constants import (
     CLS_TOKEN,
-    TEXT_ATTRIBUTE,
-    INTENT_ATTRIBUTE,
-    RESPONSE_ATTRIBUTE,
+    TEXT,
+    INTENT,
+    RESPONSE,
     TOKENS_NAMES,
 )
 from rasa.nlu.training_data import Message, TrainingData
@@ -40,15 +40,15 @@ def test_train_tokenizer(text, expected_tokens, expected_indices):
     tk = WhitespaceTokenizer()
 
     message = Message(text)
-    message.set(RESPONSE_ATTRIBUTE, text)
-    message.set(INTENT_ATTRIBUTE, text)
+    message.set(RESPONSE, text)
+    message.set(INTENT, text)
 
     training_data = TrainingData()
     training_data.training_examples = [message]
 
     tk.train(training_data)
 
-    for attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE]:
+    for attribute in [RESPONSE, TEXT]:
         tokens = training_data.training_examples[0].get(TOKENS_NAMES[attribute])
 
         assert [t.text for t in tokens] == expected_tokens
@@ -56,7 +56,7 @@ def test_train_tokenizer(text, expected_tokens, expected_indices):
         assert [t.end for t in tokens] == [i[1] for i in expected_indices]
 
     # check intent attribute
-    tokens = training_data.training_examples[0].get(TOKENS_NAMES[INTENT_ATTRIBUTE])
+    tokens = training_data.training_examples[0].get(TOKENS_NAMES[INTENT])
 
     assert [t.text for t in tokens] == [text]
 
@@ -78,7 +78,7 @@ def test_process_tokenizer(text, expected_tokens, expected_indices):
 
     tk.process(message)
 
-    tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
+    tokens = message.get(TOKENS_NAMES[TEXT])
 
     assert [t.text for t in tokens] == expected_tokens
     assert [t.start for t in tokens] == [i[0] for i in expected_indices]
@@ -98,6 +98,6 @@ def test_split_intent(text, expected_tokens):
     tk = WhitespaceTokenizer(component_config)
 
     message = Message(text)
-    message.set(INTENT_ATTRIBUTE, text)
+    message.set(INTENT, text)
 
     assert [t.text for t in tk._split_intent(message)] == expected_tokens
