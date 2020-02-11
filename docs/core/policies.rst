@@ -192,6 +192,15 @@ In order to get reproducible training results for the same inputs you can
 set the ``random_seed`` attribute of the ``KerasPolicy`` to any integer.
 
 
+.. _embedding_policy:
+
+Embedding Policy
+^^^^^^^^^^^^^^^^
+
+``EmbeddingPolicy`` got renamed to ``TEDPolicy``.
+Please take a look at :ref:`ted_policy` for more details.
+
+
 .. _ted_policy:
 
 TED Policy
