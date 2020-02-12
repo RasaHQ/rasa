@@ -262,7 +262,7 @@ class DIETClassifier(EntityExtractor):
         self.data_example = None
 
     @property
-    def label_key(self) -> Text:
+    def label_key(self) -> Optional[Text]:
         return "label_ids" if self.component_config[INTENT_CLASSIFICATION] else None
 
     @staticmethod
@@ -1154,7 +1154,7 @@ class DIET(RasaModel):
         return tf.concat(dense_features, axis=-1) * mask
 
     def _features_as_seq_ids(
-        self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text,
+        self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
     ) -> tf.Tensor:
         # if there are dense features it's enough
         for f in features:
@@ -1254,11 +1254,7 @@ class DIET(RasaModel):
         a_masked_embed = self._tf_layers[f"embed.{name}_golden_token"](a_masked)
 
         return self._tf_layers[f"loss.{name}_mask"](
-            a_t_masked_embed,
-            a_masked_embed,
-            a_masked_ids,
-            a_masked_embed,
-            a_masked_ids,
+            a_t_masked_embed, a_masked_embed, a_masked_ids, a_masked_embed, a_masked_ids
         )
 
     def _label_loss(
