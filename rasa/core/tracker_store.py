@@ -521,8 +521,9 @@ class MongoTrackerStore(TrackerStore):
 
 
 def _create_sequence(table_name: Text) -> Sequence:
-    """Creates a sequence object for a specific table name. If using Oracle
-    you will need to create a sequence in your database, as described here:
+    """Creates a sequence object for a specific table name.
+
+    If using Oracle you will need to create a sequence in your database, as described here:
     https://rasa.com/docs/rasa/api/tracker-stores/#sqltrackerstore
     Args:
         table_name: The name of the table, which gets a Sequence assigned
