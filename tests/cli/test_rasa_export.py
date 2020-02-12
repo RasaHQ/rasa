@@ -146,7 +146,7 @@ def test_get_conversation_ids_to_process(
 
     # create and mock tracker store containing `available_ids` as keys
     tracker_store = Mock()
-    tracker_store.keys.side_effect = _available_ids
+    tracker_store.keys.return_value = _available_ids
 
     # noinspection PyProtectedMember
     assert (
@@ -172,7 +172,7 @@ def test_get_conversation_ids_to_process_error_exit(
 
     # create and mock tracker store containing `available_ids` as keys
     tracker_store = Mock()
-    tracker_store.keys.side_effect = lambda: _available_ids
+    tracker_store.keys.return_value = _available_ids
 
     with pytest.raises(SystemExit):
         # noinspection PyProtectedMember
@@ -184,7 +184,7 @@ def test_prepare_pika_event_broker():
     pika_broker = Mock(spec=PikaEventBroker)
 
     # patch the spinner so we can execute the `_prepare_pika_producer()` function
-    pika_broker.is_ready.side_effect = lambda *_: True
+    pika_broker.is_ready.return_value = True
 
     # noinspection PyProtectedMember
     export._prepare_event_broker(pika_broker)
@@ -281,7 +281,7 @@ def test_fetch_events_within_time_range():
 def test_fetch_events_within_time_range_tracker_does_not_exit():
     # create mock tracker store that returns `None` on `retrieve()`
     tracker_store = Mock()
-    tracker_store.retrieve.side_effect = lambda _: None
+    tracker_store.retrieve.return_value = None
 
     # no events means `SystemExit`
     with pytest.raises(SystemExit):
@@ -292,7 +292,7 @@ def test_fetch_events_within_time_range_tracker_does_not_exit():
 def test_fetch_events_within_time_range_tracker_contains_no_events():
     # create mock tracker store that returns `None` on `retrieve()`
     tracker_store = Mock()
-    tracker_store.retrieve.side_effect = lambda _: DialogueStateTracker.from_events(
+    tracker_store.retrieve.return_value = DialogueStateTracker.from_events(
         "a great ID", []
     )
 
@@ -391,7 +391,7 @@ def test_export_events(tmp_path: Path, monkeypatch: MonkeyPatch):
 
     # mock tracker store
     tracker_store = Mock()
-    tracker_store.keys.side_effect = lambda: all_conversation_ids
+    tracker_store.keys.return_value = all_conversation_ids
     tracker_store.retrieve.side_effect = _get_tracker
 
     monkeypatch.setattr(export, "_get_tracker_store", lambda _: tracker_store)
