@@ -1,3 +1,5 @@
+import asyncio
+
 import logging
 from contextlib import contextmanager
 from typing import Text, List
@@ -33,8 +35,17 @@ DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 # from a separatedly installable pytest-cli plugin.
 pytest_plugins = ["pytester"]
 
+# https://github.com/pytest-dev/pytest-asyncio/issues/68
+# this event_loop is used by pytest-asyncio, and redefining it
+# is currently the only way of changing the scope of this fixture
+@pytest.yield_fixture(scope="session")
+def event_loop(request):
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
-@pytest.fixture
+
+@pytest.fixture(scope="session")
 async def default_agent(tmpdir_factory: TempdirFactory) -> Agent:
     model_path = tmpdir_factory.mktemp("model").strpath
 
@@ -66,17 +77,17 @@ async def unpacked_trained_moodbot_path(
     return get_model(trained_moodbot_path)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 async def stack_agent(trained_rasa_model: Text) -> Agent:
     return await load_agent(model_path=trained_rasa_model)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 async def core_agent(trained_core_model: Text) -> Agent:
     return await load_agent(model_path=trained_core_model)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 async def nlu_agent(trained_nlu_model: Text) -> Agent:
     return await load_agent(model_path=trained_nlu_model)
 
@@ -122,7 +133,7 @@ def trained_async(tmpdir_factory):
     return _train
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 async def trained_rasa_model(
     trained_async,
     default_domain_path: Text,
@@ -139,7 +150,7 @@ async def trained_rasa_model(
     return trained_stack_model_path
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 async def trained_core_model(
     trained_async,
     default_domain_path: Text,
@@ -156,7 +167,7 @@ async def trained_core_model(
     return trained_core_model_path
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 async def trained_nlu_model(
     trained_async,
     default_domain_path: Text,
