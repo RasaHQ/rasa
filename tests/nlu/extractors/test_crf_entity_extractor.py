@@ -13,7 +13,7 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
                 "entities": [
                     {"start": 16, "end": 20, "value": "west", "entity": "location"}
                 ],
-                "spacy_doc": spacy_nlp("anywhere in the west"),
+                SPACY_DOCS[TEXT]: spacy_nlp("anywhere in the west"),
             },
         ),
         Message(
@@ -36,7 +36,7 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
                         "extractor": "CRFEntityExtractor",
                     },
                 ],
-                "spacy_doc": spacy_nlp("central indian restaurant"),
+                SPACY_DOCS[TEXT]: spacy_nlp("central indian restaurant"),
             },
         ),
     ]
