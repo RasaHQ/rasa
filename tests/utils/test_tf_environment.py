@@ -1,8 +1,5 @@
 import tensorflow as tf
-from rasa.utils.tensorflow.environment import (
-    setup_cpu_environment,
-    setup_gpu_environment,
-)
+from rasa.utils.tensorflow.environment import setup_cpu_environment
 
 
 def test_tf_cpu_environment_setting():
