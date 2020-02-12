@@ -30,7 +30,7 @@ RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
   pip install --no-cache-dir -U pip && \
   cd /app && \
-  poetry install --no-interaction
+  poetry install --no-dev --no-interaction
 
 # start a new build stage
 FROM python:3.6-slim

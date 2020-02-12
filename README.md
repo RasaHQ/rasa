@@ -93,8 +93,7 @@ also be asked to sign a
 To build & edit the docs, first install all necessary dependencies:
 
 ```
-pip3 install -r requirements-dev.txt
-pip3 install -r requirements-docs.txt
+poetry install
 ```
 
 After the installation has finished, you can run and view the documentation
@@ -111,8 +110,6 @@ and apply your changes.
 In order to run the tests, make sure that you have the development requirements installed:
 ```bash
 export PIP_USE_PEP517=false
-pip3 install -r requirements-dev.txt
-pip3 install -e .
 make prepare-tests-ubuntu # Only on Ubuntu and Debian based systems
 make prepare-tests-macos  # Only on macOS
 ```
@@ -166,7 +163,7 @@ If you want to automatically format your code on every commit, you can use [pre-
 Just install it via `pip install pre-commit` and execute `pre-commit install` in the root folder.
 This will add a hook to the repository, which reformats files on every commit.
 
-If you want to set it up manually, install black via `pip install -r requirements-dev.txt`.
+If you want to set it up manually, install black via `poetry install`.
 To reformat files execute
 ```
 make formatter
@@ -174,7 +171,7 @@ make formatter
 
 #### Type Checking
 
-If you want to check types on the codebase, install `pytype` using `pip install -r requirements-dev.txt`.
+If you want to check types on the codebase, install `pytype` using `poetry install`.
 To check the types execute
 ```
 make types

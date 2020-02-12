@@ -34,7 +34,8 @@ RUN python -m venv /opt/venv && \
   poetry install --extras spacy --no-dev --no-interaction
 
 # spacy link
-RUN poetry run python -m spacy link en_core_web_md en
+RUN poetry run python -m spacy download en_core_web_md && \
+  poetry run python -m spacy link en_core_web_md en
 
 # start a new build stage
 FROM python:3.6-slim
