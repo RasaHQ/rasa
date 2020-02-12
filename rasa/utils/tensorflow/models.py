@@ -81,6 +81,7 @@ class RasaModel(tf.keras.models.Model):
             eager, evaluate_on_num_examples, evaluation_model_data
         )
 
+        val_results = {}  # validation is not performed every epoch
         pbar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
         for ep in pbar:
@@ -105,9 +106,9 @@ class RasaModel(tf.keras.models.Model):
                         ep_batch_size,
                         False,
                     )
+                    val_results = self._get_metric_results(prefix="val_")
 
-                # Get the metric results
-                postfix_dict.update(self._get_metric_results(prefix="val_"))
+                postfix_dict.update(val_results)
 
             pbar.set_postfix(postfix_dict)
 
