@@ -6,12 +6,13 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer
 from rasa.nlu.train import create_persistor
 from rasa.nlu.training_data import TrainingData
+from rasa.utils.tensorflow.constants import EPOCHS
 from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
 def as_pipeline(*components):
-    return [{"name": c} for c in components]
+    return [{"name": c, EPOCHS: 3} for c in components]
 
 
 def pipelines_for_tests():
