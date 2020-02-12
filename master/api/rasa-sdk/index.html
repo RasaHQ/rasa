@@ -375,7 +375,7 @@ which might look like this:</p>
       <span class="k">return</span> <span class="p">[</span><span class="n">SlotSet</span><span class="p">(</span><span class="s2">&quot;matches&quot;</span><span class="p">,</span> <span class="n">result</span> <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="k">else</span> <span class="p">[])]</span>
 </pre></div>
 </div>
-<p>You should add the the action name <code class="docutils literal notranslate"><span class="pre">action_check_restaurants</span></code> to
+<p>You should add the action name <code class="docutils literal notranslate"><span class="pre">action_check_restaurants</span></code> to
 the actions in your domain file. The action’s <code class="docutils literal notranslate"><span class="pre">run()</span></code> method receives
 three arguments. You can access the values of slots and the latest message
 sent by the user using the <code class="docutils literal notranslate"><span class="pre">tracker</span></code> object, and you can send messages
