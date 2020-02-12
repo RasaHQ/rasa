@@ -135,7 +135,7 @@ def test_get_tracker_store_from_endpoint_config_error_exit(tmp_path: Path):
 
 @pytest.mark.parametrize(
     "requested_ids,expected",
-    [("id1", ["id1"]), ("id1,id2", ["id1", "id2"]), (None, None)],
+    [("id1", ["id1"]), ("id1,id2", ["id1", "id2"]), (None, None), ("", None)],
 )
 def test_get_requested_conversation_ids(
     requested_ids: Optional[Text], expected: Optional[List[Text]]
