@@ -1270,32 +1270,31 @@ class DIET(RasaModel):
         )
 
     def _entity_loss(
-        self, a: tf.Tensor, c: tf.Tensor, mask: tf.Tensor, sequence_lengths
+        self, a: tf.Tensor, tag_ids: tf.Tensor, mask: tf.Tensor, sequence_lengths
     ) -> Tuple[tf.Tensor, tf.Tensor]:
 
-        # remove cls token
-        sequence_lengths = sequence_lengths - 1
-        c = tf.cast(c[:, :, 0], tf.int32)
-
+        sequence_lengths = sequence_lengths - 1  # remove cls token
+        tag_ids = tf.cast(tag_ids[:, :, 0], tf.int32)
         logits = self._tf_layers["embed.logits"](a)
 
         # should call first to build weights
         pred_ids = self._tf_layers["crf"](logits, sequence_lengths)
         # pytype: disable=attribute-error
-        loss = self._tf_layers["crf"].loss(logits, c, sequence_lengths)
+        loss = self._tf_layers["crf"].loss(logits, tag_ids, sequence_lengths)
         # pytype: enable=attribute-error
 
-        # TODO check that f1 calculation is correct
         # calculate f1 score for train predictions
         mask_bool = tf.cast(mask[:, :, 0], tf.bool)
         # pick only non padding values and flatten sequences
-        c_masked = tf.boolean_mask(c, mask_bool)
-        pred_ids_masked = tf.boolean_mask(pred_ids, mask_bool)
+        tag_ids_flat = tf.boolean_mask(tag_ids, mask_bool)
+        pred_ids_flat = tf.boolean_mask(pred_ids, mask_bool)
         # set `0` prediction to not a prediction
-        c_masked_1 = tf.one_hot(c_masked - 1, self._num_tags - 1)
-        pred_ids_masked_1 = tf.one_hot(pred_ids_masked - 1, self._num_tags - 1)
+        tag_ids_flat_one_hot = tf.one_hot(tag_ids_flat - 1, self._num_tags - 1)
+        pred_ids_flat_one_hot = tf.one_hot(pred_ids_flat - 1, self._num_tags - 1)
 
-        f1 = self._tf_layers["crf_f1_score"](c_masked_1, pred_ids_masked_1)
+        f1 = self._tf_layers["crf_f1_score"](
+            tag_ids_flat_one_hot, pred_ids_flat_one_hot
+        )
 
         return loss, f1
 
@@ -1346,10 +1345,10 @@ class DIET(RasaModel):
             losses.append(loss)
 
         if self.config[ENTITY_RECOGNITION]:
-            tags = tf_batch_data["tag_ids"][0]
+            tag_ids = tf_batch_data["tag_ids"][0]
 
             loss, f1 = self._entity_loss(
-                text_transformed, tags, mask_text, sequence_lengths
+                text_transformed, tag_ids, mask_text, sequence_lengths
             )
             self.entity_loss.update_state(loss)
             self.entity_f1.update_state(f1)
