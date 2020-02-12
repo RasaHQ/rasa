@@ -70,7 +70,7 @@ install_requires = [
     "sanic-cors==0.9.9.post1",
     "sanic-jwt~=1.3",
     # needed because of https://github.com/RasaHQ/rasa/issues/5216
-    "cloudpickle==1.2.2",
+    "cloudpickle~=1.2.0",
     # needed because of https://github.com/huge-success/sanic/issues/1729
     "multidict==4.6.1",
     "aiohttp~=3.5",
