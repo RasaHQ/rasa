@@ -36,6 +36,11 @@ LANGUAGE_MODEL_DOCS = {
     RESPONSE: "response_language_model_doc",
 }
 
+TOKEN_IDS = "token_ids"
+TOKENS = "tokens"
+SEQUENCE_FEATURES = "sequence_features"
+SENTENCE_FEATURES = "sentence_features"
+
 SPACY_DOCS = {TEXT: "text_spacy_doc", RESPONSE: "response_spacy_doc"}
 
 

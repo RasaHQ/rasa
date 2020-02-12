@@ -11,6 +11,8 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     TOKENS_NAMES,
+    SEQUENCE_FEATURES,
+    SENTENCE_FEATURES,
 )
 
 
@@ -49,8 +51,8 @@ class LanguageModelFeaturizer(Featurizer):
         doc = self.get_doc(message, attribute)
 
         if doc is not None:
-            sequence_features = doc["sequence_features"]
-            sentence_features = doc["sentence_features"]
+            sequence_features = doc[SEQUENCE_FEATURES]
+            sentence_features = doc[SENTENCE_FEATURES]
 
             features = np.concatenate([sequence_features, sentence_features])
 

@@ -17,10 +17,17 @@ from rasa.nlu.utils.hugging_face.registry import (
     model_embeddings_post_processors,
     model_tokens_cleaners,
 )
+from rasa.nlu.constants import (
+    TEXT,
+    LANGUAGE_MODEL_DOCS,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
+    TOKEN_IDS,
+    TOKENS,
+    SENTENCE_FEATURES,
+    SEQUENCE_FEATURES,
+)
 
 logger = logging.getLogger(__name__)
-
-from rasa.nlu.constants import TEXT, LANGUAGE_MODEL_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
 
 
 class HFTransformersNLP(Component):
@@ -280,12 +287,10 @@ class HFTransformersNLP(Component):
         batch_docs = []
         for index in range(len(batch_examples)):
             doc = {
-                "token_ids": batch_token_ids[index],
-                "tokens": batch_tokens[index],
-                "sequence_features": batch_sequence_features[index],
-                "sentence_features": np.reshape(
-                    batch_sentence_features[index], (1, -1)
-                ),
+                TOKEN_IDS: batch_token_ids[index],
+                TOKENS: batch_tokens[index],
+                SEQUENCE_FEATURES: batch_sequence_features[index],
+                SENTENCE_FEATURES: np.reshape(batch_sentence_features[index], (1, -1)),
             }
             batch_docs.append(doc)
 

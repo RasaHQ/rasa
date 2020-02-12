@@ -8,6 +8,7 @@ from rasa.nlu.constants import (
     LANGUAGE_MODEL_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     MESSAGE_ATTRIBUTES,
+    TOKENS,
 )
 
 
@@ -32,4 +33,4 @@ class LanguageModelTokenizer(Tokenizer):
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         doc = self.get_doc(message, attribute)
 
-        return doc["tokens"]
+        return doc[TOKENS]
