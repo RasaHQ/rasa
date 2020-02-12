@@ -260,6 +260,7 @@ def test_deprecated_pickle_deserialisation(caplog: LogCaptureFixture):
         "postgresql://localhost",
         "postgresql://localhost:5432",
         "postgresql://user:secret@localhost",
+        "sqlite:///"
     ],
 )
 def test_get_db_url_with_fully_specified_url(full_url: Text):
@@ -276,6 +277,14 @@ def test_get_db_url_with_port_in_host():
     assert (
         str(SQLTrackerStore.get_db_url(dialect="postgresql", host=host, db=db))
         == expected
+    )
+
+
+def test_db_get_url_with_sqlite():
+    expected = "sqlite:///rasa.db"
+    assert (
+            str(SQLTrackerStore.get_db_url(dialect="sqlite", db="rasa.db"))
+            == expected
     )
 
 

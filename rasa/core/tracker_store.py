@@ -30,6 +30,8 @@ if typing.TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+SQLITE_SCHEME = "sqlite"
+
 
 class TrackerStore:
     """Class to hold all of the TrackerStore classes"""
@@ -644,12 +646,15 @@ class SQLTrackerStore(TrackerStore):
 
         # Users might specify a url in the host
         parsed = parse.urlsplit(host or "")
-        if parsed.scheme and parsed.hostname:
+        # We have to check `scheme` and `hostname` because Python 3.7.6 parses strings
+        # like `localhost:1234` as a URL with scheme `localhost`. However, `sqlite:///`
+        # a special case because it doesn't require a hostname.
+        if parsed.scheme and (parsed.hostname or parsed.scheme == SQLITE_SCHEME):
             return host
 
         if host:
             # add fake scheme to properly parse components
-            parsed = parse.urlsplit("schema://" + host)
+            parsed = parse.urlsplit(f"scheme://{host}")
 
             # users might include the port in the url
             port = parsed.port or port
