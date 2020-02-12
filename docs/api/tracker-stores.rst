@@ -123,7 +123,7 @@ SQLTrackerStore
 
       Now you can configure the tracker store in the ``endpoints.yml`` as described above,
       and start the container. The ``dialect`` parameter with this setup will be ``oracle+cx_oracle``.
-      Read more about :ref:`running-rasa-with-docker`.
+      Read more about :ref:`deploying-your-rasa-assistant`.
 
 RedisTrackerStore
 ~~~~~~~~~~~~~~~~~~
