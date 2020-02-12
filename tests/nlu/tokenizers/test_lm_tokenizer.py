@@ -1,7 +1,7 @@
 import pytest
 
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TEXT_ATTRIBUTE, INTENT_ATTRIBUTE, TOKENS_NAMES
+from rasa.nlu.constants import TEXT, INTENT, TOKENS_NAMES
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 
@@ -306,7 +306,7 @@ def test_lm_tokenizer_edge_cases(model_name, texts, expected_tokens, expected_in
 
         message = Message.build(text=text)
         transformers_nlp.process(message)
-        tokens = lm_tokenizer.tokenize(message, TEXT_ATTRIBUTE)
+        tokens = lm_tokenizer.tokenize(message, TEXT)
 
         assert [t.text for t in tokens] == gt_tokens
         assert [t.start for t in tokens] == [i[0] for i in gt_indices]
@@ -330,13 +330,11 @@ def test_lm_tokenizer_custom_intent_symbol(text, expected_tokens):
     lm_tokenizer = LanguageModelTokenizer(component_config)
 
     message = Message(text)
-    message.set(INTENT_ATTRIBUTE, text)
+    message.set(INTENT, text)
 
     td = TrainingData([message])
 
     transformers_nlp.train(td)
     lm_tokenizer.train(td)
 
-    assert [
-        t.text for t in message.get(TOKENS_NAMES[INTENT_ATTRIBUTE])
-    ] == expected_tokens
+    assert [t.text for t in message.get(TOKENS_NAMES[INTENT])] == expected_tokens
