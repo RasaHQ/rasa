@@ -19,6 +19,7 @@ from multiprocessing import Process, Manager
 
 import rasa
 import rasa.constants
+import rasa.utils.io
 from rasa.core import events, utils
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel, RestInput, SlackInput
@@ -453,8 +454,7 @@ def test_train_internal_error(rasa_app: SanicTestClient):
 
 
 def test_evaluate_stories(rasa_app, default_stories_file):
-    with open(default_stories_file, "r") as f:
-        stories = f.read()
+    stories = rasa.utils.io.read_file(default_stories_file)
 
     _, response = rasa_app.post("/model/test/stories", data=stories)
 
@@ -482,8 +482,7 @@ def test_evaluate_stories(rasa_app, default_stories_file):
 def test_evaluate_stories_not_ready_agent(
     rasa_app_nlu: SanicTestClient, default_stories_file
 ):
-    with open(default_stories_file, "r") as f:
-        stories = f.read()
+    stories = rasa.utils.io.read_file(default_stories_file)
 
     _, response = rasa_app_nlu.post("/model/test/stories", data=stories)
 
@@ -491,8 +490,7 @@ def test_evaluate_stories_not_ready_agent(
 
 
 def test_evaluate_stories_end_to_end(rasa_app, end_to_end_story_file):
-    with open(end_to_end_story_file, "r") as f:
-        stories = f.read()
+    stories = rasa.utils.io.read_file(end_to_end_story_file)
 
     _, response = rasa_app.post("/model/test/stories?e2e=true", data=stories)
 
@@ -517,8 +515,7 @@ def test_evaluate_stories_end_to_end(rasa_app, end_to_end_story_file):
 
 
 def test_evaluate_intent(rasa_app, default_nlu_data):
-    with open(default_nlu_data, "r") as f:
-        nlu_data = f.read()
+    nlu_data = rasa.utils.io.read_file(default_nlu_data)
 
     _, response = rasa_app.post("/model/test/intents", data=nlu_data)
 
@@ -533,8 +530,7 @@ def test_evaluate_intent(rasa_app, default_nlu_data):
 def test_evaluate_intent_on_just_nlu_model(
     rasa_app_nlu: SanicTestClient, default_nlu_data
 ):
-    with open(default_nlu_data, "r") as f:
-        nlu_data = f.read()
+    nlu_data = rasa.utils.io.read_file(default_nlu_data)
 
     _, response = rasa_app_nlu.post("/model/test/intents", data=nlu_data)
 
@@ -552,8 +548,7 @@ def test_evaluate_intent_with_query_param(
     _, response = rasa_app.get("/status")
     previous_model_file = response.json["model_file"]
 
-    with open(default_nlu_data, "r") as f:
-        nlu_data = f.read()
+    nlu_data = rasa.utils.io.read_file(default_nlu_data)
 
     _, response = rasa_app.post(
         f"/model/test/intents?model={trained_nlu_model}", data=nlu_data

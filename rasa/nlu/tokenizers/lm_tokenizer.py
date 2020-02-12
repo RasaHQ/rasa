@@ -7,12 +7,13 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
     LANGUAGE_MODEL_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
+    MESSAGE_ATTRIBUTES,
 )
 
 
 class LanguageModelTokenizer(Tokenizer):
 
-    provides = [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
+    provides = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     requires = [
         LANGUAGE_MODEL_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES

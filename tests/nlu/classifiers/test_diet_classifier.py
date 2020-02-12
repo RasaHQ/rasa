@@ -6,18 +6,17 @@ from unittest.mock import Mock
 from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import (
-    TEXT_ATTRIBUTE,
-    SPARSE_FEATURE_NAMES,
-    DENSE_FEATURE_NAMES,
-    INTENT_ATTRIBUTE,
+from rasa.nlu.constants import TEXT, SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, INTENT
+from rasa.utils.tensorflow.constants import (
+    LOSS_TYPE,
+    RANDOM_SEED,
+    RANKING_LENGTH,
+    EPOCHS,
 )
-from rasa.utils.tensorflow.constants import LOSS_TYPE, RANDOM_SEED, RANKING_LENGTH
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
 from rasa.nlu.training_data import Message
 from rasa.utils import train_utils
-from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
@@ -47,15 +46,15 @@ def test_compute_default_label_features():
                 Message(
                     "test a",
                     data={
-                        SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]: np.zeros(1),
-                        DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]: np.zeros(1),
+                        SPARSE_FEATURE_NAMES[TEXT]: np.zeros(1),
+                        DENSE_FEATURE_NAMES[TEXT]: np.zeros(1),
                     },
                 ),
                 Message(
                     "test b",
                     data={
-                        SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]: np.zeros(1),
-                        DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]: np.zeros(1),
+                        SPARSE_FEATURE_NAMES[TEXT]: np.zeros(1),
+                        DENSE_FEATURE_NAMES[TEXT]: np.zeros(1),
                     },
                 ),
             ],
@@ -66,8 +65,8 @@ def test_compute_default_label_features():
                 Message(
                     "test a",
                     data={
-                        SPARSE_FEATURE_NAMES[INTENT_ATTRIBUTE]: np.zeros(1),
-                        DENSE_FEATURE_NAMES[INTENT_ATTRIBUTE]: np.zeros(1),
+                        SPARSE_FEATURE_NAMES[INTENT]: np.zeros(1),
+                        DENSE_FEATURE_NAMES[INTENT]: np.zeros(1),
                     },
                 )
             ],
@@ -76,7 +75,7 @@ def test_compute_default_label_features():
     ],
 )
 def test_check_labels_features_exist(messages, expected):
-    attribute = TEXT_ATTRIBUTE
+    attribute = TEXT
 
     assert DIETClassifier._check_labels_features_exist(messages, attribute) == expected
 
@@ -88,12 +87,12 @@ def test_check_labels_features_exist(messages, expected):
             {"name": "ConveRTTokenizer"},
             {"name": "CountVectorsFeaturizer"},
             {"name": "ConveRTFeaturizer"},
-            {"name": "DIETClassifier"},
+            {"name": "DIETClassifier", EPOCHS: 3},
         ],
         [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETClassifier", LOSS_TYPE: "margin"},
+            {"name": "DIETClassifier", LOSS_TYPE: "margin", EPOCHS: 3},
         ],
     ],
 )
@@ -125,7 +124,10 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
 
     _config = RasaNLUModelConfig(
         {
-            "pipeline": [{"name": "WhitespaceTokenizer"}, {"name": "DIETClassifier"}],
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "DIETClassifier", EPOCHS: 3},
+            ],
             "language": "en",
         }
     )
@@ -151,27 +153,32 @@ def as_pipeline(*components):
 @pytest.mark.parametrize(
     "classifier_params, data_path, output_length, output_should_sum_to_1",
     [
-        ({"random_seed": 42}, "data/test/many_intents.md", 10, True),  # default config
         (
-            {RANDOM_SEED: 42, RANKING_LENGTH: 0},
+            {RANDOM_SEED: 42, EPOCHS: 3},
+            "data/test/many_intents.md",
+            10,
+            True,
+        ),  # default config
+        (
+            {RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 3},
             "data/test/many_intents.md",
             LABEL_RANKING_LENGTH,
             False,
         ),  # no normalization
         (
-            {RANDOM_SEED: 42, RANKING_LENGTH: 3},
+            {RANDOM_SEED: 42, RANKING_LENGTH: 3, EPOCHS: 3},
             "data/test/many_intents.md",
             3,
             True,
         ),  # lower than default ranking_length
         (
-            {RANDOM_SEED: 42, RANKING_LENGTH: 12},
+            {RANDOM_SEED: 42, RANKING_LENGTH: 12, EPOCHS: 3},
             "data/test/many_intents.md",
             LABEL_RANKING_LENGTH,
             False,
         ),  # higher than default ranking_length
         (
-            {RANDOM_SEED: 42},
+            {RANDOM_SEED: 42, EPOCHS: 3},
             "examples/moodbot/data/nlu.md",
             7,
             True,
@@ -218,7 +225,7 @@ async def test_softmax_normalization(
 
 @pytest.mark.parametrize(
     "classifier_params, output_length",
-    [({LOSS_TYPE: "margin", RANDOM_SEED: 42}, LABEL_RANKING_LENGTH)],
+    [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 3}, LABEL_RANKING_LENGTH)],
 )
 async def test_margin_loss_is_not_normalized(
     monkeypatch, component_builder, tmpdir, classifier_params, output_length

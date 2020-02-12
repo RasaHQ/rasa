@@ -6,11 +6,11 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.constants import (
-    TEXT_ATTRIBUTE,
-    RESPONSE_ATTRIBUTE,
+    TEXT,
+    RESPONSE,
     SPACY_DOCS,
     TOKENS_NAMES,
-    INTENT_ATTRIBUTE,
+    INTENT,
     SPARSE_FEATURE_NAMES,
 )
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
@@ -80,17 +80,17 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
 
     # adds tokens to the message
     tokenizer = SpacyTokenizer({})
-    message = Message(sentence, data={RESPONSE_ATTRIBUTE: sentence})
-    message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(sentence))
+    message = Message(sentence, data={RESPONSE: sentence})
+    message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
     tokenizer.process(message)
 
-    result = ftr._features_for_patterns(message, TEXT_ATTRIBUTE)
+    result = ftr._features_for_patterns(message, TEXT)
     assert np.allclose(result.toarray(), expected, atol=1e-10)
 
     # the tokenizer should have added tokens
-    assert len(message.get(TOKENS_NAMES[TEXT_ATTRIBUTE], [])) > 0
+    assert len(message.get(TOKENS_NAMES[TEXT], [])) > 0
     # the number of regex matches on each token should match
-    for i, token in enumerate(message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])):
+    for i, token in enumerate(message.get(TOKENS_NAMES[TEXT])):
         token_matches = token.get("pattern").values()
         num_matches = sum(token_matches)
         assert num_matches == labeled_tokens.count(i)
@@ -144,13 +144,13 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     message.set("text_spacy_doc", spacy_nlp(sentence))
     tokenizer.process(message)
 
-    result = ftr._features_for_patterns(message, TEXT_ATTRIBUTE)
+    result = ftr._features_for_patterns(message, TEXT)
     assert np.allclose(result.toarray(), expected, atol=1e-10)
 
     # the tokenizer should have added tokens
-    assert len(message.get(TOKENS_NAMES[TEXT_ATTRIBUTE], [])) > 0
+    assert len(message.get(TOKENS_NAMES[TEXT], [])) > 0
     # the number of regex matches on each token should match
-    for i, token in enumerate(message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])):
+    for i, token in enumerate(message.get(TOKENS_NAMES[TEXT])):
         token_matches = token.get("pattern").values()
         num_matches = sum(token_matches)
         assert num_matches == labeled_tokens.count(i)
@@ -177,10 +177,10 @@ def test_regex_featurizer_no_sequence(sentence, expected, expected_cls, spacy_nl
     # adds tokens to the message
     tokenizer = SpacyTokenizer()
     message = Message(sentence)
-    message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(sentence))
+    message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
     tokenizer.process(message)
 
-    result = ftr._features_for_patterns(message, TEXT_ATTRIBUTE)
+    result = ftr._features_for_patterns(message, TEXT)
     assert np.allclose(result.toarray()[0], expected, atol=1e-10)
     assert np.allclose(result.toarray()[-1], expected_cls, atol=1e-10)
 
@@ -197,8 +197,8 @@ def test_regex_featurizer_train():
 
     sentence = "hey how are you today 19.12.2019 ?"
     message = Message(sentence)
-    message.set(RESPONSE_ATTRIBUTE, sentence)
-    message.set(INTENT_ATTRIBUTE, "intent")
+    message.set(RESPONSE, sentence)
+    message.set(INTENT, "intent")
     WhitespaceTokenizer().train(TrainingData([message]))
 
     featurizer.train(
@@ -208,18 +208,18 @@ def test_regex_featurizer_train():
     expected = np.array([0, 1, 0])
     expected_cls = np.array([1, 1, 1])
 
-    vecs = message.get(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+    vecs = message.get(SPARSE_FEATURE_NAMES[TEXT])
 
     assert (7, 3) == vecs.shape
     assert np.all(vecs.toarray()[0] == expected)
     assert np.all(vecs.toarray()[-1] == expected_cls)
 
-    vecs = message.get(SPARSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE])
+    vecs = message.get(SPARSE_FEATURE_NAMES[RESPONSE])
 
     assert (7, 3) == vecs.shape
     assert np.all(vecs.toarray()[0] == expected)
     assert np.all(vecs.toarray()[-1] == expected_cls)
 
-    vecs = message.get(SPARSE_FEATURE_NAMES[INTENT_ATTRIBUTE])
+    vecs = message.get(SPARSE_FEATURE_NAMES[INTENT])
 
     assert vecs is None

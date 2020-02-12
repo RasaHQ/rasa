@@ -1,10 +1,9 @@
 import logging
-import warnings
 import os
 import typing
 from typing import Any, Dict, List, Optional, Text
 
-from rasa.nlu.constants import ENTITIES_ATTRIBUTE, TOKENS_NAMES, TEXT_ATTRIBUTE
+from rasa.nlu.constants import ENTITIES, TOKENS_NAMES, TEXT
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
@@ -20,9 +19,9 @@ if typing.TYPE_CHECKING:
 
 class MitieEntityExtractor(EntityExtractor):
 
-    provides = [ENTITIES_ATTRIBUTE]
+    provides = [ENTITIES]
 
-    requires = [TOKENS_NAMES[TEXT_ATTRIBUTE], "mitie_feature_extractor", "mitie_file"]
+    requires = [TOKENS_NAMES[TEXT], "mitie_feature_extractor", "mitie_file"]
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None, ner=None):
         """Construct a new intent classifier using the sklearn framework."""
@@ -37,7 +36,7 @@ class MitieEntityExtractor(EntityExtractor):
     @staticmethod
     def _tokens_without_cls(message: Message) -> List[Token]:
         # [:-1] to remove the CLS token from the list of tokens
-        return message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])[:-1]
+        return message.get(TOKENS_NAMES[TEXT])[:-1]
 
     def extract_entities(
         self, text: Text, tokens: List[Token], feature_extractor
@@ -104,7 +103,7 @@ class MitieEntityExtractor(EntityExtractor):
         text = training_example.text
         tokens = self._tokens_without_cls(training_example)
         sample = mitie.ner_training_instance([t.text for t in tokens])
-        for ent in training_example.get(ENTITIES_ATTRIBUTE, []):
+        for ent in training_example.get(ENTITIES, []):
             try:
                 # if the token is not aligned an exception will be raised
                 start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
@@ -143,9 +142,7 @@ class MitieEntityExtractor(EntityExtractor):
         )
         extracted = self.add_extractor_name(ents)
         message.set(
-            ENTITIES_ATTRIBUTE,
-            message.get(ENTITIES_ATTRIBUTE, []) + extracted,
-            add_to_output=True,
+            ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True,
         )
 
     @classmethod

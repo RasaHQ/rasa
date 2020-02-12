@@ -6,7 +6,7 @@ from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
 
 from rasa.nlu.constants import (
-    TEXT_ATTRIBUTE,
+    TEXT,
     LANGUAGE_MODEL_DOCS,
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
@@ -43,7 +43,7 @@ class LanguageModelFeaturizer(Featurizer):
 
         self._set_lm_features(message)
 
-    def _set_lm_features(self, message: Message, attribute: Text = TEXT_ATTRIBUTE):
+    def _set_lm_features(self, message: Message, attribute: Text = TEXT):
         """Adds the precomputed word vectors to the messages features."""
 
         doc = self.get_doc(message, attribute)

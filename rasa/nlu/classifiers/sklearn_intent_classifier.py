@@ -11,7 +11,7 @@ from rasa.nlu import utils
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import DENSE_FEATURE_NAMES, TEXT_ATTRIBUTE
+from rasa.nlu.constants import DENSE_FEATURE_NAMES, TEXT
 from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
@@ -28,7 +28,7 @@ class SklearnIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    requires = [DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]]
+    requires = [DENSE_FEATURE_NAMES[TEXT]]
 
     defaults = {
         # C parameter of the svm - cross validation will select the best value
@@ -105,7 +105,7 @@ class SklearnIntentClassifier(Component):
             X = np.stack(
                 [
                     sequence_to_sentence_features(
-                        example.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+                        example.get(DENSE_FEATURE_NAMES[TEXT])
                     )
                     for example in training_data.intent_examples
                 ]
@@ -165,7 +165,7 @@ class SklearnIntentClassifier(Component):
             intent_ranking = []
         else:
             X = sequence_to_sentence_features(
-                message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+                message.get(DENSE_FEATURE_NAMES[TEXT])
             ).reshape(1, -1)
             intent_ids, probabilities = self.predict(X)
             intents = self.transform_labels_num2str(np.ravel(intent_ids))

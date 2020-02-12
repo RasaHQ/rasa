@@ -2,7 +2,7 @@ from typing import List, Tuple, Text
 import numpy as np
 
 
-def bert_tokens_pre_processor(token_ids: List[int]):
+def bert_tokens_pre_processor(token_ids: List[int]) -> List[int]:
     """Add BERT style special tokens(CLS and SEP)"""
 
     BERT_CLS_ID = 101
@@ -16,12 +16,12 @@ def bert_tokens_pre_processor(token_ids: List[int]):
     return processed_tokens
 
 
-def gpt_tokens_pre_processor(token_ids: List[int]):
+def gpt_tokens_pre_processor(token_ids: List[int]) -> List[int]:
 
     return token_ids
 
 
-def xlnet_tokens_pre_processor(token_ids: List[int]):
+def xlnet_tokens_pre_processor(token_ids: List[int]) -> List[int]:
     """Add XLNET style special tokens"""
 
     XLNET_CLS_ID = 3
@@ -33,7 +33,7 @@ def xlnet_tokens_pre_processor(token_ids: List[int]):
     return token_ids
 
 
-def roberta_tokens_pre_processor(token_ids: List[int]):
+def roberta_tokens_pre_processor(token_ids: List[int]) -> List[int]:
     """Add RoBERTa style special tokens"""
 
     ROBERTA_BEG_ID = 0
@@ -45,7 +45,7 @@ def roberta_tokens_pre_processor(token_ids: List[int]):
     return token_ids
 
 
-def xlm_tokens_pre_processor(token_ids: List[int]):
+def xlm_tokens_pre_processor(token_ids: List[int]) -> List[int]:
     """Add RoBERTa style special tokens"""
 
     XLM_SEP_ID = 1

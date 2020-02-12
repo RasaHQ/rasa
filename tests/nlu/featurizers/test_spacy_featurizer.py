@@ -6,13 +6,7 @@ from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
-from rasa.nlu.constants import (
-    SPACY_DOCS,
-    TEXT_ATTRIBUTE,
-    DENSE_FEATURE_NAMES,
-    RESPONSE_ATTRIBUTE,
-    INTENT_ATTRIBUTE,
-)
+from rasa.nlu.constants import SPACY_DOCS, TEXT, DENSE_FEATURE_NAMES, RESPONSE, INTENT
 
 
 def test_spacy_featurizer_cls_vector(spacy_nlp):
@@ -20,11 +14,11 @@ def test_spacy_featurizer_cls_vector(spacy_nlp):
 
     sentence = "Hey how are you today"
     message = Message(sentence)
-    message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(sentence))
+    message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
 
     featurizer._set_spacy_features(message)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+    vecs = message.get(DENSE_FEATURE_NAMES[TEXT])
 
     expected = np.array([-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])
     expected_cls = np.array([-0.196496, 0.3249364, -0.37408298, -0.10622784, 0.062756])
@@ -146,28 +140,28 @@ def test_spacy_featurizer_train(spacy_nlp):
 
     sentence = "Hey how are you today"
     message = Message(sentence)
-    message.set(RESPONSE_ATTRIBUTE, sentence)
-    message.set(INTENT_ATTRIBUTE, "intent")
-    message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(sentence))
-    message.set(SPACY_DOCS[RESPONSE_ATTRIBUTE], spacy_nlp(sentence))
+    message.set(RESPONSE, sentence)
+    message.set(INTENT, "intent")
+    message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
+    message.set(SPACY_DOCS[RESPONSE], spacy_nlp(sentence))
 
     featurizer.train(TrainingData([message]), RasaNLUModelConfig())
 
     expected = np.array([-0.28451, 0.31007, -0.57039, -0.073056, -0.17322])
     expected_cls = np.array([-0.196496, 0.3249364, -0.37408298, -0.10622784, 0.062756])
 
-    vecs = message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+    vecs = message.get(DENSE_FEATURE_NAMES[TEXT])
 
     assert 6 == len(vecs)
     assert np.allclose(vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE])
+    vecs = message.get(DENSE_FEATURE_NAMES[RESPONSE])
 
     assert 6 == len(vecs)
     assert np.allclose(vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[INTENT_ATTRIBUTE])
+    vecs = message.get(DENSE_FEATURE_NAMES[INTENT])
 
     assert vecs is None

@@ -4,7 +4,7 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import Message
 from rasa.nlu.constants import MESSAGE_ATTRIBUTES, TOKENS_NAMES
-from rasa.utils.train_utils import align_tokens
+import rasa.utils.train_utils as train_utils
 import tensorflow as tf
 
 
@@ -70,8 +70,9 @@ class ConveRTTokenizer(WhitespaceTokenizer):
             # clean tokens (remove special chars and empty tokens)
             split_token_strings = self._clean_tokens(split_token_strings)
 
-            _aligned_tokens = align_tokens(split_token_strings, token_end, token_start)
-            tokens_out += _aligned_tokens
+            tokens_out += train_utils.align_tokens(
+                split_token_strings, token_end, token_start
+            )
 
         return tokens_out
 

@@ -9,7 +9,6 @@ pipeline:
     features: [
       ["low", "title", "upper"],
       [
-        "bias",
         "low",
         "prefix5",
         "prefix2",
@@ -19,8 +18,6 @@ pipeline:
         "upper",
         "title",
         "digit",
-        "pattern",
-        "text_dense_features"
       ],
       ["low", "title", "upper"],
     ]

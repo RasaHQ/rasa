@@ -1,7 +1,6 @@
 import json
 import logging
 import typing
-import warnings
 from typing import Optional, Text, Dict
 
 from rasa.core.brokers.broker import EventBroker

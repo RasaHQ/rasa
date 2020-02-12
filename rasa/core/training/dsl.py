@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import re
-import warnings
 from typing import Optional, List, Text, Any, Dict, TYPE_CHECKING, Iterable
 
 import rasa.utils.io as io_utils

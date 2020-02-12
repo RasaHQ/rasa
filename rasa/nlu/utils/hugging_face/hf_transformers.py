@@ -6,7 +6,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.utils.train_utils import align_tokens
+import rasa.utils.train_utils as train_utils
 import numpy as np
 
 from rasa.nlu.utils.hugging_face.registry import (
@@ -20,11 +20,7 @@ from rasa.nlu.utils.hugging_face.registry import (
 
 logger = logging.getLogger(__name__)
 
-from rasa.nlu.constants import (
-    TEXT_ATTRIBUTE,
-    LANGUAGE_MODEL_DOCS,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
-)
+from rasa.nlu.constants import TEXT, LANGUAGE_MODEL_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
 
 
 class HFTransformersNLP(Component):
@@ -53,11 +49,11 @@ class HFTransformersNLP(Component):
 
         if self.model_name not in model_class_dict:
             logger.error(
-                f"{self.model_name} not a valid model name. Choose from {str(list(model_class_dict.keys()))} or create"
+                f"'{self.model_name}' not a valid model name. Choose from {str(list(model_class_dict.keys()))} or create"
                 f"a new class inheriting from this class to support your model."
             )
             raise KeyError(
-                f"{self.model_name} not a valid model name. Choose from {str(list(model_class_dict.keys()))}or create"
+                f"'{self.model_name}' not a valid model name. Choose from {str(list(model_class_dict.keys()))}or create"
                 f"a new class inheriting from this class to support your model."
             )
 
@@ -87,7 +83,7 @@ class HFTransformersNLP(Component):
     def required_packages(cls) -> List[Text]:
         return ["transformers"]
 
-    def _lm_tokenize(self, text: Text) -> Any:
+    def _lm_tokenize(self, text: Text) -> Tuple[List[int], List[Text]]:
 
         split_token_ids = self.tokenizer.encode(text, add_special_tokens=False)
 
@@ -129,7 +125,9 @@ class HFTransformersNLP(Component):
             np.array(post_processed_sequence_embeddings),
         )
 
-    def _tokenize_example(self, message: Message, attribute: Text):
+    def _tokenize_example(
+        self, message: Message, attribute: Text
+    ) -> Tuple[List[Token], List[int]]:
 
         tokens_in = self.whitespace_tokenizer.tokenize(message, attribute)
 
@@ -147,8 +145,9 @@ class HFTransformersNLP(Component):
 
             token_ids_out += split_token_ids
 
-            _aligned_tokens = align_tokens(split_token_strings, token_end, token_start)
-            tokens_out += _aligned_tokens
+            tokens_out += train_utils.align_tokens(
+                split_token_strings, token_end, token_start
+            )
 
         return tokens_out, token_ids_out
 
@@ -169,7 +168,7 @@ class HFTransformersNLP(Component):
         return batch_tokens, batch_token_ids
 
     @staticmethod
-    def _compute_attention_mask(actual_sequence_lengths):
+    def _compute_attention_mask(actual_sequence_lengths: List[int]) -> np.array:
 
         attention_mask = []
         max_seq_length = max(actual_sequence_lengths)
@@ -183,7 +182,9 @@ class HFTransformersNLP(Component):
 
         return attention_mask
 
-    def _add_padding_to_batch(self, batch_token_ids):
+    def _add_padding_to_batch(
+        self, batch_token_ids: List[List[int]]
+    ) -> Tuple[List[int], List[List[int]]]:
         padded_token_ids = []
         # Compute max length across examples
         max_seq_len = 0
@@ -202,7 +203,9 @@ class HFTransformersNLP(Component):
         return actual_sequence_lengths, padded_token_ids
 
     @staticmethod
-    def _extract_nonpadded_embeddings(embeddings, actual_sequence_lengths):
+    def _extract_nonpadded_embeddings(
+        embeddings: np.array, actual_sequence_lengths: List[int]
+    ):
 
         nonpadded_sequence_embeddings = []
         for index, embedding in enumerate(embeddings):
@@ -211,7 +214,9 @@ class HFTransformersNLP(Component):
 
         return np.array(nonpadded_sequence_embeddings)
 
-    def _compute_batch_sequence_features(self, batch_attention_mask, padded_token_ids):
+    def _compute_batch_sequence_features(
+        self, batch_attention_mask: np.array, padded_token_ids: List[List[int]]
+    ) -> np.array:
 
         model_outputs = self.model(
             np.array(padded_token_ids), attention_mask=np.array(batch_attention_mask)
@@ -225,7 +230,7 @@ class HFTransformersNLP(Component):
 
     def _get_model_features_for_batch(
         self, batch_token_ids: List[List[int]]
-    ) -> np.array:
+    ) -> Tuple[np.array, np.array]:
 
         # Let's first add tokenizer specific special tokens to all examples
         batch_token_ids_augmented = self._add_lm_specific_special_tokens(
@@ -323,6 +328,6 @@ class HFTransformersNLP(Component):
     def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set(
-            LANGUAGE_MODEL_DOCS[TEXT_ATTRIBUTE],
-            self._get_docs_for_batch([message], attribute=TEXT_ATTRIBUTE)[0],
+            LANGUAGE_MODEL_DOCS[TEXT],
+            self._get_docs_for_batch([message], attribute=TEXT)[0],
         )

@@ -1,6 +1,5 @@
 import pytest
 import copy
-import logging
 
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 

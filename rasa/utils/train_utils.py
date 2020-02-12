@@ -1,10 +1,32 @@
-import logging
-import tensorflow as tf
 import numpy as np
-from typing import Optional, Text, Dict, Any, List
+import tensorflow as tf
+import logging
+from typing import Optional, Text, Dict, Any, Union, List
+from rasa.core.constants import DIALOGUE
+from rasa.nlu.constants import TEXT
 from rasa.nlu.tokenizers.tokenizer import Token
 
-from rasa.utils.tensorflow.constants import SIMILARITY_TYPE, LOSS_TYPE
+from rasa.utils.tensorflow.constants import (
+    LABEL,
+    HIDDEN_LAYERS_SIZES,
+    NUM_TRANSFORMER_LAYERS,
+    NUM_HEADS,
+    MAX_SEQ_LENGTH,
+    DENSE_DIM,
+    LOSS_TYPE,
+    SIMILARITY_TYPE,
+    NUM_NEG,
+    EVAL_NUM_EXAMPLES,
+    EVAL_NUM_EPOCHS,
+    REGULARIZATION_CONSTANT,
+    USE_MAX_SIM_NEG,
+    MU_NEG,
+    MU_POS,
+    EMBED_DIM,
+    DROPRATE_DIALOGUE,
+    DROPRATE_LABEL,
+)
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +57,7 @@ def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarr
 
 
 def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    if config[SIMILARITY_TYPE] == "auto":
+    if config.get(SIMILARITY_TYPE) == "auto":
         if config[LOSS_TYPE] == "softmax":
             config[SIMILARITY_TYPE] = "inner"
         elif config[LOSS_TYPE] == "margin":
@@ -44,7 +66,9 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
     return config
 
 
-def align_tokens(tokens_in: List[Text], token_end: int, token_start: int):
+def align_tokens(
+    tokens_in: List[Text], token_end: int, token_start: int
+) -> List[Token]:
     """Align sub-tokens of Language model with tokens return by the WhitespaceTokenizer.
 
     As a language model might split a single word into multiple tokens, we need to make
@@ -76,3 +100,64 @@ def align_tokens(tokens_in: List[Text], token_end: int, token_start: int):
         current_token_offset += len(string)
 
     return tokens_out
+
+
+def _replace_deprecated_option(
+    old_option: Text, new_option: Union[Text, List[Text]], config: Dict[Text, Any]
+) -> Dict[Text, Any]:
+    if old_option in config:
+        if isinstance(new_option, str):
+            logger.warning(
+                f"Option '{old_option}' got renamed to '{new_option}'. "
+                f"Please update your configuration file."
+            )
+            config[new_option] = config[old_option]
+        else:
+            logger.warning(
+                f"Option '{old_option}' got renamed to "
+                f"a dictionary '{new_option[0]}' with a key '{new_option[1]}'. "
+                f"Please update your configuration file."
+            )
+            option_dict = config.get(new_option[0], {})
+            option_dict[new_option[1]] = config[old_option]
+            config[new_option[0]] = option_dict
+
+    return config
+
+
+def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
+
+    config = _replace_deprecated_option(
+        "hidden_layers_sizes_pre_dial", [HIDDEN_LAYERS_SIZES, DIALOGUE], config
+    )
+    config = _replace_deprecated_option(
+        "hidden_layers_sizes_bot", [HIDDEN_LAYERS_SIZES, LABEL], config
+    )
+    config = _replace_deprecated_option("droprate_a", DROPRATE_DIALOGUE, config)
+    config = _replace_deprecated_option("droprate_b", DROPRATE_LABEL, config)
+    config = _replace_deprecated_option(
+        "hidden_layers_sizes_a", [HIDDEN_LAYERS_SIZES, TEXT], config
+    )
+    config = _replace_deprecated_option(
+        "hidden_layers_sizes_b", [HIDDEN_LAYERS_SIZES, LABEL], config
+    )
+    config = _replace_deprecated_option(
+        "num_transformer_layers", NUM_TRANSFORMER_LAYERS, config
+    )
+    config = _replace_deprecated_option("num_heads", NUM_HEADS, config)
+    config = _replace_deprecated_option("max_seq_length", MAX_SEQ_LENGTH, config)
+    config = _replace_deprecated_option("dense_dim", DENSE_DIM, config)
+    config = _replace_deprecated_option("embed_dim", EMBED_DIM, config)
+    config = _replace_deprecated_option("num_neg", NUM_NEG, config)
+    config = _replace_deprecated_option("mu_pos", MU_POS, config)
+    config = _replace_deprecated_option("mu_neg", MU_NEG, config)
+    config = _replace_deprecated_option("use_max_sim_neg", USE_MAX_SIM_NEG, config)
+    config = _replace_deprecated_option("C2", REGULARIZATION_CONSTANT, config)
+    config = _replace_deprecated_option(
+        "evaluate_every_num_epochs", EVAL_NUM_EPOCHS, config
+    )
+    config = _replace_deprecated_option(
+        "evaluate_on_num_examples", EVAL_NUM_EXAMPLES, config
+    )
+
+    return config
