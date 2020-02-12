@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # noinspection PyProtectedMember
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+) -> None:
     export_parser_args = {
         "parents": parents,
         "conflict_handler": "resolve",
@@ -81,7 +81,7 @@ def _get_available_endpoints(endpoints_path: Optional[Text]) -> AvailableEndpoin
 
     Args:
         endpoints_path: Path of the endpoints file to be read. If `None` the
-            default path for that file is used ('endpoints.yml').
+            default path for that file is used (`endpoints.yml`).
 
     Returns:
         `AvailableEndpoints` object read from endpoints file.
@@ -99,7 +99,7 @@ def _get_requested_conversation_ids(
     """Get list of conversation IDs requested as a command-line argument.
 
     Args:
-        conversation_ids_arg: Value of '--conversation-ids' command-line argument. If
+        conversation_ids_arg: Value of `--conversation-ids` command-line argument. If
             provided, this is a string of comma-separated conversation IDs.
 
     Return:
@@ -142,7 +142,9 @@ def _get_conversation_ids_to_process(
 
     if not conversation_ids_in_tracker_store:
         cli_utils.print_error_and_exit(
-            f"Could not find any conversations in connected tracker store. Exiting."
+            f"Could not find any conversations in connected tracker store. "
+            f"Please validate your `endpoints.yml` and make sure the defined "
+            f"tracker store exists. Exiting."
         )
 
     if not requested_conversation_ids:
@@ -299,8 +301,6 @@ def _publish_events(
             current_timestamp = event["timestamp"]
         except Exception as e:
             logger.exception(e)
-
-            # print the error command and exit
             command = _get_continuation_command(
                 current_timestamp,
                 maximum_timestamp,

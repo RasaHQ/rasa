@@ -3,7 +3,7 @@ import argparse
 from rasa.cli.arguments.default_arguments import add_endpoint_param
 
 
-def set_export_arguments(parser: argparse.ArgumentParser):
+def set_export_arguments(parser: argparse.ArgumentParser) -> None:
     add_endpoint_param(
         parser,
         help_text=(

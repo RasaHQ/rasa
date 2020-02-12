@@ -121,7 +121,7 @@ def test_get_tracker_store_from_endpoint_config_error_exit(tmp_path: Path):
 
 @pytest.mark.parametrize(
     "requested_ids,expected",
-    [("id1", ["id1"]), ("id1,id2", ["id1", "id2"]), (None, None)],
+    [("id1", ["id1"]), ("id1,id2", ["id1", "id2"]), (None, None), ("", None)],
 )
 def test_get_requested_conversation_ids(
     requested_ids: Optional[Text], expected: Optional[List[Text]]
@@ -397,3 +397,22 @@ def test_export_events(tmp_path: Path, monkeypatch: MonkeyPatch):
         any(call[1][0]["text"] == event.text for call in calls)
         for event in [event_1, event_2, event_3, event_4]
     )
+
+
+def test_publish_events_events_error_exit(monkeypatch: MonkeyPatch):
+    # prepare events from different senders and different timestamps
+    event_1 = random_user_uttered_event(1)
+    event_2 = random_user_uttered_event(2)
+
+    monkeypatch.setattr(
+        export, "_fetch_events_within_time_range", lambda *_: [event_1, event_2]
+    )
+
+    # mock event broker so it raises on `publish()`
+    event_broker = Mock()
+    event_broker.publish.side_effect = ValueError()
+
+    # run the export function
+    with pytest.raises(SystemExit):
+        # noinspection PyProtectedMember
+        export._publish_events(Mock(), event_broker, set())
