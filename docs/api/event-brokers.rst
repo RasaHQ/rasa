@@ -35,6 +35,8 @@ Rasa enables three possible broker types:
 - `Kafka Event Broker`_
 - `SQL Event Broker`_
 
+.. _event-brokers-pika:
+
 Pika Event Broker
 -----------------
 
