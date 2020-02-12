@@ -270,7 +270,7 @@ def _publish_events(
     Args:
         tracker_store: Tracker store to source events from.
         event_broker: Event broker used to publish events over.
-        conversation_ids: List of conversation IDs selected for publishing.
+        conversation_ids: Set of conversation IDs selected for publishing.
         minimum_timestamp: Minimum timestamp of events that are published. If `None`,
             apply no such constraint.
         maximum_timestamp: Maximum timestamp of events that are published. If `None`,
@@ -283,7 +283,7 @@ def _publish_events(
 
     """
     events = _fetch_events_within_time_range(
-        tracker_store, minimum_timestamp, maximum_timestamp, conversation_ids
+        tracker_store, conversation_ids, minimum_timestamp, maximum_timestamp
     )
 
     cli_utils.print_info(f"Selected {len(events)} events. Ready to publish.")
@@ -320,19 +320,19 @@ def _publish_events(
 
 def _fetch_events_within_time_range(
     tracker_store: TrackerStore,
+    conversation_ids: Set[Text],
     minimum_timestamp: Optional[float] = None,
     maximum_timestamp: Optional[float] = None,
-    conversation_ids: Optional[Set[Text]] = None,
 ) -> List[Dict[Text, Any]]:
     """Fetch all events for `conversation_ids` within the supplied time range.
 
     Args:
         tracker_store: Tracker store to source events from.
+        conversation_ids: Set of conversation IDs selected for publishing.
         minimum_timestamp: Minimum timestamp of events that are published. If `None`,
             apply no such constraint.
         maximum_timestamp: Maximum timestamp of events that are published. If `None`,
             apply no such constraint.
-         conversation_ids: List of conversation IDs selected for publishing.
 
     Returns:
         List of serialized events with added `sender_id` field.
@@ -359,6 +359,7 @@ def _fetch_events_within_time_range(
             logger.info(
                 f"No events to migrate for conversation ID '{conversation_id}'."
             )
+            continue
 
         # the conversation IDs are needed in the event publishing
         for event in _events:

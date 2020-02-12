@@ -7,7 +7,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 from pathlib import Path
 from typing import Callable, Optional, Dict, Any, Text, List
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import rasa.utils.io as io_utils
 from rasa.cli import export
@@ -164,9 +164,7 @@ def test_get_conversation_ids_to_process(
     ],
 )
 def test_get_conversation_ids_to_process_error_exit(
-    requested_ids: Optional[List[int]],
-    available_ids: List[int],
-    monkeypatch: MonkeyPatch,
+    requested_ids: Optional[List[int]], available_ids: List[int],
 ):
     # convert ids to strings
     _requested_ids = [str(_id) for _id in requested_ids] if requested_ids else None
@@ -267,7 +265,7 @@ def test_fetch_events_within_time_range():
     tracker_store.retrieve.side_effect = _get_tracker
 
     fetched_events = export._fetch_events_within_time_range(
-        tracker_store, None, None, conversation_ids
+        tracker_store, set(conversation_ids)
     )
 
     # events should come back for all requested conversation IDs
@@ -278,6 +276,30 @@ def test_fetch_events_within_time_range():
 
     # events are sorted by timestamp despite the initially different order
     assert fetched_events == list(sorted(fetched_events, key=lambda e: e["timestamp"]))
+
+
+def test_fetch_events_within_time_range_tracker_does_not_exit():
+    # create mock tracker store that returns `None` on `retrieve()`
+    tracker_store = Mock()
+    tracker_store.retrieve.side_effect = lambda _: None
+
+    # no events means `SystemExit`
+    with pytest.raises(SystemExit):
+        # noinspection PyProtectedMember
+        export._fetch_events_within_time_range(tracker_store, set())
+
+
+def test_fetch_events_within_time_range_tracker_contains_no_events():
+    # create mock tracker store that returns `None` on `retrieve()`
+    tracker_store = Mock()
+    tracker_store.retrieve.side_effect = lambda _: DialogueStateTracker.from_events(
+        "a great ID", []
+    )
+
+    # no events means `SystemExit`
+    with pytest.raises(SystemExit):
+        # noinspection PyProtectedMember
+        export._fetch_events_within_time_range(tracker_store, set())
 
 
 # noinspection PyProtectedMember
@@ -400,12 +422,10 @@ def test_export_events(tmp_path: Path, monkeypatch: MonkeyPatch):
 
 
 def test_publish_events_events_error_exit(monkeypatch: MonkeyPatch):
-    # prepare events from different senders and different timestamps
-    event_1 = random_user_uttered_event(1)
-    event_2 = random_user_uttered_event(2)
-
     monkeypatch.setattr(
-        export, "_fetch_events_within_time_range", lambda *_: [event_1, event_2]
+        export,
+        "_fetch_events_within_time_range",
+        lambda *_: [random_user_uttered_event(1)],
     )
 
     # mock event broker so it raises on `publish()`
