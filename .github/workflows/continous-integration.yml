@@ -138,6 +138,7 @@ jobs:
       if: matrix.python-version == 3.6
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        COVERALLS_SERVICE_NAME: github-ci
       run: |
         coveralls
 
