@@ -85,7 +85,7 @@ class ResponseSelector(DIETClassifier):
 
     requires = [
         any_of(DENSE_FEATURE_NAMES[TEXT], SPARSE_FEATURE_NAMES[TEXT]),
-        any_of(DENSE_FEATURE_NAMES[RESPONSE], SPARSE_FEATURE_NAMES[RESPONSE],),
+        any_of(DENSE_FEATURE_NAMES[RESPONSE], SPARSE_FEATURE_NAMES[RESPONSE]),
     ]
 
     # default properties (DOC MARKER - don't remove)
@@ -175,6 +175,30 @@ class ResponseSelector(DIETClassifier):
     }
     # end default properties (DOC MARKER - don't remove)
 
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        inverted_label_dict: Optional[Dict[int, Text]] = None,
+        inverted_tag_dict: Optional[Dict[int, Text]] = None,
+        model: Optional[RasaModel] = None,
+        batch_tuple_sizes: Optional[Dict] = None,
+    ) -> None:
+
+        component_config = component_config or {}
+
+        # the following properties cannot be adapted for the ResponseSelector
+        component_config[INTENT_CLASSIFICATION] = True
+        component_config[ENTITY_RECOGNITION] = False
+        component_config[BILOU_FLAG] = False
+
+        super().__init__(
+            component_config,
+            inverted_label_dict,
+            inverted_tag_dict,
+            model,
+            batch_tuple_sizes,
+        )
+
     @property
     def label_key(self) -> Text:
         return "label_ids"
@@ -224,7 +248,7 @@ class ResponseSelector(DIETClassifier):
         )
 
         model_data = self._create_model_data(
-            training_data.intent_examples, label_id_dict, label_attribute=RESPONSE,
+            training_data.intent_examples, label_id_dict, label_attribute=RESPONSE
         )
 
         self.check_input_dimension_consistency(model_data)
@@ -306,7 +330,7 @@ class DIET2DIET(DIET):
         sequence_lengths_label = self._get_sequence_lengths(mask_label)
 
         label_transformed, _, _, _ = self._create_sequence(
-            self.tf_label_data["label_features"], mask_label, self.label_name,
+            self.tf_label_data["label_features"], mask_label, self.label_name
         )
         cls_label = self._last_token(label_transformed, sequence_lengths_label)
 
@@ -339,7 +363,7 @@ class DIET2DIET(DIET):
         sequence_lengths_label = self._get_sequence_lengths(mask_label)
 
         label_transformed, _, _, _ = self._create_sequence(
-            tf_batch_data["label_features"], mask_label, self.label_name,
+            tf_batch_data["label_features"], mask_label, self.label_name
         )
 
         losses = []

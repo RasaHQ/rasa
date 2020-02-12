@@ -4,11 +4,7 @@ from typing import Any, Dict, Optional, Text
 from rasa.constants import DOCS_BASE_URL
 from rasa.nlu.components import any_of
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-from rasa.nlu.constants import (
-    TEXT,
-    DENSE_FEATURE_NAMES,
-    SPARSE_FEATURE_NAMES,
-)
+from rasa.nlu.constants import TEXT, DENSE_FEATURE_NAMES, SPARSE_FEATURE_NAMES
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -125,7 +121,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
 
         component_config = component_config or {}
 
-        # the following properties are fixed for the EmbeddingIntentClassifier
+        # the following properties cannot be adapted for the EmbeddingIntentClassifier
         component_config[INTENT_CLASSIFICATION] = True
         component_config[ENTITY_RECOGNITION] = False
         component_config[MASKED_LM] = False

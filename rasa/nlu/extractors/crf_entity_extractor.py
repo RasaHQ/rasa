@@ -11,11 +11,7 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.constants import DOCS_BASE_URL
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-from rasa.nlu.constants import (
-    TEXT,
-    ENTITIES,
-    TOKENS_NAMES,
-)
+from rasa.nlu.constants import TEXT, ENTITIES, TOKENS_NAMES
 from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES,
     NUM_TRANSFORMER_LAYERS,
@@ -122,7 +118,7 @@ class CRFEntityExtractor(DIETClassifier):
     ) -> None:
         component_config = component_config or {}
 
-        # the following properties are fixed for the CRFEntityExtractor
+        # the following properties cannot be adapted for the CRFEntityExtractor
         component_config[INTENT_CLASSIFICATION] = False
         component_config[ENTITY_RECOGNITION] = True
         component_config[MASKED_LM] = False
