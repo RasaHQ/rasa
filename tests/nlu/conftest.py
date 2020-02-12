@@ -42,8 +42,7 @@ def ner_crf_pos_feature_config():
             ["low", "title", "upper", "pos", "pos2"],
             ["low", "suffix3", "suffix2", "upper", "title", "digit", "pos", "pos2"],
             ["low", "title", "upper", "pos", "pos2"],
-        ],
-        EPOCHS: 3,
+        ]
     }
 
 
