@@ -24,20 +24,36 @@ STREAM_READING_TIMEOUT_ENV = "RASA_SHELL_STREAM_READING_TIMEOUT_IN_SECONDS"
 DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS = 10
 
 
-def print_bot_output(
-    message: Dict[Text, Any], is_last=False, color=cli_utils.bcolors.OKBLUE
+def print_buttons(
+    message: Dict[Text, Any],
+    is_latest_message: bool = False,
+    color=cli_utils.bcolors.OKBLUE,
 ) -> Optional[questionary.Question]:
-    if "buttons" in message and is_last:
+    if is_latest_message:
         choices = cli_utils.button_choices_from_message_data(
             message, allow_free_text_input=True
         )
-
         question = questionary.select(
             message.get("text"),
             choices,
             style=Style([("qmark", "#6d91d3"), ("", "#6d91d3"), ("answer", "#b373d6")]),
         )
         return question
+    else:
+        cli_utils.print_color("Buttons:", color=color)
+        for idx, button in enumerate(message.get("buttons")):
+            cli_utils.print_color(cli_utils.button_to_string(button, idx), color=color)
+
+
+def print_bot_output(
+    message: Dict[Text, Any],
+    is_latest_message: bool = False,
+    color=cli_utils.bcolors.OKBLUE,
+) -> Optional[questionary.Question]:
+    if "buttons" in message:
+        question = print_buttons(message, is_latest_message, color)
+        if question:
+            return question
 
     if "text" in message:
         cli_utils.print_color(message.get("text"), color=color)
@@ -47,11 +63,6 @@ def print_bot_output(
 
     if "attachment" in message:
         cli_utils.print_color("Attachment: " + message.get("attachment"), color=color)
-
-    if "buttons" in message:
-        cli_utils.print_color("Buttons:", color=color)
-        for idx, button in enumerate(message.get("buttons")):
-            cli_utils.print_color(cli_utils.button_to_string(button, idx), color=color)
 
     if "elements" in message:
         cli_utils.print_color("Elements:", color=color)
@@ -73,7 +84,7 @@ def print_bot_output(
 def get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Text]:
     button_response = None
     if previous_response is not None:
-        button_response = print_bot_output(previous_response, is_last=True)
+        button_response = print_bot_output(previous_response, is_latest_message=True)
 
     if button_response is not None:
         response = cli_utils.payload_from_button_question(button_response)
@@ -169,7 +180,7 @@ async def record_messages(
             previous_response = None
             for response in bot_responses:
                 if previous_response is not None:
-                    print_bot_output(response)
+                    print_bot_output(previous_response)
                 previous_response = response
 
         num_messages += 1
