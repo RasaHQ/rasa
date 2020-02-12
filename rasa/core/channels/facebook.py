@@ -5,6 +5,7 @@ from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
 from fbmessenger.quick_replies import QuickReplies, QuickReply
+from fbmessenger.sender_actions import SenderAction
 from rasa.utils.common import raise_warning
 from sanic import Blueprint, response
 from sanic.request import Request
@@ -107,11 +108,12 @@ class Messenger:
         self, text: Text, sender_id: Text, metadata: Optional[Dict[Text, Any]]
     ) -> None:
         """Pass on the text to the dialogue engine for processing."""
-
+        self.client.send_action(SenderAction(sender_action='mark_seen').to_dict(), sender_id)
         out_channel = MessengerBot(self.client)
         user_msg = UserMessage(
             text, out_channel, sender_id, input_channel=self.name(), metadata=metadata
         )
+        self.client.send_action(SenderAction(sender_action='typing_on').to_dict(), sender_id)
 
         # noinspection PyBroadException
         try:
