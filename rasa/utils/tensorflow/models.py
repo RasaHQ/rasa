@@ -5,7 +5,7 @@ from collections import defaultdict
 from typing import List, Text, Dict, Tuple, Union, Optional, Callable
 from tqdm import tqdm
 from rasa.utils.common import is_logging_disabled
-from rasa.utils.tensorflow.tf_model_data import RasaModelData, FeatureSignature
+from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 
 logger = logging.getLogger(__name__)
 
@@ -320,7 +320,11 @@ class RasaModel(tf.keras.models.Model):
                     )
                     idx += 3
                 else:
-                    batch_data[k].append(batch[idx])
+                    if isinstance(batch[idx], tf.Tensor):
+                        batch_data[k].append(batch[idx])
+                    else:
+                        # convert to Tensor
+                        batch_data[k].append(tf.constant(batch[idx], dtype=tf.float32))
                     idx += 1
 
         return batch_data

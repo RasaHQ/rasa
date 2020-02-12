@@ -9,7 +9,7 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
     LexicalSyntacticFeaturizer,
 )
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.constants import TEXT_ATTRIBUTE, SPARSE_FEATURE_NAMES, SPACY_DOCS
+from rasa.nlu.constants import TEXT, SPARSE_FEATURE_NAMES, SPACY_DOCS
 from rasa.nlu.training_data import Message
 
 
@@ -57,10 +57,10 @@ def test_text_featurizer(sentence, expected_features):
     featurizer.process(test_message)
 
     assert isinstance(
-        test_message.get(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]), scipy.sparse.coo_matrix
+        test_message.get(SPARSE_FEATURE_NAMES[TEXT]), scipy.sparse.coo_matrix
     )
 
-    actual = test_message.get(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]).toarray()
+    actual = test_message.get(SPARSE_FEATURE_NAMES[TEXT]).toarray()
 
     assert np.all(actual == expected_features)
 
@@ -91,10 +91,10 @@ def test_text_featurizer_window_size(sentence, expected, expected_cls):
     featurizer.process(test_message)
 
     assert isinstance(
-        test_message.get(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]), scipy.sparse.coo_matrix
+        test_message.get(SPARSE_FEATURE_NAMES[TEXT]), scipy.sparse.coo_matrix
     )
 
-    actual = test_message.get(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]).toarray()
+    actual = test_message.get(SPARSE_FEATURE_NAMES[TEXT]).toarray()
 
     assert np.all(actual[0] == expected)
     assert np.all(actual[-1] == expected_cls)
@@ -121,8 +121,8 @@ def test_text_featurizer_using_pos(sentence, expected, spacy_nlp):
     train_message = Message(sentence)
     test_message = Message(sentence)
 
-    train_message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(sentence))
-    test_message.set(SPACY_DOCS[TEXT_ATTRIBUTE], spacy_nlp(sentence))
+    train_message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
+    test_message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
 
     SpacyTokenizer().process(train_message)
     SpacyTokenizer().process(test_message)
@@ -132,9 +132,9 @@ def test_text_featurizer_using_pos(sentence, expected, spacy_nlp):
     featurizer.process(test_message)
 
     assert isinstance(
-        test_message.get(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]), scipy.sparse.coo_matrix
+        test_message.get(SPARSE_FEATURE_NAMES[TEXT]), scipy.sparse.coo_matrix
     )
 
-    actual = test_message.get(SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]).toarray()
+    actual = test_message.get(SPARSE_FEATURE_NAMES[TEXT]).toarray()
 
     assert np.all(actual == expected)

@@ -31,7 +31,7 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
 )
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.model import Metadata
-from rasa.nlu.selectors.embedding_response_selector import ResponseSelector
+from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
@@ -41,7 +41,7 @@ from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.utils.common import class_from_module_path, raise_warning
 from rasa.utils.tensorflow.constants import (
-    LABEL_CLASSIFICATION,
+    INTENT_CLASSIFICATION,
     ENTITY_RECOGNITION,
     NUM_TRANSFORMER_LAYERS,
 )
@@ -127,7 +127,7 @@ registered_pipeline_templates = {
         {"name": "LexicalSyntacticFeaturizer"},
         {
             "name": "DIETClassifier",
-            LABEL_CLASSIFICATION: False,
+            INTENT_CLASSIFICATION: False,
             ENTITY_RECOGNITION: True,
             NUM_TRANSFORMER_LAYERS: 0,
         },

@@ -45,6 +45,9 @@ class RasaModelData:
     def feature_not_exists(self, key: Text) -> bool:
         return key not in self.data or not self.data[key]
 
+    def is_empty(self):
+        return not self.data
+
     def get_number_of_examples(self) -> int:
         """Obtain number of examples in data.
 
@@ -508,7 +511,7 @@ class RasaModelData:
 
         if array_of_dense[0].ndim < 2:
             # data doesn't contain a sequence
-            return array_of_dense
+            return array_of_dense.astype(np.float32)
 
         data_size = len(array_of_dense)
         max_seq_len = max([x.shape[0] for x in array_of_dense])

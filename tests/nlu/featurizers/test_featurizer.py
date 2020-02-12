@@ -3,14 +3,14 @@ import pytest
 import scipy.sparse
 
 from rasa.nlu.featurizers.featurizer import Featurizer, sequence_to_sentence_features
-from rasa.nlu.constants import DENSE_FEATURE_NAMES, SPARSE_FEATURE_NAMES, TEXT_ATTRIBUTE
+from rasa.nlu.constants import DENSE_FEATURE_NAMES, SPARSE_FEATURE_NAMES, TEXT
 from rasa.nlu.training_data import Message
 
 
 def test_combine_with_existing_dense_features():
 
     featurizer = Featurizer({"return_sequence": False})
-    attribute = DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
+    attribute = DENSE_FEATURE_NAMES[TEXT]
 
     existing_features = [[1, 0, 2, 3], [2, 0, 0, 1]]
     new_features = [[1, 0], [0, 1]]
@@ -28,7 +28,7 @@ def test_combine_with_existing_dense_features():
 
 def test_combine_with_existing_dense_features_shape_mismatch():
     featurizer = Featurizer({"return_sequence": False})
-    attribute = DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
+    attribute = DENSE_FEATURE_NAMES[TEXT]
 
     existing_features = [[1, 0, 2, 3], [2, 0, 0, 1]]
     new_features = [[0, 1]]
@@ -45,7 +45,7 @@ def test_combine_with_existing_dense_features_shape_mismatch():
 def test_combine_with_existing_sparse_features():
 
     featurizer = Featurizer({"return_sequence": False})
-    attribute = SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
+    attribute = SPARSE_FEATURE_NAMES[TEXT]
 
     existing_features = scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]])
     new_features = scipy.sparse.csr_matrix([[1, 0], [0, 1]])
@@ -65,7 +65,7 @@ def test_combine_with_existing_sparse_features():
 def test_combine_with_existing_sparse_features_shape_mismatch():
 
     featurizer = Featurizer({"return_sequence": False})
-    attribute = SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
+    attribute = SPARSE_FEATURE_NAMES[TEXT]
 
     existing_features = scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]])
     new_features = scipy.sparse.csr_matrix([[0, 1]])

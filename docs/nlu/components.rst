@@ -813,7 +813,7 @@ Response Selector
     In the config, you can specify these parameters.
     The default values are defined in ``ResponseSelector.defaults``:
 
-    .. literalinclude:: ../../rasa/nlu/selectors/embedding_response_selector.py
+    .. literalinclude:: ../../rasa/nlu/selectors/response_selector.py
        :dedent: 4
        :start-after: # default properties (DOC MARKER - don't remove)
        :end-before: # end default properties (DOC MARKER - don't remove)

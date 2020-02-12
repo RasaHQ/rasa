@@ -4,7 +4,7 @@ import pytest
 import scipy.sparse
 import numpy as np
 
-from rasa.utils.tensorflow.tf_model_data import RasaModelData
+from rasa.utils.tensorflow.model_data import RasaModelData
 
 
 @pytest.fixture
@@ -47,11 +47,11 @@ async def model_data() -> RasaModelData:
             "tag_ids": [
                 np.array(
                     [
-                        np.array([0, 1, 1, 0, 2]),
-                        np.array([2, 0]),
-                        np.array([0, 1, 1]),
-                        np.array([0, 1]),
-                        np.array([0, 0, 0]),
+                        np.array([[0], [1], [1], [0], [2]]),
+                        np.array([[2], [0]]),
+                        np.array([[0], [1], [1]]),
+                        np.array([[0], [1]]),
+                        np.array([[0], [0], [0]]),
                     ]
                 )
             ],
@@ -152,7 +152,7 @@ def test_get_number_of_examples_raises_value_error(model_data: RasaModelData):
 
 def test_gen_batch(model_data: RasaModelData):
     iterator = model_data._gen_batch(2, shuffle=True, batch_strategy="balanced")
-
+    print(model_data.data["tag_ids"][0])
     batch = next(iterator)
     assert len(batch) == 7
     assert len(batch[0]) == 2

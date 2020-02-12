@@ -6,12 +6,13 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer
 from rasa.nlu.train import create_persistor
 from rasa.nlu.training_data import TrainingData
+from rasa.utils.tensorflow.constants import EPOCHS
 from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
 def as_pipeline(*components):
-    return [{"name": c} for c in components]
+    return [{"name": c, EPOCHS: 3} for c in components]
 
 
 def pipelines_for_tests():
@@ -98,7 +99,7 @@ async def test_random_seed(component_builder, tmpdir):
     """test if train result is the same for two runs of tf embedding"""
 
     _config = utilities.base_test_conf("supervised_embeddings")
-    # set fixed random seed of the embedding intent classifier to 1
+    # set fixed random seed of the DIET classifier to 1
     _config.set_component_attr(5, random_seed=1)
 
     # first run

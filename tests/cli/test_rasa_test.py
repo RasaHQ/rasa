@@ -58,11 +58,22 @@ def test_test_nlu_cross_validation(run_in_default_project: Callable[..., RunResu
     assert os.path.exists("results/confmat.png")
 
 
-def test_test_nlu_comparison(run_in_default_project: Callable[..., RunResult]):
-    copyfile("config.yml", "nlu-config.yml")
+def test_test_nlu_comparison(
+    run_in_default_project_without_models: Callable[..., RunResult]
+):
+    copyfile("config.yml", "config-1.yml")
 
-    run_in_default_project(
-        "test", "nlu", "-c", "config.yml", "nlu-config.yml", "--run", "2"
+    run_in_default_project_without_models(
+        "test",
+        "nlu",
+        "--config",
+        "config.yml",
+        "config-1.yml",
+        "--run",
+        "2",
+        "--percentages",
+        "75",
+        "25",
     )
 
     assert os.path.exists("results/run_1")
@@ -106,6 +117,7 @@ def test_test_core_comparison_after_train(
         },
         "config_2.yml",
     )
+
     run_in_default_project(
         "train",
         "core",

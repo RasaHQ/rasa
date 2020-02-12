@@ -11,7 +11,7 @@ if typing.TYPE_CHECKING:
     import mitie
 
 from rasa.nlu.constants import (
-    TEXT_ATTRIBUTE,
+    TEXT,
     TOKENS_NAMES,
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
@@ -83,12 +83,12 @@ class MitieFeaturizer(Featurizer):
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         features = self.features_for_tokens(
-            message.get(TOKENS_NAMES[TEXT_ATTRIBUTE]), mitie_feature_extractor
+            message.get(TOKENS_NAMES[TEXT]), mitie_feature_extractor
         )
         message.set(
-            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE],
+            DENSE_FEATURE_NAMES[TEXT],
             self._combine_with_existing_dense_features(
-                message, features, DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
+                message, features, DENSE_FEATURE_NAMES[TEXT]
             ),
         )
 

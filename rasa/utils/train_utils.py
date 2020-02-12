@@ -1,11 +1,13 @@
 import logging
 import tensorflow as tf
 import numpy as np
-from typing import Optional, Text, Dict, Any
+from typing import Optional, Text, Dict, Any, Union, List
+from rasa.core.constants import DIALOGUE
+from rasa.nlu.constants import TEXT
 
 from rasa.utils.tensorflow.constants import (
-    HIDDEN_LAYERS_SIZES_TEXT,
-    HIDDEN_LAYERS_SIZES_LABEL,
+    LABEL,
+    HIDDEN_LAYERS_SIZES,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
     MAX_SEQ_LENGTH,
@@ -15,12 +17,11 @@ from rasa.utils.tensorflow.constants import (
     NUM_NEG,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
-    C2,
+    REGULARIZATION_CONSTANT,
     USE_MAX_SIM_NEG,
     MU_NEG,
     MU_POS,
     EMBED_DIM,
-    HIDDEN_LAYERS_SIZES_DIALOGUE,
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
 )
@@ -55,7 +56,7 @@ def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarr
 
 
 def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    if config[SIMILARITY_TYPE] == "auto":
+    if config.get(SIMILARITY_TYPE) == "auto":
         if config[LOSS_TYPE] == "softmax":
             config[SIMILARITY_TYPE] = "inner"
         elif config[LOSS_TYPE] == "margin":
@@ -65,14 +66,24 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
 
 
 def _replace_deprecated_option(
-    old_option: Text, new_option: Text, config: Dict[Text, Any]
+    old_option: Text, new_option: Union[Text, List[Text]], config: Dict[Text, Any]
 ) -> Dict[Text, Any]:
     if old_option in config:
-        logger.warning(
-            f"Option '{old_option}' got renamed to '{new_option}'. "
-            f"Please update your configuration file."
-        )
-        config[new_option] = config[old_option]
+        if isinstance(new_option, str):
+            logger.warning(
+                f"Option '{old_option}' got renamed to '{new_option}'. "
+                f"Please update your configuration file."
+            )
+            config[new_option] = config[old_option]
+        else:
+            logger.warning(
+                f"Option '{old_option}' got renamed to "
+                f"a dictionary '{new_option[0]}' with a key '{new_option[1]}'. "
+                f"Please update your configuration file."
+            )
+            option_dict = config.get(new_option[0], {})
+            option_dict[new_option[1]] = config[old_option]
+            config[new_option[0]] = option_dict
 
     return config
 
@@ -80,18 +91,18 @@ def _replace_deprecated_option(
 def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
 
     config = _replace_deprecated_option(
-        "hidden_layers_sizes_pre_dial", HIDDEN_LAYERS_SIZES_DIALOGUE, config
+        "hidden_layers_sizes_pre_dial", [HIDDEN_LAYERS_SIZES, DIALOGUE], config
     )
     config = _replace_deprecated_option(
-        "hidden_layers_sizes_bot", HIDDEN_LAYERS_SIZES_LABEL, config
+        "hidden_layers_sizes_bot", [HIDDEN_LAYERS_SIZES, LABEL], config
     )
     config = _replace_deprecated_option("droprate_a", DROPRATE_DIALOGUE, config)
     config = _replace_deprecated_option("droprate_b", DROPRATE_LABEL, config)
     config = _replace_deprecated_option(
-        "hidden_layers_sizes_a", HIDDEN_LAYERS_SIZES_TEXT, config
+        "hidden_layers_sizes_a", [HIDDEN_LAYERS_SIZES, TEXT], config
     )
     config = _replace_deprecated_option(
-        "hidden_layers_sizes_b", HIDDEN_LAYERS_SIZES_LABEL, config
+        "hidden_layers_sizes_b", [HIDDEN_LAYERS_SIZES, LABEL], config
     )
     config = _replace_deprecated_option(
         "num_transformer_layers", NUM_TRANSFORMER_LAYERS, config
@@ -104,7 +115,7 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     config = _replace_deprecated_option("mu_pos", MU_POS, config)
     config = _replace_deprecated_option("mu_neg", MU_NEG, config)
     config = _replace_deprecated_option("use_max_sim_neg", USE_MAX_SIM_NEG, config)
-    config = _replace_deprecated_option("C2", C2, config)
+    config = _replace_deprecated_option("C2", REGULARIZATION_CONSTANT, config)
     config = _replace_deprecated_option(
         "evaluate_every_num_epochs", EVAL_NUM_EPOCHS, config
     )

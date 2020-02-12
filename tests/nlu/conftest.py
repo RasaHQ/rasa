@@ -5,6 +5,7 @@ import pytest
 
 from rasa.nlu import config, train
 from rasa.nlu.components import ComponentBuilder
+from rasa.utils.tensorflow.constants import EPOCHS
 
 CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.yml"
 

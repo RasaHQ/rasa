@@ -1,4 +1,4 @@
-from rasa.nlu.constants import TEXT_ATTRIBUTE, SPACY_DOCS, ENTITIES_ATTRIBUTE
+from rasa.nlu.constants import TEXT, SPACY_DOCS, ENTITIES
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
@@ -49,12 +49,12 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
     extractor.train(training_data)
 
     sentence = "italian restaurant"
-    message = Message(sentence, {SPACY_DOCS[TEXT_ATTRIBUTE]: spacy_nlp(sentence)})
+    message = Message(sentence, {SPACY_DOCS[TEXT]: spacy_nlp(sentence)})
 
     tokenizer.process(message)
     extractor.process(message)
 
-    detected_entities = message.get(ENTITIES_ATTRIBUTE)
+    detected_entities = message.get(ENTITIES)
 
     assert len(detected_entities) == 1
     assert detected_entities[0]["entity"] == "cuisine"
