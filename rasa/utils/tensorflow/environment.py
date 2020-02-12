@@ -39,7 +39,7 @@ def setup_gpu_environment(gpu_memory_config):
                         ],
                     )
 
-                except RuntimeError as e:
+                except RuntimeError:
                     # Virtual devices must be set before GPUs have been initialized
                     raise RuntimeError(
                         "Error while setting up tensorflow environment. "
