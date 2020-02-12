@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Text
 
 import tensorflow as tf
 from rasa.constants import (
@@ -11,7 +12,7 @@ from rasa.constants import (
 logger = logging.getLogger(__name__)
 
 
-def setup_gpu_environment(gpu_memory_config):
+def setup_gpu_environment(gpu_memory_config: Text) -> None:
 
     if gpu_memory_config:
 
@@ -52,7 +53,9 @@ def setup_gpu_environment(gpu_memory_config):
             )
 
 
-def setup_cpu_environment(inter_op_parallel_threads, intra_op_parallel_threads):
+def setup_cpu_environment(
+    inter_op_parallel_threads: Text, intra_op_parallel_threads: Text
+) -> None:
 
     if inter_op_parallel_threads:
         tf.config.threading.set_inter_op_parallelism_threads(
