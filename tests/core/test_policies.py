@@ -52,35 +52,6 @@ from tests.core.conftest import (
 from tests.core.utilities import get_tracker, read_dialogue_file, user_uttered
 
 
-def tf_defaults():
-    return {
-        "tf_config": {
-            "device_count": {"CPU": 4},
-            # tell tf.Session to use CPU limit, if you have
-            # more CPU, you can increase this value appropriately
-            "inter_op_parallelism_threads": 0,
-            # the number of threads in the thread pool available
-            # for each process for blocking operation nodes set to 0
-            # to allow the system to select the appropriate value.
-            "intra_op_parallelism_threads": 0,  # tells the degree of thread
-            # parallelism of the tf.Session operation.
-            # the smaller the value, the less reuse the thread will have
-            # and the more likely it will use more CPU cores.
-            # if the value is 0,
-            # tensorflow will automatically select an appropriate value.
-            "gpu_options": {"allow_growth": True}
-            # if set True, will try to allocate
-            # as much GPU memory as possible to support running
-        }
-    }
-
-
-def session_config():
-    import tensorflow as tf
-
-    return tf.ConfigProto(**tf_defaults()["tf_config"])
-
-
 async def train_trackers(domain, augmentation_factor=20):
     return await training.load_data(
         DEFAULT_STORIES_FILE, domain, augmentation_factor=augmentation_factor
@@ -185,18 +156,6 @@ class PolicyTestCollection:
         loaded = empty_policy.__class__.load(tmpdir.strpath)
         assert loaded is not None
 
-    # TODO test tf config
-    # def test_tf_config(self, trained_policy, tmpdir):
-    #     if hasattr(trained_policy, "session"):
-    #         import tensorflow as tf
-    #
-    #         # noinspection PyProtectedMember
-    #         assert trained_policy.session._config == tf.Session()._config
-    #         trained_policy.persist(tmpdir.strpath)
-    #         loaded = trained_policy.__class__.load(tmpdir.strpath)
-    #         # noinspection PyProtectedMember
-    #         assert loaded.session._config == tf.Session()._config
-
     @staticmethod
     def _get_next_action(policy, events, domain):
         tracker = get_tracker(events)
@@ -210,22 +169,6 @@ class TestKerasPolicy(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
         p = KerasPolicy(featurizer, priority)
         return p
-
-
-class TestKerasPolicyWithTfConfig(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
-        p = KerasPolicy(featurizer, priority, **tf_defaults())
-        return p
-
-    # TODO fix and test tf config
-    @pytest.mark.skip(reason="We need to fix tf.config!")
-    def test_tf_config(self, trained_policy, tmpdir):
-        # noinspection PyProtectedMember
-        assert trained_policy.session._config == session_config()
-        trained_policy.persist(tmpdir.strpath)
-        loaded = trained_policy.__class__.load(tmpdir.strpath)
-        # noinspection PyProtectedMember
-        assert loaded.session._config == session_config()
 
 
 class TestSklearnPolicy(PolicyTestCollection):
@@ -527,22 +470,6 @@ class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
             },
         )
         return p
-
-
-class TestTEDPolicyWithTfConfig(TestTEDPolicy):
-    def create_policy(self, featurizer, priority):
-        p = TEDPolicy(featurizer=featurizer, priority=priority, **tf_defaults())
-        return p
-
-    # TODO test tf config
-    @pytest.mark.skip(reason="Fix tf config.")
-    def test_tf_config(self, trained_policy, tmpdir):
-        # noinspection PyProtectedMember
-        assert trained_policy.session._config == session_config()
-        trained_policy.persist(tmpdir.strpath)
-        loaded = trained_policy.__class__.load(tmpdir.strpath)
-        # noinspection PyProtectedMember
-        assert loaded.session._config == session_config()
 
 
 class TestMemoizationPolicy(PolicyTestCollection):
