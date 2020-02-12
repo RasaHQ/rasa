@@ -1,43 +1,43 @@
-TEXT_ATTRIBUTE = "text"
+TEXT = "text"
 
 RESPONSE_KEY_ATTRIBUTE = "response_key"
 
-INTENT_ATTRIBUTE = "intent"
+INTENT = "intent"
 
-RESPONSE_ATTRIBUTE = "response"
+RESPONSE = "response"
 
-ENTITIES_ATTRIBUTE = "entities"
-BILOU_ENTITIES_ATTRIBUTE = "bilou_entities"
+ENTITIES = "entities"
+BILOU_ENTITIES = "bilou_entities"
 
-EXTRACTOR_ATTRIBUTE = "extractor"
+EXTRACTOR = "extractor"
 
 PRETRAINED_EXTRACTORS = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
 
 CLS_TOKEN = "__CLS__"
 
-MESSAGE_ATTRIBUTES = [TEXT_ATTRIBUTE, INTENT_ATTRIBUTE, RESPONSE_ATTRIBUTE]
+MESSAGE_ATTRIBUTES = [TEXT, INTENT, RESPONSE]
 
 TOKENS_NAMES = {
-    TEXT_ATTRIBUTE: "tokens",
-    INTENT_ATTRIBUTE: "intent_tokens",
-    RESPONSE_ATTRIBUTE: "response_tokens",
+    TEXT: "tokens",
+    INTENT: "intent_tokens",
+    RESPONSE: "response_tokens",
 }
 
 SPARSE_FEATURE_NAMES = {
-    TEXT_ATTRIBUTE: "text_sparse_features",
-    INTENT_ATTRIBUTE: "intent_sparse_features",
-    RESPONSE_ATTRIBUTE: "response_sparse_features",
+    TEXT: "text_sparse_features",
+    INTENT: "intent_sparse_features",
+    RESPONSE: "response_sparse_features",
 }
 
 DENSE_FEATURE_NAMES = {
-    TEXT_ATTRIBUTE: "text_dense_features",
-    INTENT_ATTRIBUTE: "intent_dense_features",
-    RESPONSE_ATTRIBUTE: "response_dense_features",
+    TEXT: "text_dense_features",
+    INTENT: "intent_dense_features",
+    RESPONSE: "response_dense_features",
 }
 
-SPACY_DOCS = {TEXT_ATTRIBUTE: "spacy_doc", RESPONSE_ATTRIBUTE: "response_spacy_doc"}
+SPACY_DOCS = {TEXT: "spacy_doc", RESPONSE: "response_spacy_doc"}
 
-DENSE_FEATURIZABLE_ATTRIBUTES = [TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE]
+DENSE_FEATURIZABLE_ATTRIBUTES = [TEXT, RESPONSE]
 
 RESPONSE_SELECTOR_PROPERTY_NAME = "response_selector"
 DEFAULT_OPEN_UTTERANCE_TYPE = "default"

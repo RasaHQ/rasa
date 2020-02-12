@@ -14,6 +14,7 @@ from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
+from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
@@ -30,7 +31,7 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
 )
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.model import Metadata
-from rasa.nlu.selectors.embedding_response_selector import ResponseSelector
+from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
@@ -39,6 +40,11 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.utils.common import class_from_module_path, raise_warning
+from rasa.utils.tensorflow.constants import (
+    INTENT_CLASSIFICATION,
+    ENTITY_RECOGNITION,
+    NUM_TRANSFORMER_LAYERS,
+)
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.components import Component
@@ -77,6 +83,7 @@ component_classes = [
     MitieIntentClassifier,
     KeywordIntentClassifier,
     DIETClassifier,
+    EmbeddingIntentClassifier,
     # selectors
     ResponseSelector,
 ]
@@ -105,7 +112,7 @@ old_style_names = {
     "intent_classifier_sklearn": "SklearnIntentClassifier",
     "intent_classifier_mitie": "MitieIntentClassifier",
     "intent_classifier_keyword": "KeywordIntentClassifier",
-    "intent_classifier_tensorflow_embedding": "DIETClassifier",
+    "intent_classifier_tensorflow_embedding": "EmbeddingIntentClassifier",
 }
 
 # To simplify usage, there are a couple of model templates, that already add
@@ -117,7 +124,13 @@ registered_pipeline_templates = {
         {"name": "SpacyTokenizer"},
         {"name": "SpacyFeaturizer"},
         {"name": "RegexFeaturizer"},
-        {"name": "CRFEntityExtractor"},
+        {"name": "LexicalSyntacticFeaturizer"},
+        {
+            "name": "DIETClassifier",
+            INTENT_CLASSIFICATION: False,
+            ENTITY_RECOGNITION: True,
+            NUM_TRANSFORMER_LAYERS: 0,
+        },
         {"name": "EntitySynonymMapper"},
         {"name": "SklearnIntentClassifier"},
     ],
@@ -125,8 +138,7 @@ registered_pipeline_templates = {
     "supervised_embeddings": [
         {"name": "WhitespaceTokenizer"},
         {"name": "RegexFeaturizer"},
-        {"name": "CRFEntityExtractor"},
-        {"name": "EntitySynonymMapper"},
+        {"name": "LexicalSyntacticFeaturizer"},
         {"name": "CountVectorsFeaturizer"},
         {
             "name": "CountVectorsFeaturizer",
@@ -135,10 +147,12 @@ registered_pipeline_templates = {
             "max_ngram": 4,
         },
         {"name": "DIETClassifier"},
+        {"name": "EntitySynonymMapper"},
     ],
     "pretrained_embeddings_convert": [
         {"name": "ConveRTTokenizer"},
         {"name": "ConveRTFeaturizer"},
+        {"name": "LexicalSyntacticFeaturizer"},
         {"name": "DIETClassifier"},
     ],
 }

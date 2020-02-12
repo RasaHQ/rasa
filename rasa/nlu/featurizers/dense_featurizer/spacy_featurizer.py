@@ -10,7 +10,7 @@ if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
 
 from rasa.nlu.constants import (
-    TEXT_ATTRIBUTE,
+    TEXT,
     SPACY_DOCS,
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
@@ -62,7 +62,7 @@ class SpacyFeaturizer(Featurizer):
 
         self._set_spacy_features(message)
 
-    def _set_spacy_features(self, message: Message, attribute: Text = TEXT_ATTRIBUTE):
+    def _set_spacy_features(self, message: Message, attribute: Text = TEXT):
         """Adds the spacy word vectors to the messages features."""
 
         message_attribute_doc = self.get_doc(message, attribute)

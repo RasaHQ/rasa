@@ -1,5 +1,4 @@
 import logging
-import warnings
 
 from typing import Text, List, Optional, Dict, Any
 
@@ -7,12 +6,12 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.components import Component
 from rasa.nlu.constants import (
-    RESPONSE_ATTRIBUTE,
-    TEXT_ATTRIBUTE,
+    RESPONSE,
+    TEXT,
     CLS_TOKEN,
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
-    INTENT_ATTRIBUTE,
+    INTENT,
 )
 
 logger = logging.getLogger(__name__)
@@ -90,7 +89,7 @@ class Tokenizer(Component):
         for example in training_data.training_examples:
             for attribute in MESSAGE_ATTRIBUTES:
                 if example.get(attribute) is not None:
-                    if attribute == INTENT_ATTRIBUTE:
+                    if attribute == INTENT:
                         tokens = self._split_intent(example)
                     else:
                         tokens = self.tokenize(example, attribute)
@@ -100,12 +99,12 @@ class Tokenizer(Component):
     def process(self, message: Message, **kwargs: Any) -> None:
         """Tokenize the incoming message."""
 
-        tokens = self.tokenize(message, TEXT_ATTRIBUTE)
-        tokens = self.add_cls_token(tokens, TEXT_ATTRIBUTE)
-        message.set(TOKENS_NAMES[TEXT_ATTRIBUTE], tokens)
+        tokens = self.tokenize(message, TEXT)
+        tokens = self.add_cls_token(tokens, TEXT)
+        message.set(TOKENS_NAMES[TEXT], tokens)
 
     def _split_intent(self, message: Message):
-        text = message.get(INTENT_ATTRIBUTE)
+        text = message.get(INTENT)
 
         words = (
             text.split(self.intent_split_symbol)
@@ -130,7 +129,7 @@ class Tokenizer(Component):
 
     @staticmethod
     def add_cls_token(tokens: List[Token], attribute: Text) -> List[Token]:
-        if attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE] and tokens:
+        if attribute in [RESPONSE, TEXT] and tokens:
             # +1 to have a space between the last token and the __cls__ token
             idx = tokens[-1].end + 1
             tokens.append(Token(CLS_TOKEN, idx))
