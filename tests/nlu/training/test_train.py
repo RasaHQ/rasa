@@ -29,7 +29,6 @@ def pipelines_for_tests():
                 "SpacyNLP",
                 "MitieNLP",
                 "WhitespaceTokenizer",
-                "ConveRTTokenizer",
                 "MitieTokenizer",
                 "SpacyTokenizer",
                 "MitieFeaturizer",
@@ -37,7 +36,6 @@ def pipelines_for_tests():
                 "RegexFeaturizer",
                 "LexicalSyntacticFeaturizer",
                 "CountVectorsFeaturizer",
-                "ConveRTFeaturizer",
                 "MitieEntityExtractor",
                 "CRFEntityExtractor",
                 "SpacyEntityExtractor",
@@ -60,6 +58,33 @@ def pipelines_for_tests():
                 "MitieEntityExtractor",
                 "SklearnIntentClassifier",
                 "KeywordIntentClassifier",
+            ),
+        ),
+        # Create separate test pipelines for dense featurizers because they can't co-exist in the same pipeline
+        # together, as their tokenizers break the incoming message into different number of tokens.
+        (
+            "en",
+            as_pipeline(
+                "HFTransformersNLP",
+                "LanguageModelTokenizer",
+                "LanguageModelFeaturizer",
+                "LexicalSyntacticFeaturizer",
+                "CountVectorsFeaturizer",
+                "CRFEntityExtractor",
+                "DIETClassifier",
+                "ResponseSelector",
+            ),
+        ),
+        (
+            "en",
+            as_pipeline(
+                "ConveRTTokenizer",
+                "ConveRTFeaturizer",
+                "LexicalSyntacticFeaturizer",
+                "CountVectorsFeaturizer",
+                "CRFEntityExtractor",
+                "DIETClassifier",
+                "ResponseSelector",
             ),
         ),
     ]

@@ -10,7 +10,7 @@ def test_spacy_ner_extractor(component_builder, spacy_nlp):
         {
             "intent": "restaurant_search",
             "entities": [],
-            "spacy_doc": spacy_nlp("anywhere in the west"),
+            "text_spacy_doc": spacy_nlp("anywhere in the west"),
         },
     )
 
@@ -33,7 +33,7 @@ def test_spacy_ner_extractor(component_builder, spacy_nlp):
         {
             "intent": "example_intent",
             "entities": [],
-            "spacy_doc": spacy_nlp("anywhere in the West with Sebastian Thrun"),
+            "text_spacy_doc": spacy_nlp("anywhere in the West with Sebastian Thrun"),
         },
     )
     _config = RasaNLUModelConfig({"pipeline": [{"name": "SpacyEntityExtractor"}]})

@@ -85,6 +85,7 @@ install_requires = [
     "SQLAlchemy~=1.3.0",
     "sklearn-crfsuite~=0.3.6",
     "PyJWT~=1.7",
+    "transformers~=2.3.0",
 ]
 
 extras_requires = {
