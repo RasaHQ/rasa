@@ -59,10 +59,18 @@ def test_test_nlu_cross_validation(run_in_default_project: Callable[..., RunResu
 
 
 def test_test_nlu_comparison(run_in_default_project: Callable[..., RunResult]):
-    copyfile("config.yml", "nlu-config.yml")
+    copyfile("config.yml", "config-1.yml")
 
     run_in_default_project(
-        "test", "nlu", "-c", "config.yml", "nlu-config.yml", "--run", "2"
+        "test",
+        "nlu",
+        "-config",
+        "config.yml",
+        "config-1.yml",
+        "--run",
+        "2",
+        "-percentages",
+        "75",
     )
 
     assert os.path.exists("results/run_1")
@@ -106,6 +114,7 @@ def test_test_core_comparison_after_train(
         },
         "config_2.yml",
     )
+
     run_in_default_project(
         "train",
         "core",
