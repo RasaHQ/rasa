@@ -32,6 +32,15 @@ class EventBroker:
 
         raise NotImplementedError("Event broker must implement the `publish` method.")
 
+    # noinspection PyMethodMayBeStatic
+    def is_ready(self, *args: Any, **kwargs: Any) -> bool:
+        """Determine whether or not the event broker is ready.
+
+        Returns:
+            `True` by default, but this may be overridden by subclasses.
+        """
+        return True
+
 
 def _create_from_endpoint_config(
     endpoint_config: Optional[EndpointConfig],

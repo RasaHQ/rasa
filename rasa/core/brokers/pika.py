@@ -304,6 +304,27 @@ class PikaEventBroker(EventBroker):
     def _run_pika_io_loop(self) -> None:
         self._pika_connection.ioloop.start()
 
+    def is_ready(
+        self, attempts: int = 1000, wait_time_between_attempts: float = 0.01,
+    ) -> bool:
+        """Spin until the pika channel is open.
+
+        It typically takes 50 ms or so for the pika channel to open. We'll wait up
+        to 10 seconds just in case.
+
+        Args:
+            attempts: Number of retries.
+            wait_time_between_attempts: Wait time between retries.
+
+        """
+        while attempts:
+            if self.channel:
+                return True
+            time.sleep(wait_time_between_attempts)
+            attempts -= 1
+
+        return False
+
     def publish(
         self, event: Dict, retries: int = 60, retry_delay_in_seconds: int = 5
     ) -> None:

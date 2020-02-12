@@ -13,7 +13,6 @@ import rasa.utils.io as io_utils
 from rasa.cli import export
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.events import UserUttered
-from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker
 
 
@@ -48,27 +47,14 @@ def test_timestamps(
 
     # no error is raised
     # noinspection PyProtectedMember
-    export._inspect_timestamp_options(args)
+    export._validate_timestamp_options(args)
 
 
-@pytest.mark.parametrize(
-    "minimum_timestamp,maximum_timestamp",
-    [(3, 2), ("not-a-float", 5.5), (None, "no-float")],
-)
-def test_timestamp_error_exit(
-    minimum_timestamp: Optional[float], maximum_timestamp: Optional[float],
-):
-    args = argparse.Namespace()
-    args.minimum_timestamp = (
-        str(minimum_timestamp) if minimum_timestamp is not None else None
-    )
-    args.maximum_timestamp = (
-        str(maximum_timestamp) if maximum_timestamp is not None else None
-    )
-
+def test_timestamp_error_exit():
+    args = argparse.Namespace(minimum_timestamp=3, maximum_timestamp=2)
     with pytest.raises(SystemExit):
         # noinspection PyProtectedMember
-        export._inspect_timestamp_options(args)
+        export._validate_timestamp_options(args)
 
 
 def _write_endpoint_config_to_yaml(path: Path, data: Dict[Text, Any]) -> Path:
@@ -106,7 +92,7 @@ def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path)
 
     # fetching the event broker is successful
     assert export._get_event_broker(available_endpoints)
-    assert export._get_rasa_tracker_store(available_endpoints)
+    assert export._get_tracker_store(available_endpoints)
 
 
 # noinspection PyProtectedMember
@@ -130,7 +116,7 @@ def test_get_tracker_store_from_endpoint_config_error_exit(tmp_path: Path):
     available_endpoints = export._get_available_endpoints(str(endpoints_path))
 
     with pytest.raises(SystemExit):
-        assert export._get_rasa_tracker_store(available_endpoints)
+        assert export._get_tracker_store(available_endpoints)
 
 
 @pytest.mark.parametrize(
@@ -152,16 +138,15 @@ def test_get_conversation_ids_to_process(
     requested_ids: Optional[List[int]],
     available_ids: Optional[List[int]],
     expected: Optional[List[int]],
-    monkeypatch: MonkeyPatch,
 ):
     # convert ids to strings
     _requested_ids = [str(_id) for _id in requested_ids] if requested_ids else None
     _available_ids = [str(_id) for _id in available_ids]
-    _expected = [str(_id) for _id in expected] if expected else None
+    _expected = {str(_id) for _id in expected} if expected else None
 
     # create and mock tracker store containing `available_ids` as keys
-    tracker_store = TrackerStore(None, None)
-    monkeypatch.setattr(tracker_store, "keys", lambda: _available_ids)
+    tracker_store = Mock()
+    tracker_store.keys.side_effect = _available_ids
 
     # noinspection PyProtectedMember
     assert (
@@ -188,8 +173,8 @@ def test_get_conversation_ids_to_process_error_exit(
     _available_ids = [str(_id) for _id in available_ids]
 
     # create and mock tracker store containing `available_ids` as keys
-    tracker_store = TrackerStore(None, None)
-    monkeypatch.setattr(tracker_store, "keys", lambda: _available_ids)
+    tracker_store = Mock()
+    tracker_store.keys.side_effect = lambda: _available_ids
 
     with pytest.raises(SystemExit):
         # noinspection PyProtectedMember
@@ -201,9 +186,10 @@ def test_prepare_pika_event_broker():
     pika_broker = Mock(spec=PikaEventBroker)
 
     # patch the spinner so we can execute the `_prepare_pika_producer()` function
-    with patch.object(export, "_ensure_pika_channel_is_open", lambda _: None):
-        # noinspection PyProtectedMember
-        export._prepare_pika_producer(pika_broker)
+    pika_broker.is_ready.side_effect = lambda *_: True
+
+    # noinspection PyProtectedMember
+    export._prepare_event_broker(pika_broker)
 
     # the attributes are set as expected
     assert not pika_broker.should_keep_unpublished_messages
@@ -262,7 +248,7 @@ def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
 def test_fetch_events_within_time_range():
     conversation_ids = ["some-id", "another-id"]
 
-    # prepare events with from different senders and different timestamps
+    # prepare events from different senders and different timestamps
     event_1 = random_user_uttered_event(3)
     event_2 = random_user_uttered_event(2)
     event_3 = random_user_uttered_event(1)
@@ -277,7 +263,7 @@ def test_fetch_events_within_time_range():
         )
 
     # create mock tracker store
-    tracker_store = Mock(spec=TrackerStore)
+    tracker_store = Mock()
     tracker_store.retrieve.side_effect = _get_tracker
 
     fetched_events = export._fetch_events_within_time_range(
@@ -363,7 +349,7 @@ def test_export_events(tmp_path: Path, monkeypatch: MonkeyPatch):
         maximum_timestamp=10.0,
     )
 
-    # prepare events with from different senders and different timestamps
+    # prepare events from different senders and different timestamps
     event_1 = random_user_uttered_event(1)
     event_2 = random_user_uttered_event(2)
     event_3 = random_user_uttered_event(3)
@@ -385,7 +371,8 @@ def test_export_events(tmp_path: Path, monkeypatch: MonkeyPatch):
     tracker_store = Mock()
     tracker_store.keys = Mock(return_value=all_conversation_ids)
     tracker_store.retrieve.side_effect = _get_tracker
-    monkeypatch.setattr(export, "_get_rasa_tracker_store", lambda _: tracker_store)
+
+    monkeypatch.setattr(export, "_get_tracker_store", lambda _: tracker_store)
 
     # mock event broker so we can check its `publish` method is called
     event_broker = Mock()
