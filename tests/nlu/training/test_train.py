@@ -80,7 +80,6 @@ def pipelines_for_tests():
             as_pipeline(
                 "ConveRTTokenizer",
                 "ConveRTFeaturizer",
-                "LanguageModelFeaturizer",
                 "LexicalSyntacticFeaturizer",
                 "CountVectorsFeaturizer",
                 "CRFEntityExtractor",
