@@ -391,7 +391,7 @@ def test_export_events(tmp_path: Path, monkeypatch: MonkeyPatch):
 
     # mock tracker store
     tracker_store = Mock()
-    tracker_store.keys = Mock(return_value=all_conversation_ids)
+    tracker_store.keys.side_effect = lambda: all_conversation_ids
     tracker_store.retrieve.side_effect = _get_tracker
 
     monkeypatch.setattr(export, "_get_tracker_store", lambda _: tracker_store)
