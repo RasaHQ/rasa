@@ -1281,7 +1281,9 @@ class DIET(RasaModel):
 
         # should call first to build weights
         pred_ids = self._tf_layers["crf"](logits, sequence_lengths)
-        loss = self._tf_layers["crf"].loss(logits, c, sequence_lengths)
+        loss = self._tf_layers["crf"].loss(
+            logits, c, sequence_lengths
+        )  # pytype: disable=attribute-error
 
         # TODO check that f1 calculation is correct
         # calculate f1 score for train predictions
@@ -1378,12 +1380,14 @@ class DIET(RasaModel):
             cls = self._last_token(text_transformed, sequence_lengths)
             cls_embed = self._tf_layers["embed.text"](cls)
 
+            # pytype: disable=attribute-error
             sim_all = self._tf_layers["loss.label"].sim(
                 cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :]
             )
             scores = self._tf_layers["loss.label"].confidence_from_sim(
                 sim_all, self.config[SIMILARITY_TYPE]
             )
+            # pytype: enable=attribute-error
             out["i_scores"] = scores
 
         if self.config[ENTITY_RECOGNITION]:
