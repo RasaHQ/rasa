@@ -64,9 +64,9 @@ from rasa.utils.tensorflow.constants import (
     NEG_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
-    USE_MAX_SIM_NEG,
-    MU_NEG,
-    MU_POS,
+    USE_MAX_NEG_SIM,
+    MAX_NEG_SIM,
+    MAX_POS_SIM,
     EMBED_DIM,
     BILOU_FLAG,
     KEY_RELATIVE_ATTENTION,
@@ -116,8 +116,16 @@ class DIETClassifier(EntityExtractor):
         NUM_TRANSFORMER_LAYERS: 2,
         # number of attention heads in transformer
         NUM_HEADS: 4,
-        # max sequence length if pos_encoding='emb'
+        # if true use key relative embeddings in attention
+        KEY_RELATIVE_ATTENTION: False,
+        # if true use key relative embeddings in attention
+        VALUE_RELATIVE_ATTENTION: False,
+        # max position for relative embeddings
+        MAX_RELATIVE_POSITION: None,
+        # max sequence length
         MAX_SEQ_LENGTH: 256,
+        # use a unidirectional or bidirectional encoder
+        UNIDIRECTIONAL_ENCODER: False,
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
@@ -146,11 +154,11 @@ class DIETClassifier(EntityExtractor):
         RANKING_LENGTH: 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct labels
-        MU_POS: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
+        MAX_POS_SIM: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
         # maximum negative similarity for incorrect labels
-        MU_NEG: -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
+        MAX_NEG_SIM: -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
         # flag: if true, only minimize the maximum similarity for incorrect labels
-        USE_MAX_SIM_NEG: True,
+        USE_MAX_NEG_SIM: True,
         # scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
         # regularization parameters
@@ -163,8 +171,6 @@ class DIETClassifier(EntityExtractor):
         DROPRATE: 0.2,
         # dropout rate for attention
         DROPRATE_ATTENTION: 0,
-        # use a unidirectional or bidirectional encoder
-        UNIDIRECTIONAL_ENCODER: False,
         # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: True,
         # visualization of accuracy
@@ -180,12 +186,6 @@ class DIETClassifier(EntityExtractor):
         # if true random tokens of the input message will be masked and the model
         # should predict those tokens
         MASKED_LM: False,
-        # if true use key relative embeddings in attention
-        KEY_RELATIVE_ATTENTION: False,
-        # if true use key relative embeddings in attention
-        VALUE_RELATIVE_ATTENTION: False,
-        # max position for relative embeddings
-        MAX_RELATIVE_POSITION: None,
         # BILOU_flag determines whether to use BILOU tagging or not.
         # More rigorous however requires more examples per entity
         # rule of thumb: use only if more than 100 egs. per entity
@@ -1081,9 +1081,9 @@ class DIET(RasaModel):
         self._tf_layers[f"loss.{name}_mask"] = layers.DotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
-            self.config[MU_POS],
-            self.config[MU_NEG],
-            self.config[USE_MAX_SIM_NEG],
+            self.config[MAX_POS_SIM],
+            self.config[MAX_NEG_SIM],
+            self.config[USE_MAX_NEG_SIM],
             self.config[NEG_MARGIN_SCALE],
             self.config[SCALE_LOSS],
             # set to 1 to get deterministic behaviour
@@ -1106,9 +1106,9 @@ class DIET(RasaModel):
         self._tf_layers["loss.label"] = layers.DotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
-            self.config[MU_POS],
-            self.config[MU_NEG],
-            self.config[USE_MAX_SIM_NEG],
+            self.config[MAX_POS_SIM],
+            self.config[MAX_NEG_SIM],
+            self.config[USE_MAX_NEG_SIM],
             self.config[NEG_MARGIN_SCALE],
             self.config[SCALE_LOSS],
             # set to 1 to get deterministic behaviour

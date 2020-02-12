@@ -18,12 +18,13 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
     REGULARIZATION_CONSTANT,
-    USE_MAX_SIM_NEG,
-    MU_NEG,
-    MU_POS,
+    USE_MAX_NEG_SIM,
+    MAX_NEG_SIM,
+    MAX_POS_SIM,
     EMBED_DIM,
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
+    NEG_MARGIN_SCALE,
 )
 
 
@@ -112,10 +113,11 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     config = _replace_deprecated_option("dense_dim", DENSE_DIM, config)
     config = _replace_deprecated_option("embed_dim", EMBED_DIM, config)
     config = _replace_deprecated_option("num_neg", NUM_NEG, config)
-    config = _replace_deprecated_option("mu_pos", MU_POS, config)
-    config = _replace_deprecated_option("mu_neg", MU_NEG, config)
-    config = _replace_deprecated_option("use_max_sim_neg", USE_MAX_SIM_NEG, config)
+    config = _replace_deprecated_option("mu_pos", MAX_POS_SIM, config)
+    config = _replace_deprecated_option("mu_neg", MAX_NEG_SIM, config)
+    config = _replace_deprecated_option("use_max_sim_neg", USE_MAX_NEG_SIM, config)
     config = _replace_deprecated_option("C2", REGULARIZATION_CONSTANT, config)
+    config = _replace_deprecated_option("C_emb", NEG_MARGIN_SCALE, config)
     config = _replace_deprecated_option(
         "evaluate_every_num_epochs", EVAL_NUM_EPOCHS, config
     )

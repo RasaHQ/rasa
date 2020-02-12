@@ -38,9 +38,9 @@ from rasa.utils.tensorflow.constants import (
     NEG_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
-    USE_MAX_SIM_NEG,
-    MU_NEG,
-    MU_POS,
+    USE_MAX_NEG_SIM,
+    MAX_NEG_SIM,
+    MAX_POS_SIM,
     EMBED_DIM,
     BILOU_FLAG,
     KEY_RELATIVE_ATTENTION,
@@ -88,7 +88,7 @@ class ResponseSelector(DIETClassifier):
         any_of(DENSE_FEATURE_NAMES[RESPONSE], SPARSE_FEATURE_NAMES[RESPONSE]),
     ]
 
-    # default properties (DOC MARKER - don't remove)
+    # please make sure to update the docs when changing a default parameter
     defaults = {
         # nn architecture
         # sizes of hidden layers before the embedding layer
@@ -103,8 +103,16 @@ class ResponseSelector(DIETClassifier):
         NUM_TRANSFORMER_LAYERS: 2,
         # number of attention heads in transformer
         NUM_HEADS: 4,
-        # max sequence length if pos_encoding='emb'
+        # max sequence length
         MAX_SEQ_LENGTH: 256,
+        # use a unidirectional or bidirectional encoder
+        UNIDIRECTIONAL_ENCODER: False,
+        # if true use key relative embeddings in attention
+        KEY_RELATIVE_ATTENTION: False,
+        # if true use key relative embeddings in attention
+        VALUE_RELATIVE_ATTENTION: False,
+        # max position for relative embeddings
+        MAX_RELATIVE_POSITION: None,
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
@@ -133,12 +141,12 @@ class ResponseSelector(DIETClassifier):
         RANKING_LENGTH: 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct intent labels
-        MU_POS: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
+        MAX_POS_SIM: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
         # maximum negative similarity for incorrect intent labels
-        MU_NEG: -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
+        MAX_NEG_SIM: -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
         # flag: if true, only minimize the maximum similarity for
         # incorrect intent labels
-        USE_MAX_SIM_NEG: True,
+        USE_MAX_NEG_SIM: True,
         # scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
         # regularization parameters
@@ -151,8 +159,6 @@ class ResponseSelector(DIETClassifier):
         DROPRATE: 0.2,
         # dropout rate for attention
         DROPRATE_ATTENTION: 0,
-        # use a unidirectional or bidirectional encoder
-        UNIDIRECTIONAL_ENCODER: False,
         # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: True,
         # visualization of accuracy
@@ -163,17 +169,10 @@ class ResponseSelector(DIETClassifier):
         # if true random tokens of the input message will be masked and the model
         # should predict those tokens
         MASKED_LM: False,
-        # if true use key relative embeddings in attention
-        KEY_RELATIVE_ATTENTION: False,
-        # if true use key relative embeddings in attention
-        VALUE_RELATIVE_ATTENTION: False,
-        # max position for relative embeddings
-        MAX_RELATIVE_POSITION: None,
         # selector config
         # name of the intent for which this response selector is to be trained
         "retrieval_intent": None,
     }
-    # end default properties (DOC MARKER - don't remove)
 
     def __init__(
         self,

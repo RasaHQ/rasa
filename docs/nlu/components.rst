@@ -32,8 +32,8 @@ MitieNLP
 ~~~~~~~~
 
 :Short: MITIE initializer
-:Outputs: nothing
-:Requires: nothing
+:Outputs: Nothing
+:Requires: Nothing
 :Description:
     Initializes mitie structures. Every mitie component relies on this,
     hence this should be put at the beginning
@@ -58,8 +58,8 @@ SpacyNLP
 ~~~~~~~~
 
 :Short: spaCy language initializer
-:Outputs: nothing
-:Requires: nothing
+:Outputs: Nothing
+:Requires: Nothing
 :Description:
     Initializes spacy structures. Every spaCy component relies on this, hence this should be put at the beginning
     of every pipeline that uses any spaCy components.
@@ -107,7 +107,7 @@ WhitespaceTokenizer
 
 :Short: Tokenizer using whitespaces as a separator
 :Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
-:Requires: nothing
+:Requires: Nothing
 :Description:
     Creates a token for every whitespace separated character sequence.
 :Configuration:
@@ -131,7 +131,7 @@ JiebaTokenizer
 
 :Short: Tokenizer using Jieba for Chinese language
 :Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
-:Requires: nothing
+:Requires: Nothing
 :Description:
     Creates tokens using the Jieba tokenizer specifically for Chinese
     language. For language other than Chinese, Jieba will work as
@@ -199,7 +199,7 @@ ConveRTTokenizer
 
 :Short: Tokenizer using ConveRT
 :Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
-:Requires: nothing
+:Requires: Nothing
 :Description:
     Creates tokens using the ConveRT tokenizer. Must be used whenever the ``ConveRTFeaturizer`` is used.
 :Configuration:
@@ -385,7 +385,7 @@ CountVectorsFeaturizer
         In this case during prediction all unknown words will be treated as this generic word ``OOV_token``.
 
         For example, one might create separate intent ``outofscope`` in the training data containing messages of
-        different number of ``OOV_token``s and maybe some additional general words.
+        different number of ``OOV_token`` s and maybe some additional general words.
         Then an algorithm will likely classify a message with unknown words as this intent ``outofscope``.
 
         .. note::
@@ -450,6 +450,7 @@ CountVectorsFeaturizer
           OOV_token: None  # string or None
           OOV_words: []  # list of strings
 
+.. _LexicalSyntacticFeaturizer:
 
 LexicalSyntacticFeaturizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -641,70 +642,71 @@ EmbeddingIntentClassifier
 
 :Configuration:
 
-    The algorithm has hyperparameters to control:
+    The following hyperparameters can be set:
 
         - neural network's architecture:
 
-            - ``hidden_layers_sizes_text`` sets a list of hidden layer sizes before
+            - ``hidden_layers_sizes.text`` sets a list of hidden layer sizes before
               the embedding layer for user inputs, the number of hidden layers
-              is equal to the length of the list
-            - ``hidden_layers_sizes_label`` sets a list of hidden layer sizes before
+              is equal to the length of the list.
+            - ``hidden_layers_sizes.label`` sets a list of hidden layer sizes before
               the embedding layer for intent labels, the number of hidden layers
-              is equal to the length of the list
-            - ``share_hidden_layers`` if set to True, shares the hidden layers between user inputs and intent label
+              is equal to the length of the list.
+            - ``share_hidden_layers`` if set to True, shares the hidden layers between user inputs and intent label.
 
         - training:
 
             - ``batch_size`` sets the number of training examples in one
               forward/backward pass, the higher the batch size, the more
-              memory space you'll need;
+              memory space you'll need.
             - ``batch_strategy`` sets the type of batching strategy,
-              it should be either ``sequence`` or ``balanced``;
+              it should be either ``sequence`` or ``balanced``.
             - ``epochs`` sets the number of times the algorithm will see
               training data, where one ``epoch`` equals one forward pass and
-              one backward pass of all the training examples;
-            - ``random_seed`` if set to any int will get reproducible
-              training results for the same inputs;
-            - ``learning_rate`` to set the learning rate of the optimizer
+              one backward pass of all the training examples.
+            - ``random_seed`` if set you will get reproducible
+              training results for the same inputs.
+            - ``learning_rate`` sets the initial learning rate of the optimizer.
 
         - embedding:
 
-            - ``dense_dimension`` sets the dense dimensions to use for sparse tensors if no dense features are present
-            - ``embedding_dimension`` sets the dimension of embedding space;
-            - ``number_of_negative_examples`` sets the number of incorrect intent labels,
-              the algorithm will minimize their similarity to the user
-              input during training;
+            - ``dense_dimension.text`` sets the dense dimensions for user inputs to use for sparse
+              tensors if no dense features are present.
+            - ``dense_dimension.label`` sets the dense dimensions for intent labels to use for sparse
+              tensors if no dense features are present.
+            - ``embedding_dimension`` sets the dimension of embedding space.
+            - ``number_of_negative_examples`` sets the number of incorrect intent labels.
+              The algorithm will minimize their similarity to the user
+              input during training.
             - ``similarity_type`` sets the type of the similarity,
               it should be either ``auto``, ``cosine`` or ``inner``,
               if ``auto``, it will be set depending on ``loss_type``,
-              ``inner`` for ``softmax``, ``cosine`` for ``margin``;
+              ``inner`` for ``softmax``, ``cosine`` for ``margin``.
             - ``loss_type`` sets the type of the loss function,
-              it should be either ``softmax`` or ``margin``;
+              it should be either ``softmax`` or ``margin``.
             - ``ranking_length`` defines the number of top confidences over
-              which to normalize ranking results if ``loss_type: "softmax"``;
-              to turn off normalization set it to 0
+              which to normalize ranking results if ``loss_type: "softmax"``.
+              To turn off normalization set it to 0.
             - ``maximum_positive_similarity`` controls how similar the algorithm should try
               to make embedding vectors for correct intent labels,
-              used only if ``loss_type`` is set to ``margin``;
+              used only if ``loss_type`` is set to ``margin``.
             - ``maximum_negative_similarity`` controls maximum negative similarity for
-              incorrect intents,
-              used only if ``loss_type`` is set to ``margin``;
+              incorrect intents, used only if ``loss_type`` is set to ``margin``.
             - ``use_maximum_negative_similarity`` if ``true`` the algorithm only
               minimizes maximum similarity over incorrect intent labels,
-              used only if ``loss_type`` is set to ``margin``;
+              used only if ``loss_type`` is set to ``margin``.
             - ``scale_loss`` if ``true`` the algorithm will downscale the loss
               for examples where correct label is predicted with high confidence,
-              used only if ``loss_type`` is set to ``softmax``;
+              used only if ``loss_type`` is set to ``softmax``.
 
         - regularization:
 
-            - ``l2_regularization`` sets the scale of L2 regularization
-            - ``C_emb`` sets the scale of how important is to minimize
-              the maximum similarity between embeddings of different intent labels;
+            - ``regularization_constant`` sets the scale of L2 regularization.
+            - ``negative_margin_scale`` sets the scale of how important is to minimize
+              the maximum similarity between embeddings of different intent labels.
             - ``droprate`` sets the dropout rate, it should be
-              between ``0`` and ``1``, e.g. ``droprate=0.1``
-              would drop out ``10%`` of input units;
-            - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not
+              between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units.
+            - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not.
 
     .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
               be between ``-1`` and ``1``.
@@ -714,18 +716,74 @@ EmbeddingIntentClassifier
               In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
               If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
 
-    In the config, you can specify these parameters.
-    The default values are defined in ``EmbeddingIntentClassifier.defaults``:
-
-    .. literalinclude:: ../../rasa/nlu/classifiers/embedding_intent_classifier.py
-       :dedent: 4
-       :start-after: # default properties (DOC MARKER - don't remove)
-       :end-before: # end default properties (DOC MARKER - don't remove)
-
     .. note:: Parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original
-              starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity`` and
-              ``use_maximum_negative_similarity = False``.
+              starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity``
+              and ``use_maximum_negative_similarity = False``.
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+
+    Default values:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "EmbeddingIntentClassifier"
+            # nn architecture
+            # sizes of hidden layers before the embedding layer
+            # for input words and intent labels,
+            # the number of hidden layers is thus equal to the length of this list
+            "hidden_layers_sizes": {"text": [256, 128], "label": []}
+            # Whether to share the hidden layer weights between input words and labels
+            "share_hidden_layers": False
+            # training parameters
+            # initial and final batch sizes - batch size will be
+            # linearly increased for each epoch
+            "batch_size": [64, 256]
+            # how to create batches
+            "batch_strategy": "balanced"  # string 'sequence' or 'balanced'
+            # number of epochs
+            "epochs": 300
+            # set random seed to any int to get reproducible results
+            "random_seed": None
+            # optimizer
+            "learning_rate": 0.001
+            # embedding parameters
+            # default dense dimension used if no dense features are present
+            "dense_dimension": {"text": 512, "label": 20}
+            # dimension size of embedding vectors
+            "embedding_dimension": 20
+            # the type of the similarity
+            "number_of_negative_examples": 20
+            # flag if minimize only maximum similarity over incorrect actions
+            "similarity_type": "auto"  # string 'auto' or 'cosine' or 'inner'
+            # the type of the loss function
+            "loss_type": "softmax"  # string 'softmax' or 'margin'
+            # number of top intents to normalize scores for softmax loss_type
+            # set to 0 to turn off normalization
+            "ranking_length": 10
+            # how similar the algorithm should try
+            # to make embedding vectors for correct labels
+            "maximum_positive_similarity": 0.8  # should be 0.0 < ... < 1.0 for 'cosine'
+            # maximum negative similarity for incorrect labels
+            "maximum_negative_similarity": -0.4  # should be -1.0 < ... < 1.0 for 'cosine'
+            # flag: if true, only minimize the maximum similarity for incorrect labels
+            "use_maximum_negative_similarity": True
+            # scale loss inverse proportionally to confidence of correct prediction
+            "scale_loss": True
+            # regularization parameters
+            # the scale of regularization
+            "regularization_constant": 0.002
+            # the scale of how critical the algorithm should be of minimizing the
+            # maximum similarity between embeddings of different labels
+            "negative_margin_scale": 0.8
+            # dropout rate for rnn
+            "droprate": 0.2
+            # if true apply dropout to sparse tensors
+            "use_sparse_input_dropout": False
+            # visualization of accuracy
+            # how often to calculate training accuracy
+            "evaluate_every_number_of_epochs": 20  # small values may hurt performance
+            # how many examples to use for calculation of training accuracy
+            "evaluate_on_number_of_examples": 0  # large values may hurt performance
 
 .. _keyword_intent_classifier:
 
@@ -734,7 +792,7 @@ KeywordIntentClassifier
 
 :Short: Simple keyword matching intent classifier, intended for small, short-term projects.
 :Outputs: ``intent``
-:Requires: nothing
+:Requires: Nothing
 
 :Output-Example:
 
@@ -768,8 +826,8 @@ Selectors
 
 .. _response-selector:
 
-Response Selector
-~~~~~~~~~~~~~~~~~~
+ResponseSelector
+~~~~~~~~~~~~~~~~
 
 :Short: Response Selector
 :Outputs: A dictionary with key as ``direct_response_intent`` and value containing ``response`` and ``ranking``
@@ -805,22 +863,103 @@ Response Selector
 :Configuration:
 
     The algorithm includes all the hyperparameters that ``DIETClassifier`` uses.
-    In addition, the component can also be configured to train a response selector for a particular retrieval intent
+    In addition, the component can also be configured to train a response selector for a particular retrieval intent.
 
-        - ``retrieval_intent``: sets the name of the intent for which this response selector model is trained.
-          Default ``None``
+        - ``retrieval_intent`` sets the name of the intent for which this response selector model is trained.
 
-    In the config, you can specify these parameters.
-    The default values are defined in ``ResponseSelector.defaults``:
+    Default values:
 
-    .. literalinclude:: ../../rasa/nlu/selectors/response_selector.py
-       :dedent: 4
-       :start-after: # default properties (DOC MARKER - don't remove)
-       :end-before: # end default properties (DOC MARKER - don't remove)
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "ResponseSelector"
+            # nn architecture
+            # sizes of hidden layers before the embedding layer
+            # for input words and intent labels,
+            # the number of hidden layers is thus equal to the length of this list
+            "hidden_layers_sizes": {"text": [], "label": []}
+            # Whether to share the hidden layer weights between input words and labels
+            "share_hidden_layers": False
+            # number of units in transformer
+            "transformer_size": 256
+            # number of transformer layers
+            "number_of_transformer_layers": 2
+            # number of attention heads in transformer
+            "number_of_attention_heads": 4
+            # max sequence length
+            "maximum_sequence_length": 256
+            # use a unidirectional or bidirectional encoder
+            "unidirectional_encoder": False
+            # if true use key relative embeddings in attention
+            "use_key_relative_attention": False
+            # if true use key relative embeddings in attention
+            "use_value_relative_attention": False
+            # max position for relative embeddings
+            "max_relative_position": None
+            # training parameters
+            # initial and final batch sizes - batch size will be
+            # linearly increased for each epoch
+            "batch_size": [64, 256]
+            # how to create batches
+            "batch_strategy": "balanced"  # string 'sequence' or 'balanced'
+            # number of epochs
+            "epochs": 300
+            # set random seed to any int to get reproducible results
+            "random_seed": None
+            # optimizer
+            "learning_rate": 0.001
+            # embedding parameters
+            # default dense dimension used if no dense features are present
+            "dense_dimension": {"text": 512, "label": 512}
+            # dimension size of embedding vectors
+            "embedding_dimension": 20
+            # the type of the similarity
+            "number_of_negative_examples": 20
+            # flag if minimize only maximum similarity over incorrect actions
+            "similarity_type": "auto"  # string 'auto' or 'cosine' or 'inner'
+            # the type of the loss function
+            "loss_type": "softmax"  # string 'softmax' or 'margin'
+            # number of top intents to normalize scores for softmax loss_type
+            # set to 0 to turn off normalization
+            "ranking_length": 10
+            # how similar the algorithm should try
+            # to make embedding vectors for correct labels
+            "maximum_positive_similarity": 0.8  # should be 0.0 < ... < 1.0 for 'cosine'
+            # maximum negative similarity for incorrect labels
+            "maximum_negative_similarity": -0.4  # should be -1.0 < ... < 1.0 for 'cosine'
+            # flag: if true, only minimize the maximum similarity for incorrect labels
+            "use_maximum_negative_similarity": True
+            # scale loss inverse proportionally to confidence of correct prediction
+            "scale_loss": True
+            # regularization parameters
+            # the scale of regularization
+            "regularization_constant": 0.002
+            # the scale of how critical the algorithm should be of minimizing the
+            # maximum similarity between embeddings of different labels
+            "negative_margin_scale": 0.8
+            # dropout rate for rnn
+            "droprate": 0.2
+            # dropout rate for attention
+            "droprate_attention": 0
+            # if true apply dropout to sparse tensors
+            "use_sparse_input_dropout": True
+            # visualization of accuracy
+            # how often to calculate training accuracy
+            "evaluate_every_number_of_epochs": 20  # small values may hurt performance
+            # how many examples to use for calculation of training accuracy
+            "evaluate_on_number_of_examples": 0  # large values may hurt performance
+            # if true random tokens of the input message will be masked and the model
+            # should predict those tokens
+            "use_masked_language_model": False
+            # selector config
+            # name of the intent for which this response selector is to be trained
+            "retrieval_intent": None
 
 
 Entity Extractors
 -----------------
+
+Entity extractors extract entities, such as person names or locations, from the user input.
 
 MitieEntityExtractor
 ~~~~~~~~~~~~~~~~~~~~
@@ -893,19 +1032,18 @@ SpacyEntityExtractor
         pipeline:
         - name: "SpacyEntityExtractor"
           # dimensions to extract
-          dimensions: ["PERSON", "LOC", "ORG", "PRODUCT"]
+          dimensions: None
 
 
 EntitySynonymMapper
 ~~~~~~~~~~~~~~~~~~~
 
 :Short: Maps synonymous entity values to the same value.
-:Outputs: modifies existing entities that previous entity extraction components found
-:Requires: nothing
+:Outputs: Modifies existing entities that previous entity extraction components found.
+:Requires: Nothing
 :Description:
-    If the training data contains defined synonyms (by using the ``value`` attribute on the entity examples).
-    this component will make sure that detected entity values will be mapped to the same value. For example,
-    if your training data contains the following examples:
+    If the training data contains defined synonyms, this component will make sure that detected entity values will
+    be mapped to the same value. For example, if your training data contains the following examples:
 
     .. code-block:: json
 
@@ -946,7 +1084,7 @@ EntitySynonymMapper
 CRFEntityExtractor
 ~~~~~~~~~~~~~~~~~~
 
-:Short: CRF (conditional random field) entity extraction
+:Short: Conditional random field (CRF) entity extraction
 :Outputs: ``entities``
 :Requires: ``tokens`` and ``dense_features`` (optional)
 :Output-Example:
@@ -965,51 +1103,125 @@ CRFEntityExtractor
         }
 
 :Description:
-    This component implements conditional random fields to do named entity recognition.
+    This component implements a conditional random fields (CRF) to do named entity recognition.
     CRFs can be thought of as an undirected Markov chain where the time steps are words
     and the states are entity classes. Features of the words (capitalisation, POS tagging,
     etc.) give probabilities to certain entity classes, as are transitions between
     neighbouring entity tags: the most likely set of tags is then calculated and returned.
-    If POS features are used (pos or pos2), spaCy has to be installed. If you want to use
-    additional features, such as pre-trained word embeddings, from any provided dense
-    featurizer, use ``"text_dense_features"``.
 
     .. warning::
         ``CRFEntityExtractor`` is deprecated and should be replaced by ``DIETClassifier``. See
         `migration guide <https://rasa.com/docs/rasa/migration-guide/#rasa-1-7-to-rasa-1-8>`_ for more details.
 
 :Configuration:
-   .. code-block:: yaml
+
+    The following hyperparameters can be set:
+
+        - neural network's architecture:
+
+            - ``hidden_layers_sizes.text`` sets a list of hidden layer sizes before
+              the embedding layer for user inputs, the number of hidden layers
+              is equal to the length of the list.
+
+        - training:
+
+            - ``batch_size`` sets the number of training examples in one
+              forward/backward pass, the higher the batch size, the more
+              memory space you'll need.
+            - ``epochs`` sets the number of times the algorithm will see
+              training data, where one ``epoch`` equals one forward pass and
+              one backward pass of all the training examples.
+            - ``random_seed`` if set you will get reproducible
+              training results for the same inputs.
+            - ``learning_rate`` sets the initial learning rate of the optimizer.
+
+        - embedding:
+
+            - ``dense_dimension.text`` sets the dense dimensions for user inputs to use for sparse
+              tensors if no dense features are present.
+
+        - regularization:
+
+            - ``regularization_constant`` sets the scale of L2 regularization.
+            - ``droprate`` sets the dropout rate, it should be
+              between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units.
+            - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not.
+
+        - model configuration:
+
+            - ``features`` indicates what features to use. ``CRFEntityExtractor`` is using the same featurization
+              as ``LexicalSyntacticFeaturizer``. See :ref:`LexicalSyntacticFeaturizer` for details on what kind
+              of features are available.
+            - ``BILOU_flag`` determines whether to use BILOU tagging or not.
+
+    .. note:: There is an option to use linearly increasing batch size. The idea comes from
+              `<https://arxiv.org/abs/1711.00489>`_.
+              In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
+              If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
+
+
+    Default values:
+
+    .. code-block:: yaml
 
         pipeline:
         - name: "CRFEntityExtractor"
-          # The features are a ``[before, word, after]`` array with
-          # before, word, after holding keys about which
-          # features to use for each word, for example, ``"title"``
-          # in array before will have the feature
-          # "is the preceding word in title case?".
-          # Available features are:
-          # ``low``, ``title``, ``suffix5``, ``suffix3``, ``suffix2``,
-          # ``suffix1``, ``pos``, ``pos2``, ``prefix5``, ``prefix2``,
-          # ``bias``, ``upper``, ``digit``, ``pattern``, and ``text_dense_features``
-          features: [["low", "title"], ["bias", "suffix3"], ["upper", "pos", "pos2"]]
-
-          # The flag determines whether to use BILOU tagging or not. BILOU
-          # tagging is more rigorous however
-          # requires more examples per entity. Rule of thumb: use only
-          # if more than 100 examples per entity.
-          BILOU_flag: true
-
-          # This is the value given to sklearn_crfcuite.CRF tagger before training.
-          max_iterations: 50
-
-          # This is the value given to sklearn_crfcuite.CRF tagger before training.
-          # Specifies the L1 regularization coefficient.
-          L1_c: 0.1
-
-          # This is the value given to sklearn_crfcuite.CRF tagger before training.
-          # Specifies the L2 regularization coefficient.
-          L2_c: 0.1
+            # 'features' is [before, word, after] array with before, word,
+            # after holding keys about which features to use for each word,
+            # for example, 'title' in array before will have the feature
+            # "is the preceding word in title case?"
+            # POS features require 'SpacyTokenizer'.
+            "features": [
+                ["low", "title", "upper"],
+                [
+                    "BOS",
+                    "EOS",
+                    "low",
+                    "prefix5",
+                    "prefix2",
+                    "suffix5",
+                    "suffix3",
+                    "suffix2",
+                    "upper",
+                    "title",
+                    "digit",
+                ],
+                ["low", "title", "upper"],
+            ]
+            # nn architecture
+            # sizes of hidden layers before the embedding layer
+            # for input words and intent labels,
+            # the number of hidden layers is thus equal to the length of this list
+            "hidden_layers_sizes": {"text": [256, 128]}
+            # training parameters
+            # initial and final batch sizes - batch size will be
+            # linearly increased for each epoch
+            "batch_size": [64, 256]
+            # number of epochs
+            "epochs": 300
+            # set random seed to any int to get reproducible results
+            "random_seed": None
+            # optimizer
+            "learning_rate": 0.001
+            # embedding parameters
+            # default dense dimension used if no dense features are present
+            "dense_dimension": {"text": 512}
+            # regularization parameters
+            # the scale of regularization
+            "regularization_constant": 0.002
+            # dropout rate for rnn
+            "droprate": 0.2
+            # if true apply dropout to sparse tensors
+            "use_sparse_input_dropout": True
+            # visualization of accuracy
+            # how often to calculate training accuracy
+            "evaluate_every_number_of_epochs": 20  # small values may hurt performance
+            # how many examples to use for calculation of training accuracy
+            "evaluate_on_number_of_examples": 0  # large values may hurt performance
+            # BILOU_flag determines whether to use BILOU tagging or not.
+            # More rigorous however requires more examples per entity
+            # rule of thumb: use only if more than 100 egs. per entity
+            "BILOU_flag": False
 
 .. _DucklingHTTPExtractor:
 
@@ -1018,19 +1230,21 @@ DucklingHTTPExtractor
 
 :Short: Duckling lets you extract common entities like dates,
         amounts of money, distances, and others in a number of languages.
-:Outputs: appends ``entities``
-:Requires: nothing
+:Outputs: ``entities``
+:Requires: Nothing
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "entities": [{"end": 53,
-                          "entity": "time",
-                          "start": 48,
-                          "value": "2017-04-10T00:00:00.000+02:00",
-                          "confidence": 1.0,
-                          "extractor": "DucklingHTTPExtractor"}]
+            "entities": [{
+                "end": 53,
+                "entity": "time",
+                "start": 48,
+                "value": "2017-04-10T00:00:00.000+02:00",
+                "confidence": 1.0,
+                "extractor": "DucklingHTTPExtractor"
+            }]
         }
 
 :Description:
@@ -1076,8 +1290,10 @@ DucklingHTTPExtractor
           timeout : 3
 
 
-Combined Entity Extraction and Intent Classification
-----------------------------------------------------
+Combined Entity Extractors and Intent Classifiers
+-------------------------------------------------
+
+.. _diet-classifier:
 
 DIETClassifier
 ~~~~~~~~~~~~~~
@@ -1114,90 +1330,198 @@ DIETClassifier
 :Description:
     TODO
 
-    .. note:: If during prediction time a message contains **only** words unseen during training,
+    .. note:: If during prediction time a message contains **only** words unseen during training
               and no Out-Of-Vacabulary preprocessor was used,
-              empty intent ``None`` is predicted with confidence ``0.0``.
+              an empty intent ``None`` is predicted with confidence ``0.0``.
 
 :Configuration:
 
-    The algorithm also has hyperparameters to control:
+    The following hyperparameters can be set:
 
         - neural network's architecture:
 
-            - ``hidden_layers_sizes_a`` sets a list of hidden layer sizes before
+            - ``hidden_layers_sizes.text`` sets a list of hidden layer sizes before
               the embedding layer for user inputs, the number of hidden layers
-              is equal to the length of the list
-            - ``hidden_layers_sizes_b`` sets a list of hidden layer sizes before
+              is equal to the length of the list.
+            - ``hidden_layers_sizes.label`` sets a list of hidden layer sizes before
               the embedding layer for intent labels, the number of hidden layers
-              is equal to the length of the list
-            - ``share_hidden`` if set to True, shares the hidden layers between user inputs and intent label
+              is equal to the length of the list.
+            - ``share_hidden_layers`` if set to True, shares the hidden layers between user inputs and intent label.
+            - ``transformer_size`` sets the size of the transformer.
+            - ``number_of_transformer_layers`` sets the number of transformer layers to use.
+            - ``number_of_attention_heads`` sets the number of attention heads to use.
+            - ``maximum_sequence_length`` sets the maximum length of sequence.
+            - ``unidirectional_encoder`` specifies whether to use a unidirectional or bidirectional encoder.
+            - ``use_key_relative_attention`` if true use key relative embeddings in attention.
+            - ``use_value_relative_attention`` if true use key relative embeddings in attention.
+            - ``max_relative_position`` sets the max position for relative embeddings.
 
         - training:
 
             - ``batch_size`` sets the number of training examples in one
               forward/backward pass, the higher the batch size, the more
-              memory space you'll need;
+              memory space you'll need.
             - ``batch_strategy`` sets the type of batching strategy,
-              it should be either ``sequence`` or ``balanced``;
+              it should be either ``sequence`` or ``balanced``.
             - ``epochs`` sets the number of times the algorithm will see
               training data, where one ``epoch`` equals one forward pass and
-              one backward pass of all the training examples;
-            - ``random_seed`` if set to any int will get reproducible
-              training results for the same inputs;
+              one backward pass of all the training examples.
+            - ``random_seed`` if set you will get reproducible
+              training results for the same inputs.
+            - ``learning_rate`` sets the initial learning rate of the optimizer.
 
         - embedding:
 
-            - ``embed_dim`` sets the dimension of embedding space;
-            - ``num_neg`` sets the number of incorrect intent labels,
-              the algorithm will minimize their similarity to the user
-              input during training;
+            - ``dense_dimension.text`` sets the dense dimensions for user inputs to use for sparse
+              tensors if no dense features are present.
+            - ``dense_dimension.label`` sets the dense dimensions for intent labels to use for sparse
+              tensors if no dense features are present.
+            - ``embedding_dimension`` sets the dimension of embedding space.
+            - ``number_of_negative_examples`` sets the number of incorrect intent labels.
+              The algorithm will minimize their similarity to the user
+              input during training.
             - ``similarity_type`` sets the type of the similarity,
               it should be either ``auto``, ``cosine`` or ``inner``,
               if ``auto``, it will be set depending on ``loss_type``,
-              ``inner`` for ``softmax``, ``cosine`` for ``margin``;
+              ``inner`` for ``softmax``, ``cosine`` for ``margin``.
             - ``loss_type`` sets the type of the loss function,
-              it should be either ``softmax`` or ``margin``;
+              it should be either ``softmax`` or ``margin``.
             - ``ranking_length`` defines the number of top confidences over
-              which to normalize ranking results if ``loss_type: "softmax"``;
-              to turn off normalization set it to 0
-            - ``mu_pos`` controls how similar the algorithm should try
+              which to normalize ranking results if ``loss_type: "softmax"``.
+              To turn off normalization set it to 0.
+            - ``maximum_positive_similarity`` controls how similar the algorithm should try
               to make embedding vectors for correct intent labels,
-              used only if ``loss_type`` is set to ``margin``;
-            - ``mu_neg`` controls maximum negative similarity for
-              incorrect intents,
-              used only if ``loss_type`` is set to ``margin``;
-            - ``use_max_sim_neg`` if ``true`` the algorithm only
+              used only if ``loss_type`` is set to ``margin``.
+            - ``maximum_negative_similarity`` controls maximum negative similarity for
+              incorrect intents, used only if ``loss_type`` is set to ``margin``.
+            - ``use_maximum_negative_similarity`` if ``true`` the algorithm only
               minimizes maximum similarity over incorrect intent labels,
-              used only if ``loss_type`` is set to ``margin``;
+              used only if ``loss_type`` is set to ``margin``.
             - ``scale_loss`` if ``true`` the algorithm will downscale the loss
               for examples where correct label is predicted with high confidence,
-              used only if ``loss_type`` is set to ``softmax``;
+              used only if ``loss_type`` is set to ``softmax``.
 
         - regularization:
 
-            - ``C2`` sets the scale of L2 regularization
-            - ``C_emb`` sets the scale of how important is to minimize
-              the maximum similarity between embeddings of different intent labels;
+            - ``regularization_constant`` sets the scale of L2 regularization.
+            - ``negative_margin_scale`` sets the scale of how important is to minimize
+              the maximum similarity between embeddings of different intent labels.
             - ``droprate`` sets the dropout rate, it should be
-              between ``0`` and ``1``, e.g. ``droprate=0.1``
-              would drop out ``10%`` of input units;
+              between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units.
+            - ``droprate_attention`` sets the dropout rate for attention, it should be
+              between ``0`` and ``1``, e.g. ``droprate_attention=0.1`` would drop out ``10%`` of input units.
+            - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not.
 
-    .. note:: For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should be between ``-1`` and ``1``.
+        - model configuration:
+
+            - ``use_masked_language_model`` specifies whether to apply masking or not.
+            - ``intent_classification`` indicates whether intent classification should be performed or not.
+            - ``entity_recognition`` indicates whether entity recognition should be performed or not.
+            - ``BILOU_flag`` determines whether to use BILOU tagging or not.
+
+    .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
+              be between ``-1`` and ``1``.
 
     .. note:: There is an option to use linearly increasing batch size. The idea comes from
               `<https://arxiv.org/abs/1711.00489>`_.
               In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
               If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
 
-    In the config, you can specify these parameters.
-    The default values are defined in ``DIETClassifier.defaults``:
-
-    .. literalinclude:: ../../rasa/nlu/classifiers/diet_classifier.py
-       :dedent: 4
-       :start-after: # default properties (DOC MARKER - don't remove)
-       :end-before: # end default properties (DOC MARKER - don't remove)
-
-    .. note:: Parameter ``mu_neg`` is set to a negative value to mimic the original
-              starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
+    .. note:: Parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original
+              starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity``
+              and ``use_maximum_negative_similarity = False``.
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
+    Default values:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "DIETClassifier"
+            # nn architecture
+            # sizes of hidden layers before the embedding layer
+            # for input words and intent labels,
+            # the number of hidden layers is thus equal to the length of this list
+            "hidden_layers_sizes": {"text": [], "label": []}
+            # Whether to share the hidden layer weights between input words and labels
+            "share_hidden_layers": False
+            # number of units in transformer
+            "transformer_size": 256
+            # number of transformer layers
+            "number_of_transformer_layers": 2
+            # number of attention heads in transformer
+            "number_of_attention_heads": 4
+            # max sequence length
+            "maximum_sequence_length": 256
+            # use a unidirectional or bidirectional encoder
+            "unidirectional_encoder": False
+            # if true use key relative embeddings in attention
+            "use_key_relative_attention": False
+            # if true use key relative embeddings in attention
+            "use_value_relative_attention": False
+            # max position for relative embeddings
+            "max_relative_position": None
+            # training parameters
+            # initial and final batch sizes - batch size will be
+            # linearly increased for each epoch
+            "batch_size": [64, 256]
+            # how to create batches
+            "batch_strategy": "balanced"  # string 'sequence' or 'balanced'
+            # number of epochs
+            "epochs": 300
+            # set random seed to any int to get reproducible results
+            "random_seed": None
+            # optimizer
+            "learning_rate": 0.001
+            # embedding parameters
+            # default dense dimension used if no dense features are present
+            "dense_dimension": {"text": 512, "label": 20}
+            # dimension size of embedding vectors
+            "embedding_dimension": 20
+            # the type of the similarity
+            "number_of_negative_examples": 20
+            # flag if minimize only maximum similarity over incorrect actions
+            "similarity_type": "auto"  # string 'auto' or 'cosine' or 'inner'
+            # the type of the loss function
+            "loss_type": "softmax"  # string 'softmax' or 'margin'
+            # number of top intents to normalize scores for softmax loss_type
+            # set to 0 to turn off normalization
+            "ranking_length": 10
+            # how similar the algorithm should try
+            # to make embedding vectors for correct labels
+            "maximum_positive_similarity": 0.8  # should be 0.0 < ... < 1.0 for 'cosine'
+            # maximum negative similarity for incorrect labels
+            "maximum_negative_similarity": -0.4  # should be -1.0 < ... < 1.0 for 'cosine'
+            # flag: if true, only minimize the maximum similarity for incorrect labels
+            "use_maximum_negative_similarity": True
+            # scale loss inverse proportionally to confidence of correct prediction
+            "scale_loss": True
+            # regularization parameters
+            # the scale of regularization
+            "regularization_constant": 0.002
+            # the scale of how critical the algorithm should be of minimizing the
+            # maximum similarity between embeddings of different labels
+            "negative_margin_scale": 0.8
+            # dropout rate for rnn
+            "droprate": 0.2
+            # dropout rate for attention
+            "droprate_attention": 0
+            # if true apply dropout to sparse tensors
+            "use_sparse_input_dropout": True
+            # visualization of accuracy
+            # how often to calculate training accuracy
+            "evaluate_every_number_of_epochs": 20  # small values may hurt performance
+            # how many examples to use for calculation of training accuracy
+            "evaluate_on_number_of_examples": 0  # large values may hurt performance
+            # model config
+            # if true intent classification is trained and intent predicted
+            "intent_classification": True
+            # if true named entity recognition is trained and entities predicted
+            "entity_recognition": True
+            # if true random tokens of the input message will be masked and the model
+            # should predict those tokens
+            "use_masked_language_model": False
+            # BILOU_flag determines whether to use BILOU tagging or not.
+            # More rigorous however requires more examples per entity
+            # rule of thumb: use only if more than 100 egs. per entity
+            "BILOU_flag": True
