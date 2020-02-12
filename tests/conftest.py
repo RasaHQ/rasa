@@ -2,21 +2,24 @@ import asyncio
 
 import logging
 from contextlib import contextmanager
-from typing import Text, List
+from typing import Text, List, Tuple
 
 import pytest
 from _pytest.logging import LogCaptureFixture
 from _pytest.tmpdir import TempdirFactory
 from sanic import Sanic
 
+import rasa.utils.io
 from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
 from rasa.core.channels import channel
 from rasa.core.channels.channel import RestInput
+from rasa.core.domain import SessionConfig
 from rasa.core.policies import Policy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.core.run import _create_app_without_api
+from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.model import get_model
 from rasa.train import train_async
 from rasa.utils.common import TempDirectoryPath
@@ -46,11 +49,11 @@ def event_loop(request):
 
 
 @pytest.fixture(scope="session")
-async def default_agent(tmpdir_factory: TempdirFactory) -> Agent:
+async def _trained_default_agent(tmpdir_factory: TempdirFactory) -> Tuple[Agent, str]:
     model_path = tmpdir_factory.mktemp("model").strpath
 
     agent = Agent(
-        "data/test_domains/default.yml",
+        "data/test_domains/default_with_slots.yml",
         policies=[AugmentedMemoizationPolicy(max_history=3)],
     )
 
@@ -58,6 +61,18 @@ async def default_agent(tmpdir_factory: TempdirFactory) -> Agent:
     agent.train(training_data)
     agent.persist(model_path)
     return agent
+
+
+def reset_conversation_state(agent):
+    # Clean tracker store after each test so tests don't affect each other
+    agent.tracker_store = InMemoryTrackerStore(agent.domain)
+    agent.domain.session_config = SessionConfig.default()
+    return agent
+
+
+@pytest.fixture
+async def default_agent(_trained_default_agent: Agent) -> Agent:
+    return reset_conversation_state(_trained_default_agent)
 
 
 @pytest.fixture(scope="session")
@@ -137,12 +152,11 @@ def trained_async(tmpdir_factory):
 async def trained_rasa_model(
     trained_async,
     default_domain_path: Text,
-    default_config: List[Policy],
     default_nlu_data: Text,
     default_stories_file: Text,
 ) -> Text:
     trained_stack_model_path = await trained_async(
-        domain="data/test_domains/default.yml",
+        domain=default_domain_path,
         config=DEFAULT_STACK_CONFIG,
         training_files=[default_nlu_data, default_stories_file],
     )
@@ -154,7 +168,6 @@ async def trained_rasa_model(
 async def trained_core_model(
     trained_async,
     default_domain_path: Text,
-    default_config: List[Policy],
     default_nlu_data: Text,
     default_stories_file: Text,
 ) -> Text:
