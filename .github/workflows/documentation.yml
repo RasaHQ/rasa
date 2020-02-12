@@ -7,6 +7,11 @@ on:
     - master
     - github-ci-workflow
 
+# SECRETS
+# - GITHUB_DOCS_KEY: generated locally, added to github repo (public key)
+#                    `ssh-keygen -t rsa -b 4096 -C "Github CI Docs Key" -N "" -f key`
+# - GITHUB_TOKEN: (default, from github actions)
+
 jobs:
   docs:
     name: Build Docs

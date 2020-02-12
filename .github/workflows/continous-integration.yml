@@ -2,6 +2,14 @@ name: Continous Integration
 
 on: [push]
 
+# SECRETS
+# - COVERALLS_REPO_TOKEN: can be found on the coveralls page for the repo
+# - GH_RELEASE_NOTES_TOKEN: personal access token of `rasabot` github account
+#                           (login for account in 1pw)
+# - SLACK_WEBHOOK_TOKEN: token to post to RasaHQ slack account (in 1password)
+# - PYPI_TOKEN: publishing token for amn41 account, needs to be maintainer of
+#               RasaHQ/rasa on pypi (account credentials in 1password)
+
 env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
@@ -110,8 +118,8 @@ jobs:
         make test
     - name: Send Coverage Report
       if: matrix.python-version == 3.6
-      #env:
-      #  COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
       run: |
         coveralls
 
@@ -132,11 +140,10 @@ jobs:
         python3 -m pip install --user --upgrade setuptools wheel
         python setup.py sdist bdist_wheel
     - name: Publish 📦 to Test PyPI
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@37e305e7413032d8422456179fee28fac7d25187
       with:
-        user: tmbo
-        password: ${{ secrets.TEST_PYPI_TOKEN }}
-        repository_url: https://test.pypi.org/legacy/
+        user: __token__
+        password: ${{ secrets.PYPI_TOKEN }}
     - name: Notify Slack & Publish Release Notes
       env:
         GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
