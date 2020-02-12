@@ -18,13 +18,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout git repository
+    - name: Checkout git repository 🕝
       uses: actions/checkout@v2
-    - name: Set up Python 3.6
+
+    - name: Set up Python 3.6 🐍
       uses: actions/setup-python@v1
       with:
         python-version: 3.6
-    - name: Load PIP Cached artifacts
+
+    - name: Load PIP Cached artifacts ⬇
       uses: actions/cache@v1
       with:
         path: ~/.cache/pip
@@ -32,7 +34,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-3.6-pip-
 
-    - name: Install Dependencies
+    - name: Install Dependencies 📦
       env:
         RASABASTER: rasabaster-0.7.23.tar.gz
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -44,7 +46,7 @@ jobs:
         pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
         pip install -e .
         pip list
-    - name: Build & Publish Docs
+    - name: Build & Publish Docs 🏃‍♀️
       env:
         GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
       run: |

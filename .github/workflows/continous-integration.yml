@@ -44,12 +44,12 @@ jobs:
     - name: Checkout git repository 🕝
       uses: actions/checkout@v2
 
-    - name: Set up 🐍 Python 3.7
+    - name: Set up Python 3.7 🐍
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
 
-    - name: Load ⬇ Pip Cached Artifacts
+    - name: Load Pip Cached Artifacts ⬇
       uses: actions/cache@v1
       with:
         path: ~/.cache/pip
@@ -57,7 +57,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-3.7-pip-
 
-    - name: Install 📦 Dependencies
+    - name: Install Dependencies 📦
       run: |
         sudo apt-get -y install libpq-dev
         python -m pip install -U 'pip<20'
@@ -108,12 +108,12 @@ jobs:
     - name: Checkout git repository 🕝
       uses: actions/checkout@v2
 
-    - name: Set up 🐍 Python ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python-version }} 🐍
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Load ⬇ Pip Cached Artifacts
+    - name: Load Pip Cached Artifacts ⬇
       uses: actions/cache@v1
       with:
         path: ~/.cache/pip
@@ -121,7 +121,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-${{ matrix.python-version }}-pip-
 
-    - name: Install 📦 Dependencies
+    - name: Install Dependencies 📦
       run: |
         sudo apt-get update -qq
         python -m pip install -U 'pip<20'
@@ -130,11 +130,11 @@ jobs:
         make prepare-tests-ubuntu
         pip list
 
-    - name: Test 🔍 Code
+    - name: Test Code 🔍
       run: |
         make test
 
-    - name: Send Coverage 📊 Report
+    - name: Send Coverage Report 📊
       if: matrix.python-version == 3.6
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
@@ -153,7 +153,7 @@ jobs:
     - name: Checkout git repository 🕝
       uses: actions/checkout@v2
 
-    - name: Set up 🐍 Python 3.6
+    - name: Set up Python 3.6 🐍
       uses: actions/setup-python@v1
       with:
         python-version: 3.6
@@ -163,13 +163,13 @@ jobs:
         python3 -m pip install --user --upgrade setuptools wheel
         python setup.py sdist bdist_wheel
 
-    - name: Publish 📦 to Test PyPI
+    - name: Publish to Test PyPI 📦
       uses: pypa/gh-action-pypi-publish@37e305e7413032d8422456179fee28fac7d25187
       with:
         user: __token__
         password: ${{ secrets.PYPI_TOKEN }}
 
-    - name: Notify 🗞 Slack & Publish Release Notes
+    - name: Notify Slack & Publish Release Notes 🗞
       env:
         GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
         SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
