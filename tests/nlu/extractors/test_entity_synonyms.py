@@ -4,7 +4,7 @@ from tests.nlu import utilities
 
 def test_unintentional_synonyms_capitalized(component_builder):
     _config = utilities.base_test_conf("pretrained_embeddings_spacy")
-    ner_syn = component_builder.create_component(_config.for_component(5), _config)
+    ner_syn = component_builder.create_component(_config.for_component(6), _config)
     examples = [
         Message(
             "Any Mexican restaurant will do",

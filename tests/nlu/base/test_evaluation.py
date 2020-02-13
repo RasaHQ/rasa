@@ -48,7 +48,7 @@ import os
 from rasa.nlu import training_data, config
 from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH, NLU_DEFAULT_CONFIG_PATH
-from rasa.nlu.selectors.embedding_response_selector import ResponseSelector
+from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import is_response_selector_present
 
 
@@ -274,7 +274,7 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
         data, os.path.join(unpacked_trained_moodbot_path, "nlu"), errors=False
     )
     assert result.get("intent_evaluation")
-    assert result.get("entity_evaluation").get("CRFEntityExtractor")
+    assert result.get("entity_evaluation").get("DIETClassifier")
 
 
 def test_run_cv_evaluation():
@@ -292,12 +292,12 @@ def test_run_cv_evaluation():
     assert len(intent_results.test["Accuracy"]) == n_folds
     assert len(intent_results.test["Precision"]) == n_folds
     assert len(intent_results.test["F1-score"]) == n_folds
-    assert len(entity_results.train["CRFEntityExtractor"]["Accuracy"]) == n_folds
-    assert len(entity_results.train["CRFEntityExtractor"]["Precision"]) == n_folds
-    assert len(entity_results.train["CRFEntityExtractor"]["F1-score"]) == n_folds
-    assert len(entity_results.test["CRFEntityExtractor"]["Accuracy"]) == n_folds
-    assert len(entity_results.test["CRFEntityExtractor"]["Precision"]) == n_folds
-    assert len(entity_results.test["CRFEntityExtractor"]["F1-score"]) == n_folds
+    assert len(entity_results.train["DIETClassifier"]["Accuracy"]) == n_folds
+    assert len(entity_results.train["DIETClassifier"]["Precision"]) == n_folds
+    assert len(entity_results.train["DIETClassifier"]["F1-score"]) == n_folds
+    assert len(entity_results.test["DIETClassifier"]["Accuracy"]) == n_folds
+    assert len(entity_results.test["DIETClassifier"]["Precision"]) == n_folds
+    assert len(entity_results.test["DIETClassifier"]["F1-score"]) == n_folds
 
 
 def test_run_cv_evaluation_with_response_selector():

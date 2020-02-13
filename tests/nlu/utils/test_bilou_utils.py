@@ -1,7 +1,7 @@
 import pytest
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
-from rasa.nlu.constants import BILOU_ENTITIES_ATTRIBUTE, ENTITIES_ATTRIBUTE
+from rasa.nlu.constants import BILOU_ENTITIES, ENTITIES
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData, Message
 
@@ -22,27 +22,10 @@ def test_entity_name_from_tag(tag, expected):
     assert actual == expected
 
 
-@pytest.mark.parametrize(
-    "tag, expected",
-    [
-        ("B-person", "B"),
-        ("I-location", "I"),
-        ("location", None),
-        ("U-company", "U"),
-        ("L-company", "L"),
-        ("O-company", None),
-    ],
-)
-def test_bilou_from_tag(tag, expected):
-    actual = bilou_utils.bilou_prefix_from_tag(tag)
-
-    assert actual == expected
-
-
 def test_tags_to_ids():
     message = Message("Germany is part of the European Union")
     message.set(
-        BILOU_ENTITIES_ATTRIBUTE,
+        BILOU_ENTITIES,
         ["U-location", "O", "O", "O", "O", "B-organisation", "L-organisation"],
     )
 
@@ -64,14 +47,12 @@ def test_remove_bilou_prefixes():
 def test_build_tag_id_dict():
     message_1 = Message("Germany is part of the European Union")
     message_1.set(
-        BILOU_ENTITIES_ATTRIBUTE,
+        BILOU_ENTITIES,
         ["U-location", "O", "O", "O", "O", "B-organisation", "L-organisation"],
     )
 
     message_2 = Message("Berlin is the capital of Germany")
-    message_2.set(
-        BILOU_ENTITIES_ATTRIBUTE, ["U-location", "O", "O", "O", "O", "U-location"]
-    )
+    message_2.set(BILOU_ENTITIES, ["U-location", "O", "O", "O", "O", "U-location"])
 
     training_data = TrainingData([message_1, message_2])
 
@@ -95,7 +76,7 @@ def test_apply_bilou_schema():
 
     message_1 = Message("Germany is part of the European Union")
     message_1.set(
-        ENTITIES_ATTRIBUTE,
+        ENTITIES,
         [
             {"start": 0, "end": 7, "value": "Germany", "entity": "location"},
             {
@@ -109,7 +90,7 @@ def test_apply_bilou_schema():
 
     message_2 = Message("Berlin is the capital of Germany")
     message_2.set(
-        ENTITIES_ATTRIBUTE,
+        ENTITIES,
         [
             {"start": 0, "end": 6, "value": "Berlin", "entity": "location"},
             {"start": 25, "end": 32, "value": "Germany", "entity": "location"},
@@ -122,7 +103,7 @@ def test_apply_bilou_schema():
 
     bilou_utils.apply_bilou_schema(training_data)
 
-    assert message_1.get(BILOU_ENTITIES_ATTRIBUTE) == [
+    assert message_1.get(BILOU_ENTITIES) == [
         "U-location",
         "O",
         "O",
@@ -132,7 +113,7 @@ def test_apply_bilou_schema():
         "L-organisation",
         "O",
     ]
-    assert message_2.get(BILOU_ENTITIES_ATTRIBUTE) == [
+    assert message_2.get(BILOU_ENTITIES) == [
         "U-location",
         "O",
         "O",

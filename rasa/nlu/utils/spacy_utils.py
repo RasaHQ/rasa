@@ -14,7 +14,7 @@ if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc  # pytype: disable=import-error
     from rasa.nlu.model import Metadata
 
-from rasa.nlu.constants import TEXT_ATTRIBUTE, SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
+from rasa.nlu.constants import TEXT, SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
 
 
 class SpacyNLP(Component):
@@ -229,7 +229,7 @@ class SpacyNLP(Component):
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
-        message.set(SPACY_DOCS[TEXT_ATTRIBUTE], self.doc_for_text(message.text))
+        message.set(SPACY_DOCS[TEXT], self.doc_for_text(message.text))
 
     @classmethod
     def load(

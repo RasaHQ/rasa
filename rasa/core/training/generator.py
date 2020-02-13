@@ -1,7 +1,6 @@
 from collections import defaultdict, namedtuple, deque
 
 import copy
-import warnings
 import logging
 import random
 from tqdm import tqdm

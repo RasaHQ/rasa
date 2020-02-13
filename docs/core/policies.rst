@@ -164,6 +164,8 @@ learning policies.
     but we **do not recommend** changing them outside of specific cases such as custom policies.
     Doing so can lead to unexpected and undesired bot behavior.
 
+.. _keras_policy:
+
 Keras Policy
 ^^^^^^^^^^^^
 
@@ -188,6 +190,15 @@ or initialize ``KerasPolicy`` with pre-defined ``keras model``.
 
 In order to get reproducible training results for the same inputs you can
 set the ``random_seed`` attribute of the ``KerasPolicy`` to any integer.
+
+
+.. _embedding_policy:
+
+Embedding Policy
+^^^^^^^^^^^^^^^^
+
+``EmbeddingPolicy`` got renamed to ``TEDPolicy``.
+Please take a look at :ref:`ted_policy` for more details.
 
 
 .. _ted_policy:

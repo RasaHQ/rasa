@@ -5,6 +5,7 @@ import pytest
 
 from rasa.nlu import config, train
 from rasa.nlu.components import ComponentBuilder
+from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
 
 CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.yml"
 
@@ -39,20 +40,11 @@ def ner_crf_pos_feature_config():
     return {
         "features": [
             ["low", "title", "upper", "pos", "pos2"],
-            [
-                "bias",
-                "low",
-                "suffix3",
-                "suffix2",
-                "upper",
-                "title",
-                "digit",
-                "pos",
-                "pos2",
-                "pattern",
-            ],
+            ["low", "suffix3", "suffix2", "upper", "title", "digit", "pos", "pos2"],
             ["low", "title", "upper", "pos", "pos2"],
-        ]
+        ],
+        EPOCHS: 100,
+        RANDOM_SEED: 2020,
     }
 
 
