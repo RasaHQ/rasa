@@ -40,7 +40,7 @@ class ConveRTFeaturizer(Featurizer):
         try:
             self.module = tfhub.load(model_url)
         except OSError:
-            os.environ["TFHUB_CACHE_DIR"] = '/tmp/tfhub'
+            os.environ["TFHUB_CACHE_DIR"] = "/tmp/tfhub"
             self.module = tfhub.load(model_url)
 
         self.sentence_encoding_signature = self.module.signatures["default"]
