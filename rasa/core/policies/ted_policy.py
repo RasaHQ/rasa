@@ -14,7 +14,7 @@ from rasa.core.domain import Domain
 from rasa.core.featurizers import (
     TrackerFeaturizer,
     FullDialogueTrackerFeaturizer,
-    LabelTokenizerSingleStateFeaturizer,
+    BOWSingleFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.core.policies.policy import Policy
@@ -183,10 +183,10 @@ class TEDPolicy(Policy):
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
         if max_history is None:
-            return FullDialogueTrackerFeaturizer(LabelTokenizerSingleStateFeaturizer())
+            return FullDialogueTrackerFeaturizer(BOWSingleStateFeaturizer())
         else:
             return MaxHistoryTrackerFeaturizer(
-                LabelTokenizerSingleStateFeaturizer(), max_history=max_history
+                BOWSingleStateFeaturizer(), max_history=max_history
             )
 
     def __init__(
