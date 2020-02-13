@@ -22,12 +22,12 @@ mongomock==3.18.0
 # lint/format/types
 black==19.10b0
 flake8==3.7.8
-pytype==2019.7.11
+pytype==2020.2.6
 
 # other
 google-cloud-storage==1.7.0
 azure-storage-blob==1.0.0
-coveralls==1.7.0
+coveralls==1.11.0
 
 # release tools
 semantic_version==2.8.3

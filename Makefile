@@ -47,7 +47,7 @@ lint:
 	black --check rasa tests
 
 types:
-	pytype --keep-going rasa
+	pytype --keep-going rasa -j 16
 
 prepare-tests-macos: prepare-wget-macos prepare-tests-files
 	brew install graphviz || true
