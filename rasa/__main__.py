@@ -8,7 +8,7 @@ from rasa.cli import scaffold, run, train, interactive, shell, test, visualize, 
 from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
 from rasa.utils.common import set_log_level
-from rasa.utils.tensorflow.environment import setup_tf_environment
+import rasa.utils.tensorflow.environment as tf_env
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +69,7 @@ def main() -> None:
     )
     set_log_level(log_level)
 
-    # Set tensorflow environment
-    setup_tf_environment()
+    tf_env.setup_tf_environment()
 
     # insert current path in syspath so custom modules are found
     sys.path.insert(1, os.getcwd())
