@@ -52,7 +52,11 @@ class KerasPolicy(Policy):
     @staticmethod
     def _standard_featurizer(max_history=None) -> MaxHistoryTrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(
+<<<<<<< HEAD
             E2ESingleStateFeaturizer(), max_history=max_history
+=======
+            BOWSingleStateFeaturizer(), max_history=max_history
+>>>>>>> change of featurizer to fit
         )
 
     def __init__(
