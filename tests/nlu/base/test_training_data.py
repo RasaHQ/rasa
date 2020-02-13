@@ -268,7 +268,7 @@ def test_repeated_entities():
   }
 }"""
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode("utf-8"))
+        f.write(data.encode(io_utils.DEFAULT_ENCODING))
         f.flush()
         td = training_data.load_data(f.name)
         assert len(td.entity_examples) == 1
@@ -302,7 +302,7 @@ def test_multiword_entities():
   }
 }"""
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode("utf-8"))
+        f.write(data.encode(io_utils.DEFAULT_ENCODING))
         f.flush()
         td = training_data.load_data(f.name)
         assert len(td.entity_examples) == 1
@@ -334,7 +334,7 @@ def test_nonascii_entities():
   ]
 }"""
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode("utf-8"))
+        f.write(data.encode(io_utils.DEFAULT_ENCODING))
         f.flush()
         td = training_data.load_data(f.name)
         assert len(td.entity_examples) == 1
@@ -387,7 +387,7 @@ def test_entities_synonyms():
   }
 }"""
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode("utf-8"))
+        f.write(data.encode(io_utils.DEFAULT_ENCODING))
         f.flush()
         td = training_data.load_data(f.name)
         assert td.entity_synonyms["New York City"] == "nyc"
@@ -515,7 +515,9 @@ def test_url_data_format():
       }
     }"""
     fname = io_utils.create_temporary_file(
-        data.encode("utf-8"), suffix="_tmp_training_data.json", mode="w+b"
+        data.encode(io_utils.DEFAULT_ENCODING),
+        suffix="_tmp_training_data.json",
+        mode="w+b",
     )
     data = io_utils.read_json_file(fname)
     assert data is not None
