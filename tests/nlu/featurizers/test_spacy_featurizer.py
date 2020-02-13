@@ -6,13 +6,7 @@ from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
-from rasa.nlu.constants import (
-    SPACY_DOCS,
-    TEXT,
-    DENSE_FEATURE_NAMES,
-    RESPONSE,
-    INTENT,
-)
+from rasa.nlu.constants import SPACY_DOCS, TEXT, DENSE_FEATURE_NAMES, RESPONSE, INTENT
 
 
 def test_spacy_featurizer_cls_vector(spacy_nlp):
@@ -105,7 +99,7 @@ def test_spacy_featurizer_sequence(sentence, expected, spacy_nlp):
     greet = {"intent": "greet", "text_features": [0.5]}
 
     message = Message(sentence, greet)
-    message.set("spacy_doc", doc)
+    message.set("text_spacy_doc", doc)
 
     ftr._set_spacy_features(message)
 

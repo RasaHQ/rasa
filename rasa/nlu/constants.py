@@ -17,11 +17,7 @@ CLS_TOKEN = "__CLS__"
 
 MESSAGE_ATTRIBUTES = [TEXT, INTENT, RESPONSE]
 
-TOKENS_NAMES = {
-    TEXT: "tokens",
-    INTENT: "intent_tokens",
-    RESPONSE: "response_tokens",
-}
+TOKENS_NAMES = {TEXT: "tokens", INTENT: "intent_tokens", RESPONSE: "response_tokens"}
 
 SPARSE_FEATURE_NAMES = {
     TEXT: "text_sparse_features",
@@ -35,7 +31,18 @@ DENSE_FEATURE_NAMES = {
     RESPONSE: "response_dense_features",
 }
 
-SPACY_DOCS = {TEXT: "spacy_doc", RESPONSE: "response_spacy_doc"}
+LANGUAGE_MODEL_DOCS = {
+    TEXT: "text_language_model_doc",
+    RESPONSE: "response_language_model_doc",
+}
+
+TOKEN_IDS = "token_ids"
+TOKENS = "tokens"
+SEQUENCE_FEATURES = "sequence_features"
+SENTENCE_FEATURES = "sentence_features"
+
+SPACY_DOCS = {TEXT: "text_spacy_doc", RESPONSE: "response_spacy_doc"}
+
 
 DENSE_FEATURIZABLE_ATTRIBUTES = [TEXT, RESPONSE]
 

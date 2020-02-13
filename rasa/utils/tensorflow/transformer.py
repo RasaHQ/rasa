@@ -422,8 +422,10 @@ class TransformerEncoder(tf.keras.layers.Layer):
         self._embedding = DenseWithSparseWeights(
             units=units, kernel_regularizer=l2_regularizer
         )
-
-        self._pos_encoding = self._positional_encoding(max_seq_length, self.units)
+        # positional encoding helpers
+        self._angles = self._get_angles()
+        self._even_indices = np.arange(0, self.units, 2, dtype=np.int32)[:, np.newaxis]
+        self._odd_indices = np.arange(1, self.units, 2, dtype=np.int32)[:, np.newaxis]
 
         self._dropout = tf.keras.layers.Dropout(dropout_rate)
 
@@ -444,33 +446,32 @@ class TransformerEncoder(tf.keras.layers.Layer):
         ]
         self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
-    @staticmethod
-    def _look_ahead_pad_mask(seq_len: int) -> tf.Tensor:
-        pad_mask = 1 - tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
-        return pad_mask[tf.newaxis, tf.newaxis, :, :]  # (1, 1, seq_len, seq_len)
+    def _get_angles(self) -> np.ndarray:
+        i = np.arange(self.units)[np.newaxis, :]
+        return 1 / np.power(10000, (2 * (i // 2)) / np.float32(self.units))
 
-    @staticmethod
-    def _get_angles(pos: np.ndarray, i: np.ndarray, units: int) -> np.ndarray:
-        angle_dropout_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(units))
-        return pos * angle_dropout_rates
+    def _positional_encoding(self, max_position: tf.Tensor) -> tf.Tensor:
+        max_position = tf.cast(max_position, dtype=tf.float32)
+        angle_rads = tf.range(max_position)[:, tf.newaxis] * self._angles
 
-    @classmethod
-    def _positional_encoding(cls, max_position: int, units: int) -> tf.Tensor:
-        angle_rads = cls._get_angles(
-            np.arange(max_position)[:, np.newaxis],
-            np.arange(units)[np.newaxis, :],
-            units,
-        )
-
+        # transpose for easy slicing
+        angle_rads = tf.transpose(angle_rads, [1, 0])
+        shape = tf.shape(angle_rads)
         # apply sin to even indices in the array; 2i
-        angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
-
+        sin_even = tf.sin(tf.gather_nd(angle_rads, self._even_indices))
+        pos_encoding_even = tf.scatter_nd(self._even_indices, sin_even, shape)
         # apply cos to odd indices in the array; 2i+1
-        angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
+        cos_odd = tf.cos(tf.gather_nd(angle_rads, self._odd_indices))
+        pos_encoding_odd = tf.scatter_nd(self._odd_indices, cos_odd, shape)
+        # combine even and odd positions and transpose back
+        pos_encoding = tf.transpose(pos_encoding_even + pos_encoding_odd, [1, 0])
+        # add batch dimension
+        return tf.stop_gradient(pos_encoding[tf.newaxis, ...])
 
-        pos_encoding = angle_rads[np.newaxis, ...]
-
-        return tf.cast(pos_encoding, dtype=tf.float32)
+    @staticmethod
+    def _look_ahead_pad_mask(max_position: tf.Tensor) -> tf.Tensor:
+        pad_mask = 1 - tf.linalg.band_part(tf.ones((max_position, max_position)), -1, 0)
+        return pad_mask[tf.newaxis, tf.newaxis, :, :]  # (1, 1, seq_len, seq_len)
 
     def call(
         self,
@@ -484,8 +485,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         # adding embedding and position encoding.
         x = self._embedding(x)  # (batch_size, seq_len, units)
         x *= tf.math.sqrt(tf.cast(self.units, tf.float32))
-        if pad_mask is not None:
-            x += self._pos_encoding[:, : tf.shape(x)[1], :] * (1 - pad_mask)
+        x += self._positional_encoding(tf.shape(x)[1])
         x = self._dropout(x, training=training)
 
         if pad_mask is not None:

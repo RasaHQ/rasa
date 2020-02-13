@@ -82,6 +82,54 @@ SpacyNLP
           # between these two words, therefore setting this to `true`.
           case_sensitive: false
 
+
+.. _HFTransformersNLP:
+
+HFTransformersNLP
+~~~~~~~~~~~~~~~~~
+
+:Short: HuggingFace's Transformers based pre-trained language model initializer
+:Outputs: nothing
+:Requires: nothing
+:Description:
+    Initializes specified pre-trained language model from HuggingFace's `Transformers library
+    <https://huggingface.co/transformers/>`__.  The component applies language model specific tokenization and featurization
+    to compute sequence and sentence level representations for each example in the training data.
+    Include :ref:`LanguageModelTokenizer` and :ref:`LanguageModelFeaturizer` to utilize the output of this
+    component for downstream NLU models.
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+          - name: HFTransformersNLP
+
+            # Name of the language model to use
+            model_name: "bert"
+
+            # Shortcut name to specify architecture variation of the above model. Full list of supported architectures
+            # can be found at https://huggingface.co/transformers/pretrained_models.html . If left empty, it uses the
+            # default model architecture that original transformers library loads
+            model_weights: "bert-base-uncased"
+
+        #    +----------------+--------------+-------------------------+
+        #    | Language Model | Parameter    | Default value for       |
+        #    |                | "model_name" | "model_weights"         |
+        #    +----------------+--------------+-------------------------+
+        #    | BERT           | bert         | bert-base-uncased       |
+        #    +----------------+--------------+-------------------------+
+        #    | GPT            | gpt          | openai-gpt              |
+        #    +----------------+--------------+-------------------------+
+        #    | GPT-2          | gpt2         | gpt2                    |
+        #    +----------------+--------------+-------------------------+
+        #    | XLNet          | xlnet        | xlnet-base-cased        |
+        #    +----------------+--------------+-------------------------+
+        #    | DistilBERT     | distilbert   | distilbert-base-uncased |
+        #    +----------------+--------------+-------------------------+
+        #    | RoBERTa        | roberta      | roberta-base            |
+        #    +----------------+--------------+-------------------------+
+
+
 Text Featurizers
 ----------------
 
@@ -180,6 +228,40 @@ ConveRTFeaturizer
 
         pipeline:
         - name: "ConveRTFeaturizer"
+
+
+.. _LanguageModelFeaturizer:
+
+LanguageModelFeaturizer
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Short:
+    Creates a vector representation of user message and response (if specified) using a pre-trained language model.
+:Outputs:
+    nothing, used as an input to intent classifiers and response selectors that need intent features and response
+    features respectively (e.g. ``DIETClassifier`` and ``ResponseSelector``)
+:Requires: :ref:`HFTransformersNLP`
+:Type: Dense featurizer
+:Description:
+    Creates features for intent classification and response selection.
+    Uses the pre-trained language model specified in upstream :ref:`HFTransformersNLP` component to compute vector
+    representations of input text.
+
+    .. warning::
+        Please make sure that you use a language model which is pre-trained on the same language corpus as that of your
+        training data.
+
+:Configuration:
+
+    Include ``HFTransformersNLP`` component before this component. Also, use :ref:`LanguageModelTokenizer` to ensure tokens
+    are correctly set for all components throughout the pipeline.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "HFTransformersNLP"
+          model_name: # Name of language model to use
+        - name: "LanguageModelFeaturizer"
 
 
 RegexFeaturizer
@@ -782,6 +864,29 @@ ConveRTTokenizer
 :Requires: nothing
 :Description:
     Creates tokens using the ConveRT tokenizer. Must be used whenever the ``ConveRTFeaturizer`` is used.
+
+
+.. _LanguageModelTokenizer:
+
+LanguageModelTokenizer
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Short: Tokenizer from pre-trained language models
+:Outputs: nothing
+:Requires: :ref:`HFTransformersNLP`
+:Description:
+    Creates tokens using the pre-trained language model specified in upstream :ref:`HFTransformersNLP` component.
+    Must be used whenever the ``LanguageModelFeaturizer`` is used.
+:Configuration:
+
+    Include ``HFTransformersNLP`` component upstream.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "HFTransformersNLP"
+          model_name: # name of language model to use
+        - name: "LanguageModelTokenizer"
 
 
 

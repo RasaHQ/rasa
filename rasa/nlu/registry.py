@@ -29,6 +29,7 @@ from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturiz
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
+from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.selectors.response_selector import ResponseSelector
@@ -37,8 +38,10 @@ from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
+from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.utils.common import class_from_module_path, raise_warning
 from rasa.utils.tensorflow.constants import (
     INTENT_CLASSIFICATION,
@@ -59,12 +62,14 @@ component_classes = [
     # utils
     SpacyNLP,
     MitieNLP,
+    HFTransformersNLP,
     # tokenizers
     MitieTokenizer,
     SpacyTokenizer,
     WhitespaceTokenizer,
     ConveRTTokenizer,
     JiebaTokenizer,
+    LanguageModelTokenizer,
     # extractors
     SpacyEntityExtractor,
     MitieEntityExtractor,
@@ -78,6 +83,7 @@ component_classes = [
     LexicalSyntacticFeaturizer,
     CountVectorsFeaturizer,
     ConveRTFeaturizer,
+    LanguageModelFeaturizer,
     # classifiers
     SklearnIntentClassifier,
     MitieIntentClassifier,
