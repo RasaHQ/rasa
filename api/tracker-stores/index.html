@@ -146,7 +146,7 @@ of the box." />
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/evaluating-models/">Evaluating Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/validate-files/">Validate Data</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../user-guide/running-the-server/">Running the Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/configuring-http-api/">Configuring the HTTP API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/how-to-deploy/">Deploying your Rasa Assistant</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/cloud-storage/">Cloud Storage</a></li>
 </ul>
@@ -217,12 +217,13 @@ of the box." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.7.1
+          viewing: 1.7.2
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.7.2/api/tracker-stores/">1.7.2</a>
               <a href="../.././1.7.1/api/tracker-stores/">1.7.1</a>
               <a href="../.././1.7.0/api/tracker-stores/">1.7.0</a>
               <a href="../.././1.6.2/api/tracker-stores/">1.6.2</a>
@@ -305,7 +306,7 @@ It stores the conversation history in memory.</p>
 </table>
 </div>
 <div class="section" id="sqltrackerstore">
-<h2><a class="toc-backref" href="#id4">SQLTrackerStore</a><a class="headerlink" href="#sqltrackerstore" title="Permalink to this headline">¶</a></h2>
+<span id="sql-tracker-store"></span><h2><a class="toc-backref" href="#id4">SQLTrackerStore</a><a class="headerlink" href="#sqltrackerstore" title="Permalink to this headline">¶</a></h2>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -345,7 +346,7 @@ add the <code class="docutils literal notranslate"><span class="pre">--endpoints
 </ol>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><code class="docutils literal notranslate"><span class="pre">domain</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Domain object associated with this tracker store</li>
 <li><code class="docutils literal notranslate"><span class="pre">dialect</span></code> (default: <code class="docutils literal notranslate"><span class="pre">sqlite</span></code>): The dialect used to communicate with your SQL backend.  Consult the <a class="reference external" href="https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls">SQLAlchemy docs</a> for available dialects.</li>
 <li><code class="docutils literal notranslate"><span class="pre">url</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): URL of your SQL server</li>
@@ -357,6 +358,54 @@ add the <code class="docutils literal notranslate"><span class="pre">--endpoints
 <li><code class="docutils literal notranslate"><span class="pre">login_db</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Alternative database name to which initially  connect, and create the database specified by <cite>db</cite> (PostgreSQL only)</li>
 <li><code class="docutils literal notranslate"><span class="pre">query</span></code> (default: <code class="docutils literal notranslate"><span class="pre">None</span></code>): Dictionary of options to be passed to the dialect and/or the DBAPI upon connect</li>
 </ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Officially Compatible Databases:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><ul class="first simple">
+<li>PostgreSQL</li>
+<li>Oracle &gt; 11.0</li>
+<li>SQLite</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">Oracle Configuration:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><p class="first">To use the SQLTrackerStore with Oracle, there are a few additional steps.
+First, create a database <code class="docutils literal notranslate"><span class="pre">tracker</span></code> in your Oracle database and create a user with access to it.
+Create a sequence in the database with the following command, where username is the user you created
+(read more about creating sequences <a class="reference external" href="https://docs.oracle.com/cd/B28359_01/server.111/b28310/views002.htm#ADMIN11794">here</a>):</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="n">SEQUENCE</span> <span class="n">username</span><span class="p">.</span><span class="n">events_seq</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Next you have to extend the Rasa Open Source image to include the necessary drivers and clients.
+First download the Oracle Instant Client from <a class="reference external" href="https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html">here</a>,
+rename it to <code class="docutils literal notranslate"><span class="pre">oracle.rpm</span></code> and store it in the directory from where you’ll be building the docker image.
+Copy the following into a file called <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>FROM rasa/rasa:<span class="p">|</span>version<span class="p">|</span>-full
+<span class="c1"># Switch to root user to install packages</span>
+USER root
+RUN apt-get update -qq <span class="se">\</span>
+<span class="o">&amp;&amp;</span> apt-get install -y --no-install-recommends <span class="se">\</span>
+alien <span class="se">\</span>
+libaio1 <span class="se">\</span>
+<span class="o">&amp;&amp;</span> apt-get clean <span class="se">\</span>
+<span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+<span class="c1"># Copy in oracle instaclient</span>
+<span class="c1"># https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html</span>
+COPY oracle.rpm oracle.rpm
+<span class="c1"># Install the Python wrapper library for the Oracle drivers</span>
+RUN pip install cx-Oracle
+<span class="c1"># Install Oracle client libraries</span>
+RUN alien -i oracle.rpm
+USER <span class="m">1001</span>
+</pre></div>
+</div>
+<p>Then build the docker image:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker build . -t rasa-oracle:<span class="p">|</span>version<span class="p">|</span>-oracle-full
+</pre></div>
+</div>
+<p class="last">Now you can configure the tracker store in the <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> as described above,
+and start the container. The <code class="docutils literal notranslate"><span class="pre">dialect</span></code> parameter with this setup will be <code class="docutils literal notranslate"><span class="pre">oracle+cx_oracle</span></code>.
+Read more about <a class="reference internal" href="../../user-guide/how-to-deploy/#deploying-your-rasa-assistant"><span class="std std-ref">Deploying your Rasa Assistant</span></a>.</p>
 </td>
 </tr>
 </tbody>
