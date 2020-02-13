@@ -98,7 +98,7 @@ which might look like this:
          return [SlotSet("matches", result if result is not None else [])]
 
 
-You should add the the action name ``action_check_restaurants`` to
+You should add the action name ``action_check_restaurants`` to
 the actions in your domain file. The action's ``run()`` method receives
 three arguments. You can access the values of slots and the latest message
 sent by the user using the ``tracker`` object, and you can send messages
