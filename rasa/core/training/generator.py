@@ -138,6 +138,27 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
             self._append_current_state()
 
+        if isinstance(event, ActionExecuted):
+            if self._states:
+                current_intent = [element[0] for element in self._states[-1] if element[0].startswith('intent')]
+                if len(current_intent) > 0:
+                    current_intent = current_intent[0]
+                    previous_intent = None
+                    for state in list(self._states)[::-1][1:]:
+                        if not previous_intent:
+                            for element in state:
+                                if element[0].startswith('intent'):
+                                    previous_intent = [element[0]][0]
+                        else:
+                            break
+                    if previous_intent == current_intent:
+                        state_last = frozenset([element for element in list(self._states[-1]) if element[0]!=current_intent])
+                        self._states.pop()
+                        self._states.append(state_last)
+
+                
+
+
 
 # define types
 TrackerLookupDict = Dict[Optional[Text], List[TrackerWithCachedStates]]
@@ -218,7 +239,7 @@ class TrainingDataGenerator:
         story_end_trackers = []
 
         phase = 0  # one phase is one traversal of all story steps.
-        min_num_aug_phases = 3 if self.config.augmentation_factor > 0 else 0
+        min_num_aug_phases = 1 if self.config.augmentation_factor > 0 else 0
         logger.debug(f"Number of augmentation rounds is {min_num_aug_phases}")
 
         # placeholder to track gluing process of checkpoints
@@ -291,7 +312,6 @@ class TrainingDataGenerator:
 
                 trackers, end_trackers = self._process_step(step, incoming_trackers)
                 # add end trackers to finished trackers
-                finished_trackers.extend(end_trackers)
 
                 # update our tracker dictionary with the trackers
                 # that handled the events of the step and
@@ -375,8 +395,6 @@ class TrainingDataGenerator:
                 active_trackers = self._create_start_trackers_for_augmentation(
                     story_end_trackers
                 )
-
-        finished_trackers.extend(story_end_trackers)
         self._issue_unused_checkpoint_notification(previous_unused)
         logger.debug("Found {} training trackers.".format(len(finished_trackers)))
 
