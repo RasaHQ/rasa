@@ -17,6 +17,24 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.7.1] - 2020-02-11
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5106 <https://github.com/rasahq/rasa/issues/5106>`_: Fixed file loading of non proper UTF-8 story files, failing properly when checking for
+  story files.
+- `#5162 <https://github.com/rasahq/rasa/issues/5162>`_: Fix problem with multi-intents.
+  Training with multi-intents using the ``CountVectorsFeaturizer`` together with ``EmbeddingIntentClassifier`` is
+  working again.
+- `#5171 <https://github.com/rasahq/rasa/issues/5171>`_: Fix bug ``ValueError: Cannot concatenate sparse features as sequence dimension does not match``.
+
+  When training a Rasa model that contains responses for just some of the intents, training was failing.
+  Fixed the featurizers to return a consistent feature vector in case no response was given for a specific message.
+- `#5199 <https://github.com/rasahq/rasa/issues/5199>`_: If no text features are present in ``EmbeddingIntentClassifier`` return the intent ``None``.
+- `#5216 <https://github.com/rasahq/rasa/issues/5216>`_: Resolve version conflicts: Pin version of cloudpickle to ~=1.2.0.
+
+
 [1.7.0] - 2020-01-29
 ^^^^^^^^^^^^^^^^^^^^
 
