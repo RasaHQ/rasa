@@ -38,3 +38,5 @@ class AgentNotReady(RasaCoreException):
 
     def __init__(self, message: Text) -> None:
         self.message = message
+
+

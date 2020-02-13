@@ -1,20 +1,24 @@
-import logging
-from contextlib import contextmanager
-from typing import Text, List
+import random
+import uuid
 
 import pytest
-from _pytest.logging import LogCaptureFixture
 from _pytest.tmpdir import TempdirFactory
 from sanic import Sanic
+from typing import Text, List, Optional
+from unittest.mock import Mock
 
 from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
+from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel
 from rasa.core.channels.channel import RestInput
+from rasa.core.events import UserUttered
+from rasa.core.migrate import Migrator
 from rasa.core.policies import Policy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.core.run import _create_app_without_api
+from rasa.core.tracker_store import TrackerStore
 from rasa.model import get_model
 from rasa.train import train_async
 from rasa.utils.common import TempDirectoryPath
@@ -212,3 +216,20 @@ def get_test_client(server):
     test_client = server.test_client
     test_client.port = None
     return test_client
+
+
+def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
+    return UserUttered(
+        uuid.uuid4().hex,
+        timestamp=timestamp if timestamp is not None else random.random(),
+    )
+
+
+class MockMigrator(Migrator):
+    def __init__(
+        self,
+        tracker_store: TrackerStore = Mock(),
+        event_broker: EventBroker = Mock(),
+        endpoints_path: Text = "",
+    ):
+        super().__init__(tracker_store, event_broker, endpoints_path)

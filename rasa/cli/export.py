@@ -1,18 +1,20 @@
 import logging
 
 import argparse
-import itertools
-from tqdm import tqdm
-from typing import List, Text, Optional, Dict, Any, Set
+from typing import List, Text, Optional
 
 import rasa.cli.utils as cli_utils
 from rasa.cli.arguments import export as arguments
 from rasa.constants import DEFAULT_ENDPOINTS_PATH
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.pika import PikaEventBroker
+from rasa.core.migrate import Migrator
 from rasa.core.tracker_store import TrackerStore
-from rasa.core.trackers import EventVerbosity
 from rasa.core.utils import AvailableEndpoints
+from rasa.exceptions import (
+    PublishingError,
+    RasaException,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -99,79 +101,18 @@ def _get_requested_conversation_ids(
     """Get list of conversation IDs requested as a command-line argument.
 
     Args:
-        conversation_ids_arg: Value of `--conversation-ids` command-line argument. If
-            provided, this is a string of comma-separated conversation IDs.
+        conversation_ids_arg: Value of `--conversation-ids` command-line argument.
+            If provided, this is a string of comma-separated conversation IDs.
 
     Return:
-        List of conversation IDs requested as a command-line argument. `None` if that
-        argument was left unspecified.
+        List of conversation IDs requested as a command-line argument.
+        `None` if that argument was left unspecified.
 
     """
     if not conversation_ids_arg:
         return None
 
     return conversation_ids_arg.split(",")
-
-
-def _get_conversation_ids_to_process(
-    tracker_store: TrackerStore,
-    requested_conversation_ids: Optional[List[Text]] = None,
-) -> Set[Text]:
-    """Get conversation IDs that are good for processing.
-
-    Finds the intersection of events that are contained in the tracker store with
-    those events requested as a command-line argument.
-
-    Prints an error and if no conversation IDs are found in the tracker, or if no
-    overlap is found between those contained in the tracker and those requested
-    by the user.
-
-    Args:
-        tracker_store: Tracker store to source events from.
-        requested_conversation_ids: List of conversation IDs that should be published
-            requested by the user. If `None`, all conversation IDs contained in the
-            tracker store are published.
-
-    Returns:
-        Conversation IDs that are both requested and contained in the tracker
-        store. If no conversation IDs are requested, all conversation IDs in the
-        tracker store are returned.
-
-    """
-    conversation_ids_in_tracker_store = set(tracker_store.keys())
-
-    if not conversation_ids_in_tracker_store:
-        cli_utils.print_error_and_exit(
-            f"Could not find any conversations in connected tracker store. "
-            f"Please validate your `endpoints.yml` and make sure the defined "
-            f"tracker store exists. Exiting."
-        )
-
-    if not requested_conversation_ids:
-        return conversation_ids_in_tracker_store
-
-    missing_ids_in_tracker_store = (
-        set(requested_conversation_ids) - conversation_ids_in_tracker_store
-    )
-
-    if missing_ids_in_tracker_store:
-        cli_utils.print_warning(
-            f"Could not find the following requested "
-            f"conversation IDs in connected tracker store: "
-            f"{', '.join(sorted(missing_ids_in_tracker_store))}"
-        )
-
-    conversation_ids_to_process = conversation_ids_in_tracker_store & set(
-        requested_conversation_ids
-    )
-
-    if not conversation_ids_to_process:
-        cli_utils.print_error_and_exit(
-            "Could not find an overlap between the requested "
-            "conversation IDs and those found in the tracker store. Exiting."
-        )
-
-    return conversation_ids_to_process
 
 
 def _validate_timestamp_options(args: argparse.Namespace) -> None:
@@ -199,8 +140,8 @@ def _validate_timestamp_options(args: argparse.Namespace) -> None:
 
 
 def _prepare_event_broker(event_broker: EventBroker) -> None:
-    """Sets `should_keep_unpublished_messages` flag to `False` if `event_broker`
-    is a `PikaEventBroker`.
+    """Sets `should_keep_unpublished_messages` flag to `False` if
+    `self.event_broker` is a `PikaEventBroker`.
 
     If publishing of events fails, the `PikaEventBroker` instance should not keep a
     list of unpublished messages, so we can retry publishing them. This is because
@@ -209,9 +150,6 @@ def _prepare_event_broker(event_broker: EventBroker) -> None:
 
     In addition, wait until the event broker reports a `ready` state.
 
-    Args:
-        event_broker: Event broker to modify.
-
     """
     if isinstance(event_broker, PikaEventBroker):
         event_broker.should_keep_unpublished_messages = False
@@ -219,7 +157,7 @@ def _prepare_event_broker(event_broker: EventBroker) -> None:
 
     if not event_broker.is_ready():
         cli_utils.print_error_and_exit(
-            f"Event broker of type '{type(event_broker)}' is not ready. Exiting."
+            f"Event broker of type '{type(event_broker)}' is not ready. " f"Exiting."
         )
 
 
@@ -236,223 +174,59 @@ def export_trackers(args: argparse.Namespace) -> None:
     tracker_store = _get_tracker_store(endpoints)
     event_broker = _get_event_broker(endpoints)
     _prepare_event_broker(event_broker)
-
     requested_conversation_ids = _get_requested_conversation_ids(args.conversation_ids)
-    conversation_ids_to_process = _get_conversation_ids_to_process(
-        tracker_store, requested_conversation_ids
-    )
 
-    _publish_events(
-        tracker_store,
-        event_broker,
-        conversation_ids_to_process,
-        args.minimum_timestamp,
-        args.maximum_timestamp,
-        args.endpoints,
-        requested_conversation_ids,
-    )
-
-
-def _publish_events(
-    tracker_store: TrackerStore,
-    event_broker: EventBroker,
-    conversation_ids: Set[Text],
-    minimum_timestamp: Optional[float] = None,
-    maximum_timestamp: Optional[float] = None,
-    endpoints_path: Optional[Text] = None,
-    requested_conversation_ids: Optional[List[Text]] = None,
-) -> None:
-    """Publish events in a tracker store using an event broker.
-
-    Exits if the publishing of events is interrupted due to an error. In that case,
-    the CLI command to continue the export where it was interrupted is printed.
-
-    Args:
-        tracker_store: Tracker store to source events from.
-        event_broker: Event broker used to publish events over.
-        conversation_ids: Set of conversation IDs selected for publishing.
-        minimum_timestamp: Minimum timestamp of events that are published. If `None`,
-            apply no such constraint.
-        maximum_timestamp: Maximum timestamp of events that are published. If `None`,
-            apply no such constraint.
-        endpoints_path: Path to the endpoints file used to configure the event broker
-            and tracker store. If `None`, the default path ('endpoints.yml') is used.
-        requested_conversation_ids: List of conversation IDs that should be published
-            requested by the user. If `None`, all conversation IDs contained in the
-            tracker store are published.
-
-    """
-    events = _fetch_events_within_time_range(
-        tracker_store, conversation_ids, minimum_timestamp, maximum_timestamp
-    )
-
-    cli_utils.print_info(f"Selected {len(events)} events. Ready to publish.")
-
-    published_events = 0
-    current_timestamp = None
-
-    for event in tqdm(events, "events"):
-        # noinspection PyBroadException
-        try:
-            body = {"sender_id": event["sender_id"]}
-            body.update(event)
-            event_broker.publish(body)
-            published_events += 1
-            current_timestamp = event["timestamp"]
-        except Exception as e:
-            logger.exception(e)
-            command = _get_continuation_command(
-                current_timestamp,
-                maximum_timestamp,
-                endpoints_path,
-                requested_conversation_ids,
-            )
-            cli_utils.print_error_and_exit(
-                f"Encountered error while publishing event "
-                f"{published_events}/{len(events)}. To continue where I left off, "
-                f"run the following command:\n\n\t{command}\n\nExiting."
-            )
-
-    cli_utils.print_success(
-        f"Done! Successfully published '{published_events}' events 🎉"
-    )
-
-
-def _fetch_events_within_time_range(
-    tracker_store: TrackerStore,
-    conversation_ids: Set[Text],
-    minimum_timestamp: Optional[float] = None,
-    maximum_timestamp: Optional[float] = None,
-) -> List[Dict[Text, Any]]:
-    """Fetch all events for `conversation_ids` within the supplied time range.
-
-    Args:
-        tracker_store: Tracker store to source events from.
-        conversation_ids: Set of conversation IDs selected for publishing.
-        minimum_timestamp: Minimum timestamp of events that are published. If `None`,
-            apply no such constraint.
-        maximum_timestamp: Maximum timestamp of events that are published. If `None`,
-            apply no such constraint.
-
-    Returns:
-        List of serialized events with added `sender_id` field.
-
-    """
-    cli_utils.print_info(
-        f"Fetching events for {len(conversation_ids)} conversation IDs:"
-    )
-
-    events = []
-
-    for conversation_id in tqdm(conversation_ids, "conversation IDs"):
-        tracker = tracker_store.retrieve(conversation_id)
-        if not tracker:
-            logger.info(
-                f"Could not retrieve tracker for conversation ID "
-                f"'{conversation_id}'. Skipping."
-            )
-            continue
-
-        _events = tracker.current_state(EventVerbosity.ALL)["events"]
-
-        if not _events:
-            logger.info(
-                f"No events to migrate for conversation ID '{conversation_id}'."
-            )
-            continue
-
-        # the conversation IDs are needed in the event publishing
-        for event in _events:
-            event["sender_id"] = conversation_id
-            events.append(event)
-
-    return _sort_and_select_events_by_timestamp(
-        events, minimum_timestamp, maximum_timestamp
-    )
-
-
-def _sort_and_select_events_by_timestamp(
-    events: List[Dict[Text, Any]],
-    minimum_timestamp: Optional[float] = None,
-    maximum_timestamp: Optional[float] = None,
-) -> List[Dict[Text, Any]]:
-    """Sort list of events by ascending timestamp, and select events within time range.
-
-    Prints an error message and exits if no events are found within the requested
-    time range.
-
-    Args:
-        events: List of serialized events to be sorted and selected from.
-        minimum_timestamp: Minimum timestamp of events that are published. If `None`,
-            apply no such constraint.
-        maximum_timestamp: Maximum timestamp of events that are published. If `None`,
-            apply no such constraint.
-
-    Returns:
-        List of serialized and sorted (by timestamp) events within the requested time
-        range.
-
-    """
-    cli_utils.print_info(
-        f"Sorting and selecting from {len(events)} total events found."
-    )
-    # sort the events by timestamp just in case they're not sorted already
-    events = sorted(events, key=lambda x: x["timestamp"])
-
-    # drop events failing minimum timestamp requirement
-    if minimum_timestamp is not None:
-        events = itertools.dropwhile(
-            lambda x: x["timestamp"] < minimum_timestamp, events
+    try:
+        migrator = Migrator(
+            tracker_store,
+            event_broker,
+            args.endpoints,
+            requested_conversation_ids,
+            args.minimum_timestamp,
+            args.maximum_timestamp,
+        )
+        published_events = migrator.publish_events()
+        cli_utils.print_success(
+            f"Done! Successfully published '{published_events}' events 🎉"
         )
 
-    # select events passing maximum timestamp requirement
-    if maximum_timestamp is not None:
-        events = itertools.takewhile(
-            lambda x: x["timestamp"] < maximum_timestamp, events
-        )
-
-    events = list(events)
-    if not events:
+    except PublishingError as e:
+        # noinspection PyUnboundLocalVariable
+        command = _get_continuation_command(migrator, float(e))
         cli_utils.print_error_and_exit(
-            "Could not find any events within requested time range. Exiting."
+            f"Encountered error while publishing event with timestamp '{e}'. To "
+            f"continue where I left off, run the following command:"
+            f"\n\n\t{command}\n\nExiting."
         )
 
-    return events
+    except RasaException as e:
+        cli_utils.print_error_and_exit(str(e))
 
 
-def _get_continuation_command(
-    timestamp: float,
-    maximum_timestamp: Optional[float] = None,
-    endpoints_path: Optional[Text] = None,
-    requested_conversation_ids: Optional[List[Text]] = None,
-) -> Text:
+def _get_continuation_command(migrator: Migrator, timestamp: float) -> Text:
     """Build CLI command to continue 'rasa export' where it was interrupted.
 
     Called when event publishing stops due to an error.
 
     Args:
+        migrator: Migrator object containing objects relevant for this export.
         timestamp: Timestamp of the last event attempted to be published.
-        maximum_timestamp: Maximum timestamp of events that are published. If `None`,
-            apply no such constraint.
-        endpoints_path: Path to the endpoints file used to configure the event broker
-            and tracker store. If `None`, the default path ('endpoints.yml') is used.
-        requested_conversation_ids: List of conversation IDs that should be published
-            requested by the user. If `None`, all conversation IDs contained in the
-            tracker store are published.
 
     """
     # build CLI command command based on supplied timestamp and options
     command = f"rasa export"
 
-    if endpoints_path is not None:
-        command += f" --endpoints {endpoints_path}"
+    if migrator.endpoints_path is not None:
+        command += f" --endpoints {migrator.endpoints_path}"
 
     command += f" --minimum-timestamp {timestamp}"
 
-    if maximum_timestamp is not None:
-        command += f" --maximum-timestamp {maximum_timestamp}"
+    if migrator.maximum_timestamp is not None:
+        command += f" --maximum-timestamp {migrator.maximum_timestamp}"
 
-    if requested_conversation_ids:
-        command += f" --conversation-ids {','.join(requested_conversation_ids)}"
+    if migrator.requested_conversation_ids:
+        command += (
+            f" --conversation-ids {','.join(migrator.requested_conversation_ids)}"
+        )
 
     return command

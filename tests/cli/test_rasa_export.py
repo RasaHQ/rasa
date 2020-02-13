@@ -7,13 +7,15 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 from pathlib import Path
 from typing import Callable, Optional, Dict, Any, Text, List
-from unittest.mock import Mock
+from unittest.mock import Mock, PropertyMock
 
 import rasa.utils.io as io_utils
 from rasa.cli import export
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.events import UserUttered
 from rasa.core.trackers import DialogueStateTracker
+from rasa.exceptions import PublishingError
+from tests.conftest import MockMigrator, random_user_uttered_event
 
 
 def test_export_help(run: Callable[..., RunResult]):
@@ -130,55 +132,6 @@ def test_get_requested_conversation_ids(
     assert export._get_requested_conversation_ids(requested_ids) == expected
 
 
-@pytest.mark.parametrize(
-    "requested_ids,available_ids,expected",
-    [([1], [1], [1]), ([1, 2], [2], [2]), (None, [2], [2])],
-)
-def test_get_conversation_ids_to_process(
-    requested_ids: Optional[List[int]],
-    available_ids: Optional[List[int]],
-    expected: Optional[List[int]],
-):
-    # convert ids to strings
-    _requested_ids = [str(_id) for _id in requested_ids] if requested_ids else None
-    _available_ids = [str(_id) for _id in available_ids]
-    _expected = {str(_id) for _id in expected} if expected else None
-
-    # create and mock tracker store containing `available_ids` as keys
-    tracker_store = Mock()
-    tracker_store.keys.return_value = _available_ids
-
-    # noinspection PyProtectedMember
-    assert (
-        export._get_conversation_ids_to_process(tracker_store, _requested_ids)
-        == _expected
-    )
-
-
-@pytest.mark.parametrize(
-    "requested_ids,available_ids",
-    [
-        ([1], []),  # no IDs in tracker store
-        (None, []),  # same thing, but without requested IDs
-        ([1, 2, 3], [4, 5, 6]),  # no overlap between requested IDs and those available
-    ],
-)
-def test_get_conversation_ids_to_process_error_exit(
-    requested_ids: Optional[List[int]], available_ids: List[int],
-):
-    # convert ids to strings
-    _requested_ids = [str(_id) for _id in requested_ids] if requested_ids else None
-    _available_ids = [str(_id) for _id in available_ids]
-
-    # create and mock tracker store containing `available_ids` as keys
-    tracker_store = Mock()
-    tracker_store.keys.return_value = _available_ids
-
-    with pytest.raises(SystemExit):
-        # noinspection PyProtectedMember
-        export._get_conversation_ids_to_process(tracker_store, _requested_ids)
-
-
 def test_prepare_pika_event_broker():
     # mock a pika event broker
     pika_broker = Mock(spec=PikaEventBroker)
@@ -226,126 +179,16 @@ def test_get_continuation_command(
     requested_ids: Optional[List[Text]],
     expected: Text,
 ):
+    migrator = MockMigrator()
+    migrator.maximum_timestamp = maximum_timestamp
+    migrator.endpoints_path = endpoints_path
+    migrator.requested_conversation_ids = requested_ids
+
     # noinspection PyProtectedMember
     assert (
-        export._get_continuation_command(
-            current_timestamp, maximum_timestamp, endpoints_path, requested_ids
-        )
+        export._get_continuation_command(migrator, current_timestamp)
         == f"rasa export {expected}"
     )
-
-
-def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
-    return UserUttered(
-        uuid.uuid4().hex,
-        timestamp=timestamp if timestamp is not None else random.random(),
-    )
-
-
-# noinspection PyProtectedMember
-def test_fetch_events_within_time_range():
-    conversation_ids = ["some-id", "another-id"]
-
-    # prepare events from different senders and different timestamps
-    event_1 = random_user_uttered_event(3)
-    event_2 = random_user_uttered_event(2)
-    event_3 = random_user_uttered_event(1)
-    events = {
-        conversation_ids[0]: [event_1, event_2],
-        conversation_ids[1]: [event_3],
-    }
-
-    def _get_tracker(conversation_id: Text) -> DialogueStateTracker:
-        return DialogueStateTracker.from_events(
-            conversation_id, events[conversation_id]
-        )
-
-    # create mock tracker store
-    tracker_store = Mock()
-    tracker_store.retrieve.side_effect = _get_tracker
-
-    fetched_events = export._fetch_events_within_time_range(
-        tracker_store, set(conversation_ids)
-    )
-
-    # events should come back for all requested conversation IDs
-    assert all(
-        any(_id in event["sender_id"] for event in fetched_events)
-        for _id in conversation_ids
-    )
-
-    # events are sorted by timestamp despite the initially different order
-    assert fetched_events == list(sorted(fetched_events, key=lambda e: e["timestamp"]))
-
-
-def test_fetch_events_within_time_range_tracker_does_not_exit():
-    # create mock tracker store that returns `None` on `retrieve()`
-    tracker_store = Mock()
-    tracker_store.retrieve.return_value = None
-
-    # no events means `SystemExit`
-    with pytest.raises(SystemExit):
-        # noinspection PyProtectedMember
-        export._fetch_events_within_time_range(tracker_store, set())
-
-
-def test_fetch_events_within_time_range_tracker_contains_no_events():
-    # create mock tracker store that returns `None` on `retrieve()`
-    tracker_store = Mock()
-    tracker_store.retrieve.return_value = DialogueStateTracker.from_events(
-        "a great ID", []
-    )
-
-    # no events means `SystemExit`
-    with pytest.raises(SystemExit):
-        # noinspection PyProtectedMember
-        export._fetch_events_within_time_range(tracker_store, set())
-
-
-# noinspection PyProtectedMember
-def test_sort_and_select_events_by_timestamp():
-    events = [
-        event.as_dict()
-        for event in [
-            random_user_uttered_event(3),
-            random_user_uttered_event(2),
-            random_user_uttered_event(1),
-        ]
-    ]
-
-    selected_events = export._sort_and_select_events_by_timestamp(events)
-
-    # events are sorted
-    assert selected_events == list(
-        sorted(selected_events, key=lambda e: e["timestamp"])
-    )
-
-    # apply minimum timestamp requirement, expect to get only two events back
-    assert export._sort_and_select_events_by_timestamp(
-        events, minimum_timestamp=2.0
-    ) == [events[1], events[0]]
-
-    # apply maximum timestamp requirement, expect to get only one
-    assert export._sort_and_select_events_by_timestamp(
-        events, maximum_timestamp=1.1
-    ) == [events[2]]
-
-    # apply both requirements, get one event back
-    assert export._sort_and_select_events_by_timestamp(
-        events, minimum_timestamp=2.0, maximum_timestamp=2.1
-    ) == [events[1]]
-
-
-# noinspection PyProtectedMember
-def test_sort_and_select_events_by_timestamp_error_exit():
-    # no events given
-    with pytest.raises(SystemExit):
-        export._sort_and_select_events_by_timestamp([])
-
-    # supply list of events, apply timestamp constraint and no events survive
-    events = [random_user_uttered_event(3).as_dict()]
-    with pytest.raises(SystemExit):
-        export._sort_and_select_events_by_timestamp(events, minimum_timestamp=3.1)
 
 
 def _add_conversation_id_to_event(event: Dict, conversation_id: Text):
@@ -353,7 +196,7 @@ def _add_conversation_id_to_event(event: Dict, conversation_id: Text):
 
 
 # noinspection PyProtectedMember
-def test_export_events(tmp_path: Path, monkeypatch: MonkeyPatch):
+def test_export_trackers(tmp_path: Path, monkeypatch: MonkeyPatch):
     endpoints_path = _write_endpoint_config_to_yaml(
         tmp_path, {"event_broker": {"type": "pika"}, "tracker_store": {"type": "sql"}}
     )
@@ -419,20 +262,3 @@ def test_export_events(tmp_path: Path, monkeypatch: MonkeyPatch):
         any(call[1][0]["text"] == event.text for call in calls)
         for event in [event_1, event_2, event_3, event_4]
     )
-
-
-def test_publish_events_events_error_exit(monkeypatch: MonkeyPatch):
-    monkeypatch.setattr(
-        export,
-        "_fetch_events_within_time_range",
-        lambda *_: [random_user_uttered_event(1)],
-    )
-
-    # mock event broker so it raises on `publish()`
-    event_broker = Mock()
-    event_broker.publish.side_effect = ValueError()
-
-    # run the export function
-    with pytest.raises(SystemExit):
-        # noinspection PyProtectedMember
-        export._publish_events(Mock(), event_broker, set())
