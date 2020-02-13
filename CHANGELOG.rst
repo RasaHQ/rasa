@@ -24,8 +24,7 @@ Bugfixes
 --------
 - `#5197 <https://github.com/rasahq/rasa/issues/5197>`_: Fixed incompatibility of Oracle with the :ref:`sql-tracker-store`, by using a ``Sequence``
   for the primary key columns. This does not change anything for SQL databases other than Oracle.
-  If you are using Oracle, please create a sequence with the instructions in the docs
-  :ref:`oracle-configuration`.
+  If you are using Oracle, please create a sequence with the instructions in the :ref:`sql-tracker-store` docs.
 
 Improved Documentation
 ----------------------
