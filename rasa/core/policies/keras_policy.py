@@ -12,7 +12,7 @@ import rasa.utils.io
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
-    BinarySingleStateFeaturizer,
+    BOWSingleStateFeaturizer,
 )
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
@@ -49,7 +49,7 @@ class KerasPolicy(Policy):
     @staticmethod
     def _standard_featurizer(max_history=None) -> MaxHistoryTrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(
-            BinarySingleStateFeaturizer(), max_history=max_history
+            BOWSingleStateFeaturizer(), max_history=max_history
         )
 
     def __init__(
