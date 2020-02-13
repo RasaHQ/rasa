@@ -16,7 +16,6 @@ from rasa.core.brokers.broker import EventBroker
 from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.io import DEFAULT_ENCODING
-from pika.exceptions import UnroutableError
 
 if typing.TYPE_CHECKING:
     from pika.adapters.blocking_connection import BlockingChannel
@@ -316,7 +315,10 @@ class PikaEventBroker(EventBroker):
             attempts: Number of retries.
             wait_time_between_attempts: Wait time between retries.
 
+        Returns:
+            `True` if the channel is available, `False` otherwise.
         """
+
         while attempts:
             if self.channel:
                 return True
