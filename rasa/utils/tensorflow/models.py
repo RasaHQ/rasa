@@ -218,7 +218,7 @@ class RasaModel(tf.keras.models.Model):
 
         logger.debug(f"Building tensorflow {phase} graph...")
         # allows increasing batch size
-        tf_dataset_function = dataset_function  # tf.function(func=dataset_function)
+        tf_dataset_function = tf.function(func=dataset_function)
 
         init_dataset = tf_dataset_function(tf.ones((), tf.int32))
 
