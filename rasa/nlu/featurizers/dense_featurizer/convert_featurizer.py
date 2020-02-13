@@ -185,7 +185,7 @@ class ConveRTFeaturizer(Featurizer):
 
         batch_size = 64
 
-        for attribute in tqdm(DENSE_FEATURIZABLE_ATTRIBUTES):
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
 
             non_empty_examples = list(
                 filter(lambda x: x.get(attribute), training_data.training_examples)
@@ -204,7 +204,7 @@ class ConveRTFeaturizer(Featurizer):
 
                 batch_features = self._compute_features(batch_examples, attribute)
 
-                for index, ex in enumerate(batch_examples):
+                for index, ex in tqdm(enumerate(batch_examples)):
 
                     ex.set(
                         DENSE_FEATURE_NAMES[attribute],
