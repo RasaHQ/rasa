@@ -70,6 +70,7 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
 
         super().__init__()
         self.delimiter = '_'
+        self.intent_tokenization_flag = True
 
     def prepare_training_data_and_train(self, trackers_as_states):
         """
