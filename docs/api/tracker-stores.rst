@@ -73,7 +73,7 @@ SQLTrackerStore
     - ``query`` (default: ``None``): Dictionary of options to be passed to the dialect and/or the DBAPI upon connect
 
 
-:Officially Supported Databases:
+:Officially Compatible Databases:
     - PostgreSQL
     - Oracle > 11.0
     - SQLite
