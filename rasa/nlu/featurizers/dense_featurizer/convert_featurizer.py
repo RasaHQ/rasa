@@ -1,5 +1,6 @@
 import logging
 from typing import Any, Dict, List, Optional, Text, Tuple
+from tqdm import tqdm
 
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -33,10 +34,14 @@ class ConveRTFeaturizer(Featurizer):
         # needed in order to load model
         import tensorflow_text
         import tensorflow_hub as tfhub
+        import os
 
         model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
-
-        self.module = tfhub.load(model_url)
+        try:
+            self.module = tfhub.load(model_url)
+        except OSError:
+            os.environ["TFHUB_CACHE_DIR"] = '/tmp/tfhub'
+            self.module = tfhub.load(model_url)
 
         self.sentence_encoding_signature = self.module.signatures["default"]
         self.sequence_encoding_signature = self.module.signatures["encode_sequence"]
@@ -180,7 +185,7 @@ class ConveRTFeaturizer(Featurizer):
 
         batch_size = 64
 
-        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+        for attribute in tqdm(DENSE_FEATURIZABLE_ATTRIBUTES):
 
             non_empty_examples = list(
                 filter(lambda x: x.get(attribute), training_data.training_examples)

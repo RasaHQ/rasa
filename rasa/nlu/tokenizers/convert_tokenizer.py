@@ -33,10 +33,15 @@ class ConveRTTokenizer(WhitespaceTokenizer):
         # needed to load the ConveRT model
         import tensorflow_text
         import tensorflow_hub as tfhub
+        import os
 
         model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
 
-        self.module = tfhub.load(model_url)
+        try:
+            self.module = tfhub.load(model_url)
+        except OSError:
+            os.environ["TFHUB_CACHE_DIR"] = '/tmp/tfhub'
+            self.module = tfhub.load(model_url)
 
         self.tokenize_signature = self.module.signatures["tokenize"]
 
