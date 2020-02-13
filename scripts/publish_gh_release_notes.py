@@ -1,6 +1,6 @@
 """
 Script used to publish GitHub release notes extracted from CHANGELOG.rst.
-This script is executed by Github after a new release was successfully built.
+This script is executed by GitHub after a new release was successfully built.
 
 Uses the following environment variables:
 * GITHUB_TAG: the name of the tag of the current commit.
