@@ -7,13 +7,14 @@ from rasa.constants import (
     ENV_CPU_INTER_OP_CONFIG,
     ENV_CPU_INTRA_OP_CONFIG,
 )
-from tensorflow import config as tf_config
 
 logger = logging.getLogger(__name__)
 
 
 def setup_gpu_environment() -> None:
     """Set configuration for a GPU environment based on the environment variable set"""
+
+    from tensorflow import config as tf_config
 
     gpu_memory_config = os.getenv(ENV_GPU_CONFIG)
     if gpu_memory_config:
@@ -71,6 +72,8 @@ def parse_gpu_config(gpu_memory_config: Text) -> Dict[int, int]:
 
 def setup_cpu_environment() -> Tuple[int, int]:
     """Set configuration for the CPU environment based on the environment variable set"""
+
+    from tensorflow import config as tf_config
 
     inter_op_parallel_threads = os.getenv(ENV_CPU_INTER_OP_CONFIG)
     intra_op_parallel_threads = os.getenv(ENV_CPU_INTRA_OP_CONFIG)
