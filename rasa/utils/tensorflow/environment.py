@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Text
+from typing import Text, Tuple
 
 import tensorflow as tf
 from rasa.constants import (
@@ -63,13 +63,16 @@ def parse_gpu_config(gpu_memory_config: Text):
             instance_gpu_mem = int(instance_gpu_mem)
 
             parsed_gpu_config[instance_gpu_id] = instance_gpu_mem
-    except ValueError as e:
-        raise e
+    except ValueError:
+        # Add a helper explanation
+        raise ValueError(
+            f"Error parsing GPU configuration. Please cross-check the format of '{ENV_GPU_CONFIG}'"
+        )
 
     return parsed_gpu_config
 
 
-def setup_cpu_environment() -> None:
+def setup_cpu_environment() -> Tuple[int, int]:
 
     inter_op_parallel_threads = os.getenv(ENV_CPU_INTER_OP_CONFIG, None)
     intra_op_parallel_threads = os.getenv(ENV_CPU_INTRA_OP_CONFIG, None)
@@ -83,6 +86,12 @@ def setup_cpu_environment() -> None:
         tf.config.threading.set_intra_op_parallelism_threads(
             int(intra_op_parallel_threads.strip())
         )
+
+    # Returning the actual values as a confirmation. Helps with tests too.
+    return (
+        tf.config.threading.get_inter_op_parallelism_threads(),
+        tf.config.threading.get_intra_op_parallelism_threads(),
+    )
 
 
 def setup_tf_environment():
