@@ -1,18 +1,24 @@
 :desc: Find out how to use Rasa's HTTP API to integrate Rasa
        with your backend components.
 
-.. _running-the-server:
+.. _configuring-http-api:
 
-Running the Server
-==================
+Configuring the HTTP API
+========================
 
 .. edit-link::
 
 .. contents::
    :local:
 
-Running the HTTP server
------------------------
+Using Rasa's HTTP API
+---------------------
+
+.. note:: 
+
+    The instructions below are relevant for configuring how a model is run
+    within a Docker container or for testing the HTTP API locally. If you
+    want to deploy your assistant to users, see :ref:`deploying-your-rasa-assistant`.
 
 You can run a simple HTTP server that handles requests using your
 trained Rasa model with:

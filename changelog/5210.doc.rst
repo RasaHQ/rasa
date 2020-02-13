@@ -1,0 +1,1 @@
+Renamed "Running the Server" page to "Configuring the HTTP API"
