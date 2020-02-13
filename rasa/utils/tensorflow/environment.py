@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Text, Tuple
+from typing import Text, Tuple, Dict
 import warnings
 from rasa.constants import (
     ENV_GPU_CONFIG,
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def setup_gpu_environment() -> None:
     """Set configuration for a GPU environment based on the environment variable set"""
 
-    gpu_memory_config = os.getenv(ENV_GPU_CONFIG, None)
+    gpu_memory_config = os.getenv(ENV_GPU_CONFIG)
     if gpu_memory_config:
         parsed_gpu_config = parse_gpu_config(gpu_memory_config)
         physical_gpus = tf_config.list_physical_devices("GPU")
@@ -46,7 +46,7 @@ def setup_gpu_environment() -> None:
             )
 
 
-def parse_gpu_config(gpu_memory_config: Text):
+def parse_gpu_config(gpu_memory_config: Text) -> Dict[int, int]:
     """Parse GPU configuration variable from a string to a dict"""
 
     # gpu_config is of format "gpu_id_1:gpu_id_1_memory, gpu_id_2: gpu_id_2_memory"
@@ -72,8 +72,8 @@ def parse_gpu_config(gpu_memory_config: Text):
 def setup_cpu_environment() -> Tuple[int, int]:
     """Set configuration for the CPU environment based on the environment variable set"""
 
-    inter_op_parallel_threads = os.getenv(ENV_CPU_INTER_OP_CONFIG, None)
-    intra_op_parallel_threads = os.getenv(ENV_CPU_INTRA_OP_CONFIG, None)
+    inter_op_parallel_threads = os.getenv(ENV_CPU_INTER_OP_CONFIG)
+    intra_op_parallel_threads = os.getenv(ENV_CPU_INTRA_OP_CONFIG)
 
     if inter_op_parallel_threads:
 
@@ -106,7 +106,7 @@ def setup_cpu_environment() -> Tuple[int, int]:
     )
 
 
-def setup_tf_environment():
+def setup_tf_environment() -> None:
 
     setup_cpu_environment()
     setup_gpu_environment()
