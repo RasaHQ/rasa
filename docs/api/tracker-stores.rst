@@ -78,8 +78,6 @@ SQLTrackerStore
     - Oracle > 11.0
     - SQLite
 
-.. _oracle-configuration:
-
 :Oracle Configuration:
       To use the SQLTrackerStore with Oracle, there are a few additional steps.
       First, create a database ``tracker`` in your Oracle database and create a user with access to it.
