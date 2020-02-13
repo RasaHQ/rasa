@@ -1,9 +1,11 @@
 import asyncio
 import os
+
+from sanic.request import Request
 import uuid
 from datetime import datetime
 
-from typing import Text
+from typing import Text, Iterator
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
@@ -96,7 +98,7 @@ class MockedMongoTrackerStore(MongoTrackerStore):
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
 @pytest.yield_fixture(scope="session")
-def event_loop(request):
+def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
@@ -136,56 +138,20 @@ def default_domain():
     return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
 
-@pytest.fixture(scope="session")
-async def _default_agent(default_domain: Domain) -> Agent:
-    agent = Agent(
-        default_domain,
-        policies=[MemoizationPolicy()],
-        interpreter=RegexInterpreter(),
-        tracker_store=InMemoryTrackerStore(default_domain),
-    )
-    training_data = await agent.load_data(DEFAULT_STORIES_FILE)
-    agent.train(training_data)
-    return agent
-
-
-@pytest.fixture()
-async def default_agent(_default_agent: Agent) -> Agent:
-    # Clean tracker store after each test so tests don't affect each other
-    _default_agent.tracker_store = InMemoryTrackerStore(_default_agent.domain)
-    _default_agent.domain.session_config = SessionConfig.default()
-    return _default_agent
-
-
-@pytest.fixture(scope="session")
-def default_agent_path(_default_agent: Agent, tmpdir_factory: TempdirFactory):
-    path = tmpdir_factory.mktemp("agent").strpath
-    _default_agent.persist(path)
-    return path
-
-
 @pytest.fixture
 def default_channel() -> OutputChannel:
     return CollectingOutputChannel()
 
 
 @pytest.fixture
-async def default_processor(default_domain, default_nlg):
-    agent = Agent(
-        default_domain,
-        SimplePolicyEnsemble([AugmentedMemoizationPolicy()]),
-        interpreter=RegexInterpreter(),
-    )
-
-    training_data = await agent.load_data(DEFAULT_STORIES_FILE)
-    agent.train(training_data)
-    tracker_store = InMemoryTrackerStore(default_domain)
+async def default_processor(default_agent: Agent) -> MessageProcessor:
+    tracker_store = InMemoryTrackerStore(default_agent.domain)
     return MessageProcessor(
-        agent.interpreter,
-        agent.policy_ensemble,
-        default_domain,
+        default_agent.interpreter,
+        default_agent.policy_ensemble,
+        default_agent.domain,
         tracker_store,
-        default_nlg,
+        TemplatedNaturalLanguageGenerator(default_agent.domain.templates),
     )
 
 
@@ -243,39 +209,6 @@ def moodbot_metadata(unpacked_trained_moodbot_path):
     )
 
 
-@pytest.fixture()
-async def trained_stack_model(
-    trained_async,
-    default_domain_path,
-    default_stack_config,
-    default_nlu_data,
-    default_stories_file,
-):
-
-    trained_stack_model_path = await trained_async(
-        domain=default_domain_path,
-        config=default_stack_config,
-        training_files=[default_nlu_data, default_stories_file],
-    )
-
-    return trained_stack_model_path
-
-
-@pytest.fixture
-async def prepared_agent(tmpdir_factory) -> Agent:
-    model_path = tmpdir_factory.mktemp("model").strpath
-
-    agent = Agent(
-        "data/test_domains/default.yml",
-        policies=[AugmentedMemoizationPolicy(max_history=3)],
-    )
-
-    training_data = await agent.load_data(DEFAULT_STORIES_FILE)
-    agent.train(training_data)
-    agent.persist(model_path)
-    return agent
-
-
 @pytest.fixture
 def default_nlg(default_domain):
     return TemplatedNaturalLanguageGenerator(default_domain.templates)
@@ -295,30 +228,6 @@ def project() -> Text:
     create_initial_project(directory)
 
     return directory
-
-
-def train_model(loop, project: Text, filename: Text = "test.tar.gz"):
-    from rasa.constants import (
-        DEFAULT_CONFIG_PATH,
-        DEFAULT_DATA_PATH,
-        DEFAULT_DOMAIN_PATH,
-        DEFAULT_MODELS_PATH,
-    )
-    import rasa.train
-
-    output = os.path.join(project, DEFAULT_MODELS_PATH, filename)
-    domain = os.path.join(project, DEFAULT_DOMAIN_PATH)
-    config = os.path.join(project, DEFAULT_CONFIG_PATH)
-    training_files = os.path.join(project, DEFAULT_DATA_PATH)
-
-    rasa.train(domain, config, training_files, output, loop=loop)
-
-    return output
-
-
-@pytest.fixture(scope="session")
-def trained_model(loop, project) -> Text:
-    return train_model(loop, project)
 
 
 @pytest.fixture
