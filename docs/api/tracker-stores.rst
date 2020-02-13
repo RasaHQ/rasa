@@ -27,6 +27,8 @@ InMemoryTrackerStore (default)
 :Configuration:
     To use the `InMemoryTrackerStore` no configuration is needed.
 
+.. _sql-tracker-store:
+
 SQLTrackerStore
 ~~~~~~~~~~~~~~~
 
@@ -69,6 +71,59 @@ SQLTrackerStore
     - ``event_broker`` (default: ``None``): Event broker to publish events to
     - ``login_db`` (default: ``None``): Alternative database name to which initially  connect, and create the database specified by `db` (PostgreSQL only)
     - ``query`` (default: ``None``): Dictionary of options to be passed to the dialect and/or the DBAPI upon connect
+
+
+:Officially Compatible Databases:
+    - PostgreSQL
+    - Oracle > 11.0
+    - SQLite
+
+.. _oracle-configuration:
+
+:Oracle Configuration:
+      To use the SQLTrackerStore with Oracle, there are a few additional steps.
+      First, create a database ``tracker`` in your Oracle database and create a user with access to it.
+      Create a sequence in the database with the following command, where username is the user you created
+      (read more about creating sequences `here <https://docs.oracle.com/cd/B28359_01/server.111/b28310/views002.htm#ADMIN11794>`__):
+
+      .. code-block:: sql
+
+          CREATE SEQUENCE username.events_seq;
+
+      Next you have to extend the Rasa Open Source image to include the necessary drivers and clients.
+      First download the Oracle Instant Client from `here <https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html>`__,
+      rename it to ``oracle.rpm`` and store it in the directory from where you'll be building the docker image.
+      Copy the following into a file called ``Dockerfile``:
+
+      .. code-block:: bash
+
+          FROM rasa/rasa:|version|-full
+          # Switch to root user to install packages
+          USER root
+          RUN apt-get update -qq \
+          && apt-get install -y --no-install-recommends \
+          alien \
+          libaio1 \
+          && apt-get clean \
+          && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+          # Copy in oracle instaclient
+          # https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html
+          COPY oracle.rpm oracle.rpm
+          # Install the Python wrapper library for the Oracle drivers
+          RUN pip install cx-Oracle
+          # Install Oracle client libraries
+          RUN alien -i oracle.rpm
+          USER 1001
+
+      Then build the docker image:
+
+      .. code-block:: bash
+
+          docker build . -t rasa-oracle:|version|-oracle-full
+
+      Now you can configure the tracker store in the ``endpoints.yml`` as described above,
+      and start the container. The ``dialect`` parameter with this setup will be ``oracle+cx_oracle``.
+      Read more about :ref:`deploying-your-rasa-assistant`.
 
 RedisTrackerStore
 ~~~~~~~~~~~~~~~~~~
