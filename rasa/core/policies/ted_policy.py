@@ -14,7 +14,7 @@ from rasa.core.domain import Domain
 from rasa.core.featurizers import (
     TrackerFeaturizer,
     FullDialogueTrackerFeaturizer,
-    BOWSingleFeaturizer,
+    BOWSingleStateFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.core.policies.policy import Policy
