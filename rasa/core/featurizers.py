@@ -6,6 +6,7 @@ import os
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Any
 from scipy.sparse import csr_matrix
+import re, string
 
 import rasa.utils.io
 from rasa.core import utils
@@ -111,6 +112,7 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         ]
         training_data = TrainingData(training_examples=training_data)
         self.train(training_data)
+        print(self.vectorizers["text"].vocabulary_['conference'])
 
     def encode(self, state: Dict[Text, float], type_output="dense"):
         """
@@ -147,6 +149,19 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
             return features[0].A[-1].astype(np.int32)
         else:
             return features[0].getrow(-1)
+
+    def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
+        """Create matrix with all actions from domain encoded in rows as bag of words"""
+
+        encoded_all_actions = np.zeros(
+            (domain.num_actions, len(self.vectorizers["text"].vocabulary_)), dtype=np.int32
+        )
+        translator = str.maketrans(string.punctuation, self.delimiter*len(string.punctuation))
+        for idx, name in enumerate(domain.action_names):
+            name = name.translate(translator)
+            for t in name.split(self.delimiter):
+                encoded_all_actions[idx, self.vectorizers["text"].vocabulary_[t.lower()]] = 1
+        return encoded_all_actions
 
 class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
