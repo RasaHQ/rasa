@@ -1,1 +1,0 @@
-Added section on setting up the SQLTrackerStore with Oracle

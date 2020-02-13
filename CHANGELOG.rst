@@ -17,6 +17,22 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.7.2] - 2020-02-13
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5197 <https://github.com/rasahq/rasa/issues/5197>`_: Fixed incompatibility of Oracle with the :ref:`sql-tracker-store`, by using a ``Sequence``
+  for the primary key columns. This does not change anything for SQL databases other than Oracle.
+  If you are using Oracle, please create a sequence with the instructions in the docs
+  :ref:`oracle-configuration`.
+
+Improved Documentation
+----------------------
+- `#5197 <https://github.com/rasahq/rasa/issues/5197>`_: Added section on setting up the SQLTrackerStore with Oracle
+- `#5210 <https://github.com/rasahq/rasa/issues/5210>`_: Renamed "Running the Server" page to "Configuring the HTTP API"
+
+
 [1.7.1] - 2020-02-11
 ^^^^^^^^^^^^^^^^^^^^
 
