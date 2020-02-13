@@ -1,0 +1,62 @@
+name: Publish Documentation
+
+on:
+  push:
+    branches:
+    - '[0-9]+.[0-9]+.x'
+    - 'master'
+    tags:
+    - '**'
+
+# SECRETS
+# - GITHUB_DOCS_KEY: generated locally, added to github repo (public key)
+#                    `ssh-keygen -t rsa -b 4096 -C "Github CI Docs Key" -N "" -f key`
+# - GITHUB_TOKEN: (default, from github actions)
+
+jobs:
+  docs:
+    name: Build Docs
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.6 🐍
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6
+
+    - name: Load PIP Cached artifacts ⬇
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-3.6-pip-${{ hashFiles('**/requirements-dev.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-3.6-pip-
+
+    - name: Install Dependencies 📦
+      env:
+        RASABASTER: rasabaster-0.7.23.tar.gz
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
+        pip install $RASABASTER
+        pip install -r requirements.txt
+        pip install --no-cache-dir -r requirements-docs.txt
+        pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
+        pip install -e .
+        pip list
+    - name: Build & Publish Docs 🏃‍♀️
+      env:
+        GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
+      run: |
+        eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
+        echo "$GITHUB_DOCS_KEY" > "docs_key"
+        ssh-add docs_key
+
+        git config --global user.email "builds@github-ci.com"
+        git config --global user.name "GitHub CI"
+        git remote set-url --push origin "git@github.com:${{github.repository}}"
+
+        sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster
