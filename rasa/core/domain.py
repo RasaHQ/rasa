@@ -79,7 +79,7 @@ class Domain:
     """The domain specifies the universe in which the bot's policy acts.
 
     A Domain subclass provides the actions the bot can take, the intents
-    and entities it can recognise"""
+    and entities it can recognise."""
 
     @classmethod
     def empty(cls) -> "Domain":
@@ -271,9 +271,17 @@ class Domain:
     def _transform_intent_properties_for_internal_use(
         intent: Dict[Text, Any], entities: List
     ) -> Dict[Text, Any]:
-        """Transform the intent properties `use_entities` and `ignore_entities` that are
-        used in domain files into one internal property `used_entities`. Use default
-        values where the intent properties are not explicitly provided.
+        """Transform intent properties coming from a domain file for internal use.
+
+        In domain files, `use_entities` or `ignore_entities` is used. Internally, there
+        is a property `used_entities` instead that lists all entities to be used.
+
+        Args:
+            intent: The intents as provided by a domain file.
+            entities: All entities as provided by a domain file.
+
+        Returns:
+            The intents as they should be used internally.
         """
         name, properties = list(intent.items())[0]
 
@@ -331,15 +339,14 @@ class Domain:
             intent = cls._transform_intent_properties_for_internal_use(intent, entities)
 
             intent_properties.update(intent)
-            
+
         return intent_properties
 
     @staticmethod
     def collect_templates(
         yml_templates: Dict[Text, List[Any]]
     ) -> Dict[Text, List[Dict[Text, Any]]]:
-        """Go through the templates and make sure they are all in dict format
-        """
+        """Go through the templates and make sure they are all in dict format."""
         templates = {}
         for template_key, template_variations in yml_templates.items():
             validated_variations = []
@@ -418,7 +425,7 @@ class Domain:
 
     @lazy_property
     def user_actions_and_forms(self):
-        """Returns combination of user actions and forms"""
+        """Returns combination of user actions and forms."""
 
         return self.user_actions + self.form_names
 
@@ -436,7 +443,7 @@ class Domain:
         return len(self.input_states)
 
     def add_categorical_slot_default_value(self) -> None:
-        """Add a default value to all categorical slots
+        """Add a default value to all categorical slots.
 
         All unseen values found for the slot will be mapped to this default value
         for featurization.
@@ -481,7 +488,7 @@ class Domain:
     def action_for_name(
         self, action_name: Text, action_endpoint: Optional[EndpointConfig]
     ) -> Optional[Action]:
-        """Looks up which action corresponds to this action name."""
+        """Look up which action corresponds to this action name."""
 
         if action_name not in self.action_names:
             self._raise_action_not_found_exception(action_name)
@@ -512,7 +519,7 @@ class Domain:
         ]
 
     def index_for_action(self, action_name: Text) -> Optional[int]:
-        """Looks up which action index corresponds to this action name"""
+        """Look up which action index corresponds to this action name."""
 
         try:
             return self.action_names.index(action_name)
@@ -574,13 +581,13 @@ class Domain:
         return [f"active_form_{f}" for f in self.form_names]
 
     def index_of_state(self, state_name: Text) -> Optional[int]:
-        """Provides the index of a state."""
+        """Provide the index of a state."""
 
         return self.input_state_map.get(state_name)
 
     @lazy_property
     def input_state_map(self) -> Dict[Text, int]:
-        """Provides a mapping from state names to indices."""
+        """Provide a mapping from state names to indices."""
         return {f: i for i, f in enumerate(self.input_states)}
 
     @lazy_property
@@ -647,7 +654,7 @@ class Domain:
     def get_prev_action_states(
         self, tracker: "DialogueStateTracker"
     ) -> Dict[Text, float]:
-        """Turns the previous taken action into a state name."""
+        """Turn the previous taken action into a state name."""
 
         latest_action = tracker.latest_action_name
         if latest_action:
@@ -661,7 +668,7 @@ class Domain:
 
     @staticmethod
     def get_active_form(tracker: "DialogueStateTracker") -> Dict[Text, float]:
-        """Turns tracker's active form into a state name."""
+        """Turn tracker's active form into a state name."""
         form = tracker.active_form.get("name")
         if form is not None:
             return {ACTIVE_FORM_PREFIX + form: 1.0}
@@ -669,7 +676,7 @@ class Domain:
             return {}
 
     def get_active_states(self, tracker: "DialogueStateTracker") -> Dict[Text, float]:
-        """Return a bag of active states from the tracker state"""
+        """Return a bag of active states from the tracker state."""
         state_dict = self.get_parsing_states(tracker)
         state_dict.update(self.get_prev_action_states(tracker))
         state_dict.update(self.get_active_form(tracker))
@@ -701,7 +708,7 @@ class Domain:
             return []
 
     def persist_specification(self, model_path: Text) -> None:
-        """Persists the domain specification to storage."""
+        """Persist the domain specification to storage."""
 
         domain_spec_path = os.path.join(model_path, "domain.json")
         rasa.utils.io.create_directory_for_file(domain_spec_path)
@@ -718,7 +725,7 @@ class Domain:
         return specification
 
     def compare_with_specification(self, path: Text) -> bool:
-        """Compares the domain spec of the current and the loaded domain.
+        """Compare the domain spec of the current and the loaded domain.
 
         Throws exception if the loaded domain specification is different
         to the current domain are different."""
@@ -766,8 +773,14 @@ class Domain:
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
 
     def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
-        """Replace the internal `used_entities` property by `use_entities` or
-        `ignore_entities`.
+        """Transform intent properties for displaying or writing into a domain file.
+
+        Internally, there is a property `used_entities` that lists all entities to be
+        used. In domain files, `use_entities` or `ignore_entities` is used instead to
+        list individual entities to ex- or include, because this is easier to read.
+
+        Returns:
+            The intent properties as they are used in domain files.
         """
         intent_properties = copy.deepcopy(self.intent_properties)
         intents_for_file = []
@@ -788,8 +801,13 @@ class Domain:
 
     def cleaned_domain(self) -> Dict[Text, Any]:
         """Fetch cleaned domain to display or write into a file.
+
         The internal `used_entities` property is replaced by `use_entities` or
-        `ignore_entities`. Redundant keys are replaced with default values.
+        `ignore_entities` and redundant keys are replaced with default values
+        to make the domain easier readable.
+
+        Returns:
+            A cleaned dictionary version of the domain.
         """
         domain_data = self.as_dict()
 
@@ -1036,7 +1054,7 @@ class Domain:
                 )
 
     def is_empty(self) -> bool:
-        """Checks whether the domain is empty."""
+        """Check whether the domain is empty."""
 
         return self.as_dict() == Domain.empty().as_dict()
 
