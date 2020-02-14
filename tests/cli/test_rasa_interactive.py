@@ -177,3 +177,13 @@ def test_pass_conversation_id_to_interactive_learning(monkeypatch: MonkeyPatch):
     do_interactive_learning(args, Mock())
 
     _serve_application.assert_called_once_with(ANY, ANY, True, expected_conversation_id)
+
+
+def test_generate_conversation_id_for_interactive_learning(monkeypatch: MonkeyPatch):
+    parser = argparse.ArgumentParser()
+    sub_parser = parser.add_subparsers()
+    interactive.add_subparser(sub_parser, [])
+
+    args = parser.parse_args(["interactive"])
+
+    assert args.conversation_id

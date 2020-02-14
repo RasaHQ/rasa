@@ -1317,7 +1317,7 @@ async def _plot_trackers(
     output_file: Optional[Text],
     endpoint: EndpointConfig,
     unconfirmed: Optional[List[Event]] = None,
-):
+) -> None:
     """Create a plot of the trackers of the passed conversation ids.
 
     This assumes that the last conversation id is the conversation we are currently
@@ -1328,7 +1328,7 @@ async def _plot_trackers(
     if not output_file or not conversation_ids:
         # if there is no output file provided, we are going to skip plotting
         # same happens if there are no conversation ids
-        return None
+        return
 
     event_sequences = await _fetch_events(conversation_ids, endpoint)
 
