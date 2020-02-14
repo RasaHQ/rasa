@@ -8,6 +8,7 @@ from rasa.utils.common import is_logging_disabled
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from tensorflow.python.keras import callbacks as cbks
 from tensorflow.python.keras.utils.mode_keys import ModeKeys
+from tensorflow.python.keras.engine import training_utils
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,7 @@ class RasaModel(tf.keras.models.Model):
         callbacks=None,
     ) -> None:
         """Fit model data"""
+        self._run_eagerly = eager
 
         tf.random.set_seed(self.random_seed)
         np.random.seed(self.random_seed)
@@ -92,9 +94,13 @@ class RasaModel(tf.keras.models.Model):
             samples=None,
             verbose=0,  # Handle ProgBarLogger separately in this loop.
             mode=mode)
+        progbar = training_utils.get_progbar(
+            self, 'steps', mode != ModeKeys.PREDICT)
+        progbar.params = callbacks.params
 
         callbacks.model.stop_training = False
         callbacks._call_begin_hook(mode)
+        progbar.on_train_begin()
 
         val_results = {}  # validation is not performed every epoch
         pbar = tqdm(range(epochs), desc="Epochs", disable=disable)
@@ -105,13 +111,13 @@ class RasaModel(tf.keras.models.Model):
 
             # Setup work for each epoch
             epoch_logs = {}
-            if mode == ModeKeys.TRAIN:
-                callbacks.on_epoch_begin(ep, epoch_logs)
+            callbacks.on_epoch_begin(ep, epoch_logs)
+            progbar.on_epoch_begin(ep, epoch_logs)
 
             ep_batch_size = self.linearly_increasing_batch_size(ep, batch_size, epochs)
 
             self._batch_loop(
-                train_dataset_function, tf_train_on_batch_function, ep_batch_size, True, callbacks, mode
+                train_dataset_function, tf_train_on_batch_function, ep_batch_size, True, callbacks, mode, progbar
             )
 
             postfix_dict = self._get_metric_results()
@@ -125,14 +131,20 @@ class RasaModel(tf.keras.models.Model):
                         False,
                         None,
                         None,
+                        None,
                     )
                     val_results = self._get_metric_results(prefix="val_")
 
                 postfix_dict.update(val_results)
 
+            callbacks.on_epoch_end(ep, epoch_logs)
+            progbar.on_epoch_end(ep, epoch_logs)
+
             pbar.set_postfix(postfix_dict)
 
+        self._successful_loop_finish = True
         callbacks._call_end_hook(mode)
+
         self._training = None  # training phase should be defined when building a graph
         if not disable:
             logger.info("Finished training.")
@@ -214,6 +226,7 @@ class RasaModel(tf.keras.models.Model):
         training: bool,
         callbacks,
         mode,
+        progbar,
     ) -> None:
         """Run on batches"""
 
@@ -221,10 +234,15 @@ class RasaModel(tf.keras.models.Model):
         self._training = training  # needed for eager mode
         for i, batch_in in enumerate(dataset_function(batch_size)):
             # Callbacks batch_begin.
-            callbacks._call_batch_hook(mode, 'begin', i)
+            batch_logs = {'batch': i, 'size': 1}
+            callbacks._call_batch_hook(mode, 'begin', i, batch_logs)
+            progbar.on_batch_begin(i, batch_logs)
             call_model_function(batch_in)
             # Callbacks batch end.
-            callbacks._call_batch_hook(mode, 'end', i)
+            batch_outs = [metric.result().numpy() for metric in self.metrics if metric.name == 't_loss'] + [metric.result().numpy() for metric in self.metrics]
+            batch_logs = cbks.make_logs(self, batch_logs, batch_outs, mode)
+            callbacks._call_batch_hook(mode, 'end', i, batch_logs)
+            progbar.on_batch_end(i, batch_logs)
 
     @staticmethod
     def _get_tf_call_model_function(
