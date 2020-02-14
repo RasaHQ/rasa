@@ -132,6 +132,7 @@ class RasaModel(tf.keras.models.Model):
 
             pbar.set_postfix(postfix_dict)
 
+        callbacks._call_end_hook(mode)
         self._training = None  # training phase should be defined when building a graph
         if not disable:
             logger.info("Finished training.")

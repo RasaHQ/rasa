@@ -609,8 +609,12 @@ class DIETClassifier(EntityExtractor):
             self.inverted_tag_dict,
             self.component_config,
         )
-        log_dir = "logs/profile/"
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
+
+        from datetime import datetime
+        log_dir = "logs/profile/" + datetime.now().strftime("%Y%m%d-%H%M%S")
+        tensorboard_callback1 = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
+        log_dir = "logs/scalars/" + datetime.now().strftime("%Y%m%d-%H%M%S")
+        tensorboard_callback2 = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
         self.model.fit(
             model_data,
             self.component_config[EPOCHS],
@@ -618,7 +622,7 @@ class DIETClassifier(EntityExtractor):
             self.component_config[EVAL_NUM_EXAMPLES],
             self.component_config[EVAL_NUM_EPOCHS],
             self.component_config[BATCH_STRATEGY],
-            callbacks=[tensorboard_callback]
+            callbacks=[tensorboard_callback1]#, tensorboard_callback2]
         )
 
     # process helpers
