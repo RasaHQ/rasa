@@ -1,4 +1,4 @@
-:desc: Find out how to configure your environment for efficient usage of TensorFlow inside Rasa OSS
+:desc: Find out how to configure your environment for efficient usage of TensorFlow inside Rasa Open Source
 
 .. _tensorflow_usage:
 
@@ -6,9 +6,9 @@ Setting up the TensorFlow Runtime
 =================================
 
 TensorFlow allows setting the runtime environment via
-`TF Config submodule <https://www.tensorflow.org/api_docs/python/tf/config>`_. Rasa OSS supports a smaller subset of these
+`TF Config submodule <https://www.tensorflow.org/api_docs/python/tf/config>`_. Rasa Open Source supports a smaller subset of these
 configuration options and makes appropriate calls to the ``tf.config`` submodule.
-This smaller subset comprises of configurations that developers frequently use with Rasa OSS.
+This smaller subset comprises of configurations that developers frequently use with Rasa Open Source.
 All configuration options are specified using environment variables as shown in subsequent sections.
 
 Optimizing CPU Performance
@@ -50,6 +50,6 @@ For example, you may have two visible GPUs(``GPU:0`` and ``GPU:1``) and you want
 and 2048 MB from the second GPU.
 You can do so by setting an environment variable as ``TF_GPU_MEMORY_ALLOC="0:1024, 1:2048"``.
 
-Another scenario can be where you have access to 2 GPUs(``GPU:0`` and ``GPU:1``) but you would like to use only second
-GPU for the Rasa OSS process.
-``TF_GPU_MEMORY_ALLOC="1:2048"`` would make 2048 MB of memory from GPU 1 available for the Rasa process
+Another scenario can be where you have access to 2 GPUs(``GPU:0`` and ``GPU:1``) but you would like to use only the second
+GPU.
+``TF_GPU_MEMORY_ALLOC="1:2048"`` would make 2048 MB of memory availble from GPU 1.
