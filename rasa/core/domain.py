@@ -325,20 +325,24 @@ class Domain:
     ) -> Dict[Text, Dict[Text, Union[bool, List]]]:
 
         intent_properties = {}
+        duplicates = []
         for intent in intents:
             if not isinstance(intent, dict):
                 intent = {intent: {USE_ENTITIES_KEY: True, IGNORE_ENTITIES_KEY: []}}
 
             name = list(intent.keys())[0]
             if name in intent_properties.keys():
-                raise InvalidDomain(
-                    f"Intents are not unique! Found two intents with name '{name}'. "
-                    f"Either rename or remove one of them."
-                )
+                duplicates.append(name)
 
             intent = cls._transform_intent_properties_for_internal_use(intent, entities)
 
             intent_properties.update(intent)
+
+        if duplicates:
+            raise InvalidDomain(
+                f"Intents are not unique! Found multiple intents with name(s) {duplicates}. "
+                f"Either rename or remove the duplicate ones."
+            )
 
         return intent_properties
 
