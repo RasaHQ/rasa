@@ -159,22 +159,22 @@ def export_trackers(args: argparse.Namespace) -> None:
     _prepare_event_broker(event_broker)
     requested_conversation_ids = _get_requested_conversation_ids(args.conversation_ids)
 
+    migrator = Migrator(
+        tracker_store,
+        event_broker,
+        args.endpoints,
+        requested_conversation_ids,
+        args.minimum_timestamp,
+        args.maximum_timestamp,
+    )
+
     try:
-        migrator = Migrator(
-            tracker_store,
-            event_broker,
-            args.endpoints,
-            requested_conversation_ids,
-            args.minimum_timestamp,
-            args.maximum_timestamp,
-        )
         published_events = migrator.publish_events()
         cli_utils.print_success(
             f"Done! Successfully published '{published_events}' events 🎉"
         )
 
     except PublishingError as e:
-        # noinspection PyUnboundLocalVariable
         command = _get_continuation_command(migrator, float(e))
         cli_utils.print_error_and_exit(
             f"Encountered error while publishing event with timestamp '{e}'. To "
