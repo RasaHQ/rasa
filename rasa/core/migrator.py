@@ -1,4 +1,5 @@
 import logging
+import time
 
 import itertools
 from tqdm import tqdm
@@ -50,11 +51,14 @@ class Migrator:
         self.minimum_timestamp = minimum_timestamp
         self.maximum_timestamp = maximum_timestamp
 
-    def publish_events(self) -> int:
+    def publish_events(self, publish_interval: float = 0.01) -> int:
         """Publish events in a tracker store using an event broker.
 
         Exits if the publishing of events is interrupted due to an error. In that case,
         the CLI command to continue the export where it was interrupted is printed.
+
+        Args:
+            publish_interval: Wait time between messages.
 
         """
         events = self._fetch_events_within_time_range()
@@ -75,6 +79,8 @@ class Migrator:
             except Exception as e:
                 logger.exception(e)
                 raise PublishingError(current_timestamp)
+
+            time.sleep(publish_interval)
 
         return published_events
 

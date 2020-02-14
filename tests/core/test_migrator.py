@@ -34,20 +34,15 @@ def test_get_conversation_ids_to_process(
     available_ids: Optional[List[Text]],
     expected: Optional[List[Text]],
 ):
-    # convert ids to strings
-    _requested_ids = [_id for _id in requested_ids] if requested_ids else None
-    _available_ids = [_id for _id in available_ids]
-    _expected = {_id for _id in expected} if expected else None
-
     # create and mock tracker store containing `available_ids` as keys
     tracker_store = Mock()
-    tracker_store.keys.return_value = _available_ids
+    tracker_store.keys.return_value = available_ids
 
     migrator = MockMigrator(tracker_store)
     migrator.requested_conversation_ids = requested_ids
 
     # noinspection PyProtectedMember
-    assert migrator.get_conversation_ids_to_process() == _expected
+    assert migrator.get_conversation_ids_to_process() == set(expected)
 
 
 @pytest.mark.parametrize(
@@ -65,13 +60,9 @@ def test_get_conversation_ids_to_process(
 def test_get_conversation_ids_to_process_error(
     requested_ids: Optional[List[Text]], available_ids: List[Text], exception: Exception
 ):
-    # convert ids to strings
-    _requested_ids = [_id for _id in requested_ids] if requested_ids else None
-    _available_ids = [_id for _id in available_ids]
-
     # create and mock tracker store containing `available_ids` as keys
     tracker_store = Mock()
-    tracker_store.keys.return_value = _available_ids
+    tracker_store.keys.return_value = available_ids
 
     migrator = MockMigrator(tracker_store)
     migrator.requested_conversation_ids = requested_ids
