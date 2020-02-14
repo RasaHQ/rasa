@@ -26,7 +26,7 @@ class ModifiedTemplateGenerator(TemplatedNaturalLanguageGenerator):
 
     def __init__(self, templates: Dict[Text, List[Dict[Text, Any]]]) -> None:
         self.templates = templates
-        self.modifiers = ["Nevermind.", "Ok.", "Yes, that's right.", "Actually no.", "Whatever."]
+        self.modifiers = ["Nevermind.", "Ok.", "Yes, that's right.","You're so right","Yes indeed.","That's right", "Actually no.", "Not exactly. ","Not at all.","No it isn't.", "Whatever.", "I'll repeat", "Nothing.", "Good question.", "What a load of nonsense.", "That's awesome!", "That is awful", "I'm sorry to hear that", "Boom!"]
 
     async def generate(
         self,
