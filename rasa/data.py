@@ -146,13 +146,25 @@ def is_story_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a story file, otherwise `False`.
     """
-    _is_story_file = False
 
-    if file_path.endswith(".md"):
-        with open(file_path, encoding=DEFAULT_ENCODING) as f:
-            _is_story_file = any(_contains_story_pattern(l) for l in f)
+    if not file_path.endswith(".md"):
+        return False
 
-    return _is_story_file
+    try:
+        with open(
+            file_path, encoding=DEFAULT_ENCODING, errors="surrogateescape"
+        ) as lines:
+            return any(_contains_story_pattern(line) for line in lines)
+    except Exception as e:
+        # catch-all because we might be loading files we are not expecting to load
+        logger.error(
+            f"Tried to check if '{file_path}' is a story file, but failed to "
+            f"read it. If this file contains story data, you should "
+            f"investigate this error, otherwise it is probably best to "
+            f"move the file to a different location. "
+            f"Error: {e}"
+        )
+        return False
 
 
 def _contains_story_pattern(text: Text) -> bool:

@@ -93,7 +93,7 @@ def is_int(value: Any) -> bool:
         return False
 
 
-def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.array:
+def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarray:
     if hot_idx >= length:
         raise ValueError(
             "Can't create one hot. Index '{}' is out "
@@ -181,7 +181,7 @@ class HashableNDArray:
     def __hash__(self) -> int:
         return self.__hash
 
-    def unwrap(self) -> np.array:
+    def unwrap(self) -> np.ndarray:
         """Returns the encapsulated ndarray.
 
         If the wrapper is "tight", a copy of the encapsulated ndarray is

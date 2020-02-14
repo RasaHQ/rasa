@@ -81,13 +81,18 @@ class RegexFeaturizer(Featurizer):
 
     def _features_for_patterns(
         self, message: Message, attribute: Text
-    ) -> scipy.sparse.coo_matrix:
+    ) -> Optional[scipy.sparse.coo_matrix]:
         """Checks which known patterns match the message.
 
         Given a sentence, returns a vector of {1,0} values indicating which
         regexes did match. Furthermore, if the
         message is tokenized, the function will mark all tokens with a dict
         relating the name of the regex to whether it was matched."""
+
+        # Attribute not set (e.g. response not present)
+        if not message.get(attribute):
+            return None
+
         tokens = message.get(TOKENS_NAMES[attribute], [])
         seq_length = len(tokens)
 
