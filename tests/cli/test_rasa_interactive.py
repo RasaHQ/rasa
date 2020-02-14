@@ -169,7 +169,14 @@ def test_pass_conversation_id_to_interactive_learning(monkeypatch: MonkeyPatch):
     interactive.add_subparser(sub_parser, [])
 
     expected_conversation_id = "🎁"
-    args = parser.parse_args(["interactive", "--conversation-id", expected_conversation_id, "--skip-visualization", ])
+    args = parser.parse_args(
+        [
+            "interactive",
+            "--conversation-id",
+            expected_conversation_id,
+            "--skip-visualization",
+        ]
+    )
 
     _serve_application = Mock()
     monkeypatch.setattr(interactive_learning, "_serve_application", _serve_application)
