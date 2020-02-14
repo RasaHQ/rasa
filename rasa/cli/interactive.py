@@ -2,7 +2,6 @@ import argparse
 import asyncio
 import logging
 import os
-import uuid
 from typing import List, Optional, Text
 
 from rasa.cli import utils
