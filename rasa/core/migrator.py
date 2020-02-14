@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 
 class Migrator:
+    """Manages the publishing of events in a tracker store to an event broker."""
+
     def __init__(
         self,
         tracker_store: TrackerStore,
@@ -28,11 +30,7 @@ class Migrator:
         minimum_timestamp: Optional[float] = None,
         maximum_timestamp: Optional[float] = None,
     ):
-        """Publish events in a tracker store using an event broker.
-
-        Exits if the publishing of events is interrupted due to an error. In that case,
-        the CLI command to continue the export where it was interrupted is printed.
-
+        """
         Args:
             endpoints_path: Path to the endpoints file used to configure the event
                 broker and tracker store. If `None`, the default path ('endpoints.yml')
@@ -176,7 +174,7 @@ class Migrator:
     ) -> List[Dict[Text, Any]]:
         """Sort list of events by ascending timestamp, and select events within time range.
 
-        Prints an error message and exits if no events are found within the requested
+        Raises `NoEventsInTimeRange` error if no events are found within the requested
         time range.
 
         Args:

@@ -1,21 +1,20 @@
-import random
-
 import argparse
 import pytest
-import uuid
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 from pathlib import Path
-from typing import Callable, Optional, Dict, Any, Text, List
-from unittest.mock import Mock, PropertyMock
+from typing import Callable, Optional, Dict, Text, List
+from unittest.mock import Mock
 
-import rasa.utils.io as io_utils
+import rasa.core.utils as rasa_core_utils
 from rasa.cli import export
 from rasa.core.brokers.pika import PikaEventBroker
-from rasa.core.events import UserUttered
 from rasa.core.trackers import DialogueStateTracker
-from rasa.exceptions import PublishingError
-from tests.conftest import MockMigrator, random_user_uttered_event
+from tests.conftest import (
+    MockMigrator,
+    random_user_uttered_event,
+    write_endpoint_config_to_yaml,
+)
 
 
 def test_export_help(run: Callable[..., RunResult]):
@@ -59,38 +58,14 @@ def test_timestamp_error_exit():
         export._validate_timestamp_options(args)
 
 
-def _write_endpoint_config_to_yaml(path: Path, data: Dict[Text, Any]) -> Path:
-    endpoints_path = path / "endpoints.yml"
-
-    # write endpoints config to file
-    io_utils.write_yaml_file(
-        data, endpoints_path,
-    )
-    return endpoints_path
-
-
-def test_get_available_endpoints(tmp_path: Path):
-    # write valid config to file
-    endpoints_path = _write_endpoint_config_to_yaml(
-        tmp_path, {"event_broker": {"type": "pika"}, "tracker_store": {"type": "sql"}}
-    )
-
-    # noinspection PyProtectedMember
-    available_endpoints = export._get_available_endpoints(str(endpoints_path))
-
-    # assert event broker and tracker store are valid, others are not
-    assert available_endpoints.tracker_store and available_endpoints.event_broker
-    assert not available_endpoints.lock_store and not available_endpoints.nlg
-
-
 # noinspection PyProtectedMember
 def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path):
     # write valid config to file
-    endpoints_path = _write_endpoint_config_to_yaml(
-        tmp_path, {"event_broker": {"type": "sql"}, "tracker_store": {"type": "sql"}},
+    endpoints_path = write_endpoint_config_to_yaml(
+        tmp_path, {"event_broker": {"type": "sql"}, "tracker_store": {"type": "sql"}}
     )
 
-    available_endpoints = export._get_available_endpoints(str(endpoints_path))
+    available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)
 
     # fetching the event broker is successful
     assert export._get_event_broker(available_endpoints)
@@ -100,11 +75,11 @@ def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path)
 # noinspection PyProtectedMember
 def test_get_event_broker_from_endpoint_config_error_exit(tmp_path: Path):
     # write config without event broker to file
-    endpoints_path = _write_endpoint_config_to_yaml(
+    endpoints_path = write_endpoint_config_to_yaml(
         tmp_path, {"tracker_store": {"type": "sql"}}
     )
 
-    available_endpoints = export._get_available_endpoints(str(endpoints_path))
+    available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)
 
     with pytest.raises(SystemExit):
         assert export._get_event_broker(available_endpoints)
@@ -113,9 +88,9 @@ def test_get_event_broker_from_endpoint_config_error_exit(tmp_path: Path):
 # noinspection PyProtectedMember
 def test_get_tracker_store_from_endpoint_config_error_exit(tmp_path: Path):
     # write config without event broker to file
-    endpoints_path = _write_endpoint_config_to_yaml(tmp_path, {})
+    endpoints_path = write_endpoint_config_to_yaml(tmp_path, {})
 
-    available_endpoints = export._get_available_endpoints(str(endpoints_path))
+    available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)
 
     with pytest.raises(SystemExit):
         assert export._get_tracker_store(available_endpoints)
@@ -197,7 +172,7 @@ def _add_conversation_id_to_event(event: Dict, conversation_id: Text):
 
 # noinspection PyProtectedMember
 def test_export_trackers(tmp_path: Path, monkeypatch: MonkeyPatch):
-    endpoints_path = _write_endpoint_config_to_yaml(
+    endpoints_path = write_endpoint_config_to_yaml(
         tmp_path, {"event_broker": {"type": "pika"}, "tracker_store": {"type": "sql"}}
     )
 

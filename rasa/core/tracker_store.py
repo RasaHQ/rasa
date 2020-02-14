@@ -139,9 +139,7 @@ class TrackerStore:
         offset = self.number_of_existing_events(tracker.sender_id)
         events = tracker.events
         for event in list(itertools.islice(events, offset, len(events))):
-            body = {"sender_id": tracker.sender_id}
-            body.update(event.as_dict())
-            self.event_broker.publish(body)
+            self.event_broker.prepare_event_and_publish(event, tracker.sender_id)
 
     def number_of_existing_events(self, sender_id: Text) -> int:
         """Return number of stored events for a given sender id."""

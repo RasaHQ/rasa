@@ -4,8 +4,8 @@ import argparse
 from typing import List, Text, Optional
 
 import rasa.cli.utils as cli_utils
+import rasa.core.utils as rasa_core_utils
 from rasa.cli.arguments import export as arguments
-from rasa.constants import DEFAULT_ENDPOINTS_PATH
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.migrate import Migrator
@@ -76,23 +76,6 @@ def _get_event_broker(endpoints: AvailableEndpoints) -> Optional[EventBroker]:
         )
 
     return EventBroker.create(endpoints.event_broker)
-
-
-def _get_available_endpoints(endpoints_path: Optional[Text]) -> AvailableEndpoints:
-    """Get `AvailableEndpoints` object from specified path.
-
-    Args:
-        endpoints_path: Path of the endpoints file to be read. If `None` the
-            default path for that file is used (`endpoints.yml`).
-
-    Returns:
-        `AvailableEndpoints` object read from endpoints file.
-
-    """
-    endpoints_config_path = cli_utils.get_validated_path(
-        endpoints_path, "endpoints", DEFAULT_ENDPOINTS_PATH, True
-    )
-    return AvailableEndpoints.read_endpoints(endpoints_config_path)
 
 
 def _get_requested_conversation_ids(
@@ -170,7 +153,7 @@ def export_trackers(args: argparse.Namespace) -> None:
     """
     _validate_timestamp_options(args)
 
-    endpoints = _get_available_endpoints(args.endpoints)
+    endpoints = rasa_core_utils.read_endpoints_from_path(args.endpoints)
     tracker_store = _get_tracker_store(endpoints)
     event_broker = _get_event_broker(endpoints)
     _prepare_event_broker(event_broker)

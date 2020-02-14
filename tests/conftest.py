@@ -3,8 +3,9 @@ import uuid
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
+from pathlib import Path
 from sanic import Sanic
-from typing import Text, List, Optional
+from typing import Text, List, Optional, Dict, Any
 from unittest.mock import Mock
 
 from rasa import server
@@ -30,6 +31,7 @@ from tests.core.conftest import (
     END_TO_END_STORY_FILE,
     MOODBOT_MODEL_PATH,
 )
+import rasa.utils.io as io_utils
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
@@ -216,6 +218,18 @@ def get_test_client(server):
     test_client = server.test_client
     test_client.port = None
     return test_client
+
+
+def write_endpoint_config_to_yaml(
+    path: Path, data: Dict[Text, Any], endpoints_filename="endpoints.yml"
+) -> Path:
+    endpoints_path = path / endpoints_filename
+
+    # write endpoints config to file
+    io_utils.write_yaml_file(
+        data, endpoints_path,
+    )
+    return endpoints_path
 
 
 def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
