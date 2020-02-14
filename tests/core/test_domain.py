@@ -434,20 +434,6 @@ def test_collect_intent_properties(intents, entities, intent_properties):
     assert Domain.collect_intent_properties(intents, entities) == intent_properties
 
 
-def test_collect_intent_properties_duplicates():
-    intents = ["greet", "goodbye", "thank", "thank", "greet"]
-    entities = []
-    try:
-        Domain.collect_intent_properties(intents, entities)
-    except InvalidDomain as inst:
-        message = inst.message
-
-    assert (
-        message == "Intents are not unique! Found multiple intents with name(s) "
-        "['thank', 'greet']. Either rename or remove the duplicate ones."
-    )
-
-
 def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
     root = tmpdir_factory.mktemp("Parent Bot")
     root_domain = {"actions": ["utter_root", "utter_root2"]}
