@@ -45,7 +45,6 @@ def set_interactive_core_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def _add_common_params(parser: argparse.ArgumentParser) -> None:
-
     parser.add_argument(
         "--skip-visualization",
         default=False,
@@ -54,9 +53,9 @@ def _add_common_params(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
-        "--sender-id",
+        "--conversation-id",
         default=uuid.uuid4().hex,
-        help="Specify the user sending the messages.",
+        help="Specify the id of the conversation the messages are in.",
     )
 
     add_endpoint_param(

@@ -180,7 +180,7 @@ def do_interactive_learning(
     interactive.run_interactive_learning(
         file_importer=file_importer,
         skip_visualization=args.skip_visualization,
-        sender_id=args.sender_id,
+        conversation_id=args.conversation_id,
         server_args=args.__dict__,
     )
 
