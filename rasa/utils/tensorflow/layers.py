@@ -79,7 +79,6 @@ class DenseWithSparseWeights(tf.keras.layers.Dense):
         )
         self.kernel_mask = tf.Variable(initial_value=kernel_mask, trainable=False)
 
-
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
         # set some weights to 0 according to precomputed mask
         self.kernel.assign(self.kernel * self.kernel_mask)
