@@ -4,7 +4,7 @@ import tensorflow_addons as tfa
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
 import numpy as np
-from rasa.utils.tensorflow.layers import DenseWithSparseWeights
+from rasa.utils.tensorflow.layers import DenseWithSparseWeights, entmax15
 
 
 # from https://www.tensorflow.org/tutorials/text/transformer
@@ -264,7 +264,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         # softmax is normalized on the last axis (seq_len_k) so that the scores
         # add up to 1.
-        attention_weights = tf.nn.softmax(
+        attention_weights = entmax15(
             logits, axis=-1
         )  # (..., seq_len_q, seq_len_k)
 
