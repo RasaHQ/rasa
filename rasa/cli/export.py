@@ -8,7 +8,7 @@ import rasa.core.utils as rasa_core_utils
 from rasa.cli.arguments import export as arguments
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.pika import PikaEventBroker
-from rasa.core.migrate import Migrator
+from rasa.core.migrator import Migrator
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
 from rasa.exceptions import (
