@@ -15,10 +15,10 @@ def test_interactive_help(run: Callable[..., RunResult]):
 
     help_text = """usage: rasa interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-m MODEL]
                         [--data DATA [DATA ...]] [--skip-visualization]
-                        [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
-                        [--out OUT] [--augmentation AUGMENTATION]
-                        [--debug-plots] [--dump-stories] [--force]
-                        [--persist-nlu-data]
+                        [--sender-id SENDER_ID] [--endpoints ENDPOINTS]
+                        [-c CONFIG] [-d DOMAIN] [--out OUT]
+                        [--augmentation AUGMENTATION] [--debug-plots]
+                        [--dump-stories] [--force] [--persist-nlu-data]
                         {core} ... [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
@@ -31,13 +31,15 @@ def test_interactive_core_help(run: Callable[..., RunResult]):
     output = run("interactive", "core", "--help")
 
     help_text = """usage: rasa interactive core [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
-                             [--skip-visualization] [--endpoints ENDPOINTS]
-                             [-c CONFIG] [-d DOMAIN] [--out OUT]
-                             [--augmentation AUGMENTATION] [--debug-plots]
-                             [--dump-stories]
+                             [--skip-visualization] [--sender-id SENDER_ID]
+                             [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
+                             [--out OUT] [--augmentation AUGMENTATION]
+                             [--debug-plots] [--dump-stories]
                              [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
+
+    print(output)
 
     for i, line in enumerate(lines):
         assert output.outlines[i] == line

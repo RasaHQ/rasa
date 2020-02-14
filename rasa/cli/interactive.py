@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import logging
 import os
+import uuid
 from typing import List, Optional, Text
 
 from rasa.cli import utils
@@ -9,13 +10,13 @@ import rasa.cli.train as train
 from rasa.cli.arguments import interactive as arguments
 from rasa import model
 
-# noinspection PyProtectedMember
 from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_ENDPOINTS_PATH
 from rasa.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)
 
 
+# noinspection PyProtectedMember
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
@@ -28,11 +29,6 @@ def add_subparser(
         "Rasa model by chatting.",
     )
     interactive_parser.set_defaults(func=interactive, core_only=False)
-    interactive_parser.add_argument(
-        "--e2e",
-        action="store_true",
-        help="Save story files in e2e format. In this format user messages will be included in the stories.",
-    )
 
     interactive_subparsers = interactive_parser.add_subparsers()
     interactive_core_parser = interactive_subparsers.add_parser(

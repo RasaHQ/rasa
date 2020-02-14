@@ -1460,20 +1460,23 @@ async def _get_training_trackers(
 
 
 def _serve_application(
-    app: Sanic, file_importer: TrainingDataImporter, skip_visualization: bool
+    app: Sanic,
+    file_importer: TrainingDataImporter,
+    skip_visualization: bool,
+    sender_id: Text,
 ) -> Sanic:
     """Start a core server and attach the interactive learning IO."""
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
 
-    async def run_interactive_io(running_app: Sanic):
+    async def run_interactive_io(running_app: Sanic) -> None:
         """Small wrapper to shut down the server once cmd io is done."""
 
         await record_messages(
             endpoint=endpoint,
             file_importer=file_importer,
             skip_visualization=skip_visualization,
-            sender_id=uuid.uuid4().hex,
+            sender_id=sender_id,
         )
 
         logger.info("Killing Sanic server now.")
@@ -1569,6 +1572,7 @@ async def wait_til_server_is_running(
 def run_interactive_learning(
     file_importer: TrainingDataImporter,
     skip_visualization: bool = False,
+    sender_id: Text = uuid.uuid4().hex,
     server_args: Dict[Text, Any] = None,
 ):
     """Start the interactive learning with the model of the agent."""
@@ -1603,7 +1607,7 @@ def run_interactive_learning(
         "before_server_start",
     )
 
-    _serve_application(app, file_importer, skip_visualization)
+    _serve_application(app, file_importer, skip_visualization, sender_id)
 
     if not skip_visualization and p is not None:
         p.terminate()  # pytype: disable=attribute-error
