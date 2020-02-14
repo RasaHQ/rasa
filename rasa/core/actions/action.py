@@ -225,10 +225,12 @@ class ActionRetrieveResponse(Action):
             return []
 
         logger.debug(f"Picking response from selector of type {query_key}")
-        message = {
-            "text": response_selector_properties[query_key][
+        orig_text = response_selector_properties[query_key][
                 OPEN_UTTERANCE_PREDICTION_KEY
             ]["name"]
+        modified_text = nlg.prepend_and_rerank(orig_text, tracker)
+        message = {
+            "text": modified_text
         }
         return [create_bot_utterance(message)]
 
