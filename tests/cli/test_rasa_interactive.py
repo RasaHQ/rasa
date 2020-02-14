@@ -1,7 +1,7 @@
 import argparse
 import pytest
 from typing import Callable, Text
-from unittest.mock import Mock
+from unittest.mock import Mock, ANY
 
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
@@ -158,3 +158,22 @@ def test_no_interactive_without_core_data(
 
     mock.train_model.assert_not_called()
     mock.perform_interactive_learning.assert_not_called()
+
+
+def test_pass_conversation_id_to_interactive_learning(monkeypatch: MonkeyPatch):
+    from rasa.core.train import do_interactive_learning
+    from rasa.core.training import interactive as interactive_learning
+
+    parser = argparse.ArgumentParser()
+    sub_parser = parser.add_subparsers()
+    interactive.add_subparser(sub_parser, [])
+
+    expected_conversation_id = "🎁"
+    args = parser.parse_args(["interactive", "--conversation-id", expected_conversation_id, "--skip-visualization", ])
+
+    _serve_application = Mock()
+    monkeypatch.setattr(interactive_learning, "_serve_application", _serve_application)
+
+    do_interactive_learning(args, Mock())
+
+    _serve_application.assert_called_once_with(ANY, ANY, True, expected_conversation_id)
