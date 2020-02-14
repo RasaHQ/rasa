@@ -40,7 +40,7 @@ class ModifiedTemplateGenerator(TemplatedNaturalLanguageGenerator):
         template = self.generate_from_slots(
             template_name, filled_slots, output_channel, **kwargs
         )
-        enhanced_text = self.prepend_and_rerank(template['text'])
+        enhanced_text = self.prepend_and_rerank(template['text'], tracker)
         template['text'] = enhanced_text
         return template
 
@@ -49,7 +49,7 @@ class ModifiedTemplateGenerator(TemplatedNaturalLanguageGenerator):
             f"{m} {text}" for m in self.modifiers
         ]
 
-    def rank(self, candidates):
+    def rank(self, candidates, tracker):
         sess = None
 
         if sess is not None:
@@ -84,28 +84,23 @@ class ModifiedTemplateGenerator(TemplatedNaturalLanguageGenerator):
 
         response_encodings = np.concatenate(response_encodings)
 
-        context = "should I thank you?" # @param {type:"string"}
+        context = tracker.latest_message.text # @param {type:"string"}
         if context:
             context_encoding = encode_contexts([context])
             scores = np.dot(response_encodings, context_encoding.T).flatten()
             top_idx = np.argsort(scores)[::-1]
-            logger.error(top_idx)
-            logger.error(top_idx.shape)
-            logger.error(top_idx.dtype)
             for i in range(len(candidates)):
                 idx = top_idx[i]
                 logger.error(f"[{float(scores[idx])}] {candidates[idx]}")
-            #top_index = np.argmax(scores)
-            #top_score = float(scores[top_index])
 
         scores = None
         sorted_candidates = [candidates[i] for i in top_idx]
         return scores, sorted_candidates
 
     
-    def prepend_and_rerank(self, text):
+    def prepend_and_rerank(self, text, tracker):
         candidates = self.generate_modified_texts(text)
-        scores, candidates = self.rank(candidates)
+        scores, candidates = self.rank(candidates, tracker)
         return candidates[0]
 
 if __name__ == "__main__":
