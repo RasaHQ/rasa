@@ -596,7 +596,7 @@ def test_is_empty():
     assert Domain.empty().is_empty()
 
 
-def test_transform_intents_for_file():
+def test_transform_intents_for_file_default():
     domain_path = "data/test_domains/default_unfeaturized_entities.yml"
     domain = Domain.load(domain_path)
     transformed = domain._transform_intents_for_file()
@@ -609,6 +609,20 @@ def test_transform_intents_for_file():
         {"ask": {USE_ENTITIES_KEY: True}},
         {"why": {USE_ENTITIES_KEY: []}},
         {"pure_intent": {USE_ENTITIES_KEY: True}},
+    ]
+
+    assert transformed == expected
+
+
+def test_transform_intents_for_file_with_mapping():
+    domain_path = "data/test_domains/default_with_mapping.yml"
+    domain = Domain.load(domain_path)
+    transformed = domain._transform_intents_for_file()
+
+    expected = [
+        {"greet": {"triggers": "utter_greet", USE_ENTITIES_KEY: True}},
+        {"default": {"triggers": "utter_default", USE_ENTITIES_KEY: True}},
+        {"goodbye": {USE_ENTITIES_KEY: True}},
     ]
 
     assert transformed == expected
