@@ -306,8 +306,8 @@ class Domain:
             )
 
         properties[USED_ENTITIES_KEY] = used_entities
-        properties.pop(USE_ENTITIES_KEY)
-        properties.pop(IGNORE_ENTITIES_KEY)
+        del properties[USE_ENTITIES_KEY]
+        del properties[IGNORE_ENTITIES_KEY]
 
         return intent
 
@@ -331,6 +331,7 @@ class Domain:
             intent = cls._transform_intent_properties_for_internal_use(intent, entities)
 
             intent_properties.update(intent)
+            
         return intent_properties
 
     @staticmethod
@@ -795,7 +796,7 @@ class Domain:
         for idx, intent_info in enumerate(domain_data["intents"]):
             for name, intent in intent_info.items():
                 if intent.get(USE_ENTITIES_KEY) is True:
-                    intent.pop(USE_ENTITIES_KEY)
+                    del intent[USE_ENTITIES_KEY]
                 if not intent.get(IGNORE_ENTITIES_KEY):
                     intent.pop(IGNORE_ENTITIES_KEY, None)
                 if len(intent) == 0:
