@@ -23,7 +23,7 @@ def tf_cpu_setter(
 
 def test_tf_cpu_setting():
 
-    manager = multiprocessing.Manager()
+    manager = multiprocessing.get_context("spawn").Manager()
     shared_context_output = manager.dict()
 
     child_process = multiprocessing.get_context("spawn").Process(
