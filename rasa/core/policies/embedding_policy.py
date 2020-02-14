@@ -268,8 +268,8 @@ class EmbeddingPolicy(Policy):
             label_ids = np.expand_dims(label_ids, -1)
         else:
             # prediction time
-            label_ids = None
-            Y = None
+            label_ids = np.asarray([])
+            Y = np.asarray([])
 
         return {
             "dialogue_features": [data_X],

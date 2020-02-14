@@ -598,7 +598,7 @@ def test_requesting_non_existent_tracker(rasa_app: SanicTestClient):
     content = response.json
     assert response.status == 200
     assert content["paused"] is False
-    assert content["slots"] == {"location": None, "cuisine": None}
+    assert content["slots"] == {"name": None}
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [
         {
