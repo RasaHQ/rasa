@@ -152,17 +152,22 @@ for these extractors. Currently, all intent classifiers make use of available re
 
 Lookup Tables
 -------------
+Lookup tables provide a convenient way to supply a list of entity examples.
 The supplied lookup table files must be in a newline-delimited format.
 For example, ``data/test/lookup_tables/plates.txt`` may contain:
 
 .. literalinclude:: ../../data/test/lookup_tables/plates.txt
 
-And can be loaded as:
+And can be loaded and used as shown here:
 
 .. code-block:: md
 
     ## lookup:plates
     data/test/lookup_tables/plates.txt
+
+    ## intent:food_request
+    - I'd like beef [tacos](plates) and a [burrito](plates)
+    - How about some [mapo tofu](plates)
 
 When lookup tables are supplied in training data, the contents are combined
 into a large, case-insensitive regex pattern that looks for exact matches in
