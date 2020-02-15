@@ -2,9 +2,18 @@ import logging
 from typing import List, Optional, Text, Tuple, Callable, Union
 import tensorflow as tf
 import tensorflow_addons as tfa
-from tensorflow.python.keras.utils import tf_utils
+
+from tensorflow.python.eager import context
+from tensorflow.python.framework import dtypes
+from tensorflow.python.framework import tensor_shape
 from tensorflow.python.keras import backend as K
-from tensorflow.python.keras import initializers
+from tensorflow.python.keras.engine.input_spec import InputSpec
+from tensorflow.python.keras.utils import tf_utils
+from tensorflow.python.ops import gen_math_ops
+from tensorflow.python.ops import math_ops
+from tensorflow.python.ops import nn
+from tensorflow.python.ops import sparse_ops
+from tensorflow.python.ops import standard_ops
 
 logger = logging.getLogger(__name__)
 
@@ -71,20 +80,71 @@ class DenseWithSparseWeights(tf.keras.layers.Dense):
         self.sparsity = sparsity
 
     def build(self, input_shape: tf.TensorShape) -> None:
-        super().build(input_shape)
+
+        dtype = dtypes.as_dtype(self.dtype or K.floatx())
+        if not (dtype.is_floating or dtype.is_complex):
+            raise TypeError('Unable to build `Dense` layer with non-floating point '
+                            'dtype %s' % (dtype,))
+        input_shape = tensor_shape.TensorShape(input_shape)
+        if tensor_shape.dimension_value(input_shape[-1]) is None:
+            raise ValueError('The last dimension of the inputs to `Dense` '
+                             'should be defined. Found `None`.')
+        last_dim = tensor_shape.dimension_value(input_shape[-1])
+        self.input_spec = InputSpec(min_ndim=2,
+                                    axes={-1: last_dim})
+
+        self.kernel_shape = tensor_shape.TensorShape([last_dim, self.units])
         # create random mask to set some weights to 0
-        kernel_mask = tf.random.uniform(tf.shape(self.kernel), 0, 1)
-        kernel_mask = tf.cast(
-            tf.greater_equal(kernel_mask, self.sparsity), self.kernel.dtype
-        )
-        self.kernel_mask = tf.Variable(
-            initial_value=kernel_mask, trainable=False, name="kernel_mask"
-        )
+        kernel_mask = tf.random.uniform(self.kernel_shape, 0, 1)
+        kernel_mask = tf.greater_equal(kernel_mask, self.sparsity)
+        self.kernel_indices = tf.where(kernel_mask)
+        size = tf.math.count_nonzero(kernel_mask).numpy()
+        self.kernel_values = self.add_weight(
+            'kernel_values',
+            shape=[size, ],
+            initializer=self.kernel_initializer,
+            regularizer=self.kernel_regularizer,
+            constraint=self.kernel_constraint,
+            dtype=self.dtype,
+            trainable=True)
+
+        if self.use_bias:
+            self.bias = self.add_weight(
+                'bias',
+                shape=[self.units, ],
+                initializer=self.bias_initializer,
+                regularizer=self.bias_regularizer,
+                constraint=self.bias_constraint,
+                dtype=self.dtype,
+                trainable=True)
+        else:
+            self.bias = None
+        self.built = True
 
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
         # set some weights to 0 according to precomputed mask
-        self.kernel.assign(self.kernel * self.kernel_mask)
-        return super().call(inputs)
+        kernel = tf.scatter_nd(self.kernel_indices, self.kernel_values, self.kernel_shape)
+
+        rank = len(inputs.shape)
+        if rank > 2:
+            # Broadcasting is required for the inputs.
+            outputs = standard_ops.tensordot(inputs, kernel, [[rank - 1], [0]])
+            # Reshape the output back to the original ndim of the input.
+            if not context.executing_eagerly():
+                shape = inputs.shape.as_list()
+                output_shape = shape[:-1] + [self.units]
+                outputs.set_shape(output_shape)
+        else:
+            inputs = math_ops.cast(inputs, self._compute_dtype)
+            if K.is_sparse(inputs):
+                outputs = sparse_ops.sparse_tensor_dense_matmul(inputs, kernel)
+            else:
+                outputs = gen_math_ops.mat_mul(inputs, kernel)
+        if self.use_bias:
+            outputs = nn.bias_add(outputs, self.bias)
+        if self.activation is not None:
+            return self.activation(outputs)  # pylint: disable=not-callable
+        return outputs
 
 
 class Ffnn(tf.keras.layers.Layer):
