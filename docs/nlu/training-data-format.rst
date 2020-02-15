@@ -56,8 +56,6 @@ The training data for Rasa NLU is structured into different parts:
 - regex features and
 - lookup tables
 
-
-
 While common examples is the only part that is mandatory, including the others will help the NLU model
 learn the domain with fewer examples and also help it be more confident of its predictions.
 
