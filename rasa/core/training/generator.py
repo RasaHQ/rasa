@@ -312,6 +312,7 @@ class TrainingDataGenerator:
 
                 trackers, end_trackers = self._process_step(step, incoming_trackers)
                 # add end trackers to finished trackers
+                finished_trackers.extend(end_trackers)
 
                 # update our tracker dictionary with the trackers
                 # that handled the events of the step and
@@ -395,6 +396,7 @@ class TrainingDataGenerator:
                 active_trackers = self._create_start_trackers_for_augmentation(
                     story_end_trackers
                 )
+        finished_trackers.extend(story_end_trackers)
         self._issue_unused_checkpoint_notification(previous_unused)
         logger.debug("Found {} training trackers.".format(len(finished_trackers)))
 
