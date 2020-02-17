@@ -1,10 +1,12 @@
 import numpy as np
 import tensorflow as tf
 import logging
+import scipy.sparse
 from typing import Optional, Text, Dict, Any, Union, List
 from rasa.core.constants import DIALOGUE
 from rasa.nlu.constants import TEXT
 from rasa.nlu.tokenizers.tokenizer import Token
+
 
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -100,6 +102,22 @@ def align_tokens(
         current_token_offset += len(string)
 
     return tokens_out
+
+
+def sequence_to_sentence_features(
+    features: Union[np.ndarray, scipy.sparse.spmatrix]
+) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
+    """Extract the CLS token vector as sentence features.
+    Features is a sequence. The last token is the CLS token. The feature vector of
+    this token contains the sentence features."""
+
+    if features is None:
+        return None
+
+    if isinstance(features, scipy.sparse.spmatrix):
+        return scipy.sparse.coo_matrix(features.tocsr()[-1])
+
+    return np.expand_dims(features[-1], axis=0)
 
 
 def _replace_deprecated_option(

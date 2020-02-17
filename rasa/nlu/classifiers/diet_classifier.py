@@ -337,9 +337,8 @@ class DIETClassifier(EntityExtractor):
                 return False
         return True
 
-    @staticmethod
-    def _extract_and_add_features(
-        message: Message, attribute: Text
+    def _extract_features(
+        self, message: Message, attribute: Text
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
         sparse_features = None
         dense_features = None
@@ -356,6 +355,15 @@ class DIETClassifier(EntityExtractor):
                     f"Sequence dimensions for sparse and dense features "
                     f"don't coincide in '{message.text}' for attribute '{attribute}'."
                 )
+
+        if (
+            self.component_config[NUM_TRANSFORMER_LAYERS] == 0
+            and self.component_config[ENTITY_RECOGNITION] == False
+            and attribute != INTENT
+        ):
+            # Use only the CLS token vector as features
+            sparse_features = train_utils.sequence_to_sentence_features(sparse_features)
+            dense_features = train_utils.sequence_to_sentence_features(dense_features)
 
         return sparse_features, dense_features
 
@@ -379,7 +387,7 @@ class DIETClassifier(EntityExtractor):
         dense_features = []
 
         for e in label_examples:
-            _sparse, _dense = self._extract_and_add_features(e, attribute)
+            _sparse, _dense = self._extract_features(e, attribute)
             if _sparse is not None:
                 sparse_features.append(_sparse)
             if _dense is not None:
@@ -479,14 +487,14 @@ class DIETClassifier(EntityExtractor):
 
         for e in training_data:
             if label_attribute is None or e.get(label_attribute):
-                _sparse, _dense = self._extract_and_add_features(e, TEXT)
+                _sparse, _dense = self._extract_features(e, TEXT)
                 if _sparse is not None:
                     X_sparse.append(_sparse)
                 if _dense is not None:
                     X_dense.append(_dense)
 
             if e.get(label_attribute):
-                _sparse, _dense = self._extract_and_add_features(e, label_attribute)
+                _sparse, _dense = self._extract_features(e, label_attribute)
                 if _sparse is not None:
                     Y_sparse.append(_sparse)
                 if _dense is not None:
