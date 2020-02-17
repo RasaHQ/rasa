@@ -89,7 +89,13 @@ class RegexFeaturizer(Featurizer):
         regexes did match. Furthermore, if the
         message is tokenized, the function will mark all tokens with a dict
         relating the name of the regex to whether it was matched."""
-        tokens = message.get(TOKENS_NAMES[attribute])
+
+        # Attribute not set (e.g. response not present)
+        if not message.get(attribute):
+            return None
+
+        tokens = message.get(TOKENS_NAMES[attribute], [])
+
         if not tokens:
             # nothing to featurize
             return

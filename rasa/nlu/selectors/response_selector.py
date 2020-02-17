@@ -94,13 +94,13 @@ class ResponseSelector(DIETClassifier):
         # sizes of hidden layers before the embedding layer
         # for input words and responses
         # the number of hidden layers is thus equal to the length of this list
-        HIDDEN_LAYERS_SIZES: {TEXT: [], LABEL: []},
+        HIDDEN_LAYERS_SIZES: {TEXT: [256, 128], LABEL: [256, 128]},
         # Whether to share the hidden layer weights between input words and intent labels
         SHARE_HIDDEN_LAYERS: False,
         # number of units in transformer
-        TRANSFORMER_SIZE: 256,
+        TRANSFORMER_SIZE: None,
         # number of transformer layers
-        NUM_TRANSFORMER_LAYERS: 2,
+        NUM_TRANSFORMER_LAYERS: 0,
         # number of attention heads in transformer
         NUM_HEADS: 4,
         # max sequence length
@@ -160,7 +160,7 @@ class ResponseSelector(DIETClassifier):
         # dropout rate for attention
         DROPRATE_ATTENTION: 0,
         # if true apply dropout to sparse tensors
-        SPARSE_INPUT_DROPOUT: True,
+        SPARSE_INPUT_DROPOUT: False,
         # visualization of accuracy
         # how often to calculate training accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance

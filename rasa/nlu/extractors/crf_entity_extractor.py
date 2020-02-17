@@ -69,7 +69,7 @@ class CRFEntityExtractor(DIETClassifier):
         # nn architecture
         # sizes of hidden layers before the embedding layer for input words
         # the number of hidden layers is thus equal to the length of this list
-        HIDDEN_LAYERS_SIZES: {TEXT: [256, 128]},
+        HIDDEN_LAYERS_SIZES: {TEXT: []},
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
@@ -98,7 +98,7 @@ class CRFEntityExtractor(DIETClassifier):
         # BILOU_flag determines whether to use BILOU tagging or not.
         # More rigorous however requires more examples per entity
         # rule of thumb: use only if more than 100 egs. per entity
-        BILOU_FLAG: False,
+        BILOU_FLAG: True,
     }
     # end default properties (DOC MARKER - don't remove)
 

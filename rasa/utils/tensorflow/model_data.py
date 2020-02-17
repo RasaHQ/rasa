@@ -304,10 +304,7 @@ class RasaModelData:
         return tuple_sizes
 
     def as_tf_dataset(
-        self,
-        batch_size: Union[tf.Tensor, int],
-        batch_strategy: Text = "sequence",
-        shuffle: bool = False,
+        self, batch_size: int, batch_strategy: Text = "sequence", shuffle: bool = False
     ) -> tf.data.Dataset:
         """Create tf dataset."""
 
