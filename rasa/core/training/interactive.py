@@ -1370,7 +1370,7 @@ async def record_messages(
     conversation_id: Text = UserMessage.DEFAULT_SENDER_ID,
     max_message_limit: Optional[int] = None,
     skip_visualization: bool = False,
-):
+) -> None:
     """Read messages from the command line and print bot responses."""
 
     try:
@@ -1602,7 +1602,7 @@ def run_interactive_learning(
     skip_visualization: bool = False,
     conversation_id: Text = uuid.uuid4().hex,
     server_args: Dict[Text, Any] = None,
-):
+) -> None:
     """Start the interactive learning with the model of the agent."""
     global SAVE_IN_E2E
     server_args = server_args or {}
