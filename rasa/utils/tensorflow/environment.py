@@ -43,8 +43,7 @@ def _setup_gpu_environment() -> None:
 def _allocate_gpu_memory(
     gpu_instance: "tf_config.PhysicalDevice", logical_memory: int
 ) -> None:
-    """
-    Create a new logical device out of the received GPU instance with specified amount of logical memory.
+    """Create a new logical device out of the received GPU instance with specified amount of logical memory.
 
     Args:
         gpu_instance: PhysicalDevice instance of a GPU device.
@@ -72,7 +71,14 @@ def _allocate_gpu_memory(
 
 
 def _parse_gpu_config(gpu_memory_config: Text) -> Dict[int, int]:
-    """Parse GPU configuration variable from a string to a dict."""
+    """Parse GPU configuration variable from a string to a dict.
+
+    Args:
+        gpu_memory_config: String containing the configuration for GPU usage.
+
+    Returns:
+        Parsed configuration as a dictionary with GPU IDs as keys and requested memory as the value.
+    """
 
     # gpu_config is of format "gpu_id_1:gpu_id_1_memory, gpu_id_2: gpu_id_2_memory"
     # Parse it and store in a dictionary
