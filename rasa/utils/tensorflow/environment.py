@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def setup_gpu_environment() -> None:
-    """Set configuration for a GPU environment based on the environment variable set"""
+    """Set configuration for TensorFlow GPU environment based on the environment variable set."""
 
     gpu_memory_config = os.getenv(ENV_GPU_CONFIG)
     if gpu_memory_config:
@@ -31,7 +31,6 @@ def setup_gpu_environment() -> None:
         # Logic taken from https://www.tensorflow.org/guide/gpu
         if physical_gpus:
             for gpu_id, gpu_id_memory in parsed_gpu_config.items():
-
                 allocate_gpu_memory(physical_gpus[gpu_id], gpu_id_memory)
 
         else:
@@ -81,7 +80,7 @@ def parse_gpu_config(gpu_memory_config: Text) -> Dict[int, int]:
     except ValueError:
         # Add a helper explanation
         raise ValueError(
-            f"Error parsing GPU configuration. Please cross-check the format of '{ENV_GPU_CONFIG}'"
+            f"Error parsing GPU configuration. Please cross-check the format of '{ENV_GPU_CONFIG}'."
         )
 
     return parsed_gpu_config
@@ -99,19 +98,17 @@ def setup_cpu_environment() -> None:
     from tensorflow import config as tf_config
 
     if inter_op_parallel_threads:
-
         try:
             inter_op_parallel_threads = int(inter_op_parallel_threads.strip())
         except ValueError:
             raise ValueError(
                 f"Error parsing the environment variable '{ENV_CPU_INTER_OP_CONFIG}'. Please "
-                f"cross-check the value"
+                f"cross-check the value."
             )
 
         tf_config.threading.set_inter_op_parallelism_threads(inter_op_parallel_threads)
 
     if intra_op_parallel_threads:
-
         try:
             intra_op_parallel_threads = int(intra_op_parallel_threads.strip())
         except ValueError:
@@ -124,6 +121,5 @@ def setup_cpu_environment() -> None:
 
 
 def setup_tf_environment() -> None:
-
     setup_cpu_environment()
     setup_gpu_environment()
