@@ -112,8 +112,8 @@ class HFTransformersNLP(Component):
         return model_tokens_cleaners[self.model_name](token_strings)
 
     def _post_process_sequence_embeddings(
-        self, sequence_embeddings: np.array
-    ) -> Tuple[np.array, np.array]:
+        self, sequence_embeddings: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
 
         sentence_embeddings = []
         post_processed_sequence_embeddings = []
@@ -175,7 +175,7 @@ class HFTransformersNLP(Component):
         return batch_tokens, batch_token_ids
 
     @staticmethod
-    def _compute_attention_mask(actual_sequence_lengths: List[int]) -> np.array:
+    def _compute_attention_mask(actual_sequence_lengths: List[int]) -> np.ndarray:
 
         attention_mask = []
         max_seq_length = max(actual_sequence_lengths)
@@ -211,7 +211,7 @@ class HFTransformersNLP(Component):
 
     @staticmethod
     def _extract_nonpadded_embeddings(
-        embeddings: np.array, actual_sequence_lengths: List[int]
+        embeddings: np.ndarray, actual_sequence_lengths: List[int]
     ):
 
         nonpadded_sequence_embeddings = []
@@ -222,8 +222,8 @@ class HFTransformersNLP(Component):
         return np.array(nonpadded_sequence_embeddings)
 
     def _compute_batch_sequence_features(
-        self, batch_attention_mask: np.array, padded_token_ids: List[List[int]]
-    ) -> np.array:
+        self, batch_attention_mask: np.ndarray, padded_token_ids: List[List[int]]
+    ) -> np.ndarray:
 
         model_outputs = self.model(
             np.array(padded_token_ids), attention_mask=np.array(batch_attention_mask)
@@ -237,7 +237,7 @@ class HFTransformersNLP(Component):
 
     def _get_model_features_for_batch(
         self, batch_token_ids: List[List[int]]
-    ) -> Tuple[np.array, np.array]:
+    ) -> Tuple[np.ndarray, np.ndarray]:
 
         # Let's first add tokenizer specific special tokens to all examples
         batch_token_ids_augmented = self._add_lm_specific_special_tokens(
