@@ -21,14 +21,12 @@ Set ``TF_INTRA_OP_PARALLELISM_THREADS`` as an environment variable to specify ma
 to parallelize the execution of one operation. If left unspecified, this value defaults to ``0`` which means TensorFlow should
 pick an appropriate value depending on the system configuration.
 
-
 Parallelizing Multiple Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Set ``TF_INTER_OP_PARALLELISM_THREADS`` as an environment variable to specify maximum number of threads that can be used
 to parallelize the execution of multiple **non-blocking** operations. If left unspecified, this value defaults to ``0``
 which means TensorFlow should pick an appropriate value depending on the system configuration.
-
 
 Optimizing GPU Performance
 --------------------------
@@ -39,7 +37,6 @@ Limiting GPU Memory Growth
 TensorFlow by default blocks all the available GPU memory for the running process. This can be limiting if you are running
 multiple TensorFlow processes and want to distribute memory across them. To prevent this,
 set an environment variable ``TF_FORCE_GPU_ALLOW_GROWTH`` to ``True``.
-
 
 Restricting Absolute GPU Memory Available
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

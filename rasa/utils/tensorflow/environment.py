@@ -114,7 +114,7 @@ def setup_cpu_environment() -> None:
         except ValueError:
             raise ValueError(
                 f"Error parsing the environment variable '{ENV_CPU_INTRA_OP_CONFIG}'. Please "
-                f"cross-check the value"
+                f"cross-check the value."
             )
 
         tf_config.threading.set_intra_op_parallelism_threads(intra_op_parallel_threads)
