@@ -1,10 +1,5 @@
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
-from typing import Text, Dict
-import multiprocessing
-from rasa.utils.tensorflow.environment import setup_cpu_environment
 from rasa.utils.tensorflow.environment import parse_gpu_config
-from rasa.constants import ENV_CPU_INTER_OP_CONFIG, ENV_CPU_INTRA_OP_CONFIG
 
 
 @pytest.mark.parametrize(
