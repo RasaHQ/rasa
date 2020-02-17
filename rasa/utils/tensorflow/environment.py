@@ -137,5 +137,6 @@ def _setup_cpu_environment() -> None:
 
 def setup_tf_environment() -> None:
     """Setup CPU and GPU related environment settings for TensorFlow."""
+
     _setup_cpu_environment()
     _setup_gpu_environment()
