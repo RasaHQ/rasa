@@ -9,7 +9,7 @@ from rasa.nlu.training_data import Message
 
 def test_combine_with_existing_dense_features():
 
-    featurizer = Featurizer({"return_sequence": False})
+    featurizer = Featurizer()
     attribute = DENSE_FEATURE_NAMES[TEXT]
 
     existing_features = [[1, 0, 2, 3], [2, 0, 0, 1]]
@@ -27,7 +27,7 @@ def test_combine_with_existing_dense_features():
 
 
 def test_combine_with_existing_dense_features_shape_mismatch():
-    featurizer = Featurizer({"return_sequence": False})
+    featurizer = Featurizer()
     attribute = DENSE_FEATURE_NAMES[TEXT]
 
     existing_features = [[1, 0, 2, 3], [2, 0, 0, 1]]
@@ -43,8 +43,7 @@ def test_combine_with_existing_dense_features_shape_mismatch():
 
 
 def test_combine_with_existing_sparse_features():
-
-    featurizer = Featurizer({"return_sequence": False})
+    featurizer = Featurizer()
     attribute = SPARSE_FEATURE_NAMES[TEXT]
 
     existing_features = scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]])
@@ -63,8 +62,7 @@ def test_combine_with_existing_sparse_features():
 
 
 def test_combine_with_existing_sparse_features_shape_mismatch():
-
-    featurizer = Featurizer({"return_sequence": False})
+    featurizer = Featurizer()
     attribute = SPARSE_FEATURE_NAMES[TEXT]
 
     existing_features = scipy.sparse.csr_matrix([[1, 0, 2, 3], [2, 0, 0, 1]])

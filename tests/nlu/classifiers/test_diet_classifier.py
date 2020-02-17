@@ -3,6 +3,8 @@ import pytest
 
 from unittest.mock import Mock
 
+import scipy
+
 from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
@@ -84,7 +86,11 @@ def test_check_labels_features_exist(messages, expected):
     "pipeline",
     [
         [
-            {"name": "ConveRTTokenizer"},
+            {
+                "name": "ConveRTTokenizer",
+                "intent_tokenization_flag": True,
+                "intent_split_symbol": "+",
+            },
             {"name": "CountVectorsFeaturizer"},
             {"name": "ConveRTFeaturizer"},
             {"name": "DIETClassifier", EPOCHS: 3},
@@ -97,13 +103,12 @@ def test_check_labels_features_exist(messages, expected):
     ],
 )
 async def test_train_persist_load(pipeline, component_builder, tmpdir):
-
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
     (trainer, trained, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
-        data=DEFAULT_DATA_PATH,
+        data="data/examples/rasa/demo-rasa-multi-intent.md",
         component_builder=component_builder,
     )
 

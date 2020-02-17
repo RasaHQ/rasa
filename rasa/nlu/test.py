@@ -64,8 +64,8 @@ ResponseSelectionMetrics = Dict[Text, List[float]]
 
 
 def plot_confusion_matrix(
-    cm: np.array,
-    classes: np.array,
+    cm: np.ndarray,
+    classes: np.ndarray,
     normalize: bool = False,
     title: Text = "Confusion matrix",
     cmap=None,
@@ -535,7 +535,7 @@ def evaluate_intents(
 def _plot_confusion_matrix(
     output_directory: Optional[Text],
     confmat_filename: Optional[Text],
-    cnf_matrix: np.array,
+    cnf_matrix: np.ndarray,
     labels: Collection[Text],
 ) -> None:
     if output_directory:
@@ -563,7 +563,7 @@ def _plot_histogram(
 
 def merge_labels(
     aligned_predictions: List[Dict], extractor: Optional[Text] = None
-) -> np.array:
+) -> np.ndarray:
     """Concatenates all labels of the aligned predictions.
     Takes the aligned prediction labels which are grouped for each message
     and concatenates them."""

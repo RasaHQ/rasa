@@ -1,4 +1,5 @@
-from typing import Text
+from sanic.request import Request
+from typing import Text, Iterator
 
 import asyncio
 import logging
@@ -56,7 +57,7 @@ from rasa.nlu.test import is_response_selector_present
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
 @pytest.yield_fixture(scope="session")
-def event_loop(request):
+def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()

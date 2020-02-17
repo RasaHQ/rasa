@@ -130,6 +130,8 @@ HFTransformersNLP
         #    +----------------+--------------+-------------------------+
 
 
+.. _text-featurizers:
+
 Text Featurizers
 ----------------
 

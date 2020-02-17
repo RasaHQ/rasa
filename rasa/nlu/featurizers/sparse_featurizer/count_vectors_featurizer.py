@@ -419,6 +419,11 @@ class CountVectorsFeaturizer(Featurizer):
             if attribute in [TEXT, RESPONSE]:
                 tokens_without_cls = tokens[:-1]
 
+            if not tokens_without_cls:
+                # attribute is not set (e.g. response not present)
+                X.append(None)
+                continue
+
             seq_vec = self.vectorizers[attribute].transform(tokens_without_cls)
             seq_vec.sort_indices()
 
@@ -492,7 +497,6 @@ class CountVectorsFeaturizer(Featurizer):
 
         # transform for all attributes
         for attribute in self._attributes:
-
             attribute_features = self._get_featurized_attribute(
                 attribute, processed_attribute_tokens[attribute]
             )

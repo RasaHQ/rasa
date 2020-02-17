@@ -47,10 +47,10 @@ async def test_message_processor(
     await default_processor.handle_message(
         UserMessage('/greet{"name":"Core"}', default_channel)
     )
-    assert {
+    assert default_channel.latest_output() == {
         "recipient_id": "default",
         "text": "hey there Core!",
-    } == default_channel.latest_output()
+    }
 
 
 async def test_message_id_logging(default_processor: MessageProcessor):
@@ -562,10 +562,10 @@ async def test_handle_message_with_session_start(
         UserMessage(f"/greet{json.dumps(slot_1)}", default_channel, sender_id)
     )
 
-    assert {
+    assert default_channel.latest_output() == {
         "recipient_id": sender_id,
         "text": "hey there Core!",
-    } == default_channel.latest_output()
+    }
 
     # patch processor so a session start is triggered
     monkeypatch.setattr(default_processor, "_has_session_expired", lambda _: True)
