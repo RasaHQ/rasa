@@ -37,7 +37,7 @@ class ConveRTFeaturizer(Featurizer):
         import os
 
         model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
-        # required to take care of cases when other files are already 
+        # required to take care of cases when other files are already
         # stored in the default TFHUB_CACHE_DIR
         try:
             self.module = tfhub.load(model_url)
@@ -194,7 +194,10 @@ class ConveRTFeaturizer(Featurizer):
             )
 
             batch_start_index = 0
-            pbar = tqdm(total= (len(non_empty_examples) // batch_size) + 1, desc = attribute.capitalize() + ' batches:')
+            pbar = tqdm(
+                total=(len(non_empty_examples) // batch_size) + 1,
+                desc=attribute.capitalize() + " batches:",
+            )
 
             while batch_start_index < len(non_empty_examples):
                 pbar.update(1)
