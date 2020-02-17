@@ -70,30 +70,22 @@ class RasaModel(tf.keras.models.Model):
             )
 
         (
-            tf_train_dataset_function,
+            train_dataset_function,
             tf_train_on_batch_function,
         ) = self._get_tf_train_functions(eager, model_data, batch_strategy)
-
         (
-            tf_evaluation_dataset_function,
+            evaluation_dataset_function,
             tf_evaluation_on_batch_function,
-        ) = self._get_tf_evaluation_functions(
-            eager, evaluate_on_num_examples, evaluation_model_data
-        )
+        ) = self._get_tf_evaluation_functions(eager, evaluation_model_data)
 
         val_results = {}  # validation is not performed every epoch
         pbar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
         for ep in pbar:
             ep_batch_size = self.linearly_increasing_batch_size(ep, batch_size, epochs)
-            if not eager:
-                ep_batch_size *= tf.ones((), tf.int32)
 
             self._batch_loop(
-                tf_train_dataset_function,
-                tf_train_on_batch_function,
-                ep_batch_size,
-                True,
+                train_dataset_function, tf_train_on_batch_function, ep_batch_size, True
             )
 
             postfix_dict = self._get_metric_results()
@@ -101,7 +93,7 @@ class RasaModel(tf.keras.models.Model):
             if evaluate_on_num_examples > 0:
                 if self._should_evaluate(evaluate_every_num_epochs, epochs, ep):
                     self._batch_loop(
-                        tf_evaluation_dataset_function,
+                        evaluation_dataset_function,
                         tf_evaluation_on_batch_function,
                         ep_batch_size,
                         False,
@@ -130,14 +122,9 @@ class RasaModel(tf.keras.models.Model):
     def build_for_predict(
         self, predict_data: RasaModelData, eager: bool = False
     ) -> None:
-        def predict_dataset_function(  # to reuse the same helper method
-            _batch_size: Union[tf.Tensor, int]
-        ) -> tf.data.Dataset:
-            return predict_data.as_tf_dataset(_batch_size, "sequence", shuffle=False)
-
         self._training = False  # needed for tf graph mode
-        _, self._predict_function = self._get_tf_functions(
-            predict_dataset_function, self.batch_predict, eager, "prediction"
+        self._predict_function = self._get_tf_call_model_function(
+            predict_data.as_tf_dataset, self.batch_predict, eager, "prediction"
         )
 
     def predict(self, predict_data: RasaModelData) -> Dict[Text, tf.Tensor]:
@@ -194,7 +181,7 @@ class RasaModel(tf.keras.models.Model):
         self,
         dataset_function: Callable,
         call_model_function: Callable,
-        batch_size: Union[tf.Tensor, int],
+        batch_size: int,
         training: bool,
     ) -> None:
         """Run on batches"""
@@ -205,70 +192,68 @@ class RasaModel(tf.keras.models.Model):
             call_model_function(batch_in)
 
     @staticmethod
-    def _get_tf_functions(
+    def _get_tf_call_model_function(
         dataset_function: Callable,
         call_model_function: Callable,
         eager: bool,
         phase: Text,
-    ) -> Tuple[Callable, Callable]:
+    ) -> Callable:
         """Convert functions to tensorflow functions"""
 
         if eager:
-            return dataset_function, call_model_function
+            return call_model_function
 
         logger.debug(f"Building tensorflow {phase} graph...")
-        # allows increasing batch size
-        tf_dataset_function = tf.function(func=dataset_function)
 
-        init_dataset = tf_dataset_function(tf.ones((), tf.int32))
-
-        tf_method_function = tf.function(
+        init_dataset = dataset_function(1)
+        tf_call_model_function = tf.function(
             call_model_function, input_signature=[init_dataset.element_spec]
         )
-        tf_method_function(next(iter(init_dataset)))
+        tf_call_model_function(next(iter(init_dataset)))
 
         logger.debug(f"Finished building tensorflow {phase} graph.")
 
-        return tf_dataset_function, tf_method_function
+        return tf_call_model_function
 
     def _get_tf_train_functions(
         self, eager: bool, model_data: RasaModelData, batch_strategy: Text
     ) -> Tuple[Callable, Callable]:
         """Create train tensorflow functions"""
 
-        def train_dataset_function(
-            _batch_size: Union[tf.Tensor, int]
-        ) -> tf.data.Dataset:
+        def train_dataset_function(_batch_size: int) -> tf.data.Dataset:
             return model_data.as_tf_dataset(_batch_size, batch_strategy, shuffle=True)
 
         self._training = True  # needed for tf graph mode
-        return self._get_tf_functions(
-            train_dataset_function, self.train_on_batch, eager, "train"
+        return (
+            train_dataset_function,
+            self._get_tf_call_model_function(
+                train_dataset_function, self.train_on_batch, eager, "train"
+            ),
         )
 
     def _get_tf_evaluation_functions(
-        self,
-        eager: bool,
-        evaluate_on_num_examples: int,
-        evaluation_model_data: RasaModelData,
+        self, eager: bool, evaluation_model_data: Optional[RasaModelData],
     ) -> Tuple[Optional[Callable], Optional[Callable]]:
         """Create evaluation tensorflow functions"""
 
-        if evaluate_on_num_examples > 0:
+        if evaluation_model_data is None:
+            return None, None
 
-            def evaluation_dataset_function(
-                _batch_size: Union[tf.Tensor, int]
-            ) -> tf.data.Dataset:
-                return evaluation_model_data.as_tf_dataset(
-                    _batch_size, "sequence", shuffle=False
-                )
-
-            self._training = False  # needed for tf graph mode
-            return self._get_tf_functions(
-                evaluation_dataset_function, self._total_batch_loss, eager, "evaluation"
+        def evaluation_dataset_function(_batch_size: int) -> tf.data.Dataset:
+            return evaluation_model_data.as_tf_dataset(
+                _batch_size, "sequence", shuffle=False
             )
 
-        return None, None
+        self._training = False  # needed for tf graph mode
+        return (
+            evaluation_dataset_function,
+            self._get_tf_call_model_function(
+                evaluation_dataset_function,
+                self._total_batch_loss,
+                eager,
+                "evaluation",
+            ),
+        )
 
     def _get_metric_results(self, prefix: Optional[Text] = None) -> Dict[Text, Text]:
         """Get the metrics results"""
