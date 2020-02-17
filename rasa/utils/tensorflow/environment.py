@@ -1,7 +1,7 @@
 import logging
 import os
 from typing import Text, Tuple, Dict
-import warnings
+import rasa.utils.common as rasa_utils
 from rasa.constants import (
     ENV_GPU_CONFIG,
     ENV_CPU_INTER_OP_CONFIG,
@@ -14,37 +14,47 @@ logger = logging.getLogger(__name__)
 def setup_gpu_environment() -> None:
     """Set configuration for a GPU environment based on the environment variable set"""
 
-    from tensorflow import config as tf_config
-
     gpu_memory_config = os.getenv(ENV_GPU_CONFIG)
     if gpu_memory_config:
+
+        # Import from tensorflow only if necessary(environment variable was set)
+        from tensorflow import config as tf_config
+
         parsed_gpu_config = parse_gpu_config(gpu_memory_config)
         physical_gpus = tf_config.list_physical_devices("GPU")
 
         # Logic taken from https://www.tensorflow.org/guide/gpu
         if physical_gpus:
             for gpu_id, gpu_id_memory in parsed_gpu_config.items():
-                try:
-                    tf_config.experimental.set_virtual_device_configuration(
-                        physical_gpus[gpu_id],
-                        [
-                            tf_config.experimental.VirtualDeviceConfiguration(
-                                memory_limit=gpu_id_memory
-                            )
-                        ],
-                    )
 
-                except RuntimeError:
-                    # Add a helper explanation where the error comes from
-                    raise RuntimeError(
-                        "Error while setting up tensorflow environment. "
-                        "Virtual devices must be set before GPUs have been initialized"
-                    )
+                allocate_gpu_memory(physical_gpus[gpu_id], gpu_id_memory)
 
         else:
-            warnings.warn(
+            rasa_utils.raise_warning(
                 f"You have an environment variable '{ENV_GPU_CONFIG}' set but no GPUs were detected to configure"
             )
+
+
+def allocate_gpu_memory(gpu_instance, logical_memory: int) -> None:
+
+    from tensorflow import config as tf_config
+
+    try:
+        tf_config.experimental.set_virtual_device_configuration(
+            gpu_instance,
+            [
+                tf_config.experimental.VirtualDeviceConfiguration(
+                    memory_limit=logical_memory
+                )
+            ],
+        )
+
+    except RuntimeError:
+        # Add a helper explanation where the error comes from
+        raise RuntimeError(
+            "Error while setting up tensorflow environment. "
+            "Virtual devices must be set before GPUs have been initialized"
+        )
 
 
 def parse_gpu_config(gpu_memory_config: Text) -> Dict[int, int]:
