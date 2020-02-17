@@ -2,6 +2,7 @@ import copy
 import logging
 import os
 import pickle
+import scipy.sparse
 
 import numpy as np
 import tensorflow as tf
@@ -219,7 +220,7 @@ class TEDPolicy(Policy):
 
     # noinspection PyPep8Naming
     def _create_model_data(
-        self, data_X: np.ndarray, data_Y: Optional[np.ndarray] = None
+        self, data_X: Optional[np.ndarray], data_Y: Optional[np.ndarray] = None
     ) -> RasaModelData:
         """Combine all model related data into RasaModelData."""
 
@@ -234,7 +235,16 @@ class TEDPolicy(Policy):
             label_ids = np.expand_dims(label_ids, -1)
 
         model_data = RasaModelData(label_key="label_ids")
-        model_data.add_features("dialogue_features", [data_X])
+
+        if isinstance(data_X[0][0], scipy.sparse.spmatrix):
+            data_X_for_sparse = []
+            for dial in data_X:
+                max_hist = dial.shape[0]
+                states = scipy.sparse.vstack([dial[i] for i in range(max_hist)])
+                data_X_for_sparse.append(states)
+            model_data.add_features("dialogue_features", [np.array(data_X_for_sparse)])
+        else:
+            model_data.add_features("dialogue_features", [data_X])
         model_data.add_features("label_features", [Y])
         model_data.add_features("label_ids", [label_ids])
 
@@ -498,6 +508,34 @@ class TED(RasaModel):
                 f"Cannot train '{self.__class__.__name__}' model."
             )
 
+    def _prepare_sparse_dense_layers(
+        self,
+        data_signature: List[FeatureSignature],
+        name: Text,
+        reg_lambda: float,
+        dense_dim: int,
+    ) -> None:
+        sparse = False
+        dense = False
+        for is_sparse, shape in data_signature:
+            if is_sparse:
+                sparse = True
+            else:
+                dense = True
+                # if dense features are present
+                # use the feature dimension of the dense features
+                dense_dim = shape[-1]
+
+        if sparse:
+            self._tf_layers[f"sparse_to_dense.{name}"] = layers.DenseForSparse(
+                units=dense_dim, reg_lambda=reg_lambda, name=name
+            )
+            if not dense:
+                # create dense labels for the input to use in negative sampling
+                self._tf_layers[f"sparse_to_dense_ids.{name}"] = layers.DenseForSparse(
+                    units=2, trainable=False, name=f"sparse_to_dense_ids.{name}"
+                )
+
     def _prepare_layers(self) -> None:
         self._tf_layers["loss.label"] = layers.DotProductLoss(
             self.config[NUM_NEG],
@@ -510,6 +548,12 @@ class TED(RasaModel):
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,
         )
+
+        self._prepare_sparse_dense_layers(self.data_signature['dialogue_features'], 
+            'dialogue_features',
+            self.config[REGULARIZATION_CONSTANT],
+            100)
+
         self._tf_layers["ffnn.dialogue"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
             self.config[DROPRATE_DIALOGUE],
@@ -561,6 +605,8 @@ class TED(RasaModel):
 
         # mask different length sequences
         # if there is at least one `-1` it should be masked
+        if isinstance(dialogue_in, tf.SparseTensor):
+            dialogue_in = self._tf_layers["sparse_to_dense.dialogue_features"](dialogue_in)
         mask = tf.sign(tf.reduce_max(dialogue_in, -1) + 1)
 
         dialogue = self._tf_layers["ffnn.dialogue"](dialogue_in, self._training)
