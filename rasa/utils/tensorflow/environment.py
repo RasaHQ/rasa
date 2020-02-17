@@ -23,7 +23,7 @@ def _setup_gpu_environment() -> None:
     if not gpu_memory_config:
         return
 
-    # Import from tensorflow only if necessary(environment variable was set)
+    # Import from tensorflow only if necessary (environment variable was set)
     from tensorflow import config as tf_config
 
     parsed_gpu_config = _parse_gpu_config(gpu_memory_config)
