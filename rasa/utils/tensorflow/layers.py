@@ -83,47 +83,62 @@ class DenseWithSparseWeights(tf.keras.layers.Dense):
 
         dtype = dtypes.as_dtype(self.dtype or K.floatx())
         if not (dtype.is_floating or dtype.is_complex):
-            raise TypeError('Unable to build `Dense` layer with non-floating point '
-                            'dtype %s' % (dtype,))
+            raise TypeError(
+                "Unable to build `Dense` layer with non-floating point "
+                "dtype %s" % (dtype,)
+            )
         input_shape = tensor_shape.TensorShape(input_shape)
         if tensor_shape.dimension_value(input_shape[-1]) is None:
-            raise ValueError('The last dimension of the inputs to `Dense` '
-                             'should be defined. Found `None`.')
+            raise ValueError(
+                "The last dimension of the inputs to `Dense` "
+                "should be defined. Found `None`."
+            )
         last_dim = tensor_shape.dimension_value(input_shape[-1])
-        self.input_spec = InputSpec(min_ndim=2,
-                                    axes={-1: last_dim})
+        self.input_spec = InputSpec(min_ndim=2, axes={-1: last_dim})
 
         self.kernel_shape = tensor_shape.TensorShape([last_dim, self.units])
         # create random mask to set some weights to 0
         kernel_mask = tf.random.uniform(self.kernel_shape, 0, 1)
-        kernel_mask = tf.greater_equal(kernel_mask, self.sparsity)
-        self.kernel_indices = tf.where(kernel_mask)
-        size = tf.math.count_nonzero(kernel_mask).numpy()
+
+        size = int(last_dim * self.units * (1 - self.sparsity))
+        # the probability that there are identical numbers is negligible
+        threshold = tf.sort(tf.reshape(kernel_mask, (-1,)), direction="DESCENDING")[
+            size - 1
+        ]
+        kernel_mask = tf.greater_equal(kernel_mask, threshold)
+
+        self.kernel_indices = tf.Variable(
+            initial_value=tf.where(kernel_mask), trainable=False, name="kernel_indices"
+        )
         self.kernel_values = self.add_weight(
-            'kernel_values',
-            shape=[size, ],
+            "kernel_values",
+            shape=[size,],
             initializer=self.kernel_initializer,
             regularizer=self.kernel_regularizer,
             constraint=self.kernel_constraint,
             dtype=self.dtype,
-            trainable=True)
+            trainable=True,
+        )
 
         if self.use_bias:
             self.bias = self.add_weight(
-                'bias',
-                shape=[self.units, ],
+                "bias",
+                shape=[self.units,],
                 initializer=self.bias_initializer,
                 regularizer=self.bias_regularizer,
                 constraint=self.bias_constraint,
                 dtype=self.dtype,
-                trainable=True)
+                trainable=True,
+            )
         else:
             self.bias = None
         self.built = True
 
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
-        # set some weights to 0 according to precomputed mask
-        kernel = tf.scatter_nd(self.kernel_indices, self.kernel_values, self.kernel_shape)
+        # create dense kernel
+        kernel = tf.scatter_nd(
+            self.kernel_indices, self.kernel_values, self.kernel_shape
+        )
 
         rank = len(inputs.shape)
         if rank > 2:
