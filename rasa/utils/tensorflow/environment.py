@@ -1,6 +1,11 @@
 import logging
 import os
-from typing import Text, Tuple, Dict
+from typing import Text, Dict
+import typing
+
+if typing.TYPE_CHECKING:
+    from tensorflow import config as tf_config
+
 import rasa.utils.common as rasa_utils
 from rasa.constants import (
     ENV_GPU_CONFIG,
@@ -35,7 +40,9 @@ def setup_gpu_environment() -> None:
             )
 
 
-def allocate_gpu_memory(gpu_instance, logical_memory: int) -> None:
+def allocate_gpu_memory(
+    gpu_instance: "tf_config.PhysicalDevice", logical_memory: int
+) -> None:
 
     from tensorflow import config as tf_config
 
@@ -80,13 +87,16 @@ def parse_gpu_config(gpu_memory_config: Text) -> Dict[int, int]:
     return parsed_gpu_config
 
 
-def setup_cpu_environment() -> Tuple[int, int]:
+def setup_cpu_environment() -> None:
     """Set configuration for the CPU environment based on the environment variable set"""
-
-    from tensorflow import config as tf_config
 
     inter_op_parallel_threads = os.getenv(ENV_CPU_INTER_OP_CONFIG)
     intra_op_parallel_threads = os.getenv(ENV_CPU_INTRA_OP_CONFIG)
+
+    if not inter_op_parallel_threads and not intra_op_parallel_threads:
+        return
+
+    from tensorflow import config as tf_config
 
     if inter_op_parallel_threads:
 
@@ -111,12 +121,6 @@ def setup_cpu_environment() -> Tuple[int, int]:
             )
 
         tf_config.threading.set_intra_op_parallelism_threads(intra_op_parallel_threads)
-
-    # Returning the actual values as a confirmation. Helps with tests too.
-    return (
-        tf_config.threading.get_inter_op_parallelism_threads(),
-        tf_config.threading.get_intra_op_parallelism_threads(),
-    )
 
 
 def setup_tf_environment() -> None:
