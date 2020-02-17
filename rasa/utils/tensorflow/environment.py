@@ -43,7 +43,7 @@ def _setup_gpu_environment() -> None:
 def _allocate_gpu_memory(
     gpu_instance: "tf_config.PhysicalDevice", logical_memory: int
 ) -> None:
-    """Create a new logical device out of the received GPU instance with specified amount of logical memory.
+    """Create a new logical device for the requested amount of memory.
 
     Args:
         gpu_instance: PhysicalDevice instance of a GPU device.
