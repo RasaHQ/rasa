@@ -46,6 +46,9 @@ install_requires = [
     "setuptools >= 41.0.0",
     "tensorflow-probability~=0.7.0",
     "tensor2tensor~=1.14.0",
+    # fixes https://github.com/RasaHQ/rasa/issues/5231
+    # remove when removing `tensor2tensor`
+    "gym<=0.15.4",
     "apscheduler~=3.0",
     "tqdm~=4.0",
     "networkx~=2.4.0",
