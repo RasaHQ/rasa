@@ -112,9 +112,8 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         ]
         training_data = TrainingData(training_examples=training_data)
         self.train(training_data)
-        print(self.vectorizers["text"].vocabulary_['conference'])
 
-    def encode(self, state: Dict[Text, float], type_output="dense"):
+    def encode(self, state: Dict[Text, float], type_output="sparse"):
         """
         Encode the state into a numpy array or a sparse sklearn
 
