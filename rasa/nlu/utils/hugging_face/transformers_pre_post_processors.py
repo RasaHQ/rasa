@@ -57,9 +57,10 @@ def xlm_tokens_pre_processor(token_ids: List[int]) -> List[int]:
 
 
 def bert_embeddings_post_processor(
-    sequence_embeddings: np.array,
-) -> Tuple[np.array, np.array]:
-    """Post process embeddings from BERT by removing CLS and SEP embeddings and returning CLS
+    sequence_embeddings: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Post process embeddings from BERT by removing CLS and SEP embeddings and
+    returning CLS
 
     token embedding as sentence representation"""
 
@@ -70,9 +71,10 @@ def bert_embeddings_post_processor(
 
 
 def gpt_embeddings_post_processor(
-    sequence_embeddings: np.array,
-) -> Tuple[np.array, np.array]:
-    """Post process embeddings from GPT models by taking a mean over sequence embeddings and
+    sequence_embeddings: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Post process embeddings from GPT models by taking a mean over sequence
+    embeddings and
 
     returning that as sentence representation"""
 
@@ -83,12 +85,13 @@ def gpt_embeddings_post_processor(
 
 
 def xlnet_embeddings_post_processor(
-    sequence_embeddings: np.array,
-) -> Tuple[np.array, np.array]:
-    """Post process embeddings from XLNet models by taking a mean over sequence embeddings and
+    sequence_embeddings: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Post process embeddings from XLNet models by taking a mean over sequence
+    embeddings and
 
-    returning that as sentence representation. Remove last two time steps corresponding to special tokens from the
-    sequence embeddings."""
+    returning that as sentence representation. Remove last two time steps corresponding
+    to special tokens from the sequence embeddings."""
 
     post_processed_embedding = sequence_embeddings[:-2]
     sentence_embedding = np.mean(post_processed_embedding, axis=0)
@@ -97,12 +100,13 @@ def xlnet_embeddings_post_processor(
 
 
 def roberta_embeddings_post_processor(
-    sequence_embeddings: np.array,
-) -> Tuple[np.array, np.array]:
-    """Post process embeddings from Roberta models by taking a mean over sequence embeddings and
+    sequence_embeddings: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Post process embeddings from Roberta models by taking a mean over sequence
+    embeddings and
 
-    returning that as sentence representation. Remove first and last time steps corresponding to special tokens from the
-    sequence embeddings."""
+    returning that as sentence representation. Remove first and last time steps
+    corresponding to special tokens from the sequence embeddings."""
 
     post_processed_embedding = sequence_embeddings[1:-1]
     sentence_embedding = np.mean(post_processed_embedding, axis=0)
@@ -111,12 +115,13 @@ def roberta_embeddings_post_processor(
 
 
 def xlm_embeddings_post_processor(
-    sequence_embeddings: np.array,
-) -> Tuple[np.array, np.array]:
-    """Post process embeddings from XLM models by taking a mean over sequence embeddings and
+    sequence_embeddings: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Post process embeddings from XLM models by taking a mean over sequence
+    embeddings and
 
-    returning that as sentence representation. Remove first and last time steps corresponding to special tokens from the
-    sequence embeddings."""
+    returning that as sentence representation. Remove first and last time steps
+    corresponding to special tokens from the sequence embeddings."""
 
     post_processed_embedding = sequence_embeddings[1:-1]
     sentence_embedding = np.mean(post_processed_embedding, axis=0)
@@ -125,28 +130,32 @@ def xlm_embeddings_post_processor(
 
 
 def bert_tokens_cleaner(token_strings: List[Text]) -> List[Text]:
-    """Clean up tokens with the extra delimiters(##) BERT adds while breaking a token into sub-tokens"""
+    """Clean up tokens with the extra delimiters(##) BERT adds while breaking a token
+    into sub-tokens"""
 
     tokens = [string.replace("##", "") for string in token_strings]
     return [string for string in tokens if string]
 
 
 def openaigpt_tokens_cleaner(token_strings: List[Text]) -> List[Text]:
-    """Clean up tokens with the extra delimiters(</w>) OpenAIGPT adds while breaking a token into sub-tokens"""
+    """Clean up tokens with the extra delimiters(</w>) OpenAIGPT adds while breaking a
+    token into sub-tokens"""
 
     tokens = [string.replace("</w>", "") for string in token_strings]
     return [string for string in tokens if string]
 
 
 def gpt2_tokens_cleaner(token_strings: List[Text]) -> List[Text]:
-    """Clean up tokens with the extra delimiters(</w>) GPT2 adds while breaking a token into sub-tokens"""
+    """Clean up tokens with the extra delimiters(</w>) GPT2 adds while breaking a token
+    into sub-tokens"""
 
     tokens = [string.replace("Ġ", "") for string in token_strings]
     return [string for string in tokens if string]
 
 
 def xlnet_tokens_cleaner(token_strings: List[Text]) -> List[Text]:
-    """Clean up tokens with the extra delimiters(▁) XLNet adds while breaking a token into sub-tokens"""
+    """Clean up tokens with the extra delimiters(▁) XLNet adds while breaking a token
+    into sub-tokens"""
 
     tokens = [string.replace("▁", "") for string in token_strings]
     return [string for string in tokens if string]
