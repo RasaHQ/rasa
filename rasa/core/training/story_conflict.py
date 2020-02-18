@@ -129,6 +129,21 @@ class TrackerEventStateTuple(NamedTuple):
         return hash(str(list(self.sliced_states)))
 
 
+def _get_length_of_longest_story(
+    trackers: List[TrackerWithCachedStates], domain: Domain
+) -> int:
+    """Returns the longest story in the given trackers.
+
+    Args:
+        trackers: Trackers to get stories from.
+        domain: The domain.
+
+    Returns:
+        The maximal length of any story
+    """
+    return max([len(tracker.past_states(domain)) for tracker in trackers])
+
+
 def find_story_conflicts(
     trackers: List[TrackerWithCachedStates],
     domain: Domain,
@@ -144,9 +159,8 @@ def find_story_conflicts(
     Returns:
         StoryConflict objects.
     """
-    # Use the length of the longest story for `max_history` if not specified otherwise
     if not max_history:
-        max_history = max([len(tracker.past_states(domain)) for tracker in trackers])
+        max_history = _get_length_of_longest_story(trackers, domain)
 
     logger.info(f"Considering the preceding {max_history} turns for conflict analysis.")
 
