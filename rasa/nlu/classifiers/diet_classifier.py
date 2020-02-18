@@ -358,7 +358,7 @@ class DIETClassifier(EntityExtractor):
 
         if (
             self.component_config[NUM_TRANSFORMER_LAYERS] == 0
-            and self.component_config[ENTITY_RECOGNITION] == False
+            and not self.component_config[ENTITY_RECOGNITION]
             and attribute != INTENT
         ):
             # Use only the CLS token vector as features

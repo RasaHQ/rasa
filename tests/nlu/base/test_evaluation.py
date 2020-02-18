@@ -2,7 +2,6 @@ from sanic.request import Request
 from typing import Text, Iterator
 
 import asyncio
-import logging
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
@@ -43,7 +42,6 @@ from rasa.nlu.test import determine_intersection
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu import utils
 import json
 import os
 from rasa.nlu import training_data, config
@@ -51,12 +49,12 @@ from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH, NLU_DEFAULT_CONFIG_PATH
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import is_response_selector_present
+from rasa.utils.tensorflow.constants import EPOCHS
 
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
-from utils.tensorflow.constants import EPOCHS
 
 
 @pytest.yield_fixture(scope="session")
