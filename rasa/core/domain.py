@@ -333,14 +333,14 @@ class Domain:
             The intent properties to be stored in the domain.
         """
         intent_properties = {}
-        duplicates = []
+        duplicates = set()
         for intent in intents:
             if not isinstance(intent, dict):
                 intent = {intent: {USE_ENTITIES_KEY: True, IGNORE_ENTITIES_KEY: []}}
 
             name = list(intent.keys())[0]
             if name in intent_properties.keys():
-                duplicates.append(name)
+                duplicates.add(name)
 
             intent = cls._transform_intent_properties_for_internal_use(intent, entities)
 
@@ -348,7 +348,7 @@ class Domain:
 
         if duplicates:
             raise InvalidDomain(
-                f"Intents are not unique! Found multiple intents with name(s) {duplicates}. "
+                f"Intents are not unique! Found multiple intents with name(s) {sorted(duplicates)}. "
                 f"Either rename or remove the duplicate ones."
             )
 
