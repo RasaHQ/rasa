@@ -33,6 +33,7 @@ from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFea
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.selectors.response_selector import ResponseSelector
+from rasa.nlu.selectors.diet_selector import DIETSelector
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
@@ -92,6 +93,7 @@ component_classes = [
     EmbeddingIntentClassifier,
     # selectors
     ResponseSelector,
+    DIETSelector,
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
@@ -130,13 +132,7 @@ registered_pipeline_templates = {
         {"name": "SpacyTokenizer"},
         {"name": "SpacyFeaturizer"},
         {"name": "RegexFeaturizer"},
-        {"name": "LexicalSyntacticFeaturizer"},
-        {
-            "name": "DIETClassifier",
-            INTENT_CLASSIFICATION: False,
-            ENTITY_RECOGNITION: True,
-            NUM_TRANSFORMER_LAYERS: 0,
-        },
+        {"name": "CRFEntityExtractor"},
         {"name": "EntitySynonymMapper"},
         {"name": "SklearnIntentClassifier"},
     ],
@@ -144,7 +140,8 @@ registered_pipeline_templates = {
     "supervised_embeddings": [
         {"name": "WhitespaceTokenizer"},
         {"name": "RegexFeaturizer"},
-        {"name": "LexicalSyntacticFeaturizer"},
+        {"name": "CRFEntityExtractor"},
+        {"name": "EntitySynonymMapper"},
         {"name": "CountVectorsFeaturizer"},
         {
             "name": "CountVectorsFeaturizer",
@@ -152,14 +149,12 @@ registered_pipeline_templates = {
             "min_ngram": 1,
             "max_ngram": 4,
         },
-        {"name": "DIETClassifier"},
-        {"name": "EntitySynonymMapper"},
+        {"name": "EmbeddingIntentClassifier"},
     ],
     "pretrained_embeddings_convert": [
         {"name": "ConveRTTokenizer"},
         {"name": "ConveRTFeaturizer"},
-        {"name": "LexicalSyntacticFeaturizer"},
-        {"name": "DIETClassifier"},
+        {"name": "EmbeddingIntentClassifier"},
     ],
 }
 

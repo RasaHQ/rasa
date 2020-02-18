@@ -93,6 +93,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    api/lock-stores
    api/training-data-importers
    api/core-featurization
+   api/tensorflow_usage
    migration-guide
    changelog
 
