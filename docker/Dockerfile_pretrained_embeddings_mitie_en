@@ -66,7 +66,7 @@ FROM base AS runner
 WORKDIR /app
 
 # Copy over default pipeline config
-COPY sample_configs/config_pretrained_embeddings_mitie.yml config.yml
+COPY data/test_config/config_pretrained_embeddings_mitie.yml config.yml
 
 # Copy over mitie model
 COPY --from=builder /app/data/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
