@@ -1,15 +1,20 @@
+from typing import Text, List, Tuple
+
+from rasa.core.domain import Domain
 from rasa.core.training.story_conflict import (
     StoryConflict,
     find_story_conflicts,
     _get_previous_event,
 )
-from rasa.core.training.generator import TrainingDataGenerator
+from rasa.core.training.generator import TrainingDataGenerator, TrackerWithCachedStates
 from rasa.core.validator import Validator
 from rasa.importers.rasa import RasaFileImporter
 from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
-async def _setup_trackers_for_testing(domain_path, training_data_file):
+async def _setup_trackers_for_testing(
+    domain_path: Text, training_data_file: Text
+) -> Tuple[List[TrackerWithCachedStates], Domain]:
     importer = RasaFileImporter(
         domain_path=domain_path, training_data_paths=[training_data_file],
     )
