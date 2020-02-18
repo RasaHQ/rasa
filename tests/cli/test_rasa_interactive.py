@@ -1,7 +1,7 @@
 import argparse
 import pytest
 from typing import Callable, Text
-from unittest.mock import Mock
+from unittest.mock import Mock, ANY
 
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
@@ -15,6 +15,7 @@ def test_interactive_help(run: Callable[..., RunResult]):
 
     help_text = """usage: rasa interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-m MODEL]
                         [--data DATA [DATA ...]] [--skip-visualization]
+                        [--conversation-id CONVERSATION_ID]
                         [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
                         [--out OUT] [--augmentation AUGMENTATION]
                         [--debug-plots] [--dump-stories] [--force]
@@ -31,10 +32,11 @@ def test_interactive_core_help(run: Callable[..., RunResult]):
     output = run("interactive", "core", "--help")
 
     help_text = """usage: rasa interactive core [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
-                             [--skip-visualization] [--endpoints ENDPOINTS]
-                             [-c CONFIG] [-d DOMAIN] [--out OUT]
-                             [--augmentation AUGMENTATION] [--debug-plots]
-                             [--dump-stories]
+                             [--skip-visualization]
+                             [--conversation-id CONVERSATION_ID]
+                             [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
+                             [--out OUT] [--augmentation AUGMENTATION]
+                             [--debug-plots] [--dump-stories]
                              [model-as-positional-argument]"""
 
     lines = help_text.split("\n")
@@ -156,3 +158,39 @@ def test_no_interactive_without_core_data(
 
     mock.train_model.assert_not_called()
     mock.perform_interactive_learning.assert_not_called()
+
+
+def test_pass_conversation_id_to_interactive_learning(monkeypatch: MonkeyPatch):
+    from rasa.core.train import do_interactive_learning
+    from rasa.core.training import interactive as interactive_learning
+
+    parser = argparse.ArgumentParser()
+    sub_parser = parser.add_subparsers()
+    interactive.add_subparser(sub_parser, [])
+
+    expected_conversation_id = "🎁"
+    args = parser.parse_args(
+        [
+            "interactive",
+            "--conversation-id",
+            expected_conversation_id,
+            "--skip-visualization",
+        ]
+    )
+
+    _serve_application = Mock()
+    monkeypatch.setattr(interactive_learning, "_serve_application", _serve_application)
+
+    do_interactive_learning(args, Mock())
+
+    _serve_application.assert_called_once_with(ANY, ANY, True, expected_conversation_id)
+
+
+def test_generate_conversation_id_for_interactive_learning(monkeypatch: MonkeyPatch):
+    parser = argparse.ArgumentParser()
+    sub_parser = parser.add_subparsers()
+    interactive.add_subparser(sub_parser, [])
+
+    args = parser.parse_args(["interactive"])
+
+    assert args.conversation_id
