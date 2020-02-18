@@ -10,6 +10,11 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
 )
+from rasa.core.domain import (
+    USED_ENTITIES_KEY,
+    USE_ENTITIES_KEY,
+    IGNORE_ENTITIES_KEY,
+)
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain, SessionConfig
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
@@ -377,20 +382,22 @@ session_config:
 
 
 @pytest.mark.parametrize(
-    "intents, intent_properties",
+    "intents, entities, intent_properties",
     [
         (
             ["greet", "goodbye"],
+            ["entity", "other", "third"],
             {
-                "greet": {"use_entities": True, "ignore_entities": []},
-                "goodbye": {"use_entities": True, "ignore_entities": []},
+                "greet": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
+                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
             },
         ),
         (
-            [{"greet": {"use_entities": []}}, "goodbye"],
+            [{"greet": {USE_ENTITIES_KEY: []}}, "goodbye"],
+            ["entity", "other", "third"],
             {
-                "greet": {"use_entities": [], "ignore_entities": []},
-                "goodbye": {"use_entities": True, "ignore_entities": []},
+                "greet": {USED_ENTITIES_KEY: []},
+                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
             },
         ),
         (
@@ -398,39 +405,33 @@ session_config:
                 {
                     "greet": {
                         "triggers": "utter_goodbye",
-                        "use_entities": ["entity"],
-                        "ignore_entities": ["other"],
+                        USE_ENTITIES_KEY: ["entity"],
+                        IGNORE_ENTITIES_KEY: ["other"],
                     }
                 },
                 "goodbye",
             ],
+            ["entity", "other", "third"],
             {
-                "greet": {
-                    "triggers": "utter_goodbye",
-                    "use_entities": ["entity"],
-                    "ignore_entities": ["other"],
-                },
-                "goodbye": {"use_entities": True, "ignore_entities": []},
+                "greet": {"triggers": "utter_goodbye", USED_ENTITIES_KEY: ["entity"],},
+                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
             },
         ),
         (
             [
-                {"greet": {"triggers": "utter_goodbye", "use_entities": None}},
-                {"goodbye": {"use_entities": [], "ignore_entities": []}},
+                {"greet": {"triggers": "utter_goodbye", USE_ENTITIES_KEY: None}},
+                {"goodbye": {USE_ENTITIES_KEY: [], IGNORE_ENTITIES_KEY: []}},
             ],
+            ["entity", "other", "third"],
             {
-                "greet": {
-                    "use_entities": [],
-                    "ignore_entities": [],
-                    "triggers": "utter_goodbye",
-                },
-                "goodbye": {"use_entities": [], "ignore_entities": []},
+                "greet": {USED_ENTITIES_KEY: [], "triggers": "utter_goodbye",},
+                "goodbye": {USED_ENTITIES_KEY: []},
             },
         ),
     ],
 )
-def test_collect_intent_properties(intents, intent_properties):
-    assert Domain.collect_intent_properties(intents) == intent_properties
+def test_collect_intent_properties(intents, entities, intent_properties):
+    assert Domain.collect_intent_properties(intents, entities) == intent_properties
 
 
 def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
@@ -595,18 +596,50 @@ def test_is_empty():
     assert Domain.empty().is_empty()
 
 
-def test_clean_domain():
+def test_transform_intents_for_file_default():
+    domain_path = "data/test_domains/default_unfeaturized_entities.yml"
+    domain = Domain.load(domain_path)
+    transformed = domain._transform_intents_for_file()
+
+    expected = [
+        {"greet": {USE_ENTITIES_KEY: ["name"]}},
+        {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
+        {"goodbye": {USE_ENTITIES_KEY: []}},
+        {"thank": {USE_ENTITIES_KEY: []}},
+        {"ask": {USE_ENTITIES_KEY: True}},
+        {"why": {USE_ENTITIES_KEY: []}},
+        {"pure_intent": {USE_ENTITIES_KEY: True}},
+    ]
+
+    assert transformed == expected
+
+
+def test_transform_intents_for_file_with_mapping():
+    domain_path = "data/test_domains/default_with_mapping.yml"
+    domain = Domain.load(domain_path)
+    transformed = domain._transform_intents_for_file()
+
+    expected = [
+        {"greet": {"triggers": "utter_greet", USE_ENTITIES_KEY: True}},
+        {"default": {"triggers": "utter_default", USE_ENTITIES_KEY: True}},
+        {"goodbye": {USE_ENTITIES_KEY: True}},
+    ]
+
+    assert transformed == expected
+
+
+def test_clean_domain_for_file():
     domain_path = "data/test_domains/default_unfeaturized_entities.yml"
     cleaned = Domain.load(domain_path).cleaned_domain()
 
     expected = {
         "intents": [
-            {"greet": {"use_entities": ["name"]}},
-            {"default": {"ignore_entities": ["unrelated_recognized_entity"]}},
-            {"goodbye": {"use_entities": []}},
-            {"thank": {"use_entities": []}},
+            {"greet": {USE_ENTITIES_KEY: ["name"]}},
+            {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
+            {"goodbye": {USE_ENTITIES_KEY: []}},
+            {"thank": {USE_ENTITIES_KEY: []}},
             "ask",
-            {"why": {"use_entities": []}},
+            {"why": {USE_ENTITIES_KEY: []}},
             "pure_intent",
         ],
         "entities": ["name", "other", "unrelated_recognized_entity"],
@@ -616,12 +649,13 @@ def test_clean_domain():
             "utter_default": [{"text": "default message"}],
         },
         "actions": ["utter_default", "utter_goodbye", "utter_greet"],
+        "session_config": {
+            "carry_over_slots_to_new_session": True,
+            "session_expiration_time": 0,
+        },
     }
 
-    expected = Domain.from_dict(expected)
-    actual = Domain.from_dict(cleaned)
-
-    assert hash(actual) == hash(expected)
+    assert cleaned == expected
 
 
 def test_clean_domain_deprecated_templates():
@@ -630,12 +664,12 @@ def test_clean_domain_deprecated_templates():
 
     expected = {
         "intents": [
-            {"greet": {"use_entities": ["name"]}},
-            {"default": {"ignore_entities": ["unrelated_recognized_entity"]}},
-            {"goodbye": {"use_entities": []}},
-            {"thank": {"use_entities": []}},
+            {"greet": {USE_ENTITIES_KEY: ["name"]}},
+            {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
+            {"goodbye": {USE_ENTITIES_KEY: []}},
+            {"thank": {USE_ENTITIES_KEY: []}},
             "ask",
-            {"why": {"use_entities": []}},
+            {"why": {USE_ENTITIES_KEY: []}},
             "pure_intent",
         ],
         "entities": ["name", "other", "unrelated_recognized_entity"],
