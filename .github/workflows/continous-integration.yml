@@ -49,12 +49,12 @@ jobs:
       with:
         python-version: 3.7
 
-#    - name: Load Pip Cached Artifacts ⬇
-#      uses: actions/cache@v1
-#      with:
-#        path: ~/.cache/pip
-#        key: ${{ runner.os }}-3.7-pip-${{ hashFiles('**/requirements-dev.txt') }}
-#        restore-keys: ${{ runner.os }}-3.7-pip-
+    - name: Load Pip Cached Artifacts ⬇
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-3.7-pip-${{ hashFiles('**/requirements-dev.txt') }}
+        restore-keys: ${{ runner.os }}-3.7-pip-
 
     - name: Install Dependencies 📦
       run: |
