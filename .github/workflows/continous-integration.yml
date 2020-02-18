@@ -1,6 +1,12 @@
 name: Continuous Integration
 
-on: [push]
+on:
+  push:
+    branches:
+    - master
+    tags:
+    - '*'
+  pull_request:
 
 # SECRETS
 # - COVERALLS_REPO_TOKEN: can be found on the coveralls page for the repo
