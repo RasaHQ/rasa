@@ -117,10 +117,8 @@ class Trainer:
     """Trainer will load the data and train all components.
 
     Requires a pipeline specification and configuration to use for
-    the training."""
-
-    # Officially supported languages (others might be used, but might fail)
-    SUPPORTED_LANGUAGES = ["de", "en"]
+    the training.
+    """
 
     def __init__(
         self,
@@ -150,7 +148,8 @@ class Trainer:
     def _build_pipeline(
         cfg: RasaNLUModelConfig, component_builder: ComponentBuilder
     ) -> List[Component]:
-        """Transform the passed names of the pipeline components into classes"""
+        """Transform the passed names of the pipeline components into classes."""
+
         pipeline = []
 
         # Transform the passed names of the pipeline components into classes
