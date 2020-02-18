@@ -213,7 +213,7 @@ def test_determine_token_labels_throws_error():
         determine_token_labels(
             CH_correct_segmentation[0],
             [CH_correct_entity, CH_wrong_entity],
-            set(CRFEntityExtractor.name),
+            [CRFEntityExtractor.name],
         )
 
 
@@ -232,7 +232,7 @@ def test_determine_token_labels_with_extractors():
     determine_token_labels(
         CH_correct_segmentation[0],
         [CH_correct_entity, CH_wrong_entity],
-        set(SpacyEntityExtractor.name, MitieEntityExtractor.name),
+        [SpacyEntityExtractor.name, MitieEntityExtractor.name],
     )
 
 
