@@ -5,14 +5,16 @@ import pytest
 from sanic import Sanic, response
 
 import rasa.core
+from rasa.core.policies.embedding_policy import EmbeddingPolicy
+from rasa.core.policies.mapping_policy import MappingPolicy
 import rasa.utils.io
 from rasa.core import jobs, utils
 from rasa.core.agent import Agent, load_agent
 from rasa.core.channels.channel import UserMessage
 from rasa.core.domain import Domain, InvalidDomain
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
-from rasa.core.policies.ensemble import PolicyEnsemble
-from rasa.core.policies.memoization import AugmentedMemoizationPolicy
+from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
+from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
 from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
@@ -63,30 +65,25 @@ async def test_training_data_is_reproducible(tmpdir, default_domain):
         assert str(x.as_dialogue()) == str(same_training_data[i].as_dialogue())
 
 
-async def test_agent_train(tmpdir, default_domain):
-    training_data_file = "examples/moodbot/data/stories.md"
-    agent = Agent(
-        "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
-    )
-
-    training_data = await agent.load_data(training_data_file)
-
-    agent.train(training_data)
-    agent.persist(tmpdir.strpath)
-
-    loaded = Agent.load(tmpdir.strpath)
+async def test_agent_train(trained_moodbot_path: Text):
+    moodbot_domain = Domain.load("examples/moodbot/domain.yml")
+    loaded = Agent.load(trained_moodbot_path)
 
     # test domain
-    assert loaded.domain.action_names == agent.domain.action_names
-    assert loaded.domain.intents == agent.domain.intents
-    assert loaded.domain.entities == agent.domain.entities
-    assert loaded.domain.templates == agent.domain.templates
-    assert [s.name for s in loaded.domain.slots] == [s.name for s in agent.domain.slots]
+    assert loaded.domain.action_names == moodbot_domain.action_names
+    assert loaded.domain.intents == moodbot_domain.intents
+    assert loaded.domain.entities == moodbot_domain.entities
+    assert loaded.domain.templates == moodbot_domain.templates
+    assert [s.name for s in loaded.domain.slots] == [
+        s.name for s in moodbot_domain.slots
+    ]
 
     # test policies
-    assert isinstance(loaded.policy_ensemble, type(agent.policy_ensemble))
+    assert isinstance(loaded.policy_ensemble, SimplePolicyEnsemble)
     assert [type(p) for p in loaded.policy_ensemble.policies] == [
-        type(p) for p in agent.policy_ensemble.policies
+        EmbeddingPolicy,
+        MemoizationPolicy,
+        MappingPolicy,
     ]
 
 
@@ -122,7 +119,7 @@ async def test_agent_parse_message_using_nlu_interpreter(
     assert result == expected
 
 
-async def test_agent_handle_text(default_agent):
+async def test_agent_handle_text(default_agent: Agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
     result = await default_agent.handle_text(text, sender_id="test_agent_handle_text")
     assert result == [
@@ -130,7 +127,7 @@ async def test_agent_handle_text(default_agent):
     ]
 
 
-async def test_agent_handle_message(default_agent):
+async def test_agent_handle_message(default_agent: Agent):
     text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
     message = UserMessage(text, sender_id="test_agent_handle_message")
     result = await default_agent.handle_message(message)
@@ -192,8 +189,8 @@ async def test_wait_time_between_pulls_without_interval(model_server, monkeypatc
     jobs.kill_scheduler()
 
 
-async def test_load_agent(trained_model):
-    agent = await load_agent(model_path=trained_model)
+async def test_load_agent(trained_rasa_model: str):
+    agent = await load_agent(model_path=trained_rasa_model)
 
     assert agent.tracker_store is not None
     assert agent.interpreter is not None
@@ -247,8 +244,8 @@ def test_two_stage_fallback_without_deny_suggestion(domain, policy_config):
     assert "The intent 'out_of_scope' must be present" in str(execinfo.value)
 
 
-async def test_agent_update_model_none_domain(trained_model: Text):
-    agent = await load_agent(model_path=trained_model)
+async def test_agent_update_model_none_domain(trained_rasa_model: Text):
+    agent = await load_agent(model_path=trained_rasa_model)
     agent.update_model(
         None, None, agent.fingerprint, agent.interpreter, agent.model_directory
     )
