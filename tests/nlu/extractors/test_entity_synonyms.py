@@ -2,10 +2,17 @@ from rasa.nlu.training_data import TrainingData, Message
 from tests.nlu import utilities
 
 
-def test_unintentional_synonyms_capitalized(component_builder):
-    _config = utilities.base_test_conf("pretrained_embeddings_spacy")
-    idx = _config.component_names.index("EntitySynonymMapper")
-    ner_syn = component_builder.create_component(_config.for_component(idx), _config)
+def test_unintentional_synonyms_capitalized(
+    component_builder, pretrained_embeddings_spacy_config
+):
+    idx = pretrained_embeddings_spacy_config.component_names.index(
+        "EntitySynonymMapper"
+    )
+    ner_syn = component_builder.create_component(
+        pretrained_embeddings_spacy_config.for_component(idx),
+        pretrained_embeddings_spacy_config,
+    )
+
     examples = [
         Message(
             "Any Mexican restaurant will do",
@@ -26,6 +33,10 @@ def test_unintentional_synonyms_capitalized(component_builder):
             },
         ),
     ]
-    ner_syn.train(TrainingData(training_examples=examples), _config)
+
+    ner_syn.train(
+        TrainingData(training_examples=examples), pretrained_embeddings_spacy_config
+    )
+
     assert ner_syn.synonyms.get("mexican") is None
     assert ner_syn.synonyms.get("tacos") == "Mexican"

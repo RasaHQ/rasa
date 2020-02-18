@@ -7,6 +7,7 @@ import pytest
 from _pytest.tmpdir import TempdirFactory
 
 import rasa.utils.io
+from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.test import compare_nlu_models
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -44,9 +45,9 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Token
 import json
 import os
-from rasa.nlu import training_data, config
+from rasa.nlu import training_data
 from tests.nlu import utilities
-from tests.nlu.conftest import DEFAULT_DATA_PATH, NLU_DEFAULT_CONFIG_PATH
+from tests.nlu.conftest import DEFAULT_DATA_PATH
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import is_response_selector_present
 from rasa.utils.tensorflow.constants import EPOCHS
@@ -212,7 +213,7 @@ def test_determine_token_labels_throws_error():
         determine_token_labels(
             CH_correct_segmentation[0],
             [CH_correct_entity, CH_wrong_entity],
-            ["CRFEntityExtractor"],
+            set(CRFEntityExtractor.name),
         )
 
 
@@ -231,7 +232,7 @@ def test_determine_token_labels_with_extractors():
     determine_token_labels(
         CH_correct_segmentation[0],
         [CH_correct_entity, CH_wrong_entity],
-        [SpacyEntityExtractor.name, MitieEntityExtractor.name],
+        set(SpacyEntityExtractor.name, MitieEntityExtractor.name),
     )
 
 
@@ -279,26 +280,12 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
     assert result.get("entity_evaluation").get("CRFEntityExtractor")
 
 
-def test_run_cv_evaluation():
+def test_run_cv_evaluation(pretrained_embeddings_spacy_config):
     td = training_data.load_data("data/examples/rasa/demo-rasa.json")
-    nlu_config = RasaNLUModelConfig(
-        {
-            "language": "en",
-            "pipeline": [
-                {"name": "SpacyNLP"},
-                {"name": "SpacyTokenizer"},
-                {"name": "SpacyFeaturizer"},
-                {"name": "RegexFeaturizer"},
-                {"name": "CRFEntityExtractor", EPOCHS: 3},
-                {"name": "EntitySynonymMapper"},
-                {"name": "SklearnIntentClassifier"},
-            ],
-        }
-    )
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
-        td, n_folds, nlu_config
+        td, n_folds, pretrained_embeddings_spacy_config
     )
 
     assert len(intent_results.train["Accuracy"]) == n_folds
@@ -315,7 +302,7 @@ def test_run_cv_evaluation():
     assert len(entity_results.test["CRFEntityExtractor"]["F1-score"]) == n_folds
 
 
-def test_run_cv_evaluation_with_response_selector():
+def test_run_cv_evaluation_with_response_selector(supervised_embeddings_config):
     training_data_obj = training_data.load_data("data/examples/rasa/demo-rasa.md")
     training_data_responses_obj = training_data.load_data(
         "data/examples/rasa/demo-rasa-responses.md"
@@ -739,11 +726,8 @@ def test_get_evaluation_metrics(
     assert NO_ENTITY not in report
 
 
-def test_nlu_comparison(tmpdir):
-    configs = [
-        NLU_DEFAULT_CONFIG_PATH,
-        "sample_configs/config_supervised_embeddings.yml",
-    ]
+def test_nlu_comparison(tmpdir, config_path):
+    configs = [config_path]
     output = tmpdir.strpath
 
     compare_nlu_models(
