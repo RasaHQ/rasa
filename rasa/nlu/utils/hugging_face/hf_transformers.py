@@ -40,6 +40,7 @@ class HFTransformersNLP(Component):
         "model_name": "bert",
         # Pre-Trained weights to be loaded(string)
         "model_weights": None,
+        "force_download": False,
     }
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
@@ -74,10 +75,10 @@ class HFTransformersNLP(Component):
 
         logger.debug(f"Loading Tokenizer and Model for {self.model_name}")
         self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
-            self.model_weights
+            self.model_weights, force_download=self.component_config["force_download"]
         )
         self.model = model_class_dict[self.model_name].from_pretrained(
-            self.model_weights
+            self.model_weights, force_download=self.component_config["force_download"]
         )
 
         # Use a universal pad token since all transformer architectures do not have a consistent token.

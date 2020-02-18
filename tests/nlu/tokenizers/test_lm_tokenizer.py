@@ -297,7 +297,7 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 )
 def test_lm_tokenizer_edge_cases(model_name, texts, expected_tokens, expected_indices):
 
-    transformers_config = {"model_name": model_name}
+    transformers_config = {"model_name": model_name, "force_download": True}
 
     transformers_nlp = HFTransformersNLP(transformers_config)
     lm_tokenizer = LanguageModelTokenizer()

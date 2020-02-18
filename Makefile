@@ -67,7 +67,7 @@ prepare-tests-files:
 
 test: clean
 	# OMP_NUM_THREADS can improve overral performance using one thread by process (on tensorflow), avoiding overload
-	OMP_NUM_THREADS=1 pytest tests/nlu/tokenizers/test_lm_tokenizer.py tests/nlu/featurizers/test_lm_featurizer.py -n $(JOBS) --cov rasa
+	OMP_NUM_THREADS=1 pytest tests -n $(JOBS) --cov rasa
 
 doctest: clean
 	cd docs && make doctest
