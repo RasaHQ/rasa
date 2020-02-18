@@ -94,13 +94,15 @@ async def test_early_exit_on_invalid_domain():
     assert len(record) == 2
     assert (
         f"Loading domain from '{domain_path}' failed. Using empty domain. "
-        "Error: 'Intents are not unique! Found two intents with name "
-        "'default'. Either rename or remove one of them.'" in record[0].message.args[0]
+        "Error: 'Intents are not unique! Found multiple intents with name(s) "
+        "['default', 'goodbye']. Either rename or remove the duplicate ones.'"
+        in record[0].message.args[0]
     )
     assert (
         f"Loading domain from '{domain_path}' failed. Using empty domain. "
-        "Error: 'Intents are not unique! Found two intents with name "
-        "'default'. Either rename or remove one of them.'" in record[1].message.args[0]
+        "Error: 'Intents are not unique! Found multiple intents with name(s) "
+        "['default', 'goodbye']. Either rename or remove the duplicate ones.'"
+        in record[1].message.args[0]
     )
 
 
