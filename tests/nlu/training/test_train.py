@@ -1,4 +1,5 @@
 import os
+
 import pytest
 
 from rasa.nlu import registry, train
@@ -12,7 +13,7 @@ from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
 def as_pipeline(*components):
-    return [{"name": c, EPOCHS: 3} for c in components]
+    return [{"name": c, EPOCHS: 2} for c in components]
 
 
 def pipelines_for_tests():
@@ -47,6 +48,7 @@ def pipelines_for_tests():
                 "DIETClassifier",
                 "KeywordIntentClassifier",
                 "ResponseSelector",
+                "DIETSelector",
             ),
         ),
         (
@@ -124,8 +126,13 @@ async def test_random_seed(component_builder, tmpdir):
     """test if train result is the same for two runs of tf embedding"""
 
     _config = utilities.base_test_conf("supervised_embeddings")
-    # set fixed random seed of the DIET classifier to 1
-    _config.set_component_attr(5, random_seed=1)
+    # set fixed random seed
+    idx = _config.component_names.index("EmbeddingIntentClassifier")
+    _config.set_component_attr(idx, random_seed=1)
+    _config.set_component_attr(idx, epochs=1)
+    idx = _config.component_names.index("CRFEntityExtractor")
+    _config.set_component_attr(idx, random_seed=1)
+    _config.set_component_attr(idx, epochs=1)
 
     # first run
     (trained_a, _, persisted_path_a) = await train(

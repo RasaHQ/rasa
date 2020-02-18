@@ -5,7 +5,6 @@ from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifi
 
 # TODO: add tests for other classifers
 # from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
-# from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa.nlu.training_data.formats.rasa import RasaReader
 from rasa.nlu.training_data import load_data
 from rasa.nlu.training_data.message import Message

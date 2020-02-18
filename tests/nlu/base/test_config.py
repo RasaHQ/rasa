@@ -63,10 +63,16 @@ def test_default_config_file():
 
 def test_set_attr_on_component():
     cfg = config.load("sample_configs/config_pretrained_embeddings_spacy.yml")
-    cfg.set_component_attr(7, C=324)
 
-    assert cfg.for_component(1) == {"name": "SpacyTokenizer"}
-    assert cfg.for_component(7) == {"name": "SklearnIntentClassifier", "C": 324}
+    idx_classifier = cfg.component_names.index("SklearnIntentClassifier")
+    idx_tokenizer = cfg.component_names.index("SpacyTokenizer")
+    cfg.set_component_attr(idx_classifier, C=324)
+
+    assert cfg.for_component(idx_tokenizer) == {"name": "SpacyTokenizer"}
+    assert cfg.for_component(idx_classifier) == {
+        "name": "SklearnIntentClassifier",
+        "C": 324,
+    }
 
 
 def test_override_defaults_supervised_embeddings_pipeline():
