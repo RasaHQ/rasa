@@ -117,7 +117,7 @@ def _append_story_structure_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def split_nlu_data(args) -> None:
+def split_nlu_data(args: argparse.Namespace) -> None:
     from rasa.nlu.training_data.loading import load_data
     from rasa.nlu.training_data.util import get_file_format
 
