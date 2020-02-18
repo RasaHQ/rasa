@@ -212,7 +212,7 @@ def test_mattermost_channel():
         # the name of your team for mattermost
         team="community",
         # the bot token of the bot account that will post messages
-        token="abcdefghijklmnop",
+        token="xxxxx",
         # the password of your bot user that will post messages
         # the webhook-url your bot should listen for messages
         webhook_url="YOUR_WEBHOOK_URL",
