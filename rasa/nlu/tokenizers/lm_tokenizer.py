@@ -1,6 +1,7 @@
 from typing import Text, List, Any, Dict
 
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.nlu.training_data import Message
 
 from rasa.nlu.constants import (
@@ -19,6 +20,8 @@ class LanguageModelTokenizer(Tokenizer):
     requires = [
         LANGUAGE_MODEL_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ]
+
+    required_components = [HFTransformersNLP.name]
 
     defaults = {
         # Flag to check whether to split intents

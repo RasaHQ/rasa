@@ -3,6 +3,8 @@ from typing import Any, Optional, Text
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
+from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 from rasa.nlu.constants import (
@@ -25,6 +27,8 @@ class LanguageModelFeaturizer(Featurizer):
     requires = [
         LANGUAGE_MODEL_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ] + [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
+
+    required_components = [HFTransformersNLP.name, LanguageModelTokenizer.name]
 
     def train(
         self,

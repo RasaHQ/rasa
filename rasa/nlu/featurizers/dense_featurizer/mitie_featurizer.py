@@ -5,6 +5,8 @@ from typing import Any, List, Text, Optional, Dict
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.utils.mitie_utils import MitieNLP
+from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 if typing.TYPE_CHECKING:
@@ -26,6 +28,8 @@ class MitieFeaturizer(Featurizer):
     requires = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES] + [
         "mitie_feature_extractor"
     ]
+
+    required_components = [MitieNLP.name, MitieTokenizer.name]
 
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of

@@ -51,6 +51,36 @@ def validate_requirements(component_names: List[Text]) -> None:
         )
 
 
+def validate_tokenizers(pipeline: List["Component"]) -> None:
+    from rasa.nlu.tokenizers.tokenizer import Tokenizer
+
+    tokenizer_names = []
+    for component in pipeline:
+        if isinstance(component, Tokenizer):
+            tokenizer_names.append(component.name)
+
+    if not tokenizer_names:
+        raise Exception(
+            f"No tokenizer is used. You should add one tokenizer to your pipeline."
+        )
+    elif len(tokenizer_names) > 1:
+        raise Exception(
+            f"More then one tokenizer is used: {tokenizer_names}. "
+            f"You can use only one tokenizer."
+        )
+
+
+def validate_required_components(pipeline: List["Component"]) -> None:
+    unique_component_names = set()
+    for component in pipeline:
+        unique_component_names.add(component.name)
+        if not set(component.required_components).issubset(unique_component_names):
+            raise Exception(
+                f"'{component.name}' requires {component.required_components}. "
+                f"Add required components to the pipeline"
+            )
+
+
 def validate_arguments(
     pipeline: List["Component"],
     context: Dict[Text, Any],
@@ -224,6 +254,9 @@ class Component(metaclass=ComponentMetaclass):
     # "option_1" or "option_2" needs to be present in the
     # provided properties from the previous components.
     requires = []
+
+    # Which components are required by this component
+    required_components = []
 
     # Defines the default configuration parameters of a component
     # these values can be overwritten in the pipeline configuration

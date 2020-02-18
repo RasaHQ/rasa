@@ -4,6 +4,8 @@ from typing import Any, Optional, Text, Dict
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.utils.spacy_utils import SpacyNLP
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.training_data import Message, TrainingData
 
 if typing.TYPE_CHECKING:
@@ -27,6 +29,8 @@ class SpacyFeaturizer(Featurizer):
     requires = [
         SPACY_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ] + [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
+
+    required_components = [SpacyNLP.name, SpacyTokenizer.name]
 
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of
