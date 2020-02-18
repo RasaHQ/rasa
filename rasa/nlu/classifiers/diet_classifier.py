@@ -356,12 +356,15 @@ class DIETClassifier(EntityExtractor):
                     f"don't coincide in '{message.text}' for attribute '{attribute}'."
                 )
 
+        # To speed up training take only the CLS token vector as feature if we don't
+        # use the transformer and we don't want to do entity recognition. We would
+        # not make use of the sequence anyway in this setup.  Carrying over
+        # those features to the actual training process takes quite some time.
         if (
             self.component_config[NUM_TRANSFORMER_LAYERS] == 0
             and not self.component_config[ENTITY_RECOGNITION]
             and attribute != INTENT
         ):
-            # Use only the CLS token vector as features
             sparse_features = train_utils.sequence_to_sentence_features(sparse_features)
             dense_features = train_utils.sequence_to_sentence_features(dense_features)
 
