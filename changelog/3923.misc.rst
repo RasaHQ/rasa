@@ -1,0 +1,3 @@
+Internally, intents now have only one property ``used_entities`` to indicate which
+entities should be used. For displaying purposes and in ``domain.yml`` files, the
+properties ``use_entities`` and/or ``ignore_entities`` will be used as before.
