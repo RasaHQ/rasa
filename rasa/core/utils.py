@@ -88,7 +88,7 @@ def is_int(value: Any) -> bool:
         return False
 
 
-def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.array:
+def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarray:
     if hot_idx >= length:
         raise ValueError(
             "Can't create one hot. Index '{}' is out "
@@ -176,7 +176,7 @@ class HashableNDArray:
     def __hash__(self) -> int:
         return self.__hash
 
-    def unwrap(self) -> np.array:
+    def unwrap(self) -> np.ndarray:
         """Returns the encapsulated ndarray.
 
         If the wrapper is "tight", a copy of the encapsulated ndarray is
@@ -471,13 +471,13 @@ def replace_floats_with_decimals(obj: Union[List, Dict], round_digits: int = 9) 
     """
     if isinstance(obj, list):
         for i in range(len(obj)):
-            obj[i] = replace_floats_with_decimals(obj[i])
+            obj[i] = replace_floats_with_decimals(obj[i], round_digits)
         return obj
     elif isinstance(obj, dict):
         for j in obj:
-            obj[j] = replace_floats_with_decimals(obj[j])
+            obj[j] = replace_floats_with_decimals(obj[j], round_digits)
         return obj
-    elif isinstance(obj, float):
+    elif isinstance(obj, float) or isinstance(obj, Decimal):
         return round(Decimal(obj), round_digits)
     else:
         return obj

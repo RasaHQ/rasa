@@ -1,15 +1,14 @@
 import json
-import warnings
 import logging
 import re
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
+
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+from rasa.utils.common import raise_warning
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from slackclient import SlackClient
-from typing import Text, Optional, List, Dict, Any, Callable, Awaitable
-
-from rasa.core.channels.channel import InputChannel
-from rasa.core.channels.channel import UserMessage, OutputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -80,9 +79,9 @@ class SlackBot(SlackClient, OutputChannel):
         text_block = {"type": "section", "text": {"type": "plain_text", "text": text}}
 
         if len(buttons) > 5:
-            warnings.warn(
+            raise_warning(
                 "Slack API currently allows only up to 5 buttons. "
-                "If you add more, all will be ignored."
+                "Since you added more than 5, slack will ignore all of them."
             )
             return await self.send_text_message(recipient, text, **kwargs)
 
@@ -210,17 +209,17 @@ class SlackInput(InputChannel):
             ]:
                 text = re.sub(regex, replacement, text)
 
-        """Find mailto or http links like <mailto:xyz@rasa.com|xyz@rasa.com> or '<http://url.com|url.com>in text and substitute it with original content
+        """Find multiple mailto or http links like <mailto:xyz@rasa.com|xyz@rasa.com> or '<http://url.com|url.com>in text and substitute it with original content
         """
 
-        pattern = r"\<(mailto:|(http|https):\/\/).*\|.*\>"
-        match = re.search(pattern, text)
+        pattern = r"(\<(?:mailto|http|https):\/\/.*?\|.*?\>)"
+        match = re.findall(pattern, text)
 
         if match:
-            regex = match.group(0)
-            replacement = regex.split("|")[1]
-            replacement = replacement.replace(">", "")
-            text = text.replace(regex, replacement)
+            for remove in match:
+                replacement = remove.split("|")[1]
+                replacement = replacement.replace(">", "")
+                text = text.replace(remove, replacement)
         return text.strip()
 
     @staticmethod

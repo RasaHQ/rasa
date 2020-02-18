@@ -1,11 +1,11 @@
 import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple
-import warnings
 
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
-from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.constants import RESPONSE_ATTRIBUTE
+from rasa.nlu.training_data import Message, TrainingData
+from rasa.utils.common import raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
@@ -124,7 +124,7 @@ def validate_required_components_from_data(
             response_selector_exists = True
 
     if len(data.response_examples) and not response_selector_exists:
-        warnings.warn(
+        raise_warning(
             "Training data consists examples for training a response selector but "
             "no response selector component specified inside NLU pipeline."
         )

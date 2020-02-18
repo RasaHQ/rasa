@@ -1,6 +1,5 @@
 import aiohttp
 
-import warnings
 import json
 import logging
 import re
@@ -8,9 +7,11 @@ import re
 import os
 from typing import Text, List, Dict, Any, Union, Optional, Tuple
 
+from rasa.constants import DOCS_URL_STORIES
 from rasa.core import constants
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
+from rasa.utils.common import raise_warning, class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ class NaturalLanguageInterpreter:
         """Factory to create an natural language interpreter."""
 
         if endpoint is not None:
-            warnings.warn(
+            raise_warning(
                 "Calling `NaturalLanguageInterpreter.create` with two parameters"
                 "is deprecated. The `endpoint` parameter will be removed in the "
                 "future. You should replace a call "
@@ -44,7 +45,6 @@ class NaturalLanguageInterpreter:
                 "with the single parameter version "
                 "`NaturalLanguageInterpreter.create(e or s)`.",
                 category=DeprecationWarning,
-                stacklevel=2,
             )
             obj = endpoint or obj
 
@@ -104,12 +104,13 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                     f"(instead parser found '{type(parsed_entities)}')"
                 )
         except Exception as e:
-            warnings.warn(
-                f"Invalid to parse arguments in line "
+            raise_warning(
+                f"Failed to parse arguments in line "
                 f"'{user_input}'. Failed to decode parameters "
                 f"as a json object. Make sure the intent "
                 f"is followed by a proper json object. "
-                f"Error: {e}"
+                f"Error: {e}",
+                docs=DOCS_URL_STORIES,
             )
             return []
 
@@ -121,11 +122,12 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         try:
             return float(confidence_str.strip()[1:])
         except Exception as e:
-            warnings.warn(
+            raise_warning(
                 f"Invalid to parse confidence value in line "
                 f"'{confidence_str}'. Make sure the intent confidence is an "
                 f"@ followed by a decimal number. "
-                f"Error: {e}"
+                f"Error: {e}",
+                docs=DOCS_URL_STORIES,
             )
             return 0.0
 
@@ -312,10 +314,9 @@ def _load_from_module_string(
     endpoint_config: EndpointConfig,
 ) -> "NaturalLanguageInterpreter":
     """Instantiate an event channel based on its class name."""
-    from rasa.utils import common
 
     try:
-        nlu_interpreter_class = common.class_from_module_path(endpoint_config.type)
+        nlu_interpreter_class = class_from_module_path(endpoint_config.type)
         return nlu_interpreter_class(endpoint_config=endpoint_config)
     except (AttributeError, ImportError) as e:
         raise Exception(

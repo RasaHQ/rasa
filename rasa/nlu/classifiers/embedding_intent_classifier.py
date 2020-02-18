@@ -6,7 +6,6 @@ import pickle
 import scipy.sparse
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
-import warnings
 
 from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
@@ -23,6 +22,8 @@ from rasa.nlu.constants import (
 import tensorflow as tf
 
 # avoid warning println on contrib import - remove for tf 2
+from rasa.utils.common import raise_warning
+
 tf.contrib._warning = None
 
 logger = logging.getLogger(__name__)
@@ -131,7 +132,7 @@ class EmbeddingIntentClassifier(Component):
         ]
         for removed_param in removed_tokenization_params:
             if removed_param in config:
-                warnings.warn(
+                raise_warning(
                     f"Intent tokenization has been moved to Tokenizer components. "
                     f"Your config still mentions '{removed_param}'. "
                     f"Tokenization may fail if you specify the parameter here. "
@@ -541,7 +542,8 @@ class EmbeddingIntentClassifier(Component):
                 dense_features.append(f)
 
         output = tf.concat(dense_features, axis=-1) * mask
-        output = tf.squeeze(output, axis=1)
+        # reduce dimensionality of output
+        output = tf.reduce_sum(output, axis=1)
 
         return output
 
@@ -814,6 +816,16 @@ class EmbeddingIntentClassifier(Component):
         # transform sim to python list for JSON serializing
         return label_ids, message_sim.tolist()
 
+    @staticmethod
+    def _text_features_present(session_data: SessionDataType) -> bool:
+        return np.array(
+            [
+                f.nnz != 0 if isinstance(f, scipy.sparse.spmatrix) else f.any()
+                for features in session_data["text_features"]
+                for f in features
+            ]
+        ).any()
+
     def predict_label(
         self, message: "Message"
     ) -> Tuple[Dict[Text, Any], List[Dict[Text, Any]]]:
@@ -832,6 +844,12 @@ class EmbeddingIntentClassifier(Component):
 
         # create session data from message and convert it into a batch of 1
         session_data = self._create_session_data([message])
+
+        # if no text-features are present (e.g. incoming message is not in the
+        # vocab), do not predict a random intent
+        if not self._text_features_present(session_data):
+            return label, label_ranking
+
         batch = train_utils.prepare_batch(
             session_data, tuple_sizes=self.batch_tuple_sizes
         )
@@ -981,8 +999,8 @@ class EmbeddingIntentClassifier(Component):
             )
 
         else:
-            warnings.warn(
+            raise_warning(
                 f"Failed to load nlu model. "
-                f"Maybe path '{os.path.abspath(model_dir)}' doesn't exist."
+                f"Maybe the path '{os.path.abspath(model_dir)}' doesn't exist?"
             )
             return cls(component_config=meta)

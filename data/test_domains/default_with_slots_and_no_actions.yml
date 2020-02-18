@@ -18,7 +18,7 @@ slots:
   name:
     type: text
 
-templates:
+responses:
   utter_greet:
     - text: "hey there {name}!"  # {name} will be filled by slot (same name) or by custom action
   utter_channel:

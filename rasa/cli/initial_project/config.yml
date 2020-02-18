@@ -7,5 +7,7 @@ pipeline: supervised_embeddings
 # https://rasa.com/docs/rasa/core/policies/
 policies:
   - name: MemoizationPolicy
-  - name: KerasPolicy
+  - name: EmbeddingPolicy
+    max_history: 5
+    epochs: 100
   - name: MappingPolicy

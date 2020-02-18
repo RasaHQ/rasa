@@ -1,9 +1,9 @@
 """
 Script used to publish GitHub release notes extracted from CHANGELOG.rst.
-This script is executed by Travis after a new release was successfully built.
+This script is executed by GitHub after a new release was successfully built.
 
 Uses the following environment variables:
-* TRAVIS_TAG: the name of the tag of the current commit.
+* GITHUB_TAG: the name of the tag of the current commit.
 * GITHUB_TOKEN: a personal access token with 'repo' permissions.
 
 The script also requires ``pandoc`` to be previously installed in the system.
@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 from typing import Text
 
-# if this needs any more dependencies, they need to be installed on travis deploy stage
+# if this needs any more dependencies, they need to be installed on github deploy stage
 import github3
 import pypandoc
 
@@ -41,7 +41,7 @@ def parse_changelog(tag_name: Text) -> Text:
     p = Path(__file__).parent.parent / "CHANGELOG.rst"
     changelog_lines = p.read_text(encoding="UTF-8").splitlines()
 
-    title_regex = re.compile(r"\[\d+\.\d+\.\d+(\S*)\]\s*-\s*\d{4}-\d{2}-\d{2}")
+    title_regex = re.compile(r"\[(\d+\.\d+\.\d+)(\S*)\]\s*-\s*\d{4}-\d{2}-\d{2}")
     consuming_version = False
     version_lines = []
     for line in changelog_lines:
@@ -57,17 +57,20 @@ def parse_changelog(tag_name: Text) -> Text:
         if consuming_version:
             version_lines.append(line)
 
-    return "\n".join(version_lines)
+    # drop the first lines (version headline, not needed for GH)
+    return "\n".join(version_lines[2:]).strip()
 
 
 def convert_rst_to_md(text):
-    return pypandoc.convert_text(text, "md", format="rst")
+    return pypandoc.convert_text(
+        text, "md", format="rst", extra_args=["--wrap=preserve"]
+    )
 
 
 def main():
-    tag_name = os.environ.get("TRAVIS_TAG")
+    tag_name = os.environ.get("GITHUB_TAG")
     if not tag_name:
-        print("environment variable TRAVIS_TAG not set", file=sys.stderr)
+        print("environment variable GITHUB_TAG not set", file=sys.stderr)
         return 1
 
     token = os.environ.get("GITHUB_TOKEN")
@@ -75,13 +78,18 @@ def main():
         print("GITHUB_TOKEN not set", file=sys.stderr)
         return 1
 
-    slug = os.environ.get("TRAVIS_REPO_SLUG")
+    slug = os.environ.get("GITHUB_REPO_SLUG")
     if not slug:
-        print("TRAVIS_REPO_SLUG not set", file=sys.stderr)
+        print("GITHUB_REPO_SLUG not set", file=sys.stderr)
         return 1
 
     rst_body = parse_changelog(tag_name)
     md_body = convert_rst_to_md(rst_body)
+
+    if not md_body:
+        print("Failed to extract changelog entries for version from changelog.")
+        return 2
+
     if not create_github_release(slug, token, tag_name, md_body):
         print("Could not publish release notes:", file=sys.stderr)
         print(md_body, file=sys.stderr)

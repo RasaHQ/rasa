@@ -1,7 +1,6 @@
 import numpy as np
-import warnings
 import scipy.sparse
-from typing import Any, Text, Union, Optional, Dict
+from typing import Any, Text, Union, Optional
 from rasa.nlu.training_data import Message
 from rasa.nlu.components import Component
 from rasa.nlu.constants import SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, TEXT_ATTRIBUTE
@@ -37,9 +36,7 @@ class Featurizer(Component):
                 raise ValueError(
                     f"Cannot concatenate dense features as sequence dimension does not "
                     f"match: {len(message.get(feature_name))} != "
-                    f"{len(additional_features)}. "
-                    f"Make sure to set 'return_sequence' to the same value for all your "
-                    f"featurizers."
+                    f"{len(additional_features)}. Message: '{message.text}'."
                 )
 
             return np.concatenate(
@@ -61,9 +58,7 @@ class Featurizer(Component):
                 raise ValueError(
                     f"Cannot concatenate sparse features as sequence dimension does not "
                     f"match: {message.get(feature_name).shape[0]} != "
-                    f"{additional_features.shape[0]}. "
-                    f"Make sure to set 'return_sequence' to the same value for all your "
-                    f"featurizers."
+                    f"{additional_features.shape[0]}. Message: '{message.text}'."
                 )
             return hstack([message.get(feature_name), additional_features])
         else:
