@@ -142,7 +142,7 @@ def _prepare_event_broker(event_broker: EventBroker) -> None:
 
     if not event_broker.is_ready():
         cli_utils.print_error_and_exit(
-            f"Event broker of type '{type(event_broker)}' is not ready. " f"Exiting."
+            f"Event broker of type '{type(event_broker)}' is not ready. Exiting."
         )
 
 
