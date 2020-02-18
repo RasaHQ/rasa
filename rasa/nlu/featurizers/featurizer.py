@@ -1,7 +1,6 @@
 import numpy as np
-import warnings
 import scipy.sparse
-from typing import Any, Text, Union, Optional, Dict
+from typing import Any, Text, Union, Optional
 from rasa.nlu.training_data import Message
 from rasa.nlu.components import Component
 from rasa.nlu.constants import SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, TEXT_ATTRIBUTE
@@ -10,28 +9,21 @@ from rasa.nlu.constants import SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, TEXT_A
 def sequence_to_sentence_features(
     features: Union[np.ndarray, scipy.sparse.spmatrix]
 ) -> Optional[Union[np.ndarray, scipy.sparse.spmatrix]]:
+    """Extract the CLS token vector as sentence features.
+
+    Features is a sequence. The last token is the CLS token. The feature vector of
+    this token contains the sentence features."""
+
     if features is None:
         return None
 
     if isinstance(features, scipy.sparse.spmatrix):
-        return scipy.sparse.coo_matrix(features.sum(axis=0))
+        return scipy.sparse.coo_matrix(features.tocsr()[-1])
 
-    return np.mean(features, axis=0)
+    return np.expand_dims(features[-1], axis=0)
 
 
 class Featurizer(Component):
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
-        super(Featurizer, self).__init__(component_config)
-
-        try:
-            self.return_sequence = self.component_config["return_sequence"]
-        except KeyError:
-            warnings.warn(
-                "No default value for 'return_sequence' was set. Please, "
-                "add it to the default dict of the featurizer and set it to 'False'."
-            )
-            self.return_sequence = False
-
     @staticmethod
     def _combine_with_existing_dense_features(
         message: Message,
@@ -44,9 +36,7 @@ class Featurizer(Component):
                 raise ValueError(
                     f"Cannot concatenate dense features as sequence dimension does not "
                     f"match: {len(message.get(feature_name))} != "
-                    f"{len(additional_features)}. "
-                    f"Make sure to set 'return_sequence' to the same value for all your "
-                    f"featurizers."
+                    f"{len(additional_features)}. Message: '{message.text}'."
                 )
 
             return np.concatenate(
@@ -68,9 +58,7 @@ class Featurizer(Component):
                 raise ValueError(
                     f"Cannot concatenate sparse features as sequence dimension does not "
                     f"match: {message.get(feature_name).shape[0]} != "
-                    f"{additional_features.shape[0]}. "
-                    f"Make sure to set 'return_sequence' to the same value for all your "
-                    f"featurizers."
+                    f"{additional_features.shape[0]}. Message: '{message.text}'."
                 )
             return hstack([message.get(feature_name), additional_features])
         else:

@@ -1,11 +1,11 @@
 import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple
-import warnings
 
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults
-from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.constants import RESPONSE_ATTRIBUTE
+from rasa.nlu.training_data import Message, TrainingData
+from rasa.utils.common import raise_warning
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
@@ -43,12 +43,11 @@ def validate_requirements(component_names: List[Text]) -> None:
         # if available, use the development file to figure out the correct
         # version numbers for each requirement
         raise Exception(
-            "Not all required importable packages are installed. "
-            + "To use this pipeline, you need to install the "
-            "missing dependencies. "
-            + "Please install the package(s) that contain the module(s): {}".format(
-                ", ".join(failed_imports)
-            )
+            f"Not all required importable packages are installed. "
+            f"To use this pipeline, you need to install the "
+            f"missing dependencies. "
+            f"Please install the package(s) that contain the module(s): "
+            f"{', '.join(failed_imports)}"
         )
 
 
@@ -65,8 +64,8 @@ def validate_arguments(
         raise ValueError(
             "Can not train an empty pipeline. "
             "Make sure to specify a proper pipeline in "
-            "the configuration using the `pipeline` key."
-            + "The `backend` configuration key is "
+            "the configuration using the 'pipeline' key. "
+            "The 'backend' configuration key is "
             "NOT supported anymore."
         )
 
@@ -74,13 +73,44 @@ def validate_arguments(
 
     for component in pipeline:
         for r in component.requires:
-            if r not in provided_properties:
-                raise Exception(
-                    "Failed to validate at component "
-                    "'{}'. Missing property: '{}'"
-                    "".format(component.name, r)
-                )
+            if isinstance(r, Tuple):
+                validate_requires_any_of(r, provided_properties, str(component.name))
+            else:
+                if r not in provided_properties:
+                    raise Exception(
+                        f"Failed to validate component {component.name}. "
+                        f"Missing property: '{r}'"
+                    )
+
         provided_properties.update(component.provides)
+
+
+def any_of(*args) -> Tuple[Any]:
+    """Helper function to define that one of the given arguments is required
+    by a component.
+
+    Should be used inside `requires`."""
+    return args
+
+
+def validate_requires_any_of(
+    required_properties: Tuple[Text],
+    provided_properties: Set[Text],
+    component_name: Text,
+) -> None:
+    """Validates that at least one of the given required properties is present in
+    the provided properties."""
+
+    property_present = any(
+        [property in provided_properties for property in required_properties]
+    )
+
+    if not property_present:
+        raise Exception(
+            f"Failed to validate component '{component_name}'. "
+            f"Missing one of the following properties: "
+            f"{required_properties}."
+        )
 
 
 def validate_required_components_from_data(
@@ -94,9 +124,9 @@ def validate_required_components_from_data(
             response_selector_exists = True
 
     if len(data.response_examples) and not response_selector_exists:
-        warnings.warn(
+        raise_warning(
             "Training data consists examples for training a response selector but "
-            "no response selector component specified inside NLU pipeline"
+            "no response selector component specified inside NLU pipeline."
         )
 
 
@@ -131,8 +161,8 @@ class UnsupportedLanguageError(Exception):
         super().__init__(component, language)
 
     def __str__(self) -> Text:
-        return "component {} does not support language {}".format(
-            self.component, self.language
+        return (
+            f"component '{self.component}' does not support language '{self.language}'."
         )
 
 
@@ -185,9 +215,12 @@ class Component(metaclass=ComponentMetaclass):
     provides = []
 
     # Which attributes on a message are required by this
-    # component. e.g. if requires contains "tokens", than a
+    # component. E.g. if requires contains "tokens", than a
     # previous component in the pipeline needs to have "tokens"
     # within the above described `provides` property.
+    # Use `any_of("option_1", "option_2")` to define that either
+    # "option_1" or "option_2" needs to be present in the
+    # provided properties from the previous components.
     requires = []
 
     # Defines the default configuration parameters of a component
@@ -420,8 +453,7 @@ class ComponentBuilder:
         if cache_key is not None and self.use_cache:
             self.component_cache[cache_key] = component
             logger.info(
-                "Added '{}' to component cache. Key '{}'."
-                "".format(component.name, cache_key)
+                f"Added '{component.name}' to component cache. Key '{cache_key}'."
             )
 
     def load_component(
@@ -462,8 +494,8 @@ class ComponentBuilder:
             return component
         except MissingArgumentError as e:  # pragma: no cover
             raise Exception(
-                "Failed to load component from file `{}`. "
-                "{}".format(component_meta.get("file"), e)
+                f"Failed to load component from file '{component_meta.get('file')}'. "
+                f"Error: {e}"
             )
 
     def create_component(
@@ -484,6 +516,6 @@ class ComponentBuilder:
             return component
         except MissingArgumentError as e:  # pragma: no cover
             raise Exception(
-                "Failed to create component `{}`. "
-                "{}".format(component_config["name"], e)
+                f"Failed to create component '{component_config['name']}'. "
+                f"Error: {e}"
             )

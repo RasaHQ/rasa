@@ -10,11 +10,20 @@ from rasa.core.constants import (
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
 )
+from rasa.core.domain import (
+    USED_ENTITIES_KEY,
+    USE_ENTITIES_KEY,
+    IGNORE_ENTITIES_KEY,
+)
 from rasa.core import training, utils
 from rasa.core.domain import Domain, InvalidDomain, SessionConfig
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.slots import TextSlot, UnfeaturizedSlot
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
+from tests.core.conftest import (
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+    DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS,
+    DEFAULT_STORIES_FILE,
+)
 from rasa.utils import io as io_utils
 
 
@@ -157,7 +166,16 @@ def test_domain_from_template():
 
     assert not domain.is_empty()
     assert len(domain.intents) == 10
-    assert len(domain.action_names) == 12
+    assert len(domain.action_names) == 13
+
+
+def test_avoid_action_repetition():
+    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+    domain_with_no_actions = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS_AND_NO_ACTIONS)
+
+    assert not domain.is_empty() and not domain_with_no_actions.is_empty()
+    assert len(domain.intents) == len(domain_with_no_actions.intents)
+    assert len(domain.action_names) == len(domain_with_no_actions.action_names)
 
 
 def test_utter_templates():
@@ -181,7 +199,7 @@ def test_custom_slot_type(tmpdir: Path):
          custom:
            type: tests.core.conftest.CustomSlot
 
-       templates:
+       responses:
          utter_greet:
            - text: hey there!
 
@@ -200,7 +218,7 @@ def test_custom_slot_type(tmpdir: Path):
         custom:
          type: tests.core.conftest.Unknown
 
-    templates:
+    responses:
         utter_greet:
          - text: hey there!
 
@@ -211,7 +229,7 @@ def test_custom_slot_type(tmpdir: Path):
         custom:
          type: blubblubblub
 
-    templates:
+    responses:
         utter_greet:
          - text: hey there!
 
@@ -234,18 +252,56 @@ config:
 entities: []
 forms: []
 intents: []
+responses:
+  utter_greet:
+  - text: hey there!
 session_config:
   carry_over_slots_to_new_session: true
   session_expiration_time: 60
-slots: {}
-templates:
-  utter_greet:
-  - text: hey there!"""
+slots: {}"""
 
     domain = Domain.from_yaml(test_yaml)
     # python 3 and 2 are different here, python 3 will have a leading set
     # of --- at the beginning of the yml
     assert domain.as_yaml().strip().endswith(test_yaml.strip())
+    assert Domain.from_yaml(domain.as_yaml()) is not None
+
+
+def test_domain_to_yaml_deprecated_templates():
+    test_yaml = """actions:
+- utter_greet
+config:
+  store_entities_as_slots: true
+entities: []
+forms: []
+intents: []
+templates:
+  utter_greet:
+  - text: hey there!
+session_config:
+  carry_over_slots_to_new_session: true
+  session_expiration_time: 60
+slots: {}"""
+
+    target_yaml = """actions:
+- utter_greet
+config:
+  store_entities_as_slots: true
+entities: []
+forms: []
+intents: []
+responses:
+  utter_greet:
+  - text: hey there!
+session_config:
+  carry_over_slots_to_new_session: true
+  session_expiration_time: 60
+slots: {}"""
+
+    domain = Domain.from_yaml(test_yaml)
+    # python 3 and 2 are different here, python 3 will have a leading set
+    # of --- at the beginning of the yml
+    assert domain.as_yaml().strip().endswith(target_yaml.strip())
     assert Domain.from_yaml(domain.as_yaml()) is not None
 
 
@@ -257,7 +313,7 @@ config:
 entities: []
 intents: []
 slots: {}
-templates:
+responses:
   utter_greet:
   - text: hey there!"""
 
@@ -276,7 +332,7 @@ intents:
 slots:
   cuisine:
     type: text
-templates:
+responses:
   utter_greet:
   - text: hey you!"""
 
@@ -326,20 +382,22 @@ session_config:
 
 
 @pytest.mark.parametrize(
-    "intents, intent_properties",
+    "intents, entities, intent_properties",
     [
         (
             ["greet", "goodbye"],
+            ["entity", "other", "third"],
             {
-                "greet": {"use_entities": True, "ignore_entities": []},
-                "goodbye": {"use_entities": True, "ignore_entities": []},
+                "greet": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
+                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
             },
         ),
         (
-            [{"greet": {"use_entities": []}}, "goodbye"],
+            [{"greet": {USE_ENTITIES_KEY: []}}, "goodbye"],
+            ["entity", "other", "third"],
             {
-                "greet": {"use_entities": [], "ignore_entities": []},
-                "goodbye": {"use_entities": True, "ignore_entities": []},
+                "greet": {USED_ENTITIES_KEY: []},
+                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
             },
         ),
         (
@@ -347,39 +405,33 @@ session_config:
                 {
                     "greet": {
                         "triggers": "utter_goodbye",
-                        "use_entities": ["entity"],
-                        "ignore_entities": ["other"],
+                        USE_ENTITIES_KEY: ["entity"],
+                        IGNORE_ENTITIES_KEY: ["other"],
                     }
                 },
                 "goodbye",
             ],
+            ["entity", "other", "third"],
             {
-                "greet": {
-                    "triggers": "utter_goodbye",
-                    "use_entities": ["entity"],
-                    "ignore_entities": ["other"],
-                },
-                "goodbye": {"use_entities": True, "ignore_entities": []},
+                "greet": {"triggers": "utter_goodbye", USED_ENTITIES_KEY: ["entity"],},
+                "goodbye": {USED_ENTITIES_KEY: ["entity", "other", "third"]},
             },
         ),
         (
             [
-                {"greet": {"triggers": "utter_goodbye", "use_entities": None}},
-                {"goodbye": {"use_entities": [], "ignore_entities": []}},
+                {"greet": {"triggers": "utter_goodbye", USE_ENTITIES_KEY: None}},
+                {"goodbye": {USE_ENTITIES_KEY: [], IGNORE_ENTITIES_KEY: []}},
             ],
+            ["entity", "other", "third"],
             {
-                "greet": {
-                    "use_entities": [],
-                    "ignore_entities": [],
-                    "triggers": "utter_goodbye",
-                },
-                "goodbye": {"use_entities": [], "ignore_entities": []},
+                "greet": {USED_ENTITIES_KEY: [], "triggers": "utter_goodbye",},
+                "goodbye": {USED_ENTITIES_KEY: []},
             },
         ),
     ],
 )
-def test_collect_intent_properties(intents, intent_properties):
-    assert Domain.collect_intent_properties(intents) == intent_properties
+def test_collect_intent_properties(intents, entities, intent_properties):
+    assert Domain.collect_intent_properties(intents, entities) == intent_properties
 
 
 def test_load_domain_from_directory_tree(tmpdir_factory: TempdirFactory):
@@ -544,22 +596,84 @@ def test_is_empty():
     assert Domain.empty().is_empty()
 
 
-def test_clean_domain():
+def test_transform_intents_for_file_default():
+    domain_path = "data/test_domains/default_unfeaturized_entities.yml"
+    domain = Domain.load(domain_path)
+    transformed = domain._transform_intents_for_file()
+
+    expected = [
+        {"greet": {USE_ENTITIES_KEY: ["name"]}},
+        {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
+        {"goodbye": {USE_ENTITIES_KEY: []}},
+        {"thank": {USE_ENTITIES_KEY: []}},
+        {"ask": {USE_ENTITIES_KEY: True}},
+        {"why": {USE_ENTITIES_KEY: []}},
+        {"pure_intent": {USE_ENTITIES_KEY: True}},
+    ]
+
+    assert transformed == expected
+
+
+def test_transform_intents_for_file_with_mapping():
+    domain_path = "data/test_domains/default_with_mapping.yml"
+    domain = Domain.load(domain_path)
+    transformed = domain._transform_intents_for_file()
+
+    expected = [
+        {"greet": {"triggers": "utter_greet", USE_ENTITIES_KEY: True}},
+        {"default": {"triggers": "utter_default", USE_ENTITIES_KEY: True}},
+        {"goodbye": {USE_ENTITIES_KEY: True}},
+    ]
+
+    assert transformed == expected
+
+
+def test_clean_domain_for_file():
     domain_path = "data/test_domains/default_unfeaturized_entities.yml"
     cleaned = Domain.load(domain_path).cleaned_domain()
 
     expected = {
         "intents": [
-            {"greet": {"use_entities": ["name"]}},
-            {"default": {"ignore_entities": ["unrelated_recognized_entity"]}},
-            {"goodbye": {"use_entities": []}},
-            {"thank": {"use_entities": []}},
+            {"greet": {USE_ENTITIES_KEY: ["name"]}},
+            {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
+            {"goodbye": {USE_ENTITIES_KEY: []}},
+            {"thank": {USE_ENTITIES_KEY: []}},
             "ask",
-            {"why": {"use_entities": []}},
+            {"why": {USE_ENTITIES_KEY: []}},
             "pure_intent",
         ],
         "entities": ["name", "other", "unrelated_recognized_entity"],
-        "templates": {
+        "responses": {
+            "utter_greet": [{"text": "hey there!"}],
+            "utter_goodbye": [{"text": "goodbye :("}],
+            "utter_default": [{"text": "default message"}],
+        },
+        "actions": ["utter_default", "utter_goodbye", "utter_greet"],
+        "session_config": {
+            "carry_over_slots_to_new_session": True,
+            "session_expiration_time": 0,
+        },
+    }
+
+    assert cleaned == expected
+
+
+def test_clean_domain_deprecated_templates():
+    domain_path = "data/test_domains/default_deprecated_templates.yml"
+    cleaned = Domain.load(domain_path).cleaned_domain()
+
+    expected = {
+        "intents": [
+            {"greet": {USE_ENTITIES_KEY: ["name"]}},
+            {"default": {IGNORE_ENTITIES_KEY: ["unrelated_recognized_entity"]}},
+            {"goodbye": {USE_ENTITIES_KEY: []}},
+            {"thank": {USE_ENTITIES_KEY: []}},
+            "ask",
+            {"why": {USE_ENTITIES_KEY: []}},
+            "pure_intent",
+        ],
+        "entities": ["name", "other", "unrelated_recognized_entity"],
+        "responses": {
             "utter_greet": [{"text": "hey there!"}],
             "utter_goodbye": [{"text": "goodbye :("}],
             "utter_default": [{"text": "default message"}],

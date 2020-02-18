@@ -164,6 +164,8 @@ learning policies.
     but we **do not recommend** changing them outside of specific cases such as custom policies.
     Doing so can lead to unexpected and undesired bot behavior.
 
+.. _keras_policy:
+
 Keras Policy
 ^^^^^^^^^^^^
 
@@ -271,6 +273,9 @@ It is recommended to use
               ``inner`` for ``softmax``, ``cosine`` for ``margin``;
             - ``loss_type`` sets the type of the loss function,
               it should be either ``softmax`` or ``margin``;
+            - ``ranking_length`` defines the number of top confidences over
+              which to normalize ranking results if ``loss_type: "softmax"``;
+              to turn off normalization set it to 0
             - ``mu_pos`` controls how similar the algorithm should try
               to make embedding vectors for correct intent labels,
               used only if ``loss_type`` is set to ``margin``;
@@ -398,10 +403,10 @@ simple example that dispatches a bot utterance and then reverts the interaction:
 
 .. note::
 
-  If you use the ``MappingPolicy`` to predict bot utterances directly (e.g.
+  If you use the ``MappingPolicy`` to predict bot utterance actions directly (e.g.
   ``triggers: utter_{}``), these interactions must go in your stories, as in this
   case there is no ``UserUtteranceReverted()`` and the
-  intent and the mapped utterance will appear in the dialogue history.
+  intent and the mapped response action will appear in the dialogue history.
 
 .. note::
 

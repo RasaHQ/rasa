@@ -1,38 +1,41 @@
-import warnings
 import logging
 import os
+import time
 from types import LambdaType
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import numpy as np
-import time
 
+from rasa.constants import DOCS_URL_POLICIES, DOCS_URL_DOMAINS
 from rasa.core import jobs
-from rasa.core.actions.action import Action, ACTION_SESSION_START_NAME
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
+from rasa.core.actions.action import (
+    ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
+    Action,
+    ActionExecutionRejection,
+)
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
-    UserMessage,
     OutputChannel,
+    UserMessage,
 )
 from rasa.core.constants import (
-    ACTION_NAME_SENDER_ID_CONNECTOR_STR,
-    USER_INTENT_RESTART,
-    UTTER_PREFIX,
     USER_INTENT_BACK,
     USER_INTENT_OUT_OF_SCOPE,
+    USER_INTENT_RESTART,
     USER_INTENT_SESSION_START,
+    UTTER_PREFIX,
 )
 from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,
     ActionExecutionRejected,
+    BotUttered,
     Event,
     ReminderCancelled,
     ReminderScheduled,
     SlotSet,
     UserUttered,
-    BotUttered,
 )
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
@@ -43,10 +46,10 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
-
 
 MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
 
@@ -94,13 +97,14 @@ class MessageProcessor:
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
-            warnings.warn(
+            raise_warning(
                 "No policy ensemble or domain set. Skipping action prediction "
-                "and execution."
+                "and execution.",
+                docs=DOCS_URL_POLICIES,
             )
             return None
 
-        await self._predict_and_execute_next_action(message, tracker)
+        await self._predict_and_execute_next_action(message.output_channel, tracker)
 
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
@@ -123,8 +127,10 @@ class MessageProcessor:
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
-            warnings.warn(
-                "No policy ensemble or domain set. Skipping action prediction "
+            raise_warning(
+                "No policy ensemble or domain set. Skipping action prediction."
+                "You should set a policy before training a model.",
+                docs=DOCS_URL_POLICIES,
             )
             return None
 
@@ -324,22 +330,53 @@ class MessageProcessor:
             or not self._is_reminder_still_valid(tracker, reminder_event)
         ):
             logger.debug(
-                f"Canceled reminder because it is outdated. "
-                f"(event: {reminder_event.action_name} id: {reminder_event.name})"
+                f"Canceled reminder because it is outdated. " f"({reminder_event})"
             )
         else:
-            # necessary for proper featurization, otherwise the previous
-            # unrelated message would influence featurization
-            tracker.update(UserUttered.empty())
-            action = self._get_action(reminder_event.action_name)
-            should_continue = await self._run_action(
-                action, tracker, output_channel, nlg
+            intent = reminder_event.intent
+            entities = reminder_event.entities or {}
+            await self.trigger_external_user_uttered(
+                intent, entities, tracker, output_channel
             )
-            if should_continue:
-                user_msg = UserMessage(None, output_channel, sender_id)
-                await self._predict_and_execute_next_action(user_msg, tracker)
-            # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
+
+    async def trigger_external_user_uttered(
+        self,
+        intent_name: Text,
+        entities: Optional[Union[List[Dict[Text, Any]], Dict[Text, Text]]],
+        tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
+    ) -> None:
+        """Triggers an external message.
+
+        Triggers an external message (like a user message, but invisible;
+        used, e.g., by a reminder or the trigger_intent endpoint).
+
+        Args:
+            intent_name: Name of the intent to be triggered.
+            entities: Entities to be passed on.
+            tracker: The tracker to which the event should be added.
+            output_channel: The output channel.
+        """
+        if isinstance(entities, list):
+            entity_list = entities
+        elif isinstance(entities, dict):
+            # Allow for a short-hand notation {"ent1": "val1", "ent2": "val2", ...}.
+            # Useful if properties like 'start', 'end', or 'extractor' are not given,
+            # e.g. for external events.
+            entity_list = [
+                {"entity": ent, "value": val} for ent, val in entities.items()
+            ]
+        elif not entities:
+            entity_list = []
+        else:
+            raise_warning(
+                f"Invalid entity specification: {entities}. Assuming no entities."
+            )
+            entity_list = []
+        tracker.update(UserUttered.create_external(intent_name, entity_list))
+        await self._predict_and_execute_next_action(output_channel, tracker)
+        # save tracker state to continue conversation from this state
+        self._save_tracker(tracker)
 
     @staticmethod
     def _log_slots(tracker) -> None:
@@ -362,18 +399,22 @@ class MessageProcessor:
                 domain_is_not_empty and intent in self.domain.intents
             ) or intent in DEFAULT_INTENTS
             if not intent_is_recognized:
-                warnings.warn(
+                raise_warning(
                     f"Interpreter parsed an intent '{intent}' "
-                    "that is not defined in the domain."
+                    f"which is not defined in the domain. "
+                    f"Please make sure all intents are listed in the domain.",
+                    docs=DOCS_URL_DOMAINS,
                 )
 
         entities = parse_data["entities"] or []
         for element in entities:
             entity = element["entity"]
             if entity and domain_is_not_empty and entity not in self.domain.entities:
-                warnings.warn(
+                raise_warning(
                     f"Interpreter parsed an entity '{entity}' "
-                    "that is not defined in the domain."
+                    f"which is not defined in the domain. "
+                    f"Please make sure all entities are listed in the domain.",
+                    docs=DOCS_URL_DOMAINS,
                 )
 
     def _get_action(self, action_name) -> Optional[Action]:
@@ -442,7 +483,7 @@ class MessageProcessor:
         )
 
     async def _predict_and_execute_next_action(
-        self, message: UserMessage, tracker: DialogueStateTracker
+        self, output_channel: OutputChannel, tracker: DialogueStateTracker
     ):
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
@@ -464,7 +505,7 @@ class MessageProcessor:
             action, policy, confidence = self.predict_next_action(tracker)
 
             should_predict_another_action = await self._run_action(
-                action, tracker, message.output_channel, self.nlg, policy, confidence
+                action, tracker, output_channel, self.nlg, policy, confidence
             )
             num_predicted_actions += 1
 
@@ -476,7 +517,7 @@ class MessageProcessor:
             )
             if self.on_circuit_break:
                 # call a registered callback
-                self.on_circuit_break(tracker, message.output_channel, self.nlg)
+                self.on_circuit_break(tracker, output_channel, self.nlg)
 
     @staticmethod
     def should_predict_another_action(action_name: Text) -> bool:
@@ -529,31 +570,24 @@ class MessageProcessor:
                 args=[e, tracker.sender_id, output_channel, nlg],
                 id=e.name,
                 replace_existing=True,
-                name=(
-                    str(e.action_name)
-                    + ACTION_NAME_SENDER_ID_CONNECTOR_STR
-                    + tracker.sender_id
-                ),
+                name=e.scheduled_job_name(tracker.sender_id),
             )
 
     @staticmethod
     async def _cancel_reminders(
         events: List[Event], tracker: DialogueStateTracker
     ) -> None:
-        """Cancel reminders by action_name"""
+        """Cancel reminders that match the `ReminderCancelled` event."""
 
-        # All Reminders with the same action name will be cancelled
-        for e in events:
-            if isinstance(e, ReminderCancelled):
-                name_to_check = (
-                    str(e.action_name)
-                    + ACTION_NAME_SENDER_ID_CONNECTOR_STR
-                    + tracker.sender_id
-                )
+        # All Reminders specified by ReminderCancelled events will be cancelled
+        for event in events:
+            if isinstance(event, ReminderCancelled):
                 scheduler = await jobs.scheduler()
-                for j in scheduler.get_jobs():
-                    if j.name == name_to_check:
-                        scheduler.remove_job(j.id)
+                for scheduled_job in scheduler.get_jobs():
+                    if event.cancels_job_with_name(
+                        scheduled_job.name, tracker.sender_id
+                    ):
+                        scheduler.remove_job(scheduled_job.id)
 
     async def _run_action(
         self, action, tracker, output_channel, nlg, policy=None, confidence=None
@@ -606,10 +640,10 @@ class MessageProcessor:
                     if e.key == "requested_slot" and tracker.active_form:
                         pass
                     else:
-                        warnings.warn(
-                            f"Action '{action_name}' set a slot type '{e.key}' that "
+                        raise_warning(
+                            f"Action '{action_name}' set a slot type '{e.key}' which "
                             f"it never set during the training. This "
-                            f"can throw of the prediction. Make sure to "
+                            f"can throw off the prediction. Make sure to "
                             f"include training examples in your stories "
                             f"for the different types of slots this "
                             f"action can return. Remember: you need to "

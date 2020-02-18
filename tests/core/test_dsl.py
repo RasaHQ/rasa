@@ -2,12 +2,14 @@ import os
 
 import json
 from collections import Counter
+from pathlib import Path
 from typing import Text, Dict
 
 import numpy as np
 import pytest
 
-from rasa.core import training
+import rasa.utils.io
+from rasa.core import training, utils
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.dsl import StoryFileReader, EndToEndReader
 from rasa.core.domain import Domain
@@ -25,6 +27,7 @@ from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
     BinarySingleStateFeaturizer,
 )
+from rasa.utils.io import DEFAULT_ENCODING
 
 
 async def test_can_read_test_story(default_domain):
@@ -73,8 +76,7 @@ async def test_persist_and_read_test_story_graph(tmpdir, default_domain):
         "data/test_stories/stories.md", default_domain
     )
     out_path = tmpdir.join("persisted_story.md")
-    with open(out_path.strpath, "w", encoding="utf-8") as f:
-        f.write(graph.as_story_string())
+    rasa.utils.io.write_text_file(graph.as_story_string(), out_path.strpath)
 
     recovered_trackers = await training.load_data(
         out_path.strpath,
@@ -232,11 +234,11 @@ async def test_generate_training_data_with_cycles(default_domain):
     # deterministic way but should always be 3 or 4
     assert len(training_trackers) == 3 or len(training_trackers) == 4
 
-    # if we have 4 trackers, there is going to be one example more for label 9
-    num_nines = len(training_trackers) - 1
+    # if we have 4 trackers, there is going to be one example more for label 10
+    num_tens = len(training_trackers) - 1
     # if new default actions are added the keys of the actions will be changed
 
-    assert Counter(y) == {0: 6, 10: 3, 9: num_nines, 1: 2, 11: 1}
+    assert Counter(y) == {0: 6, 10: num_tens, 12: 1, 1: 2, 11: 3}
 
 
 async def test_generate_training_data_with_unused_checkpoints(tmpdir, default_domain):
@@ -333,13 +335,9 @@ async def test_load_multi_file_training_data(default_domain):
 
 async def test_load_training_data_handles_hidden_files(tmpdir, default_domain):
     # create a hidden file
-
-    with open(os.path.join(tmpdir.strpath, ".hidden"), "a") as f:
-        f.close()
+    Path(tmpdir / ".hidden").touch()
     # create a normal file
-    normal_file = os.path.join(tmpdir.strpath, "normal_file")
-    with open(normal_file, "a") as f:
-        f.close()
+    Path(tmpdir / "normal_file").touch()
 
     featurizer = MaxHistoryTrackerFeaturizer(
         BinarySingleStateFeaturizer(), max_history=2

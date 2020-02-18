@@ -48,7 +48,7 @@ install_requires = [
     "tensor2tensor~=1.14.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
-    "networkx~=2.3.0",
+    "networkx~=2.4.0",
     "fbmessenger~=6.0",
     "pykwalify~=1.7.0",
     "coloredlogs~=10.0",
@@ -68,16 +68,20 @@ install_requires = [
     "gevent~=1.4",
     "pytz~=2019.1",
     "python-dateutil~=2.8",
-    "rasa-sdk~=1.6.0",
+    "rasa-sdk~=1.7.0",
     "colorclass~=2.2",
     "terminaltables~=3.1",
     "sanic~=19.9.0",
     "sanic-cors==0.9.9.post1",
     "sanic-jwt~=1.3",
+    # needed because of https://github.com/RasaHQ/rasa/issues/5216
+    "cloudpickle~=1.2.0",
     # needed because of https://github.com/huge-success/sanic/issues/1729
     "multidict==4.6.1",
     "aiohttp~=3.5",
     "questionary>=1.1.0",
+    # needed because of https://github.com/prompt-toolkit/python-prompt-toolkit/issues/951
+    "prompt-toolkit<3.0",
     "python-socketio>=4.3.1",
     # the below can be unpinned when python-socketio pins >=3.9.3
     "python-engineio>=3.9.3",

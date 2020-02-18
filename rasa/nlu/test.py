@@ -25,6 +25,8 @@ from rasa.nlu.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     OPEN_UTTERANCE_PREDICTION_KEY,
+    EXTRACTOR_ATTRIBUTE,
+    PRETRAINED_EXTRACTORS,
 )
 from rasa.model import get_model
 from rasa.nlu import config, training_data, utils
@@ -34,11 +36,8 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.core.constants import RESPOND_PREFIX
 
 logger = logging.getLogger(__name__)
-
-PRETRAINED_EXTRACTORS = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
 
 ENTITY_PROCESSORS = {"EntitySynonymMapper"}
 
@@ -65,8 +64,8 @@ ResponseSelectionMetrics = Dict[Text, List[float]]
 
 
 def plot_confusion_matrix(
-    cm: np.array,
-    classes: np.array,
+    cm: np.ndarray,
+    classes: np.ndarray,
     normalize: bool = False,
     title: Text = "Confusion matrix",
     cmap=None,
@@ -536,7 +535,7 @@ def evaluate_intents(
 def _plot_confusion_matrix(
     output_directory: Optional[Text],
     confmat_filename: Optional[Text],
-    cnf_matrix: np.array,
+    cnf_matrix: np.ndarray,
     labels: Collection[Text],
 ) -> None:
     if output_directory:
@@ -564,7 +563,7 @@ def _plot_histogram(
 
 def merge_labels(
     aligned_predictions: List[Dict], extractor: Optional[Text] = None
-) -> np.array:
+) -> np.ndarray:
     """Concatenates all labels of the aligned predictions.
     Takes the aligned prediction labels which are grouped for each message
     and concatenates them."""
@@ -761,7 +760,7 @@ def does_token_cross_borders(token: Token, entity: Dict) -> bool:
 def determine_intersection(token: Token, entity: Dict) -> int:
     """Calculates how many characters a given token and entity share."""
 
-    pos_token = set(range(token.offset, token.end))
+    pos_token = set(range(token.start, token.end))
     pos_entity = set(range(entity["start"], entity["end"]))
     return len(pos_token.intersection(pos_entity))
 
@@ -803,7 +802,7 @@ def find_intersecting_entites(token: Token, entities: List[Dict]) -> List[Dict]:
             logger.debug(
                 "Token boundary error for token {}({}, {}) "
                 "and entity {}"
-                "".format(token.text, token.offset, token.end, e)
+                "".format(token.text, token.start, token.end, e)
             )
     return candidates
 
@@ -873,7 +872,7 @@ def align_entity_predictions(
         extractor: [] for extractor in extractors
     }
     for p in result.entity_predictions:
-        entities_by_extractors[p["extractor"]].append(p)
+        entities_by_extractors[p[EXTRACTOR_ATTRIBUTE]].append(p)
     extractor_labels: Dict[Text, List] = {extractor: [] for extractor in extractors}
     for t in result.tokens:
         true_token_labels.append(determine_token_labels(t, result.entity_targets, None))

@@ -1,13 +1,15 @@
 import os
-import warnings
 import logging
 import typing
 import re
 from typing import Any, Dict, Optional, Text
 
+from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import utils
 from rasa.nlu.components import Component
 from rasa.nlu.training_data import Message
+from rasa.nlu.constants import INTENT_ATTRIBUTE
+from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +29,7 @@ class KeywordIntentClassifier(Component):
 
     """
 
-    provides = ["intent"]
+    provides = [INTENT_ATTRIBUTE]
 
     defaults = {"case_sensitive": True}
 
@@ -53,17 +55,19 @@ class KeywordIntentClassifier(Component):
         for ex in training_data.training_examples:
             if (
                 ex.text in self.intent_keyword_map.keys()
-                and ex.get("intent") != self.intent_keyword_map[ex.text]
+                and ex.get(INTENT_ATTRIBUTE) != self.intent_keyword_map[ex.text]
             ):
                 duplicate_examples.add(ex.text)
-                warnings.warn(
-                    f"Keyword '{ex.text}' is a keyword of intent '{self.intent_keyword_map[ex.text]}' and of "
-                    f"intent '{ex.get('intent')}', it will be removed from the list of "
-                    f"keywords.\n"
-                    f"Remove (one of) the duplicates from the training data."
+                raise_warning(
+                    f"Keyword '{ex.text}' is a keyword to trigger intent "
+                    f"'{self.intent_keyword_map[ex.text]}' and also "
+                    f"intent '{ex.get(INTENT_ATTRIBUTE)}', it will be removed "
+                    f"from the list of keywords for both of them. "
+                    f"Remove (one of) the duplicates from the training data.",
+                    docs=DOCS_URL_COMPONENTS + "#keyword-intent-classifier",
                 )
             else:
-                self.intent_keyword_map[ex.text] = ex.get("intent")
+                self.intent_keyword_map[ex.text] = ex.get(INTENT_ATTRIBUTE)
         for keyword in duplicate_examples:
             self.intent_keyword_map.pop(keyword)
             logger.debug(
@@ -84,13 +88,14 @@ class KeywordIntentClassifier(Component):
                     and intent1 != intent2
                 ):
                     ambiguous_mappings.append((intent1, keyword1))
-                    warnings.warn(
+                    raise_warning(
                         f"Keyword '{keyword1}' is a keyword of intent '{intent1}', "
                         f"but also a substring of '{keyword2}', which is a "
                         f"keyword of intent '{intent2}."
                         f" '{keyword1}' will be removed from the list of keywords.\n"
-                        "Remove (one of) the conflicting keywords from the"
-                        " training data."
+                        f"Remove (one of) the conflicting keywords from the"
+                        f" training data.",
+                        docs=DOCS_URL_COMPONENTS + "#keyword-intent-classifier",
                     )
         for intent, keyword in ambiguous_mappings:
             self.intent_keyword_map.pop(keyword)
@@ -101,13 +106,16 @@ class KeywordIntentClassifier(Component):
 
     def process(self, message: Message, **kwargs: Any) -> None:
         intent_name = self._map_keyword_to_intent(message.text)
+
         confidence = 0.0 if intent_name is None else 1.0
         intent = {"name": intent_name, "confidence": confidence}
-        if message.get("intent") is None or intent is not None:
-            message.set("intent", intent, add_to_output=True)
+
+        if message.get(INTENT_ATTRIBUTE) is None or intent is not None:
+            message.set(INTENT_ATTRIBUTE, intent, add_to_output=True)
 
     def _map_keyword_to_intent(self, text: Text) -> Optional[Text]:
         re_flag = 0 if self.case_sensitive else re.IGNORECASE
+
         for keyword, intent in self.intent_keyword_map.items():
             if re.search(r"\b" + keyword + r"\b", text, flags=re_flag):
                 logger.debug(
@@ -115,6 +123,7 @@ class KeywordIntentClassifier(Component):
                     f" intent '{intent}'."
                 )
                 return intent
+
         logger.debug("KeywordClassifier did not find any keywords in the message.")
         return None
 
@@ -146,8 +155,14 @@ class KeywordIntentClassifier(Component):
             if os.path.exists(keyword_file):
                 intent_keyword_map = utils.read_json_file(keyword_file)
             else:
-                warnings.warn(
-                    f"Failed to load IntentKeywordClassifier, maybe "
-                    "{keyword_file} does not exist."
+                raise_warning(
+                    f"Failed to load key word file for `IntentKeywordClassifier`, "
+                    f"maybe {keyword_file} does not exist?",
                 )
-        return cls(meta, intent_keyword_map)
+                intent_keyword_map = None
+            return cls(meta, intent_keyword_map)
+        else:
+            raise Exception(
+                f"Failed to load keyword intent classifier model. "
+                f"Path {os.path.abspath(meta.get('file'))} doesn't exist."
+            )

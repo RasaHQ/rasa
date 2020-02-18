@@ -23,17 +23,17 @@
     "common_examples": [
       {
         "text": "hey",
-        "intent": "greet", 
+        "intent": "greet",
         "entities": []
       }, 
       {
         "text": "howdy",
-        "intent": "greet", 
+        "intent": "greet",
         "entities": []
       }, 
       {
         "text": "hey there",
-        "intent": "greet", 
+        "intent": "greet",
         "entities": []
       }, 
       {

@@ -44,6 +44,18 @@ Otherwise, if you do not have ``rasa`` installed, run this command:
 
     python -m rasa_sdk --actions actions
 
+You can verify that the action server is up and running with the command:
+
+.. code-block:: bash
+
+    curl http://localhost:5055/health
+
+You can get the list of registered custom actions with the command:
+
+.. code-block:: bash
+
+    curl http://localhost:5055/actions
+
 
 The file that contains your custom actions should be called ``actions.py``.
 Alternatively, you can use a package directory called ``actions`` or else
@@ -86,7 +98,7 @@ which might look like this:
          return [SlotSet("matches", result if result is not None else [])]
 
 
-You should add the the action name ``action_check_restaurants`` to
+You should add the action name ``action_check_restaurants`` to
 the actions in your domain file. The action's ``run()`` method receives
 three arguments. You can access the values of slots and the latest message
 sent by the user using the ``tracker`` object, and you can send messages
