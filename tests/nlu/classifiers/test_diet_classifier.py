@@ -3,8 +3,6 @@ import pytest
 
 from unittest.mock import Mock
 
-import scipy
-
 from rasa.nlu import train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig

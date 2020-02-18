@@ -56,6 +56,9 @@ from rasa.nlu.test import is_response_selector_present
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
+from utils.tensorflow.constants import EPOCHS
+
+
 @pytest.yield_fixture(scope="session")
 def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
@@ -275,12 +278,25 @@ def test_run_evaluation(unpacked_trained_moodbot_path):
         data, os.path.join(unpacked_trained_moodbot_path, "nlu"), errors=False
     )
     assert result.get("intent_evaluation")
-    assert result.get("entity_evaluation").get("DIETClassifier")
+    assert result.get("entity_evaluation").get("CRFEntityExtractor")
 
 
 def test_run_cv_evaluation():
     td = training_data.load_data("data/examples/rasa/demo-rasa.json")
-    nlu_config = config.load("sample_configs/config_pretrained_embeddings_spacy.yml")
+    nlu_config = RasaNLUModelConfig(
+        {
+            "language": "en",
+            "pipeline": [
+                {"name": "SpacyNLP"},
+                {"name": "SpacyTokenizer"},
+                {"name": "SpacyFeaturizer"},
+                {"name": "RegexFeaturizer"},
+                {"name": "CRFEntityExtractor", EPOCHS: 3},
+                {"name": "EntitySynonymMapper"},
+                {"name": "SklearnIntentClassifier"},
+            ],
+        }
+    )
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
@@ -293,12 +309,12 @@ def test_run_cv_evaluation():
     assert len(intent_results.test["Accuracy"]) == n_folds
     assert len(intent_results.test["Precision"]) == n_folds
     assert len(intent_results.test["F1-score"]) == n_folds
-    assert len(entity_results.train["DIETClassifier"]["Accuracy"]) == n_folds
-    assert len(entity_results.train["DIETClassifier"]["Precision"]) == n_folds
-    assert len(entity_results.train["DIETClassifier"]["F1-score"]) == n_folds
-    assert len(entity_results.test["DIETClassifier"]["Accuracy"]) == n_folds
-    assert len(entity_results.test["DIETClassifier"]["Precision"]) == n_folds
-    assert len(entity_results.test["DIETClassifier"]["F1-score"]) == n_folds
+    assert len(entity_results.train["CRFEntityExtractor"]["Accuracy"]) == n_folds
+    assert len(entity_results.train["CRFEntityExtractor"]["Precision"]) == n_folds
+    assert len(entity_results.train["CRFEntityExtractor"]["F1-score"]) == n_folds
+    assert len(entity_results.test["CRFEntityExtractor"]["Accuracy"]) == n_folds
+    assert len(entity_results.test["CRFEntityExtractor"]["Precision"]) == n_folds
+    assert len(entity_results.test["CRFEntityExtractor"]["F1-score"]) == n_folds
 
 
 def test_run_cv_evaluation_with_response_selector():
@@ -309,8 +325,16 @@ def test_run_cv_evaluation_with_response_selector():
     training_data_obj = training_data_obj.merge(training_data_responses_obj)
     training_data_obj.fill_response_phrases()
 
-    nlu_config = config.load(
-        "sample_configs/config_embedding_intent_response_selector.yml"
+    nlu_config = RasaNLUModelConfig(
+        {
+            "language": "en",
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "DIETClassifier", EPOCHS: 2},
+                {"name": "DIETSelector", EPOCHS: 2},
+            ],
+        }
     )
 
     n_folds = 2

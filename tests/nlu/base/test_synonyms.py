@@ -1,6 +1,4 @@
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
-from rasa.nlu.model import Metadata
-import pytest
 
 
 def test_entity_synonyms():
