@@ -323,7 +323,15 @@ class Domain:
     def collect_intent_properties(
         cls, intents: List[Union[Text, Dict[Text, Any]]], entities: List[Text]
     ) -> Dict[Text, Dict[Text, Union[bool, List]]]:
+        """Get intent properties for a domain from what is provided by a domain file.
 
+        Args:
+            intents: The intents as provided by a domain file.
+            entities: All entities as provided by a domain file.
+
+        Returns:
+            The intent properties to be stored in the domain.
+        """
         intent_properties = {}
         duplicates = []
         for intent in intents:
