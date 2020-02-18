@@ -1,9 +1,8 @@
-import logging
-import time
-
 import itertools
-from tqdm import tqdm
+import logging
 from typing import Text, Optional, List, Set, Dict, Any
+
+from tqdm import tqdm
 
 import rasa.cli.utils as cli_utils
 from rasa.core.brokers.broker import EventBroker
@@ -51,19 +50,18 @@ class Migrator:
         self.minimum_timestamp = minimum_timestamp
         self.maximum_timestamp = maximum_timestamp
 
-    def publish_events(self, publish_interval: float = 0.01) -> int:
+    def publish_events(self) -> int:
         """Publish events in a tracker store using an event broker.
 
         Exits if the publishing of events is interrupted due to an error. In that case,
         the CLI command to continue the export where it was interrupted is printed.
 
-        Args:
-            publish_interval: Wait time between messages.
-
         """
         events = self._fetch_events_within_time_range()
 
-        cli_utils.print_info(f"Selected {len(events)} events. Ready to publish.")
+        cli_utils.print_info(
+            f"Selected {len(events)} events for publishing. Ready to go 🚀"
+        )
 
         published_events = 0
         current_timestamp = None
@@ -80,7 +78,7 @@ class Migrator:
                 logger.exception(e)
                 raise PublishingError(current_timestamp)
 
-            time.sleep(publish_interval)
+        self.event_broker.close()
 
         return published_events
 
@@ -191,9 +189,7 @@ class Migrator:
             range.
 
         """
-        cli_utils.print_info(
-            f"Sorting and selecting from {len(events)} total events found."
-        )
+        logger.debug(f"Sorting and selecting from {len(events)} total events found.")
         # sort the events by timestamp just in case they're not sorted already
         events = sorted(events, key=lambda x: x["timestamp"])
 

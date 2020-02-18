@@ -1,6 +1,5 @@
-import logging
-
 import argparse
+import logging
 from typing import List, Text, Optional
 
 import rasa.cli.utils as cli_utils
@@ -27,7 +26,7 @@ def add_subparser(
         "parents": parents,
         "conflict_handler": "resolve",
         "formatter_class": argparse.ArgumentDefaultsHelpFormatter,
-        "help": "Export Rasa trackers using an event broker.",
+        "help": "Export conversations using an event broker.",
     }
 
     shell_parser = subparsers.add_parser("export", **export_parser_args)
@@ -51,7 +50,9 @@ def _get_tracker_store(endpoints: AvailableEndpoints) -> TrackerStore:
     if not endpoints.tracker_store:
         cli_utils.print_error_and_exit(
             "Could not find a `tracker_store` section in the supplied "
-            "endpoints file. Exiting."
+            "endpoints file. Instructions on how to configure a tracker store "
+            "can be found here: https://rasa.com/docs/rasa/api/tracker-stores. "
+            "Exiting. "
         )
 
     return TrackerStore.create(endpoints.tracker_store)
@@ -72,7 +73,8 @@ def _get_event_broker(endpoints: AvailableEndpoints) -> Optional[EventBroker]:
     if not endpoints.event_broker:
         cli_utils.print_error_and_exit(
             "Could not find an `event_broker` section in the supplied "
-            "endpoints file. Exiting."
+            "endpoints file. Instructions on how to configure an event broker "
+            "can be found here: https://rasa.com/docs/rasa/api/event-brokers. Exiting."
         )
 
     return EventBroker.create(endpoints.event_broker)
@@ -171,7 +173,7 @@ def export_trackers(args: argparse.Namespace) -> None:
     try:
         published_events = migrator.publish_events()
         cli_utils.print_success(
-            f"Done! Successfully published '{published_events}' events 🎉"
+            f"Done! Successfully published {published_events} events 🎉"
         )
 
     except PublishingError as e:

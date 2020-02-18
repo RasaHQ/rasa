@@ -1,10 +1,11 @@
 import argparse
-import pytest
-from _pytest.monkeypatch import MonkeyPatch
-from _pytest.pytester import RunResult
 from pathlib import Path
 from typing import Callable, Optional, Dict, Text, List
 from unittest.mock import Mock
+
+import pytest
+from _pytest.monkeypatch import MonkeyPatch
+from _pytest.pytester import RunResult
 
 import rasa.core.utils as rasa_core_utils
 from rasa.cli import export

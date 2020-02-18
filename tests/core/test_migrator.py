@@ -1,8 +1,10 @@
-import pytest
 import uuid
 from pathlib import Path
 from typing import Optional, Dict, Any, Text, List
 from unittest.mock import Mock
+
+import pytest
+from _pytest.logging import LogCaptureFixture
 
 import rasa.utils.io as io_utils
 from rasa.core.trackers import DialogueStateTracker
@@ -199,18 +201,18 @@ def _add_conversation_id_to_event(event: Dict, conversation_id: Text):
     event["sender_id"] = conversation_id
 
 
-def test_publishing_error():
+def test_publishing_error(caplog: LogCaptureFixture):
     # mock event broker so it raises on `publish()`
     event_broker = Mock()
     event_broker.publish.side_effect = ValueError()
 
-    tracker_store = Mock()
+    migrator = MockMigrator(event_broker=event_broker)
 
-    migrator = MockMigrator(tracker_store)
+    user_event = random_user_uttered_event(1).as_dict()
+    user_event["sender_id"] = uuid.uuid4().hex
+
     # noinspection PyProtectedMember
-    migrator._fetch_events_within_time_range = Mock(
-        return_value=[random_user_uttered_event(1)]
-    )
+    migrator._fetch_events_within_time_range = Mock(return_value=[user_event])
 
     # run the export function
     with pytest.raises(PublishingError):

@@ -56,8 +56,8 @@ def create_argument_parser() -> argparse.ArgumentParser:
     test.add_subparser(subparsers, parents=parent_parsers)
     visualize.add_subparser(subparsers, parents=parent_parsers)
     data.add_subparser(subparsers, parents=parent_parsers)
-    x.add_subparser(subparsers, parents=parent_parsers)
     export.add_subparser(subparsers, parents=parent_parsers)
+    x.add_subparser(subparsers, parents=parent_parsers)
 
     return parser
 

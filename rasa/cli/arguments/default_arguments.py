@@ -85,9 +85,11 @@ def add_out_param(
 
 
 def add_endpoint_param(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer], help_text: Text
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+    help_text: Text,
+    default: Optional[Text] = None,
 ):
-    parser.add_argument("--endpoints", type=str, default=None, help=help_text)
+    parser.add_argument("--endpoints", type=str, default=default, help=help_text)
 
 
 def add_data_param(

@@ -175,16 +175,35 @@ def _declare_pika_channel_with_queue(
     return channel
 
 
-def close_pika_channel(channel: "Channel") -> None:
-    """Attempt to close Pika channel."""
+def close_pika_channel(
+    channel: "Channel", attempts: int = 1000, time_between_attempts: float = 0.001
+) -> None:
+    """Attempt to close Pika channel, and wait until it is closed.
 
+    Args:
+        channel: Pika `Channel` to close.
+        attempts: How many times to try to confirm that the channel has been close
+            indeed closed.
+        time_between_attempts: Wait time between attempts to confirm closed state.
+
+    """
     from pika.exceptions import AMQPError
 
     try:
         channel.close()
-        logger.debug("Successfully closed Pika channel.")
+        logger.debug("Successfully initiated closing of Pika channel.")
     except AMQPError:
-        logger.exception("Failed to close Pika channel.")
+        logger.exception("Failed to initiate closing of Pika channel.")
+
+    while attempts:
+        if channel.is_closed:
+            logger.debug("Successfully closed Pika channel.")
+            return None
+
+        time.sleep(time_between_attempts)
+        attempts -= 1
+
+    logger.exception("Failed to close Pika channel.")
 
 
 def close_pika_connection(connection: "Connection") -> None:
@@ -248,6 +267,10 @@ class PikaEventBroker(EventBroker):
         if self.channel:
             close_pika_channel(self.channel)
             close_pika_connection(self.channel.connection)
+
+    def close(self):
+        """Close the pika channel and connection."""
+        self.__del__()
 
     @property
     def rasa_environment(self) -> Optional[Text]:
