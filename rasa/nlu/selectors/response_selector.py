@@ -175,7 +175,8 @@ class ResponseSelector(DIETClassifier):
         )
 
         raise_warning(
-            f"'ResponseSelector' is deprecated. Use 'DIETSelector' instead.",
+            f"'ResponseSelector' is deprecated and will be removed in version 2.0. "
+            f"Use 'DIETSelector' instead.",
             category=FutureWarning,
             docs=f"{DOCS_BASE_URL}/nlu/components/",
         )

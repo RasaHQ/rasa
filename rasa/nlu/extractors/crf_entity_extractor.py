@@ -7,6 +7,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
     LexicalSyntacticFeaturizer,
 )
+from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.constants import DOCS_BASE_URL
@@ -135,10 +136,11 @@ class CRFEntityExtractor(DIETClassifier):
         )
 
         raise_warning(
-            f"'CRFEntityExtractor' is deprecated. Use 'DIETClassifier' in "
-            f"combination with 'LexicalSyntacticFeaturizer' instead.",
+            f"'CRFEntityExtractor' is deprecated and will be remove in version 2.0. "
+            f"Use 'DIETClassifier' in combination with 'LexicalSyntacticFeaturizer' "
+            f"instead.",
             category=FutureWarning,
-            docs=f"{DOCS_BASE_URL}/nlu/components/",
+            docs=DOCS_URL_COMPONENTS,
         )
 
     def train(
