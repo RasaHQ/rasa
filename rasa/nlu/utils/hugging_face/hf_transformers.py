@@ -75,10 +75,12 @@ class HFTransformersNLP(Component):
 
         logger.debug(f"Loading Tokenizer and Model for {self.model_name}")
         self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
-            self.model_weights, force_download=self.component_config["force_download"]
+            self.model_weights
+            # , force_download=self.component_config["force_download"]
         )
         self.model = model_class_dict[self.model_name].from_pretrained(
-            self.model_weights, force_download=self.component_config["force_download"]
+            self.model_weights
+            # , force_download=self.component_config["force_download"]
         )
 
         # Use a universal pad token since all transformer architectures do not have a consistent token.
