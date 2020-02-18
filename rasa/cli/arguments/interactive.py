@@ -55,7 +55,8 @@ def _add_common_params(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--conversation-id",
         default=uuid.uuid4().hex,
-        help="Specify the id of the conversation the messages are in.",
+        help="Specify the id of the conversation the messages are in. Defaults to a "
+        "UUID that will be randomly generated.",
     )
 
     add_endpoint_param(
