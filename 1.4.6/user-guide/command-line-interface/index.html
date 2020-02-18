@@ -440,6 +440,7 @@ Training will be skipped if the training data and config haven’t changed.</p>
 <p>The full list of arguments that can be set for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">interactive</span></code> is:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa interactive [-h] [-v] [-vv] [--quiet] [--e2e] [-m MODEL]
                         [--data DATA [DATA ...]] [--skip-visualization]
+                        [--conversation-id CONVERSATION_ID]
                         [--endpoints ENDPOINTS] [-c CONFIG] [-d DOMAIN]
                         [--out OUT] [--augmentation AUGMENTATION]
                         [--debug-plots] [--dump-stories] [--force]
@@ -471,6 +472,10 @@ optional arguments:
                         [&#39;data&#39;])
   --skip-visualization  Disable plotting the visualization during interactive
                         learning. (default: False)
+  --conversation-id CONVERSATION_ID
+                        Specify the id of the conversation the messages are
+                        in. Defaults to a UUID that will be randomly
+                        generated. (default: 870da2f3fa5d44669891484edcd6e36b)
   --endpoints ENDPOINTS
                         Configuration file for the model server and the
                         connectors as a yml file. (default: None)
