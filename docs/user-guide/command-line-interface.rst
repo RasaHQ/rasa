@@ -23,7 +23,7 @@ Command                    Effect
 ``rasa train``             Trains a model using your NLU data and stories, saves trained model in ``./models``.
 ``rasa interactive``       Starts an interactive learning session to create new training data by chatting.
 ``rasa shell``             Loads your trained model and lets you talk to your assistant on the command line.
-``rasa run``               Starts a Rasa server with your trained model. See the :ref:`running-the-server` docs for details.
+``rasa run``               Starts a Rasa server with your trained model. See the :ref:`configuring-http-api` docs for details.
 ``rasa run actions``       Starts an action server using the Rasa SDK.
 ``rasa visualize``         Visualizes stories.
 ``rasa test``              Tests a trained Rasa model using your test NLU data and stories.
@@ -161,7 +161,7 @@ The following arguments can be used to configure your Rasa server:
 
 .. program-output:: rasa run --help
 
-For more information on the additional parameters, see :ref:`running-the-server`.
+For more information on the additional parameters, see :ref:`configuring-http-api`.
 See the Rasa :ref:`http-api` docs for detailed documentation of all the endpoints.
 
 .. _run-action-server:

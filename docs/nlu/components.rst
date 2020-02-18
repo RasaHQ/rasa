@@ -82,6 +82,8 @@ SpacyNLP
           # between these two words, therefore setting this to `true`.
           case_sensitive: false
 
+.. _text-featurizers:
+
 Text Featurizers
 ----------------
 
