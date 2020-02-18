@@ -13,7 +13,7 @@ from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
 )
 
-from rasa.core.events import UserUttered
+from rasa.core.events import UserUttered, ActionExecuted
 
 from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa.core.domain import Domain, InvalidDomain
@@ -180,11 +180,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             ACTION_DEFAULT_ASK_REPHRASE_NAME,
             self.fallback_action_name,
         ]
-        input_given = (
-            type(tracker.events[-1]) is UserUttered
-            if len(tracker.events) > 0
-            else False
-        )
+        last_utterance_time = tracker.get_last_event_for(UserUttered).timestamp
+        last_action_time = tracker.get_last_event_for(ActionExecuted).timestamp
+        input_given = last_action_time < last_utterance_time
         return action_requires_input and not input_given
 
     def _has_user_denied(
