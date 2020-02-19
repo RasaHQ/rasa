@@ -1330,73 +1330,62 @@ CRFEntityExtractor
     etc.) give probabilities to certain entity classes, as are transitions between
     neighbouring entity tags: the most likely set of tags is then calculated and returned.
 
+    .. note::
+        If POS features are used (pos or pos2), you need to have ``SpacyTokenizer`` in your pipeline.
+
     .. warning::
         ``CRFEntityExtractor`` is deprecated and should be replaced by ``DIETClassifier``. See
         `migration guide <https://rasa.com/docs/rasa/migration-guide/#rasa-1-7-to-rasa-1-8>`_ for more details.
 
 :Configuration:
+    You need to configure what kind of features the CRF should use.
+    The following features are available:
 
-    The following hyperparameters can be set:
+    ===================  =============================================================================================
+    Feature Name         Description
+    ===================  =============================================================================================
+    low                  Checks if the token is lower case.
+    upper                Checks if the token is upper case.
+    title                Checks if the token starts with an uppercase character and all remaining characters are
+                         lowercased.
+    digit                Checks if the token contains just digits.
+    prefix5              Take the first five characters of the token.
+    prefix2              Take the first two characters of the token.
+    suffix5              Take the last five characters of the token.
+    suffix3              Take the last three characters of the token.
+    suffix2              Take the last two characters of the token.
+    suffix1              Take the last character of the token.
+    pos                  Take the Part-of-Speech tag of the token (spaCy required).
+    pos2                 Take the first two characters of the Part-of-Speech tag of the token (spaCy required).
+    pattern              Take the patterns defined by ``RegexFeaturizer``.
+    ===================  =============================================================================================
 
-        - neural network's architecture:
+    As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
+    previous tokens, the current token, and the next tokens in the sliding window.
+    You define the features as [before, token, after] array.
 
-            - ``hidden_layers_sizes.text`` sets a list of hidden layer sizes before
-              the embedding layer for user inputs, the number of hidden layers
-              is equal to the length of the list.
+    Additional you can set a flag to determine whether to use the BILOU tagging schema or not.
 
-        - training:
-
-            - ``batch_size`` sets the number of training examples in one
-              forward/backward pass, the higher the batch size, the more
-              memory space you'll need.
-            - ``epochs`` sets the number of times the algorithm will see
-              training data, where one ``epoch`` equals one forward pass and
-              one backward pass of all the training examples.
-            - ``random_seed`` if set you will get reproducible
-              training results for the same inputs.
-            - ``learning_rate`` sets the initial learning rate of the optimizer.
-
-        - embedding:
-
-            - ``dense_dimension.text`` sets the dense dimensions for user inputs to use for sparse
-              tensors if no dense features are present.
-
-        - regularization:
-
-            - ``regularization_constant`` sets the scale of L2 regularization.
-            - ``droprate`` sets the dropout rate, it should be
-              between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units.
-            - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not.
-
-        - model configuration:
-
-            - ``features`` indicates what features to use. ``CRFEntityExtractor`` is using the same featurization
-              as ``LexicalSyntacticFeaturizer``. See :ref:`LexicalSyntacticFeaturizer` for details on what kind
-              of features are available.
-            - ``BILOU_flag`` determines whether to use BILOU tagging or not.
-
-    .. note:: There is an option to use linearly increasing batch size. The idea comes from
-              `<https://arxiv.org/abs/1711.00489>`_.
-              In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
-              If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
-
-
-    Default values:
+        - ``BILOU_flag`` determines whether to use BILOU tagging or not.
 
     .. code-block:: yaml
 
         pipeline:
         - name: "CRFEntityExtractor"
-            # 'features' is [before, word, after] array with before, word,
-            # after holding keys about which features to use for each word,
-            # for example, 'title' in array before will have the feature
+            # BILOU_flag determines whether to use BILOU tagging or not.
+            # More rigorous however requires more examples per entity
+            # rule of thumb: use only if more than 100 egs. per entity
+            "BILOU_flag": True
+            # crf_features is [before, word, after] array with before, word,
+            # after holding keys about which
+            # features to use for each word, for example, 'title' in
+            # array before will have the feature
             # "is the preceding word in title case?"
-            # POS features require 'SpacyTokenizer'.
+            # POS features require spaCy to be installed
             "features": [
                 ["low", "title", "upper"],
                 [
-                    "BOS",
-                    "EOS",
+                    "bias",
                     "low",
                     "prefix5",
                     "prefix2",
@@ -1406,43 +1395,16 @@ CRFEntityExtractor
                     "upper",
                     "title",
                     "digit",
+                    "pattern",
                 ],
                 ["low", "title", "upper"],
             ]
-            # nn architecture
-            # sizes of hidden layers before the embedding layer
-            # for input words and intent labels,
-            # the number of hidden layers is thus equal to the length of this list
-            "hidden_layers_sizes": {"text": [256, 128]}
-            # training parameters
-            # initial and final batch sizes - batch size will be
-            # linearly increased for each epoch
-            "batch_size": [64, 256]
-            # number of epochs
-            "epochs": 300
-            # set random seed to any int to get reproducible results
-            "random_seed": None
-            # optimizer
-            "learning_rate": 0.001
-            # embedding parameters
-            # default dense dimension used if no dense features are present
-            "dense_dimension": {"text": 512}
-            # regularization parameters
-            # the scale of regularization
-            "regularization_constant": 0.002
-            # dropout rate for rnn
-            "droprate": 0.2
-            # if true apply dropout to sparse tensors
-            "use_sparse_input_dropout": True
-            # visualization of accuracy
-            # how often to calculate training accuracy
-            "evaluate_every_number_of_epochs": 20  # small values may hurt performance
-            # how many examples to use for calculation of training accuracy
-            "evaluate_on_number_of_examples": 0  # large values may hurt performance
-            # BILOU_flag determines whether to use BILOU tagging or not.
-            # More rigorous however requires more examples per entity
-            # rule of thumb: use only if more than 100 egs. per entity
-            "BILOU_flag": False
+            # The maximum number of iterations for optimization algorithms.
+            "max_iterations": 50
+            # weight of the L1 regularization
+            "L1_c": 0.1
+            # weight of the L2 regularization
+            "L2_c": 0.1
 
 .. _DucklingHTTPExtractor:
 

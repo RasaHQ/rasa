@@ -65,7 +65,7 @@ class CRFEntityExtractor(EntityExtractor):
         ],
         # The maximum number of iterations for optimization algorithms.
         "max_iterations": 50,
-        # weight of theL1 regularization
+        # weight of the L1 regularization
         "L1_c": 0.1,
         # weight of the L2 regularization
         "L2_c": 0.1,
