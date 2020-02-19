@@ -1549,7 +1549,13 @@ DIETClassifier
         }
 
 :Description:
-    TODO
+    DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
+    recognition. The architecture is based on a transformer which is shared for both tasks.
+    A sequence of entity labels is predicted through a Conditional Random Field (CRF) tagging layer on top of the
+    transformer output sequence corresponding to the input sequence of tokens.
+    The transformer output for the ``__CLS__`` token and intent labels are embedded into a single semantic vector
+    space. We use the dot-product loss to maximize the similarity with the target label and minimize
+    similarities with negative samples.
 
     .. note:: If during prediction time a message contains **only** words unseen during training
               and no Out-Of-Vacabulary preprocessor was used,

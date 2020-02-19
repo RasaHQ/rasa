@@ -36,6 +36,9 @@ General
   ``epochs``. ``max_history`` is particularly important and strongly depends on your stories.
   Please see the docs of the :ref:`embedding_policy` if you want to customize them.
 
+- All pre-defined pipeline templates are deprecated. Take a look at :ref:`choosing-a-pipeline`
+  to decide on what components you should use in your configuration file.
+
 - The :ref:`embedding_policy` got renamed to :ref:`ted_policy`. The functionality of the policy stayed the same.
   Please update your configuration files to use ``TEDPolicy`` instead of ``EmbeddingPolicy``.
 
@@ -66,13 +69,13 @@ General
   evaluate_on_num_examples       evaluate_on_number_of_examples
   =============================  =======================================================
 
-  A warning will be logged in case an old option is used.
+  A warning will be logged in case an old option is used. However, you can still use the old configuration options.
+  They will be mapped to the new names.
 
 - ``EmbeddingIntentClassifier`` is now deprecated and will be replaced by ``DIETClassifier`` in the future.
-  ``DIETClassifier`` builds on top the model architecture of the ``EmbeddingIntentClassifier``. ``DIETClassfier``
-  allows you to train one model for entity extraction and intent classification. However, if you want to
-  get the same model behaviour as the current ``EmbeddingIntentClassifier``, you can use the following configuration of
-  ``DIETClassifier``:
+  ``DIETClassfier`` is based on a multi-task architecture for intent classification and entity recognition.
+  However, if you want to get the same model behaviour as the current ``EmbeddingIntentClassifier``, you can use
+  the following configuration of ``DIETClassifier``:
 
   .. code-block:: yaml
 
@@ -89,7 +92,7 @@ General
   See :ref:`diet-classifier` for more information about the new component.
 
 - ``CRFEntityExtractor`` is now deprecated and will be replaced by ``DIETClassifier`` in the future. ``DIETClassfier``
-  allows you to train one model for entity extraction and intent classification. However, if you want to
+  is based on a multi-task architecture for intent classification and entity recognition. However, if you want to
   get the same model behaviour as the current ``CRFEntityExtractor``, you can use the following configuration:
 
   .. code-block:: yaml
@@ -127,6 +130,24 @@ General
   in order to obtain the same results as before, you need to add this featurizer to your pipeline before the
   ``DIETClassifier``. For more information about the ``DIETClassifier`` and the ``LexicalSyntacticFeaturizer``
   see :ref:`components`.
+
+- ``ResponseSelector`` is now deprecated and will be replaced by ``DIETSelector`` in the future. If you want to
+  get the same model behaviour as the current ``ResponseSelector``, you can use the following configuration of
+  ``DIETSelector``:
+
+  .. code-block:: yaml
+
+    pipeline:
+    - ... # other components
+    - name: DIETSelector
+      intent_classification: True
+      entity_recognition: False
+      use_masked_language_model: False
+      BILOU_flag: False
+      number_of_transformer_layers: 0
+      ... # any other parameters
+
+  See :ref:`diet-selector` for more information about the new component.
 
 .. _migration-to-rasa-1.7:
 
