@@ -18,23 +18,23 @@ Rasa 1.7 to Rasa 1.8
 
 General
 ~~~~~~~
-- The :ref:`embedding_policy` replaced the :ref:`keras_policy` as recommended machine
+- The :ref:`ted_policy` replaced the :ref:`keras_policy` as recommended machine
   learning policy. New projects generated with ``rasa init`` will automatically use
   this policy. In case you want to change your existing model configuration to use the
-  :ref:`embedding_policy` add this to the ``policies`` section in your ``config.yml``
+  :ref:`ted_policy` add this to the ``policies`` section in your ``config.yml``
   and remove potentially existing ``KerasPolicy`` entries:
 
   .. code-block:: yaml
 
     policies:
     - ... # other policies
-    - name: EmbeddingPolicy
+    - name: TEDPolicy
       max_history: 5
       epochs: 100
 
   The given snippet specifies default values for the parameters ``max_history`` and
   ``epochs``. ``max_history`` is particularly important and strongly depends on your stories.
-  Please see the docs of the :ref:`embedding_policy` if you want to customize them.
+  Please see the docs of the :ref:`ted_policy` if you want to customize them.
 
 - All pre-defined pipeline templates are deprecated. Take a look at :ref:`choosing-a-pipeline`
   to decide on what components you should use in your configuration file.

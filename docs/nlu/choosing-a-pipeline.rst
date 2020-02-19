@@ -1,6 +1,4 @@
-:desc: Set up a pipeline of pre-trained word vectors form GloVe or fastText
-       or fit them specifically on your dataset using the TensorFlow pipeline
-       for open source NLU.
+:desc: Set up a pipeline of pre-trained components.
 
 .. _choosing-a-pipeline:
 
@@ -15,6 +13,10 @@ it on your dataset.
 .. contents::
    :local:
 
+.. note::
+    We deprecated all existing pipeline templates, e.g. ``supervised_embeddings``, ``pretrained_embeddings_convert``
+    and ``pretrained_embeddings_spacy``. Please, list any components you want to use directly in the configuration
+    file.
 
 The Short Answer
 ----------------
