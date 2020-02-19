@@ -1,9 +1,7 @@
-language: "de"
+language: "en"
 
 pipeline:
-  - name: SpacyNLP
-  - name: SpacyTokenizer
-  - name: SpacyFeaturizer
+  - name: WhitespaceTokenizer
   - name: RegexFeaturizer
   - name: LexicalSyntacticFeaturizer
   - name: CountVectorsFeaturizer
@@ -14,3 +12,6 @@ pipeline:
   - name: DIETClassifier
   - name: EntitySynonymMapper
   - name: DIETSelector
+  - name: DucklingHTTPExtractor
+    url: "http://duckling:8000"
+  

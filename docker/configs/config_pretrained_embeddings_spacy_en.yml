@@ -1,4 +1,4 @@
-language: "de"
+language: "en"
 
 pipeline:
   - name: SpacyNLP

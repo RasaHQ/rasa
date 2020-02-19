@@ -67,7 +67,7 @@ FROM base AS runner
 WORKDIR /app
 
 # Copy over default pipeline config
-COPY docker/configs/config_pretrained_embeddings_spacy.yml config.yml
+COPY docker/configs/config_pretrained_embeddings_spacy_en.yml config.yml
 
 # Copy virtualenv from previous stage
 COPY --from=builder /build /build

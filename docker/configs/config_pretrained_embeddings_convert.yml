@@ -1,9 +1,8 @@
-language: "de"
+language: "en"
 
 pipeline:
-  - name: SpacyNLP
-  - name: SpacyTokenizer
-  - name: SpacyFeaturizer
+  - name: ConveRTTokenizer
+  - name: ConveRTFeaturizer
   - name: RegexFeaturizer
   - name: LexicalSyntacticFeaturizer
   - name: CountVectorsFeaturizer
