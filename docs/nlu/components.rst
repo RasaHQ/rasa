@@ -15,6 +15,10 @@ Components
    ``supervised_embeddings``, and ``spacy_sklearn`` is now known as
    ``pretrained_embeddings_spacy``. Please update your code if you are using these.
 
+.. note::
+    We deprecated all pre-defined pipeline templates. Take a look at :ref:`choosing-a-pipeline`
+    to decide on what components you should use in your configuration file.
+
 This is a reference of the configuration options for every built-in
 component in Rasa NLU. If you want to build a custom component, check
 out :ref:`custom-nlu-components`.
@@ -61,7 +65,7 @@ SpacyNLP
 :Outputs: Nothing
 :Requires: Nothing
 :Description:
-    Initializes spacy structures. Every spaCy component relies on this, hence this should be put at the beginning
+    Initializes spaCy structures. Every spaCy component relies on this, hence this should be put at the beginning
     of every pipeline that uses any spaCy components.
 :Configuration:
     Language model, default will use the configured language.
@@ -91,12 +95,12 @@ HFTransformersNLP
 ~~~~~~~~~~~~~~~~~
 
 :Short: HuggingFace's Transformers based pre-trained language model initializer
-:Outputs: nothing
-:Requires: nothing
+:Outputs: Nothing
+:Requires: Nothing
 :Description:
     Initializes specified pre-trained language model from HuggingFace's `Transformers library
-    <https://huggingface.co/transformers/>`__.  The component applies language model specific tokenization and featurization
-    to compute sequence and sentence level representations for each example in the training data.
+    <https://huggingface.co/transformers/>`__.  The component applies language model specific tokenization and
+    featurization to compute sequence and sentence level representations for each example in the training data.
     Include :ref:`LanguageModelTokenizer` and :ref:`LanguageModelFeaturizer` to utilize the output of this
     component for downstream NLU models.
 :Configuration:
@@ -265,6 +269,26 @@ ConveRTTokenizer
           "case_sensitive": True
 
 
+.. _LanguageModelTokenizer:
+
+LanguageModelTokenizer
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Short: Tokenizer from pre-trained language models
+:Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
+:Requires: :ref:`HFTransformersNLP`
+:Description:
+    Creates tokens using the pre-trained language model specified in upstream :ref:`HFTransformersNLP` component.
+    Must be used whenever the ``LanguageModelFeaturizer`` is used.
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "LanguageModelTokenizer"
+
+
+
 .. _text-featurizers:
 
 Text Featurizers
@@ -274,7 +298,7 @@ Text featurizers are divided into two different categories: sparse featurizers a
 Sparse featurizers are featurizers that return feature vectors with a lot of missing values, e.g. zeros.
 As those feature vectors would normally take up a lot of memory, we store them as sparse features.
 Sparse features only store the values that are non zero and their positions in the vector.
-Thus, we save a lot of memroy and are able to train on larger datasets.
+Thus, we save a lot of memory and are able to train on larger datasets.
 
 By default all featurizers will return a matrix of length (number-of-tokens x feature-dimension).
 So, the returned matrix will have a feature vector for every token.
@@ -287,7 +311,7 @@ MitieFeaturizer
 ~~~~~~~~~~~~~~~
 
 :Short:
-    Creates a vector representation of user message and response (if specified) using the spaCy featurizer.
+    Creates a vector representation of user message and response (if specified) using the MITIE featurizer.
 :Outputs: ``dense_features`` for texts and responses
 :Requires: :ref:`MitieNLP`
 :Type: Dense featurizer
@@ -300,7 +324,7 @@ MitieFeaturizer
         NOT used by the ``MitieIntentClassifier`` component.
 
 :Configuration:
-    The sentence vector, e.g. the vector of the ``CLS`` token can be calculated in two different ways, either via
+    The sentence vector, e.g. the vector of the ``__CLS__`` token can be calculated in two different ways, either via
     mean or via max pooling. You can specify the pooling method in your configuration file with the option ``pooling``.
     The default pooling method is set to ``mean``.
 
@@ -309,7 +333,7 @@ MitieFeaturizer
         pipeline:
         - name: "MitieFeaturizer"
           # Specify what pooling operation should be used to calculate the vector of
-          # the CLS token. Available options: 'mean' and 'max'.
+          # the __CLS__ token. Available options: 'mean' and 'max'.
           "pooling": "mean"
 
 
@@ -325,7 +349,7 @@ SpacyFeaturizer
     Creates features for entity extraction, intent classification, and response classification using the spaCy
     featurizer.
 :Configuration:
-    The sentence vector, e.g. the vector of the ``CLS`` token can be calculated in two different ways, either via
+    The sentence vector, e.g. the vector of the ``__CLS__`` token can be calculated in two different ways, either via
     mean or via max pooling. You can specify the pooling method in your configuration file with the option ``pooling``.
     The default pooling method is set to ``mean``.
 
@@ -334,7 +358,7 @@ SpacyFeaturizer
         pipeline:
         - name: "SpacyFeaturizer"
           # Specify what pooling operation should be used to calculate the vector of
-          # the CLS token. Available options: 'mean' and 'max'.
+          # the __CLS__ token. Available options: 'mean' and 'max'.
           "pooling": "mean"
 
 
@@ -375,13 +399,11 @@ LanguageModelFeaturizer
 
 :Short:
     Creates a vector representation of user message and response (if specified) using a pre-trained language model.
-:Outputs:
-    nothing, used as an input to intent classifiers and response selectors that need intent features and response
-    features respectively (e.g. ``DIETClassifier`` and ``ResponseSelector``)
+:Outputs: ``dense_features`` for texts and responses
 :Requires: :ref:`HFTransformersNLP`
 :Type: Dense featurizer
 :Description:
-    Creates features for intent classification and response selection.
+    Creates features for entity extraction, intent classification, and response selection.
     Uses the pre-trained language model specified in upstream :ref:`HFTransformersNLP` component to compute vector
     representations of input text.
 
@@ -391,14 +413,12 @@ LanguageModelFeaturizer
 
 :Configuration:
 
-    Include ``HFTransformersNLP`` component before this component. Also, use :ref:`LanguageModelTokenizer` to ensure tokens
-    are correctly set for all components throughout the pipeline.
+    Include ``HFTransformersNLP`` component before this component. Also, use :ref:`LanguageModelTokenizer` to ensure
+    tokens are correctly set for all components throughout the pipeline.
 
     .. code-block:: yaml
 
         pipeline:
-        - name: "HFTransformersNLP"
-          model_name: # Name of language model to use
         - name: "LanguageModelFeaturizer"
 
 
@@ -416,7 +436,8 @@ RegexFeaturizer
     For each regex, a feature will be set marking whether this expression was found in the input, which will later
     be fed into intent classifier / entity extractor to simplify classification (assuming the classifier has learned
     during the training phase, that this set feature indicates a certain intent / entity).
-    Regex features for entity extraction are currently only supported by the ``CRFEntityExtractor`` component!
+    Regex features for entity extraction are currently only supported by the ``CRFEntityExtractor`` and the
+    ``DIETClassifier`` components!
 
 :Configuration:
 
@@ -574,7 +595,7 @@ LexicalSyntacticFeaturizer
     ==============  =============================================================================================
 
     As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
-    previous words, the current word, and the next words in the sliding window.
+    previous tokens, the current token, and the next tokens in the sliding window.
     You define the features as [before, token, after] array.
     If you, for example, want to define features for the token before, the current token, and the token after,
     your features configuration could look like this:
@@ -664,10 +685,9 @@ SklearnIntentClassifier
         }
 
 :Description:
-    The sklearn intent classifier trains a linear SVM which gets optimized using a grid search. In addition
-    to other classifiers it also provides rankings of the labels that did not "win". The ``SklearnIntentClassifier``
-    needs to be preceded by a dense featurizer in the pipeline. This dense featurizer creates the features used for
-    the classification.
+    The sklearn intent classifier trains a linear SVM which gets optimized using a grid search. It also provides
+    rankings of the labels that did not "win". The ``SklearnIntentClassifier`` needs to be preceded by a dense
+    featurizer in the pipeline. This dense featurizer creates the features used for the classification.
 
 :Configuration:
     During the training of the SVM a hyperparameter search is run to
@@ -940,6 +960,121 @@ ResponseSelector
     Response Selector component can be used to build a response retrieval model to directly predict a bot response from
     a set of candidate responses. The prediction of this model is used by :ref:`retrieval-actions`.
     It embeds user inputs and response labels into the same space and follows the exact same
+    neural network architecture and optimization as the ``EmbeddingIntentClassifier``.
+
+    .. note:: If during prediction time a message contains **only** words unseen during training,
+              and no Out-Of-Vacabulary preprocessor was used,
+              empty response ``None`` is predicted with confidence ``0.0``.
+
+    .. warning::
+        ``ResponseSelector`` is deprecated and should be replaced by ``DIETSelector``. See
+        `migration guide <https://rasa.com/docs/rasa/migration-guide/#rasa-1-7-to-rasa-1-8>`_ for more details.
+
+:Configuration:
+
+    The algorithm includes all the hyperparameters that ``EmbeddingIntentClassifier`` uses.
+    In addition, the component can also be configured to train a response selector for a particular retrieval intent.
+
+        - ``retrieval_intent`` sets the name of the intent for which this response selector model is trained.
+
+    Default values:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "ResponseSelector"
+            # nn architecture
+            # sizes of hidden layers before the embedding layer
+            # for input words and intent labels,
+            # the number of hidden layers is thus equal to the length of this list
+            "hidden_layers_sizes": {"text": [], "label": []}
+            # Whether to share the hidden layer weights between input words and labels
+            "share_hidden_layers": False
+            # training parameters
+            # initial and final batch sizes - batch size will be
+            # linearly increased for each epoch
+            "batch_size": [64, 256]
+            # how to create batches
+            "batch_strategy": "balanced"  # string 'sequence' or 'balanced'
+            # number of epochs
+            "epochs": 300
+            # set random seed to any int to get reproducible results
+            "random_seed": None
+            # optimizer
+            "learning_rate": 0.001
+            # embedding parameters
+            # default dense dimension used if no dense features are present
+            "dense_dimension": {"text": 512, "label": 512}
+            # dimension size of embedding vectors
+            "embedding_dimension": 20
+            # the type of the similarity
+            "number_of_negative_examples": 20
+            # flag if minimize only maximum similarity over incorrect actions
+            "similarity_type": "auto"  # string 'auto' or 'cosine' or 'inner'
+            # the type of the loss function
+            "loss_type": "softmax"  # string 'softmax' or 'margin'
+            # number of top intents to normalize scores for softmax loss_type
+            # set to 0 to turn off normalization
+            "ranking_length": 10
+            # how similar the algorithm should try
+            # to make embedding vectors for correct labels
+            "maximum_positive_similarity": 0.8  # should be 0.0 < ... < 1.0 for 'cosine'
+            # maximum negative similarity for incorrect labels
+            "maximum_negative_similarity": -0.4  # should be -1.0 < ... < 1.0 for 'cosine'
+            # flag: if true, only minimize the maximum similarity for incorrect labels
+            "use_maximum_negative_similarity": True
+            # scale loss inverse proportionally to confidence of correct prediction
+            "scale_loss": True
+            # regularization parameters
+            # the scale of regularization
+            "regularization_constant": 0.002
+            # the scale of how critical the algorithm should be of minimizing the
+            # maximum similarity between embeddings of different labels
+            "negative_margin_scale": 0.8
+            # dropout rate for rnn
+            "droprate": 0.2
+            # if true apply dropout to sparse tensors
+            "use_sparse_input_dropout": True
+            # visualization of accuracy
+            # how often to calculate training accuracy
+            "evaluate_every_number_of_epochs": 20  # small values may hurt performance
+            # how many examples to use for calculation of training accuracy
+            "evaluate_on_number_of_examples": 0  # large values may hurt performance
+            # selector config
+            # name of the intent for which this response selector is to be trained
+            "retrieval_intent": None
+
+
+.. _diet-selector:
+
+DIETSelector
+~~~~~~~~~~~~~~~~
+
+:Short: DIET Selector
+:Outputs: A dictionary with key as ``direct_response_intent`` and value containing ``response`` and ``ranking``
+:Requires: ``dense_features`` and/or ``sparse_features`` for user message and response
+
+:Output-Example:
+
+    .. code-block:: json
+
+        {
+            "response_selector": {
+              "faq": {
+                "response": {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+                "ranking": [
+                    {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
+                    {"confidence": 0.2134543431, "name": "You can ask me about how to get started"}
+                ]
+              }
+            }
+        }
+
+:Description:
+
+    DIET Selector component can be used to build a response retrieval model to directly predict a bot response from
+    a set of candidate responses. The prediction of this model is used by :ref:`retrieval-actions`.
+    It embeds user inputs and response labels into the same space and follows the exact same
     neural network architecture and optimization as the ``DIETClassifier``.
 
     .. note:: If during prediction time a message contains **only** words unseen during training,
@@ -1040,29 +1175,6 @@ ResponseSelector
             # selector config
             # name of the intent for which this response selector is to be trained
             "retrieval_intent": None
-
-.. _LanguageModelTokenizer:
-
-LanguageModelTokenizer
-~~~~~~~~~~~~~~~~~~~~~~
-
-:Short: Tokenizer from pre-trained language models
-:Outputs: nothing
-:Requires: :ref:`HFTransformersNLP`
-:Description:
-    Creates tokens using the pre-trained language model specified in upstream :ref:`HFTransformersNLP` component.
-    Must be used whenever the ``LanguageModelFeaturizer`` is used.
-:Configuration:
-
-    Include ``HFTransformersNLP`` component upstream.
-
-    .. code-block:: yaml
-
-        pipeline:
-        - name: "HFTransformersNLP"
-          model_name: # name of language model to use
-        - name: "LanguageModelTokenizer"
-
 
 
 Entity Extractors
@@ -1407,7 +1519,7 @@ Combined Entity Extractors and Intent Classifiers
 DIETClassifier
 ~~~~~~~~~~~~~~
 
-:Short: Dual Intent Entity Transformer used for intent classification and entity extraction
+:Short: Dual Intent Entity Transformer (DIET) used for intent classification and entity extraction
 :Outputs: ``entities``, ``intent`` and ``intent_ranking``
 :Requires: ``dense_features`` and/or ``sparse_features`` for user message and intent (optional)
 :Output-Example:

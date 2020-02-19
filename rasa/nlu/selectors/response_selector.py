@@ -139,9 +139,6 @@ class ResponseSelector(DIETClassifier):
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
         EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance,
-        # if true random tokens of the input message will be masked and the model
-        # should predict those tokens
-        MASKED_LM: False,
         # selector config
         # name of the intent for which this response selector is to be trained
         "retrieval_intent": None,
