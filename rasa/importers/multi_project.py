@@ -3,6 +3,8 @@ from functools import reduce
 from typing import Text, Set, Dict, Optional, List, Union, Any
 import os
 
+from async_lru import alru_cache
+
 from rasa import data
 import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
@@ -163,12 +165,14 @@ class MultiProjectImporter(TrainingDataImporter):
     def add_import(self, path: Text) -> None:
         self._imports.append(path)
 
+    @alru_cache()
     async def get_domain(self) -> Domain:
         domains = [Domain.load(path) for path in self._domain_paths]
         return reduce(
             lambda merged, other: merged.merge(other), domains, Domain.empty()
         )
 
+    @alru_cache()
     async def get_stories(
         self,
         interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
@@ -186,8 +190,10 @@ class MultiProjectImporter(TrainingDataImporter):
         )
         return StoryGraph(story_steps)
 
+    @alru_cache()
     async def get_config(self) -> Dict:
         return self.config
 
+    @alru_cache()
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         return utils.training_data_from_paths(self._nlu_paths, language)
