@@ -9,7 +9,6 @@ on:
   pull_request:
 
 # SECRETS
-# - COVERALLS_REPO_TOKEN: can be found on the coveralls page for the repo
 # - GH_RELEASE_NOTES_TOKEN: personal access token of `rasabot` github account
 #                           (login for account in 1pw)
 # - SLACK_WEBHOOK_TOKEN: token to post to RasaHQ slack account (in 1password)
@@ -137,8 +136,8 @@ jobs:
     - name: Send Coverage Report 📊
       if: matrix.python-version == 3.6
       env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        COVERALLS_SERVICE_NAME: github-ci
+        COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERALLS_SERVICE_NAME: github
       run: coveralls
 
   deploy:
