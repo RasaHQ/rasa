@@ -193,15 +193,11 @@ class ConveRTFeaturizer(Featurizer):
                 filter(lambda x: x.get(attribute), training_data.training_examples)
             )
 
-            batch_start_index = 0
             pbar = tqdm(
-                total=(len(non_empty_examples) // batch_size) + 1,
+                range(0, len(non_empty_examples), batch_size),
                 desc=attribute.capitalize() + " batches:",
             )
-
-            while batch_start_index < len(non_empty_examples):
-                pbar.update(1)
-
+            for batch_start_index in pbar:
                 batch_end_index = min(
                     batch_start_index + batch_size, len(non_empty_examples)
                 )
@@ -212,16 +208,12 @@ class ConveRTFeaturizer(Featurizer):
                 batch_features = self._compute_features(batch_examples, attribute)
 
                 for index, ex in enumerate(batch_examples):
-
                     ex.set(
                         DENSE_FEATURE_NAMES[attribute],
                         self._combine_with_existing_dense_features(
                             ex, batch_features[index], DENSE_FEATURE_NAMES[attribute]
                         ),
                     )
-
-                batch_start_index += batch_size
-        print('\n')
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
