@@ -30,9 +30,9 @@ from rasa.utils.tensorflow.constants import (
     NEG_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
-    USE_MAX_SIM_NEG,
-    MU_NEG,
-    MU_POS,
+    USE_MAX_NEG_SIM,
+    MAX_NEG_SIM,
+    MAX_POS_SIM,
     EMBED_DIM,
     BILOU_FLAG,
 )
@@ -48,7 +48,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
 
     requires = [any_of(DENSE_FEATURE_NAMES[TEXT], SPARSE_FEATURE_NAMES[TEXT])]
 
-    # default properties (DOC MARKER - don't remove)
+    # please make sure to update the docs when changing a default parameter
     defaults = {
         # nn architecture
         # sizes of hidden layers before the embedding layer
@@ -85,11 +85,11 @@ class EmbeddingIntentClassifier(DIETClassifier):
         RANKING_LENGTH: 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct labels
-        MU_POS: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
+        MAX_POS_SIM: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
         # maximum negative similarity for incorrect labels
-        MU_NEG: -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
+        MAX_NEG_SIM: -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
         # flag: if true, only minimize the maximum similarity for incorrect labels
-        USE_MAX_SIM_NEG: True,
+        USE_MAX_NEG_SIM: True,
         # scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
         # regularization parameters
@@ -108,7 +108,6 @@ class EmbeddingIntentClassifier(DIETClassifier):
         # how many examples to use for calculation of training accuracy
         EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
     }
-    # end default properties (DOC MARKER - don't remove)
 
     def __init__(
         self,

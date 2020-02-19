@@ -148,7 +148,7 @@ expected outcome in the case of a tie. They look like this, where higher numbers
     | 4. ``FallbackPolicy`` and ``TwoStageFallbackPolicy``
     | 3. ``MemoizationPolicy`` and ``AugmentedMemoizationPolicy``
     | 2. ``MappingPolicy``
-    | 1. ``TEDPolicy``, ``KerasPolicy``, and ``SklearnPolicy``
+    | 1. ``TEDPolicy``, ``EmbeddingPolicy``, ``KerasPolicy``, and ``SklearnPolicy``
 
 This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
 above the ``nlu_threshold``, the bot will still fall back. In general, it is not recommended to have more
@@ -197,8 +197,10 @@ set the ``random_seed`` attribute of the ``KerasPolicy`` to any integer.
 Embedding Policy
 ^^^^^^^^^^^^^^^^
 
-``EmbeddingPolicy`` got renamed to ``TEDPolicy``.
-Please take a look at :ref:`ted_policy` for more details.
+    .. warning::
+
+        ``EmbeddingPolicy`` got renamed to ``TEDPolicy``. Please use :ref:`ted_policy` instead of ``EmbeddingPolicy``.
+        The functionality of the policy stayed the same.
 
 
 .. _ted_policy:
@@ -208,54 +210,46 @@ TED Policy
 
 Transformer Embedding Dialogue Policy (TEDP)
 
-Transformer version of the Recurrent Embedding Dialogue Policy (REDP)
-used in our paper: `<https://arxiv.org/abs/1811.11707>`_
+The policy used in our paper https://arxiv.org/abs/1910.00486.
 
 This policy has a pre-defined architecture, which comprises the
 following steps:
 
-    - concatenate user input (user intent and entities),
-      previous system action, slots and active form
-      for each time step into an input vector
-      to pre-transformer embedding layer;
+    - concatenate user input (user intent and entities), previous system action, slots and active form for each time
+      step into an input vector to pre-transformer embedding layer;
     - feed it to transformer;
-    - apply a dense layer to the output of the transformer
-      to get embeddings of a dialogue for each time step;
+    - apply a dense layer to the output of the transformer to get embeddings of a dialogue for each time step;
     - apply a dense layer to create embeddings for system actions for each time step;
-    - calculate the similarity between the
-      dialogue embedding and embedded system actions.
-      This step is based on the
-      `StarSpace <https://arxiv.org/abs/1709.03856>`_ idea.
+    - calculate the similarity between the dialogue embedding and embedded system actions.
+      This step is based on the `StarSpace <https://arxiv.org/abs/1709.03856>`_ idea.
 
-It is recommended to use
-``state_featurizer=LabelTokenizerSingleStateFeaturizer(...)``
+It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(...)``
 (see :ref:`featurization_conversations` for details).
 
 **Configuration:**
 
     Configuration parameters can be passed as parameters to the
-    ``TEDPolicy`` within the policy configuration file.
+    ``TEDPolicy`` within the configuration file.
 
     .. warning::
 
-        Pass an appropriate number of ``epochs`` to the ``TEDPolicy``,
-        otherwise the policy will be trained only for ``1``
-        epoch.
+        Pass an appropriate number of ``epochs`` to the ``TEDPolicy``, otherwise the policy will be trained only
+        for ``1`` epoch.
 
     The algorithm also has hyper-parameters to control:
 
         - neural network's architecture:
 
-            - ``hidden_layers_sizes_b`` sets a list of hidden layers
+            - ``hidden_layers_sizes`` sets a list of hidden layers
               sizes before embedding layer for system actions, the number
-              of hidden layers is equal to the length of the list;
-            - ``transformer_size`` sets the number of units in the transfomer;
-            - ``num_transformer_layers`` sets the number of transformer layers;
-            - ``pos_encoding`` sets the type of positional encoding in transformer,
-              it should be either ``timing`` or ``emb``;
-            - ``max_seq_length`` sets maximum sequence length
-              if embedding positional encodings are used;
-            - ``num_heads`` sets the number of heads in multihead attention;
+              of hidden layers is equal to the length of the list.
+            - ``transformer_size`` sets the number of units in the transfomer.
+            - ``number_of_transformer_layers`` sets the number of transformer layers.
+            - ``maximum_sequence_length`` sets maximum sequence length.
+            - ``number_of_attention_heads`` sets the number of heads in multihead attention.
+            - ``use_key_relative_attention`` if true use key relative embeddings in attention.
+            - ``use_value_relative_attention`` if true use key relative embeddings in attention.
+            - ``max_relative_position`` sets the max position for relative embeddings.
 
         - training:
 
@@ -272,8 +266,8 @@ It is recommended to use
 
         - embedding:
 
-            - ``embed_dim`` sets the dimension of embedding space;
-            - ``num_neg`` sets the number of incorrect intent labels,
+            - ``embedding_dimension`` sets the dimension of embedding space;
+            - ``number_of_negative_examples`` sets the number of incorrect intent labels,
               the algorithm will minimize their similarity to the user
               input during training;
             - ``similarity_type`` sets the type of the similarity,
@@ -285,13 +279,13 @@ It is recommended to use
             - ``ranking_length`` defines the number of top confidences over
               which to normalize ranking results if ``loss_type: "softmax"``;
               to turn off normalization set it to 0
-            - ``mu_pos`` controls how similar the algorithm should try
+            - ``maximum_positive_similarity`` controls how similar the algorithm should try
               to make embedding vectors for correct intent labels,
               used only if ``loss_type`` is set to ``margin``;
-            - ``mu_neg`` controls maximum negative similarity for
+            - ``maximum_negative_similarity`` controls maximum negative similarity for
               incorrect intents,
               used only if ``loss_type`` is set to ``margin``;
-            - ``use_max_sim_neg`` if ``true`` the algorithm only
+            - ``use_maximum_negative_similarity`` if ``true`` the algorithm only
               minimizes maximum similarity over incorrect intent labels,
               used only if ``loss_type`` is set to ``margin``;
             - ``scale_loss`` if ``true`` the algorithm will downscale the loss
@@ -300,20 +294,21 @@ It is recommended to use
 
         - regularization:
 
-            - ``C2`` sets the scale of L2 regularization
-            - ``C_emb`` sets the scale of how important is to minimize
+            - ``regularization_constant`` sets the scale of L2 regularization.
+            - ``negative_margin_scale`` sets the scale of how important is to minimize
               the maximum similarity between embeddings of different
-              intent labels, used only if ``loss_type`` is set to ``margin``;
-            - ``droprate_a`` sets the dropout rate between
-              layers before embedding layer for user inputs;
-            - ``droprate_b`` sets the dropout rate between layers
-              before embedding layer for system actions;
+              intent labels, used only if ``loss_type`` is set to ``margin``.
+            - ``droprate_dialogue`` sets the dropout rate between
+              layers before embedding layer for user inputs.
+            - ``droprate_label`` sets the dropout rate between layers
+              before embedding layer for system actions.
+            - ``droprate_attention`` sets the dropout rate for attention.
 
         - train accuracy calculation:
 
-            - ``evaluate_every_num_epochs`` sets how often to calculate
-              train accuracy, small values may hurt performance;
-            - ``evaluate_on_num_examples`` how many examples to use for
+            - ``evaluate_every_number_of_epochs`` sets how often to calculate
+              train accuracy, small values may hurt performance.
+            - ``evaluate_on_number_of_examples`` how many examples to use for
               hold out validation set to calculate of validation accuracy,
               large values may hurt performance.
 
@@ -328,11 +323,11 @@ It is recommended to use
 
     .. warning::
 
-        If ``evaluate_on_num_examples`` is non zero, random examples will be
+        If ``evaluate_on_number_of_examples`` is non zero, random examples will be
         picked by stratified split and used as **hold out** validation set,
         so they will be excluded from training data.
         We suggest to set it to zero if data set contains a lot of unique examples
-        of dialogue turns
+        of dialogue turns.
 
     .. note::
 
@@ -341,7 +336,7 @@ It is recommended to use
 
     .. note::
 
-        For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should
+        For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
         be between ``-1`` and ``1``.
 
     .. note::
@@ -353,19 +348,85 @@ It is recommended to use
         ``batch_size`` is required, pass an ``int``, e.g.
         ``"batch_size": 8``.
 
-    These parameters can be specified in the policy configuration file.
-    The default values are defined in ``EmbeddingPolicy.defaults``:
+    These parameters can be specified in the configuration file.
+    The following default values are set:
 
-    .. literalinclude:: ../../rasa/core/policies/ted_policy.py
-       :dedent: 4
-       :start-after: # default properties (DOC MARKER - don't remove)
-       :end-before: # end default properties (DOC MARKER - don't remove)
+    .. code-block:: yaml
+
+        # nn architecture
+        # a list of hidden layers sizes before dialogue and action embed layers
+        # number of hidden layers is equal to the length of this list
+        "hidden_layers_sizes": {"dialogue": [], "label": []}
+        # number of units in transformer
+        "transformer_size": 128
+        # number of transformer layers
+        "number_of_transformer_layers": 1
+        # max sequence length
+        "maximum_sequence_length": 256
+        # number of attention heads in transformer
+        "number_of_attention_heads": 4
+        # if true use key relative embeddings in attention
+        "use_key_relative_attention": False
+        # if true use key relative embeddings in attention
+        "use_value_relative_attention": False
+        # max position for relative embeddings
+        "max_relative_position": None
+        # training parameters
+        # initial and final batch sizes:
+        # batch size will be linearly increased for each epoch
+        "batch_size": [8, 32]
+        # how to create batches
+        "batch_strategy": "balanced"  # string 'sequence' or 'balanced'
+        # number of epochs
+        "epochs": 1
+        # set random seed to any int to get reproducible results
+        "random_seed": None
+        # embedding parameters
+        # dimension size of embedding vectors
+        "embedding_dimension": 20
+        # the type of the similarity
+        "number_of_negative_examples": 20
+        # flag if minimize only maximum similarity over incorrect labels
+        "similarity_type": "auto"  # string 'auto' or 'cosine' or 'inner'
+        # the type of the loss function
+        "loss_type": "softmax"  # string 'softmax' or 'margin'
+        # number of top actions to normalize scores for softmax loss_type
+        # set to 0 to turn off normalization
+        "ranking_length": 10
+        # how similar the algorithm should try
+        # to make embedding vectors for correct labels
+        "maximum_positive_similarity": 0.8  # should be 0.0 < ... < 1.0 for 'cosine'
+        # maximum negative similarity for incorrect labels
+        "maximum_negative_similarity": -0.2  # should be -1.0 < ... < 1.0 for 'cosine'
+        # the number of incorrect labels, the algorithm will minimize
+        # their similarity to the user input during training
+        "use_maximum_negative_similarity": True  # flag which loss function to use
+        # scale loss inverse proportionally to confidence of correct prediction
+        "scale_loss": True
+        # regularization
+        # the scale of regularization
+        "regularization_constant": 0.001
+        # the scale of how important is to minimize the maximum similarity
+        # between embeddings of different labels
+        "negative_margin_scale": 0.8
+        # dropout rate for dial nn
+        "droprate_dialogue": 0.1
+        # dropout rate for bot nn
+        "droprate_label": 0.0
+        # dropout rate for attention
+        "droprate_attention": 0
+        # visualization of accuracy
+        # how often calculate validation accuracy
+        "evaluate_every_number_of_epochs": 20  # small values may hurt performance
+        # how many examples to use for hold out validation set
+        "evaluate_on_number_of_examples": 0  # large values may hurt performance
 
     .. note::
 
-          Parameter ``mu_neg`` is set to a negative value to mimic
+          Parameter ``maximum_negative_similarity`` is set to a negative value to mimic
           the original starspace algorithm in the case
-          ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``. See
+          ``maximum_negative_similarity = maximum_positive_similarity`` and
+          ``use_maximum_negative_similarity = False``. See
           `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
 .. _mapping-policy:

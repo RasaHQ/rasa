@@ -30,9 +30,9 @@ from rasa.utils.tensorflow.constants import (
     NEG_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
-    USE_MAX_SIM_NEG,
-    MU_NEG,
-    MU_POS,
+    USE_MAX_NEG_SIM,
+    MAX_NEG_SIM,
+    MAX_POS_SIM,
     EMBED_DIM,
     BILOU_FLAG,
 )
@@ -78,7 +78,7 @@ class ResponseSelector(DIETClassifier):
         any_of(DENSE_FEATURE_NAMES[RESPONSE], SPARSE_FEATURE_NAMES[RESPONSE]),
     ]
 
-    # default properties (DOC MARKER - don't remove)
+    # please make sure to update the docs when changing a default parameter
     defaults = {
         # nn architecture
         # sizes of hidden layers before the embedding layer
@@ -116,12 +116,12 @@ class ResponseSelector(DIETClassifier):
         RANKING_LENGTH: 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct intent labels
-        MU_POS: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
+        MAX_POS_SIM: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
         # maximum negative similarity for incorrect intent labels
-        MU_NEG: -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
+        MAX_NEG_SIM: -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
         # flag: if true, only minimize the maximum similarity for
         # incorrect intent labels
-        USE_MAX_SIM_NEG: True,
+        USE_MAX_NEG_SIM: True,
         # scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
         # regularization parameters
@@ -139,14 +139,10 @@ class ResponseSelector(DIETClassifier):
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
         EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance,
-        # if true random tokens of the input message will be masked and the model
-        # should predict those tokens
-        MASKED_LM: False,
         # selector config
         # name of the intent for which this response selector is to be trained
         "retrieval_intent": None,
     }
-    # end default properties (DOC MARKER - don't remove)
 
     def __init__(
         self,

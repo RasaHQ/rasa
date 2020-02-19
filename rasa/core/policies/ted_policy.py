@@ -45,9 +45,9 @@ from rasa.utils.tensorflow.constants import (
     NEG_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
-    USE_MAX_SIM_NEG,
-    MU_NEG,
-    MU_POS,
+    USE_MAX_NEG_SIM,
+    MAX_NEG_SIM,
+    MAX_POS_SIM,
     EMBED_DIM,
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
@@ -79,10 +79,16 @@ class TEDPolicy(Policy):
         TRANSFORMER_SIZE: 128,
         # number of transformer layers
         NUM_TRANSFORMER_LAYERS: 1,
-        # max sequence length if pos_encoding='emb'
+        # max sequence length
         MAX_SEQ_LENGTH: 256,
         # number of attention heads in transformer
         NUM_HEADS: 4,
+        # if true use key relative embeddings in attention
+        KEY_RELATIVE_ATTENTION: False,
+        # if true use key relative embeddings in attention
+        VALUE_RELATIVE_ATTENTION: False,
+        # max position for relative embeddings
+        MAX_RELATIVE_POSITION: None,
         # training parameters
         # initial and final batch sizes:
         # batch size will be linearly increased for each epoch
@@ -107,12 +113,12 @@ class TEDPolicy(Policy):
         RANKING_LENGTH: 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct labels
-        MU_POS: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
+        MAX_POS_SIM: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
         # maximum negative similarity for incorrect labels
-        MU_NEG: -0.2,  # should be -1.0 < ... < 1.0 for 'cosine'
+        MAX_NEG_SIM: -0.2,  # should be -1.0 < ... < 1.0 for 'cosine'
         # the number of incorrect labels, the algorithm will minimize
         # their similarity to the user input during training
-        USE_MAX_SIM_NEG: True,  # flag which loss function to use
+        USE_MAX_NEG_SIM: True,  # flag which loss function to use
         # scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
         # regularization
@@ -132,12 +138,6 @@ class TEDPolicy(Policy):
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for hold out validation set
         EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
-        # if true use key relative embeddings in attention
-        KEY_RELATIVE_ATTENTION: False,
-        # if true use key relative embeddings in attention
-        VALUE_RELATIVE_ATTENTION: False,
-        # max position for relative embeddings
-        MAX_RELATIVE_POSITION: None,
     }
     # end default properties (DOC MARKER - don't remove)
 
@@ -502,9 +502,9 @@ class TED(RasaModel):
         self._tf_layers["loss.label"] = layers.DotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
-            self.config[MU_POS],
-            self.config[MU_NEG],
-            self.config[USE_MAX_SIM_NEG],
+            self.config[MAX_POS_SIM],
+            self.config[MAX_NEG_SIM],
+            self.config[USE_MAX_NEG_SIM],
             self.config[NEG_MARGIN_SCALE],
             self.config[SCALE_LOSS],
             # set to 1 to get deterministic behaviour
