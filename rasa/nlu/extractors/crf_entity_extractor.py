@@ -103,6 +103,13 @@ class CRFEntityExtractor(EntityExtractor):
 
         self._validate_configuration()
 
+        raise_warning(
+            "'CRFEntityExtractor' is deprecated and will be removed in version "
+            "2.0. Use 'DIETClassifier' instead.",
+            category=FutureWarning,
+            docs=DOCS_URL_COMPONENTS,
+        )
+
     def _validate_configuration(self) -> None:
         if len(self.component_config.get("features", [])) % 2 != 1:
             raise ValueError(
