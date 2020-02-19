@@ -147,7 +147,10 @@ class CRFEntityExtractor(EntityExtractor):
         return ["sklearn_crfsuite", "sklearn"]
 
     def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
 
         # checks whether there is at least one
@@ -193,9 +196,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         extracted = self.add_extractor_name(self.extract_entities(message))
         message.set(
-            ENTITIES,
-            message.get(ENTITIES, []) + extracted,
-            add_to_output=True,
+            ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True,
         )
 
     @staticmethod
