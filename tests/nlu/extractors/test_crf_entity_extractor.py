@@ -50,6 +50,7 @@ def test_crf_extractor(spacy_nlp):
                 ["low", "title", "upper", "pos", "pos2"],
             ],
             RANDOM_SEED: 1,
+            EPOCHS: 75,
         }
     )
     tokenizer = WhitespaceTokenizer()
