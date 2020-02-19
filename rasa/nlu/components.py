@@ -251,7 +251,8 @@ class Component(metaclass=ComponentMetaclass):
     # provided properties from the previous components.
     requires = []
 
-    # Which components are required by this component
+    # Which components are required by this component. Listed components should appear before 
+    # the component itself in the pipeline.
     required_components = []
 
     # Defines the default configuration parameters of a component
