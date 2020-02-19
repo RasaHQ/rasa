@@ -180,9 +180,13 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             ACTION_DEFAULT_ASK_REPHRASE_NAME,
             self.fallback_action_name,
         ]
-        last_utterance_time = tracker.get_last_event_for(UserUttered).timestamp
-        last_action_time = tracker.get_last_event_for(ActionExecuted).timestamp
-        input_given = last_action_time < last_utterance_time
+        try:
+            last_utterance_time = tracker.get_last_event_for(UserUttered).timestamp
+            last_action_time = tracker.get_last_event_for(ActionExecuted).timestamp
+            input_given = last_action_time < last_utterance_time
+        except AttributeError:
+            input_given = False
+
         return action_requires_input and not input_given
 
     def _has_user_denied(
