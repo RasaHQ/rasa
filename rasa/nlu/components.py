@@ -28,7 +28,7 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
 
 
 def validate_requirements(component_names: List[Text]) -> None:
-    """Ensures that all required importable python packages are installed."""
+    """Validates that all required importable python packages are installed."""
 
     from rasa.nlu import registry
 
@@ -52,6 +52,8 @@ def validate_requirements(component_names: List[Text]) -> None:
 
 
 def validate_tokenizers(pipeline: List["Component"]) -> None:
+    """Validates that only one tokenizer is present in the pipeline."""
+
     from rasa.nlu.tokenizers.tokenizer import Tokenizer
 
     tokenizer_names = []
@@ -67,6 +69,8 @@ def validate_tokenizers(pipeline: List["Component"]) -> None:
 
 
 def validate_required_components(pipeline: List["Component"]) -> None:
+    """Validates that all required components are present in the pipeline."""
+
     unique_component_names = set()
     for component in pipeline:
         unique_component_names.add(component.name)
@@ -82,10 +86,7 @@ def validate_arguments(
     context: Dict[Text, Any],
     allow_empty_pipeline: bool = False,
 ) -> None:
-    """Validates a pipeline before it is run.
-
-    Ensures, that all arguments are present to train the pipeline.
-    """
+    """Validates that all arguments are present to train the pipeline."""
 
     # Ensure the pipeline is not empty
     if not allow_empty_pipeline and len(pipeline) == 0:
@@ -143,7 +144,8 @@ def validate_requires_any_of(
 
 def validate_required_components_from_data(
     pipeline: List["Component"], data: TrainingData
-):
+) -> None:
+    """Validates that all components are present in the pipeline based on data."""
 
     response_selector_exists = False
     for component in pipeline:
