@@ -30,7 +30,7 @@ class MitieFeaturizer(Featurizer):
         TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
     ] + ["mitie_feature_extractor"]
 
-    required_components = [MitieNLP.name, MitieTokenizer.name]
+    required_components = [MitieNLP.name]
 
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of

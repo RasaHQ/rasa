@@ -22,33 +22,100 @@ def pipelines_for_tests():
     # tested they still need to be in a useful order - hence we can not simply
     # generate this automatically.
 
+    # Create separate test pipelines for dense featurizers
+    # because they can't co-exist in the same pipeline together,
+    # as their tokenizers break the incoming message into different number of tokens.
+
     # first is language followed by list of components
     return [
         (
             "en",
             as_pipeline(
-                "SpacyNLP",
-                "MitieNLP",
+                "KeywordIntentClassifier",
+            ),
+        ),
+        (
+            "en",
+            as_pipeline(
                 "WhitespaceTokenizer",
-                "MitieTokenizer",
+                "RegexFeaturizer",
+                "LexicalSyntacticFeaturizer",
+                "CountVectorsFeaturizer",
+                "CRFEntityExtractor",
+                "DucklingHTTPExtractor",
+                "DIETClassifier",
+                "ResponseSelector",
+                "DIETSelector",
+                "EntitySynonymMapper",
+            ),
+        ),
+        (
+            "en",
+            as_pipeline(
+                "SpacyNLP",
                 "SpacyTokenizer",
-                "MitieFeaturizer",
                 "SpacyFeaturizer",
                 "RegexFeaturizer",
                 "LexicalSyntacticFeaturizer",
                 "CountVectorsFeaturizer",
-                "MitieEntityExtractor",
                 "CRFEntityExtractor",
-                "SpacyEntityExtractor",
                 "DucklingHTTPExtractor",
-                "EntitySynonymMapper",
+                "SpacyEntityExtractor",
                 "SklearnIntentClassifier",
-                "MitieIntentClassifier",
-                "EmbeddingIntentClassifier",
                 "DIETClassifier",
-                "KeywordIntentClassifier",
                 "ResponseSelector",
                 "DIETSelector",
+                "EntitySynonymMapper",
+            ),
+        ),
+        (
+            "en",
+            as_pipeline(
+                "HFTransformersNLP",
+                "LanguageModelTokenizer",
+                "LanguageModelFeaturizer",
+                "RegexFeaturizer",
+                "LexicalSyntacticFeaturizer",
+                "CountVectorsFeaturizer",
+                "CRFEntityExtractor",
+                "DucklingHTTPExtractor",
+                "DIETClassifier",
+                "ResponseSelector",
+                "DIETSelector",
+                "EntitySynonymMapper",
+            ),
+        ),
+        (
+            "en",
+            as_pipeline(
+                "ConveRTTokenizer",
+                "ConveRTFeaturizer",
+                "RegexFeaturizer",
+                "LexicalSyntacticFeaturizer",
+                "CountVectorsFeaturizer",
+                "CRFEntityExtractor",
+                "DucklingHTTPExtractor",
+                "DIETClassifier",
+                "ResponseSelector",
+                "DIETSelector",
+                "EntitySynonymMapper",
+            ),
+        ),
+        (
+            "en",
+            as_pipeline(
+                "MitieNLP",
+                "MitieTokenizer",
+                "MitieFeaturizer",
+                "RegexFeaturizer",
+                "CountVectorsFeaturizer",
+                "MitieEntityExtractor",
+                "DucklingHTTPExtractor",
+                "MitieIntentClassifier",
+                "DIETClassifier",
+                "ResponseSelector",
+                "DIETSelector",
+                "EntitySynonymMapper",
             ),
         ),
         (
@@ -57,36 +124,14 @@ def pipelines_for_tests():
                 "MitieNLP",
                 "JiebaTokenizer",
                 "MitieFeaturizer",
+                "RegexFeaturizer",
+                "CountVectorsFeaturizer",
                 "MitieEntityExtractor",
-                "SklearnIntentClassifier",
-                "KeywordIntentClassifier",
-            ),
-        ),
-        # Create separate test pipelines for dense featurizers because they can't co-exist in the same pipeline
-        # together, as their tokenizers break the incoming message into different number of tokens.
-        (
-            "en",
-            as_pipeline(
-                "HFTransformersNLP",
-                "LanguageModelTokenizer",
-                "LanguageModelFeaturizer",
-                "LexicalSyntacticFeaturizer",
-                "CountVectorsFeaturizer",
-                "CRFEntityExtractor",
+                "MitieIntentClassifier",
                 "DIETClassifier",
                 "ResponseSelector",
-            ),
-        ),
-        (
-            "en",
-            as_pipeline(
-                "ConveRTTokenizer",
-                "ConveRTFeaturizer",
-                "LexicalSyntacticFeaturizer",
-                "CountVectorsFeaturizer",
-                "CRFEntityExtractor",
-                "DIETClassifier",
-                "ResponseSelector",
+                "DIETSelector",
+                "EntitySynonymMapper",
             ),
         ),
     ]
