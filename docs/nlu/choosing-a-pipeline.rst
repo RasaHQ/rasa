@@ -1,6 +1,4 @@
-:desc: Set up a pipeline of pre-trained word vectors form GloVe or fastText
-       or fit them specifically on your dataset using the TensorFlow pipeline
-       for open source NLU.
+:desc: Set up a pipeline of pre-trained components.
 
 .. _choosing-a-pipeline:
 
@@ -15,76 +13,133 @@ it on your dataset.
 .. contents::
    :local:
 
+.. warning::
+    We deprecated all existing pipeline templates, e.g. ``supervised_embeddings``, ``pretrained_embeddings_convert``
+    and ``pretrained_embeddings_spacy``. Please, list any components you want to use directly in the configuration
+    file.
 
 The Short Answer
 ----------------
 
-If your training data is in english, a good starting point is using ``pretrained_embeddings_convert`` pipeline.
+If your training data is in english, a good starting point is the following pipeline:
 
-.. literalinclude:: ../../data/test_config/config_pretrained_embeddings_convert.yml
-    :language: yaml
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+      - name: ConveRTTokenizer
+      - name: ConveRTFeaturizer
+      - name: RegexFeaturizer
+      - name: LexicalSyntacticFeaturizer
+      - name: CountVectorsFeaturizer
+      - name: CountVectorsFeaturizer
+        analyzer: "char_wb"
+        min_ngram: 1
+        max_ngram: 4
+      - name: DIETClassifier
+      - name: EntitySynonymMapper
+      - name: DIETSelector
+
 
 In case your training data is multi-lingual and is rich with domain specific vocabulary,
-use the ``supervised_embeddings`` pipeline:
+use the following pipeline:
 
-.. literalinclude:: ../../data/test_config/config_supervised_embeddings.yml
-    :language: yaml
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+      - name: WhitespaceTokenizer
+      - name: RegexFeaturizer
+      - name: LexicalSyntacticFeaturizer
+      - name: CountVectorsFeaturizer
+      - name: CountVectorsFeaturizer
+        analyzer: "char_wb"
+        min_ngram: 1
+        max_ngram: 4
+      - name: DIETClassifier
+      - name: EntitySynonymMapper
+      - name: DIETSelector
 
 
 A Longer Answer
 ---------------
 
-The three most important pipelines are ``supervised_embeddings``, ``pretrained_embeddings_convert`` and ``pretrained_embeddings_spacy``.
-The ``pretrained_embeddings_spacy`` pipeline uses pre-trained
-word vectors from either GloVe or fastText, whereas ``pretrained_embeddings_convert`` uses a pretrained sentence encoding model `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ to
-extract vector representations of complete user utterance as a whole. On the other hand, the ``supervised_embeddings`` pipeline
-doesn't use any pre-trained word vectors or sentence vectors, but instead fits these specifically for your dataset.
+We encourage everyone to define their own pipeline by listing the names of the components you want to use.
+For example:
+
+.. code-block:: yaml
+
+    pipeline:
+      - name: WhitespaceTokenizer
+      - name: RegexFeaturizer
+      - name: LexicalSyntacticFeaturizer
+      - name: CountVectorsFeaturizer
+      - name: CountVectorsFeaturizer
+        analyzer: "char_wb"
+        min_ngram: 1
+        max_ngram: 4
+      - name: DIETClassifier
+      - name: EntitySynonymMapper
+      - name: DIETSelector
+
+You can find the details of each component in :ref:`components`.
+If you want to use custom components in your pipeline, see :ref:`custom-nlu-components`.
+
+A pipeline usually consist of three main parts:
+
+    1. Tokenizaion
+    2. Featuirzation
+    3. Entity Recognition / Intent Classification / Response Selectors
+
+Tokenization
+~~~~~~~~~~~~
+If your chosen language is whitespace-tokenized (words are separated by spaces), you
+can use the ``WhitespaceTokenizer``. If this is not the case you should use a different tokenizer.
+We support a number of different :ref:`tokenizers <tokenizers>`, or you can :ref:`create your own <custom-nlu-components>`.
 
 .. note::
-    These recommendations are highly dependent on your dataset and hence approximate. We suggest experimenting with different pipelines to train the best model.
+    Some components further down the pipeline may require a specific tokenizer. You can find those requirements
+    on the individual components in :ref:`components`. If a required component is missing inside the pipeline, an
+    error will be thrown.
 
-pretrained_embeddings_spacy
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Featurization
+~~~~~~~~~~~~~
+You need to decide whether to use components that provide pre-trained word embeddings or not.
 
-The advantage of ``pretrained_embeddings_spacy`` pipeline is that if you have a training example like:
-"I want to buy apples", and Rasa is asked to predict the intent for "get pears", your model
-already knows that the words "apples" and "pears" are very similar. This is especially useful
-if you don't have large enough training data.
+If you do not use any pre-trained word embeddings, your word vectors will be customised for your domain. For example,
+in general English, the word "balance" is closely related to "symmetry", but very different to the word "cash". In a
+banking domain, "balance" and "cash" are closely related and you'd like your model to capture that. If you don't
+use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language and domain.
+Thus, you should only use featurizers from the category `sparse` featuirzers, such as
+``CountVectorsFeaturizer`` or ``RegexFeaturizer``.
 
+The advantage of using pre-trained word embeddings in your pipeline is that if you have a training example like:
+"I want to buy apples", and Rasa is asked to predict the intent for "get pears", your model already knows that the
+words "apples" and "pears" are very similar. This is especially useful if you don't have large enough training data.
+We support a few components that provide pre-trained word embeddings:
 
-pretrained_embeddings_convert
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    .. warning::
-        Since ``ConveRT`` model is trained only on an **English** corpus of conversations, this pipeline should only be used if your training data is in English language.
+1. ``MitieFeaturizer``
+2. ``SpacyFeaturizer``
+3. ``ConveRTFeaturizer``
+4. ``LanguageModelFeaturizer``
 
+The advantage of the ``ConveRTFeaturizer`` is that it doesn't treat each word of the user message independently, but
+creates a contextual vector representation for the complete sentence. For example, if you
+have a training example, like: "can I book a car?", and Rasa is asked to predict the intent for "I need a ride from
+my place", since the contextual vector representation for both examples are already very similar, the intent classified
+for both is highly likely to be the same. This is also useful if you don't have large enough training data.
 
-This pipeline uses `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model to extract vector representation of a sentence and feeds them to ``EmbeddingIntentClassifier`` for intent classification.
-The advantage of using ``pretrained_embeddings_convert`` pipeline is that it doesn't treat each word of the user message independently,
-but creates a contextual vector representation for the complete sentence. For example, if you have a training example, like:
-"can I book a car?", and Rasa is asked to predict the intent for "I need a ride from my place", since the contextual vector representation for both
-examples are already very similar, the intent classified for both is highly likely to be the same. This is also useful if you don't have
-large enough training data.
+TODO when to use what featurizer
 
-    .. note::
-        To use ``pretrained_embeddings_convert`` pipeline, you should install Rasa with ``pip install rasa[convert]``. Please also note that one of the dependencies(``tensorflow-text``) is currently only supported on Linux platforms.
+Entity Recognition / Intent Classification / Response Selectors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Depending on your data you may want to only perform intent classification or just entity recognition.
+We support several components for each of the task. All of them are listed in :ref:`components`.
+We recommend to use :ref:`diet-classifier` for intent classification and entity recognition and :ref:`response-selector`
+for response selection.
 
-supervised_embeddings
-~~~~~~~~~~~~~~~~~~~~~
-
-The advantage of the ``supervised_embeddings`` pipeline is that your word vectors will be customised
-for your domain. For example, in general English, the word "balance" is closely related to "symmetry",
-but very different to the word "cash". In a banking domain, "balance" and "cash" are closely related
-and you'd like your model to capture that. This pipeline doesn't use a language-specific model,
-so it will work with any language that you can tokenize (on whitespace or using a custom tokenizer).
-
-You can read more about this topic `here <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`__ .
-
-MITIE
-~~~~~
-
-You can also use MITIE as a source of word vectors in your pipeline, see :ref:`section_mitie_pipeline`. The MITIE backend performs well for small datasets, but training can take very long if you have more than a couple of hundred examples.
-
-However, we do not recommend that you use it as mitie support is likely to be deprecated in a future release.
 
 Comparing different pipelines for your data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,7 +159,7 @@ Class imbalance
 
 Classification algorithms often do not perform well if there is a large `class imbalance`,
 for example if you have a lot of training data for some intents and very little training data for others.
-To mitigate this problem, rasa's ``supervised_embeddings`` pipeline uses a ``balanced`` batching strategy.
+To mitigate this problem, you can use a ``balanced`` batching strategy.
 This algorithm ensures that all classes are represented in every batch, or at least in
 as many subsequent batches as possible, still mimicking the fact that some classes are more frequent than others.
 Balanced batching is used by default. In order to turn it off and use a classic batching strategy include
@@ -115,22 +170,24 @@ Balanced batching is used by default. In order to turn it off and use a classic 
     language: "en"
 
     pipeline:
-    - name: "CountVectorsFeaturizer"
-    - name: "EmbeddingIntentClassifier"
+    - ... # other components
+    - name: "DIETClassifier"
       batch_strategy: sequence
 
 
 Multiple Intents
 ----------------
 
-If you want to split intents into multiple labels,
-e.g. for predicting multiple intents or for modeling hierarchical intent structure,
-you can only do this with the supervised embeddings pipeline.
-To do this, use these flags in ``Whitespace Tokenizer``:
+If you want to split intents into multiple labels, e.g. for predicting multiple intents or for modeling hierarchical
+intent structure, you need to use :ref:`diet-classifier` in your pipeline.
+To do this, use these flags in any tokenizer:
 
-    - ``intent_split_symbol``: sets the delimiter string to split the intent labels. Default ``_``
+    - ``intent_tokenization_flag``: indicates whether to tokenize intent labels or not. By default this flag is set to
+      ``False``, intent will not be tokenized.
+    - ``intent_split_symbol``: sets the delimiter string to split the intent labels. Default ``_``.
 
-`Here <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`__ is a tutorial on how to use multiple intents in Rasa Core and NLU.
+`Here <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`__ is a
+tutorial on how to use multiple intents in Rasa.
 
 Here's an example configuration:
 
@@ -140,23 +197,24 @@ Here's an example configuration:
 
     pipeline:
     - name: "WhitespaceTokenizer"
+      intent_tokenization_flag: True
       intent_split_symbol: "_"
     - name: "CountVectorsFeaturizer"
-    - name: "EmbeddingIntentClassifier"
+    - name: "DIETClassifier"
 
 
 Understanding the Rasa NLU Pipeline
 -----------------------------------
 
 In Rasa NLU, incoming messages are processed by a sequence of components.
-These components are executed one after another
-in a so-called processing pipeline. There are components for entity extraction, for intent classification, response selection,
+These components are executed one after another in a so-called processing pipeline.
+There are components for entity extraction, for intent classification, response selection,
 pre-processing, and others. If you want to add your own component, for example to run a spell-check or to
 do sentiment analysis, check out :ref:`custom-nlu-components`.
 
 Each component processes the input and creates an output. The output can be used by any component that comes after
 this component in the pipeline. There are components which only produce information that is used by other components
-in the pipeline and there are other components that produce ``Output`` attributes which will be returned after
+in the pipeline and there are other components that produce ``output`` attributes which will be returned after
 the processing has finished. For example, for the sentence ``"I am looking for Chinese food"`` the output is:
 
 .. code-block:: json
@@ -164,7 +222,14 @@ the processing has finished. For example, for the sentence ``"I am looking for C
     {
         "text": "I am looking for Chinese food",
         "entities": [
-            {"start": 8, "end": 15, "value": "chinese", "entity": "cuisine", "extractor": "CRFEntityExtractor", "confidence": 0.864}
+            {
+                "start": 8,
+                "end": 15,
+                "value": "chinese",
+                "entity": "cuisine",
+                "extractor": "DIETClassifier",
+                "confidence": 0.864
+            }
         ],
         "intent": {"confidence": 0.6485910906220309, "name": "restaurant_search"},
         "intent_ranking": [
@@ -173,18 +238,35 @@ the processing has finished. For example, for the sentence ``"I am looking for C
         ]
     }
 
-This is created as a combination of the results of the different components in the pre-configured pipeline ``pretrained_embeddings_spacy``.
-For example, the ``entities`` attribute is created by the ``CRFEntityExtractor`` component.
+This is created as a combination of the results of the different components in the following pipeline:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+      - name: WhitespaceTokenizer
+      - name: RegexFeaturizer
+      - name: LexicalSyntacticFeaturizer
+      - name: CountVectorsFeaturizer
+      - name: CountVectorsFeaturizer
+        analyzer: "char_wb"
+        min_ngram: 1
+        max_ngram: 4
+      - name: DIETClassifier
+      - name: EntitySynonymMapper
+      - name: DIETSelector
+
+For example, the ``entities`` attribute is created by the ``DIETClassifier`` component.
 
 
 .. _section_component_lifecycle:
 
 Component Lifecycle
 -------------------
-Every component can implement several methods from the ``Component``
-base class; in a pipeline these different methods
-will be called in a specific order. Lets assume, we added the following
-pipeline to our config:
+
+Every component can implement several methods from the ``Component`` base class; in a pipeline these different methods
+will be called in a specific order. Lets assume, we added the following pipeline to our config:
 ``"pipeline": ["Component A", "Component B", "Last Component"]``.
 The image shows the call order during the training of this pipeline:
 
@@ -234,20 +316,23 @@ exactly. Instead it will return the trained synonym.
 
 .. note::
 
-    The ``confidence`` will be set by the CRF entity extractor
-    (``CRFEntityExtractor`` component). The duckling entity extractor will always return
-    ``1``. The ``SpacyEntityExtractor`` extractor does not provide this information and
-    returns ``null``.
+    The ``confidence`` will be set by the ``CRFEntityExtractor`` and ``DIETClassifier`` component. The
+    ``DucklingHTTPExtractor`` will always return ``1``. The ``SpacyEntityExtractor`` extractor does not provide this
+    information and returns ``null``.
 
 
-Pre-configured Pipelines
-------------------------
+Pipeline Templates (deprecated)
+-------------------------------
 
-A template is just a shortcut for
-a full list of components. For example, these two configurations are equivalent:
+A template is just a shortcut for a full list of components. For example, these two configurations are equivalent:
 
-.. literalinclude:: ../../data/test_config/config_pretrained_embeddings_spacy.yml
-    :language: yaml
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline: "pretrained_embeddings_spacy"
+
+and
 
 .. code-block:: yaml
 
@@ -262,18 +347,114 @@ a full list of components. For example, these two configurations are equivalent:
     - name: "EntitySynonymMapper"
     - name: "SklearnIntentClassifier"
 
-Below is a list of all the pre-configured pipeline templates with customization information.
+The three most important pipelines are ``supervised_embeddings``, ``pretrained_embeddings_convert`` and
+``pretrained_embeddings_spacy``.
+The ``pretrained_embeddings_spacy`` pipeline uses pre-trained word vectors from either GloVe or fastText,
+whereas ``pretrained_embeddings_convert`` uses a pretrained sentence encoding model
+`ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ to extract vector representations of complete user
+utterance as a whole. On the other hand, the ``supervised_embeddings`` pipeline doesn't use any pre-trained word
+vectors or sentence vectors, but instead fits these specifically for your dataset.
+
+.. note::
+    These recommendations are highly dependent on your dataset and hence approximate. We suggest experimenting with
+    different pipelines to train the best model.
+
+.. _section_pretrained_embeddings_spacy_pipeline:
+
+pretrained_embeddings_spacy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The advantage of ``pretrained_embeddings_spacy`` pipeline is that if you have a training example like:
+"I want to buy apples", and Rasa is asked to predict the intent for "get pears", your model
+already knows that the words "apples" and "pears" are very similar. This is especially useful
+if you don't have large enough training data.
+
+To use the ``pretrained_embeddings_spacy`` template, use the following configuration:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline: "pretrained_embeddings_spacy"
+
+See :ref:`pretrained-word-vectors` for more information about loading spacy language models.
+To use the components and configure them separately:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "SpacyNLP"
+    - name: "SpacyTokenizer"
+    - name: "SpacyFeaturizer"
+    - name: "RegexFeaturizer"
+    - name: "CRFEntityExtractor"
+    - name: "EntitySynonymMapper"
+    - name: "SklearnIntentClassifier"
+
+.. _section_pretrained_embeddings_convert_pipeline:
+
+pretrained_embeddings_convert
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    .. warning::
+        Since ``ConveRT`` model is trained only on an **English** corpus of conversations, this pipeline should only
+        be used if your training data is in English language.
+
+This pipeline uses `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model to extract vector representation of
+a sentence and feeds them to ``EmbeddingIntentClassifier`` for intent classification.
+The advantage of using ``pretrained_embeddings_convert`` pipeline is that it doesn't treat each word of the user
+message independently, but creates a contextual vector representation for the complete sentence. For example, if you
+have a training example, like: "can I book a car?", and Rasa is asked to predict the intent for "I need a ride from
+my place", since the contextual vector representation for both examples are already very similar, the intent classified
+for both is highly likely to be the same. This is also useful if you don't have large enough training data.
+
+    .. note::
+        To use ``pretrained_embeddings_convert`` pipeline, you should install Rasa with ``pip install rasa[convert]``.
+        Please also note that one of the dependencies(``tensorflow-text``) is currently only supported on Linux
+        platforms.
+
+To use the ``pretrained_embeddings_convert`` template:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline: "pretrained_embeddings_convert"
+
+To use the components and configure them separately:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "ConveRTTokenizer"
+    - name: "ConveRTFeaturizer"
+    - name: "EmbeddingIntentClassifier"
 
 .. _section_supervised_embeddings_pipeline:
 
 supervised_embeddings
 ~~~~~~~~~~~~~~~~~~~~~
 
+The advantage of the ``supervised_embeddings`` pipeline is that your word vectors will be customised
+for your domain. For example, in general English, the word "balance" is closely related to "symmetry",
+but very different to the word "cash". In a banking domain, "balance" and "cash" are closely related
+and you'd like your model to capture that. This pipeline doesn't use a language-specific model,
+so it will work with any language that you can tokenize (on whitespace or using a custom tokenizer).
+
+You can read more about this topic `here <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`__ .
+
 To train a Rasa model in your preferred language, define the
 ``supervised_embeddings`` pipeline as your pipeline in your ``config.yml`` or other configuration file:
 
-.. literalinclude:: ../../data/test_config/config_supervised_embeddings.yml
-    :language: yaml
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline: "supervised_embeddings"
 
 The ``supervised_embeddings`` pipeline supports any language that can be tokenized.  By default it uses whitespace
 for tokenization. You can customize the setup of this pipeline by adding or changing components. Here are the default
@@ -305,57 +486,16 @@ n-grams, preserving word boundaries. We empirically found the second featurizer
 to be more powerful, but we decided to keep the first featurizer as well to make
 featurization more robust.
 
-.. _section_pretrained_embeddings_convert_pipeline:
-
-pretrained_embeddings_convert
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-To use the ``pretrained_embeddings_convert`` template:
-
-.. literalinclude:: ../../data/test_config/config_pretrained_embeddings_convert.yml
-    :language: yaml
-
-To use the components and configure them separately:
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-    - name: "ConveRTTokenizer"
-    - name: "ConveRTFeaturizer"
-    - name: "EmbeddingIntentClassifier"
-
-.. _section_pretrained_embeddings_spacy_pipeline:
-
-pretrained_embeddings_spacy
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-To use the ``pretrained_embeddings_spacy`` template:
-
-.. literalinclude:: ../../data/test_config/config_pretrained_embeddings_spacy.yml
-    :language: yaml
-
-See :ref:`pretrained-word-vectors` for more information about loading spacy language models.
-To use the components and configure them separately:
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-    - name: "SpacyNLP"
-    - name: "SpacyTokenizer"
-    - name: "SpacyFeaturizer"
-    - name: "RegexFeaturizer"
-    - name: "CRFEntityExtractor"
-    - name: "EntitySynonymMapper"
-    - name: "SklearnIntentClassifier"
-
 .. _section_mitie_pipeline:
 
 MITIE
 ~~~~~
+
+You can also use MITIE as a source of word vectors in your pipeline.
+The MITIE backend performs well for small datasets, but training can take very long if you have more than a couple
+of hundred examples.
+
+However, we do not recommend that you use it as mitie support is likely to be deprecated in a future release.
 
 To use the MITIE pipeline, you will have to train word vectors from a corpus. Instructions can be found
 :ref:`here <mitie>`. This will give you the file path to pass to the ``model`` parameter.
@@ -368,23 +508,3 @@ Training can be quite slow, so this is not recommended for large datasets.
 
 .. literalinclude:: ../../data/test_config/config_pretrained_embeddings_mitie_2.yml
     :language: yaml
-
-
-Custom pipelines
-----------------
-
-You don't have to use a template, you can also run a fully custom pipeline
-by listing the names of the components you want to use:
-
-.. code-block:: yaml
-
-    pipeline:
-    - name: "SpacyNLP"
-    - name: "CRFEntityExtractor"
-    - name: "EntitySynonymMapper"
-
-This creates a pipeline that only does entity recognition, but no
-intent classification. So Rasa NLU will not predict any intents.
-You can find the details of each component in :ref:`components`.
-
-If you want to use custom components in your pipeline, see :ref:`custom-nlu-components`.

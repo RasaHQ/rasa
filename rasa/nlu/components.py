@@ -2,7 +2,7 @@ import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple
 
-from rasa.nlu.config import RasaNLUModelConfig, override_defaults
+from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.nlu.constants import RESPONSE
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import raise_warning
@@ -62,7 +62,7 @@ def validate_tokenizers(pipeline: List["Component"]) -> None:
             tokenizer_names.append(component.name)
 
     if len(tokenizer_names) > 1:
-        raise Exception(
+        raise InvalidConfigError(
             f"More then one tokenizer is used: {tokenizer_names}. "
             f"You can use only one tokenizer."
         )
@@ -75,7 +75,7 @@ def validate_required_components(pipeline: List["Component"]) -> None:
     for component in pipeline:
         unique_component_names.add(component.name)
         if not set(component.required_components).issubset(unique_component_names):
-            raise Exception(
+            raise InvalidConfigError(
                 f"'{component.name}' requires {component.required_components}. "
                 f"Add required components to the pipeline."
             )
@@ -90,7 +90,7 @@ def validate_arguments(
 
     # Ensure the pipeline is not empty
     if not allow_empty_pipeline and len(pipeline) == 0:
-        raise ValueError(
+        raise InvalidConfigError(
             "Can not train an empty pipeline. "
             "Make sure to specify a proper pipeline in "
             "the configuration using the 'pipeline' key. "
@@ -106,7 +106,7 @@ def validate_arguments(
                 validate_requires_any_of(r, provided_properties, str(component.name))
             else:
                 if r not in provided_properties:
-                    raise Exception(
+                    raise InvalidConfigError(
                         f"Failed to validate component {component.name}. "
                         f"Missing property: '{r}'"
                     )
@@ -135,7 +135,7 @@ def validate_requires_any_of(
     )
 
     if not property_present:
-        raise Exception(
+        raise InvalidConfigError(
             f"Failed to validate component '{component_name}'. "
             f"Missing one of the following properties: "
             f"{required_properties}."
