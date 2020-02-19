@@ -59,11 +59,7 @@ def validate_tokenizers(pipeline: List["Component"]) -> None:
         if isinstance(component, Tokenizer):
             tokenizer_names.append(component.name)
 
-    if not tokenizer_names:
-        raise Exception(
-            f"No tokenizer is used. You should add one tokenizer to your pipeline."
-        )
-    elif len(tokenizer_names) > 1:
+    if len(tokenizer_names) > 1:
         raise Exception(
             f"More then one tokenizer is used: {tokenizer_names}. "
             f"You can use only one tokenizer."
