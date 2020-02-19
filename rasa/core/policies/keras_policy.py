@@ -75,7 +75,7 @@ class KerasPolicy(Policy):
             "'KerasPolicy' is deprecated and will be removed in version "
             "2.0. Use 'TEDPolicy' instead.",
             category=FutureWarning,
-            docs=f"{DOCS_BASE_URL}/core/policies/",
+            docs=f"{DOCS_URL_POLICIES}",
         )
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
