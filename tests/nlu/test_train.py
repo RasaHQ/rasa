@@ -39,6 +39,7 @@ def pipelines_for_tests():
                 "CRFEntityExtractor",
                 "DucklingHTTPExtractor",
                 "DIETClassifier",
+                "EmbeddingIntentClassifier",
                 "ResponseSelector",
                 "DIETSelector",
                 "EntitySynonymMapper",

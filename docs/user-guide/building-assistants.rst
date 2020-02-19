@@ -764,7 +764,7 @@ unfeaturized slots are only used for storing information. The stories for this s
        - sales_form
        - form{"name": null}
 
-   ## explain email
+   ## explain budget
    * contact_sales
        - sales_form
        - form{"name": "sales_form"}
