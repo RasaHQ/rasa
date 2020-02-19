@@ -28,12 +28,7 @@ def pipelines_for_tests():
 
     # first is language followed by list of components
     return [
-        (
-            "en",
-            as_pipeline(
-                "KeywordIntentClassifier",
-            ),
-        ),
+        ("en", as_pipeline("KeywordIntentClassifier")),
         (
             "en",
             as_pipeline(
