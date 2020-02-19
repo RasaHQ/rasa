@@ -37,7 +37,7 @@ def mitie_feature_extractor(
     ).extractor
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def default_config() -> RasaNLUModelConfig:
     return RasaNLUModelConfig({"language": "en", "pipeline": []})
 
@@ -57,7 +57,7 @@ def config_path() -> Text:
     ).name
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def pretrained_embeddings_spacy_config() -> RasaNLUModelConfig:
     return RasaNLUModelConfig(
         {
@@ -75,7 +75,7 @@ def pretrained_embeddings_spacy_config() -> RasaNLUModelConfig:
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def supervised_embeddings_config() -> RasaNLUModelConfig:
     return RasaNLUModelConfig(
         {
@@ -98,7 +98,7 @@ def supervised_embeddings_config() -> RasaNLUModelConfig:
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def pretrained_embeddings_convert_config() -> RasaNLUModelConfig:
     return RasaNLUModelConfig(
         {

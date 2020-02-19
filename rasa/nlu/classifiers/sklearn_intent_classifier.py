@@ -145,7 +145,7 @@ class SklearnIntentClassifier(Component):
         # dirty str fix because sklearn is expecting
         # str not instance of basestr...
         tuned_parameters = [
-            {"C": np.array(C), "gamma": gamma, "kernel": [str(k) for k in kernels]}
+            {"C": C, "gamma": gamma, "kernel": [str(k) for k in kernels]}
         ]
 
         # aim for 5 examples in each fold
