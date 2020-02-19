@@ -164,10 +164,34 @@ class MultiProjectImporter(TrainingDataImporter):
 
     def add_import(self, path: Text) -> None:
         self._imports.append(path)
+    
+    def _log_merge_infos(self, domains) -> None:
+        merges = {
+            "actions": {},
+            "entities": {},
+            "forms": {},
+            "intents": {},
+            "slots": {}
+        }
+        domain_dicts = [domain.as_dict() for domain in domains]
+        for i, domain_dict in enumerate(domain_dicts):
+            domain_path = self._domain_paths[i]
+            for k, v in merges.items():
+                for e in domain_dict.get(k, []):
+                    name = e if isinstance(e, str) else next(iter(e.keys()))
+                    v[name] = v.get(name, []) + [domain_path]
+        for k, v in merges.items():
+            infos = ""
+            for name, paths in v.items():
+                if len(paths) > 1:
+                    infos += f"\n  - {name} (from {' + '.join(paths)})"
+            if len(infos) > 0:
+                logger.info(f"Merging following {k}:" + infos)
 
     @alru_cache()
     async def get_domain(self) -> Domain:
         domains = [Domain.load(path) for path in self._domain_paths]
+        self._log_merge_infos(domains)
         return reduce(
             lambda merged, other: merged.merge(other), domains, Domain.empty()
         )
