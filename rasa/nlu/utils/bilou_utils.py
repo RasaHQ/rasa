@@ -3,14 +3,16 @@ from typing import List, Tuple, Text, Optional, Dict, Set
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.constants import (
-    ENTITIES,
-    TOKENS_NAMES,
-    TEXT,
-    BILOU_ENTITIES,
-)
+from rasa.nlu.constants import ENTITIES, TOKENS_NAMES, TEXT, BILOU_ENTITIES
 
 BILOU_PREFIXES = ["B-", "I-", "U-", "L-"]
+
+
+def bilou_prefix_from_tag(tag: Text) -> Optional[Text]:
+    """Remove the BILOU prefix from the given tag."""
+    if tag[:2] in BILOU_PREFIXES:
+        return tag[0]
+    return None
 
 
 def entity_name_from_tag(tag: Text) -> Text:
@@ -68,13 +70,13 @@ def apply_bilou_schema(training_data: TrainingData):
         if not entities:
             continue
 
-        entities = _map_message_entities(message)
-        output = _bilou_tags_from_offsets(message.get(TOKENS_NAMES[TEXT]), entities)
+        entities = map_message_entities(message)
+        output = bilou_tags_from_offsets(message.get(TOKENS_NAMES[TEXT]), entities)
 
         message.set(BILOU_ENTITIES, output)
 
 
-def _map_message_entities(message: Message) -> List[Tuple[int, int, Text]]:
+def map_message_entities(message: Message) -> List[Tuple[int, int, Text]]:
     """Maps the entities of the given message to their start, end, and tag values."""
 
     def convert_entity(entity):
@@ -83,7 +85,7 @@ def _map_message_entities(message: Message) -> List[Tuple[int, int, Text]]:
     return [convert_entity(entity) for entity in message.get(ENTITIES, [])]
 
 
-def _bilou_tags_from_offsets(
+def bilou_tags_from_offsets(
     tokens: List[Token], entities: List[Tuple[int, int, Text]], missing: Text = "O"
 ) -> List[Text]:
     """Creates a list of BILOU tags for the given list of tokens and entities."""

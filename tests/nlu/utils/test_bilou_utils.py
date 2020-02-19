@@ -22,6 +22,23 @@ def test_entity_name_from_tag(tag, expected):
     assert actual == expected
 
 
+@pytest.mark.parametrize(
+    "tag, expected",
+    [
+        ("B-person", "B"),
+        ("I-location", "I"),
+        ("location", None),
+        ("U-company", "U"),
+        ("L-company", "L"),
+        ("O-company", None),
+    ],
+)
+def test_bilou_from_tag(tag, expected):
+    actual = bilou_utils.bilou_prefix_from_tag(tag)
+
+    assert actual == expected
+
+
 def test_tags_to_ids():
     message = Message("Germany is part of the European Union")
     message.set(
