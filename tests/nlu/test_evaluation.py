@@ -302,7 +302,7 @@ def test_run_cv_evaluation(pretrained_embeddings_spacy_config):
     assert len(entity_results.test["CRFEntityExtractor"]["F1-score"]) == n_folds
 
 
-def test_run_cv_evaluation_with_response_selector(supervised_embeddings_config):
+def test_run_cv_evaluation_with_response_selector():
     training_data_obj = training_data.load_data("data/examples/rasa/demo-rasa.md")
     training_data_responses_obj = training_data.load_data(
         "data/examples/rasa/demo-rasa-responses.md"
