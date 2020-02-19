@@ -33,8 +33,121 @@ General
       epochs: 100
 
   The given snippet specifies default values for the parameters ``max_history`` and
-  ``epochs``. ``max_history`` is particularly important and strongly depends on your stories. Please see the docs of the :ref:`embedding_policy` if you want to
-  customize them.
+  ``epochs``. ``max_history`` is particularly important and strongly depends on your stories.
+  Please see the docs of the :ref:`embedding_policy` if you want to customize them.
+
+- All pre-defined pipeline templates are deprecated. Take a look at :ref:`choosing-a-pipeline`
+  to decide on what components you should use in your configuration file.
+
+- The :ref:`embedding_policy` got renamed to :ref:`ted_policy`. The functionality of the policy stayed the same.
+  Please update your configuration files to use ``TEDPolicy`` instead of ``EmbeddingPolicy``.
+
+- Most of the model options for ``EmbeddingPolicy``, ``EmbeddingIntentClassifier``, and ``ResponseSelector`` got
+  renamed. Please update your configuration files using the following mapping:
+
+  =============================  =======================================================
+  Old model option               New model option
+  =============================  =======================================================
+  hidden_layers_sizes_a          dictionary "hidden_layers_sizes" with key "text"
+  hidden_layers_sizes_b          dictionary "hidden_layers_sizes" with key "label"
+  hidden_layers_sizes_pre_dial   dictionary "hidden_layers_sizes" with key "dialogue"
+  hidden_layers_sizes_bot        dictionary "hidden_layers_sizes" with key "label"
+  num_transformer_layers         number_of_transformer_layers
+  num_heads                      number_of_attention_heads
+  max_seq_length                 maximum_sequence_length
+  dense_dim                      dense_dimension
+  embed_dim                      embedding_dimension
+  num_neg                        number_of_negative_examples
+  mu_pos                         maximum_positive_similarity
+  mu_neg                         maximum_negative_similarity
+  use_max_sim_neg                use_maximum_negative_similarity
+  C2                             regularization_constant
+  C_emb                          negative_margin_scale
+  droprate_a                     droprate_dialogue
+  droprate_b                     droprate_label
+  evaluate_every_num_epochs      evaluate_every_number_of_epochs
+  evaluate_on_num_examples       evaluate_on_number_of_examples
+  =============================  =======================================================
+
+  A warning will be logged in case an old option is used. However, you can still use the old configuration options.
+  They will be mapped to the new names.
+
+- ``EmbeddingIntentClassifier`` is now deprecated and will be replaced by ``DIETClassifier`` in the future.
+  ``DIETClassfier`` is based on a multi-task architecture for intent classification and entity recognition.
+  However, if you want to get the same model behaviour as the current ``EmbeddingIntentClassifier``, you can use
+  the following configuration of ``DIETClassifier``:
+
+  .. code-block:: yaml
+
+    pipeline:
+    - ... # other components
+    - name: DIETClassifier
+      intent_classification: True
+      entity_recognition: False
+      use_masked_language_model: False
+      BILOU_flag: False
+      number_of_transformer_layers: 0
+      ... # any other parameters
+
+  See :ref:`diet-classifier` for more information about the new component.
+
+- ``CRFEntityExtractor`` is now deprecated and will be replaced by ``DIETClassifier`` in the future. ``DIETClassfier``
+  is based on a multi-task architecture for intent classification and entity recognition. However, if you want to
+  get the same model behaviour as the current ``CRFEntityExtractor``, you can use the following configuration:
+
+  .. code-block:: yaml
+
+    pipeline:
+    - ... # other components
+    - name: LexicalSyntacticFeaturizer
+      features: [
+        ["low", "title", "upper"],
+        [
+          "BOS",
+          "EOS",
+          "low",
+          "prefix5",
+          "prefix2",
+          "suffix5",
+          "suffix3",
+          "suffix2",
+          "upper",
+          "title",
+          "digit",
+        ],
+        ["low", "title", "upper"],
+      ]
+    - name: DIETClassifier
+      intent_classification: False
+      entity_recognition: True
+      use_masked_language_model: False
+      number_of_transformer_layers: 0
+      ... # any other parameters
+
+  As you can see in the configuration, you need to add the ``LexicalSyntacticFeaturizer`` before the ``DIETClassifier``
+  to your pipeline. ``CRFEntityExtractor`` featurizes user messages on its own, it does not depend on any featurizer.
+  We extracted the featurization from the component into the new featurizer ``LexicalSyntacticFeaturizer``. Thus,
+  in order to obtain the same results as before, you need to add this featurizer to your pipeline before the
+  ``DIETClassifier``. For more information about the ``DIETClassifier`` and the ``LexicalSyntacticFeaturizer``
+  see :ref:`components`.
+
+- ``ResponseSelector`` is now deprecated and will be replaced by ``DIETSelector`` in the future. If you want to
+  get the same model behaviour as the current ``ResponseSelector``, you can use the following configuration of
+  ``DIETSelector``:
+
+  .. code-block:: yaml
+
+    pipeline:
+    - ... # other components
+    - name: DIETSelector
+      intent_classification: True
+      entity_recognition: False
+      use_masked_language_model: False
+      BILOU_flag: False
+      number_of_transformer_layers: 0
+      ... # any other parameters
+
+  See :ref:`diet-selector` for more information about the new component.
 
 .. _migration-to-rasa-1.7:
 

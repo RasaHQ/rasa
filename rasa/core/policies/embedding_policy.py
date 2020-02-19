@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Text
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.constants import DOCS_BASE_URL
+from rasa.constants import DOCS_URL_POLICIES
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -25,9 +25,9 @@ from rasa.utils.tensorflow.constants import (
     NEG_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
-    USE_MAX_SIM_NEG,
-    MU_NEG,
-    MU_POS,
+    USE_MAX_NEG_SIM,
+    MAX_NEG_SIM,
+    MAX_POS_SIM,
     EMBED_DIM,
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
@@ -86,12 +86,12 @@ class EmbeddingPolicy(TEDPolicy):
         RANKING_LENGTH: 10,
         # how similar the algorithm should try
         # to make embedding vectors for correct labels
-        MU_POS: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
+        MAX_POS_SIM: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
         # maximum negative similarity for incorrect labels
-        MU_NEG: -0.2,  # should be -1.0 < ... < 1.0 for 'cosine'
+        MAX_NEG_SIM: -0.2,  # should be -1.0 < ... < 1.0 for 'cosine'
         # the number of incorrect labels, the algorithm will minimize
         # their similarity to the user input during training
-        USE_MAX_SIM_NEG: True,  # flag which loss function to use
+        USE_MAX_NEG_SIM: True,  # flag which loss function to use
         # scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
         # regularization
@@ -132,7 +132,8 @@ class EmbeddingPolicy(TEDPolicy):
         super().__init__(featurizer, priority, max_history, model, **kwargs)
 
         raise_warning(
-            f"'EmbeddingPolicy' is deprecated. Use 'TEDPolicy' instead.",
+            f"'EmbeddingPolicy' is deprecated and will be removed in version 2.0. "
+            f"Use 'TEDPolicy' instead.",
             category=FutureWarning,
-            docs=f"{DOCS_BASE_URL}/core/policies/",
+            docs=DOCS_URL_POLICIES,
         )

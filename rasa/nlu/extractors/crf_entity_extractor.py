@@ -7,6 +7,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
     LexicalSyntacticFeaturizer,
 )
+from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.constants import DOCS_BASE_URL
@@ -16,7 +17,6 @@ from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES,
     NUM_TRANSFORMER_LAYERS,
     BATCH_SIZES,
-    BATCH_STRATEGY,
     EPOCHS,
     RANDOM_SEED,
     LEARNING_RATE,
@@ -30,6 +30,7 @@ from rasa.utils.tensorflow.constants import (
     DROPRATE,
     REGULARIZATION_CONSTANT,
     BILOU_FLAG,
+    BATCH_STRATEGY,
 )
 from rasa.utils.common import raise_warning
 from rasa.utils.tensorflow.models import RasaModel
@@ -43,7 +44,7 @@ class CRFEntityExtractor(DIETClassifier):
 
     requires = [TOKENS_NAMES[TEXT]]
 
-    # default properties (DOC MARKER - don't remove)
+    # please make sure to update the docs when changing a default parameter
     defaults = {
         # 'features' is [before, word, after] array with before, word,
         # after holding keys about which features to use for each word,
@@ -75,8 +76,6 @@ class CRFEntityExtractor(DIETClassifier):
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
         BATCH_SIZES: [64, 256],
-        # how to create batches
-        BATCH_STRATEGY: "sequence",  # string 'sequence' or 'balanced'
         # number of epochs
         EPOCHS: 300,
         # set random seed to any int to get reproducible results
@@ -121,6 +120,7 @@ class CRFEntityExtractor(DIETClassifier):
         component_config[ENTITY_RECOGNITION] = True
         component_config[MASKED_LM] = False
         component_config[NUM_TRANSFORMER_LAYERS] = 0
+        component_config[BATCH_STRATEGY] = "sequence"
 
         super().__init__(
             component_config,
@@ -135,10 +135,11 @@ class CRFEntityExtractor(DIETClassifier):
         )
 
         raise_warning(
-            f"'CRFEntityExtractor' is deprecated. Use 'DIETClassifier' in "
-            f"combination with 'LexicalSyntacticFeaturizer' instead.",
+            f"'CRFEntityExtractor' is deprecated and will be remove in version 2.0. "
+            f"Use 'DIETClassifier' in combination with 'LexicalSyntacticFeaturizer' "
+            f"instead.",
             category=FutureWarning,
-            docs=f"{DOCS_BASE_URL}/nlu/components/",
+            docs=DOCS_URL_COMPONENTS,
         )
 
     def train(

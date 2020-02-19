@@ -1,6 +1,5 @@
-# Configuration for Rasa NLU.
-# https://rasa.com/docs/rasa/nlu/components/
-language: en
+language: "en"
+
 pipeline:
   - name: WhitespaceTokenizer
   - name: RegexFeaturizer
@@ -13,12 +12,6 @@ pipeline:
   - name: DIETClassifier
   - name: EntitySynonymMapper
   - name: DIETSelector
-
-# Configuration for Rasa Core.
-# https://rasa.com/docs/rasa/core/policies/
-policies:
-  - name: MemoizationPolicy
-  - name: EmbeddingPolicy
-    max_history: 5
-    epochs: 100
-  - name: MappingPolicy
+  - name: DucklingHTTPExtractor
+    url: "http://duckling:8000"
+  

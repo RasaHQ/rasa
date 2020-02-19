@@ -21,13 +21,13 @@ The Short Answer
 
 If your training data is in english, a good starting point is using ``pretrained_embeddings_convert`` pipeline.
 
-.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_convert.yml
+.. literalinclude:: ../../data/test_config/config_pretrained_embeddings_convert.yml
     :language: yaml
 
 In case your training data is multi-lingual and is rich with domain specific vocabulary,
 use the ``supervised_embeddings`` pipeline:
 
-.. literalinclude:: ../../sample_configs/config_supervised_embeddings.yml
+.. literalinclude:: ../../data/test_config/config_supervised_embeddings.yml
     :language: yaml
 
 
@@ -246,7 +246,7 @@ Pre-configured Pipelines
 A template is just a shortcut for
 a full list of components. For example, these two configurations are equivalent:
 
-.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_spacy.yml
+.. literalinclude:: ../../data/test_config/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
 .. code-block:: yaml
@@ -272,7 +272,7 @@ supervised_embeddings
 To train a Rasa model in your preferred language, define the
 ``supervised_embeddings`` pipeline as your pipeline in your ``config.yml`` or other configuration file:
 
-.. literalinclude:: ../../sample_configs/config_supervised_embeddings.yml
+.. literalinclude:: ../../data/test_config/config_supervised_embeddings.yml
     :language: yaml
 
 The ``supervised_embeddings`` pipeline supports any language that can be tokenized.  By default it uses whitespace
@@ -312,7 +312,7 @@ pretrained_embeddings_convert
 
 To use the ``pretrained_embeddings_convert`` template:
 
-.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_convert.yml
+.. literalinclude:: ../../data/test_config/config_pretrained_embeddings_convert.yml
     :language: yaml
 
 To use the components and configure them separately:
@@ -333,7 +333,7 @@ pretrained_embeddings_spacy
 
 To use the ``pretrained_embeddings_spacy`` template:
 
-.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_spacy.yml
+.. literalinclude:: ../../data/test_config/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
 See :ref:`pretrained-word-vectors` for more information about loading spacy language models.
@@ -360,13 +360,13 @@ MITIE
 To use the MITIE pipeline, you will have to train word vectors from a corpus. Instructions can be found
 :ref:`here <mitie>`. This will give you the file path to pass to the ``model`` parameter.
 
-.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_mitie.yml
+.. literalinclude:: ../../data/test_config/config_pretrained_embeddings_mitie.yml
     :language: yaml
 
 Another version of this pipeline uses MITIE's featurizer and also its multi-class classifier.
 Training can be quite slow, so this is not recommended for large datasets.
 
-.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_mitie_2.yml
+.. literalinclude:: ../../data/test_config/config_pretrained_embeddings_mitie_2.yml
     :language: yaml
 
 

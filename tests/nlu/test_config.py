@@ -4,25 +4,17 @@ from typing import Text
 
 import pytest
 
-import rasa.utils.io
 from rasa.nlu import config
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.registry import registered_pipeline_templates
-from tests.nlu.conftest import CONFIG_DEFAULTS_PATH
 from tests.nlu.utilities import write_file_config
 
-defaults = rasa.utils.io.read_config_file(CONFIG_DEFAULTS_PATH)
 
-
-def test_default_config(default_config):
-    assert default_config.as_dict() == defaults
-
-
-def test_blank_config():
+def test_blank_config(default_config):
     file_config = {}
     f = write_file_config(file_config)
     final_config = config.load(f.name)
-    assert final_config.as_dict() == defaults
+    assert final_config.as_dict() == default_config.as_dict()
 
 
 def test_invalid_config_json():
@@ -61,29 +53,43 @@ def test_default_config_file():
     assert len(final_config) > 1
 
 
-def test_set_attr_on_component():
-    cfg = config.load("sample_configs/config_pretrained_embeddings_spacy.yml")
+def test_set_attr_on_component(pretrained_embeddings_spacy_config):
+    idx_classifier = pretrained_embeddings_spacy_config.component_names.index(
+        "SklearnIntentClassifier"
+    )
+    idx_tokenizer = pretrained_embeddings_spacy_config.component_names.index(
+        "SpacyTokenizer"
+    )
+    pretrained_embeddings_spacy_config.set_component_attr(idx_classifier, C=324)
 
-    idx_classifier = cfg.component_names.index("SklearnIntentClassifier")
-    idx_tokenizer = cfg.component_names.index("SpacyTokenizer")
-    cfg.set_component_attr(idx_classifier, C=324)
-
-    assert cfg.for_component(idx_tokenizer) == {"name": "SpacyTokenizer"}
-    assert cfg.for_component(idx_classifier) == {
+    assert pretrained_embeddings_spacy_config.for_component(idx_tokenizer) == {
+        "name": "SpacyTokenizer"
+    }
+    assert pretrained_embeddings_spacy_config.for_component(idx_classifier) == {
         "name": "SklearnIntentClassifier",
         "C": 324,
     }
 
 
-def test_override_defaults_supervised_embeddings_pipeline():
-    cfg = config.load("data/test/config_embedding_test.yml")
+def test_override_defaults_supervised_embeddings_pipeline(supervised_embeddings_config):
     builder = ComponentBuilder()
 
-    component1_cfg = cfg.for_component(0)
+    idx_featurizer = supervised_embeddings_config.component_names.index(
+        "CountVectorsFeaturizer"
+    )
+    idx_classifier = supervised_embeddings_config.component_names.index(
+        "EmbeddingIntentClassifier"
+    )
 
-    component1 = builder.create_component(component1_cfg, cfg)
-    assert component1.max_ngram == 3
+    config_featurizer = supervised_embeddings_config.for_component(idx_featurizer)
+    config_classifier = supervised_embeddings_config.for_component(idx_classifier)
 
-    component2_cfg = cfg.for_component(1)
-    component2 = builder.create_component(component2_cfg, cfg)
-    assert component2.component_config["epochs"] == 10
+    component1 = builder.create_component(
+        config_featurizer, supervised_embeddings_config
+    )
+    assert component1.max_ngram == 1
+
+    component2 = builder.create_component(
+        config_classifier, supervised_embeddings_config
+    )
+    assert component2.component_config["epochs"] == 3

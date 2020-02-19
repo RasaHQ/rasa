@@ -1,11 +1,32 @@
+from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.training_data import TrainingData, Message
-from tests.nlu import utilities
 
 
-def test_unintentional_synonyms_capitalized(component_builder):
-    _config = utilities.base_test_conf("pretrained_embeddings_spacy")
-    idx = _config.component_names.index("EntitySynonymMapper")
-    ner_syn = component_builder.create_component(_config.for_component(idx), _config)
+def test_entity_synonyms():
+    entities = [
+        {"entity": "test", "value": "chines", "start": 0, "end": 6},
+        {"entity": "test", "value": "chinese", "start": 0, "end": 6},
+        {"entity": "test", "value": "china", "start": 0, "end": 6},
+    ]
+    ent_synonyms = {"chines": "chinese", "NYC": "New York City"}
+    EntitySynonymMapper(synonyms=ent_synonyms).replace_synonyms(entities)
+    assert len(entities) == 3
+    assert entities[0]["value"] == "chinese"
+    assert entities[1]["value"] == "chinese"
+    assert entities[2]["value"] == "china"
+
+
+def test_unintentional_synonyms_capitalized(
+    component_builder, pretrained_embeddings_spacy_config
+):
+    idx = pretrained_embeddings_spacy_config.component_names.index(
+        "EntitySynonymMapper"
+    )
+    ner_syn = component_builder.create_component(
+        pretrained_embeddings_spacy_config.for_component(idx),
+        pretrained_embeddings_spacy_config,
+    )
+
     examples = [
         Message(
             "Any Mexican restaurant will do",
@@ -26,6 +47,10 @@ def test_unintentional_synonyms_capitalized(component_builder):
             },
         ),
     ]
-    ner_syn.train(TrainingData(training_examples=examples), _config)
+
+    ner_syn.train(
+        TrainingData(training_examples=examples), pretrained_embeddings_spacy_config
+    )
+
     assert ner_syn.synonyms.get("mexican") is None
     assert ner_syn.synonyms.get("tacos") == "Mexican"

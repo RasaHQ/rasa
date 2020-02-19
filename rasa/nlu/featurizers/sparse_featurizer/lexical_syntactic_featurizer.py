@@ -32,19 +32,7 @@ class LexicalSyntacticFeaturizer(Featurizer):
         # POS features require 'SpacyTokenizer'.
         "features": [
             ["low", "title", "upper"],
-            [
-                "BOS",
-                "EOS",
-                "low",
-                "prefix5",
-                "prefix2",
-                "suffix5",
-                "suffix3",
-                "suffix2",
-                "upper",
-                "title",
-                "digit",
-            ],
+            ["BOS", "EOS", "low", "upper", "title", "digit"],
             ["low", "title", "upper"],
         ]
     }

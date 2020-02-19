@@ -218,6 +218,7 @@ and sklearn_crfsuite get automatically installed. However, spaCy and MITIE need 
 
         $ pip install -r alt_requirements/requirements_full.txt
 
+.. _install-spacy:
 
 Dependencies for spaCy
 ######################
