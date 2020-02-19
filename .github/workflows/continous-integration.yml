@@ -139,7 +139,11 @@ jobs:
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
         COVERALLS_SERVICE_NAME: github-ci
-      run: coveralls
+      run: |
+        # Community PRs don't have access to secrets
+        if [[ ${COVERALLS_REPO_TOKEN} != "" ]]; then
+          coveralls
+        fi
 
   deploy:
     name: Deploy to PyPI
