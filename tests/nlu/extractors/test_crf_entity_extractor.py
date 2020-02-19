@@ -2,9 +2,10 @@ from rasa.nlu.constants import TEXT, SPACY_DOCS, ENTITIES
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
 
 
-def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
+def test_crf_extractor(spacy_nlp):
     examples = [
         Message(
             "anywhere in the west",
@@ -41,7 +42,17 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
         ),
     ]
 
-    extractor = CRFEntityExtractor(component_config=ner_crf_pos_feature_config)
+    extractor = CRFEntityExtractor(
+        component_config={
+            "features": [
+                ["low", "title", "upper", "pos", "pos2"],
+                ["low", "suffix3", "suffix2", "upper", "title", "digit", "pos", "pos2"],
+                ["low", "title", "upper", "pos", "pos2"],
+            ],
+            RANDOM_SEED: 1,
+            EPOCHS: 75,
+        }
+    )
     tokenizer = WhitespaceTokenizer()
 
     training_data = TrainingData(training_examples=examples)

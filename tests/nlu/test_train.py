@@ -122,28 +122,27 @@ async def test_train_model(pipeline_template, component_builder, tmpdir):
     assert loaded.parse("Hello today is Monday, again!") is not None
 
 
-async def test_random_seed(component_builder, tmpdir):
+async def test_random_seed(component_builder, tmpdir, supervised_embeddings_config):
     """test if train result is the same for two runs of tf embedding"""
 
-    _config = utilities.base_test_conf("supervised_embeddings")
     # set fixed random seed
-    idx = _config.component_names.index("EmbeddingIntentClassifier")
-    _config.set_component_attr(idx, random_seed=1)
-    _config.set_component_attr(idx, epochs=1)
-    idx = _config.component_names.index("CRFEntityExtractor")
-    _config.set_component_attr(idx, random_seed=1)
-    _config.set_component_attr(idx, epochs=1)
+    idx = supervised_embeddings_config.component_names.index(
+        "EmbeddingIntentClassifier"
+    )
+    supervised_embeddings_config.set_component_attr(idx, random_seed=1)
+    idx = supervised_embeddings_config.component_names.index("CRFEntityExtractor")
+    supervised_embeddings_config.set_component_attr(idx, random_seed=1)
 
     # first run
     (trained_a, _, persisted_path_a) = await train(
-        _config,
+        supervised_embeddings_config,
         path=tmpdir.strpath + "_a",
         data=DEFAULT_DATA_PATH,
         component_builder=component_builder,
     )
     # second run
     (trained_b, _, persisted_path_b) = await train(
-        _config,
+        supervised_embeddings_config,
         path=tmpdir.strpath + "_b",
         data=DEFAULT_DATA_PATH,
         component_builder=component_builder,
@@ -212,12 +211,15 @@ async def test_train_named_model(component_builder, tmpdir):
     assert normalized_path == tmpdir.strpath
 
 
-async def test_handles_pipeline_with_non_existing_component(component_builder):
-    _config = utilities.base_test_conf("pretrained_embeddings_spacy")
-    _config.pipeline.append({"name": "my_made_up_component"})
+async def test_handles_pipeline_with_non_existing_component(
+    component_builder, pretrained_embeddings_spacy_config
+):
+    pretrained_embeddings_spacy_config.pipeline.append({"name": "my_made_up_component"})
     with pytest.raises(Exception) as execinfo:
         await train(
-            _config, data=DEFAULT_DATA_PATH, component_builder=component_builder
+            pretrained_embeddings_spacy_config,
+            data=DEFAULT_DATA_PATH,
+            component_builder=component_builder,
         )
     assert "Cannot find class" in str(execinfo.value)
 

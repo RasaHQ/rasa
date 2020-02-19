@@ -14,10 +14,11 @@ from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
     BinarySingleStateFeaturizer,
 )
+from rasa.constants import DOCS_URL_POLICIES
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.common import obtain_verbosity
+from rasa.utils.common import obtain_verbosity, raise_warning
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 # there are a number of issues with imports from tensorflow. hence the deactivation
@@ -69,6 +70,13 @@ class KerasPolicy(Policy):
         self.model = model
 
         self.current_epoch = current_epoch
+
+        raise_warning(
+            "'KerasPolicy' is deprecated and will be removed in version "
+            "2.0. Use 'TEDPolicy' instead.",
+            category=FutureWarning,
+            docs=DOCS_URL_POLICIES,
+        )
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         config = copy.deepcopy(self.defaults)

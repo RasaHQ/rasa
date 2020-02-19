@@ -118,6 +118,15 @@ class RasaNLUModelConfig:
             pipeline = registry.pipeline_template(template_name)
 
             if pipeline:
+                raise_warning(
+                    "You are using a pipeline template. All pipelines templates "
+                    "are deprecated and will be removed in version 2.0. Please add "
+                    "the components you want to use directly to your configuration "
+                    "file.",
+                    FutureWarning,
+                    docs=DOCS_URL_PIPELINE,
+                )
+
                 # replaces the template with the actual components
                 self.__dict__["pipeline"] = pipeline
             else:

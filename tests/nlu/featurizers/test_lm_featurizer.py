@@ -4,14 +4,7 @@ import pytest
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
-from rasa.nlu.constants import (
-    TEXT,
-    DENSE_FEATURE_NAMES,
-    TOKENS_NAMES,
-    RESPONSE,
-    INTENT,
-    LANGUAGE_MODEL_DOCS,
-)
+from rasa.nlu.constants import TEXT, DENSE_FEATURE_NAMES, INTENT
 from rasa.nlu.training_data import Message
 
 

@@ -80,9 +80,7 @@ def test_whitespace_with_case(text, component_config, expected_tokens):
     assert [t.text for t in tokens] == expected_tokens
 
 
-def test_whitespace_training():
-    _config = utilities.base_test_conf("supervised_embeddings")
-
+def test_whitespace_training(supervised_embeddings_config):
     examples = [
         Message(
             "Any Mexican restaurant will do",
@@ -107,7 +105,7 @@ def test_whitespace_training():
     component_config = {"case_sensitive": False}
     tk = WhitespaceTokenizer(component_config)
 
-    tk.train(TrainingData(training_examples=examples), _config)
+    tk.train(TrainingData(training_examples=examples), supervised_embeddings_config)
 
     assert examples[0].data.get("tokens")[0].text == "any"
     assert examples[0].data.get("tokens")[1].text == "mexican"

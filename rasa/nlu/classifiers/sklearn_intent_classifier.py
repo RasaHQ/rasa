@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 import numpy as np
 
-from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
+from rasa.constants import DOCS_URL_COMPONENTS, DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu import utils
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
@@ -62,6 +62,13 @@ class SklearnIntentClassifier(Component):
         else:
             self.le = LabelEncoder()
         self.clf = clf
+
+        raise_warning(
+            "'SklearnIntentClassifier' is deprecated and will be removed in version "
+            "2.0. Use 'DIETClassifier' instead.",
+            category=FutureWarning,
+            docs=DOCS_URL_COMPONENTS,
+        )
 
     @classmethod
     def required_packages(cls) -> List[Text]:

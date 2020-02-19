@@ -41,9 +41,6 @@ RUN apt-get update -qq \
 # Make sure we have the latest pip version
 RUN pip install -U pip
 
-# Download mitie model
-RUN wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
-
 # Copy only what we really need
 COPY README.md .
 COPY setup.py .
@@ -54,11 +51,11 @@ COPY requirements.txt .
 COPY LICENSE.txt .
 
 # Install dependencies
-RUN pip install --no-cache-dir -r alt_requirements/requirements_pretrained_embeddings_mitie.txt
+RUN pip install --no-cache-dir -r alt_requirements/requirements_pretrained_embeddings_convert.txt
 
 # Install Rasa as package
 COPY rasa ./rasa
-RUN pip install .[sql,mitie]
+RUN pip install .[sql,convert]
 
 # Runtime stage which uses the virtualenv which we built in the previous stage
 FROM base AS runner
@@ -66,10 +63,7 @@ FROM base AS runner
 WORKDIR /app
 
 # Copy over default pipeline config
-COPY sample_configs/config_pretrained_embeddings_mitie.yml config.yml
-
-# Copy over mitie model
-COPY --from=builder /app/data/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
+COPY docker/configs/config_pretrained_embeddings_convert.yml config.yml
 
 # Copy virtualenv from previous stage
 COPY --from=builder /build /build

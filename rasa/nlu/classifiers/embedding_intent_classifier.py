@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict, Optional, Text
 
-from rasa.constants import DOCS_BASE_URL
+from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.components import any_of
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.constants import TEXT, DENSE_FEATURE_NAMES, SPARSE_FEATURE_NAMES
@@ -136,7 +136,8 @@ class EmbeddingIntentClassifier(DIETClassifier):
         )
 
         raise_warning(
-            f"'EmbeddingIntentClassifier' is deprecated. Use 'DIETClassifier' instead.",
+            "'EmbeddingIntentClassifier' is deprecated and will be removed in version "
+            "2.0. Use 'DIETClassifier' instead.",
             category=FutureWarning,
-            docs=f"{DOCS_BASE_URL}/nlu/components/",
+            docs=DOCS_URL_COMPONENTS,
         )

@@ -1,21 +1,13 @@
-import logging
-import os
+from typing import Text
 
 import pytest
 
-from rasa.nlu import config, train
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import ComponentBuilder
 from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
-
-CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.yml"
-
-NLU_DEFAULT_CONFIG_PATH = "sample_configs/config_pretrained_embeddings_mitie.yml"
+from tests.nlu.utilities import write_file_config
 
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
-
-NLU_MODEL_NAME = "nlu_model.tar.gz"
-
-MOODBOT_MODEL_PATH = "examples/moodbot/models/"
 
 
 @pytest.fixture(scope="session")
@@ -36,20 +28,9 @@ def spacy_nlp_component(component_builder, default_config):
 
 
 @pytest.fixture(scope="session")
-def ner_crf_pos_feature_config():
-    return {
-        "features": [
-            ["low", "title", "upper", "pos", "pos2"],
-            ["low", "suffix3", "suffix2", "upper", "title", "digit", "pos", "pos2"],
-            ["low", "title", "upper", "pos", "pos2"],
-        ],
-        EPOCHS: 100,
-        RANDOM_SEED: 2020,
-    }
-
-
-@pytest.fixture(scope="session")
-def mitie_feature_extractor(component_builder, default_config):
+def mitie_feature_extractor(
+    component_builder: ComponentBuilder, default_config: RasaNLUModelConfig
+):
     mitie_nlp_config = {"name": "MitieNLP"}
     return component_builder.create_component(
         mitie_nlp_config, default_config
@@ -57,5 +38,75 @@ def mitie_feature_extractor(component_builder, default_config):
 
 
 @pytest.fixture(scope="session")
-def default_config():
-    return config.load(CONFIG_DEFAULTS_PATH)
+def default_config() -> RasaNLUModelConfig:
+    return RasaNLUModelConfig({"language": "en", "pipeline": []})
+
+
+@pytest.fixture(scope="session")
+def config_path() -> Text:
+    return write_file_config(
+        {
+            "language": "en",
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CRFEntityExtractor", EPOCHS: 2, RANDOM_SEED: 42},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "EmbeddingIntentClassifier", EPOCHS: 2, RANDOM_SEED: 42},
+            ],
+        }
+    ).name
+
+
+@pytest.fixture()
+def pretrained_embeddings_spacy_config() -> RasaNLUModelConfig:
+    return RasaNLUModelConfig(
+        {
+            "language": "en",
+            "pipeline": [
+                {"name": "SpacyNLP"},
+                {"name": "SpacyTokenizer"},
+                {"name": "SpacyFeaturizer"},
+                {"name": "RegexFeaturizer"},
+                {"name": "CRFEntityExtractor", EPOCHS: 3, RANDOM_SEED: 42},
+                {"name": "EntitySynonymMapper"},
+                {"name": "SklearnIntentClassifier"},
+            ],
+        }
+    )
+
+
+@pytest.fixture()
+def supervised_embeddings_config() -> RasaNLUModelConfig:
+    return RasaNLUModelConfig(
+        {
+            "language": "en",
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "RegexFeaturizer"},
+                {"name": "CRFEntityExtractor", EPOCHS: 3, RANDOM_SEED: 42},
+                {"name": "EntitySynonymMapper"},
+                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "CountVectorsFeaturizer",
+                    "analyzer": "char_wb",
+                    "min_ngram": 1,
+                    "max_ngram": 4,
+                },
+                {"name": "EmbeddingIntentClassifier", EPOCHS: 3, RANDOM_SEED: 42},
+            ],
+        }
+    )
+
+
+@pytest.fixture()
+def pretrained_embeddings_convert_config() -> RasaNLUModelConfig:
+    return RasaNLUModelConfig(
+        {
+            "language": "en",
+            "pipeline": [
+                {"name": "ConveRTTokenizer"},
+                {"name": "ConveRTFeaturizer"},
+                {"name": "EmbeddingIntentClassifier", EPOCHS: 3, RANDOM_SEED: 42},
+            ],
+        }
+    )

@@ -47,7 +47,7 @@ from rasa.nlu.constants import (
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.models import RasaModel
 from rasa.utils.common import raise_warning
-from rasa.constants import DOCS_BASE_URL
+from rasa.constants import DOCS_URL_COMPONENTS
 
 logger = logging.getLogger(__name__)
 
@@ -171,9 +171,10 @@ class ResponseSelector(DIETClassifier):
         )
 
         raise_warning(
-            f"'ResponseSelector' is deprecated. Use 'DIETSelector' instead.",
+            f"'ResponseSelector' is deprecated and will be removed in version 2.0. "
+            f"Use 'DIETSelector' instead.",
             category=FutureWarning,
-            docs=f"{DOCS_BASE_URL}/nlu/components/",
+            docs=DOCS_URL_COMPONENTS,
         )
 
     @property
