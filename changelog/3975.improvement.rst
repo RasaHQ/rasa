@@ -1,0 +1,2 @@
+Added command line argument ``--conversation-id`` to ``rasa interactive``.
+If the argument is not given, ``conversation_id`` defaults to a random uuid.

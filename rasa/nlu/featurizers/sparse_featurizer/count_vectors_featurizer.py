@@ -269,9 +269,9 @@ class CountVectorsFeaturizer(Featurizer):
         """Get processed text of attribute of a message"""
 
         if message.get(attribute) is None:
-            # return empty string since sklearn countvectorizer does not like None
+            # return empty list since sklearn countvectorizer does not like None
             # object while training and predicting
-            return [""]
+            return []
 
         tokens = self._get_message_tokens_by_attribute(message, attribute)
         tokens = self._process_tokens(tokens, attribute)
@@ -416,6 +416,11 @@ class CountVectorsFeaturizer(Featurizer):
             if attribute in [TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE]:
                 tokens_without_cls = tokens[:-1]
 
+            if not tokens_without_cls:
+                # attribute is not set (e.g. response not present)
+                X.append(None)
+                continue
+
             seq_vec = self.vectorizers[attribute].transform(tokens_without_cls)
             seq_vec.sort_indices()
 
@@ -489,7 +494,6 @@ class CountVectorsFeaturizer(Featurizer):
 
         # transform for all attributes
         for attribute in self._attributes:
-
             attribute_features = self._get_featurized_attribute(
                 attribute, processed_attribute_tokens[attribute]
             )

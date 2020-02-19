@@ -2,6 +2,11 @@
 - you are an idiot
 - You lack understanding.
 
+## intent:grett
+- Hello
+- Hi
+- Welcome
+
 ## intent:thank
 - Thanks
 - Thank you
