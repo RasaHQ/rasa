@@ -221,6 +221,7 @@ class ConveRTFeaturizer(Featurizer):
                     )
 
                 batch_start_index += batch_size
+        print('\n')
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
