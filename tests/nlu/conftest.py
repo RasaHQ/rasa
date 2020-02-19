@@ -4,7 +4,7 @@ import pytest
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import ComponentBuilder
-from rasa.utils.tensorflow.constants import EPOCHS
+from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
 from tests.nlu.utilities import write_file_config
 
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
@@ -37,7 +37,7 @@ def mitie_feature_extractor(
     ).extractor
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def default_config() -> RasaNLUModelConfig:
     return RasaNLUModelConfig({"language": "en", "pipeline": []})
 
@@ -49,9 +49,9 @@ def config_path() -> Text:
             "language": "en",
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
-                {"name": "CRFEntityExtractor", EPOCHS: 2},
+                {"name": "CRFEntityExtractor", EPOCHS: 2, RANDOM_SEED: 42},
                 {"name": "CountVectorsFeaturizer"},
-                {"name": "EmbeddingIntentClassifier", EPOCHS: 2},
+                {"name": "EmbeddingIntentClassifier", EPOCHS: 2, RANDOM_SEED: 42},
             ],
         }
     ).name
@@ -67,7 +67,7 @@ def pretrained_embeddings_spacy_config() -> RasaNLUModelConfig:
                 {"name": "SpacyTokenizer"},
                 {"name": "SpacyFeaturizer"},
                 {"name": "RegexFeaturizer"},
-                {"name": "CRFEntityExtractor", EPOCHS: 3},
+                {"name": "CRFEntityExtractor", EPOCHS: 3, RANDOM_SEED: 42},
                 {"name": "EntitySynonymMapper"},
                 {"name": "SklearnIntentClassifier"},
             ],
@@ -83,7 +83,7 @@ def supervised_embeddings_config() -> RasaNLUModelConfig:
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
                 {"name": "RegexFeaturizer"},
-                {"name": "CRFEntityExtractor", EPOCHS: 3},
+                {"name": "CRFEntityExtractor", EPOCHS: 3, RANDOM_SEED: 42},
                 {"name": "EntitySynonymMapper"},
                 {"name": "CountVectorsFeaturizer"},
                 {
@@ -92,7 +92,7 @@ def supervised_embeddings_config() -> RasaNLUModelConfig:
                     "min_ngram": 1,
                     "max_ngram": 4,
                 },
-                {"name": "EmbeddingIntentClassifier", EPOCHS: 3},
+                {"name": "EmbeddingIntentClassifier", EPOCHS: 3, RANDOM_SEED: 42},
             ],
         }
     )
