@@ -73,7 +73,7 @@ def validate_required_components(pipeline: List["Component"]) -> None:
         if not set(component.required_components).issubset(unique_component_names):
             raise Exception(
                 f"'{component.name}' requires {component.required_components}. "
-                f"Add required components to the pipeline"
+                f"Add required components to the pipeline."
             )
 
 
