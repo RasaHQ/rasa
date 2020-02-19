@@ -14,7 +14,7 @@ from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
     BinarySingleStateFeaturizer,
 )
-from rasa.constants import DOCS_BASE_URL
+from rasa.constants import DOCS_URL_POLICIES
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
@@ -75,7 +75,7 @@ class KerasPolicy(Policy):
             "'KerasPolicy' is deprecated and will be removed in version "
             "2.0. Use 'TEDPolicy' instead.",
             category=FutureWarning,
-            docs=f"{DOCS_URL_POLICIES}",
+            docs=DOCS_URL_POLICIES,
         )
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:

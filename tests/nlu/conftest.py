@@ -106,7 +106,7 @@ def pretrained_embeddings_convert_config() -> RasaNLUModelConfig:
             "pipeline": [
                 {"name": "ConveRTTokenizer"},
                 {"name": "ConveRTFeaturizer"},
-                {"name": "EmbeddingIntentClassifier", EPOCHS: 3},
+                {"name": "EmbeddingIntentClassifier", EPOCHS: 3, RANDOM_SEED: 42},
             ],
         }
     )
