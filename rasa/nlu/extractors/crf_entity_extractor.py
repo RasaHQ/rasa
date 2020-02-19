@@ -29,6 +29,7 @@ from rasa.utils.tensorflow.constants import (
     DROPRATE,
     REGULARIZATION_CONSTANT,
     BILOU_FLAG,
+    BATCH_STRATEGY,
 )
 from rasa.utils.common import raise_warning
 from rasa.utils.tensorflow.models import RasaModel
@@ -118,6 +119,7 @@ class CRFEntityExtractor(DIETClassifier):
         component_config[ENTITY_RECOGNITION] = True
         component_config[MASKED_LM] = False
         component_config[NUM_TRANSFORMER_LAYERS] = 0
+        component_config[BATCH_STRATEGY] = "sequence"
 
         super().__init__(
             component_config,
