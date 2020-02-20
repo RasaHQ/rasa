@@ -386,8 +386,8 @@ class DIETClassifier(EntityExtractor):
         """Checks if text features and label features have the same dimensionality if
         hidden layers are shared."""
         if self.component_config.get(SHARE_HIDDEN_LAYERS):
-            num_text_features = model_data.get_feature_dimension("text_features")
-            num_label_features = model_data.get_feature_dimension("label_features")
+            num_text_features = model_data.feature_dimension("text_features")
+            num_label_features = model_data.feature_dimension("label_features")
 
             if num_text_features != num_label_features:
                 raise ValueError(
@@ -541,7 +541,7 @@ class DIETClassifier(EntityExtractor):
         model_data = RasaModelData(label_key=self.label_key)
         model_data.add_features("text_features", [X_sparse, X_dense])
         model_data.add_features("label_features", [Y_sparse, Y_dense])
-        if label_attribute and model_data.feature_not_exists("label_features"):
+        if label_attribute and model_data.does_feature_exist("label_features"):
             # no label features are present, get default features from _label_data
             model_data.add_features(
                 "label_features", self._use_default_label_features(label_ids)
