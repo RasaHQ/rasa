@@ -39,7 +39,7 @@ A Longer Answer
 We encourage everyone to define their own pipeline by listing the names of the components you want to use.
 For example:
 
-.. literalinclude:: ../../data/configs_for_docs/default_config.yml
+.. literalinclude:: ../../data/configs_for_docs/default_spacy_config.yml
     :language: yaml
 
 You can find the details of each component in :ref:`components`.
@@ -55,7 +55,8 @@ Tokenization
 ~~~~~~~~~~~~
 If your chosen language is whitespace-tokenized (words are separated by spaces), you
 can use the ``WhitespaceTokenizer``. If this is not the case you should use a different tokenizer.
-We support a number of different :ref:`tokenizers <tokenizers>`, or you can :ref:`create your own <custom-nlu-components>`.
+We support a number of different :ref:`tokenizers <tokenizers>`, or you can
+:ref:`create your own <custom-nlu-components>`.
 
 .. note::
     Some components further down the pipeline may require a specific tokenizer. You can find those requirements
@@ -90,25 +91,24 @@ have a training example, like: "can I book a car?", and Rasa is asked to predict
 my place", since the contextual vector representation for both examples are already very similar, the intent classified
 for both is highly likely to be the same. This is also useful if you don't have large enough training data.
 
-An alternative to ``ConveRTFeaturizer`` can be ``LanguageModelFeaturizer`` which uses pre-trained language models such as
-BERT, GPT-2, etc. to extract similar contextual vector representations for the complete sentence. See :ref:`HFTransformersNLP`
-for a full list of supported language models.
+An alternative to ``ConveRTFeaturizer`` can be ``LanguageModelFeaturizer`` which uses pre-trained language models such
+as BERT, GPT-2, etc. to extract similar contextual vector representations for the complete sentence. See
+:ref:`HFTransformersNLP` for a full list of supported language models.
 
 In case, your training data is not in English you can also use a different variant of a language model which
 is pre-trained in the language specific to your training data. For example, there is a chinese language variant of
-BERT(``bert-base-chinese``) or a japanese variant of it(``bert-base-japanese``). A full list of different variants of these
-language models is available in the
-`official docs of Transformers library <https://huggingface.co/transformers/pretrained_models.html>_`
+BERT(``bert-base-chinese``) or a japanese variant of it(``bert-base-japanese``). A full list of different variants of
+these language models is available in the
+`official docs of Transformers library <https://huggingface.co/transformers/pretrained_models.html>_`.
 
 ``SpacyFeaturizer`` also provides word embeddings in many different languages (see :ref:`pretrained-word-vectors`).
 So, this featurizer can also be an alternate option depending on the language of your training data.
-
 
 Entity Recognition / Intent Classification / Response Selectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Depending on your data you may want to only perform intent classification or entity recognition.
 We support several components for each of the task. All of them are listed in :ref:`components`.
-We recommend to use :ref:`diet-classifier` for intent classification and entity recognition and :ref:`diet-selector`
+We recommend to use :ref:`diet-classifier` for intent classification and entity recognition and :ref:`response-selector`
 for response selection.
 
 Comparing different pipelines for your data

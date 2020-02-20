@@ -202,15 +202,12 @@ Embedding Policy
         ``EmbeddingPolicy`` got renamed to ``TEDPolicy``. Please use :ref:`ted_policy` instead of ``EmbeddingPolicy``.
         The functionality of the policy stayed the same.
 
-
 .. _ted_policy:
 
 TED Policy
 ^^^^^^^^^^
 
-Transformer Embedding Dialogue (TED) Policy
-
-The policy used in our paper https://arxiv.org/abs/1910.00486.
+Transformer Embedding Dialogue (TED) Policy is described in our paper https://arxiv.org/abs/1910.00486.
 
 This policy has a pre-defined architecture, which comprises the
 following steps:
