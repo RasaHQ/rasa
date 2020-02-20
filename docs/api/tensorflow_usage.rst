@@ -1,4 +1,4 @@
-:desc: Find out how to configure your environment for efficient usage of TensorFlow inside Rasa Open Source
+:desc: Find out how to configure your environment for efficient usage of TensorFlow inside Rasa Open Source.
 
 .. _tensorflow_usage:
 
