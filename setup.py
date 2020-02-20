@@ -85,13 +85,14 @@ install_requires = [
     "SQLAlchemy~=1.3.0",
     "sklearn-crfsuite~=0.3.6",
     "PyJWT~=1.7",
-    "transformers~=2.3.0",
+    "tensorflow-addons==0.7.0",
 ]
 
 extras_requires = {
     "test": tests_requires,
     "spacy": ["spacy>=2.1,<2.2"],
     "convert": ["tensorflow_text>=2.1.0rc0", "tensorflow_hub~=0.7.0"],
+    "transformers": ["transformers~=2.3.0"],
     "mitie": ["mitie"],
     "sql": ["psycopg2~=2.8.2", "SQLAlchemy~=1.3"],
     "kafka": ["kafka-python~=1.4"],
