@@ -27,6 +27,7 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
     DROPRATE,
+    WEIGHT_SPARSITY,
     NEG_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
@@ -100,6 +101,8 @@ class EmbeddingIntentClassifier(DIETClassifier):
         NEG_MARGIN_SCALE: 0.8,
         # dropout rate for rnn
         DROPRATE: 0.2,
+        # sparsity of the weights in dense layers
+        WEIGHT_SPARSITY: 0.8,
         # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: False,
         # visualization of accuracy

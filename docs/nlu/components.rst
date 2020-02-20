@@ -819,6 +819,7 @@ EmbeddingIntentClassifier
               the maximum similarity between embeddings of different intent labels.
             - ``droprate`` sets the dropout rate, it should be
               between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units.
+            - ``weight_sparsity`` sets the sparsity of the weght kernels in dense layers.
             - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not.
 
     .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
@@ -890,6 +891,8 @@ EmbeddingIntentClassifier
             "negative_margin_scale": 0.8
             # dropout rate for rnn
             "droprate": 0.2
+            # sparsity of the weights in dense layers
+            "weight_sparsity": 0.8
             # if true apply dropout to sparse tensors
             "use_sparse_input_dropout": False
             # visualization of accuracy
@@ -1040,6 +1043,8 @@ ResponseSelector
             "negative_margin_scale": 0.8
             # dropout rate for rnn
             "droprate": 0.2
+            # sparsity of the weights in dense layers
+            "weight_sparsity": 0.8
             # if true apply dropout to sparse tensors
             "use_sparse_input_dropout": True
             # visualization of accuracy
@@ -1114,8 +1119,6 @@ DIETSelector
             "number_of_transformer_layers": 2
             # number of attention heads in transformer
             "number_of_attention_heads": 4
-            # max sequence length
-            "maximum_sequence_length": 256
             # use a unidirectional or bidirectional encoder
             "unidirectional_encoder": False
             # if true use key relative embeddings in attention
@@ -1169,6 +1172,8 @@ DIETSelector
             "droprate": 0.2
             # dropout rate for attention
             "droprate_attention": 0
+            # sparsity of the weights in dense layers
+            "weight_sparsity": 0.8
             # if true apply dropout to sparse tensors
             "use_sparse_input_dropout": True
             # visualization of accuracy
@@ -1551,7 +1556,6 @@ DIETClassifier
             - ``transformer_size`` sets the size of the transformer.
             - ``number_of_transformer_layers`` sets the number of transformer layers to use.
             - ``number_of_attention_heads`` sets the number of attention heads to use.
-            - ``maximum_sequence_length`` sets the maximum length of sequence.
             - ``unidirectional_encoder`` specifies whether to use a unidirectional or bidirectional encoder.
             - ``use_key_relative_attention`` if true use key relative embeddings in attention.
             - ``use_value_relative_attention`` if true use key relative embeddings in attention.
@@ -1611,6 +1615,7 @@ DIETClassifier
               between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units.
             - ``droprate_attention`` sets the dropout rate for attention, it should be
               between ``0`` and ``1``, e.g. ``droprate_attention=0.1`` would drop out ``10%`` of input units.
+            - ``weight_sparsity`` sets the sparsity of weight kernels in dense layers.
             - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not.
 
         - model configuration:
@@ -1652,8 +1657,6 @@ DIETClassifier
             "number_of_transformer_layers": 2
             # number of attention heads in transformer
             "number_of_attention_heads": 4
-            # max sequence length
-            "maximum_sequence_length": 256
             # use a unidirectional or bidirectional encoder
             "unidirectional_encoder": False
             # if true use key relative embeddings in attention
@@ -1707,6 +1710,8 @@ DIETClassifier
             "droprate": 0.2
             # dropout rate for attention
             "droprate_attention": 0
+            # sparsity of the weights in dense layers
+            "weight_sparsity": 0.8
             # if true apply dropout to sparse tensors
             "use_sparse_input_dropout": True
             # visualization of accuracy
