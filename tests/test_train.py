@@ -1,16 +1,15 @@
 import tempfile
 import os
-import shutil
 from typing import Text
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
-from _pytest.tmpdir import TempdirFactory
 
 import rasa.model
 
 from rasa.train import train_core, train_nlu, train
 from tests.core.test_model import _fingerprint
+from tests.utilities import update_number_of_epochs
 
 
 @pytest.mark.parametrize(
@@ -131,3 +130,28 @@ def test_train_nlu_temp_files(
     )
 
     assert count_temp_rasa_files(tempfile.tempdir) == 0
+
+
+def docker_config_files():
+    docker_config_path = "docker/configs"
+
+    return [
+        os.path.join(docker_config_path, f)
+        for f in os.listdir(docker_config_path)
+        if os.path.isfile(os.path.join(docker_config_path, f))
+    ]
+
+
+@pytest.mark.parametrize("config_file", docker_config_files())
+def test_train_docker_configs(
+    config_file: Text, tmp_path: Text, default_nlu_data: Text
+):
+    output = str(tmp_path)
+    tmp_config_file = os.path.join(output, "config.yml")
+
+    update_number_of_epochs(config_file, tmp_config_file)
+
+    train_nlu(tmp_config_file, default_nlu_data, output=output)
+
+    files = os.listdir(output)
+    assert any([f.startswith("nlu") and f.endswith("tar.gz") for f in files])
