@@ -15,7 +15,6 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    MAX_SEQ_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
     EPOCHS,
@@ -35,6 +34,7 @@ from rasa.utils.tensorflow.constants import (
     UNIDIRECTIONAL_ENCODER,
     DROPRATE,
     DROPRATE_ATTENTION,
+    WEIGHTS_SPARSITY,
     NEG_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
@@ -103,8 +103,6 @@ class DIETSelector(DIETClassifier):
         NUM_TRANSFORMER_LAYERS: 0,
         # number of attention heads in transformer
         NUM_HEADS: 4,
-        # max sequence length if pos_encoding='emb'
-        MAX_SEQ_LENGTH: 256,
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
@@ -151,6 +149,8 @@ class DIETSelector(DIETClassifier):
         DROPRATE: 0.2,
         # dropout rate for attention
         DROPRATE_ATTENTION: 0,
+        # sparsity of the weights in dense layers
+        WEIGHTS_SPARSITY: 0.8,
         # use a unidirectional or bidirectional encoder
         UNIDIRECTIONAL_ENCODER: False,
         # if true apply dropout to sparse tensors

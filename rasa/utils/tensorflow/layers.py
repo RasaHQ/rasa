@@ -66,7 +66,7 @@ class DenseForSparse(tf.keras.layers.Dense):
 
 
 class DenseWithSparseWeights(tf.keras.layers.Dense):
-    def __init__(self, sparsity: int = 0.8, **kwargs) -> None:
+    def __init__(self, sparsity: float = 0.8, **kwargs) -> None:
         super().__init__(**kwargs)
         self.sparsity = sparsity
 
@@ -95,6 +95,7 @@ class Ffnn(tf.keras.layers.Layer):
         layer_sizes: List[int],
         dropout_rate: float,
         reg_lambda: float,
+        sparsity: float,
         layer_name_suffix: Text,
     ) -> None:
         super().__init__(name=f"ffnn_{layer_name_suffix}")
@@ -105,6 +106,7 @@ class Ffnn(tf.keras.layers.Layer):
             self._ffn_layers.append(
                 DenseWithSparseWeights(
                     units=layer_size,
+                    sparsity=sparsity,
                     activation=tfa.activations.gelu,
                     kernel_regularizer=l2_regularizer,
                     name=f"hidden_layer_{layer_name_suffix}_{i}",

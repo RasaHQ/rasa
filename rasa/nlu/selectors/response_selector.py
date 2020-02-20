@@ -3,7 +3,7 @@ import logging
 from typing import Any, Dict, Optional, Text
 
 from rasa.nlu.training_data import TrainingData, Message
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.selectors.diet_selector import DIETSelector
 from rasa.nlu.components import any_of
 from rasa.utils.tensorflow.constants import (
     LABEL,
@@ -27,6 +27,7 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
     DROPRATE,
+    WEIGHTS_SPARSITY,
     NEG_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
@@ -52,7 +53,7 @@ from rasa.constants import DOCS_URL_COMPONENTS
 logger = logging.getLogger(__name__)
 
 
-class ResponseSelector(DIETClassifier):
+class ResponseSelector(DIETSelector):
     """Response selector using supervised embeddings.
 
     The response selector embeds user inputs
@@ -132,6 +133,8 @@ class ResponseSelector(DIETClassifier):
         NEG_MARGIN_SCALE: 0.8,
         # dropout rate for rnn
         DROPRATE: 0.2,
+        # sparsity of the weights in dense layers
+        WEIGHTS_SPARSITY: 0.8,
         # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: False,
         # visualization of accuracy

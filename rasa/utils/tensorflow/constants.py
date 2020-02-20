@@ -12,8 +12,6 @@ KEY_RELATIVE_ATTENTION = "use_key_relative_attention"
 VALUE_RELATIVE_ATTENTION = "use_value_relative_attention"
 MAX_RELATIVE_POSITION = "max_relative_position"
 
-MAX_SEQ_LENGTH = "maximum_sequence_length"
-
 BATCH_SIZES = "batch_size"
 BATCH_STRATEGY = "batch_strategy"
 EPOCHS = "epochs"
@@ -37,6 +35,7 @@ DROPRATE = "droprate"
 DROPRATE_ATTENTION = "droprate_attention"
 DROPRATE_DIALOGUE = "droprate_dialogue"
 DROPRATE_LABEL = "droprate_label"
+WEIGHTS_SPARSITY = "weights_sparsity"
 
 EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
 EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"

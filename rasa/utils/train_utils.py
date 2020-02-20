@@ -13,7 +13,6 @@ from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    MAX_SEQ_LENGTH,
     DENSE_DIM,
     LOSS_TYPE,
     SIMILARITY_TYPE,
@@ -155,7 +154,6 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
         "num_transformer_layers", NUM_TRANSFORMER_LAYERS, config
     )
     config = _replace_deprecated_option("num_heads", NUM_HEADS, config)
-    config = _replace_deprecated_option("max_seq_length", MAX_SEQ_LENGTH, config)
     config = _replace_deprecated_option("dense_dim", DENSE_DIM, config)
     config = _replace_deprecated_option("embed_dim", EMBED_DIM, config)
     config = _replace_deprecated_option("num_neg", NUM_NEG, config)
