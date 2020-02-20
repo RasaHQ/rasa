@@ -22,16 +22,16 @@ from rasa.utils.tensorflow.constants import (
     NUM_NEG,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
-    NEG_MARGIN_SCALE,
+    NEGATIVE_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
     USE_MAX_NEG_SIM,
     MAX_NEG_SIM,
     MAX_POS_SIM,
     EMBEDDING_DIMENSION,
-    DROPRATE_DIALOGUE,
-    DROPRATE_LABEL,
-    DROPRATE_ATTENTION,
+    DROP_RATE_DIALOGUE,
+    DROP_RATE_LABEL,
+    DROP_RATE_ATTENTION,
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
@@ -43,15 +43,15 @@ logger = logging.getLogger(__name__)
 
 
 class EmbeddingPolicy(TEDPolicy):
-    """Transformer Embedding Dialogue Policy (TEDP)
+    """Transformer Embedding Dialogue (TED) Policy.
 
-    The policy used in our paper https://arxiv.org/abs/1910.00486
+    The policy used in our paper https://arxiv.org/abs/1910.00486.
     """
 
     # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
-        # a list of hidden layers sizes before dialogue and action embed layers
+        # a list of hidden layers sizes before dialogue and action embedding layers
         # number of hidden layers is equal to the length of this list
         HIDDEN_LAYERS_SIZES: {DIALOGUE: [], LABEL: []},
         # number of units in transformer
@@ -67,7 +67,7 @@ class EmbeddingPolicy(TEDPolicy):
         # batch size will be linearly increased for each epoch
         BATCH_SIZES: [8, 32],
         # how to create batches
-        BATCH_STRATEGY: "balanced",  # string 'sequence' or 'balanced'
+        BATCH_STRATEGY: "balanced",  # 'sequence' or 'balanced'
         # number of epochs
         EPOCHS: 1,
         # set random seed to any int to get reproducible results
@@ -78,9 +78,9 @@ class EmbeddingPolicy(TEDPolicy):
         # the type of the similarity
         NUM_NEG: 20,
         # flag if minimize only maximum similarity over incorrect labels
-        SIMILARITY_TYPE: "auto",  # string 'auto' or 'cosine' or 'inner'
+        SIMILARITY_TYPE: "auto",  # 'auto' or 'cosine' or 'inner'
         # the type of the loss function
-        LOSS_TYPE: "softmax",  # string 'softmax' or 'margin'
+        LOSS_TYPE: "softmax",  # 'softmax' or 'margin'
         # number of top actions to normalize scores for softmax loss_type
         # set to 0 to turn off normalization
         RANKING_LENGTH: 10,
@@ -99,13 +99,13 @@ class EmbeddingPolicy(TEDPolicy):
         REGULARIZATION_CONSTANT: 0.001,
         # the scale of how important is to minimize the maximum similarity
         # between embeddings of different labels
-        NEG_MARGIN_SCALE: 0.8,
+        NEGATIVE_MARGIN_SCALE: 0.8,
         # dropout rate for dial nn
-        DROPRATE_DIALOGUE: 0.1,
+        DROP_RATE_DIALOGUE: 0.1,
         # dropout rate for bot nn
-        DROPRATE_LABEL: 0.0,
+        DROP_RATE_LABEL: 0.0,
         # dropout rate for attention
-        DROPRATE_ATTENTION: 0,
+        DROP_RATE_ATTENTION: 0,
         # visualization of accuracy
         # how often calculate validation accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
