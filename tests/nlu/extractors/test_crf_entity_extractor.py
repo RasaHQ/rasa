@@ -76,7 +76,17 @@ def test_crf_json_from_BILOU(spacy_nlp):
         component_config={
             "features": [
                 ["low", "title", "upper", "pos", "pos2"],
-                ["low", "suffix3", "suffix2", "upper", "title", "digit", "pos", "pos2"],
+                [
+                    "low",
+                    "bias",
+                    "suffix3",
+                    "suffix2",
+                    "upper",
+                    "title",
+                    "digit",
+                    "pos",
+                    "pos2",
+                ],
                 ["low", "title", "upper", "pos", "pos2"],
             ]
         }

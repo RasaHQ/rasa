@@ -1333,6 +1333,9 @@ CRFEntityExtractor
     .. note::
         If POS features are used (pos or pos2), you need to have ``SpacyTokenizer`` in your pipeline.
 
+    .. note::
+        If "pattern" features are used, you need to have ``RegexFeaturizer`` in your pipeline.
+
     .. warning::
         ``CRFEntityExtractor`` is deprecated and should be replaced by ``DIETClassifier``. See
         `migration guide <https://rasa.com/docs/rasa/migration-guide/#rasa-1-7-to-rasa-1-8>`_ for more details.
@@ -1341,24 +1344,26 @@ CRFEntityExtractor
     You need to configure what kind of features the CRF should use.
     The following features are available:
 
-    ===================  =============================================================================================
-    Feature Name         Description
-    ===================  =============================================================================================
-    low                  Checks if the token is lower case.
-    upper                Checks if the token is upper case.
-    title                Checks if the token starts with an uppercase character and all remaining characters are
-                         lowercased.
-    digit                Checks if the token contains just digits.
-    prefix5              Take the first five characters of the token.
-    prefix2              Take the first two characters of the token.
-    suffix5              Take the last five characters of the token.
-    suffix3              Take the last three characters of the token.
-    suffix2              Take the last two characters of the token.
-    suffix1              Take the last character of the token.
-    pos                  Take the Part-of-Speech tag of the token (spaCy required).
-    pos2                 Take the first two characters of the Part-of-Speech tag of the token (spaCy required).
-    pattern              Take the patterns defined by ``RegexFeaturizer``.
-    ===================  =============================================================================================
+    ===============  =============================================================================
+    Feature Name     Description
+    ===============  =============================================================================
+    low              Checks if the token is lower case.
+    upper            Checks if the token is upper case.
+    title            Checks if the token starts with an uppercase character and all remaining
+                     characters are lowercased.
+    digit            Checks if the token contains just digits.
+    prefix5          Take the first five characters of the token.
+    prefix2          Take the first two characters of the token.
+    suffix5          Take the last five characters of the token.
+    suffix3          Take the last three characters of the token.
+    suffix2          Take the last two characters of the token.
+    suffix1          Take the last character of the token.
+    pos              Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
+    pos2             Take the first two characters of the Part-of-Speech tag of the token
+                     (``SpacyTokenizer`` required).
+    pattern          Take the patterns defined by ``RegexFeaturizer``.
+    bias             Add an additional "bias" feature to the list of features.
+    ===============  =============================================================================
 
     As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
     previous tokens, the current token, and the next tokens in the sliding window.
@@ -1375,13 +1380,13 @@ CRFEntityExtractor
             # BILOU_flag determines whether to use BILOU tagging or not.
             # More rigorous however requires more examples per entity
             # rule of thumb: use only if more than 100 egs. per entity
-            "BILOU_flag": True
-            # crf_features is [before, word, after] array with before, word,
-            # after holding keys about which
-            # features to use for each word, for example, 'title' in
-            # array before will have the feature
-            # "is the preceding word in title case?"
-            # POS features require spaCy to be installed
+            "BILOU_flag": True,
+            # crf_features is [before, token, after] array with before, token,
+            # after holding keys about which features to use for each token,
+            # for example, 'title' in array before will have the feature
+            # "is the preceding token in title case?"
+            # POS features require SpacyTokenizer
+            # pattern feature require RegexFeaturizer
             "features": [
                 ["low", "title", "upper"],
                 [
@@ -1398,13 +1403,13 @@ CRFEntityExtractor
                     "pattern",
                 ],
                 ["low", "title", "upper"],
-            ]
+            ],
             # The maximum number of iterations for optimization algorithms.
-            "max_iterations": 50
+            "max_iterations": 50,
             # weight of the L1 regularization
-            "L1_c": 0.1
+            "L1_c": 0.1,
             # weight of the L2 regularization
-            "L2_c": 0.1
+            "L2_c": 0.1,
 
 .. _DucklingHTTPExtractor:
 

@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from sklearn_crfsuite import CRF
-    from spacy.tokens import Doc
 
 
 class CRFToken(NamedTuple):
@@ -40,18 +39,17 @@ class CRFEntityExtractor(EntityExtractor):
         # More rigorous however requires more examples per entity
         # rule of thumb: use only if more than 100 egs. per entity
         "BILOU_flag": True,
-        # crf_features is [before, word, after] array with before, word,
-        # after holding keys about which
-        # features to use for each word, for example, 'title' in
-        # array before will have the feature
-        # "is the preceding word in title case?"
-        # POS features require spaCy to be installed
+        # crf_features is [before, token, after] array with before, token,
+        # after holding keys about which features to use for each token,
+        # for example, 'title' in array before will have the feature
+        # "is the preceding token in title case?"
+        # POS features require SpacyTokenizer
+        # pattern feature require RegexFeaturizer
         "features": [
             ["low", "title", "upper"],
             [
-                "bias",
                 "low",
-                "prefix5",
+                "bias" "prefix5",
                 "prefix2",
                 "suffix5",
                 "suffix3",
@@ -72,21 +70,21 @@ class CRFEntityExtractor(EntityExtractor):
     }
 
     function_dict = {
-        "low": lambda crf_token: crf_token.text.lower(),  # pytype: disable=attribute-error
-        "title": lambda crf_token: crf_token.text.istitle(),  # pytype: disable=attribute-error
+        "low": lambda crf_token: crf_token.text.lower(),
+        "title": lambda crf_token: crf_token.text.istitle(),
         "prefix5": lambda crf_token: crf_token.text[:5],
         "prefix2": lambda crf_token: crf_token.text[:2],
         "suffix5": lambda crf_token: crf_token.text[-5:],
         "suffix3": lambda crf_token: crf_token.text[-3:],
         "suffix2": lambda crf_token: crf_token.text[-2:],
         "suffix1": lambda crf_token: crf_token.text[-1:],
+        "bias": lambda crf_token: "bias",
         "pos": lambda crf_token: crf_token.tag,
         "pos2": lambda crf_token: crf_token.tag[:2]
         if crf_token.tag is not None
         else None,
-        "bias": lambda crf_token: "bias",
-        "upper": lambda crf_token: crf_token.text.isupper(),  # pytype: disable=attribute-error
-        "digit": lambda crf_token: crf_token.text.isdigit(),  # pytype: disable=attribute-error
+        "upper": lambda crf_token: crf_token.text.isupper(),
+        "digit": lambda crf_token: crf_token.text.isdigit(),
         "pattern": lambda crf_token: crf_token.pattern,
         "text_dense_features": lambda crf_token: crf_token.dense_features,
     }
@@ -187,29 +185,25 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             return "", 0.0
 
+    @staticmethod
     def _create_entity_dict(
-        self,
         message: Message,
-        tokens: Union["Doc", List[Token]],
+        tokens: List[Token],
         start: int,
         end: int,
         entity: str,
         confidence: float,
     ) -> Dict[Text, Any]:
-        if isinstance(tokens, list):  # tokens is a list of Token
-            _start = tokens[start].start
-            _end = tokens[end].end
-            value = tokens[start].text
-            value += "".join(
-                [
-                    message.text[tokens[i - 1].end : tokens[i].start] + tokens[i].text
-                    for i in range(start + 1, end + 1)
-                ]
-            )
-        else:  # tokens is a Doc
-            _start = tokens[start].idx
-            _end = tokens[start : end + 1].end_char
-            value = tokens[start : end + 1].text
+
+        _start = tokens[start].start
+        _end = tokens[end].end
+        value = tokens[start].text
+        value += "".join(
+            [
+                message.text[tokens[i - 1].end : tokens[i].start] + tokens[i].text
+                for i in range(start + 1, end + 1)
+            ]
+        )
 
         return {
             "start": _start,
