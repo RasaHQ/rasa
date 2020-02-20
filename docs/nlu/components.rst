@@ -103,6 +103,9 @@ HFTransformersNLP
     featurization to compute sequence and sentence level representations for each example in the training data.
     Include :ref:`LanguageModelTokenizer` and :ref:`LanguageModelFeaturizer` to utilize the output of this
     component for downstream NLU models.
+
+    .. note:: To use ``HFTransformersNLP`` component, install Rasa OS with ``pip install rasa[transformers]``.
+
 :Configuration:
     .. code-block:: yaml
 
