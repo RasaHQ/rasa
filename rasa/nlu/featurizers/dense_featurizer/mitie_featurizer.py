@@ -38,7 +38,7 @@ class MitieFeaturizer(Featurizer):
         "pooling": "mean"
     }
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None):
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
         super().__init__(component_config)
 
         self.pooling_operation = self.component_config["pooling"]

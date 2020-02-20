@@ -13,7 +13,7 @@ from rasa.utils.tensorflow.constants import (
     HIDDEN_LAYERS_SIZES,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    DENSE_DIM,
+    DENSE_DIMENSION,
     LOSS_TYPE,
     SIMILARITY_TYPE,
     NUM_NEG,
@@ -23,7 +23,7 @@ from rasa.utils.tensorflow.constants import (
     USE_MAX_NEG_SIM,
     MAX_NEG_SIM,
     MAX_POS_SIM,
-    EMBED_DIM,
+    EMBEDDING_DIMENSION,
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
     NEG_MARGIN_SCALE,
@@ -154,8 +154,8 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
         "num_transformer_layers", NUM_TRANSFORMER_LAYERS, config
     )
     config = _replace_deprecated_option("num_heads", NUM_HEADS, config)
-    config = _replace_deprecated_option("dense_dim", DENSE_DIM, config)
-    config = _replace_deprecated_option("embed_dim", EMBED_DIM, config)
+    config = _replace_deprecated_option("dense_dim", DENSE_DIMENSION, config)
+    config = _replace_deprecated_option("embed_dim", EMBEDDING_DIMENSION, config)
     config = _replace_deprecated_option("num_neg", NUM_NEG, config)
     config = _replace_deprecated_option("mu_pos", MAX_POS_SIM, config)
     config = _replace_deprecated_option("mu_neg", MAX_NEG_SIM, config)

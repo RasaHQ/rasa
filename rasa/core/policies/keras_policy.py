@@ -75,7 +75,7 @@ class KerasPolicy(Policy):
             "'KerasPolicy' is deprecated and will be removed in version "
             "2.0. Use 'TEDPolicy' instead.",
             category=FutureWarning,
-            docs=DOCS_URL_POLICIES,
+            docs="https://rasa.com/docs/rasa/migration-guide/",
         )
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
@@ -177,7 +177,7 @@ class KerasPolicy(Policy):
                 shuffled_X.shape[1:], shuffled_y.shape[1:]
             )
 
-        logger.info(
+        logger.debug(
             "Fitting model with {} total samples and a "
             "validation split of {}"
             "".format(training_data.num_examples(), self.validation_split)

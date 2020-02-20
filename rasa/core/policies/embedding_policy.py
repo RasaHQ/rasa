@@ -27,7 +27,7 @@ from rasa.utils.tensorflow.constants import (
     USE_MAX_NEG_SIM,
     MAX_NEG_SIM,
     MAX_POS_SIM,
-    EMBED_DIM,
+    EMBEDDING_DIMENSION,
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
     DROPRATE_ATTENTION,
@@ -72,7 +72,7 @@ class EmbeddingPolicy(TEDPolicy):
         RANDOM_SEED: None,
         # embedding parameters
         # dimension size of embedding vectors
-        EMBED_DIM: 20,
+        EMBEDDING_DIMENSION: 20,
         # the type of the similarity
         NUM_NEG: 20,
         # flag if minimize only maximum similarity over incorrect labels
@@ -135,5 +135,5 @@ class EmbeddingPolicy(TEDPolicy):
             f"'EmbeddingPolicy' is deprecated and will be removed in version 2.0. "
             f"Use 'TEDPolicy' instead.",
             category=FutureWarning,
-            docs=DOCS_URL_POLICIES,
+            docs="https://rasa.com/docs/rasa/migration-guide/",
         )

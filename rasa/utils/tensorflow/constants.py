@@ -18,8 +18,8 @@ EPOCHS = "epochs"
 RANDOM_SEED = "random_seed"
 LEARNING_RATE = "learning_rate"
 
-DENSE_DIM = "dense_dimension"
-EMBED_DIM = "embedding_dimension"
+DENSE_DIMENSION = "dense_dimension"
+EMBEDDING_DIMENSION = "embedding_dimension"
 
 SIMILARITY_TYPE = "similarity_type"
 LOSS_TYPE = "loss_type"

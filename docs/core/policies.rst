@@ -202,20 +202,18 @@ Embedding Policy
         ``EmbeddingPolicy`` got renamed to ``TEDPolicy``. Please use :ref:`ted_policy` instead of ``EmbeddingPolicy``.
         The functionality of the policy stayed the same.
 
-
 .. _ted_policy:
 
 TED Policy
 ^^^^^^^^^^
 
-Transformer Embedding Dialogue (TED) Policy
-
-The policy used in our paper https://arxiv.org/abs/1910.00486.
+Transformer Embedding Dialogue (TED) Policy is described in
+`our paper <https://github.com/PolyAI-LDN/polyai-models#convert>`__.
 
 This policy has a pre-defined architecture, which comprises the
 following steps:
 
-    - concatenate user input (user intent and entities), previous system action, slots and active form for each time
+    - concatenate user input (user intent and entities), previous system actions, slots and active forms for each time
       step into an input vector to pre-transformer embedding layer;
     - feed it to transformer;
     - apply a dense layer to the output of the transformer to get embeddings of a dialogue for each time step;
@@ -353,7 +351,7 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
 
     .. code-block:: yaml
 
-        # nn architecture
+        # Architecture of the used neural network.
         # a list of hidden layers sizes before dialogue and action embed layers
         # number of hidden layers is equal to the length of this list
         "hidden_layers_sizes": {"dialogue": [], "label": []}
@@ -423,7 +421,7 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
 
     .. note::
 
-          Parameter ``maximum_negative_similarity`` is set to a negative value to mimic
+          The parameter ``maximum_negative_similarity`` is set to a negative value to mimic
           the original starspace algorithm in the case
           ``maximum_negative_similarity = maximum_positive_similarity`` and
           ``use_maximum_negative_similarity = False``. See

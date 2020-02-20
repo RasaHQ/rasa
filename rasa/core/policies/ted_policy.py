@@ -47,7 +47,7 @@ from rasa.utils.tensorflow.constants import (
     USE_MAX_NEG_SIM,
     MAX_NEG_SIM,
     MAX_POS_SIM,
-    EMBED_DIM,
+    EMBEDDING_DIMENSION,
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
     DROPRATE_ATTENTION,
@@ -99,7 +99,7 @@ class TEDPolicy(Policy):
         RANDOM_SEED: None,
         # embedding parameters
         # dimension size of embedding vectors
-        EMBED_DIM: 20,
+        EMBEDDING_DIMENSION: 20,
         # the type of the similarity
         NUM_NEG: 20,
         # flag if minimize only maximum similarity over incorrect labels
@@ -158,7 +158,7 @@ class TEDPolicy(Policy):
         model: Optional[RasaModel] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
-        """Declare instant variables with default values"""
+        """Declare instance variables with default values"""
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
@@ -180,8 +180,14 @@ class TEDPolicy(Policy):
 
         self.config = train_utils.update_similarity_type(self.config)
 
-        if self.config[EVAL_NUM_EPOCHS] < 1:
+        if self.config[EVAL_NUM_EPOCHS] == -1:
+            # magic value -1 is used to set evaluation to number of epochs
             self.config[EVAL_NUM_EPOCHS] = self.config[EPOCHS]
+        elif self.config[EVAL_NUM_EPOCHS] < 1:
+            raise ValueError(
+                f"'{EVAL_NUM_EXAMPLES}' is set to '{self.config[EVAL_NUM_EPOCHS]}'. "
+                f"Only values > 1 are allowed for this configuration value."
+            )
 
     # data helpers
     # noinspection PyPep8Naming
@@ -364,7 +370,7 @@ class TEDPolicy(Policy):
             )
             return
 
-        file_name = "TED_policy"
+        file_name = "ted_policy"
         tf_model_file = os.path.join(path, f"{file_name}.tf_model")
 
         rasa.utils.io.create_directory_for_file(tf_model_file)
@@ -540,13 +546,13 @@ class TED(RasaModel):
             name=DIALOGUE + "_encoder",
         )
         self._tf_layers["embed.dialogue"] = layers.Embed(
-            self.config[EMBED_DIM],
+            self.config[EMBEDDING_DIMENSION],
             self.config[REGULARIZATION_CONSTANT],
             DIALOGUE,
             self.config[SIMILARITY_TYPE],
         )
         self._tf_layers["embed.label"] = layers.Embed(
-            self.config[EMBED_DIM],
+            self.config[EMBEDDING_DIMENSION],
             self.config[REGULARIZATION_CONSTANT],
             LABEL,
             self.config[SIMILARITY_TYPE],
