@@ -34,7 +34,7 @@ from rasa.utils.tensorflow.constants import (
     UNIDIRECTIONAL_ENCODER,
     DROPRATE,
     DROPRATE_ATTENTION,
-    WEIGHTS_SPARSITY,
+    WEIGHT_SPARSITY,
     NEG_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
@@ -150,7 +150,7 @@ class DIETSelector(DIETClassifier):
         # dropout rate for attention
         DROPRATE_ATTENTION: 0,
         # sparsity of the weights in dense layers
-        WEIGHTS_SPARSITY: 0.8,
+        WEIGHT_SPARSITY: 0.8,
         # use a unidirectional or bidirectional encoder
         UNIDIRECTIONAL_ENCODER: False,
         # if true apply dropout to sparse tensors

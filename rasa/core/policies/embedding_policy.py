@@ -31,7 +31,7 @@ from rasa.utils.tensorflow.constants import (
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
     DROPRATE_ATTENTION,
-    WEIGHTS_SPARSITY,
+    WEIGHT_SPARSITY,
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
@@ -105,7 +105,7 @@ class EmbeddingPolicy(TEDPolicy):
         # dropout rate for attention
         DROPRATE_ATTENTION: 0,
         # sparsity of the weights in dense layers
-        WEIGHTS_SPARSITY: 0.8,
+        WEIGHT_SPARSITY: 0.8,
         # visualization of accuracy
         # how often calculate validation accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance

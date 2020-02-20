@@ -51,7 +51,7 @@ from rasa.utils.tensorflow.constants import (
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
     DROPRATE_ATTENTION,
-    WEIGHTS_SPARSITY,
+    WEIGHT_SPARSITY,
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
@@ -132,7 +132,7 @@ class TEDPolicy(Policy):
         # dropout rate for attention
         DROPRATE_ATTENTION: 0,
         # sparsity of the weights in dense layers
-        WEIGHTS_SPARSITY: 0.8,
+        WEIGHT_SPARSITY: 0.8,
         # visualization of accuracy
         # how often calculate validation accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
@@ -514,14 +514,14 @@ class TED(RasaModel):
             self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
             self.config[DROPRATE_DIALOGUE],
             self.config[REGULARIZATION_CONSTANT],
-            self.config[WEIGHTS_SPARSITY],
+            self.config[WEIGHT_SPARSITY],
             layer_name_suffix=DIALOGUE,
         )
         self._tf_layers["ffnn.label"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES][LABEL],
             self.config[DROPRATE_LABEL],
             self.config[REGULARIZATION_CONSTANT],
-            self.config[WEIGHTS_SPARSITY],
+            self.config[WEIGHT_SPARSITY],
             layer_name_suffix=LABEL,
         )
         self._tf_layers["transformer"] = TransformerEncoder(
@@ -532,7 +532,7 @@ class TED(RasaModel):
             self.config[REGULARIZATION_CONSTANT],
             dropout_rate=self.config[DROPRATE_DIALOGUE],
             attention_dropout_rate=self.config[DROPRATE_ATTENTION],
-            sparsity=self.config[WEIGHTS_SPARSITY],
+            sparsity=self.config[WEIGHT_SPARSITY],
             unidirectional=True,
             use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
             use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],

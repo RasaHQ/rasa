@@ -60,7 +60,7 @@ from rasa.utils.tensorflow.constants import (
     UNIDIRECTIONAL_ENCODER,
     DROPRATE,
     DROPRATE_ATTENTION,
-    WEIGHTS_SPARSITY,
+    WEIGHT_SPARSITY,
     NEG_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
@@ -170,7 +170,7 @@ class DIETClassifier(EntityExtractor):
         # dropout rate for attention
         DROPRATE_ATTENTION: 0,
         # sparsity of the weights in dense layers
-        WEIGHTS_SPARSITY: 0.8,
+        WEIGHT_SPARSITY: 0.8,
         # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: True,
         # visualization of accuracy
@@ -1049,7 +1049,7 @@ class DIET(RasaModel):
             self.config[HIDDEN_LAYERS_SIZES][name],
             self.config[DROPRATE],
             self.config[REGULARIZATION_CONSTANT],
-            self.config[WEIGHTS_SPARSITY],
+            self.config[WEIGHT_SPARSITY],
             name,
         )
 
@@ -1065,7 +1065,7 @@ class DIET(RasaModel):
                 self.config[REGULARIZATION_CONSTANT],
                 dropout_rate=self.config[DROPRATE],
                 attention_dropout_rate=self.config[DROPRATE_ATTENTION],
-                sparsity=self.config[WEIGHTS_SPARSITY],
+                sparsity=self.config[WEIGHT_SPARSITY],
                 unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
                 use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
                 use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],

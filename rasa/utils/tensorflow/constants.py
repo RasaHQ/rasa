@@ -35,7 +35,8 @@ DROPRATE = "droprate"
 DROPRATE_ATTENTION = "droprate_attention"
 DROPRATE_DIALOGUE = "droprate_dialogue"
 DROPRATE_LABEL = "droprate_label"
-WEIGHTS_SPARSITY = "weights_sparsity"
+
+WEIGHT_SPARSITY = "weight_sparsity"
 
 EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
 EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"
