@@ -1,4 +1,5 @@
 from typing import Text
+import os
 
 import pytest
 
@@ -18,6 +19,10 @@ def component_builder():
 
 @pytest.fixture(scope="session")
 def hftransformers_nlp(component_builder, default_config):
+
+    cache_dir = "~/.cache/torch/transformers"
+    if os.path.exists(cache_dir):
+        os.removedirs(cache_dir)
     model_components = {}
     for model_key in model_class_dict.keys():
         component_config = {"name": "HFTransformersNLP", "model_name": model_key}
