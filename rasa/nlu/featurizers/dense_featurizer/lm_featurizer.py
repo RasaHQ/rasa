@@ -19,6 +19,11 @@ from rasa.nlu.constants import (
 
 
 class LanguageModelFeaturizer(Featurizer):
+    """Featurizer using transformer based language models.
+
+        Uses the output of HFTransformersNLP component to set the sequence and sentence
+        level representations for dense featurizable attributes of each message object.
+    """
 
     provides = [
         DENSE_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES

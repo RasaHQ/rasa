@@ -16,6 +16,7 @@ from rasa.nlu.constants import (
 )
 import numpy as np
 import tensorflow as tf
+import os
 
 from rasa.utils.common import raise_warning
 
@@ -23,6 +24,12 @@ logger = logging.getLogger(__name__)
 
 
 class ConveRTFeaturizer(Featurizer):
+    """Featurizer using ConveRT model.
+
+        Loads the ConveRT(https://github.com/PolyAI-LDN/polyai-models#convert)
+        model from TFHub and computes sentence and sequence level feature representations
+        for dense featurizable attributes of each message object.
+    """
 
     provides = [
         DENSE_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
@@ -33,17 +40,17 @@ class ConveRTFeaturizer(Featurizer):
     required_components = [ConveRTTokenizer.name]
 
     def _load_from_tfhub(self, model_url: Text):
+        """Load model from TFHub"""
 
         import tensorflow_hub as tfhub
 
         self.module = tfhub.load(model_url)
 
     def _load_model(self) -> None:
+        """Load model from cache if possible, otherwise from TFHub"""
 
         # needed in order to load model
         import tensorflow_text
-        import tensorflow_hub as tfhub
-        import os
 
         model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
         # required to take care of cases when other files are already
