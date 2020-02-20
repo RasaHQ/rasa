@@ -104,7 +104,7 @@ HFTransformersNLP
     Include :ref:`LanguageModelTokenizer` and :ref:`LanguageModelFeaturizer` to utilize the output of this
     component for downstream NLU models.
 
-    .. note:: To use ``HFTransformersNLP`` component, install Rasa OS with ``pip install rasa[transformers]``.
+     .. note:: To use ``HFTransformersNLP`` component, install Rasa Open Source with ``pip install rasa[transformers]``.
 
 :Configuration:
     .. code-block:: yaml
