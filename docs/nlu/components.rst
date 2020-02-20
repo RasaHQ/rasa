@@ -969,121 +969,6 @@ ResponseSelector
     Response Selector component can be used to build a response retrieval model to directly predict a bot response from
     a set of candidate responses. The prediction of this model is used by :ref:`retrieval-actions`.
     It embeds user inputs and response labels into the same space and follows the exact same
-    neural network architecture and optimization as the ``EmbeddingIntentClassifier``.
-
-    .. note:: If during prediction time a message contains **only** words unseen during training,
-              and no Out-Of-Vacabulary preprocessor was used,
-              empty response ``None`` is predicted with confidence ``0.0``.
-
-    .. warning::
-        ``ResponseSelector`` is deprecated and should be replaced by ``DIETSelector``. See
-        `migration guide <https://rasa.com/docs/rasa/migration-guide/#rasa-1-7-to-rasa-1-8>`_ for more details.
-
-:Configuration:
-
-    The algorithm includes all the hyperparameters that ``EmbeddingIntentClassifier`` uses.
-    In addition, the component can also be configured to train a response selector for a particular retrieval intent.
-
-        - ``retrieval_intent`` sets the name of the intent for which this response selector model is trained.
-
-    Default values:
-
-    .. code-block:: yaml
-
-        pipeline:
-        - name: "ResponseSelector"
-            # nn architecture
-            # sizes of hidden layers before the embedding layer
-            # for input words and intent labels,
-            # the number of hidden layers is thus equal to the length of this list
-            "hidden_layers_sizes": {"text": [], "label": []}
-            # Whether to share the hidden layer weights between input words and labels
-            "share_hidden_layers": False
-            # training parameters
-            # initial and final batch sizes - batch size will be
-            # linearly increased for each epoch
-            "batch_size": [64, 256]
-            # how to create batches
-            "batch_strategy": "balanced"  # string 'sequence' or 'balanced'
-            # number of epochs
-            "epochs": 300
-            # set random seed to any int to get reproducible results
-            "random_seed": None
-            # optimizer
-            "learning_rate": 0.001
-            # embedding parameters
-            # default dense dimension used if no dense features are present
-            "dense_dimension": {"text": 512, "label": 512}
-            # dimension size of embedding vectors
-            "embedding_dimension": 20
-            # the type of the similarity
-            "number_of_negative_examples": 20
-            # flag if minimize only maximum similarity over incorrect actions
-            "similarity_type": "auto"  # string 'auto' or 'cosine' or 'inner'
-            # the type of the loss function
-            "loss_type": "softmax"  # string 'softmax' or 'margin'
-            # number of top intents to normalize scores for softmax loss_type
-            # set to 0 to turn off normalization
-            "ranking_length": 10
-            # how similar the algorithm should try
-            # to make embedding vectors for correct labels
-            "maximum_positive_similarity": 0.8  # should be 0.0 < ... < 1.0 for 'cosine'
-            # maximum negative similarity for incorrect labels
-            "maximum_negative_similarity": -0.4  # should be -1.0 < ... < 1.0 for 'cosine'
-            # flag: if true, only minimize the maximum similarity for incorrect labels
-            "use_maximum_negative_similarity": True
-            # scale loss inverse proportionally to confidence of correct prediction
-            "scale_loss": True
-            # regularization parameters
-            # the scale of regularization
-            "regularization_constant": 0.002
-            # the scale of how critical the algorithm should be of minimizing the
-            # maximum similarity between embeddings of different labels
-            "negative_margin_scale": 0.8
-            # dropout rate for rnn
-            "droprate": 0.2
-            # if true apply dropout to sparse tensors
-            "use_sparse_input_dropout": True
-            # visualization of accuracy
-            # how often to calculate training accuracy
-            "evaluate_every_number_of_epochs": 20  # small values may hurt performance
-            # how many examples to use for calculation of training accuracy
-            "evaluate_on_number_of_examples": 0  # large values may hurt performance
-            # selector config
-            # name of the intent for which this response selector is to be trained
-            "retrieval_intent": None
-
-
-.. _diet-selector:
-
-DIETSelector
-~~~~~~~~~~~~~~~~
-
-:Short: DIET Selector
-:Outputs: A dictionary with key as ``direct_response_intent`` and value containing ``response`` and ``ranking``
-:Requires: ``dense_features`` and/or ``sparse_features`` for user message and response
-
-:Output-Example:
-
-    .. code-block:: json
-
-        {
-            "response_selector": {
-              "faq": {
-                "response": {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
-                "ranking": [
-                    {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
-                    {"confidence": 0.2134543431, "name": "You can ask me about how to get started"}
-                ]
-              }
-            }
-        }
-
-:Description:
-
-    DIET Selector component can be used to build a response retrieval model to directly predict a bot response from
-    a set of candidate responses. The prediction of this model is used by :ref:`retrieval-actions`.
-    It embeds user inputs and response labels into the same space and follows the exact same
     neural network architecture and optimization as the ``DIETClassifier``.
 
     .. note:: If during prediction time a message contains **only** words unseen during training,
@@ -1107,13 +992,13 @@ DIETSelector
             # sizes of hidden layers before the embedding layer
             # for input words and intent labels,
             # the number of hidden layers is thus equal to the length of this list
-            "hidden_layers_sizes": {"text": [], "label": []}
+            "hidden_layers_sizes": {"text": [256, 128], "label": [256, 128]}
             # Whether to share the hidden layer weights between input words and labels
             "share_hidden_layers": False
             # number of units in transformer
-            "transformer_size": 256
+            "transformer_size": None
             # number of transformer layers
-            "number_of_transformer_layers": 2
+            "number_of_transformer_layers": 0
             # number of attention heads in transformer
             "number_of_attention_heads": 4
             # max sequence length
