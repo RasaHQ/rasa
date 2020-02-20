@@ -48,7 +48,7 @@ If you want to use custom components in your pipeline, see :ref:`custom-nlu-comp
 A pipeline usually consist of three main parts:
 
     1. Tokenizaion
-    2. Featuirzation
+    2. Featurization
     3. Entity Recognition / Intent Classification / Response Selectors
 
 Tokenization
@@ -90,8 +90,19 @@ have a training example, like: "can I book a car?", and Rasa is asked to predict
 my place", since the contextual vector representation for both examples are already very similar, the intent classified
 for both is highly likely to be the same. This is also useful if you don't have large enough training data.
 
-``SpacyFeaturizer`` provides word embeddings in many different language (see :ref:`pretrained-word-vectors`).
-So in case, your training data is not in Enlgish you might want to use this featurizer.
+An alternative to ``ConveRTFeaturizer`` can be ``LanguageModelFeaturizer`` which uses pre-trained language models such as
+BERT, GPT-2, etc. to extract similar contextual vector representations for the complete sentence. See :ref:`HFTransformersNLP`
+for a full list of supported language models.
+
+In case, your training data is not in English you can also use a different variant of a language model which
+is pre-trained in the language specific to your training data. For example, there is a chinese language variant of
+BERT(``bert-base-chinese``) or a japanese variant of it(``bert-base-japanese``). A full list of different variants of these
+language models is available in the
+`official docs of Transformers library <https://huggingface.co/transformers/pretrained_models.html>_`
+
+``SpacyFeaturizer`` also provides word embeddings in many different languages (see :ref:`pretrained-word-vectors`).
+So, this featurizer can also be an alternate option depending on the language of your training data.
+
 
 Entity Recognition / Intent Classification / Response Selectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
