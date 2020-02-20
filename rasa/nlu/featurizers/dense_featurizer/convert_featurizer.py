@@ -18,7 +18,7 @@ import numpy as np
 import tensorflow as tf
 import os
 
-from rasa.utils.common import raise_warning
+import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -193,7 +193,7 @@ class ConveRTFeaturizer(Featurizer):
     ) -> None:
 
         if config is not None and config.language != "en":
-            raise_warning(
+            common_utils.raise_warning(
                 f"Since ``ConveRT`` model is trained only on an english "
                 f"corpus of conversations, this featurizer should only be "
                 f"used if your training data is in english language. "

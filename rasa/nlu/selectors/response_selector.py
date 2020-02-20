@@ -59,7 +59,6 @@ from rasa.nlu.constants import (
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.models import RasaModel
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -90,10 +89,11 @@ class ResponseSelector(DIETClassifier):
     ]
 
     defaults = {
-        # nn architecture
-        # sizes of hidden layers before the embedding layer
-        # for input words and responses
-        # the number of hidden layers is thus equal to the length of this list
+        # ## Architecture of the used neural network
+        # Hidden layer sizes for layers before the embedding layers for user message
+        # and labels.
+        # The number of hidden layers is equal to the length of the corresponding
+        # list.
         HIDDEN_LAYERS_SIZES: {TEXT: [256, 128], LABEL: [256, 128]},
         # Whether to share the hidden layer weights between input words and responses
         SHARE_HIDDEN_LAYERS: False,
@@ -111,66 +111,69 @@ class ResponseSelector(DIETClassifier):
         MAX_RELATIVE_POSITION: None,
         # use a unidirectional or bidirectional encoder
         UNIDIRECTIONAL_ENCODER: False,
-        # training parameters
-        # initial and final batch sizes - batch size will be
-        # linearly increased for each epoch
+        # ## Training parameters
+        # Initial and final batch sizes:
+        # Batch size will be linearly increased for each epoch.
         BATCH_SIZES: [64, 256],
-        # how to create batches
-        BATCH_STRATEGY: "balanced",  # string 'sequence' or 'balanced'
-        # number of epochs
+        # Strategy used when creating batches.
+        # Can be either 'sequence' or 'balanced'.
+        BATCH_STRATEGY: "balanced",
+        # Number of epochs to train
         EPOCHS: 300,
-        # set random seed to any int to get reproducible results
+        # Set random seed to any 'int' to get reproducible results
         RANDOM_SEED: None,
-        # optimizer
+        # Initial learning rate for the optimizer
         LEARNING_RATE: 0.001,
-        # embedding parameters
-        # default dense dimension used if no dense features are present
-        DENSE_DIMENSION: {TEXT: 512, LABEL: 512},
-        # dimension size of embedding vectors
+        # ## Parameters for embeddings
+        # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,
-        # the type of the similarity
+        # Default dense dimension to use if no dense features are present.
+        DENSE_DIMENSION: {TEXT: 512, LABEL: 512},
+        # The number of incorrect labels. The algorithm will minimize
+        # their similarity to the user input during training.
         NUM_NEG: 20,
-        # flag if minimize only maximum similarity over incorrect actions
-        SIMILARITY_TYPE: "auto",  # string 'auto' or 'cosine' or 'inner'
-        # the type of the loss function
-        LOSS_TYPE: "softmax",  # string 'softmax' or 'margin'
-        # number of top responses to normalize scores for softmax loss_type
-        # set to 0 to turn off normalization
+        # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
+        SIMILARITY_TYPE: "auto",
+        # The type of the loss function, either 'softmax' or 'margin'.
+        LOSS_TYPE: "softmax",
+        # Number of top actions to normalize scores for loss type 'softmax'.
+        # Set to 0 to turn off normalization.
         RANKING_LENGTH: 10,
-        # how similar the algorithm should try
-        # to make embedding vectors for correct labels
-        MAX_POS_SIM: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
-        # maximum negative similarity for incorrect labels
-        MAX_NEG_SIM: -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
-        # flag: if true, only minimize the maximum similarity for incorrect labels
+        # Indicates how similar the algorithm should try to make embedding vectors
+        # for correct labels.
+        # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
+        MAX_POS_SIM: 0.8,
+        # Maximum negative similarity for incorrect labels.
+        # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
+        MAX_NEG_SIM: -0.4,
+        # If 'True' the algorithm only minimizes maximum similarity over
+        # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
         USE_MAX_NEG_SIM: True,
-        # scale loss inverse proportionally to confidence of correct prediction
+        # Scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
-        # regularization parameters
-        # the scale of L2 regularization
+        # ## Regularization parameters
+        # The scale of regularization
         REGULARIZATION_CONSTANT: 0.002,
-        # the scale of how critical the algorithm should be of minimizing the
-        # maximum similarity between embeddings of different labels
-        NEGATIVE_MARGIN_SCALE: 0.8,
-        # dropout rate for encoder
-        DROP_RATE: 0.2,
-        # dropout rate for attention
-        DROP_RATE_ATTENTION: 0,
         # sparsity of the weights in dense layers
         WEIGHT_SPARSITY: 0.8,
-        # if true apply dropout to sparse tensors
-        SPARSE_INPUT_DROPOUT: True,
-        # visualization of accuracy
-        # how often to calculate training accuracy
-        EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
-        # how many examples to use for calculation of training accuracy
-        EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
-        # model config
-        # if true random tokens of the input message will be masked and the model
-        # should predict those tokens
-        MASKED_LM: False,
-        # selector config
-        # name of the intent for which this response selector is to be trained
+        # The scale of how important is to minimize the maximum similarity
+        # between embeddings of different labels.
+        NEGATIVE_MARGIN_SCALE: 0.8,
+        # Dropout rate for encoder
+        DROP_RATE: 0.2,
+        # Dropout rate for attention
+        DROP_RATE_ATTENTION: 0,
+        # If 'True' apply dropout to sparse tensors
+        SPARSE_INPUT_DROPOUT: False,
+        # ## Evaluation parameters
+        # How often calculate validation accuracy.
+        # Small values may hurt performance, e.g. model accuracy.
+        EVAL_NUM_EPOCHS: 20,
+        # How many examples to use for hold out validation set
+        # Large values may hurt performance, e.g. model accuracy.
+        EVAL_NUM_EXAMPLES: 0,
+        # ## Selector config
+        # Name of the intent for which this response selector is to be trained
         RETRIEVAL_INTENT: None,
     }
 

@@ -14,16 +14,17 @@ from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
     BinarySingleStateFeaturizer,
 )
-from rasa.constants import DOCS_URL_POLICIES
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.common import obtain_verbosity, raise_warning
+import rasa.utils.common as common_utils
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+
 
 # there are a number of issues with imports from tensorflow. hence the deactivation
 # pytype: disable=import-error
 # pytype: disable=module-attr
+
 
 try:
     import cPickle as pickle
@@ -71,7 +72,7 @@ class KerasPolicy(Policy):
 
         self.current_epoch = current_epoch
 
-        raise_warning(
+        common_utils.raise_warning(
             "'KerasPolicy' is deprecated and will be removed in version "
             "2.0. Use 'TEDPolicy' instead.",
             category=FutureWarning,
@@ -151,7 +152,7 @@ class KerasPolicy(Policy):
             loss="categorical_crossentropy", optimizer="rmsprop", metrics=["accuracy"]
         )
 
-        if obtain_verbosity() > 0:
+        if common_utils.obtain_verbosity() > 0:
             model.summary()
 
         return model
@@ -194,45 +195,11 @@ class KerasPolicy(Policy):
             epochs=self.epochs,
             batch_size=self.batch_size,
             shuffle=False,
-            verbose=obtain_verbosity(),
+            verbose=common_utils.obtain_verbosity(),
             **self._train_params,
         )
         self.current_epoch = self.epochs
         logger.info("Done fitting keras policy model")
-
-    def continue_training(
-        self,
-        training_trackers: List[DialogueStateTracker],
-        domain: Domain,
-        **kwargs: Any,
-    ) -> None:
-        """Continues training an already trained policy."""
-
-        # takes the new example labelled and learns it
-        # via taking `epochs` samples of n_batch-1 parts of the training data,
-        # inserting our new example and learning them. this means that we can
-        # ask the network to fit the example without overemphasising
-        # its importance (and therefore throwing off the biases)
-
-        batch_size = kwargs.get("batch_size", 5)
-        epochs = kwargs.get("epochs", 50)
-
-        for _ in range(epochs):
-            training_data = self._training_data_for_continue_training(
-                batch_size, training_trackers, domain
-            )
-
-            # fit to one extra example using updated trackers
-            self.model.fit(
-                training_data.X,
-                training_data.y,
-                epochs=self.current_epoch + 1,
-                batch_size=len(training_data.y),
-                verbose=obtain_verbosity(),
-                initial_epoch=self.current_epoch,
-            )
-
-            self.current_epoch += 1
 
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain

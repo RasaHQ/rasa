@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 import numpy as np
 
-from rasa.constants import DOCS_URL_COMPONENTS, DOCS_URL_TRAINING_DATA_NLU
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu import utils
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
@@ -15,7 +15,7 @@ from rasa.nlu.constants import DENSE_FEATURE_NAMES, TEXT
 from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.utils.common import raise_warning
+import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ class SklearnIntentClassifier(Component):
             self.le = LabelEncoder()
         self.clf = clf
 
-        raise_warning(
+        common_utils.raise_warning(
             "'SklearnIntentClassifier' is deprecated and will be removed in version "
             "2.0. Use 'DIETClassifier' instead.",
             category=FutureWarning,
@@ -101,7 +101,7 @@ class SklearnIntentClassifier(Component):
         labels = [e.get("intent") for e in training_data.intent_examples]
 
         if len(set(labels)) < 2:
-            raise_warning(
+            common_utils.raise_warning(
                 "Can not train an intent classifier as there are not "
                 "enough intents. Need at least 2 different intents. "
                 "Skipping training of intent classifier.",
