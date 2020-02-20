@@ -5,6 +5,7 @@ from tqdm import tqdm
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
@@ -28,6 +29,8 @@ class ConveRTFeaturizer(Featurizer):
     ]
 
     requires = [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
+
+    required_components = [ConveRTTokenizer.name]
 
     def _load_model(self) -> None:
 

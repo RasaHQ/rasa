@@ -2,7 +2,7 @@ import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple
 
-from rasa.nlu.config import RasaNLUModelConfig, override_defaults
+from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.nlu.constants import RESPONSE
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import raise_warning
@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
-    """Tries to import all the package names and returns
-    the packages where it failed."""
+    """Tries to import all package names and returns the packages where it failed."""
+
     import importlib
 
     failed_imports = set()
@@ -28,8 +28,8 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
 
 
 def validate_requirements(component_names: List[Text]) -> None:
-    """Ensures that all required importable python packages are installed to
-    instantiate and used the passed components."""
+    """Validates that all required importable python packages are installed."""
+
     from rasa.nlu import registry
 
     # Validate that all required packages are installed
@@ -51,17 +51,46 @@ def validate_requirements(component_names: List[Text]) -> None:
         )
 
 
+def validate_tokenizers(pipeline: List["Component"]) -> None:
+    """Validates that only one tokenizer is present in the pipeline."""
+
+    from rasa.nlu.tokenizers.tokenizer import Tokenizer
+
+    tokenizer_names = []
+    for component in pipeline:
+        if isinstance(component, Tokenizer):
+            tokenizer_names.append(component.name)
+
+    if len(tokenizer_names) > 1:
+        raise InvalidConfigError(
+            f"More then one tokenizer is used: {tokenizer_names}. "
+            f"You can use only one tokenizer."
+        )
+
+
+def validate_required_components(pipeline: List["Component"]) -> None:
+    """Validates that all required components are present in the pipeline."""
+
+    unique_component_names = set()
+    for component in pipeline:
+        unique_component_names.add(component.name)
+        if not set(component.required_components).issubset(unique_component_names):
+            raise InvalidConfigError(
+                f"'{component.name}' requires {component.required_components}. "
+                f"Add required components to the pipeline."
+            )
+
+
 def validate_arguments(
     pipeline: List["Component"],
     context: Dict[Text, Any],
     allow_empty_pipeline: bool = False,
 ) -> None:
-    """Validates a pipeline before it is run. Ensures, that all
-    arguments are present to train the pipeline."""
+    """Validates that all arguments are present to train the pipeline."""
 
     # Ensure the pipeline is not empty
     if not allow_empty_pipeline and len(pipeline) == 0:
-        raise ValueError(
+        raise InvalidConfigError(
             "Can not train an empty pipeline. "
             "Make sure to specify a proper pipeline in "
             "the configuration using the 'pipeline' key. "
@@ -77,7 +106,7 @@ def validate_arguments(
                 validate_requires_any_of(r, provided_properties, str(component.name))
             else:
                 if r not in provided_properties:
-                    raise Exception(
+                    raise InvalidConfigError(
                         f"Failed to validate component {component.name}. "
                         f"Missing property: '{r}'"
                     )
@@ -86,10 +115,11 @@ def validate_arguments(
 
 
 def any_of(*args) -> Tuple[Any]:
-    """Helper function to define that one of the given arguments is required
-    by a component.
+    """Helper function to define that one of the given arguments is required.
 
-    Should be used inside `requires`."""
+    Should be used inside `requires`.
+    """
+
     return args
 
 
@@ -98,15 +128,14 @@ def validate_requires_any_of(
     provided_properties: Set[Text],
     component_name: Text,
 ) -> None:
-    """Validates that at least one of the given required properties is present in
-    the provided properties."""
+    """Validates that at least one of the given required properties is present."""
 
     property_present = any(
         [property in provided_properties for property in required_properties]
     )
 
     if not property_present:
-        raise Exception(
+        raise InvalidConfigError(
             f"Failed to validate component '{component_name}'. "
             f"Missing one of the following properties: "
             f"{required_properties}."
@@ -115,7 +144,8 @@ def validate_requires_any_of(
 
 def validate_required_components_from_data(
     pipeline: List["Component"], data: TrainingData
-):
+) -> None:
+    """Validates that all components are present in the pipeline based on data."""
 
     response_selector_exists = False
     for component in pipeline:
@@ -131,8 +161,7 @@ def validate_required_components_from_data(
 
 
 class MissingArgumentError(ValueError):
-    """Raised when a function is called and not all parameters can be
-    filled from the context / config.
+    """Raised when not all parameters can be filled from the context / config.
 
     Attributes:
         message -- explanation of which parameter is missing
@@ -167,7 +196,7 @@ class UnsupportedLanguageError(Exception):
 
 
 class ComponentMetaclass(type):
-    """Metaclass with `name` class property"""
+    """Metaclass with `name` class property."""
 
     @property
     def name(cls):
@@ -195,7 +224,8 @@ class Component(metaclass=ComponentMetaclass):
     components a component can use to do its own
     processing. For example, a featurizer component can provide
     features that are used by another component down
-    the pipeline to do intent classification."""
+    the pipeline to do intent classification.
+    """
 
     # Component class name is used when integrating it in a
     # pipeline. E.g. ``[ComponentA, ComponentB]``
@@ -222,6 +252,10 @@ class Component(metaclass=ComponentMetaclass):
     # "option_1" or "option_2" needs to be present in the
     # provided properties from the previous components.
     requires = []
+
+    # Which components are required by this component.
+    # Listed components should appear before the component itself in the pipeline.
+    required_components = []
 
     # Defines the default configuration parameters of a component
     # these values can be overwritten in the pipeline configuration
@@ -251,13 +285,16 @@ class Component(metaclass=ComponentMetaclass):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
-        """Specify which python packages need to be installed to use this
-        component, e.g. ``["spacy"]``. More specifically, these should be
+        """Specify which python packages need to be installed.
+
+        E.g. ``["spacy"]``. More specifically, these should be
         importable python package names e.g. `sklearn` and not package
         names in the dependencies sense e.g. `scikit-learn`
 
         This list of requirements allows us to fail early during training
-        if a required package is not installed."""
+        if a required package is not installed.
+        """
+
         return []
 
     @classmethod
@@ -276,8 +313,9 @@ class Component(metaclass=ComponentMetaclass):
         this component needs to be able to restore itself.
         Components can rely on any context attributes that are
         created by :meth:`components.Component.create`
-        calls to components previous
-        to this one."""
+        calls to components previous to this one.
+        """
+
         if cached_component:
             return cached_component
         else:
@@ -300,7 +338,7 @@ class Component(metaclass=ComponentMetaclass):
         return cls(component_config)
 
     def provide_context(self) -> Optional[Dict[Text, Any]]:
-        """Initialize this component for a new pipeline
+        """Initialize this component for a new pipeline.
 
         This function will be called before the training
         is started and before the first message is processed using
@@ -310,7 +348,9 @@ class Component(metaclass=ComponentMetaclass):
         components do not need to implement this method.
         It's mostly used to initialize framework environments
         like MITIE and spacy
-        (e.g. loading word vectors for the pipeline)."""
+        (e.g. loading word vectors for the pipeline).
+        """
+
         pass
 
     def train(
@@ -328,7 +368,9 @@ class Component(metaclass=ComponentMetaclass):
         of ANY component and
         on any context attributes created by a call to
         :meth:`rasa.nlu.components.Component.train`
-        of components previous to this one."""
+        of components previous to this one.
+        """
+
         pass
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -341,7 +383,9 @@ class Component(metaclass=ComponentMetaclass):
         of ANY component and
         on any context attributes created by a call to
         :meth:`rasa.nlu.components.Component.process`
-        of components previous to this one."""
+        of components previous to this one.
+        """
+
         pass
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
@@ -358,7 +402,8 @@ class Component(metaclass=ComponentMetaclass):
         If a component is unique to a model it should return None.
         Otherwise, an instantiation of the
         component will be reused for all models where the
-        metadata creates the same key."""
+        metadata creates the same key.
+        """
 
         return None
 
@@ -382,7 +427,8 @@ class Component(metaclass=ComponentMetaclass):
         The pipeline should be a list of components that are
         previous to this one in the pipeline and
         have already finished their training (and can therefore
-        be safely used to process messages)."""
+        be safely used to process messages).
+        """
 
         self.partial_processing_pipeline = pipeline
         self.partial_processing_context = context
@@ -392,7 +438,8 @@ class Component(metaclass=ComponentMetaclass):
         training (e.g. external training data).
 
         The passed message will be processed by all components
-        previous to this one in the pipeline."""
+        previous to this one in the pipeline.
+        """
 
         if self.partial_processing_context is not None:
             for component in self.partial_processing_pipeline:
@@ -406,7 +453,8 @@ class Component(metaclass=ComponentMetaclass):
         """Check if component supports a specific language.
 
         This method can be overwritten when needed. (e.g. dynamically
-        determine which language is supported.)"""
+        determine which language is supported.)
+        """
 
         # if language_list is set to `None` it means: support all languages
         if language is None or cls.language_list is None:
@@ -466,7 +514,9 @@ class ComponentBuilder:
         model_metadata: "Metadata",
         **context: Any,
     ) -> Component:
-        """Tries to retrieve a component from the cache, else calls
+        """Loads a component.
+
+        Tries to retrieve a component from the cache, else calls
         ``load`` to create a new component.
 
         Args:
@@ -504,8 +554,12 @@ class ComponentBuilder:
     def create_component(
         self, component_config: Dict[Text, Any], cfg: RasaNLUModelConfig
     ) -> Component:
-        """Tries to retrieve a component from the cache,
-        calls `create` to create a new component."""
+        """Creates a component.
+
+        Tries to retrieve a component from the cache,
+        calls `create` to create a new component.
+        """
+
         from rasa.nlu import registry
         from rasa.nlu.model import Metadata
 

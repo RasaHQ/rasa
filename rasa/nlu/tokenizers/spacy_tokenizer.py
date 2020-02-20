@@ -2,6 +2,7 @@ import typing
 from typing import Text, List, Any
 
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.training_data import Message
 
 from rasa.nlu.constants import TOKENS_NAMES, SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
@@ -20,6 +21,8 @@ class SpacyTokenizer(Tokenizer):
     provides = [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
 
     requires = [SPACY_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
+
+    required_components = [SpacyNLP.name]
 
     defaults = {
         # Flag to check whether to split intents
