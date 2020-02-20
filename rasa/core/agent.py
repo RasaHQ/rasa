@@ -26,6 +26,7 @@ from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import LockStore, InMemoryLockStore
 from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.nlg.modified import ModifiedTemplateGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import Policy
@@ -317,7 +318,8 @@ class Agent:
 
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
 
-        self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
+        self.nlg = ModifiedTemplateGenerator(self.domain.templates)
+        #self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(tracker_store, self.domain)
         self.lock_store = self._create_lock_store(lock_store)
         self.action_endpoint = action_endpoint
