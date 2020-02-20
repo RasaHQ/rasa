@@ -6,6 +6,8 @@ help:
 	@echo "make"
 	@echo "    clean"
 	@echo "        Remove Python/build artifacts."
+	@echo "    install"
+	@echo "        Install rasa."
 	@echo "    formatter"
 	@echo "        Apply black formatting to code."
 	@echo "    lint"
@@ -36,6 +38,9 @@ clean:
 	rm -rf .pytype/
 	rm -rf dist/
 	rm -rf docs/_build
+
+install:
+	poetry install
 
 formatter:
 	poetry run black rasa tests
