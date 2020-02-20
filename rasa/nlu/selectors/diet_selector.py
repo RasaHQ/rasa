@@ -33,9 +33,9 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
     UNIDIRECTIONAL_ENCODER,
-    DROPRATE,
-    DROPRATE_ATTENTION,
-    NEG_MARGIN_SCALE,
+    DROP_RATE,
+    DROP_RATE_ATTENTION,
+    NEGATIVE_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
     EMBEDDING_DIMENSION,
@@ -147,11 +147,11 @@ class DIETSelector(DIETClassifier):
         REGULARIZATION_CONSTANT: 0.002,
         # the scale of how critical the algorithm should be of minimizing the
         # maximum similarity between embeddings of different intent labels
-        NEG_MARGIN_SCALE: 0.8,
+        NEGATIVE_MARGIN_SCALE: 0.8,
         # dropout rate for rnn
-        DROPRATE: 0.2,
+        DROP_RATE: 0.2,
         # dropout rate for attention
-        DROPRATE_ATTENTION: 0,
+        DROP_RATE_ATTENTION: 0,
         # use a unidirectional or bidirectional encoder
         UNIDIRECTIONAL_ENCODER: False,
         # if true apply dropout to sparse tensors

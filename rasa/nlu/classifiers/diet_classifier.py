@@ -59,9 +59,9 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
     UNIDIRECTIONAL_ENCODER,
-    DROPRATE,
-    DROPRATE_ATTENTION,
-    NEG_MARGIN_SCALE,
+    DROP_RATE,
+    DROP_RATE_ATTENTION,
+    NEGATIVE_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
     USE_MAX_NEG_SIM,
@@ -166,11 +166,11 @@ class DIETClassifier(EntityExtractor):
         REGULARIZATION_CONSTANT: 0.002,
         # the scale of how critical the algorithm should be of minimizing the
         # maximum similarity between embeddings of different labels
-        NEG_MARGIN_SCALE: 0.8,
+        NEGATIVE_MARGIN_SCALE: 0.8,
         # dropout rate for encoder
-        DROPRATE: 0.2,
+        DROP_RATE: 0.2,
         # dropout rate for attention
-        DROPRATE_ATTENTION: 0,
+        DROP_RATE_ATTENTION: 0,
         # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: True,
         # visualization of accuracy
@@ -1051,7 +1051,7 @@ class DIET(RasaModel):
 
     def _prepare_input_layers(self, name: Text) -> None:
         self._tf_layers[f"sparse_dropout.{name}"] = layers.SparseDropout(
-            rate=self.config[DROPRATE]
+            rate=self.config[DROP_RATE]
         )
         self._prepare_sparse_dense_layers(
             self.data_signature[f"{name}_features"],
@@ -1061,7 +1061,7 @@ class DIET(RasaModel):
         )
         self._tf_layers[f"ffnn.{name}"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES][name],
-            self.config[DROPRATE],
+            self.config[DROP_RATE],
             self.config[REGULARIZATION_CONSTANT],
             name,
         )
@@ -1077,8 +1077,8 @@ class DIET(RasaModel):
                 self.config[TRANSFORMER_SIZE] * 4,
                 self.config[MAX_SEQUENCE_LENGTH],
                 self.config[REGULARIZATION_CONSTANT],
-                dropout_rate=self.config[DROPRATE],
-                attention_dropout_rate=self.config[DROPRATE_ATTENTION],
+                dropout_rate=self.config[DROP_RATE],
+                attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
                 unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
                 use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
                 use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
@@ -1109,7 +1109,7 @@ class DIET(RasaModel):
             self.config[MAX_POS_SIM],
             self.config[MAX_NEG_SIM],
             self.config[USE_MAX_NEG_SIM],
-            self.config[NEG_MARGIN_SCALE],
+            self.config[NEGATIVE_MARGIN_SCALE],
             self.config[SCALE_LOSS],
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,
@@ -1134,7 +1134,7 @@ class DIET(RasaModel):
             self.config[MAX_POS_SIM],
             self.config[MAX_NEG_SIM],
             self.config[USE_MAX_NEG_SIM],
-            self.config[NEG_MARGIN_SCALE],
+            self.config[NEGATIVE_MARGIN_SCALE],
             self.config[SCALE_LOSS],
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,
