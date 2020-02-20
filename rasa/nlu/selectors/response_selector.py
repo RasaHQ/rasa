@@ -191,7 +191,7 @@ class ResponseSelector(DIETClassifier):
         # the following properties cannot be adapted for the ResponseSelector
         component_config[INTENT_CLASSIFICATION] = True
         component_config[ENTITY_RECOGNITION] = False
-        component_config[BILOU_FLAG] = False
+        component_config[BILOU_FLAG] = None
 
         super().__init__(
             component_config,
