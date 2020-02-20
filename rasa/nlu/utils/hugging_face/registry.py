@@ -1,3 +1,9 @@
+import logging
+
+# Explicitly set logging level for this module before any import
+# because otherwise it logs tensorflow/pytorch versions
+logging.getLogger("transformers.file_utils").setLevel(logging.WARNING)
+
 from transformers import (
     TFBertModel,
     TFOpenAIGPTModel,
