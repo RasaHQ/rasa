@@ -1,4 +1,4 @@
-Added a new NLU components ``DIETClassifier`` and a new policy ``TEDPolicy``.
+Added a new NLU component ``DIETClassifier`` and a new policy ``TEDPolicy``.
 
 DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
 recognition. You can read more about this component in our

@@ -23,44 +23,14 @@ The Short Answer
 
 If your training data is in english, a good starting point is the following pipeline:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-      - name: ConveRTTokenizer
-      - name: ConveRTFeaturizer
-      - name: RegexFeaturizer
-      - name: LexicalSyntacticFeaturizer
-      - name: CountVectorsFeaturizer
-      - name: CountVectorsFeaturizer
-        analyzer: "char_wb"
-        min_ngram: 1
-        max_ngram: 4
-      - name: DIETClassifier
-      - name: EntitySynonymMapper
-      - name: DIETSelector
-
+.. literalinclude:: ../../data/configs_for_docs/default_english_config.yml
+    :language: yaml
 
 In case your training data is multi-lingual and is rich with domain specific vocabulary,
 use the following pipeline:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-      - name: WhitespaceTokenizer
-      - name: RegexFeaturizer
-      - name: LexicalSyntacticFeaturizer
-      - name: CountVectorsFeaturizer
-      - name: CountVectorsFeaturizer
-        analyzer: "char_wb"
-        min_ngram: 1
-        max_ngram: 4
-      - name: DIETClassifier
-      - name: EntitySynonymMapper
-      - name: DIETSelector
+.. literalinclude:: ../../data/configs_for_docs/default_config.yml
+    :language: yaml
 
 
 A Longer Answer
@@ -69,20 +39,8 @@ A Longer Answer
 We encourage everyone to define their own pipeline by listing the names of the components you want to use.
 For example:
 
-.. code-block:: yaml
-
-    pipeline:
-      - name: WhitespaceTokenizer
-      - name: RegexFeaturizer
-      - name: LexicalSyntacticFeaturizer
-      - name: CountVectorsFeaturizer
-      - name: CountVectorsFeaturizer
-        analyzer: "char_wb"
-        min_ngram: 1
-        max_ngram: 4
-      - name: DIETClassifier
-      - name: EntitySynonymMapper
-      - name: DIETSelector
+.. literalinclude:: ../../data/configs_for_docs/default_config.yml
+    :language: yaml
 
 You can find the details of each component in :ref:`components`.
 If you want to use custom components in your pipeline, see :ref:`custom-nlu-components`.
@@ -125,21 +83,22 @@ We support a few components that provide pre-trained word embeddings:
 3. ``ConveRTFeaturizer``
 4. ``LanguageModelFeaturizer``
 
+If your training data is in English, we recommend to use the ``ConveRTFeaturizer``.
 The advantage of the ``ConveRTFeaturizer`` is that it doesn't treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence. For example, if you
 have a training example, like: "can I book a car?", and Rasa is asked to predict the intent for "I need a ride from
 my place", since the contextual vector representation for both examples are already very similar, the intent classified
 for both is highly likely to be the same. This is also useful if you don't have large enough training data.
 
-TODO when to use what featurizer
+``SpacyFeaturizer`` provides word embeddings in many different language (see :ref:`pretrained-word-vectors`).
+So in case, your training data is not in Enlgish you might want to use this featurizer.
 
 Entity Recognition / Intent Classification / Response Selectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Depending on your data you may want to only perform intent classification or just entity recognition.
+Depending on your data you may want to only perform intent classification or entity recognition.
 We support several components for each of the task. All of them are listed in :ref:`components`.
-We recommend to use :ref:`diet-classifier` for intent classification and entity recognition and :ref:`response-selector`
+We recommend to use :ref:`diet-classifier` for intent classification and entity recognition and :ref:`diet-selector`
 for response selection.
-
 
 Comparing different pipelines for your data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -170,7 +129,7 @@ Balanced batching is used by default. In order to turn it off and use a classic 
     language: "en"
 
     pipeline:
-    - ... # other components
+    # - ... other components
     - name: "DIETClassifier"
       batch_strategy: sequence
 
@@ -240,22 +199,8 @@ the processing has finished. For example, for the sentence ``"I am looking for C
 
 This is created as a combination of the results of the different components in the following pipeline:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-      - name: WhitespaceTokenizer
-      - name: RegexFeaturizer
-      - name: LexicalSyntacticFeaturizer
-      - name: CountVectorsFeaturizer
-      - name: CountVectorsFeaturizer
-        analyzer: "char_wb"
-        min_ngram: 1
-        max_ngram: 4
-      - name: DIETClassifier
-      - name: EntitySynonymMapper
-      - name: DIETSelector
+.. literalinclude:: ../../data/configs_for_docs/default_config.yml
+    :language: yaml
 
 For example, the ``entities`` attribute is created by the ``DIETClassifier`` component.
 
@@ -371,27 +316,14 @@ if you don't have large enough training data.
 
 To use the ``pretrained_embeddings_spacy`` template, use the following configuration:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline: "pretrained_embeddings_spacy"
+.. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_spacy_config_1.yml
+    :language: yaml
 
 See :ref:`pretrained-word-vectors` for more information about loading spacy language models.
 To use the components and configure them separately:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-    - name: "SpacyNLP"
-    - name: "SpacyTokenizer"
-    - name: "SpacyFeaturizer"
-    - name: "RegexFeaturizer"
-    - name: "CRFEntityExtractor"
-    - name: "EntitySynonymMapper"
-    - name: "SklearnIntentClassifier"
+.. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_spacy_config_2.yml
+    :language: yaml
 
 .. _section_pretrained_embeddings_convert_pipeline:
 
@@ -417,22 +349,13 @@ for both is highly likely to be the same. This is also useful if you don't have 
 
 To use the ``pretrained_embeddings_convert`` template:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline: "pretrained_embeddings_convert"
+.. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_convert_config_2.yml
+    :language: yaml
 
 To use the components and configure them separately:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-    - name: "ConveRTTokenizer"
-    - name: "ConveRTFeaturizer"
-    - name: "EmbeddingIntentClassifier"
+.. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_convert_config_2.yml
+    :language: yaml
 
 .. _section_supervised_embeddings_pipeline:
 
@@ -450,31 +373,15 @@ You can read more about this topic `here <https://medium.com/rasa-blog/supervise
 To train a Rasa model in your preferred language, define the
 ``supervised_embeddings`` pipeline as your pipeline in your ``config.yml`` or other configuration file:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline: "supervised_embeddings"
+.. literalinclude:: ../../data/configs_for_docs/supervised_embeddings_config_1.yml
+    :language: yaml
 
 The ``supervised_embeddings`` pipeline supports any language that can be tokenized.  By default it uses whitespace
 for tokenization. You can customize the setup of this pipeline by adding or changing components. Here are the default
 components that make up the ``supervised_embeddings`` pipeline:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-    - name: "WhitespaceTokenizer"
-    - name: "RegexFeaturizer"
-    - name: "CRFEntityExtractor"
-    - name: "EntitySynonymMapper"
-    - name: "CountVectorsFeaturizer"
-    - name: "CountVectorsFeaturizer"
-      analyzer: "char_wb"
-      min_ngram: 1
-      max_ngram: 4
-    - name: "EmbeddingIntentClassifier"
+.. literalinclude:: ../../data/configs_for_docs/supervised_embeddings_config_2.yml
+    :language: yaml
     
 So for example, if your chosen language is not whitespace-tokenized (words are not separated by spaces), you
 can replace the ``WhitespaceTokenizer`` with your own tokenizer. We support a number of different :ref:`tokenizers <tokenizers>`,
@@ -500,11 +407,11 @@ However, we do not recommend that you use it as mitie support is likely to be de
 To use the MITIE pipeline, you will have to train word vectors from a corpus. Instructions can be found
 :ref:`here <mitie>`. This will give you the file path to pass to the ``model`` parameter.
 
-.. literalinclude:: ../../data/test_config/config_pretrained_embeddings_mitie.yml
+.. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_mitie_config_1.yml
     :language: yaml
 
 Another version of this pipeline uses MITIE's featurizer and also its multi-class classifier.
 Training can be quite slow, so this is not recommended for large datasets.
 
-.. literalinclude:: ../../data/test_config/config_pretrained_embeddings_mitie_2.yml
+.. literalinclude:: ../../data/configs_for_docs/pretrained_embeddings_mitie_config_2.yml
     :language: yaml

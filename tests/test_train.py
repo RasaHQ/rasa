@@ -132,18 +132,19 @@ def test_train_nlu_temp_files(
     assert count_temp_rasa_files(tempfile.tempdir) == 0
 
 
-def docker_config_files():
-    docker_config_path = "docker/configs"
-
+def config_files_in(config_directory: Text):
     return [
-        os.path.join(docker_config_path, f)
-        for f in os.listdir(docker_config_path)
-        if os.path.isfile(os.path.join(docker_config_path, f))
+        os.path.join(config_directory, f)
+        for f in os.listdir(config_directory)
+        if os.path.isfile(os.path.join(config_directory, f))
     ]
 
 
-@pytest.mark.parametrize("config_file", docker_config_files())
-def test_train_docker_configs(
+@pytest.mark.parametrize(
+    "config_file",
+    config_files_in("data/configs_for_docs") + config_files_in("docker/configs"),
+)
+def test_train_docker_and_docs_configs(
     config_file: Text, tmp_path: Text, default_nlu_data: Text
 ):
     output = str(tmp_path)
