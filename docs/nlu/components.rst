@@ -248,11 +248,11 @@ SpacyTokenizer
 ConveRTTokenizer
 ~~~~~~~~~~~~~~~~
 
-:Short: Tokenizer using ConveRT
+:Short: Tokenizer using `ConveRT <https://github.com/PolyAI-LDN/polyai-models#convert>`_
 :Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
 :Requires: Nothing
 :Description:
-    Creates tokens using the ConveRT tokenizer. Must be used whenever the ``ConveRTFeaturizer`` is used.
+    Creates tokens using the ConveRT tokenizer. Must be used whenever the :ref:`ConveRTFeaturizer` is used.
 :Configuration:
     Make the tokenizer not case sensitive by adding the ``case_sensitive: False`` option.
     Default being ``case_sensitive: True``.
@@ -307,6 +307,9 @@ However, the additional token at the end (e.g. ``__CLS__``) contains features fo
 This feature vector can be used in any non-sequence model.
 The corresponding classifier can therefore decide what kind of features to use.
 
+
+.. _MitieFeaturizer:
+
 MitieFeaturizer
 ~~~~~~~~~~~~~~~
 
@@ -337,6 +340,8 @@ MitieFeaturizer
           "pooling": "mean"
 
 
+.. _SpacyFeaturizer:
+
 SpacyFeaturizer
 ~~~~~~~~~~~~~~~
 
@@ -361,6 +366,8 @@ SpacyFeaturizer
           # the __CLS__ token. Available options: 'mean' and 'max'.
           "pooling": "mean"
 
+
+.. _ConveRTFeaturizer:
 
 ConveRTFeaturizer
 ~~~~~~~~~~~~~~~~~

@@ -78,10 +78,10 @@ The advantage of using pre-trained word embeddings in your pipeline is that if y
 words "apples" and "pears" are very similar. This is especially useful if you don't have large enough training data.
 We support a few components that provide pre-trained word embeddings:
 
-1. ``MitieFeaturizer``
-2. ``SpacyFeaturizer``
-3. ``ConveRTFeaturizer``
-4. ``LanguageModelFeaturizer``
+1. :ref:`MitieFeaturizer`
+2. :ref:`SpacyFeaturizer`
+3. :ref:`ConveRTFeaturizer`
+4. :ref:`LanguageModelFeaturizer`
 
 If your training data is in English, we recommend to use the ``ConveRTFeaturizer``.
 The advantage of the ``ConveRTFeaturizer`` is that it doesn't treat each word of the user message independently, but
