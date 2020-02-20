@@ -209,12 +209,9 @@ def test_mattermost_channel():
     input_channel = MattermostInput(
         # this is the url of the api for your mattermost instance
         url="http://chat.example.com/api/v4",
-        # the name of your team for mattermost
-        team="community",
-        # the username of your bot user that will post messages
-        user="user@email.com",
+        # the bot token of the bot account that will post messages
+        token="xxxxx",
         # the password of your bot user that will post messages
-        pw="password",
         # the webhook-url your bot should listen for messages
         webhook_url="YOUR_WEBHOOK_URL",
     )
