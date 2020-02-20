@@ -26,9 +26,9 @@ from rasa.utils.tensorflow.constants import (
     INTENT_CLASSIFICATION,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
-    DROPRATE,
+    DROP_RATE,
     WEIGHT_SPARSITY,
-    NEG_MARGIN_SCALE,
+    NEGATIVE_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
     USE_MAX_NEG_SIM,
@@ -98,9 +98,9 @@ class EmbeddingIntentClassifier(DIETClassifier):
         REGULARIZATION_CONSTANT: 0.002,
         # the scale of how critical the algorithm should be of minimizing the
         # maximum similarity between embeddings of different labels
-        NEG_MARGIN_SCALE: 0.8,
+        NEGATIVE_MARGIN_SCALE: 0.8,
         # dropout rate for rnn
-        DROPRATE: 0.2,
+        DROP_RATE: 0.2,
         # sparsity of the weights in dense layers
         WEIGHT_SPARSITY: 0.8,
         # if true apply dropout to sparse tensors

@@ -32,20 +32,21 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
     UNIDIRECTIONAL_ENCODER,
-    DROPRATE,
-    DROPRATE_ATTENTION,
+    DROP_RATE,
+    DROP_RATE_ATTENTION,
     WEIGHT_SPARSITY,
-    NEG_MARGIN_SCALE,
+    NEGATIVE_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
+    USE_MAX_NEG_SIM,
+    MAX_NEG_SIM,
+    MAX_POS_SIM,
     EMBEDDING_DIMENSION,
     BILOU_FLAG,
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
-    USE_MAX_NEG_SIM,
-    MAX_NEG_SIM,
-    MAX_POS_SIM,
+    RETRIEVAL_INTENT,
 )
 from rasa.nlu.constants import (
     RESPONSE,
@@ -94,7 +95,7 @@ class ResponseSelector(DIETClassifier):
         # for input words and responses
         # the number of hidden layers is thus equal to the length of this list
         HIDDEN_LAYERS_SIZES: {TEXT: [256, 128], LABEL: [256, 128]},
-        # Whether to share the hidden layer weights between input words and intent labels
+        # Whether to share the hidden layer weights between input words and responses
         SHARE_HIDDEN_LAYERS: False,
         # number of units in transformer
         TRANSFORMER_SIZE: None,
@@ -102,6 +103,14 @@ class ResponseSelector(DIETClassifier):
         NUM_TRANSFORMER_LAYERS: 0,
         # number of attention heads in transformer
         NUM_HEADS: 4,
+        # if true use key relative embeddings in attention
+        KEY_RELATIVE_ATTENTION: False,
+        # if true use key relative embeddings in attention
+        VALUE_RELATIVE_ATTENTION: False,
+        # max position for relative embeddings
+        MAX_RELATIVE_POSITION: None,
+        # use a unidirectional or bidirectional encoder
+        UNIDIRECTIONAL_ENCODER: False,
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
@@ -129,12 +138,11 @@ class ResponseSelector(DIETClassifier):
         # set to 0 to turn off normalization
         RANKING_LENGTH: 10,
         # how similar the algorithm should try
-        # to make embedding vectors for correct intent labels
+        # to make embedding vectors for correct labels
         MAX_POS_SIM: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
-        # maximum negative similarity for incorrect intent labels
+        # maximum negative similarity for incorrect labels
         MAX_NEG_SIM: -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
-        # flag: if true, only minimize the maximum similarity for
-        # incorrect intent labels
+        # flag: if true, only minimize the maximum similarity for incorrect labels
         USE_MAX_NEG_SIM: True,
         # scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
@@ -142,35 +150,28 @@ class ResponseSelector(DIETClassifier):
         # the scale of L2 regularization
         REGULARIZATION_CONSTANT: 0.002,
         # the scale of how critical the algorithm should be of minimizing the
-        # maximum similarity between embeddings of different intent labels
-        NEG_MARGIN_SCALE: 0.8,
-        # dropout rate for rnn
-        DROPRATE: 0.2,
+        # maximum similarity between embeddings of different labels
+        NEGATIVE_MARGIN_SCALE: 0.8,
+        # dropout rate for encoder
+        DROP_RATE: 0.2,
         # dropout rate for attention
-        DROPRATE_ATTENTION: 0,
+        DROP_RATE_ATTENTION: 0,
         # sparsity of the weights in dense layers
         WEIGHT_SPARSITY: 0.8,
-        # use a unidirectional or bidirectional encoder
-        UNIDIRECTIONAL_ENCODER: False,
         # if true apply dropout to sparse tensors
-        SPARSE_INPUT_DROPOUT: False,
+        SPARSE_INPUT_DROPOUT: True,
         # visualization of accuracy
         # how often to calculate training accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
         # how many examples to use for calculation of training accuracy
-        EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance,
+        EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
+        # model config
         # if true random tokens of the input message will be masked and the model
         # should predict those tokens
         MASKED_LM: False,
-        # if true use key relative embeddings in attention
-        KEY_RELATIVE_ATTENTION: False,
-        # if true use key relative embeddings in attention
-        VALUE_RELATIVE_ATTENTION: False,
-        # max position for relative embeddings
-        MAX_RELATIVE_POSITION: None,
         # selector config
         # name of the intent for which this response selector is to be trained
-        "retrieval_intent": None,
+        RETRIEVAL_INTENT: None,
     }
 
     def __init__(
@@ -206,7 +207,7 @@ class ResponseSelector(DIETClassifier):
         return DIET2DIET
 
     def _load_selector_params(self, config: Dict[Text, Any]) -> None:
-        self.retrieval_intent = config["retrieval_intent"]
+        self.retrieval_intent = config[RETRIEVAL_INTENT]
         if not self.retrieval_intent:
             # retrieval intent was left to its default value
             logger.info(

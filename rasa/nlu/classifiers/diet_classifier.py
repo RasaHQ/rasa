@@ -58,10 +58,10 @@ from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
     UNIDIRECTIONAL_ENCODER,
-    DROPRATE,
-    DROPRATE_ATTENTION,
+    DROP_RATE,
+    DROP_RATE_ATTENTION,
     WEIGHT_SPARSITY,
-    NEG_MARGIN_SCALE,
+    NEGATIVE_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
     USE_MAX_NEG_SIM,
@@ -163,11 +163,11 @@ class DIETClassifier(EntityExtractor):
         REGULARIZATION_CONSTANT: 0.002,
         # the scale of how critical the algorithm should be of minimizing the
         # maximum similarity between embeddings of different labels
-        NEG_MARGIN_SCALE: 0.8,
+        NEGATIVE_MARGIN_SCALE: 0.8,
         # dropout rate for encoder
-        DROPRATE: 0.2,
+        DROP_RATE: 0.2,
         # dropout rate for attention
-        DROPRATE_ATTENTION: 0,
+        DROP_RATE_ATTENTION: 0,
         # sparsity of the weights in dense layers
         WEIGHT_SPARSITY: 0.8,
         # if true apply dropout to sparse tensors
@@ -384,8 +384,8 @@ class DIETClassifier(EntityExtractor):
         """Checks if text features and label features have the same dimensionality if
         hidden layers are shared."""
         if self.component_config.get(SHARE_HIDDEN_LAYERS):
-            num_text_features = model_data.get_feature_dimension("text_features")
-            num_label_features = model_data.get_feature_dimension("label_features")
+            num_text_features = model_data.feature_dimension("text_features")
+            num_label_features = model_data.feature_dimension("label_features")
 
             if num_text_features != num_label_features:
                 raise ValueError(
@@ -539,7 +539,7 @@ class DIETClassifier(EntityExtractor):
         model_data = RasaModelData(label_key=self.label_key)
         model_data.add_features("text_features", [X_sparse, X_dense])
         model_data.add_features("label_features", [Y_sparse, Y_dense])
-        if label_attribute and model_data.feature_not_exists("label_features"):
+        if label_attribute and model_data.does_feature_exist("label_features"):
             # no label features are present, get default features from _label_data
             model_data.add_features(
                 "label_features", self._use_default_label_features(label_ids)
@@ -1049,7 +1049,7 @@ class DIET(RasaModel):
 
     def _prepare_input_layers(self, name: Text) -> None:
         self._tf_layers[f"sparse_dropout.{name}"] = layers.SparseDropout(
-            rate=self.config[DROPRATE]
+            rate=self.config[DROP_RATE]
         )
         self._prepare_sparse_dense_layers(
             self.data_signature[f"{name}_features"],
@@ -1059,7 +1059,7 @@ class DIET(RasaModel):
         )
         self._tf_layers[f"ffnn.{name}"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES][name],
-            self.config[DROPRATE],
+            self.config[DROP_RATE],
             self.config[REGULARIZATION_CONSTANT],
             self.config[WEIGHT_SPARSITY],
             name,
@@ -1075,8 +1075,8 @@ class DIET(RasaModel):
                 self.config[NUM_HEADS],
                 self.config[TRANSFORMER_SIZE] * 4,
                 self.config[REGULARIZATION_CONSTANT],
-                dropout_rate=self.config[DROPRATE],
-                attention_dropout_rate=self.config[DROPRATE_ATTENTION],
+                dropout_rate=self.config[DROP_RATE],
+                attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
                 sparsity=self.config[WEIGHT_SPARSITY],
                 unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
                 use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
@@ -1108,7 +1108,7 @@ class DIET(RasaModel):
             self.config[MAX_POS_SIM],
             self.config[MAX_NEG_SIM],
             self.config[USE_MAX_NEG_SIM],
-            self.config[NEG_MARGIN_SCALE],
+            self.config[NEGATIVE_MARGIN_SCALE],
             self.config[SCALE_LOSS],
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,
@@ -1133,7 +1133,7 @@ class DIET(RasaModel):
             self.config[MAX_POS_SIM],
             self.config[MAX_NEG_SIM],
             self.config[USE_MAX_NEG_SIM],
-            self.config[NEG_MARGIN_SCALE],
+            self.config[NEGATIVE_MARGIN_SCALE],
             self.config[SCALE_LOSS],
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,

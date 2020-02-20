@@ -141,13 +141,13 @@ def test_session_data_for_ids(model_data: RasaModelData):
 
 
 def test_get_number_of_examples(model_data: RasaModelData):
-    assert model_data.get_number_of_examples() == 5
+    assert model_data.number_of_examples() == 5
 
 
 def test_get_number_of_examples_raises_value_error(model_data: RasaModelData):
     model_data.data["dense"] = [np.random.randint(5, size=(2, 10))]
     with pytest.raises(ValueError):
-        model_data.get_number_of_examples()
+        model_data.number_of_examples()
 
 
 def test_gen_batch(model_data: RasaModelData):
@@ -184,6 +184,6 @@ def test_not_balance_model_data(model_data: RasaModelData):
 
 
 def test_get_num_of_features(model_data: RasaModelData):
-    num_features = model_data.get_feature_dimension("text_features")
+    num_features = model_data.feature_dimension("text_features")
 
     assert num_features == 24

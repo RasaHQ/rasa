@@ -24,9 +24,10 @@ from rasa.utils.tensorflow.constants import (
     MAX_NEG_SIM,
     MAX_POS_SIM,
     EMBEDDING_DIMENSION,
-    DROPRATE_DIALOGUE,
-    DROPRATE_LABEL,
-    NEG_MARGIN_SCALE,
+    DROP_RATE_DIALOGUE,
+    DROP_RATE_LABEL,
+    NEGATIVE_MARGIN_SCALE,
+    DROP_RATE,
 )
 
 
@@ -142,8 +143,9 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     config = _replace_deprecated_option(
         "hidden_layers_sizes_bot", [HIDDEN_LAYERS_SIZES, LABEL], config
     )
-    config = _replace_deprecated_option("droprate_a", DROPRATE_DIALOGUE, config)
-    config = _replace_deprecated_option("droprate_b", DROPRATE_LABEL, config)
+    config = _replace_deprecated_option("droprate", DROP_RATE, config)
+    config = _replace_deprecated_option("droprate_a", DROP_RATE_DIALOGUE, config)
+    config = _replace_deprecated_option("droprate_b", DROP_RATE_LABEL, config)
     config = _replace_deprecated_option(
         "hidden_layers_sizes_a", [HIDDEN_LAYERS_SIZES, TEXT], config
     )
@@ -161,7 +163,7 @@ def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
     config = _replace_deprecated_option("mu_neg", MAX_NEG_SIM, config)
     config = _replace_deprecated_option("use_max_sim_neg", USE_MAX_NEG_SIM, config)
     config = _replace_deprecated_option("C2", REGULARIZATION_CONSTANT, config)
-    config = _replace_deprecated_option("C_emb", NEG_MARGIN_SCALE, config)
+    config = _replace_deprecated_option("C_emb", NEGATIVE_MARGIN_SCALE, config)
     config = _replace_deprecated_option(
         "evaluate_every_num_epochs", EVAL_NUM_EPOCHS, config
     )

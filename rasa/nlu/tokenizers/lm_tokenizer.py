@@ -16,8 +16,8 @@ from rasa.nlu.constants import (
 class LanguageModelTokenizer(Tokenizer):
     """Tokenizer using transformer based language models.
 
-        Uses the output of HFTransformersNLP component to set the tokens
-        for dense featurizable attributes of each message object.
+    Uses the output of HFTransformersNLP component to set the tokens
+    for dense featurizable attributes of each message object.
     """
 
     provides = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
