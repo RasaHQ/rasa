@@ -116,12 +116,6 @@ class PolicyTestCollection:
             loaded.featurizer.state_featurizer, BinarySingleStateFeaturizer
         )
 
-    async def test_continue_training(self, trained_policy, default_domain):
-        training_trackers = await train_trackers(default_domain, augmentation_factor=0)
-        trained_policy.continue_training(
-            training_trackers, default_domain, **{EPOCHS: 1}
-        )
-
     async def test_persist_and_load(self, trained_policy, default_domain, tmpdir):
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)

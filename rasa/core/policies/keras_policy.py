@@ -201,40 +201,6 @@ class KerasPolicy(Policy):
         self.current_epoch = self.epochs
         logger.info("Done fitting keras policy model")
 
-    def continue_training(
-        self,
-        training_trackers: List[DialogueStateTracker],
-        domain: Domain,
-        **kwargs: Any,
-    ) -> None:
-        """Continues training an already trained policy."""
-
-        # takes the new example labelled and learns it
-        # via taking `epochs` samples of n_batch-1 parts of the training data,
-        # inserting our new example and learning them. this means that we can
-        # ask the network to fit the example without overemphasising
-        # its importance (and therefore throwing off the biases)
-
-        batch_size = kwargs.get("batch_size", 5)
-        epochs = kwargs.get("epochs", 50)
-
-        for _ in range(epochs):
-            training_data = self._training_data_for_continue_training(
-                batch_size, training_trackers, domain
-            )
-
-            # fit to one extra example using updated trackers
-            self.model.fit(
-                training_data.X,
-                training_data.y,
-                epochs=self.current_epoch + 1,
-                batch_size=len(training_data.y),
-                verbose=common_utils.obtain_verbosity(),
-                initial_epoch=self.current_epoch,
-            )
-
-            self.current_epoch += 1
-
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[float]:

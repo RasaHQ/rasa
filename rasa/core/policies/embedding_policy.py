@@ -146,7 +146,6 @@ class EmbeddingPolicy(TEDPolicy):
         model: Optional[RasaModel] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
-
         super().__init__(featurizer, priority, max_history, model, **kwargs)
 
         common_utils.raise_warning(

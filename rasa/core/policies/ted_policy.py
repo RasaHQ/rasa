@@ -331,32 +331,6 @@ class TEDPolicy(Policy):
             batch_strategy=self.config[BATCH_STRATEGY],
         )
 
-    def continue_training(
-        self,
-        training_trackers: List[DialogueStateTracker],
-        domain: Domain,
-        **kwargs: Any,
-    ) -> None:
-        """Continue training an already trained policy."""
-
-        batch_size = kwargs.get("batch_size", 5)
-        epochs = kwargs.get("epochs", 50)
-
-        training_data = self._training_data_for_continue_training(
-            batch_size, training_trackers, domain
-        )
-
-        model_data = self._create_model_data(training_data.X, training_data.y)
-
-        self.model.fit(
-            model_data,
-            epochs,
-            [batch_size],
-            self.config[EVAL_NUM_EXAMPLES],
-            self.config[EVAL_NUM_EPOCHS],
-            batch_strategy=self.config[BATCH_STRATEGY],
-        )
-
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[float]:
