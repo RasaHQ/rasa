@@ -173,6 +173,9 @@ class ResponseSelector(DIETClassifier):
         # Large values may hurt performance, e.g. model accuracy.
         EVAL_NUM_EXAMPLES: 0,
         # ## Selector config
+        # If 'True' random tokens of the input message will be masked and the model
+        # should predict those tokens.
+        MASKED_LM: False,
         # Name of the intent for which this response selector is to be trained
         RETRIEVAL_INTENT: None,
     }
