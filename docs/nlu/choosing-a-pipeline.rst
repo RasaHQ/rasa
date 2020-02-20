@@ -108,8 +108,8 @@ Entity Recognition / Intent Classification / Response Selectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Depending on your data you may want to only perform intent classification or entity recognition.
 We support several components for each of the task. All of them are listed in :ref:`components`.
-We recommend to use :ref:`diet-classifier` for intent classification and entity recognition and :ref:`response-selector`
-for response selection.
+We recommend to use :ref:`diet-classifier` for intent classification and entity recognition
+and :ref:`response-selector` for response selection.
 
 Comparing different pipelines for your data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
