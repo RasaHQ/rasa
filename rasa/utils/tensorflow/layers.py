@@ -37,7 +37,7 @@ class DenseForSparse(tf.keras.layers.Dense):
 
     def __init__(self, reg_lambda: float = 0, **kwargs) -> None:
         if reg_lambda > 0:
-            regularizer = tf.keras.regularizers.l1(reg_lambda)
+            regularizer = tf.keras.regularizers.l2(reg_lambda)
         else:
             regularizer = None
 
@@ -217,7 +217,7 @@ class CRF(tf.keras.layers.Layer):
     def __init__(self, num_tags: int, reg_lambda: float, name: Text = None) -> None:
         super().__init__(name=name)
         self.num_tags = num_tags
-        self.regularizer = tf.keras.regularizers.l1(reg_lambda)
+        self.regularizer = tf.keras.regularizers.l2(reg_lambda)
 
     def build(self, input_shape: tf.TensorShape) -> None:
         # should be created in `build` to apply random_seed
