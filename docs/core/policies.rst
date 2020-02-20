@@ -208,7 +208,7 @@ TED Policy
 ^^^^^^^^^^
 
 Transformer Embedding Dialogue (TED) Policy is described in
-`our paper <https://github.com/PolyAI-LDN/polyai-models#convert>`__.
+`our paper <https://arxiv.org/abs/1910.00486>`__.
 
 This policy has a pre-defined architecture, which comprises the
 following steps:
