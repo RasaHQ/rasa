@@ -28,20 +28,17 @@ class MattermostBot(MattermostAPI, OutputChannel):
         self,
         url: Text,
         team: Text,
-        user: Text,
-        pw: Text,
+        token: Text,
         bot_channel: Text,
         webhook_url: Optional[Text],
     ) -> None:
         self.url = url
         self.team = team
-        self.user = user
-        self.pw = pw
+        self.token = token
         self.bot_channel = bot_channel
         self.webhook_url = webhook_url
 
-        super().__init__(url, team)
-        super().login(user, pw)
+        super().__init__(url, team, token=token)
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
@@ -120,15 +117,12 @@ class MattermostInput(InputChannel):
         return cls(
             credentials.get("url"),
             credentials.get("team"),
-            credentials.get("user"),
-            credentials.get("pw"),
+            credentials.get("token"),
             credentials.get("webhook_url"),
         )
         # pytype: enable=attribute-error
 
-    def __init__(
-        self, url: Text, team: Text, user: Text, pw: Text, webhook_url: Text
-    ) -> None:
+    def __init__(self, url: Text, team: Text, token: Text, webhook_url: Text) -> None:
         """Create a Mattermost input channel.
         Needs a couple of settings to properly authenticate and validate
         messages.
@@ -137,16 +131,14 @@ class MattermostInput(InputChannel):
             url: Your Mattermost team url including /v4 example
                 https://mysite.example.com/api/v4
             team: Your mattermost team name
-            user: Your mattermost userid that will post messages
-            pw: Your mattermost password for your user
+            token: Your mattermost bot token
             webhook_url: The mattermost callback url as specified
                 in the outgoing webhooks in mattermost example
                 https://mysite.example.com/webhooks/mattermost/webhook
         """
         self.url = url
         self.team = team
-        self.user = user
-        self.pw = pw
+        self.token = token
         self.webhook_url = webhook_url
 
     async def message_with_trigger_word(
@@ -165,12 +157,7 @@ class MattermostInput(InputChannel):
 
         try:
             out_channel = MattermostBot(
-                self.url,
-                self.team,
-                self.user,
-                self.pw,
-                self.bot_channel,
-                self.webhook_url,
+                self.url, self.team, self.token, self.bot_channel, self.webhook_url,
             )
             user_msg = UserMessage(
                 text,
@@ -198,12 +185,7 @@ class MattermostInput(InputChannel):
 
         try:
             out_channel = MattermostBot(
-                self.url,
-                self.team,
-                self.user,
-                self.pw,
-                self.bot_channel,
-                self.webhook_url,
+                self.url, self.team, self.token, self.bot_channel, self.webhook_url,
             )
             context_action = UserMessage(
                 action,
