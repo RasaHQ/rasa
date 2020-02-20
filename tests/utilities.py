@@ -1,5 +1,3 @@
-import tempfile
-
 from typing import Text
 from yarl import URL
 
@@ -26,6 +24,10 @@ def update_number_of_epochs(config_path: Text, output_file: Text):
         raise ValueError(f"Invalid config provided! File: '{config_path}'.")
 
     for component in config["pipeline"]:
+        # do not update epochs for pipeline templates
+        if not isinstance(component, dict):
+            continue
+
         if component["name"] in [
             EmbeddingIntentClassifier.name,
             DIETClassifier.name,
