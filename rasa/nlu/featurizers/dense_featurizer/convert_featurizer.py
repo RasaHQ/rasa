@@ -211,7 +211,7 @@ class ConveRTFeaturizer(Featurizer):
 
             pbar = tqdm(
                 range(0, len(non_empty_examples), batch_size),
-                desc=attribute.capitalize() + " batches:",
+                desc=attribute.capitalize() + " batches",
             )
             for batch_start_index in pbar:
                 batch_end_index = min(
