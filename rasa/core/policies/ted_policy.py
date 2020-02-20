@@ -61,85 +61,107 @@ from rasa.utils.tensorflow.constants import (
 logger = logging.getLogger(__name__)
 
 
-class TEDPolicy(Policy):
-    """Transformer Embedding Dialogue (TED) Policy.
+SAVE_MODEL_FILE_NAME = "ted_policy"
 
-    The policy used in our paper https://arxiv.org/abs/1910.00486.
+
+class TEDPolicy(Policy):
+    """Transformer Embedding Dialogue (TED) Policy is described in
+    https://arxiv.org/abs/1910.00486.
+
+    This policy has a pre-defined architecture, which comprises the
+    following steps:
+        - concatenate user input (user intent and entities), previous system actions,
+          slots and active forms for each time step into an input vector to
+          pre-transformer embedding layer;
+        - feed it to transformer;
+        - apply a dense layer to the output of the transformer to get embeddings of a
+          dialogue for each time step;
+        - apply a dense layer to create embeddings for system actions for each time
+          step;
+        - calculate the similarity between the dialogue embedding and embedded system
+          actions. This step is based on the StarSpace
+          (https://arxiv.org/abs/1709.03856) idea.
     """
 
     SUPPORTS_ONLINE_TRAINING = True
 
-    # default properties (DOC MARKER - don't remove)
+    # please make sure to update the docs when changing a default parameter
     defaults = {
-        # nn architecture
-        # a list of hidden layers sizes before dialogue and action embedding layers
-        # number of hidden layers is equal to the length of this list
+        # ## Architecture of the used neural network
+        # Hidden layer sizes for layers before the dialogue and label embedding layers.
+        # The number of hidden layers is equal to the length of the corresponding
+        # list.
         HIDDEN_LAYERS_SIZES: {DIALOGUE: [], LABEL: []},
-        # number of units in transformer
+        # Number of units in transformer
         TRANSFORMER_SIZE: 128,
-        # number of transformer layers
+        # Number of transformer layers
         NUM_TRANSFORMER_LAYERS: 1,
-        # max sequence length
-        MAX_SEQUENCE_LENGTH: 256,
-        # number of attention heads in transformer
-        NUM_HEADS: 4,
-        # if true use key relative embeddings in attention
+        # If 'True' use key relative embeddings in attention
         KEY_RELATIVE_ATTENTION: False,
-        # if true use key relative embeddings in attention
+        # If 'True' use key relative embeddings in attention
         VALUE_RELATIVE_ATTENTION: False,
-        # max position for relative embeddings
+        # Max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
-        # training parameters
-        # initial and final batch sizes:
-        # batch size will be linearly increased for each epoch
+        # Max sequence length
+        MAX_SEQUENCE_LENGTH: 256,
+        # Number of attention heads in transformer
+        NUM_HEADS: 4,
+        # ## Training parameters
+        # Initial and final batch sizes:
+        # Batch size will be linearly increased for each epoch.
         BATCH_SIZES: [8, 32],
-        # how to create batches
-        BATCH_STRATEGY: "balanced",  # 'sequence' or 'balanced'
-        # number of epochs
+        # Strategy used whenc creating batches.
+        # Can be either 'sequence' or 'balanced'.
+        BATCH_STRATEGY: "balanced",
+        # Number of epochs to train
         EPOCHS: 1,
-        # set random seed to any int to get reproducible results
+        # Set random seed to any 'int' to get reproducible results
         RANDOM_SEED: None,
-        # embedding parameters
-        # dimension size of embedding vectors
+        # ## Parameters for embeddings
+        # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,
-        # the type of the similarity
+        # The number of incorrect labels. The algorithm will minimize
+        # their similarity to the user input during training.
         NUM_NEG: 20,
-        # flag if minimize only maximum similarity over incorrect labels
-        SIMILARITY_TYPE: "auto",  # 'auto' or 'cosine' or 'inner'
-        # the type of the loss function
-        LOSS_TYPE: "softmax",  # 'softmax' or 'margin'
-        # number of top actions to normalize scores for softmax loss_type
-        # set to 0 to turn off normalization
+        # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
+        SIMILARITY_TYPE: "auto",
+        # The type of the loss function, either 'softmax' or 'margin'.
+        LOSS_TYPE: "softmax",
+        # Number of top actions to normalize scores for loss type 'softmax'.
+        # Set to 0 to turn off normalization.
         RANKING_LENGTH: 10,
-        # how similar the algorithm should try
-        # to make embedding vectors for correct labels
-        MAX_POS_SIM: 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
-        # maximum negative similarity for incorrect labels
-        MAX_NEG_SIM: -0.2,  # should be -1.0 < ... < 1.0 for 'cosine'
-        # the number of incorrect labels, the algorithm will minimize
-        # their similarity to the user input during training
-        USE_MAX_NEG_SIM: True,  # flag which loss function to use
-        # scale loss inverse proportionally to confidence of correct prediction
+        # Indicates how similar the algorithm should try to make embedding vectors
+        # for correct labels.
+        # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
+        MAX_POS_SIM: 0.8,
+        # Maximum negative similarity for incorrect labels.
+        # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
+        MAX_NEG_SIM: -0.2,
+        # If 'True' the algorithm only minimizes maximum similarity over
+        # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
+        USE_MAX_NEG_SIM: True,
+        # Scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
-        # regularization
-        # the scale of regularization
+        # ## Regularization parameters
+        # The scale of regularization
         REGULARIZATION_CONSTANT: 0.001,
-        # the scale of how important is to minimize the maximum similarity
-        # between embeddings of different labels
+        # The scale of how important is to minimize the maximum similarity
+        # between embeddings of different labels.
         NEGATIVE_MARGIN_SCALE: 0.8,
-        # dropout rate for dial nn
+        # Dropout rate for embedding layers of dialogue features.
         DROP_RATE_DIALOGUE: 0.1,
-        # dropout rate for bot nn
+        # Dropout rate for embedding layers of label, e.g. action, features.
         DROP_RATE_LABEL: 0.0,
-        # dropout rate for attention
+        # Dropout rate for attention.
         DROP_RATE_ATTENTION: 0,
-        # visualization of accuracy
-        # how often calculate validation accuracy
-        EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
-        # how many examples to use for hold out validation set
-        EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
+        # ## Evaluation parameters
+        # How often calculate validation accuracy.
+        # Small values may hurt performance, e.g. model accuracy.
+        EVAL_NUM_EPOCHS: 20,
+        # How many examples to use for hold out validation set
+        # Large values may hurt performance, e.g. model accuracy.
+        EVAL_NUM_EXAMPLES: 0,
     }
-    # end default properties (DOC MARKER - don't remove)
 
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
@@ -370,8 +392,7 @@ class TEDPolicy(Policy):
             )
             return
 
-        file_name = "ted_policy"
-        tf_model_file = os.path.join(path, f"{file_name}.tf_model")
+        tf_model_file = os.path.join(path, f"{SAVE_MODEL_FILE_NAME}.tf_model")
 
         rasa.utils.io.create_directory_for_file(tf_model_file)
 
@@ -379,16 +400,22 @@ class TEDPolicy(Policy):
 
         self.model.save(tf_model_file)
 
-        with open(os.path.join(path, file_name + ".priority.pkl"), "wb") as f:
+        with open(
+            os.path.join(path, SAVE_MODEL_FILE_NAME + ".priority.pkl"), "wb"
+        ) as f:
             pickle.dump(self.priority, f)
 
-        with open(os.path.join(path, file_name + ".meta.pkl"), "wb") as f:
+        with open(os.path.join(path, SAVE_MODEL_FILE_NAME + ".meta.pkl"), "wb") as f:
             pickle.dump(self.config, f)
 
-        with open(os.path.join(path, file_name + ".data_example.pkl"), "wb") as f:
+        with open(
+            os.path.join(path, SAVE_MODEL_FILE_NAME + ".data_example.pkl"), "wb"
+        ) as f:
             pickle.dump(self.data_example, f)
 
-        with open(os.path.join(path, file_name + ".label_data.pkl"), "wb") as f:
+        with open(
+            os.path.join(path, SAVE_MODEL_FILE_NAME + ".label_data.pkl"), "wb"
+        ) as f:
             pickle.dump(self._label_data, f)
 
     @classmethod
@@ -404,26 +431,33 @@ class TEDPolicy(Policy):
                 f"'{os.path.abspath(path)}' doesn't exist."
             )
 
-        file_name = "TED_policy"
-        tf_model_file = os.path.join(path, f"{file_name}.tf_model")
+        tf_model_file = os.path.join(path, f"{SAVE_MODEL_FILE_NAME}.tf_model")
 
         featurizer = TrackerFeaturizer.load(path)
 
-        if not os.path.exists(os.path.join(path, file_name + ".data_example.pkl")):
+        if not os.path.exists(
+            os.path.join(path, SAVE_MODEL_FILE_NAME + ".data_example.pkl")
+        ):
             return cls(featurizer=featurizer)
 
-        with open(os.path.join(path, file_name + ".data_example.pkl"), "rb") as f:
+        with open(
+            os.path.join(path, SAVE_MODEL_FILE_NAME + ".data_example.pkl"), "rb"
+        ) as f:
             model_data_example = RasaModelData(
                 label_key="label_ids", data=pickle.load(f)
             )
 
-        with open(os.path.join(path, file_name + ".label_data.pkl"), "rb") as f:
+        with open(
+            os.path.join(path, SAVE_MODEL_FILE_NAME + ".label_data.pkl"), "rb"
+        ) as f:
             label_data = pickle.load(f)
 
-        with open(os.path.join(path, file_name + ".meta.pkl"), "rb") as f:
+        with open(os.path.join(path, SAVE_MODEL_FILE_NAME + ".meta.pkl"), "rb") as f:
             meta = pickle.load(f)
 
-        with open(os.path.join(path, file_name + ".priority.pkl"), "rb") as f:
+        with open(
+            os.path.join(path, SAVE_MODEL_FILE_NAME + ".priority.pkl"), "rb"
+        ) as f:
             priority = pickle.load(f)
 
         meta = train_utils.update_similarity_type(meta)
