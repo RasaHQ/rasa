@@ -182,11 +182,17 @@ from rasa.nlu.training_data import Message
     ],
 )
 def test_lm_featurizer_shape_values(
-    model_name, texts, expected_shape, expected_sequence_vec, expected_cls_vec
+    model_name,
+    texts,
+    expected_shape,
+    expected_sequence_vec,
+    expected_cls_vec,
+    hftransformers_nlp,
 ):
-    transformers_config = {"model_name": model_name}
-
-    transformers_nlp = HFTransformersNLP(transformers_config)
+    # transformers_config = {"model_name": model_name}
+    #
+    # transformers_nlp = HFTransformersNLP(transformers_config)
+    transformers_nlp = hftransformers_nlp[model_name]
     lm_featurizer = LanguageModelFeaturizer()
 
     messages = []

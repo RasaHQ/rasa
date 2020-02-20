@@ -295,11 +295,14 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
         ),
     ],
 )
-def test_lm_tokenizer_edge_cases(model_name, texts, expected_tokens, expected_indices):
+def test_lm_tokenizer_edge_cases(
+    model_name, texts, expected_tokens, expected_indices, hftransformers_nlp
+):
 
-    transformers_config = {"model_name": model_name}
-
-    transformers_nlp = HFTransformersNLP(transformers_config)
+    # transformers_config = {"model_name": model_name}
+    #
+    # transformers_nlp = HFTransformersNLP(transformers_config)
+    transformers_nlp = hftransformers_nlp[model_name]
     lm_tokenizer = LanguageModelTokenizer()
 
     for text, gt_tokens, gt_indices in zip(texts, expected_tokens, expected_indices):
@@ -321,12 +324,13 @@ def test_lm_tokenizer_edge_cases(model_name, texts, expected_tokens, expected_in
         ("Forecast+for+LUNCH", ["Forecast", "for", "LUNCH"]),
     ],
 )
-def test_lm_tokenizer_custom_intent_symbol(text, expected_tokens):
+def test_lm_tokenizer_custom_intent_symbol(text, expected_tokens, hftransformers_nlp):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
-    transformers_config = {"model_name": "bert"}  # Test for one should be enough
-
-    transformers_nlp = HFTransformersNLP(transformers_config)
+    # transformers_config = {"model_name": "bert"}  # Test for one should be enough
+    #
+    # transformers_nlp = HFTransformersNLP(transformers_config)
+    transformers_nlp = hftransformers_nlp["bert"]  # Test for one should be enough
     lm_tokenizer = LanguageModelTokenizer(component_config)
 
     message = Message(text)

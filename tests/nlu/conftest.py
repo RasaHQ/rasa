@@ -6,6 +6,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import ComponentBuilder
 from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
 from tests.nlu.utilities import write_file_config
+from rasa.nlu.utils.hugging_face.registry import model_class_dict
 
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
@@ -13,6 +14,17 @@ DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 @pytest.fixture(scope="session")
 def component_builder():
     return ComponentBuilder()
+
+
+@pytest.fixture(scope="session")
+def hftransformers_nlp(component_builder, default_config):
+    model_components = {}
+    for model_key in model_class_dict.keys():
+        component_config = {"name": "HFTransformersNLP", "model_name": model_key}
+        model_components[model_key] = component_builder.create_component(
+            component_config, default_config
+        )
+    return model_components
 
 
 @pytest.fixture(scope="session")
