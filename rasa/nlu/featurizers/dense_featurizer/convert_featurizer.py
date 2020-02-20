@@ -32,6 +32,12 @@ class ConveRTFeaturizer(Featurizer):
 
     required_components = [ConveRTTokenizer.name]
 
+    def _load_from_tfhub(self, model_url: Text):
+
+        import tensorflow_hub as tfhub
+
+        self.module = tfhub.load(model_url)
+
     def _load_model(self) -> None:
 
         # needed in order to load model
@@ -43,10 +49,10 @@ class ConveRTFeaturizer(Featurizer):
         # required to take care of cases when other files are already
         # stored in the default TFHUB_CACHE_DIR
         try:
-            self.module = tfhub.load(model_url)
+            self._load_from_tfhub(model_url)
         except OSError:
             os.environ["TFHUB_CACHE_DIR"] = "/tmp/tfhub"
-            self.module = tfhub.load(model_url)
+            self._load_from_tfhub(model_url)
 
         self.sentence_encoding_signature = self.module.signatures["default"]
         self.sequence_encoding_signature = self.module.signatures["encode_sequence"]
