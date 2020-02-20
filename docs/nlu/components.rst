@@ -1380,7 +1380,7 @@ CRFEntityExtractor
             # BILOU_flag determines whether to use BILOU tagging or not.
             # More rigorous however requires more examples per entity
             # rule of thumb: use only if more than 100 egs. per entity
-            "BILOU_flag": True,
+            "BILOU_flag": True
             # crf_features is [before, token, after] array with before, token,
             # after holding keys about which features to use for each token,
             # for example, 'title' in array before will have the feature
@@ -1403,13 +1403,13 @@ CRFEntityExtractor
                     "pattern",
                 ],
                 ["low", "title", "upper"],
-            ],
+            ]
             # The maximum number of iterations for optimization algorithms.
-            "max_iterations": 50,
+            "max_iterations": 50
             # weight of the L1 regularization
-            "L1_c": 0.1,
+            "L1_c": 0.1
             # weight of the L2 regularization
-            "L2_c": 0.1,
+            "L2_c": 0.1
 
 .. _DucklingHTTPExtractor:
 
