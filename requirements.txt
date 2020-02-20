@@ -62,3 +62,6 @@ python-dateutil==2.8.0
 # for new featurizers
 tensorflow==2.1.0
 tensorflow-addons==0.7.0
+tensor2tensor==1.14.0
+tensorflow_hub==0.7.0
+tensorflow-probability==0.7.0
