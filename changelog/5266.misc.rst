@@ -1,0 +1,9 @@
+We deprecated all existing pipeline templates, ``SklearnIntentClassifier`` and ``KerasPolicy``.
+
+Please list the components you want to use directly in your configuration file.
+Check out `Choosing a Pipeline <https://rasa.com/docs/rasa/nlu/choosing-a-pipeline/>`_ to decide what components to
+include in your pipeline.
+
+Use ``DIETClassifier`` instead of ``SklearnIntentClassifier``.
+
+Use ``TEDPolicy`` instead of ``KerasPolicy``.
