@@ -170,13 +170,13 @@ class StoryFileReader:
 
     def __init__(
         self,
-        domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        domain: Optional[Domain] = None,
         template_vars: Optional[Dict] = None,
         use_e2e: bool = False,
     ):
         self.story_steps = []
-        self.current_step_builder = None  # type: Optional[StoryStepBuilder]
+        self.current_step_builder: Optional[StoryStepBuilder] = None
         self.domain = domain
         self.interpreter = interpreter
         self.template_variables = template_vars if template_vars else {}
@@ -250,7 +250,7 @@ class StoryFileReader:
         try:
             with open(filename, "r", encoding=io_utils.DEFAULT_ENCODING) as f:
                 lines = f.readlines()
-            reader = StoryFileReader(domain, interpreter, template_variables, use_e2e)
+            reader = StoryFileReader(interpreter, domain, template_variables, use_e2e)
             return await reader.process_lines(lines)
         except ValueError as err:
             file_info = "Invalid story file format. Failed to parse '{}'".format(
@@ -404,7 +404,7 @@ class StoryFileReader:
 
         self.current_step_builder.add_checkpoint(name, conditions)
 
-    async def _parse_message(self, message: Text, line_num: int):
+    async def _parse_message(self, message: Text, line_num: int) -> UserUttered:
         if message.startswith(INTENT_MESSAGE_PREFIX):
             parse_data = await RegexInterpreter().parse(message)
         else:
@@ -413,7 +413,7 @@ class StoryFileReader:
             message, parse_data.get("intent"), parse_data.get("entities"), parse_data
         )
         intent_name = utterance.intent.get("name")
-        if intent_name not in self.domain.intents:
+        if self.domain and intent_name not in self.domain.intents:
             raise_warning(
                 f"Found unknown intent '{intent_name}' on line {line_num}. "
                 "Please, make sure that all intents are "
