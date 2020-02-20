@@ -69,7 +69,6 @@ class TEDPolicy(Policy):
 
     SUPPORTS_ONLINE_TRAINING = True
 
-    # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
         # a list of hidden layers sizes before dialogue and action embed layers
@@ -139,7 +138,6 @@ class TEDPolicy(Policy):
         # how many examples to use for hold out validation set
         EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance
     }
-    # end default properties (DOC MARKER - don't remove)
 
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:

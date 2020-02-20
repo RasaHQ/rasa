@@ -88,7 +88,6 @@ class ResponseSelector(DIETClassifier):
         any_of(DENSE_FEATURE_NAMES[RESPONSE], SPARSE_FEATURE_NAMES[RESPONSE]),
     ]
 
-    # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
         # sizes of hidden layers before the embedding layer
@@ -173,7 +172,6 @@ class ResponseSelector(DIETClassifier):
         # name of the intent for which this response selector is to be trained
         "retrieval_intent": None,
     }
-    # end default properties (DOC MARKER - don't remove)
 
     def __init__(
         self,

@@ -48,7 +48,6 @@ class EmbeddingPolicy(TEDPolicy):
     The policy used in our paper https://arxiv.org/abs/1910.00486
     """
 
-    # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
         # a list of hidden layers sizes before dialogue and action embed layers
@@ -118,7 +117,6 @@ class EmbeddingPolicy(TEDPolicy):
         # max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
     }
-    # end default properties (DOC MARKER - don't remove)
 
     def __init__(
         self,
