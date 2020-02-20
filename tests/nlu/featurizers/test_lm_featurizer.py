@@ -189,10 +189,9 @@ def test_lm_featurizer_shape_values(
     expected_cls_vec,
     hftransformers_nlp,
 ):
-    # transformers_config = {"model_name": model_name}
-    #
-    # transformers_nlp = HFTransformersNLP(transformers_config)
-    transformers_nlp = hftransformers_nlp[model_name]
+
+    # retrieve cached model component
+    transformers_nlp_pipeline = hftransformers_nlp[model_name]
     lm_featurizer = LanguageModelFeaturizer()
 
     messages = []
@@ -200,7 +199,7 @@ def test_lm_featurizer_shape_values(
         messages.append(Message.build(text=text))
     td = TrainingData(messages)
 
-    transformers_nlp.train(td)
+    transformers_nlp_pipeline.train(td)
     lm_featurizer.train(td)
 
     for index in range(len(texts)):

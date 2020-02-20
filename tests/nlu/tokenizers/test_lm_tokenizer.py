@@ -299,16 +299,14 @@ def test_lm_tokenizer_edge_cases(
     model_name, texts, expected_tokens, expected_indices, hftransformers_nlp
 ):
 
-    # transformers_config = {"model_name": model_name}
-    #
-    # transformers_nlp = HFTransformersNLP(transformers_config)
-    transformers_nlp = hftransformers_nlp[model_name]
+    # retrieve cached model component
+    transformers_nlp_pipeline = hftransformers_nlp[model_name]
     lm_tokenizer = LanguageModelTokenizer()
 
     for text, gt_tokens, gt_indices in zip(texts, expected_tokens, expected_indices):
 
         message = Message.build(text=text)
-        transformers_nlp.process(message)
+        transformers_nlp_pipeline.process(message)
         tokens = lm_tokenizer.tokenize(message, TEXT)
 
         assert [t.text for t in tokens] == gt_tokens
@@ -327,10 +325,10 @@ def test_lm_tokenizer_edge_cases(
 def test_lm_tokenizer_custom_intent_symbol(text, expected_tokens, hftransformers_nlp):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
-    # transformers_config = {"model_name": "bert"}  # Test for one should be enough
-    #
-    # transformers_nlp = HFTransformersNLP(transformers_config)
-    transformers_nlp = hftransformers_nlp["bert"]  # Test for one should be enough
+    # retrieve cached model component
+    transformers_nlp_pipeline = hftransformers_nlp[
+        "bert"
+    ]  # Test for one should be enough
     lm_tokenizer = LanguageModelTokenizer(component_config)
 
     message = Message(text)
@@ -338,7 +336,7 @@ def test_lm_tokenizer_custom_intent_symbol(text, expected_tokens, hftransformers
 
     td = TrainingData([message])
 
-    transformers_nlp.train(td)
+    transformers_nlp_pipeline.train(td)
     lm_tokenizer.train(td)
 
     assert [t.text for t in message.get(TOKENS_NAMES[INTENT])] == expected_tokens
