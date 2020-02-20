@@ -1,6 +1,6 @@
 Refactor how GPU and CPU environments are configured for TensorFlow 2.0.
 
-Please refer to the `documentation <https://rasa.com/docs/rasa/api/tensorflow_usage.html>`_ to understand
+Please refer to the :ref:`documentation <tensorflow_usage>` to understand
 which environment variables to set in what scenarios. A couple of examples are shown below as well:
 
 .. code-block:: python

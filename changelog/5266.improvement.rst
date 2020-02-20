@@ -1,1 +1,1 @@
-We updated our code to Tensorflow 2.0.
+We updated our code to TensorFlow 2.

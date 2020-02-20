@@ -1,6 +1,6 @@
 Integrate language models from HuggingFace's `Transformers <https://github.com/huggingface/transformers>`_ Library.
 
-Add a new NLP component `HFTransformersNLP <https://rasa.com/docs/rasa/nlu/components.html#hftransformersnlp>`_ which
+Add a new NLP component :ref:`HFTransformersNLP <HFTransformersNLP>` which
 tokenizes and featurizes incoming messages using a specified pre-trained model with the Transformers library as the backend.
 Add ``LanguageModelTokenizers`` and ``LanguageModelFeaturizers`` which use the information from ``HFTransformersNLP``
 and sets them correctly for message object.
