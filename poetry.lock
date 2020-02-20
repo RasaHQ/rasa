@@ -3448,7 +3448,7 @@ gh-release-notes = ["pypandoc", "github3.py"]
 spacy = ["spacy"]
 
 [metadata]
-content-hash = "130afedbb64cb6d97b531f02d856487b8d9e8396af821ce800d7001e41f6fb29"
+content-hash = "7c0e6ad479fc225146ab120a571e744d643b2146f374722fbbdac9ac3928307b"
 python-versions = "^3.6"
 
 [metadata.files]
