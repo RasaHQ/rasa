@@ -130,7 +130,7 @@ class DIETClassifier(EntityExtractor):
         BATCH_STRATEGY: "balanced",
         # Number of epochs to train
         EPOCHS: 300,
-        # Set random seed to any int to get reproducible results
+        # Set random seed to any 'int' to get reproducible results
         RANDOM_SEED: None,
         # Initial learning rate for the optimizer
         LEARNING_RATE: 0.001,
@@ -139,7 +139,8 @@ class DIETClassifier(EntityExtractor):
         EMBEDDING_DIMENSION: 20,
         # Default dense dimension to use if no dense features are present.
         DENSE_DIMENSION: {TEXT: 512, LABEL: 20},
-        # Number of negative examples to compare to
+        # The number of incorrect labels. The algorithm will minimize
+        # their similarity to the user input during training.
         NUM_NEG: 20,
         # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
         SIMILARITY_TYPE: "auto",
@@ -155,8 +156,8 @@ class DIETClassifier(EntityExtractor):
         # Maximum negative similarity for incorrect labels.
         # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
         MAX_NEG_SIM: -0.4,
-        # The number of incorrect labels. The algorithm will minimize
-        # their similarity to the user input during training.
+        # If 'True' the algorithm only minimizes maximum similarity over
+        # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
         USE_MAX_NEG_SIM: True,
         # Scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
@@ -174,10 +175,10 @@ class DIETClassifier(EntityExtractor):
         SPARSE_INPUT_DROPOUT: True,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
-        # Small values may hurt performance.
+        # Small values may hurt performance, e.g. model accuracy.
         EVAL_NUM_EPOCHS: 20,
         # How many examples to use for hold out validation set
-        # Large values may hurt performance.
+        # Large values may hurt performance, e.g. model accuracy.
         EVAL_NUM_EXAMPLES: 0,
         # ## Model config
         # If 'True' intent classification is trained and intent predicted.

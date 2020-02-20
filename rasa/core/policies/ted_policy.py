@@ -82,6 +82,7 @@ class TEDPolicy(Policy):
 
     SUPPORTS_ONLINE_TRAINING = True
 
+    # please make sure to update the docs when changing a default parameter
     defaults = {
         # ## Architecture of the used neural network
         # Hidden layer sizes for layers before the dialogue and label embedding layers.
@@ -106,17 +107,18 @@ class TEDPolicy(Policy):
         # Initial and final batch sizes:
         # Batch size will be linearly increased for each epoch.
         BATCH_SIZES: [8, 32],
-        # Strategy used when creating batches.
+        # Strategy used whenc creating batches.
         # Can be either 'sequence' or 'balanced'.
         BATCH_STRATEGY: "balanced",
         # Number of epochs to train
         EPOCHS: 1,
-        # Set random seed to any int to get reproducible results
+        # Set random seed to any 'int' to get reproducible results
         RANDOM_SEED: None,
         # ## Parameters for embeddings
         # Dimension size of embedding vectors
         EMBEDDING_DIMENSION: 20,
-        # Number of negative examples to compare to
+        # The number of incorrect labels. The algorithm will minimize
+        # their similarity to the user input during training.
         NUM_NEG: 20,
         # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
         SIMILARITY_TYPE: "auto",
@@ -132,8 +134,8 @@ class TEDPolicy(Policy):
         # Maximum negative similarity for incorrect labels.
         # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
         MAX_NEG_SIM: -0.2,
-        # The number of incorrect labels. The algorithm will minimize
-        # their similarity to the user input during training.
+        # If 'True' the algorithm only minimizes maximum similarity over
+        # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
         USE_MAX_NEG_SIM: True,
         # Scale loss inverse proportionally to confidence of correct prediction
         SCALE_LOSS: True,
@@ -151,10 +153,10 @@ class TEDPolicy(Policy):
         DROP_RATE_ATTENTION: 0,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
-        # Small values may hurt performance.
+        # Small values may hurt performance, e.g. model accuracy.
         EVAL_NUM_EPOCHS: 20,
         # How many examples to use for hold out validation set
-        # Large values may hurt performance.
+        # Large values may hurt performance, e.g. model accuracy.
         EVAL_NUM_EXAMPLES: 0,
     }
 
