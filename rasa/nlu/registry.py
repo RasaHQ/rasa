@@ -33,7 +33,6 @@ from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFea
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.selectors.response_selector import ResponseSelector
-from rasa.nlu.selectors.diet_selector import DIETSelector
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
@@ -93,7 +92,6 @@ component_classes = [
     EmbeddingIntentClassifier,
     # selectors
     ResponseSelector,
-    DIETSelector,
 ]
 
 # Mapping from a components name to its class to allow name based lookup.

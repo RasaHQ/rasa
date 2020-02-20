@@ -101,7 +101,6 @@ class DIETClassifier(EntityExtractor):
 
     requires = [any_of(DENSE_FEATURE_NAMES[TEXT], SPARSE_FEATURE_NAMES[TEXT])]
 
-    # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
         # sizes of hidden layers before the embedding layer
@@ -191,7 +190,6 @@ class DIETClassifier(EntityExtractor):
         # rule of thumb: use only if more than 100 egs. per entity
         BILOU_FLAG: True,
     }
-    # end default properties (DOC MARKER - don't remove)
 
     # init helpers
     def _check_config_parameters(self) -> None:
