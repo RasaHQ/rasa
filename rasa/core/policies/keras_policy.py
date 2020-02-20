@@ -197,8 +197,7 @@ class KerasPolicy(Policy):
             verbose=obtain_verbosity(),
             **self._train_params,
         )
-        # the default parameter for epochs in keras fit is 1
-        self.current_epoch = self.defaults.get("epochs", 1)
+        self.current_epoch = self.epochs
         logger.info("Done fitting keras policy model")
 
     def continue_training(
