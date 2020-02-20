@@ -248,7 +248,7 @@ SpacyTokenizer
 ConveRTTokenizer
 ~~~~~~~~~~~~~~~~
 
-:Short: Tokenizer using `ConveRT <https://github.com/PolyAI-LDN/polyai-models#convert>`_
+:Short: Tokenizer using `ConveRT <https://github.com/PolyAI-LDN/polyai-models#convert>`__ model.
 :Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
 :Requires: Nothing
 :Description:
@@ -374,7 +374,7 @@ ConveRTFeaturizer
 
 :Short:
     Creates a vector representation of user message and response (if specified) using
-    `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model.
+    `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`__ model.
 :Outputs: ``dense_features`` for texts and responses
 :Requires: :ref:`ConveRTTokenizer`
 :Type: Dense featurizer
