@@ -307,7 +307,10 @@ class SlackInput(InputChannel):
 
             return response.text(None, status=201, headers={"X-Slack-No-Retry": 1})
 
-        output_channel = metadata.get("out_channel")
+        if metadata is not None:
+            output_channel = metadata.get("out_channel")
+        else:
+            output_channel = None
 
         try:
             user_msg = UserMessage(
@@ -332,15 +335,14 @@ class SlackInput(InputChannel):
             request: A `Request` object that contains a slack API event in the body.
 
         Returns:
-            Metadata extracted from the sent event payload. This includes the output channel for the response, the text
-            from the user and users that have installed the bot.
+            Metadata extracted from the sent event payload. This includes the output channel for the response,
+            and users that have installed the bot.
         """
         slack_event = request.json
         event = slack_event.get("event", {})
+
         return {
             "out_channel": event.get("channel"),
-            "text": event.get("text"),
-            "sender": event.get("user"),
             "users": slack_event.get("authed_users"),
         }
 
@@ -376,7 +378,11 @@ class SlackInput(InputChannel):
 
             elif request.json:
                 output = request.json
+                event = output.get("event", {})
+                user_message = event.get("text", "")
+                sender_id = event.get("user", "")
                 metadata = self.get_metadata(request)
+
                 if "challenge" in output:
                     return response.json(output.get("challenge"))
 
@@ -387,9 +393,9 @@ class SlackInput(InputChannel):
                         request,
                         on_new_message,
                         text=self._sanitize_user_message(
-                            metadata["text"], metadata["users"]
+                            user_message, metadata["users"]
                         ),
-                        sender_id=metadata["sender"],
+                        sender_id=sender_id,
                         metadata=metadata,
                     )
                 else:
