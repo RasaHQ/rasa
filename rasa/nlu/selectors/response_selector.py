@@ -35,6 +35,7 @@ from rasa.utils.tensorflow.constants import (
     MAX_POS_SIM,
     EMBEDDING_DIMENSION,
     BILOU_FLAG,
+    RETRIEVAL_INTENT,
 )
 from rasa.nlu.constants import (
     RESPONSE,
@@ -141,7 +142,7 @@ class ResponseSelector(DIETClassifier):
         EVAL_NUM_EXAMPLES: 0,  # large values may hurt performance,
         # selector config
         # name of the intent for which this response selector is to be trained
-        "retrieval_intent": None,
+        RETRIEVAL_INTENT: None,
     }
 
     def __init__(
@@ -182,7 +183,7 @@ class ResponseSelector(DIETClassifier):
         return "label_ids"
 
     def _load_selector_params(self, config: Dict[Text, Any]) -> None:
-        self.retrieval_intent = config["retrieval_intent"]
+        self.retrieval_intent = config[RETRIEVAL_INTENT]
         if not self.retrieval_intent:
             # retrieval intent was left to its default value
             logger.info(
