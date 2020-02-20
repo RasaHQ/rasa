@@ -1,1 +1,1 @@
-Support invoking a ``SlackBot`` by direct messaging or @ mentions.
+Support invoking a ``SlackBot`` by direct messaging or ``@<app name>`` mentions.

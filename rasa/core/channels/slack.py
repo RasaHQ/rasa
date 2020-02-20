@@ -307,10 +307,7 @@ class SlackInput(InputChannel):
 
             return response.text(None, status=201, headers={"X-Slack-No-Retry": 1})
 
-        if metadata is not None:
-            output_channel = metadata.get("out_channel")
-        else:
-            output_channel = None
+        output_channel = metadata.get("out_channel")
 
         try:
             user_msg = UserMessage(
