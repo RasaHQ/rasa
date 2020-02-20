@@ -713,6 +713,8 @@ SklearnIntentClassifier
           # This is used with the ``C`` hyperparameter in GridSearchCV.
           kernels: ["linear"]
 
+.. _embedding-intent-classifier:
+
 EmbeddingIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

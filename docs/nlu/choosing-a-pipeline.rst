@@ -72,7 +72,7 @@ in general English, the word "balance" is closely related to "symmetry", but ver
 banking domain, "balance" and "cash" are closely related and you'd like your model to capture that. If you don't
 use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language and domain.
 Thus, you should only use featurizers from the category `sparse` featuirzers, such as
-``CountVectorsFeaturizer`` or ``RegexFeaturizer``.
+``CountVectorsFeaturizer``, ``RegexFeaturizer`` or ``LexicalSyntacticFeaturizer``.
 
 The advantage of using pre-trained word embeddings in your pipeline is that if you have a training example like:
 "I want to buy apples", and Rasa is asked to predict the intent for "get pears", your model already knows that the
