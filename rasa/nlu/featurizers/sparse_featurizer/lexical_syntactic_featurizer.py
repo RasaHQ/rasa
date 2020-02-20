@@ -4,7 +4,6 @@ from collections import defaultdict, OrderedDict
 
 import numpy as np
 import os
-import pickle
 import scipy.sparse
 from typing import Any, Dict, Optional, Text, List
 
@@ -15,6 +14,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import TOKENS_NAMES, TEXT, SPARSE_FEATURE_NAMES
 from rasa.nlu.model import Metadata
+import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
 
@@ -280,9 +280,9 @@ class LexicalSyntacticFeaturizer(Featurizer):
         """Persist this model into the passed directory.
         Return the metadata necessary to load the model again."""
 
-        with open(
-            os.path.join(model_dir, file_name + ".feature_to_idx_dict.pkl"), "wb"
-        ) as f:
-            json.dump(self.feature_to_idx_dict, f)
+        feature_to_idx_file = os.path.join(
+            model_dir, file_name + ".feature_to_idx_dict.pkl"
+        )
+        io_utils.dump_obj_as_json_to_file(feature_to_idx_file, self.feature_to_idx_dict)
 
         return {"file": file_name}
