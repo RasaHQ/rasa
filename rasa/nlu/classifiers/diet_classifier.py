@@ -41,7 +41,6 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    MAX_SEQUENCE_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
     EPOCHS,
@@ -61,6 +60,7 @@ from rasa.utils.tensorflow.constants import (
     UNIDIRECTIONAL_ENCODER,
     DROPRATE,
     DROPRATE_ATTENTION,
+    WEIGHT_SPARSITY,
     NEG_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
@@ -121,8 +121,6 @@ class DIETClassifier(EntityExtractor):
         VALUE_RELATIVE_ATTENTION: False,
         # max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
-        # max sequence length
-        MAX_SEQUENCE_LENGTH: 256,
         # use a unidirectional or bidirectional encoder
         UNIDIRECTIONAL_ENCODER: False,
         # training parameters
@@ -170,6 +168,8 @@ class DIETClassifier(EntityExtractor):
         DROPRATE: 0.2,
         # dropout rate for attention
         DROPRATE_ATTENTION: 0,
+        # sparsity of the weights in dense layers
+        WEIGHT_SPARSITY: 0.8,
         # if true apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: True,
         # visualization of accuracy
@@ -1061,6 +1061,7 @@ class DIET(RasaModel):
             self.config[HIDDEN_LAYERS_SIZES][name],
             self.config[DROPRATE],
             self.config[REGULARIZATION_CONSTANT],
+            self.config[WEIGHT_SPARSITY],
             name,
         )
 
@@ -1073,10 +1074,10 @@ class DIET(RasaModel):
                 self.config[TRANSFORMER_SIZE],
                 self.config[NUM_HEADS],
                 self.config[TRANSFORMER_SIZE] * 4,
-                self.config[MAX_SEQUENCE_LENGTH],
                 self.config[REGULARIZATION_CONSTANT],
                 dropout_rate=self.config[DROPRATE],
                 attention_dropout_rate=self.config[DROPRATE_ATTENTION],
+                sparsity=self.config[WEIGHT_SPARSITY],
                 unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
                 use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
                 use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],

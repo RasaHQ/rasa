@@ -11,7 +11,6 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    MAX_SEQUENCE_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
     EPOCHS,
@@ -32,6 +31,7 @@ from rasa.utils.tensorflow.constants import (
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
     DROPRATE_ATTENTION,
+    WEIGHT_SPARSITY,
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
@@ -57,8 +57,6 @@ class EmbeddingPolicy(TEDPolicy):
         TRANSFORMER_SIZE: 128,
         # number of transformer layers
         NUM_TRANSFORMER_LAYERS: 1,
-        # max sequence length if pos_encoding='emb'
-        MAX_SEQUENCE_LENGTH: 256,
         # number of attention heads in transformer
         NUM_HEADS: 4,
         # training parameters
@@ -105,6 +103,8 @@ class EmbeddingPolicy(TEDPolicy):
         DROPRATE_LABEL: 0.0,
         # dropout rate for attention
         DROPRATE_ATTENTION: 0,
+        # sparsity of the weights in dense layers
+        WEIGHT_SPARSITY: 0.8,
         # visualization of accuracy
         # how often calculate validation accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance

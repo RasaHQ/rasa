@@ -15,6 +15,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         units: int,
         num_heads: int,
         attention_dropout_rate: float = 0.0,
+        sparsity: float = 0.8,
         unidirectional: bool = False,
         use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
@@ -42,11 +43,17 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         self._depth = units // self.num_heads
 
-        self._wq = DenseWithSparseWeights(units=units, use_bias=False)
-        self._wk = DenseWithSparseWeights(units=units, use_bias=False)
-        self._wv = DenseWithSparseWeights(units=units, use_bias=False)
+        self._wq = DenseWithSparseWeights(
+            units=units, use_bias=False, sparsity=sparsity
+        )
+        self._wk = DenseWithSparseWeights(
+            units=units, use_bias=False, sparsity=sparsity
+        )
+        self._wv = DenseWithSparseWeights(
+            units=units, use_bias=False, sparsity=sparsity
+        )
 
-        self._dense = DenseWithSparseWeights(units=units)
+        self._dense = DenseWithSparseWeights(units=units, sparsity=sparsity)
 
         self._create_relative_embeddings()
 
@@ -301,6 +308,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
             x, (tf.shape(x)[0], -1, self.units)
         )  # (batch_size, seq_len_q, units)
 
+    # noinspection PyMethodOverriding
     def call(
         self,
         v: tf.Tensor,
@@ -340,6 +348,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         filter_units: int,
         dropout_rate: float = 0.1,
         attention_dropout_rate: float = 0.0,
+        sparsity: float = 0.8,
         unidirectional: bool = False,
         use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
@@ -353,6 +362,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
             units,
             num_heads,
             attention_dropout_rate,
+            sparsity,
             unidirectional,
             use_key_relative_position,
             use_value_relative_position,
@@ -364,10 +374,12 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         self._ffn_layers = [
             tf.keras.layers.LayerNormalization(epsilon=1e-6),
             DenseWithSparseWeights(
-                units=filter_units, activation=tfa.activations.gelu
+                units=filter_units, activation=tfa.activations.gelu, sparsity=sparsity
             ),  # (batch_size, seq_len, filter_units)
             tf.keras.layers.Dropout(dropout_rate),
-            DenseWithSparseWeights(units=units),  # (batch_size, seq_len, units)
+            DenseWithSparseWeights(
+                units=units, sparsity=sparsity
+            ),  # (batch_size, seq_len, units)
             tf.keras.layers.Dropout(dropout_rate),
         ]
 
@@ -402,10 +414,10 @@ class TransformerEncoder(tf.keras.layers.Layer):
         units: int,
         num_heads: int,
         filter_units: int,
-        max_seq_length: int,
         reg_lambda: float,
         dropout_rate: float = 0.1,
         attention_dropout_rate: float = 0.0,
+        sparsity: float = 0.8,
         unidirectional: bool = False,
         use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
@@ -420,7 +432,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
 
         l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
         self._embedding = DenseWithSparseWeights(
-            units=units, kernel_regularizer=l2_regularizer
+            units=units, kernel_regularizer=l2_regularizer, sparsity=sparsity
         )
         # positional encoding helpers
         self._angles = self._get_angles()
@@ -436,6 +448,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
                 filter_units,
                 dropout_rate,
                 attention_dropout_rate,
+                sparsity,
                 unidirectional,
                 use_key_relative_position,
                 use_value_relative_position,

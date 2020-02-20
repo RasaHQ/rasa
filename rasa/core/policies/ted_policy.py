@@ -31,7 +31,6 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    MAX_SEQUENCE_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
     EPOCHS,
@@ -52,6 +51,7 @@ from rasa.utils.tensorflow.constants import (
     DROPRATE_DIALOGUE,
     DROPRATE_LABEL,
     DROPRATE_ATTENTION,
+    WEIGHT_SPARSITY,
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
@@ -78,8 +78,6 @@ class TEDPolicy(Policy):
         TRANSFORMER_SIZE: 128,
         # number of transformer layers
         NUM_TRANSFORMER_LAYERS: 1,
-        # max sequence length
-        MAX_SEQUENCE_LENGTH: 256,
         # number of attention heads in transformer
         NUM_HEADS: 4,
         # if true use key relative embeddings in attention
@@ -132,6 +130,8 @@ class TEDPolicy(Policy):
         DROPRATE_LABEL: 0.0,
         # dropout rate for attention
         DROPRATE_ATTENTION: 0,
+        # sparsity of the weights in dense layers
+        WEIGHT_SPARSITY: 0.8,
         # visualization of accuracy
         # how often calculate validation accuracy
         EVAL_NUM_EPOCHS: 20,  # small values may hurt performance
@@ -518,12 +518,14 @@ class TED(RasaModel):
             self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
             self.config[DROPRATE_DIALOGUE],
             self.config[REGULARIZATION_CONSTANT],
+            self.config[WEIGHT_SPARSITY],
             layer_name_suffix=DIALOGUE,
         )
         self._tf_layers["ffnn.label"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES][LABEL],
             self.config[DROPRATE_LABEL],
             self.config[REGULARIZATION_CONSTANT],
+            self.config[WEIGHT_SPARSITY],
             layer_name_suffix=LABEL,
         )
         self._tf_layers["transformer"] = TransformerEncoder(
@@ -531,10 +533,10 @@ class TED(RasaModel):
             self.config[TRANSFORMER_SIZE],
             self.config[NUM_HEADS],
             self.config[TRANSFORMER_SIZE] * 4,
-            self.config[MAX_SEQUENCE_LENGTH],
             self.config[REGULARIZATION_CONSTANT],
             dropout_rate=self.config[DROPRATE_DIALOGUE],
             attention_dropout_rate=self.config[DROPRATE_ATTENTION],
+            sparsity=self.config[WEIGHT_SPARSITY],
             unidirectional=True,
             use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
             use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
