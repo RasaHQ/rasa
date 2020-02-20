@@ -61,6 +61,9 @@ from rasa.utils.tensorflow.constants import (
 logger = logging.getLogger(__name__)
 
 
+SAVE_MODEL_FILE_NAME = "ted_policy"
+
+
 class TEDPolicy(Policy):
     """Transformer Embedding Dialogue (TED) Policy is described in
     https://arxiv.org/abs/1910.00486.
@@ -389,8 +392,7 @@ class TEDPolicy(Policy):
             )
             return
 
-        file_name = "ted_policy"
-        tf_model_file = os.path.join(path, f"{file_name}.tf_model")
+        tf_model_file = os.path.join(path, f"{SAVE_MODEL_FILE_NAME}.tf_model")
 
         rasa.utils.io.create_directory_for_file(tf_model_file)
 
@@ -398,16 +400,22 @@ class TEDPolicy(Policy):
 
         self.model.save(tf_model_file)
 
-        with open(os.path.join(path, file_name + ".priority.pkl"), "wb") as f:
+        with open(
+            os.path.join(path, SAVE_MODEL_FILE_NAME + ".priority.pkl"), "wb"
+        ) as f:
             pickle.dump(self.priority, f)
 
-        with open(os.path.join(path, file_name + ".meta.pkl"), "wb") as f:
+        with open(os.path.join(path, SAVE_MODEL_FILE_NAME + ".meta.pkl"), "wb") as f:
             pickle.dump(self.config, f)
 
-        with open(os.path.join(path, file_name + ".data_example.pkl"), "wb") as f:
+        with open(
+            os.path.join(path, SAVE_MODEL_FILE_NAME + ".data_example.pkl"), "wb"
+        ) as f:
             pickle.dump(self.data_example, f)
 
-        with open(os.path.join(path, file_name + ".label_data.pkl"), "wb") as f:
+        with open(
+            os.path.join(path, SAVE_MODEL_FILE_NAME + ".label_data.pkl"), "wb"
+        ) as f:
             pickle.dump(self._label_data, f)
 
     @classmethod
@@ -423,26 +431,33 @@ class TEDPolicy(Policy):
                 f"'{os.path.abspath(path)}' doesn't exist."
             )
 
-        file_name = "TED_policy"
-        tf_model_file = os.path.join(path, f"{file_name}.tf_model")
+        tf_model_file = os.path.join(path, f"{SAVE_MODEL_FILE_NAME}.tf_model")
 
         featurizer = TrackerFeaturizer.load(path)
 
-        if not os.path.exists(os.path.join(path, file_name + ".data_example.pkl")):
+        if not os.path.exists(
+            os.path.join(path, SAVE_MODEL_FILE_NAME + ".data_example.pkl")
+        ):
             return cls(featurizer=featurizer)
 
-        with open(os.path.join(path, file_name + ".data_example.pkl"), "rb") as f:
+        with open(
+            os.path.join(path, SAVE_MODEL_FILE_NAME + ".data_example.pkl"), "rb"
+        ) as f:
             model_data_example = RasaModelData(
                 label_key="label_ids", data=pickle.load(f)
             )
 
-        with open(os.path.join(path, file_name + ".label_data.pkl"), "rb") as f:
+        with open(
+            os.path.join(path, SAVE_MODEL_FILE_NAME + ".label_data.pkl"), "rb"
+        ) as f:
             label_data = pickle.load(f)
 
-        with open(os.path.join(path, file_name + ".meta.pkl"), "rb") as f:
+        with open(os.path.join(path, SAVE_MODEL_FILE_NAME + ".meta.pkl"), "rb") as f:
             meta = pickle.load(f)
 
-        with open(os.path.join(path, file_name + ".priority.pkl"), "rb") as f:
+        with open(
+            os.path.join(path, SAVE_MODEL_FILE_NAME + ".priority.pkl"), "rb"
+        ) as f:
             priority = pickle.load(f)
 
         meta = train_utils.update_similarity_type(meta)
