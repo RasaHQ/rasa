@@ -48,7 +48,7 @@ If you want to use custom components in your pipeline, see :ref:`custom-nlu-comp
 A pipeline usually consist of three main parts:
 
     1. Tokenizaion
-    2. Featuirzation
+    2. Featurization
     3. Entity Recognition / Intent Classification / Response Selectors
 
 Tokenization
