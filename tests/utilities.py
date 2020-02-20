@@ -2,10 +2,10 @@ from typing import Text
 from yarl import URL
 
 import rasa.utils.io as io_utils
-from nlu.classifiers.diet_classifier import DIETClassifier
-from nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
-from nlu.selectors.response_selector import ResponseSelector
-from utils.tensorflow.constants import EPOCHS
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
+from rasa.nlu.selectors.response_selector import ResponseSelector
+from rasa.utils.tensorflow.constants import EPOCHS
 
 
 def latest_request(mocked, request_type, path):

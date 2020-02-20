@@ -12,7 +12,7 @@ KEY_RELATIVE_ATTENTION = "use_key_relative_attention"
 VALUE_RELATIVE_ATTENTION = "use_value_relative_attention"
 MAX_RELATIVE_POSITION = "max_relative_position"
 
-MAX_SEQ_LENGTH = "maximum_sequence_length"
+MAX_SEQUENCE_LENGTH = "maximum_sequence_length"
 
 BATCH_SIZES = "batch_size"
 BATCH_STRATEGY = "batch_strategy"
@@ -20,8 +20,8 @@ EPOCHS = "epochs"
 RANDOM_SEED = "random_seed"
 LEARNING_RATE = "learning_rate"
 
-DENSE_DIM = "dense_dimension"
-EMBED_DIM = "embedding_dimension"
+DENSE_DIMENSION = "dense_dimension"
+EMBEDDING_DIMENSION = "embedding_dimension"
 
 SIMILARITY_TYPE = "similarity_type"
 LOSS_TYPE = "loss_type"

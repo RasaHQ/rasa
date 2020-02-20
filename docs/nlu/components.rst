@@ -753,7 +753,7 @@ EmbeddingIntentClassifier
 
     .. warning::
         ``EmbeddingIntentClassifier`` is deprecated and should be replaced by ``DIETClassifier``. See
-        `migration guide <https://rasa.com/docs/rasa/migration-guide/#rasa-1-7-to-rasa-1-8>`_ for more details.
+        :ref:`migration guide <migration-to-rasa-1.8>` for more details.
 
 :Configuration:
 
@@ -1232,7 +1232,7 @@ CRFEntityExtractor
 
     .. warning::
         ``CRFEntityExtractor`` is deprecated and should be replaced by ``DIETClassifier``. See
-        `migration guide <https://rasa.com/docs/rasa/migration-guide/#rasa-1-7-to-rasa-1-8>`_ for more details.
+        :ref:`migration guide <migration-to-rasa-1.8>` for more details.
 
 :Configuration:
     You need to configure what kind of features the CRF should use.

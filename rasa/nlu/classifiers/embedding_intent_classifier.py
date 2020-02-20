@@ -15,7 +15,7 @@ from rasa.utils.tensorflow.constants import (
     EPOCHS,
     RANDOM_SEED,
     LEARNING_RATE,
-    DENSE_DIM,
+    DENSE_DIMENSION,
     RANKING_LENGTH,
     LOSS_TYPE,
     SIMILARITY_TYPE,
@@ -33,7 +33,7 @@ from rasa.utils.tensorflow.constants import (
     USE_MAX_NEG_SIM,
     MAX_NEG_SIM,
     MAX_POS_SIM,
-    EMBED_DIM,
+    EMBEDDING_DIMENSION,
     BILOU_FLAG,
 )
 from rasa.utils.common import raise_warning
@@ -71,9 +71,9 @@ class EmbeddingIntentClassifier(DIETClassifier):
         LEARNING_RATE: 0.001,
         # embedding parameters
         # default dense dimension used if no dense features are present
-        DENSE_DIM: {TEXT: 512, LABEL: 20},
+        DENSE_DIMENSION: {TEXT: 512, LABEL: 20},
         # dimension size of embedding vectors
-        EMBED_DIM: 20,
+        EMBEDDING_DIMENSION: 20,
         # the type of the similarity
         NUM_NEG: 20,
         # flag if minimize only maximum similarity over incorrect actions
@@ -139,5 +139,5 @@ class EmbeddingIntentClassifier(DIETClassifier):
             "'EmbeddingIntentClassifier' is deprecated and will be removed in version "
             "2.0. Use 'DIETClassifier' instead.",
             category=FutureWarning,
-            docs=DOCS_URL_COMPONENTS,
+            docs="https://rasa.com/docs/rasa/migration-guide/",
         )
