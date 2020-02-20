@@ -25,7 +25,7 @@ class RasaModelData:
         self.data = data or {}
         self.label_key = label_key
         # will be updated when features are added
-        self.num_examples = self.get_number_of_examples()
+        self.num_examples = self.number_of_examples()
 
     def get(self, key: Text) -> List[np.ndarray]:
         if key in self.data:
@@ -42,13 +42,15 @@ class RasaModelData:
     def keys(self):
         return self.data.keys()
 
-    def feature_not_exists(self, key: Text) -> bool:
+    def does_feature_exist(self, key: Text) -> bool:
+        """Check if feature key is present and features are available."""
         return key not in self.data or not self.data[key]
 
     def is_empty(self):
+        """Checks if data is set."""
         return not self.data
 
-    def get_number_of_examples(self) -> int:
+    def number_of_examples(self) -> int:
         """Obtain number of examples in data.
 
         Raise a ValueError if number of examples differ for different data in
@@ -68,7 +70,7 @@ class RasaModelData:
 
         return example_lengths[0]
 
-    def get_feature_dimension(self, key: Text) -> int:
+    def feature_dimension(self, key: Text) -> int:
         """Get the feature dimension of the given key."""
 
         number_of_features = 0
@@ -133,7 +135,7 @@ class RasaModelData:
             del self.data[key]
 
         # update number of examples
-        self.num_examples = self.get_number_of_examples()
+        self.num_examples = self.number_of_examples()
 
     def add_mask(self, key: Text, from_key: Text):
         """Calculate mask for given key and put it under specified key."""

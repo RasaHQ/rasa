@@ -25,10 +25,10 @@ logger = logging.getLogger(__name__)
 class HFTransformersNLP(Component):
     """Utility Component for interfacing between Transformers library.
 
-        The transformers(https://github.com/huggingface/transformers) library
-        is used to load pre-trained language models like BERT, GPT-2, etc.
-        The component also tokenizes and featurizes dense featurizable attributes of each
-        message.
+    The transformers(https://github.com/huggingface/transformers) library
+    is used to load pre-trained language models like BERT, GPT-2, etc.
+    The component also tokenizes and featurizes dense featurizable attributes of each
+    message.
     """
 
     provides = [
@@ -62,7 +62,8 @@ class HFTransformersNLP(Component):
 
         if self.model_name not in model_class_dict:
             raise KeyError(
-                f"'{self.model_name}' not a valid model name. Choose from {str(list(model_class_dict.keys()))}or create"
+                f"'{self.model_name}' not a valid model name. Choose from "
+                f"{str(list(model_class_dict.keys()))}or create"
                 f"a new class inheriting from this class to support your model."
             )
 
@@ -70,7 +71,8 @@ class HFTransformersNLP(Component):
 
         if not self.model_weights:
             logger.info(
-                f"Model weights not specified. Will choose default model weights: {model_weights_defaults[self.model_name]}"
+                f"Model weights not specified. Will choose default model weights: "
+                f"{model_weights_defaults[self.model_name]}"
             )
             self.model_weights = model_weights_defaults[self.model_name]
 
@@ -82,10 +84,12 @@ class HFTransformersNLP(Component):
             self.model_weights
         )
 
-        # Use a universal pad token since all transformer architectures do not have a consistent token.
-        # Instead of pad_token_id we use unk_token_id because pad_token_id is not set for all architectures.
-        # We can't add a new token as well since vocabulary resizing is not yet supported for TF classes.
-        # Also, this does not hurt the model predictions since we use an attention mask while feeding input.
+        # Use a universal pad token since all transformer architectures do not have a
+        # consistent token. Instead of pad_token_id we use unk_token_id because
+        # pad_token_id is not set for all architectures. We can't add a new token as
+        # well since vocabulary resizing is not yet supported for TF classes.
+        # Also, this does not hurt the model predictions since we use an attention mask
+        # while feeding input.
         self.pad_token_id = self.tokenizer.unk_token_id
 
     @classmethod

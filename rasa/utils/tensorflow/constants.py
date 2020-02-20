@@ -32,11 +32,11 @@ USE_MAX_NEG_SIM = "use_maximum_negative_similarity"
 
 SCALE_LOSS = "scale_loss"
 REGULARIZATION_CONSTANT = "regularization_constant"
-NEG_MARGIN_SCALE = "negative_margin_scale"
-DROPRATE = "droprate"
-DROPRATE_ATTENTION = "droprate_attention"
-DROPRATE_DIALOGUE = "droprate_dialogue"
-DROPRATE_LABEL = "droprate_label"
+NEGATIVE_MARGIN_SCALE = "negative_margin_scale"
+DROP_RATE = "drop_rate"
+DROP_RATE_ATTENTION = "drop_rate_attention"
+DROP_RATE_DIALOGUE = "drop_rate_dialogue"
+DROP_RATE_LABEL = "drop_rate_label"
 
 EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
 EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"
@@ -50,3 +50,5 @@ SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
 RANKING_LENGTH = "ranking_length"
 
 BILOU_FLAG = "BILOU_flag"
+
+RETRIEVAL_INTENT = "retrieval_intent"
