@@ -208,7 +208,7 @@ Embedding Policy
 TED Policy
 ^^^^^^^^^^
 
-Transformer Embedding Dialogue Policy (TEDP)
+Transformer Embedding Dialogue (TED) Policy
 
 The policy used in our paper https://arxiv.org/abs/1910.00486.
 

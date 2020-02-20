@@ -27,7 +27,7 @@ General
   .. code-block:: yaml
 
     policies:
-    - ... # other policies
+    # - ... other policies
     - name: TEDPolicy
       max_history: 5
       epochs: 100
@@ -98,7 +98,7 @@ General
   .. code-block:: yaml
 
     pipeline:
-    - ... # other components
+    # - ... other components
     - name: LexicalSyntacticFeaturizer
       features: [
         ["low", "title", "upper"],
@@ -122,7 +122,7 @@ General
       entity_recognition: True
       use_masked_language_model: False
       number_of_transformer_layers: 0
-      ... # any other parameters
+      # ... any other parameters
 
   As you can see in the configuration, you need to add the ``LexicalSyntacticFeaturizer`` before the ``DIETClassifier``
   to your pipeline. ``CRFEntityExtractor`` featurizes user messages on its own, it does not depend on any featurizer.
@@ -138,14 +138,14 @@ General
   .. code-block:: yaml
 
     pipeline:
-    - ... # other components
+    # - ... other components
     - name: DIETSelector
       intent_classification: True
       entity_recognition: False
       use_masked_language_model: False
       BILOU_flag: False
       number_of_transformer_layers: 0
-      ... # any other parameters
+      # ... any other parameters
 
   See :ref:`diet-selector` for more information about the new component.
 

@@ -14,4 +14,3 @@ pipeline:
   - name: DIETSelector
   - name: DucklingHTTPExtractor
     url: "http://duckling:8000"
-  

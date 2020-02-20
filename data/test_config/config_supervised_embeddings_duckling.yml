@@ -2,6 +2,6 @@ language: "en"
 
 pipeline:
 - name: "CountVectorsFeaturizer"
-- name: "DIETClassifier"
+- name: "EmbeddingIntentClassifier"
 - name: "DucklingHTTPExtractor"
   url: "http://duckling:8000"
