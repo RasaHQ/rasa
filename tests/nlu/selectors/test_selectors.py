@@ -17,7 +17,7 @@ from rasa.utils.tensorflow.constants import EPOCHS
         [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETSelector", EPOCHS: 2},
+            {"name": "ResponseSelector", EPOCHS: 2},
         ],
     ],
 )

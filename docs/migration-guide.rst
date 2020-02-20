@@ -131,24 +131,6 @@ General
   ``DIETClassifier``. For more information about the ``DIETClassifier`` and the ``LexicalSyntacticFeaturizer``
   see :ref:`components`.
 
-- ``ResponseSelector`` is now deprecated and will be replaced by ``DIETSelector`` in the future. If you want to
-  get the same model behaviour as the current ``ResponseSelector``, you can use the following configuration of
-  ``DIETSelector``:
-
-  .. code-block:: yaml
-
-    pipeline:
-    # - ... other components
-    - name: DIETSelector
-      intent_classification: True
-      entity_recognition: False
-      use_masked_language_model: False
-      BILOU_flag: False
-      number_of_transformer_layers: 0
-      # ... any other parameters
-
-  See :ref:`diet-selector` for more information about the new component.
-
 .. _migration-to-rasa-1.7:
 
 Rasa 1.6 to Rasa 1.7
