@@ -57,7 +57,6 @@ you need to supply a ``credentials.yml`` with the following content:
 
    mattermost:
      url: "https://chat.example.com/api/v4"
-     team: "community"
      token: "xxxxx" #  the token for the bot account from creating the bot step.
      webhook_url: "https://server.example.com/webhooks/mattermost/webhook"
 
