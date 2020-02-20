@@ -1,3 +1,4 @@
+import json
 import logging
 from collections import defaultdict, OrderedDict
 
@@ -271,7 +272,7 @@ class LexicalSyntacticFeaturizer(Featurizer):
         with open(
             os.path.join(model_dir, file_name + ".feature_to_idx_dict.pkl"), "rb"
         ) as f:
-            feature_to_idx_dict = pickle.load(f)
+            feature_to_idx_dict = json.load(f)
 
         return LexicalSyntacticFeaturizer(meta, feature_to_idx_dict=feature_to_idx_dict)
 
@@ -282,6 +283,6 @@ class LexicalSyntacticFeaturizer(Featurizer):
         with open(
             os.path.join(model_dir, file_name + ".feature_to_idx_dict.pkl"), "wb"
         ) as f:
-            pickle.dump(self.feature_to_idx_dict, f)
+            json.dump(self.feature_to_idx_dict, f)
 
         return {"file": file_name}
