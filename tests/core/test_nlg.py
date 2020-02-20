@@ -1,13 +1,10 @@
-import asyncio
 import uuid
 from typing import Text, Any
 
 import jsonschema
 import pytest
-from flask import Flask, request, jsonify
-from pytest_localserver.http import WSGIServer
+from sanic import Sanic, response
 
-import rasa.utils.io
 from rasa.core.nlg.callback import (
     nlg_request_format_spec,
     CallbackNaturalLanguageGenerator,
@@ -19,10 +16,11 @@ from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 
 def nlg_app(base_url="/"):
-    app = Flask(__name__)
+
+    app = Sanic(__name__)
 
     @app.route(base_url, methods=["POST"])
-    def generate():
+    async def generate(request):
         """Simple HTTP NLG generator, checks that the incoming request
         is format according to the spec."""
 
@@ -31,28 +29,26 @@ def nlg_app(base_url="/"):
         jsonschema.validate(nlg_call, nlg_request_format_spec())
 
         if nlg_call.get("template") == "utter_greet":
-            response = {"text": "Hey there!"}
+            response_dict = {"text": "Hey there!"}
         else:
-            response = {"text": "Sorry, didn't get that."}
-        return jsonify(response)
+            response_dict = {"text": "Sorry, didn't get that."}
+        return response.json(response_dict)
 
     return app
 
 
 # noinspection PyShadowingNames
-@pytest.fixture(scope="module")
-def http_nlg(request):
-    http_server = WSGIServer(application=nlg_app())
-    http_server.start()
-
-    request.addfinalizer(http_server.stop)
-    return http_server.url
+@pytest.fixture()
+async def http_nlg(test_server):
+    server = await test_server(nlg_app())
+    yield server
+    await server.close()
 
 
 async def test_nlg(http_nlg, trained_rasa_model):
     sender = str(uuid.uuid1())
 
-    nlg_endpoint = EndpointConfig.from_dict({"url": http_nlg})
+    nlg_endpoint = EndpointConfig.from_dict({"url": http_nlg.make_url("/")})
     agent = Agent.load(trained_rasa_model, None, generator=nlg_endpoint)
 
     response = await agent.handle_text("/greet", sender_id=sender)
