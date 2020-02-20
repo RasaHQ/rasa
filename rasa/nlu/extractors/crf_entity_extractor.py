@@ -5,6 +5,7 @@ import numpy as np
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, NamedTuple
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
+import rasa.utils.common as common_utils
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.model import Metadata
@@ -12,7 +13,6 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import TOKENS_NAMES, TEXT, DENSE_FEATURE_NAMES, ENTITIES
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU, DOCS_URL_COMPONENTS
-from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         self._validate_configuration()
 
-        raise_warning(
+        common_utils.raise_warning(
             "'CRFEntityExtractor' is deprecated and will be removed in version "
             "2.0. Use 'DIETClassifier' instead.",
             category=FutureWarning,
@@ -448,7 +448,7 @@ class CRFEntityExtractor(EntityExtractor):
                 collected.append(t)
             elif collected:
                 collected_text = " ".join([t.text for t in collected])
-                raise_warning(
+                common_utils.raise_warning(
                     f"Misaligned entity annotation for '{collected_text}' "
                     f"in sentence '{message.text}' with intent "
                     f"'{message.get('intent')}'. "
@@ -484,7 +484,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         tokens = message.get(TOKENS_NAMES[TEXT], [])
         if len(tokens) != len(features):
-            raise_warning(
+            common_utils.raise_warning(
                 f"Number of features ({len(features)}) for attribute "
                 f"'{DENSE_FEATURE_NAMES[TEXT]}' "
                 f"does not match number of tokens ({len(tokens)}). Set "

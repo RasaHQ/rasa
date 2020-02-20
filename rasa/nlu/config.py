@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Text, Union, Tuple
 import rasa.utils.io
 from rasa.constants import DEFAULT_CONFIG_PATH, DOCS_URL_PIPELINE
 from rasa.nlu.utils import json_to_string
-from rasa.utils.common import raise_warning
+import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ def component_config_from_pipeline(
         c = pipeline[index]
         return override_defaults(defaults, c)
     except IndexError:
-        raise_warning(
+        common_utils.raise_warning(
             f"Tried to get configuration value for component "
             f"number {index} which is not part of your pipeline. "
             f"Returning `defaults`.",
@@ -103,7 +103,7 @@ class RasaNLUModelConfig:
                 "tensorflow_embedding": "supervised_embeddings",
             }
             if template_name in new_names:
-                raise_warning(
+                common_utils.raise_warning(
                     f"You have specified the pipeline template "
                     f"'{template_name}' which has been renamed to "
                     f"'{new_names[template_name]}'. "
@@ -118,7 +118,7 @@ class RasaNLUModelConfig:
             pipeline = registry.pipeline_template(template_name)
 
             if pipeline:
-                raise_warning(
+                common_utils.raise_warning(
                     "You are using a pipeline template. All pipelines templates "
                     "are deprecated and will be removed in version 2.0. Please add "
                     "the components you want to use directly to your configuration "
@@ -190,7 +190,7 @@ class RasaNLUModelConfig:
         try:
             self.pipeline[index].update(kwargs)
         except IndexError:
-            raise_warning(
+            common_utils.raise_warning(
                 f"Tried to set configuration value for component "
                 f"number {index} which is not part of the pipeline.",
                 docs=DOCS_URL_PIPELINE,

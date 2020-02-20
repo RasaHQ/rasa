@@ -35,7 +35,7 @@ from rasa.utils.tensorflow.constants import (
     EMBEDDING_DIMENSION,
     BILOU_FLAG,
 )
-from rasa.utils.common import raise_warning
+import rasa.utils.common as common_utils
 from rasa.utils.tensorflow.models import RasaModel
 
 logger = logging.getLogger(__name__)
@@ -152,7 +152,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
             batch_tuple_sizes,
         )
 
-        raise_warning(
+        common_utils.raise_warning(
             "'EmbeddingIntentClassifier' is deprecated and will be removed in version "
             "2.0. Use 'DIETClassifier' instead.",
             category=FutureWarning,

@@ -5,7 +5,7 @@ import scipy.sparse
 from typing import Any, Dict, List, Optional, Text
 
 from rasa.constants import DOCS_URL_COMPONENTS
-from rasa.utils.common import raise_warning
+import rasa.utils.common as common_utils
 
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu import utils
@@ -292,7 +292,7 @@ class CountVectorsFeaturizer(Featurizer):
 
         if any(text for tokens in all_tokens for text in tokens):
             # if there is some text in tokens, warn if there is no oov token
-            raise_warning(
+            common_utils.raise_warning(
                 f"The out of vocabulary token '{self.OOV_token}' was configured, but "
                 f"could not be found in any one of the NLU message training examples. "
                 f"All unseen words will be ignored during prediction.",

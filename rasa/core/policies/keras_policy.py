@@ -14,16 +14,17 @@ from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
     BinarySingleStateFeaturizer,
 )
-from rasa.constants import DOCS_URL_POLICIES
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.common import obtain_verbosity, raise_warning
+import rasa.utils.common as common_utils
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+
 
 # there are a number of issues with imports from tensorflow. hence the deactivation
 # pytype: disable=import-error
 # pytype: disable=module-attr
+
 
 try:
     import cPickle as pickle
@@ -71,7 +72,7 @@ class KerasPolicy(Policy):
 
         self.current_epoch = current_epoch
 
-        raise_warning(
+        common_utils.raise_warning(
             "'KerasPolicy' is deprecated and will be removed in version "
             "2.0. Use 'TEDPolicy' instead.",
             category=FutureWarning,
@@ -151,7 +152,7 @@ class KerasPolicy(Policy):
             loss="categorical_crossentropy", optimizer="rmsprop", metrics=["accuracy"]
         )
 
-        if obtain_verbosity() > 0:
+        if common_utils.obtain_verbosity() > 0:
             model.summary()
 
         return model
@@ -194,7 +195,7 @@ class KerasPolicy(Policy):
             epochs=self.epochs,
             batch_size=self.batch_size,
             shuffle=False,
-            verbose=obtain_verbosity(),
+            verbose=common_utils.obtain_verbosity(),
             **self._train_params,
         )
         self.current_epoch = self.epochs
@@ -228,7 +229,7 @@ class KerasPolicy(Policy):
                 training_data.y,
                 epochs=self.current_epoch + 1,
                 batch_size=len(training_data.y),
-                verbose=obtain_verbosity(),
+                verbose=common_utils.obtain_verbosity(),
                 initial_epoch=self.current_epoch,
             )
 

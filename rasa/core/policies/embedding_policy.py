@@ -4,7 +4,6 @@ from typing import Any, Dict, Optional, Text
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.constants import DOCS_URL_POLICIES
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -36,8 +35,8 @@ from rasa.utils.tensorflow.constants import (
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
 )
-from rasa.utils.common import raise_warning
 from rasa.utils.tensorflow.models import RasaModel
+import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +149,7 @@ class EmbeddingPolicy(TEDPolicy):
 
         super().__init__(featurizer, priority, max_history, model, **kwargs)
 
-        raise_warning(
+        common_utils.raise_warning(
             f"'EmbeddingPolicy' is deprecated and will be removed in version 2.0. "
             f"Use 'TEDPolicy' instead.",
             category=FutureWarning,

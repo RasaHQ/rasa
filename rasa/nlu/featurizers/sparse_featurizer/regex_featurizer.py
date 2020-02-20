@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-import typing
 from typing import Any, Dict, List, Optional, Text, Union
 
 import numpy as np
@@ -21,7 +20,7 @@ from rasa.nlu.constants import (
 )
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.utils.common import raise_warning
+import rasa.utils.common as common_utils
 from rasa.nlu.model import Metadata
 
 logger = logging.getLogger(__name__)
@@ -140,7 +139,7 @@ class RegexFeaturizer(Featurizer):
         # if it's a list, it should be the elements directly
         if isinstance(lookup_elements, list):
             elements_to_regex = lookup_elements
-            raise_warning(
+            common_utils.raise_warning(
                 f"Directly including lookup tables as a list is deprecated since Rasa "
                 f"1.6.",
                 FutureWarning,
