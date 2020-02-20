@@ -67,7 +67,7 @@ class SklearnIntentClassifier(Component):
             "'SklearnIntentClassifier' is deprecated and will be removed in version "
             "2.0. Use 'DIETClassifier' instead.",
             category=FutureWarning,
-            docs=DOCS_URL_COMPONENTS,
+            docs="https://rasa.com/docs/rasa/migration-guide/",
         )
 
     @classmethod

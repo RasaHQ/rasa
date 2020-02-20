@@ -15,13 +15,13 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    MAX_SEQ_LENGTH,
+    MAX_SEQUENCE_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
     EPOCHS,
     RANDOM_SEED,
     LEARNING_RATE,
-    DENSE_DIM,
+    DENSE_DIMENSION,
     RANKING_LENGTH,
     LOSS_TYPE,
     SIMILARITY_TYPE,
@@ -38,7 +38,7 @@ from rasa.utils.tensorflow.constants import (
     NEG_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
-    EMBED_DIM,
+    EMBEDDING_DIMENSION,
     BILOU_FLAG,
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
@@ -104,7 +104,7 @@ class DIETSelector(DIETClassifier):
         # number of attention heads in transformer
         NUM_HEADS: 4,
         # max sequence length if pos_encoding='emb'
-        MAX_SEQ_LENGTH: 256,
+        MAX_SEQUENCE_LENGTH: 256,
         # training parameters
         # initial and final batch sizes - batch size will be
         # linearly increased for each epoch
@@ -119,9 +119,9 @@ class DIETSelector(DIETClassifier):
         LEARNING_RATE: 0.001,
         # embedding parameters
         # default dense dimension used if no dense features are present
-        DENSE_DIM: {TEXT: 512, LABEL: 512},
+        DENSE_DIMENSION: {TEXT: 512, LABEL: 512},
         # dimension size of embedding vectors
-        EMBED_DIM: 20,
+        EMBEDDING_DIMENSION: 20,
         # the type of the similarity
         NUM_NEG: 20,
         # flag if minimize only maximum similarity over incorrect actions

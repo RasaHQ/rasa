@@ -124,7 +124,7 @@ class RasaNLUModelConfig:
                     "the components you want to use directly to your configuration "
                     "file.",
                     FutureWarning,
-                    docs=DOCS_URL_PIPELINE,
+                    docs="https://rasa.com/docs/rasa/migration-guide/",
                 )
 
                 # replaces the template with the actual components

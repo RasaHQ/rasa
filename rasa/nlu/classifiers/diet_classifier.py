@@ -41,13 +41,13 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    MAX_SEQ_LENGTH,
+    MAX_SEQUENCE_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
     EPOCHS,
     RANDOM_SEED,
     LEARNING_RATE,
-    DENSE_DIM,
+    DENSE_DIMENSION,
     RANKING_LENGTH,
     LOSS_TYPE,
     SIMILARITY_TYPE,
@@ -67,7 +67,7 @@ from rasa.utils.tensorflow.constants import (
     USE_MAX_NEG_SIM,
     MAX_NEG_SIM,
     MAX_POS_SIM,
-    EMBED_DIM,
+    EMBEDDING_DIMENSION,
     BILOU_FLAG,
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
@@ -123,7 +123,7 @@ class DIETClassifier(EntityExtractor):
         # max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
         # max sequence length
-        MAX_SEQ_LENGTH: 256,
+        MAX_SEQUENCE_LENGTH: 256,
         # use a unidirectional or bidirectional encoder
         UNIDIRECTIONAL_ENCODER: False,
         # training parameters
@@ -140,9 +140,9 @@ class DIETClassifier(EntityExtractor):
         LEARNING_RATE: 0.001,
         # embedding parameters
         # default dense dimension used if no dense features are present
-        DENSE_DIM: {TEXT: 512, LABEL: 20},
+        DENSE_DIMENSION: {TEXT: 512, LABEL: 20},
         # dimension size of embedding vectors
-        EMBED_DIM: 20,
+        EMBEDDING_DIMENSION: 20,
         # the type of the similarity
         NUM_NEG: 20,
         # flag if minimize only maximum similarity over incorrect actions
@@ -209,9 +209,14 @@ class DIETClassifier(EntityExtractor):
             )
 
         if self.component_config.get(SHARE_HIDDEN_LAYERS):
-            v1 = next(iter(self.component_config[HIDDEN_LAYERS_SIZES].values()))
+            first_hidden_layer_size = next(
+                iter(self.component_config[HIDDEN_LAYERS_SIZES].values())
+            )
             if any(
-                v != v1 for v in self.component_config[HIDDEN_LAYERS_SIZES].values()
+                current_hidden_layer_size != first_hidden_layer_size
+                for current_hidden_layer_size in self.component_config[
+                    HIDDEN_LAYERS_SIZES
+                ].values()
             ):
                 raise ValueError(
                     f"If hidden layer weights are shared, "
@@ -222,8 +227,15 @@ class DIETClassifier(EntityExtractor):
             self.component_config
         )
 
-        if self.component_config[EVAL_NUM_EPOCHS] < 1:
+        if self.component_config[EVAL_NUM_EPOCHS] == -1:
+            # magic value -1 is used to set evaluation to number of epochs
             self.component_config[EVAL_NUM_EPOCHS] = self.component_config[EPOCHS]
+        elif self.component_config[EVAL_NUM_EPOCHS] < 1:
+            raise ValueError(
+                f"'{EVAL_NUM_EXAMPLES}' is set to "
+                f"'{self.component_config[EVAL_NUM_EPOCHS]}'. "
+                f"Only values > 1 are allowed for this configuration value."
+            )
 
     # package safety checks
     @classmethod
@@ -371,6 +383,8 @@ class DIETClassifier(EntityExtractor):
         return sparse_features, dense_features
 
     def check_input_dimension_consistency(self, model_data: RasaModelData):
+        """Checks if text features and label features have the same dimensionality if
+        hidden layers are shared."""
         if self.component_config.get(SHARE_HIDDEN_LAYERS):
             num_text_features = model_data.get_feature_dimension("text_features")
             num_label_features = model_data.get_feature_dimension("label_features")
@@ -1043,7 +1057,7 @@ class DIET(RasaModel):
             self.data_signature[f"{name}_features"],
             name,
             self.config[REGULARIZATION_CONSTANT],
-            self.config[DENSE_DIM][name],
+            self.config[DENSE_DIMENSION][name],
         )
         self._tf_layers[f"ffnn.{name}"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES][name],
@@ -1061,7 +1075,7 @@ class DIET(RasaModel):
                 self.config[TRANSFORMER_SIZE],
                 self.config[NUM_HEADS],
                 self.config[TRANSFORMER_SIZE] * 4,
-                self.config[MAX_SEQ_LENGTH],
+                self.config[MAX_SEQUENCE_LENGTH],
                 self.config[REGULARIZATION_CONSTANT],
                 dropout_rate=self.config[DROPRATE],
                 attention_dropout_rate=self.config[DROPRATE_ATTENTION],
@@ -1078,13 +1092,13 @@ class DIET(RasaModel):
     def _prepare_mask_lm_layers(self, name: Text) -> None:
         self._tf_layers[f"{name}_input_mask"] = layers.InputMask()
         self._tf_layers[f"embed.{name}_lm_mask"] = layers.Embed(
-            self.config[EMBED_DIM],
+            self.config[EMBEDDING_DIMENSION],
             self.config[REGULARIZATION_CONSTANT],
             f"{name}_lm_mask",
             self.config[SIMILARITY_TYPE],
         )
         self._tf_layers[f"embed.{name}_golden_token"] = layers.Embed(
-            self.config[EMBED_DIM],
+            self.config[EMBEDDING_DIMENSION],
             self.config[REGULARIZATION_CONSTANT],
             f"{name}_golden_token",
             self.config[SIMILARITY_TYPE],
@@ -1103,13 +1117,13 @@ class DIET(RasaModel):
 
     def _prepare_label_classification_layers(self) -> None:
         self._tf_layers["embed.text"] = layers.Embed(
-            self.config[EMBED_DIM],
+            self.config[EMBEDDING_DIMENSION],
             self.config[REGULARIZATION_CONSTANT],
             "text",
             self.config[SIMILARITY_TYPE],
         )
         self._tf_layers["embed.label"] = layers.Embed(
-            self.config[EMBED_DIM],
+            self.config[EMBEDDING_DIMENSION],
             self.config[REGULARIZATION_CONSTANT],
             "label",
             self.config[SIMILARITY_TYPE],
