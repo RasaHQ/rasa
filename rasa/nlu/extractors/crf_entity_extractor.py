@@ -49,7 +49,8 @@ class CRFEntityExtractor(EntityExtractor):
             ["low", "title", "upper"],
             [
                 "low",
-                "bias" "prefix5",
+                "bias",
+                "prefix5",
                 "prefix2",
                 "suffix5",
                 "suffix3",
