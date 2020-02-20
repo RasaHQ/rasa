@@ -9,14 +9,6 @@ from rasa.nlu.tokenizers.tokenizer import Token
 import rasa.utils.train_utils as train_utils
 import numpy as np
 
-from rasa.nlu.utils.hugging_face.registry import (
-    model_class_dict,
-    model_tokenizer_dict,
-    model_weights_defaults,
-    model_special_tokens_pre_processors,
-    model_embeddings_post_processors,
-    model_tokens_cleaners,
-)
 from rasa.nlu.constants import (
     TEXT,
     LANGUAGE_MODEL_DOCS,
@@ -59,6 +51,12 @@ class HFTransformersNLP(Component):
 
     def _load_model(self) -> None:
         """Try loading the model"""
+
+        from rasa.nlu.utils.hugging_face.registry import (
+            model_class_dict,
+            model_weights_defaults,
+            model_tokenizer_dict,
+        )
 
         self.model_name = self.component_config["model_name"]
 
@@ -106,6 +104,10 @@ class HFTransformersNLP(Component):
         self, token_ids: List[List[int]]
     ) -> List[List[int]]:
 
+        from rasa.nlu.utils.hugging_face.registry import (
+            model_special_tokens_pre_processors,
+        )
+
         augmented_tokens = [
             model_special_tokens_pre_processors[self.model_name](example_token_ids)
             for example_token_ids in token_ids
@@ -113,11 +115,18 @@ class HFTransformersNLP(Component):
         return augmented_tokens
 
     def _lm_specific_token_cleanup(self, token_strings: List[Text]) -> List[Text]:
+
+        from rasa.nlu.utils.hugging_face.registry import model_tokens_cleaners
+
         return model_tokens_cleaners[self.model_name](token_strings)
 
     def _post_process_sequence_embeddings(
         self, sequence_embeddings: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
+
+        from rasa.nlu.utils.hugging_face.registry import (
+            model_embeddings_post_processors,
+        )
 
         sentence_embeddings = []
         post_processed_sequence_embeddings = []
