@@ -500,7 +500,6 @@ def test_slack_metadata():
     r = Mock()
     r.json = direct_message_event
     metadata = input_channel.get_metadata(request=r)
-    assert metadata["sender"] == user
     assert metadata["out_channel"] == channel
     assert metadata["users"] == authed_users
 
@@ -542,7 +541,6 @@ def test_slack_metadata_missing_keys():
     r = Mock()
     r.json = direct_message_event
     metadata = input_channel.get_metadata(request=r)
-    assert metadata["sender"] is None
     assert metadata["users"] is None
     assert metadata["out_channel"] == channel
 
