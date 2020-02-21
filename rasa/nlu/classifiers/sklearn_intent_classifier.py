@@ -6,8 +6,8 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 import numpy as np
 
+import rasa.utils.io as io_utils
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
-from rasa.nlu import utils
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
@@ -229,10 +229,10 @@ class SklearnIntentClassifier(Component):
         classifier_file_name = file_name + "_classifier.pkl"
         encoder_file_name = file_name + "_encoder.pkl"
         if self.clf and self.le:
-            utils.json_pickle(
+            io_utils.json_pickle(
                 os.path.join(model_dir, encoder_file_name), self.le.classes_
             )
-            utils.json_pickle(
+            io_utils.json_pickle(
                 os.path.join(model_dir, classifier_file_name), self.clf.best_estimator_
             )
         return {"classifier": classifier_file_name, "encoder": encoder_file_name}
@@ -252,8 +252,8 @@ class SklearnIntentClassifier(Component):
         encoder_file = os.path.join(model_dir, meta.get("encoder"))
 
         if os.path.exists(classifier_file):
-            classifier = utils.json_unpickle(classifier_file)
-            classes = utils.json_unpickle(encoder_file)
+            classifier = io_utils.json_unpickle(classifier_file)
+            classes = io_utils.json_unpickle(encoder_file)
             encoder = LabelEncoder()
             encoder.classes_ = classes
             return cls(meta, classifier, encoder)

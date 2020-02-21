@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 import logging
 import scipy.sparse
 from typing import Optional, Text, Dict, Any, Union, List
@@ -28,6 +27,8 @@ from rasa.utils.tensorflow.constants import (
     DROP_RATE_LABEL,
     NEGATIVE_MARGIN_SCALE,
     DROP_RATE,
+    EPOCHS,
+    EVALUATE_ONCE_PER_EPOCH,
 )
 
 
@@ -51,6 +52,14 @@ def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarr
 
 
 def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
+    """
+    If SIMILARITY_TYPE is set to 'auto', update the SIMILARITY_TYPE depending
+    on the LOSS_TYPE.
+    Args:
+        config: model configuration
+
+    Returns: updated model configuration
+    """
     if config.get(SIMILARITY_TYPE) == "auto":
         if config[LOSS_TYPE] == "softmax":
             config[SIMILARITY_TYPE] = "inner"
@@ -112,6 +121,28 @@ def sequence_to_sentence_features(
     return np.expand_dims(features[-1], axis=0)
 
 
+def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
+    """
+    If EVAL_NUM_EPOCHS is set to -1, evaluate at the end of every epoch.
+
+    Args:
+        config: model configuration
+
+    Returns: updated model configuration
+    """
+
+    if config[EVAL_NUM_EPOCHS] == EVALUATE_ONCE_PER_EPOCH:
+        config[EVAL_NUM_EPOCHS] = config[EPOCHS]
+    elif config[EVAL_NUM_EPOCHS] < 1:
+        raise ValueError(
+            f"'{EVAL_NUM_EXAMPLES}' is set to "
+            f"'{config[EVAL_NUM_EPOCHS]}'. "
+            f"Only values > 1 are allowed for this configuration value."
+        )
+
+    return config
+
+
 def _replace_deprecated_option(
     old_option: Text, new_option: Union[Text, List[Text]], config: Dict[Text, Any]
 ) -> Dict[Text, Any]:
@@ -136,6 +167,14 @@ def _replace_deprecated_option(
 
 
 def check_deprecated_options(config: Dict[Text, Any]) -> Dict[Text, Any]:
+    """
+    If old model configuration parameters are present in the provided config, replace
+    them with the new parameters and log a warning.
+    Args:
+        config: model configuration
+
+    Returns: updated model configuration
+    """
 
     config = _replace_deprecated_option(
         "hidden_layers_sizes_pre_dial", [HIDDEN_LAYERS_SIZES, DIALOGUE], config

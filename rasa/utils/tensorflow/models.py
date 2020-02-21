@@ -232,7 +232,7 @@ class RasaModel(tf.keras.models.Model):
         )
 
     def _get_tf_evaluation_functions(
-        self, eager: bool, evaluation_model_data: Optional[RasaModelData],
+        self, eager: bool, evaluation_model_data: Optional[RasaModelData]
     ) -> Tuple[Optional[Callable], Optional[Callable]]:
         """Create evaluation tensorflow functions"""
 
@@ -248,10 +248,7 @@ class RasaModel(tf.keras.models.Model):
         return (
             evaluation_dataset_function,
             self._get_tf_call_model_function(
-                evaluation_dataset_function,
-                self._total_batch_loss,
-                eager,
-                "evaluation",
+                evaluation_dataset_function, self._total_batch_loss, eager, "evaluation"
             ),
         )
 
@@ -335,22 +332,36 @@ class RasaModel(tf.keras.models.Model):
             return int(batch_size[0])
 
     def compile(self, *args, **kwargs) -> None:
-        raise NotImplemented
+        raise Exception(
+            "This method should neither be called nor implemented in our code."
+        )
 
     def evaluate(self, *args, **kwargs) -> None:
-        raise NotImplemented
+        raise Exception(
+            "This method should neither be called nor implemented in our code."
+        )
 
     def test_on_batch(self, *args, **kwargs) -> None:
-        raise NotImplemented
+        raise Exception(
+            "This method should neither be called nor implemented in our code."
+        )
 
     def predict_on_batch(self, *args, **kwargs) -> None:
-        raise NotImplemented
+        raise Exception(
+            "This method should neither be called nor implemented in our code."
+        )
 
     def fit_generator(self, *args, **kwargs) -> None:
-        raise NotImplemented
+        raise Exception(
+            "This method should neither be called nor implemented in our code."
+        )
 
     def evaluate_generator(self, *args, **kwargs) -> None:
-        raise NotImplemented
+        raise Exception(
+            "This method should neither be called nor implemented in our code."
+        )
 
     def predict_generator(self, *args, **kwargs) -> None:
-        raise NotImplemented
+        raise Exception(
+            "This method should neither be called nor implemented in our code."
+        )

@@ -1,7 +1,7 @@
 import copy
 import logging
 import os
-import pickle
+from pathlib import Path
 
 import numpy as np
 import tensorflow as tf
@@ -9,7 +9,7 @@ import tensorflow_addons as tfa
 
 from typing import Any, List, Optional, Text, Dict, Tuple, Union
 
-import rasa.utils.io
+import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
     TrackerFeaturizer,
@@ -55,6 +55,7 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
+    EVALUATE_ONCE_PER_EPOCH,
 )
 
 
@@ -191,8 +192,8 @@ class TEDPolicy(Policy):
 
         self.model = model
 
-        self._label_data = None
-        self.data_example = None
+        self._label_data = None  # RasaModelData
+        self.data_example = None  # Dict[Text, List[np.ndarray]]
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         self.config = copy.deepcopy(self.defaults)
@@ -201,15 +202,7 @@ class TEDPolicy(Policy):
         self.config = train_utils.check_deprecated_options(self.config)
 
         self.config = train_utils.update_similarity_type(self.config)
-
-        if self.config[EVAL_NUM_EPOCHS] == -1:
-            # magic value -1 is used to set evaluation to number of epochs
-            self.config[EVAL_NUM_EPOCHS] = self.config[EPOCHS]
-        elif self.config[EVAL_NUM_EPOCHS] < 1:
-            raise ValueError(
-                f"'{EVAL_NUM_EXAMPLES}' is set to '{self.config[EVAL_NUM_EPOCHS]}'. "
-                f"Only values > 1 are allowed for this configuration value."
-            )
+        self.config = train_utils.update_evaluation_parameters(self.config)
 
     # data helpers
     # noinspection PyPep8Naming
@@ -222,9 +215,8 @@ class TEDPolicy(Policy):
     # noinspection PyPep8Naming
     def _label_features_for_Y(self, label_ids: np.ndarray) -> np.ndarray:
         """Prepare Y data for training: features for label_ids."""
-
-        # full dialogue featurizer is used
-        if len(label_ids.shape) == 2:
+        is_full_dialogue_featurizer_used = len(label_ids.shape) == 2
+        if is_full_dialogue_featurizer_used:
             return np.stack(
                 [
                     np.stack(
@@ -287,20 +279,17 @@ class TEDPolicy(Policy):
     ) -> None:
         """Train the policy on given training trackers."""
 
-        # set numpy random seed
-        np.random.seed(self.config[RANDOM_SEED])
-
         # dealing with training data
         training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
 
         self._label_data = self._create_label_data(domain)
 
         # check if number of negatives is less than number of label_ids
-        logger.debug(
-            f"Check if num_neg {self.config[NUM_NEG]} is smaller "
-            f"than number of label_ids {domain.num_actions}, "
-            f"else set num_neg to the number of label_ids - 1."
-        )
+        if self.config[NUM_NEG] < domain.num_actions:
+            logger.debug(
+                f"Set '{NUM_NEG}' to the number of actions - 1, e.g. "
+                f"{domain.num_actions - 1}."
+            )
         self.config[NUM_NEG] = min(self.config[NUM_NEG], domain.num_actions - 1)
 
         # extract actual training data to feed to model
@@ -313,7 +302,10 @@ class TEDPolicy(Policy):
             return
 
         # keep one example for persisting and loading
-        self.data_example = {k: [v[:1] for v in vs] for k, vs in model_data.items()}
+        self.data_example = {
+            feature_name: [feature[:1] for feature in features]
+            for feature_name, features in model_data.items()
+        }
 
         self.model = TED(
             model_data.get_signature(),
@@ -339,7 +331,7 @@ class TEDPolicy(Policy):
         Return the list of probabilities for the next actions.
         """
         if self.model is None:
-            return [0.0] * domain.num_actions
+            return self._default_predictions(domain)
 
         # create model data from tracker
         data_X = self.featurizer.create_X([tracker], domain)
@@ -355,7 +347,7 @@ class TEDPolicy(Policy):
 
         return confidence.tolist()
 
-    def persist(self, path: Text):
+    def persist(self, path: Text) -> None:
         """Persists the policy to a storage."""
 
         if self.model is None:
@@ -366,31 +358,27 @@ class TEDPolicy(Policy):
             )
             return
 
-        tf_model_file = os.path.join(path, f"{SAVE_MODEL_FILE_NAME}.tf_model")
+        model_path = Path(path)
+        tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
-        rasa.utils.io.create_directory_for_file(tf_model_file)
+        io_utils.create_directory_for_file(tf_model_file)
 
         self.featurizer.persist(path)
 
-        self.model.save(tf_model_file)
+        self.model.save(str(tf_model_file))
 
-        with open(
-            os.path.join(path, SAVE_MODEL_FILE_NAME + ".priority.pkl"), "wb"
-        ) as f:
-            pickle.dump(self.priority, f)
-
-        with open(os.path.join(path, SAVE_MODEL_FILE_NAME + ".meta.pkl"), "wb") as f:
-            pickle.dump(self.config, f)
-
-        with open(
-            os.path.join(path, SAVE_MODEL_FILE_NAME + ".data_example.pkl"), "wb"
-        ) as f:
-            pickle.dump(self.data_example, f)
-
-        with open(
-            os.path.join(path, SAVE_MODEL_FILE_NAME + ".label_data.pkl"), "wb"
-        ) as f:
-            pickle.dump(self._label_data, f)
+        io_utils.json_pickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.priority.json", self.priority
+        )
+        io_utils.json_pickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.meta.json", self.config
+        )
+        io_utils.json_pickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.json", self.data_example
+        )
+        io_utils.json_pickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.json", self._label_data
+        )
 
     @classmethod
     def load(cls, path: Text) -> "TEDPolicy":
@@ -405,39 +393,30 @@ class TEDPolicy(Policy):
                 f"'{os.path.abspath(path)}' doesn't exist."
             )
 
-        tf_model_file = os.path.join(path, f"{SAVE_MODEL_FILE_NAME}.tf_model")
+        model_path = Path(path)
+        tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
         featurizer = TrackerFeaturizer.load(path)
 
-        if not os.path.exists(
-            os.path.join(path, SAVE_MODEL_FILE_NAME + ".data_example.pkl")
-        ):
+        if not (model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl").is_file():
             return cls(featurizer=featurizer)
 
-        with open(
-            os.path.join(path, SAVE_MODEL_FILE_NAME + ".data_example.pkl"), "rb"
-        ) as f:
-            model_data_example = RasaModelData(
-                label_key="label_ids", data=pickle.load(f)
-            )
+        loaded_data = io_utils.json_unpickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl"
+        )
+        label_data = io_utils.json_unpickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl"
+        )
+        meta = io_utils.json_unpickle(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
+        priority = io_utils.json_unpickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl"
+        )
 
-        with open(
-            os.path.join(path, SAVE_MODEL_FILE_NAME + ".label_data.pkl"), "rb"
-        ) as f:
-            label_data = pickle.load(f)
-
-        with open(os.path.join(path, SAVE_MODEL_FILE_NAME + ".meta.pkl"), "rb") as f:
-            meta = pickle.load(f)
-
-        with open(
-            os.path.join(path, SAVE_MODEL_FILE_NAME + ".priority.pkl"), "rb"
-        ) as f:
-            priority = pickle.load(f)
-
+        model_data_example = RasaModelData(label_key="label_ids", data=loaded_data)
         meta = train_utils.update_similarity_type(meta)
 
         model = TED.load(
-            tf_model_file,
+            str(tf_model_file),
             model_data_example,
             data_signature=model_data_example.get_signature(),
             config=meta,
@@ -457,6 +436,7 @@ class TEDPolicy(Policy):
         return cls(featurizer=featurizer, priority=priority, model=model, **meta)
 
 
+# accessing _tf_layers with any key results in key-error, disable it
 # pytype: disable=key-error
 
 
