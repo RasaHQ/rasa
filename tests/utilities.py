@@ -33,6 +33,6 @@ def update_number_of_epochs(config_path: Text, output_file: Text):
             DIETClassifier.name,
             ResponseSelector.name,
         ]:
-            component[EPOCHS] = 2
+            component[EPOCHS] = 1
 
     io_utils.write_yaml_file(config, output_file)
