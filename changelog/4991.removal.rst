@@ -1,0 +1,2 @@
+Removed ``Agent.continue_training`` and the ``dump_flattened_stories`` parameter
+from ``Agent.persist``.
