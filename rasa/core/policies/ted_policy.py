@@ -2,6 +2,7 @@ import copy
 import logging
 import os
 import pickle
+from pathlib import Path
 
 import numpy as np
 import tensorflow as tf
@@ -9,7 +10,7 @@ import tensorflow_addons as tfa
 
 from typing import Any, List, Optional, Text, Dict, Tuple, Union
 
-import rasa.utils.io
+import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
     TrackerFeaturizer,
@@ -306,7 +307,10 @@ class TEDPolicy(Policy):
             return
 
         # keep one example for persisting and loading
-        self.data_example = {k: [v[:1] for v in vs] for k, vs in model_data.items()}
+        self.data_example = {
+            feature_name: [feature[:1] for feature in features]
+            for feature_name, features in model_data.items()
+        }
 
         self.model = TED(
             model_data.get_signature(),
@@ -359,31 +363,27 @@ class TEDPolicy(Policy):
             )
             return
 
-        tf_model_file = os.path.join(path, f"{SAVE_MODEL_FILE_NAME}.tf_model")
+        model_path = Path(path)
+        tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
-        rasa.utils.io.create_directory_for_file(tf_model_file)
+        io_utils.create_directory_for_file(tf_model_file)
 
         self.featurizer.persist(path)
 
-        self.model.save(tf_model_file)
+        self.model.save(str(tf_model_file))
 
-        with open(
-            os.path.join(path, SAVE_MODEL_FILE_NAME + ".priority.pkl"), "wb"
-        ) as f:
-            pickle.dump(self.priority, f)
-
-        with open(os.path.join(path, SAVE_MODEL_FILE_NAME + ".meta.pkl"), "wb") as f:
-            pickle.dump(self.config, f)
-
-        with open(
-            os.path.join(path, SAVE_MODEL_FILE_NAME + ".data_example.pkl"), "wb"
-        ) as f:
-            pickle.dump(self.data_example, f)
-
-        with open(
-            os.path.join(path, SAVE_MODEL_FILE_NAME + ".label_data.pkl"), "wb"
-        ) as f:
-            pickle.dump(self._label_data, f)
+        io_utils.pickle_dump(
+            model_path / SAVE_MODEL_FILE_NAME + ".priority.json", self.priority
+        )
+        io_utils.pickle_dump(
+            model_path / SAVE_MODEL_FILE_NAME + ".meta.json", self.config
+        )
+        io_utils.pickle_dump(
+            model_path / SAVE_MODEL_FILE_NAME + ".data_example.json", self.data_example
+        )
+        io_utils.pickle_dump(
+            model_path / SAVE_MODEL_FILE_NAME + ".label_data.json", self._label_data
+        )
 
     @classmethod
     def load(cls, path: Text) -> "TEDPolicy":
@@ -398,39 +398,30 @@ class TEDPolicy(Policy):
                 f"'{os.path.abspath(path)}' doesn't exist."
             )
 
-        tf_model_file = os.path.join(path, f"{SAVE_MODEL_FILE_NAME}.tf_model")
+        model_path = Path(path)
+        tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
         featurizer = TrackerFeaturizer.load(path)
 
-        if not os.path.exists(
-            os.path.join(path, SAVE_MODEL_FILE_NAME + ".data_example.pkl")
-        ):
+        if not (model_path / SAVE_MODEL_FILE_NAME + ".data_example.pkl").is_file():
             return cls(featurizer=featurizer)
 
-        with open(
-            os.path.join(path, SAVE_MODEL_FILE_NAME + ".data_example.pkl"), "rb"
-        ) as f:
-            model_data_example = RasaModelData(
-                label_key="label_ids", data=pickle.load(f)
-            )
+        loaded_data = io_utils.pickle_load(
+            model_path / SAVE_MODEL_FILE_NAME + ".data_example.pkl"
+        )
+        label_data = io_utils.pickle_load(
+            model_path / SAVE_MODEL_FILE_NAME + ".label_data.pkl"
+        )
+        meta = io_utils.pickle_load(model_path / SAVE_MODEL_FILE_NAME + ".meta.pkl")
+        priority = io_utils.pickle_load(
+            model_path / SAVE_MODEL_FILE_NAME + ".priority.pkl"
+        )
 
-        with open(
-            os.path.join(path, SAVE_MODEL_FILE_NAME + ".label_data.pkl"), "rb"
-        ) as f:
-            label_data = pickle.load(f)
-
-        with open(os.path.join(path, SAVE_MODEL_FILE_NAME + ".meta.pkl"), "rb") as f:
-            meta = pickle.load(f)
-
-        with open(
-            os.path.join(path, SAVE_MODEL_FILE_NAME + ".priority.pkl"), "rb"
-        ) as f:
-            priority = pickle.load(f)
-
+        model_data_example = RasaModelData(label_key="label_ids", data=loaded_data)
         meta = train_utils.update_similarity_type(meta)
 
         model = TED.load(
-            tf_model_file,
+            str(tf_model_file),
             model_data_example,
             data_signature=model_data_example.get_signature(),
             config=meta,

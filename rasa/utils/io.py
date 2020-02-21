@@ -3,6 +3,7 @@ import errno
 import json
 import logging
 import os
+import pickle
 import tarfile
 import tempfile
 import typing
@@ -155,6 +156,18 @@ def dump_obj_as_json_to_file(filename: Text, obj: Any) -> None:
     """Dump an object as a json string to a file."""
 
     write_text_file(json.dumps(obj, indent=2), filename)
+
+
+def pickle_dump(filename: Text, obj: Any):
+    """Saves object to file."""
+    with open(filename, "wb") as f:
+        pickle.dump(obj, f)
+
+
+def pickle_load(filename: Text) -> Any:
+    """Loads an object from a file."""
+    with open(filename, "rb") as f:
+        return pickle.load(f)
 
 
 def read_config_file(filename: Text) -> Dict[Text, Any]:

@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 import numpy as np
 import os
@@ -10,7 +11,7 @@ import tensorflow_addons as tfa
 
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
-import rasa.utils.io
+import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
 from rasa.nlu.extractors import EntityExtractor
 from rasa.nlu.test import determine_token_labels
@@ -246,7 +247,7 @@ class DIETClassifier(EntityExtractor):
         model: Optional[RasaModel] = None,
         batch_tuple_sizes: Optional[Dict] = None,
     ) -> None:
-        """Declare instance variables with default values"""
+        """Declare instance variables with default values."""
 
         super().__init__(component_config)
 
@@ -786,30 +787,28 @@ class DIETClassifier(EntityExtractor):
         if self.model is None:
             return {"file": None}
 
-        tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
+        model_dir = Path(model_dir)
+        tf_model_file = model_dir / f"{file_name}.tf_model"
 
-        rasa.utils.io.create_directory_for_file(tf_model_file)
+        io_utils.create_directory_for_file(tf_model_file)
 
-        self.model.save(tf_model_file)
+        self.model.save(str(tf_model_file))
 
-        with open(os.path.join(model_dir, file_name + ".data_example.pkl"), "wb") as f:
-            pickle.dump(self.data_example, f)
-
-        with open(os.path.join(model_dir, file_name + ".label_data.pkl"), "wb") as f:
-            pickle.dump(self._label_data, f)
-
-        with open(
-            os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "wb"
-        ) as f:
-            pickle.dump(self.inverted_label_dict, f)
-
-        with open(os.path.join(model_dir, file_name + ".inv_tag_dict.pkl"), "wb") as f:
-            pickle.dump(self.inverted_tag_dict, f)
-
-        with open(
-            os.path.join(model_dir, file_name + ".batch_tuple_sizes.pkl"), "wb"
-        ) as f:
-            pickle.dump(self.batch_tuple_sizes, f)
+        io_utils.pickle_dump(
+            model_dir / f"{file_name}.data_example.pkl", self.data_example
+        )
+        io_utils.pickle_dump(
+            model_dir / f"{file_name}.label_data.pkl", self._label_data
+        )
+        io_utils.pickle_dump(
+            model_dir / f"{file_name}.inv_label_dict.pkl", self.inverted_label_dict
+        )
+        io_utils.pickle_dump(
+            model_dir / f"{file_name}.inv_tag_dict.pkl", self.inverted_tag_dict
+        )
+        io_utils.pickle_dump(
+            model_dir / f"{file_name}.batch_tuple_sizes.pkl", self.batch_tuple_sizes
+        )
 
         return {"file": file_name}
 
@@ -856,24 +855,17 @@ class DIETClassifier(EntityExtractor):
     def _load_from_files(cls, meta: Dict[Text, Any], model_dir: Text):
         file_name = meta.get("file")
 
-        with open(os.path.join(model_dir, file_name + ".data_example.pkl"), "rb") as f:
-            data_example = pickle.load(f)
+        model_dir = Path(model_dir)
 
-        with open(os.path.join(model_dir, file_name + ".label_data.pkl"), "rb") as f:
-            label_data = pickle.load(f)
-
-        with open(
-            os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "rb"
-        ) as f:
-            inv_label_dict = pickle.load(f)
-
-        with open(os.path.join(model_dir, file_name + ".inv_tag_dict.pkl"), "rb") as f:
-            inv_tag_dict = pickle.load(f)
-
-        with open(
-            os.path.join(model_dir, file_name + ".batch_tuple_sizes.pkl"), "rb"
-        ) as f:
-            batch_tuple_sizes = pickle.load(f)
+        data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
+        label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
+        inv_label_dict = io_utils.pickle_load(
+            model_dir / f"{file_name}.inv_label_dict.pkl"
+        )
+        inv_tag_dict = io_utils.pickle_load(model_dir / f"{file_name}.inv_tag_dict.pkl")
+        batch_tuple_sizes = io_utils.pickle_load(
+            model_dir / f"{file_name}.batch_tuple_sizes.pkl"
+        )
 
         return (
             batch_tuple_sizes,
