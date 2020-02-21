@@ -17,6 +17,18 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.7.3] - 2020-02-21
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5231 <https://github.com/rasahq/rasa/issues/5231>`_: Fix segmentation fault when running ``rasa train`` or ``rasa shell``.
+
+Improved Documentation
+----------------------
+- `#5286 <https://github.com/rasahq/rasa/issues/5286>`_: Fix doc links on "Deploying your Assistant" page
+
+
 [1.7.2] - 2020-02-13
 ^^^^^^^^^^^^^^^^^^^^
 
