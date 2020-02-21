@@ -55,6 +55,7 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
+    EVALUATE_ONCE_PER_EPOCH,
 )
 
 
@@ -191,8 +192,8 @@ class TEDPolicy(Policy):
 
         self.model = model
 
-        self._label_data = None
-        self.data_example = None
+        self._label_data = None  # RasaModelData
+        self.data_example = None  # Dict[Text, List[np.ndarray]]
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         self.config = copy.deepcopy(self.defaults)
@@ -201,15 +202,7 @@ class TEDPolicy(Policy):
         self.config = train_utils.check_deprecated_options(self.config)
 
         self.config = train_utils.update_similarity_type(self.config)
-
-        if self.config[EVAL_NUM_EPOCHS] == -1:
-            # magic value -1 is used to set evaluation to number of epochs
-            self.config[EVAL_NUM_EPOCHS] = self.config[EPOCHS]
-        elif self.config[EVAL_NUM_EPOCHS] < 1:
-            raise ValueError(
-                f"'{EVAL_NUM_EXAMPLES}' is set to '{self.config[EVAL_NUM_EPOCHS]}'. "
-                f"Only values > 1 are allowed for this configuration value."
-            )
+        self.config = train_utils.update_evaluation_parameters(self.config)
 
     # data helpers
     # noinspection PyPep8Naming

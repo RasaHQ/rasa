@@ -72,6 +72,7 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
+    EVALUATE_ONCE_PER_EPOCH,
 )
 
 
@@ -228,16 +229,9 @@ class DIETClassifier(EntityExtractor):
         self.component_config = train_utils.update_similarity_type(
             self.component_config
         )
-
-        if self.component_config[EVAL_NUM_EPOCHS] == -1:
-            # magic value -1 is used to set evaluation to number of epochs
-            self.component_config[EVAL_NUM_EPOCHS] = self.component_config[EPOCHS]
-        elif self.component_config[EVAL_NUM_EPOCHS] < 1:
-            raise ValueError(
-                f"'{EVAL_NUM_EXAMPLES}' is set to "
-                f"'{self.component_config[EVAL_NUM_EPOCHS]}'. "
-                f"Only values > 1 are allowed for this configuration value."
-            )
+        self.component_config = train_utils.update_evaluation_parameters(
+            self.component_config
+        )
 
     # package safety checks
     @classmethod
@@ -265,7 +259,7 @@ class DIETClassifier(EntityExtractor):
         self.model = model
 
         # encode all label_ids with numbers
-        self._label_data = None
+        self._label_data = None  # RasaModelData
 
         # keep the input tuple sizes in self.batch_in
         self.batch_tuple_sizes = batch_tuple_sizes
@@ -273,7 +267,7 @@ class DIETClassifier(EntityExtractor):
         # number of entity tags
         self.num_tags = 0
 
-        self.data_example = None
+        self.data_example = None  # Dict[Text, List[np.ndarray]]
 
     @property
     def label_key(self) -> Optional[Text]:
