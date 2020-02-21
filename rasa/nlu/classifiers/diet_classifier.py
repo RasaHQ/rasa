@@ -12,11 +12,12 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import rasa.utils.io
 import rasa.nlu.utils.bilou_utils as bilou_utils
-from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
-from rasa.nlu.components import any_of
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
@@ -78,7 +79,7 @@ from rasa.utils.tensorflow.constants import (
 logger = logging.getLogger(__name__)
 
 
-class DIETClassifier(EntityExtractor):
+class DIETClassifier(IntentClassifier, EntityExtractor):
     """DIET (Dual Intent and Entity Transformer) is a multi-task architecture for
     intent classification and entity recognition.
 
@@ -91,9 +92,9 @@ class DIETClassifier(EntityExtractor):
     similarities with negative samples.
     """
 
-    provides = ["intent", "intent_ranking", "entities"]
-
-    requires = [any_of(DENSE_FEATURE_NAMES[TEXT], SPARSE_FEATURE_NAMES[TEXT])]
+    @classmethod
+    def required_components(cls) -> List[Any]:
+        return [Featurizer]
 
     # please make sure to update the docs when changing a default parameter
     defaults = {

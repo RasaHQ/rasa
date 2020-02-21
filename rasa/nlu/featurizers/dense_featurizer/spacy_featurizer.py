@@ -1,36 +1,27 @@
 import numpy as np
 import typing
-from typing import Any, Optional, Text, Dict
+from typing import Any, Optional, Text, Dict, List
 
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.training_data import Message, TrainingData
-
-if typing.TYPE_CHECKING:
-    from spacy.tokens import Doc
-
 from rasa.nlu.constants import (
     TEXT,
     SPACY_DOCS,
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    TOKENS_NAMES,
 )
 
+if typing.TYPE_CHECKING:
+    from spacy.tokens import Doc
 
-class SpacyFeaturizer(Featurizer):
 
-    provides = [
-        DENSE_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
-    ]
-
-    requires = [
-        SPACY_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
-    ] + [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
-
-    required_components = [SpacyNLP.name, SpacyTokenizer.name]
+class SpacyFeaturizer(DenseFeaturizer):
+    @classmethod
+    def required_components(cls) -> List[Any]:
+        return [SpacyNLP, SpacyTokenizer]
 
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of

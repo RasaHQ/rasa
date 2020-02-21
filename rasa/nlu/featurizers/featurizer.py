@@ -24,6 +24,10 @@ def sequence_to_sentence_features(
 
 
 class Featurizer(Component):
+    pass
+
+
+class DenseFeaturizer(Featurizer):
     @staticmethod
     def _combine_with_existing_dense_features(
         message: Message,
@@ -42,28 +46,6 @@ class Featurizer(Component):
             return np.concatenate(
                 (message.get(feature_name), additional_features), axis=-1
             )
-        else:
-            return additional_features
-
-    @staticmethod
-    def _combine_with_existing_sparse_features(
-        message: Message,
-        additional_features: Any,
-        feature_name: Text = SPARSE_FEATURE_NAMES[TEXT],
-    ) -> Any:
-        if additional_features is None:
-            return
-
-        if message.get(feature_name) is not None:
-            from scipy.sparse import hstack
-
-            if message.get(feature_name).shape[0] != additional_features.shape[0]:
-                raise ValueError(
-                    f"Cannot concatenate sparse features as sequence dimension does not "
-                    f"match: {message.get(feature_name).shape[0]} != "
-                    f"{additional_features.shape[0]}. Message: '{message.text}'."
-                )
-            return hstack([message.get(feature_name), additional_features])
         else:
             return additional_features
 
@@ -87,3 +69,27 @@ class Featurizer(Component):
                 f"Invalid pooling operation specified. Available operations are "
                 f"'mean' or 'max', but provided value is '{pooling_operation}'."
             )
+
+
+class SparseFeaturizer(Featurizer):
+    @staticmethod
+    def _combine_with_existing_sparse_features(
+        message: Message,
+        additional_features: Any,
+        feature_name: Text = SPARSE_FEATURE_NAMES[TEXT],
+    ) -> Any:
+        if additional_features is None:
+            return
+
+        if message.get(feature_name) is not None:
+            from scipy.sparse import hstack
+
+            if message.get(feature_name).shape[0] != additional_features.shape[0]:
+                raise ValueError(
+                    f"Cannot concatenate sparse features as sequence dimension does not "
+                    f"match: {message.get(feature_name).shape[0]} != "
+                    f"{additional_features.shape[0]}. Message: '{message.text}'."
+                )
+            return hstack([message.get(feature_name), additional_features])
+        else:
+            return additional_features

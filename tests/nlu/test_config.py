@@ -8,7 +8,6 @@ from rasa.nlu import config
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.registry import registered_pipeline_templates
 from rasa.nlu.model import Trainer
-from rasa.nlu.training_data.training_data import TrainingData
 from tests.nlu.utilities import write_file_config
 
 
@@ -76,8 +75,8 @@ def test_invalid_requred_components_in_config():
     assert "Add required components to the pipeline" in str(execinfo.value)
 
     with pytest.raises(config.InvalidConfigError) as execinfo:
-        Trainer(config.RasaNLUModelConfig(count_vectors_config)).train(TrainingData())
-    assert "Missing property" in str(execinfo.value)
+        Trainer(config.RasaNLUModelConfig(count_vectors_config))
+    assert "Add required components to the pipeline" in str(execinfo.value)
 
 
 @pytest.mark.parametrize(

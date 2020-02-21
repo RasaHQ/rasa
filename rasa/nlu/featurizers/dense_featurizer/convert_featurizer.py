@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
@@ -23,7 +23,7 @@ import rasa.utils.common as common_utils
 logger = logging.getLogger(__name__)
 
 
-class ConveRTFeaturizer(Featurizer):
+class ConveRTFeaturizer(DenseFeaturizer):
     """Featurizer using ConveRT model.
 
         Loads the ConveRT(https://github.com/PolyAI-LDN/polyai-models#convert)
@@ -31,13 +31,9 @@ class ConveRTFeaturizer(Featurizer):
         for dense featurizable attributes of each message object.
     """
 
-    provides = [
-        DENSE_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
-    ]
-
-    requires = [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
-
-    required_components = [ConveRTTokenizer.name]
+    @classmethod
+    def required_components(cls) -> List[Any]:
+        return [ConveRTTokenizer]
 
     def _load_from_tfhub(self, model_url: Text):
         """Load model from TFHub"""

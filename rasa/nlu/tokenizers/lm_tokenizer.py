@@ -20,13 +20,9 @@ class LanguageModelTokenizer(Tokenizer):
     for dense featurizable attributes of each message object.
     """
 
-    provides = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
-
-    requires = [
-        LANGUAGE_MODEL_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
-    ]
-
-    required_components = [HFTransformersNLP.name]
+    @classmethod
+    def required_components(cls) -> List[Any]:
+        return [HFTransformersNLP]
 
     defaults = {
         # Flag to check whether to split intents

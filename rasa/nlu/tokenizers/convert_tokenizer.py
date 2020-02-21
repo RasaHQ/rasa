@@ -11,12 +11,10 @@ import tensorflow as tf
 class ConveRTTokenizer(WhitespaceTokenizer):
     """Tokenizer using ConveRT model.
 
-        Loads the ConveRT(https://github.com/PolyAI-LDN/polyai-models#convert)
-        model from TFHub and computes sub-word tokens for dense
-        featurizable attributes of each message object.
+    Loads the ConveRT(https://github.com/PolyAI-LDN/polyai-models#convert)
+    model from TFHub and computes sub-word tokens for dense
+    featurizable attributes of each message object.
     """
-
-    provides = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
 
     defaults = {
         # Flag to check whether to split intents

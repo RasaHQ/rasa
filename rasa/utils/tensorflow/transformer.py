@@ -128,7 +128,8 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         x.shape =
         (batch, num_heads, length, relative_length, depth)
         or (batch, num_heads, length, relative_length)
-        "Slides" relative embeddings by 45 degree """
+        "Slides" relative embeddings by 45 degree.
+        """
 
         x_dim = len(x.shape)
 

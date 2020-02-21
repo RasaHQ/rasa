@@ -18,7 +18,8 @@ from rasa.nlu.constants import (
     TEXT,
     TOKENS_NAMES,
 )
-from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.nlu.training_data import Message, TrainingData
 import rasa.utils.common as common_utils
 from rasa.nlu.model import Metadata
@@ -26,11 +27,10 @@ from rasa.nlu.model import Metadata
 logger = logging.getLogger(__name__)
 
 
-class RegexFeaturizer(Featurizer):
-
-    provides = [SPARSE_FEATURE_NAMES[TEXT]]
-
-    requires = [TOKENS_NAMES[TEXT]]
+class RegexFeaturizer(SparseFeaturizer):
+    @classmethod
+    def required_components(cls) -> List[Any]:
+        return [Tokenizer]
 
     def __init__(
         self,

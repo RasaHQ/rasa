@@ -31,10 +31,6 @@ class HFTransformersNLP(Component):
     message.
     """
 
-    provides = [
-        LANGUAGE_MODEL_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
-    ]
-
     defaults = {
         # name of the language model to load.
         "model_name": "bert",

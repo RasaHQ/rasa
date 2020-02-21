@@ -51,6 +51,8 @@ Component
 
 .. autoclass:: rasa.nlu.components.Component
 
+   .. automethod:: required_components
+
    .. automethod:: required_packages
 
    .. automethod:: create

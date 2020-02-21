@@ -10,7 +10,8 @@ import rasa.utils.common as common_utils
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import (
@@ -26,7 +27,7 @@ from rasa.nlu.constants import (
 logger = logging.getLogger(__name__)
 
 
-class CountVectorsFeaturizer(Featurizer):
+class CountVectorsFeaturizer(SparseFeaturizer):
     """Creates a sequence of token counts features based on sklearn's `CountVectorizer`.
 
     All tokens which consist only of digits (e.g. 123 and 99
@@ -37,9 +38,9 @@ class CountVectorsFeaturizer(Featurizer):
     from https://arxiv.org/abs/1810.07150.
     """
 
-    provides = [SPARSE_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
-
-    requires = [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
+    @classmethod
+    def required_components(cls) -> List[Any]:
+        return [Tokenizer]
 
     defaults = {
         # whether to use a shared vocab

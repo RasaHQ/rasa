@@ -7,3 +7,6 @@ include in your pipeline.
 Use ``DIETClassifier`` instead of ``SklearnIntentClassifier``.
 
 Use ``TEDPolicy`` instead of ``KerasPolicy``.
+
+Properties ``Component.provides`` and ``Component.requires`` are deprecated.
+Use ``Component.required_components()`` instead.
