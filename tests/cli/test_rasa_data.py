@@ -88,15 +88,7 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
     subparsers = parser.add_subparsers(help="Rasa commands")
     data.add_subparser(subparsers, parents=[])
 
-    args = parser.parse_args(
-        [
-            "data",
-            "validate",
-            "stories",
-            "--max-history",
-            0
-        ]
-    )
+    args = parser.parse_args(["data", "validate", "stories", "--max-history", 0])
 
     import rasa.cli.data as data
 
