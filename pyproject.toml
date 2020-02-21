@@ -151,10 +151,10 @@ sphinx-autodoc-typehints = "==1.6.0"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
+mitie = [ "mitie",]
 convert = [ "tensorflow_text",]
 transformers = [ "transformers",]
-mitie = [ "mitie",]
-full = [ "spacy", "tensorflow_text",]
+full = [ "spacy", "mitie", "tensorflow_text", "transformers", "jieba"]
 gh-release-notes = [ "pypandoc", "github3.py",]
 
 [tool.poetry.dependencies.mitie]
@@ -179,6 +179,10 @@ optional = true
 
 [tool.poetry.dependencies.transformers]
 version = "~2.3.0"
+optional = true
+
+[tool.poetry.dependencies.jieba]
+version = "==0.39"
 optional = true
 
 [tool.poetry.dependencies.pymongo]
