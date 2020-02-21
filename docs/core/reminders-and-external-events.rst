@@ -2,7 +2,7 @@
 
 .. _reminders-and-external-events:
 
-Reminders and external events
+Reminders and External Events
 =============================
 
 .. edit-link::
@@ -10,6 +10,8 @@ Reminders and external events
 The ``ReminderScheduled`` event and the
 `trigger_intent endpoint <../../api/http-api/#operation/triggerConversationIntent>`_ let your assistant remind you
 about things after a given period of time, or to respond to external events (other applications, sensors, etc.).
+You can find a full example assistant that implements these features
+`here <https://github.com/RasaHQ/rasa/tree/master/examples/reminderbot/README.md>`_.
 
 .. contents::
    :local:
@@ -47,39 +49,11 @@ We could make this connection by providing training stories (recommended for mor
 
 The custom action ``action_set_reminder`` should schedule a reminder that, 5 seconds later, triggers an intent ``EXTERNAL_reminder`` with all the entities that the user provided in his/her last message (similar to an external event):
 
-.. code-block:: python
-
-  class ActionSetReminder(Action):
-    """Schedules a reminder, supplied with the last message's entities."""
-
-    def name(self) -> Text:
-        return "action_set_reminder"
-
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> List[Dict[Text, Any]]:
-
-        dispatcher.utter_message("I will remind you in 5 seconds.")
-
-        date = datetime.datetime.now() + datetime.timedelta(seconds=5)
-        entities = tracker.latest_message.get("entities")
-
-        reminder = ReminderScheduled(
-            "EXTERNAL_reminder",
-            trigger_date_time=date,
-            entities=entities,
-            name="my_reminder",
-            kill_on_user_message=False,
-        )
-
-        return [reminder]
+.. literalinclude:: ../../examples/reminderbot/actions.py
+   :pyobject: ActionSetReminder
 
 
-Note, that this requires the ``datetime`` and ``rasa-sdk.events`` packages.
-For details, have a look at the `reminderbot <https://github.com/RasaHQ/rasa/tree/master/examples/reminderbot/README.md>`_.
+Note that this requires the ``datetime`` and ``rasa_sdk.events`` packages.
 
 Finally, we define another custom action ``action_react_to_reminder`` and link it to the ``EXTERNAL_reminder`` intent:
 
@@ -90,25 +64,8 @@ Finally, we define another custom action ``action_react_to_reminder`` and link i
 
 where the ``action_react_to_reminder`` is
 
-.. code-block:: python
-
-  class ActionReactToReminder(Action):
-    """Reminds the user to call someone."""
-
-    def name(self) -> Text:
-        return "action_react_to_reminder"
-
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> List[Dict[Text, Any]]:
-
-        name = next(tracker.get_latest_entity_values("name"), None) or "someone"
-        dispatcher.utter_message(f"Remember to call {name}!")
-
-        return []
+.. literalinclude:: ../../examples/reminderbot/actions.py
+   :pyobject: ActionReactToReminder
 
 Instead of a custom action, we could also have used a simple response template.
 But here we want to make use of the fact that the reminder can carry entities, and we can process the entities in this custom action.
@@ -131,8 +88,6 @@ But here we want to make use of the fact that the reminder can carry entities, a
    using the :ref:`callbackInput` channel to send messages to a webhook.
 
 
-Check out the ``reminderbot`` example project under ``rasa/examples/reminderbot``, and feel free to customize things for your own assistant!
-
 
 .. _cancelling-reminders-guide:
 
@@ -142,20 +97,8 @@ Cancelling reminders
 Sometimes the user may want to cancel a reminder that he has scheduled earlier.
 A simple way of adding this functionality to your assistant is to create an intent ``ask_forget_reminders`` and let your assistant respond to it with a custom action such as
 
-.. code-block:: python
-
-  class ForgetReminders(Action):
-    """Cancels all reminders."""
-
-    def name(self) -> Text:
-        return "action_forget_reminders"
-
-    def run(
-        self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
-    ) -> List[Dict[Text, Any]]:
-
-        # Cancel all reminders
-        return [ReminderCancelled()]
+.. literalinclude:: ../../examples/reminderbot/actions.py
+   :pyobject: ForgetReminders
 
 Here, ``ReminderCancelled()`` simply cancels all the reminders that are currently scheduled.
 Alternatively, you may provide some parameters to narrow down the types of reminders that you want to cancel.
@@ -191,25 +134,8 @@ The first thing we need is the Session ID of the conversation that your sensor s
 An easy way to get this is to define a custom action (see :ref:`custom-actions`) that displays the ID in the conversation.
 For example:
 
-.. code-block:: python
-
-  class ActionTellID(Action):
-    """Informs the user about the conversation ID."""
-
-    def name(self) -> Text:
-        return "action_tell_id"
-
-    def run(
-        self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
-    ) -> List[Dict[Text, Any]]:
-
-        conversation_id = tracker.sender_id
-
-        dispatcher.utter_message(
-            f"The ID of this conversation is: '{conversation_id}'."
-        )
-
-        return []
+.. literalinclude:: ../../examples/reminderbot/actions.py
+   :pyobject: ActionTellID
 
 
 In addition, we also declare an intent ``ask_id``, define some NLU data for it, and add both ``action_tell_id`` and
@@ -224,7 +150,6 @@ In addition, we also declare an intent ``ask_id``, define some NLU data for it, 
 
 Now, when you ask "What is the ID of this conversation?", the assistant replies with something like "The ID of this
 conversation is: 38cc25d7e23e4dde800353751b7c2d3e".
-See the `reminderbot <https://github.com/RasaHQ/rasa/tree/master/examples/reminderbot/README.md>`_ for details.
 
 If you want your assistant to link to the Raspberry Pi automatically, you will have to write a custom action that
 informs the Pi about the conversation id when your conversation starts (see :ref:`custom_session_start`).
@@ -242,24 +167,8 @@ Here, we start the intent name with ``EXTERNAL_`` to indicate that this is not s
 
 In the domain file, we now connect the intent ``EXTERNAL_dry_plant`` with another custom action ``action_warn_dry``, e.g.
 
-.. code-block:: python
-
-  class ActionWarnDry(Action):
-    """Informs the user that a plant needs water."""
-    def name(self) -> Text:
-        return "action_warn_dry"
-
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> List[Dict[Text, Any]]:
-
-        plant = next(tracker.get_latest_entity_values("plant"), None) or "plant"
-        dispatcher.utter_message(f"Your {plant} needs some water!")
-
-        return []
+.. literalinclude:: ../../examples/reminderbot/actions.py
+   :pyobject: ActionWarnDry
 
 
 Now, when you are in a conversation with id ``38cc25d7e23e4dde800353751b7c2d3e``, then running
