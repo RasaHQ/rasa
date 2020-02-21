@@ -37,7 +37,7 @@ Kubernetes/Openshift
 Kubernetes/Openshift is the best option if you need a scalable architecture. It's straightforward to deploy if you use the helm charts we provide. However, you can also customize the Helm charts if you have specific requirements.
 
     - Default: Read the docs `here <https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/>`__.
-    - Custom: Read the docs `https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/>`__ and customize the `open source Helm charts <https://github.com/RasaHQ/rasa-x-helm>`_.
+    - Custom: Read the docs `here <https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/>`__ and customize the `open source Helm charts <https://github.com/RasaHQ/rasa-x-helm>`_.
 
 Docker Compose
 ~~~~~~~~~~~~~~
