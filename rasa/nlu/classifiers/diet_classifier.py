@@ -925,6 +925,7 @@ class DIETClassifier(EntityExtractor):
         return model
 
 
+# accessing _tf_layers with any key results in key-error, disable it
 # pytype: disable=key-error
 
 

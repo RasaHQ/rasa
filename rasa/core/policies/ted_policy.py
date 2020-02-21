@@ -457,6 +457,7 @@ class TEDPolicy(Policy):
         return cls(featurizer=featurizer, priority=priority, model=model, **meta)
 
 
+# accessing _tf_layers with any key results in key-error, disable it
 # pytype: disable=key-error
 
 
