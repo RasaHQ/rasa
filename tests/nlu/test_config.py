@@ -6,7 +6,7 @@ from typing import Text
 import pytest
 
 import rasa.utils.io as io_utils
-from nlu.config import RasaNLUModelConfig
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu import config
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.registry import registered_pipeline_templates
