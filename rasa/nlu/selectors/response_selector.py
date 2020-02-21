@@ -154,7 +154,7 @@ class ResponseSelector(DIETClassifier):
         # ## Regularization parameters
         # The scale of regularization
         REGULARIZATION_CONSTANT: 0.002,
-        # sparsity of the weights in dense layers
+        # Sparsity of the weights in dense layers
         WEIGHT_SPARSITY: 0.8,
         # The scale of how important is to minimize the maximum similarity
         # between embeddings of different labels.
