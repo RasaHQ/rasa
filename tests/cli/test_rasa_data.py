@@ -82,20 +82,16 @@ def _text_is_part_of_output_error(text: Text, output: RunResult) -> bool:
 
 
 def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
-    import rasa.cli.data as data
-
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(help="Rasa commands")
     data.add_subparser(subparsers, parents=[])
 
     args = parser.parse_args(["data", "validate", "stories", "--max-history", 0])
 
-    import rasa.cli.data as data
-
-    async def from_importer(_) -> "Validator":
+    async def mock_from_importer(importer: "TrainingDataImporter") -> "Validator":
         return Mock()
 
-    monkeypatch.setattr("rasa.core.validator.Validator.from_importer", from_importer)
+    monkeypatch.setattr("rasa.core.validator.Validator.from_importer", mock_from_importer)
 
     with pytest.raises(argparse.ArgumentTypeError):
         data.validate_files(args)
