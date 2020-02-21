@@ -3,7 +3,6 @@ from pathlib import Path
 
 import numpy as np
 import os
-import pickle
 import scipy.sparse
 import warnings
 import tensorflow as tf
@@ -797,14 +796,14 @@ class DIETClassifier(EntityExtractor):
         io_utils.pickle_dump(
             model_dir / f"{file_name}.data_example.pkl", self.data_example
         )
-        io_utils.pickle_dump(
+        io_utils.json_pickle(
             model_dir / f"{file_name}.label_data.pkl", self._label_data
         )
-        io_utils.pickle_dump(
-            model_dir / f"{file_name}.inv_label_dict.pkl", self.inverted_label_dict
+        io_utils.json_pickle(
+            model_dir / f"{file_name}.inverted_label_dict.pkl", self.inverted_label_dict
         )
-        io_utils.pickle_dump(
-            model_dir / f"{file_name}.inv_tag_dict.pkl", self.inverted_tag_dict
+        io_utils.json_pickle(
+            model_dir / f"{file_name}.inverted_tag_dict.pkl", self.inverted_tag_dict
         )
         io_utils.pickle_dump(
             model_dir / f"{file_name}.batch_tuple_sizes.pkl", self.batch_tuple_sizes
@@ -858,19 +857,29 @@ class DIETClassifier(EntityExtractor):
         model_dir = Path(model_dir)
 
         data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
-        label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
-        inv_label_dict = io_utils.pickle_load(
-            model_dir / f"{file_name}.inv_label_dict.pkl"
+        label_data = io_utils.json_unpickle(model_dir / f"{file_name}.label_data.pkl")
+        inverted_label_dict = io_utils.json_unpickle(
+            model_dir / f"{file_name}.inverted_label_dict.pkl"
         )
-        inv_tag_dict = io_utils.pickle_load(model_dir / f"{file_name}.inv_tag_dict.pkl")
+        inverted_tag_dict = io_utils.json_unpickle(
+            model_dir / f"{file_name}.inverted_tag_dict.pkl"
+        )
         batch_tuple_sizes = io_utils.pickle_load(
             model_dir / f"{file_name}.batch_tuple_sizes.pkl"
         )
 
+        # jsonpickle converts dictionary keys to strings
+        inverted_label_dict = {
+            int(key): value for key, value in inverted_label_dict.items()
+        }
+        inverted_tag_dict = {
+            int(key): value for key, value in inverted_tag_dict.items()
+        }
+
         return (
             batch_tuple_sizes,
-            inv_label_dict,
-            inv_tag_dict,
+            inverted_label_dict,
+            inverted_tag_dict,
             label_data,
             meta,
             data_example,

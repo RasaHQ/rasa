@@ -367,17 +367,17 @@ class TEDPolicy(Policy):
 
         self.model.save(str(tf_model_file))
 
-        io_utils.pickle_dump(
-            model_path / SAVE_MODEL_FILE_NAME + ".priority.json", self.priority
+        io_utils.json_pickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.priority.json", self.priority
         )
-        io_utils.pickle_dump(
-            model_path / SAVE_MODEL_FILE_NAME + ".meta.json", self.config
+        io_utils.json_pickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.meta.json", self.config
         )
-        io_utils.pickle_dump(
-            model_path / SAVE_MODEL_FILE_NAME + ".data_example.json", self.data_example
+        io_utils.json_pickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.json", self.data_example
         )
-        io_utils.pickle_dump(
-            model_path / SAVE_MODEL_FILE_NAME + ".label_data.json", self._label_data
+        io_utils.json_pickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.json", self._label_data
         )
 
     @classmethod
@@ -398,18 +398,18 @@ class TEDPolicy(Policy):
 
         featurizer = TrackerFeaturizer.load(path)
 
-        if not (model_path / SAVE_MODEL_FILE_NAME + ".data_example.pkl").is_file():
+        if not (model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl").is_file():
             return cls(featurizer=featurizer)
 
-        loaded_data = io_utils.pickle_load(
-            model_path / SAVE_MODEL_FILE_NAME + ".data_example.pkl"
+        loaded_data = io_utils.json_unpickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl"
         )
-        label_data = io_utils.pickle_load(
-            model_path / SAVE_MODEL_FILE_NAME + ".label_data.pkl"
+        label_data = io_utils.json_unpickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl"
         )
-        meta = io_utils.pickle_load(model_path / SAVE_MODEL_FILE_NAME + ".meta.pkl")
-        priority = io_utils.pickle_load(
-            model_path / SAVE_MODEL_FILE_NAME + ".priority.pkl"
+        meta = io_utils.json_unpickle(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
+        priority = io_utils.json_unpickle(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl"
         )
 
         model_data_example = RasaModelData(label_key="label_ids", data=loaded_data)
