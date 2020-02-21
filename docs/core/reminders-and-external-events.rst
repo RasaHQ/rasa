@@ -79,7 +79,7 @@ The custom action ``action_set_reminder`` should schedule a reminder that, 5 sec
 
 
 Note, that this requires the ``datetime`` and ``rasa-sdk.events`` packages.
-For details, have a look at the ``reminderbot`` example under ``rasa/examples/reminderbot``.
+For details, have a look at the `reminderbot <https://github.com/RasaHQ/rasa/tree/master/examples/reminderbot/README.md>`_.
 
 Finally, we define another custom action ``action_react_to_reminder`` and link it to the ``EXTERNAL_reminder`` intent:
 
@@ -212,7 +212,8 @@ For example:
         return []
 
 
-In addition, we also declare an intent ``ask_id``, define some NLU data for it, and add both ``action_tell_id`` and ``ask_id`` to the domain file, where we specify that one should trigger the other:
+In addition, we also declare an intent ``ask_id``, define some NLU data for it, and add both ``action_tell_id`` and
+``ask_id`` to the domain file, where we specify that one should trigger the other:
 
 .. code-block:: md
 
@@ -221,8 +222,12 @@ In addition, we also declare an intent ``ask_id``, define some NLU data for it, 
       triggers: action_tell_id
 
 
-Now, when you ask "What is the ID of this conversation?", the assistant replies with something like "The ID of this conversation is: 38cc25d7e23e4dde800353751b7c2d3e".
-See the ``reminderbot`` example project under ``rasa/examples/reminderbot`` for details.
+Now, when you ask "What is the ID of this conversation?", the assistant replies with something like "The ID of this
+conversation is: 38cc25d7e23e4dde800353751b7c2d3e".
+See the `reminderbot <https://github.com/RasaHQ/rasa/tree/master/examples/reminderbot/README.md>`_ for details.
+
+If you want your assistant to link to the Raspberry Pi automatically, you will have to write a custom action that
+informs the Pi about the conversation id when your conversation starts (see :ref:`custom_session_start`).
 
 
 .. _responding_to_external_events:
