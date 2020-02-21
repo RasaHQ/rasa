@@ -57,14 +57,3 @@ def run_in_default_project(
         return result
 
     return do_run
-
-
-@pytest.fixture
-def run_in_default_project_with_info(testdir: Testdir) -> Callable[..., RunResult]:
-    testdir.run("rasa", "init", "--no-prompt")
-
-    def do_run(*args):
-        args = ["rasa"] + list(args)
-        return testdir.run(*args)
-
-    return do_run

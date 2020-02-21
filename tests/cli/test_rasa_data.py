@@ -1,7 +1,11 @@
+import argparse
 import os
+from unittest.mock import Mock
 import pytest
 from collections import namedtuple
 from typing import Callable, Text
+
+from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 from rasa.cli import data
 
@@ -77,13 +81,32 @@ def _text_is_part_of_output_error(text: Text, output: RunResult) -> bool:
     return found_info_string
 
 
-def test_data_validate_stories_with_max_history_zero(
-    run_in_default_project_with_info: Callable[..., RunResult]
-):
-    output = run_in_default_project_with_info(
-        "data", "validate", "stories", "--max-history", "0"
+def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
+    import rasa.cli.data as data
+
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(help="Rasa commands")
+    data.add_subparser(subparsers, parents=[])
+
+    args = parser.parse_args(
+        [
+            "data",
+            "validate",
+            "stories",
+            "--max-history",
+            0
+        ]
     )
-    assert _text_is_part_of_output_error("is not a positive integer", output)
+
+    import rasa.cli.data as data
+
+    async def from_importer(_) -> "Validator":
+        return Mock()
+
+    monkeypatch.setattr("rasa.core.validator.Validator.from_importer", from_importer)
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        data.validate_files(args)
 
 
 def test_validate_files_exit_early():

@@ -176,8 +176,7 @@ def _validate_nlu(validator: Validator, args: argparse.Namespace) -> bool:
 def _validate_story_structure(validator: Validator, args: argparse.Namespace) -> bool:
     # Check if a valid setting for `max_history` was given
     if isinstance(args.max_history, int) and args.max_history < 1:
-        raise argparse.ArgumentError(
-            args.max_history,
+        raise argparse.ArgumentTypeError(
             f"The value of `--max-history {args.max_history}` is not a positive integer.",
         )
 
