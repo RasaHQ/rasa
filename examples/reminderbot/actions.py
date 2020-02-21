@@ -22,7 +22,7 @@ class ActionSetReminder(Action):
     def name(self) -> Text:
         return "action_set_reminder"
 
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
@@ -51,7 +51,7 @@ class ActionReactToReminder(Action):
     def name(self) -> Text:
         return "action_react_to_reminder"
 
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
@@ -70,7 +70,7 @@ class ActionTellID(Action):
     def name(self) -> Text:
         return "action_tell_id"
 
-    def run(
+    async def run(
         self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
 
@@ -98,7 +98,7 @@ class ActionWarnDry(Action):
     def name(self) -> Text:
         return "action_warn_dry"
 
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
@@ -117,7 +117,7 @@ class ForgetReminders(Action):
     def name(self) -> Text:
         return "action_forget_reminders"
 
-    def run(
+    async def run(
         self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
 
