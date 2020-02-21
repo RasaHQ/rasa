@@ -1,7 +1,6 @@
 import copy
 import logging
 import os
-import pickle
 from pathlib import Path
 
 import numpy as np
@@ -216,9 +215,8 @@ class TEDPolicy(Policy):
     # noinspection PyPep8Naming
     def _label_features_for_Y(self, label_ids: np.ndarray) -> np.ndarray:
         """Prepare Y data for training: features for label_ids."""
-
-        # full dialogue featurizer is used
-        if len(label_ids.shape) == 2:
+        is_full_dialogue_featurizer_used = len(label_ids.shape) == 2
+        if is_full_dialogue_featurizer_used:
             return np.stack(
                 [
                     np.stack(
@@ -281,20 +279,17 @@ class TEDPolicy(Policy):
     ) -> None:
         """Train the policy on given training trackers."""
 
-        # set numpy random seed
-        np.random.seed(self.config[RANDOM_SEED])
-
         # dealing with training data
         training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
 
         self._label_data = self._create_label_data(domain)
 
         # check if number of negatives is less than number of label_ids
-        logger.debug(
-            f"Check if num_neg {self.config[NUM_NEG]} is smaller "
-            f"than number of label_ids {domain.num_actions}, "
-            f"else set num_neg to the number of label_ids - 1."
-        )
+        if self.config[NUM_NEG] < domain.num_actions:
+            logger.debug(
+                f"Set '{NUM_NEG}' to the number of actions - 1, e.g. "
+                f"{domain.num_actions - 1}."
+            )
         self.config[NUM_NEG] = min(self.config[NUM_NEG], domain.num_actions - 1)
 
         # extract actual training data to feed to model
@@ -336,7 +331,7 @@ class TEDPolicy(Policy):
         Return the list of probabilities for the next actions.
         """
         if self.model is None:
-            return [0.0] * domain.num_actions
+            return self._default_predictions(domain)
 
         # create model data from tracker
         data_X = self.featurizer.create_X([tracker], domain)
@@ -352,7 +347,7 @@ class TEDPolicy(Policy):
 
         return confidence.tolist()
 
-    def persist(self, path: Text):
+    def persist(self, path: Text) -> None:
         """Persists the policy to a storage."""
 
         if self.model is None:

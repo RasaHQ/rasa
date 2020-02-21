@@ -107,6 +107,10 @@ class Policy:
             Needs to load its featurizer"""
         raise NotImplementedError("Policy must have the capacity to load itself.")
 
+    @staticmethod
+    def _default_predictions(domain: Domain) -> List[float]:
+        return [0.0] * domain.num_actions
+
 
 def confidence_scores_for(action_name, value, domain) -> List[float]:
     """Returns confidence scores if a single action is predicted.
