@@ -262,3 +262,35 @@ async def test_margin_loss_is_not_normalized(
 
     # make sure top ranking is reflected in intent prediction
     assert parse_data.get("intent") == intent_ranking[0]
+
+
+async def test_random_seed(component_builder, tmpdir, supervised_embeddings_config):
+    """test if train result is the same for two runs of tf embedding"""
+
+    # set fixed random seed
+    idx = supervised_embeddings_config.component_names.index(
+        "EmbeddingIntentClassifier"
+    )
+    supervised_embeddings_config.set_component_attr(idx, random_seed=1)
+    idx = supervised_embeddings_config.component_names.index("CRFEntityExtractor")
+    supervised_embeddings_config.set_component_attr(idx, random_seed=1)
+
+    # first run
+    (trained_a, _, persisted_path_a) = await train(
+        supervised_embeddings_config,
+        path=tmpdir.strpath + "_a",
+        data=DEFAULT_DATA_PATH,
+        component_builder=component_builder,
+    )
+    # second run
+    (trained_b, _, persisted_path_b) = await train(
+        supervised_embeddings_config,
+        path=tmpdir.strpath + "_b",
+        data=DEFAULT_DATA_PATH,
+        component_builder=component_builder,
+    )
+    loaded_a = Interpreter.load(persisted_path_a, component_builder)
+    loaded_b = Interpreter.load(persisted_path_b, component_builder)
+    result_a = loaded_a.parse("hello")["intent"]["confidence"]
+    result_b = loaded_b.parse("hello")["intent"]["confidence"]
+    assert result_a == result_b

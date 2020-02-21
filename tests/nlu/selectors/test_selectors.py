@@ -12,12 +12,12 @@ from rasa.utils.tensorflow.constants import EPOCHS
         [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
-            {"name": "ResponseSelector", EPOCHS: 2},
+            {"name": "ResponseSelector", EPOCHS: 1},
         ],
         [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETSelector", EPOCHS: 2},
+            {"name": "DIETSelector", EPOCHS: 1},
         ],
     ],
 )

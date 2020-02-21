@@ -18,13 +18,18 @@ from tests.nlu import utilities
 @pytest.mark.parametrize(
     "pipeline_template", list(registry.registered_pipeline_templates.keys())
 )
-async def test_interpreter(pipeline_template, component_builder, tmpdir):
+async def test_interpreter_on_pipeline_templates(
+    pipeline_template, component_builder, tmpdir
+):
     test_data = "data/examples/rasa/demo-rasa.json"
-    _conf = utilities.base_test_conf(pipeline_template)
-    _conf["data"] = test_data
+
+    config = utilities.base_test_conf(pipeline_template)
+    config["data"] = test_data
+
     td = training_data.load_data(test_data)
+
     interpreter = await utilities.interpreter_for(
-        component_builder, "data/examples/rasa/demo-rasa.json", tmpdir.strpath, _conf
+        component_builder, "data/examples/rasa/demo-rasa.json", tmpdir.strpath, config
     )
 
     texts = ["good bye", "i am looking for an indian spot"]
@@ -60,9 +65,10 @@ async def test_interpreter(pipeline_template, component_builder, tmpdir):
         {"rasa_version": "0.14.4"},
         {"rasa_version": "0.15.0a1"},
         {"rasa_version": "1.0.0a1"},
+        {"rasa_version": "1.5.0"},
     ],
 )
-def test_model_not_compatible(metadata):
+def test_model_is_not_compatible(metadata):
     with pytest.raises(rasa.nlu.model.UnsupportedModelError):
         Interpreter.ensure_model_compatibility(metadata)
 

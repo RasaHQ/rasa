@@ -1,10 +1,18 @@
 import tempfile
-
 import ruamel.yaml as yaml
+
+from typing import Text
+
+import rasa.utils.io as io_utils
 
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter
 from rasa.nlu.train import train
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
+from rasa.nlu.selectors.diet_selector import DIETSelector
+from rasa.nlu.selectors.response_selector import ResponseSelector
+from rasa.utils.tensorflow.constants import EPOCHS
 
 
 def base_test_conf(pipeline_template):

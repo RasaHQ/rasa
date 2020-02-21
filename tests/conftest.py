@@ -1,4 +1,6 @@
 import asyncio
+import os
+
 from sanic.request import Request
 from sanic.testing import SanicTestClient
 
@@ -29,6 +31,7 @@ from tests.core.conftest import (
     END_TO_END_STORY_FILE,
     MOODBOT_MODEL_PATH,
 )
+from tests.utilities import update_number_of_epochs
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
@@ -74,10 +77,15 @@ async def default_agent(_trained_default_agent: Agent) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path() -> Text:
+async def trained_moodbot_path(tmpdir_factory: TempdirFactory) -> Text:
+    output = tmpdir_factory.mktemp("moodbot").strpath
+    tmp_config_file = os.path.join(output, "config.yml")
+
+    update_number_of_epochs("examples/moodbot/config.yml", tmp_config_file)
+
     return await train_async(
         domain="examples/moodbot/domain.yml",
-        config="examples/moodbot/config.yml",
+        config=tmp_config_file,
         training_files="examples/moodbot/data/",
         output_path=MOODBOT_MODEL_PATH,
     )
@@ -182,7 +190,7 @@ async def trained_core_model(
 async def trained_nlu_model(
     trained_async,
     default_domain_path: Text,
-    default_config: List[Policy],
+    blank_config,
     default_nlu_data: Text,
     default_stories_file: Text,
 ) -> Text:

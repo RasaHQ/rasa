@@ -14,7 +14,7 @@ class Object:
 
 # noinspection PyPep8Naming
 @mock_s3
-async def test_list_method_method_in_AWSPersistor(component_builder, tmpdir):
+async def test_list_method_method_in_AWS_persistor(component_builder, tmpdir):
     # artificially create a persisted model
     _config = utilities.base_test_conf("keyword")
     os.environ["BUCKET_NAME"] = "rasa-test"
@@ -38,7 +38,7 @@ async def test_list_method_method_in_AWSPersistor(component_builder, tmpdir):
 
 # noinspection PyPep8Naming
 @mock_s3
-def test_list_models_method_raise_exeception_in_AWSPersistor():
+def test_list_models_method_raise_exeception_in_AWS_persistor():
     os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
 
     awspersistor = persistor.AWSPersistor("rasa-test")
@@ -75,7 +75,7 @@ def test_s3_private_retrieve_tar():
 
 
 # noinspection PyPep8Naming
-def test_list_models_method_in_GCSPersistor():
+def test_list_models_method_in_GCS_persistor():
     # noinspection PyUnusedLocal
     def mocked_init(self, *args, **kwargs):
         self._model_dir_and_model_from_filename = lambda x: {
@@ -97,7 +97,7 @@ def test_list_models_method_in_GCSPersistor():
 
 
 # noinspection PyPep8Naming
-def test_list_models_method_raise_exeception_in_GCSPersistor():
+def test_list_models_method_raise_exeception_in_GCS_persistor():
     # noinspection PyUnusedLocal
     def mocked_init(self, *args, **kwargs):
         self._model_dir_and_model_from_filename = lambda x: {
@@ -117,7 +117,7 @@ def test_list_models_method_raise_exeception_in_GCSPersistor():
 
 
 # noinspection PyPep8Naming
-def test_list_models_method_in_AzurePersistor():
+def test_list_models_method_in_Azure_persistor():
     # noinspection PyUnusedLocal
     def mocked_init(self, *args, **kwargs):
         self._model_dir_and_model_from_filename = lambda x: {
@@ -141,7 +141,7 @@ def test_list_models_method_in_AzurePersistor():
 
 
 # noinspection PyPep8Naming
-def test_list_models_method_raise_exeception_in_AzurePersistor():
+def test_list_models_method_raise_exeception_in_Azure_persistor():
     def mocked_init(self, *args, **kwargs):
         self._model_dir_and_model_from_filename = lambda x: {"blob_name": ("project",)}[
             x

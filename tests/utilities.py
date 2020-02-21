@@ -1,7 +1,8 @@
-from typing import Text
 from yarl import URL
+from typing import Text
 
 import rasa.utils.io as io_utils
+
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
 from rasa.nlu.selectors.diet_selector import DIETSelector
