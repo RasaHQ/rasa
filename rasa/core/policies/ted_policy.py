@@ -31,7 +31,6 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    MAX_SEQUENCE_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
     EPOCHS,
@@ -52,6 +51,7 @@ from rasa.utils.tensorflow.constants import (
     DROP_RATE_DIALOGUE,
     DROP_RATE_LABEL,
     DROP_RATE_ATTENTION,
+    WEIGHT_SPARSITY,
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
@@ -96,16 +96,14 @@ class TEDPolicy(Policy):
         TRANSFORMER_SIZE: 128,
         # Number of transformer layers
         NUM_TRANSFORMER_LAYERS: 1,
+        # Number of attention heads in transformer
+        NUM_HEADS: 4,
         # If 'True' use key relative embeddings in attention
         KEY_RELATIVE_ATTENTION: False,
         # If 'True' use key relative embeddings in attention
         VALUE_RELATIVE_ATTENTION: False,
         # Max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
-        # Max sequence length
-        MAX_SEQUENCE_LENGTH: 256,
-        # Number of attention heads in transformer
-        NUM_HEADS: 4,
         # ## Training parameters
         # Initial and final batch sizes:
         # Batch size will be linearly increased for each epoch.
@@ -154,6 +152,8 @@ class TEDPolicy(Policy):
         DROP_RATE_LABEL: 0.0,
         # Dropout rate for attention.
         DROP_RATE_ATTENTION: 0,
+        # Sparsity of the weights in dense layers
+        WEIGHT_SPARSITY: 0.8,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
         # Small values may hurt performance, e.g. model accuracy.
@@ -528,12 +528,14 @@ class TED(RasaModel):
             self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
             self.config[DROP_RATE_DIALOGUE],
             self.config[REGULARIZATION_CONSTANT],
+            self.config[WEIGHT_SPARSITY],
             layer_name_suffix=DIALOGUE,
         )
         self._tf_layers["ffnn.label"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES][LABEL],
             self.config[DROP_RATE_LABEL],
             self.config[REGULARIZATION_CONSTANT],
+            self.config[WEIGHT_SPARSITY],
             layer_name_suffix=LABEL,
         )
         self._tf_layers["transformer"] = TransformerEncoder(
@@ -541,10 +543,10 @@ class TED(RasaModel):
             self.config[TRANSFORMER_SIZE],
             self.config[NUM_HEADS],
             self.config[TRANSFORMER_SIZE] * 4,
-            self.config[MAX_SEQUENCE_LENGTH],
             self.config[REGULARIZATION_CONSTANT],
             dropout_rate=self.config[DROP_RATE_DIALOGUE],
             attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
+            sparsity=self.config[WEIGHT_SPARSITY],
             unidirectional=True,
             use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
             use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],

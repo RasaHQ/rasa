@@ -17,5 +17,5 @@ pipeline:
     max_ngram: 4
   - name: DIETClassifier
   - name: EntitySynonymMapper
-  - name: DIETSelector
+  - name: ResponseSelector
 ```

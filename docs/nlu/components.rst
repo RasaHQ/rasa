@@ -824,6 +824,7 @@ EmbeddingIntentClassifier
               the maximum similarity between embeddings of different intent labels.
             - ``drop_rate`` sets the dropout rate, it should be
               between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units.
+            - ``weight_sparsity`` sets the sparsity of the weght kernels in dense layers.
             - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not.
 
     .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
@@ -899,6 +900,8 @@ EmbeddingIntentClassifier
             # The scale of how important is to minimize the maximum similarity
             # between embeddings of different labels.
             "negative_margin_scale": 0.8
+            # Sparsity of the weights in dense layers
+            "weight_sparsity": 0.8
             # Dropout rate for encoder
             "drop_rate": 0.2
             # If 'True' apply dropout to sparse tensors
@@ -980,129 +983,6 @@ ResponseSelector
     Response Selector component can be used to build a response retrieval model to directly predict a bot response from
     a set of candidate responses. The prediction of this model is used by :ref:`retrieval-actions`.
     It embeds user inputs and response labels into the same space and follows the exact same
-    neural network architecture and optimization as the ``EmbeddingIntentClassifier``.
-
-    .. note:: If during prediction time a message contains **only** words unseen during training,
-              and no Out-Of-Vacabulary preprocessor was used,
-              empty response ``None`` is predicted with confidence ``0.0``.
-
-    .. warning::
-        ``ResponseSelector`` is deprecated and should be replaced by ``DIETSelector``. See
-        :ref:`migration guide <migration-to-rasa-1.8>` for more details.
-
-:Configuration:
-
-    The algorithm includes all the hyperparameters that ``EmbeddingIntentClassifier`` uses.
-    In addition, the component can also be configured to train a response selector for a particular retrieval intent.
-
-        - ``retrieval_intent`` sets the name of the intent for which this response selector model is trained.
-
-    Default values:
-
-    .. code-block:: yaml
-
-        pipeline:
-        - name: "ResponseSelector"
-            # ## Architecture of the used neural network
-            # Hidden layer sizes for layers before the embedding layers for user message
-            # and labels.
-            # The number of hidden layers is equal to the length of the corresponding
-            # list.
-            "hidden_layers_sizes": {"text": [256, 128], "label": [256, 128]}
-            # Whether to share the hidden layer weights between user message and labels.
-            "share_hidden_layers": False
-            # ## Training parameters
-            # Initial and final batch sizes:
-            # Batch size will be linearly increased for each epoch.
-            "batch_size": [64, 256]
-            # Strategy used when creating batches.
-            # Can be either 'sequence' or 'balanced'.
-            "batch_strategy": "balanced"
-            # Number of epochs to train
-            "epochs": 300
-            # Set random seed to any 'int' to get reproducible results
-            "random_seed": None
-            # Initial learning rate for the optimizer
-            "learning_rate": 0.001
-            # ## Parameters for embeddings
-            # Dimension size of embedding vectors
-            "embedding_dimension": 20
-            # Default dense dimension to use if no dense features are present.
-            "dense_dimension": {"text": 512, "label": 512}
-            # The number of incorrect labels. The algorithm will minimize
-            # their similarity to the user input during training.
-            "number_of_negative_examples": 20
-            # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
-            "similarity_type": "auto"
-            # The type of the loss function, either 'softmax' or 'margin'.
-            "loss_type": "softmax"
-            # Number of top actions to normalize scores for loss type 'softmax'.
-            # Set to 0 to turn off normalization.
-            "ranking_length": 10
-            # Indicates how similar the algorithm should try to make embedding vectors
-            # for correct labels.
-            # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
-            "maximum_positive_similarity": 0.8
-            # Maximum negative similarity for incorrect labels.
-            # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
-            "maximum_negative_similarity": -0.4
-            # If 'True' the algorithm only minimizes maximum similarity over
-            # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
-            "use_maximum_negative_similarity": True
-            # Scale loss inverse proportionally to confidence of correct prediction
-            "scale_loss": True
-            # ## Regularization parameters
-            # The scale of regularization
-            "regularization_constant": 0.002
-            # The scale of how important is to minimize the maximum similarity
-            # between embeddings of different labels.
-            "negative_margin_scale": 0.8
-            # Dropout rate for encoder
-            "drop_rate": 0.2
-            # If 'True' apply dropout to sparse tensors
-            "use_sparse_input_dropout": False
-            # ## Evaluation parameters
-            # How often calculate validation accuracy.
-            # Small values may hurt performance, e.g. model accuracy.
-            "evaluate_every_number_of_epochs": 20
-            # How many examples to use for hold out validation set
-            # Large values may hurt performance, e.g. model accuracy.
-            "evaluate_on_number_of_examples": 0
-            # ## Selector config
-            # Name of the intent for which this response selector is to be trained
-            "retrieval_intent": None
-
-
-.. _diet-selector:
-
-DIETSelector
-~~~~~~~~~~~~~~~~
-
-:Short: DIET Selector
-:Outputs: A dictionary with key as ``direct_response_intent`` and value containing ``response`` and ``ranking``
-:Requires: ``dense_features`` and/or ``sparse_features`` for user message and response
-
-:Output-Example:
-
-    .. code-block:: json
-
-        {
-            "response_selector": {
-              "faq": {
-                "response": {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
-                "ranking": [
-                    {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
-                    {"confidence": 0.2134543431, "name": "You can ask me about how to get started"}
-                ]
-              }
-            }
-        }
-
-:Description:
-
-    DIET Selector component can be used to build a response retrieval model to directly predict a bot response from
-    a set of candidate responses. The prediction of this model is used by :ref:`retrieval-actions`.
-    It embeds user inputs and response labels into the same space and follows the exact same
     neural network architecture and optimization as the ``DIETClassifier``.
 
     .. note:: If during prediction time a message contains **only** words unseen during training,
@@ -1126,17 +1006,15 @@ DIETSelector
             # sizes of hidden layers before the embedding layer
             # for input words and intent labels,
             # the number of hidden layers is thus equal to the length of this list
-            "hidden_layers_sizes": {"text": [], "label": []}
+            "hidden_layers_sizes": {"text": [256, 128], "label": [256, 128]}
             # Whether to share the hidden layer weights between input words and labels
             "share_hidden_layers": False
             # number of units in transformer
-            "transformer_size": 256
+            "transformer_size": None
             # number of transformer layers
-            "number_of_transformer_layers": 2
+            "number_of_transformer_layers": 0
             # number of attention heads in transformer
             "number_of_attention_heads": 4
-            # max sequence length
-            "maximum_sequence_length": 256
             # use a unidirectional or bidirectional encoder
             "unidirectional_encoder": False
             # if true use key relative embeddings in attention
@@ -1190,6 +1068,8 @@ DIETSelector
             "droprate": 0.2
             # dropout rate for attention
             "droprate_attention": 0
+            # sparsity of the weights in dense layers
+            "weight_sparsity": 0.8
             # if true apply dropout to sparse tensors
             "use_sparse_input_dropout": True
             # visualization of accuracy
@@ -1572,7 +1452,6 @@ DIETClassifier
             - ``transformer_size`` sets the size of the transformer.
             - ``number_of_transformer_layers`` sets the number of transformer layers to use.
             - ``number_of_attention_heads`` sets the number of attention heads to use.
-            - ``maximum_sequence_length`` sets the maximum length of sequence.
             - ``unidirectional_encoder`` specifies whether to use a unidirectional or bidirectional encoder.
             - ``use_key_relative_attention`` if true use key relative embeddings in attention.
             - ``use_value_relative_attention`` if true use key relative embeddings in attention.
@@ -1632,6 +1511,7 @@ DIETClassifier
               between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units.
             - ``droprate_attention`` sets the dropout rate for attention, it should be
               between ``0`` and ``1``, e.g. ``droprate_attention=0.1`` would drop out ``10%`` of input units.
+            - ``weight_sparsity`` sets the sparsity of weight kernels in dense layers.
             - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not.
 
         - model configuration:
@@ -1730,6 +1610,8 @@ DIETClassifier
             # The scale of how important is to minimize the maximum similarity
             # between embeddings of different labels.
             "negative_margin_scale": 0.8
+            # Sparsity of the weights in dense layers
+            "weight_sparsity": 0.8
             # Dropout rate for encoder
             "drop_rate": 0.2
             # Dropout rate for attention

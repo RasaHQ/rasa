@@ -41,7 +41,6 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    MAX_SEQUENCE_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
     EPOCHS,
@@ -61,6 +60,7 @@ from rasa.utils.tensorflow.constants import (
     UNIDIRECTIONAL_ENCODER,
     DROP_RATE,
     DROP_RATE_ATTENTION,
+    WEIGHT_SPARSITY,
     NEGATIVE_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
@@ -117,8 +117,6 @@ class DIETClassifier(EntityExtractor):
         VALUE_RELATIVE_ATTENTION: False,
         # Max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
-        # Max sequence length
-        MAX_SEQUENCE_LENGTH: 256,
         # Use a unidirectional or bidirectional encoder.
         UNIDIRECTIONAL_ENCODER: False,
         # ## Training parameters
@@ -171,6 +169,8 @@ class DIETClassifier(EntityExtractor):
         DROP_RATE: 0.2,
         # Dropout rate for attention
         DROP_RATE_ATTENTION: 0,
+        # Sparsity of the weights in dense layers
+        WEIGHT_SPARSITY: 0.8,
         # If 'True' apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: True,
         # ## Evaluation parameters
@@ -1065,6 +1065,7 @@ class DIET(RasaModel):
             self.config[HIDDEN_LAYERS_SIZES][name],
             self.config[DROP_RATE],
             self.config[REGULARIZATION_CONSTANT],
+            self.config[WEIGHT_SPARSITY],
             name,
         )
 
@@ -1077,10 +1078,10 @@ class DIET(RasaModel):
                 self.config[TRANSFORMER_SIZE],
                 self.config[NUM_HEADS],
                 self.config[TRANSFORMER_SIZE] * 4,
-                self.config[MAX_SEQUENCE_LENGTH],
                 self.config[REGULARIZATION_CONSTANT],
                 dropout_rate=self.config[DROP_RATE],
                 attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
+                sparsity=self.config[WEIGHT_SPARSITY],
                 unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
                 use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
                 use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],

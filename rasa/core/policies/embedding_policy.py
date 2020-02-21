@@ -10,7 +10,6 @@ from rasa.utils.tensorflow.constants import (
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     NUM_HEADS,
-    MAX_SEQUENCE_LENGTH,
     BATCH_SIZES,
     BATCH_STRATEGY,
     EPOCHS,
@@ -31,6 +30,7 @@ from rasa.utils.tensorflow.constants import (
     DROP_RATE_DIALOGUE,
     DROP_RATE_LABEL,
     DROP_RATE_ATTENTION,
+    WEIGHT_SPARSITY,
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
@@ -77,8 +77,6 @@ class EmbeddingPolicy(TEDPolicy):
         VALUE_RELATIVE_ATTENTION: False,
         # Max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
-        # Max sequence length
-        MAX_SEQUENCE_LENGTH: 256,
         # Number of attention heads in transformer
         NUM_HEADS: 4,
         # ## Training parameters
@@ -129,6 +127,8 @@ class EmbeddingPolicy(TEDPolicy):
         DROP_RATE_LABEL: 0.0,
         # Dropout rate for attention.
         DROP_RATE_ATTENTION: 0,
+        # Sparsity of the weights in dense layers
+        WEIGHT_SPARSITY: 0.8,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
         # Small values may hurt performance, e.g. model accuracy.
