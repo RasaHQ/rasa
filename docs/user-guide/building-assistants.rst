@@ -186,7 +186,7 @@ The test command will produce a directory named ``results``. It should contain a
 called ``failed_stories.md``, where any test cases that failed will be printed. It will
 also specify whether it was an NLU or Core prediction that went wrong.  As part of a
 CI/CD pipeline, the test option ``--fail-on-prediction-errors`` can be used to throw
-an exception that and stop the pipeline.
+an exception that stops the pipeline.
 
 Response Selectors
 ^^^^^^^^^^^^^^^^^^
@@ -585,6 +585,7 @@ At this point, you already have a working form, so let’s try it out. Make sure
     url: "http://localhost:5055/webhook"
 
 Then start the action server in a new terminal window:
+
 .. code-block:: bash
 
     rasa run actions
@@ -763,7 +764,7 @@ unfeaturized slots are only used for storing information. The stories for this s
        - sales_form
        - form{"name": null}
 
-   ## explain email
+   ## explain budget
    * contact_sales
        - sales_form
        - form{"name": "sales_form"}
@@ -881,7 +882,7 @@ the bot respond with a default message like "Sorry, I can’t handle that reques
    * out_of_scope
      utter_out_of_scope
 
-We’ll need to add NLU data for the `out_of_scope` intent as well:
+We’ll need to add NLU data for the ``out_of_scope`` intent as well:
 
 .. code-block:: md
 

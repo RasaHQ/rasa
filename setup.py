@@ -59,7 +59,6 @@ install_requires = [
     "python-telegram-bot~=11.0",
     "twilio~=6.0",
     "webexteamssdk~=1.1",
-    "mattermostwrapper~=2.0",
     "rocketchat_API~=0.6.0",
     "colorhash~=1.0",
     "pika~=1.0.0",
@@ -74,6 +73,8 @@ install_requires = [
     "sanic~=19.9.0",
     "sanic-cors==0.9.9.post1",
     "sanic-jwt~=1.3",
+    # needed because of https://github.com/RasaHQ/rasa/issues/5216
+    "cloudpickle~=1.2.0",
     # needed because of https://github.com/huge-success/sanic/issues/1729
     "multidict==4.6.1",
     "aiohttp~=3.5",

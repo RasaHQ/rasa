@@ -27,6 +27,7 @@ from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer,
     BinarySingleStateFeaturizer,
 )
+from rasa.utils.io import DEFAULT_ENCODING
 
 
 async def test_can_read_test_story(default_domain):
