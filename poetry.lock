@@ -1470,19 +1470,6 @@ python-versions = "*"
 version = "0.8.4"
 
 [[package]]
-category = "main"
-description = ""
-name = "mitie"
-optional = true
-python-versions = "*"
-version = "0.7.0"
-
-[package.source]
-reference = "b143c6cb1fc9d3659b796cd613d96cfcf5729416"
-type = "git"
-url = "https://github.com/tmbo/MITIE.git"
-
-[[package]]
 category = "dev"
 description = "Rolling backport of unittest.mock for all Pythons"
 name = "mock"
@@ -3520,14 +3507,13 @@ testing = ["jaraco.itertools", "func-timeout"]
 
 [extras]
 convert = ["tensorflow_text"]
-full = ["spacy", "mitie", "tensorflow_text", "transformers", "jieba"]
+full = ["spacy", "tensorflow_text", "transformers", "jieba"]
 gh-release-notes = ["pypandoc", "github3.py"]
-mitie = ["mitie"]
 spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "5d4110dbdbb1ebf2a5388a3fb14f0daa4dbe14f39b2d5f538d133479af0de09b"
+content-hash = "6618ed8b21500a0b61f62681702abe5e9d83d243d40260d4cc080889022d84fb"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -4303,7 +4289,6 @@ mistune = [
     {file = "mistune-0.8.4-py2.py3-none-any.whl", hash = "sha256:88a1051873018da288eee8538d476dffe1262495144b33ecb586c4ab266bb8d4"},
     {file = "mistune-0.8.4.tar.gz", hash = "sha256:59a3429db53c50b5c6bcc8a07f8848cb00d7dc8bdb431a4ab41920d201d4756e"},
 ]
-mitie = []
 mock = [
     {file = "mock-4.0.1-py3-none-any.whl", hash = "sha256:5e48d216809f6f393987ed56920305d8f3c647e6ed35407c1ff2ecb88a9e1151"},
     {file = "mock-4.0.1.tar.gz", hash = "sha256:2a572b715f09dd2f0a583d8aeb5bb67d7ed7a8fd31d193cf1227a99c16a67bc3"},

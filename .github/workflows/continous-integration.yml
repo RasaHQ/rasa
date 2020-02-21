@@ -74,8 +74,7 @@ jobs:
     - name: Install Dependencies 📦
       run: |
         sudo apt-get -y install libpq-dev
-        poetry run python -m pip install -U 'pip<20'
-        make install
+        make install-full
 
     - name: Lint Code 🎎
       run: make lint
@@ -87,7 +86,7 @@ jobs:
       # makes sure we catch any dependency error early. they will create strange
       # errors during the docs build, so easier to catch them early on by
       # trying to run the `rasa` command once before the docs build.
-      run: rasa --help
+      run: poetry run rasa --help
 
 # DOES NOT WORK YET DUE TO TENSORFLOW 1.5 (some issue with no tensorflow-cpu verison)
 #  -> should work with 2.0 and replace the below "Test Docs":
@@ -102,8 +101,9 @@ jobs:
 
     - name: Test Docs 📃
       run: |
-        make install
-        cd docs && make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
+        make install-full
+        export SPHINXBUILD=$(poetry run which sphinx-build)
+        cd docs && make SPHINXBUILD=$SPHINXBUILD SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
 
   test:
     name: Run Tests
@@ -142,8 +142,7 @@ jobs:
     - name: Install Dependencies 📦
       run: |
         sudo apt-get -y install libpq-dev
-        poetry run python -m pip install -U 'pip<20'
-        make install
+        make install-full
         make prepare-tests-ubuntu
 
     - name: Test Code 🔍

@@ -40,7 +40,14 @@ clean:
 	rm -rf docs/_build
 
 install:
+	poetry run python -m pip install -U 'pip<20'
 	poetry install
+
+install-mitie:
+	poetry run python -m pip install -U git+https://github.com/tmbo/MITIE.git#egg=mitie
+
+install-full: install install-mitie
+	poetry install -E full
 
 formatter:
 	poetry run black rasa tests
