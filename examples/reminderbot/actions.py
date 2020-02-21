@@ -5,7 +5,8 @@
 # https://rasa.com/docs/rasa/core/actions/#custom-actions/
 
 
-# This is a simple example for a custom action which utters "Hello World!"
+# This is a simple example for an assistant that schedules reminders and
+# reacts to external events.
 
 from typing import Any, Text, Dict, List
 import datetime
@@ -57,7 +58,7 @@ class ActionReactToReminder(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
 
-        name = next(tracker.get_latest_entity_values("name"), None) or "someone"
+        name = next(tracker.get_latest_entity_values("name"), "someone")
         dispatcher.utter_message(f"Remember to call {name}!")
 
         return []
@@ -104,7 +105,7 @@ class ActionWarnDry(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
 
-        plant = next(tracker.get_latest_entity_values("plant"), None) or "plant"
+        plant = next(tracker.get_latest_entity_values("plant"), "someone")
         dispatcher.utter_message(f"Your {plant} needs some water!")
 
         return []
@@ -119,6 +120,8 @@ class ForgetReminders(Action):
     def run(
         self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
+
+        dispatcher.utter_message(f"Okay, I'll cancel all your reminders.")
 
         # Cancel all reminders
         return [ReminderCancelled()]

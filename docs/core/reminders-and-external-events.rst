@@ -107,7 +107,8 @@ For example,
 
     - ``ReminderCancelled(intent="greet")`` cancels all reminders with intent ``greet``
     - ``ReminderCancelled(entities={...})`` cancels all reminders with the given entities
-    - ``ReminderCancelled("...")`` cancels the one unique reminder with the given name
+    - ``ReminderCancelled("...")`` cancels the one unique reminder with the given name "``...``" that you supplied
+      during its creation
 
 
 .. _external-event-guide:
