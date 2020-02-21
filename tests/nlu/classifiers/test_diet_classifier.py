@@ -12,6 +12,7 @@ from rasa.utils.tensorflow.constants import (
     RANDOM_SEED,
     RANKING_LENGTH,
     EPOCHS,
+    MASKED_LM,
 )
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
@@ -91,7 +92,7 @@ def test_check_labels_features_exist(messages, expected):
             },
             {"name": "CountVectorsFeaturizer"},
             {"name": "ConveRTFeaturizer"},
-            {"name": "DIETClassifier", EPOCHS: 1},
+            {"name": "DIETClassifier", MASKED_LM: True, EPOCHS: 1},
         ],
         [
             {"name": "WhitespaceTokenizer"},

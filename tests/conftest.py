@@ -190,7 +190,7 @@ async def trained_core_model(
 async def trained_nlu_model(
     trained_async,
     default_domain_path: Text,
-    blank_config,
+    default_config: List[Policy],
     default_nlu_data: Text,
     default_stories_file: Text,
 ) -> Text:
