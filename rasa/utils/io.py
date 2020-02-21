@@ -280,7 +280,7 @@ def create_path(file_path: Text) -> None:
         os.makedirs(parent_dir)
 
 
-def create_directory_for_file(file_path: Text) -> None:
+def create_directory_for_file(file_path: Union[Text, Path]) -> None:
     """Creates any missing parent directories of this file path."""
 
     create_directory(os.path.dirname(file_path))
