@@ -29,7 +29,7 @@ COPY docker/configs/config_pretrained_embeddings_spacy_de.yml /app/config.yml
 # install dependencies
 RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
-  pip install --no-cache-dir -U pip && \
+  pip install --no-cache-dir -U 'pip<20' && \
   cd /app && \
   poetry install --extras spacy --no-dev --no-interaction
 

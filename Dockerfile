@@ -28,7 +28,7 @@ COPY . /app/
 # install dependencies
 RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
-  pip install --no-cache-dir -U pip && \
+  pip install --no-cache-dir -U 'pip<20' && \
   cd /app && \
   poetry install --no-dev --no-interaction
 

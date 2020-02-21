@@ -72,7 +72,10 @@ jobs:
         restore-keys: ${{ runner.os }}-poetry-
 
     - name: Install Dependencies 📦
-      run: make install
+      run: |
+        sudo apt-get -y install libpq-dev
+        poetry run python -m pip install -U 'pip<20'
+        make install
 
     - name: Lint Code 🎎
       run: make lint
@@ -137,7 +140,11 @@ jobs:
         restore-keys: ${{ runner.os }}-poetry-
 
     - name: Install Dependencies 📦
-      run: make install
+      run: |
+        sudo apt-get -y install libpq-dev
+        poetry run python -m pip install -U 'pip<20'
+        make install
+        make prepare-tests-ubuntu
 
     - name: Test Code 🔍
       run: JOBS=2 make test
