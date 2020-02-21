@@ -264,7 +264,7 @@ async def test_margin_loss_is_not_normalized(
     assert parse_data.get("intent") == intent_ranking[0]
 
 
-async def test_set_random_seed(component_builder, tmpdir, supervised_embeddings_config):
+async def test_set_random_seed(component_builder, tmpdir):
     """test if train result is the same for two runs of tf embedding"""
 
     # set fixed random seed
@@ -281,14 +281,14 @@ async def test_set_random_seed(component_builder, tmpdir, supervised_embeddings_
 
     # first run
     (trained_a, _, persisted_path_a) = await train(
-        supervised_embeddings_config,
+        _config,
         path=tmpdir.strpath + "_a",
         data=DEFAULT_DATA_PATH,
         component_builder=component_builder,
     )
     # second run
     (trained_b, _, persisted_path_b) = await train(
-        supervised_embeddings_config,
+        _config,
         path=tmpdir.strpath + "_b",
         data=DEFAULT_DATA_PATH,
         component_builder=component_builder,

@@ -36,6 +36,7 @@ def init_default_project(tmpdir_factory: TempdirFactory) -> str:
     os.environ["LOG_LEVEL"] = "ERROR"
 
     check_call(["rasa", "init", "--no-prompt"], cwd=path)
+
     return path
 
 
@@ -90,11 +91,7 @@ def _set_up_initial_project(testdir: Testdir):
     write_yaml_file(
         {
             "language": "en",
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
-                {"name": "KeywordIntentClassifier"},
-            ],
+            "pipeline": [{"name": "KeywordIntentClassifier"}],
             "policies": [
                 {"name": "MappingPolicy"},
                 {"name": "MemoizationPolicy", "max_history": 5},
