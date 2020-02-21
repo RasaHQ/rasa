@@ -17,6 +17,7 @@ from rasa.utils.tensorflow.constants import EPOCHS
     ],
 )
 def test_train_selector(pipeline, component_builder, tmpdir):
+    # use data that include some responses
     td = load_data("data/examples/rasa/demo-rasa.md")
     td_responses = load_data("data/examples/rasa/demo-rasa-responses.md")
     td = td.merge(td_responses)
@@ -30,7 +31,8 @@ def test_train_selector(pipeline, component_builder, tmpdir):
     persisted_path = trainer.persist(tmpdir)
 
     assert trainer.pipeline
+
     loaded = Interpreter.load(persisted_path, component_builder)
+
     assert loaded.pipeline
     assert loaded.parse("hello") is not None
-    assert loaded.parse("Hello today is Monday, again!") is not None
