@@ -52,3 +52,5 @@ RANKING_LENGTH = "ranking_length"
 BILOU_FLAG = "BILOU_flag"
 
 RETRIEVAL_INTENT = "retrieval_intent"
+
+EVALUATE_ONCE_PER_EPOCH = -1

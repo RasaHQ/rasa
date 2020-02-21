@@ -1,8 +1,8 @@
 import logging
+from pathlib import Path
 
 import numpy as np
 import os
-import pickle
 import scipy.sparse
 import warnings
 import tensorflow as tf
@@ -10,7 +10,7 @@ import tensorflow_addons as tfa
 
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
-import rasa.utils.io
+import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.classifiers.classifier import IntentClassifier
@@ -73,6 +73,7 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
+    EVALUATE_ONCE_PER_EPOCH,
 )
 
 
@@ -229,16 +230,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.component_config = train_utils.update_similarity_type(
             self.component_config
         )
-
-        if self.component_config[EVAL_NUM_EPOCHS] == -1:
-            # magic value -1 is used to set evaluation to number of epochs
-            self.component_config[EVAL_NUM_EPOCHS] = self.component_config[EPOCHS]
-        elif self.component_config[EVAL_NUM_EPOCHS] < 1:
-            raise ValueError(
-                f"'{EVAL_NUM_EXAMPLES}' is set to "
-                f"'{self.component_config[EVAL_NUM_EPOCHS]}'. "
-                f"Only values > 1 are allowed for this configuration value."
-            )
+        self.component_config = train_utils.update_evaluation_parameters(
+            self.component_config
+        )
 
     # package safety checks
     @classmethod
@@ -253,7 +247,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model: Optional[RasaModel] = None,
         batch_tuple_sizes: Optional[Dict] = None,
     ) -> None:
-        """Declare instance variables with default values"""
+        """Declare instance variables with default values."""
 
         super().__init__(component_config)
 
@@ -266,7 +260,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.model = model
 
         # encode all label_ids with numbers
-        self._label_data = None
+        self._label_data = None  # RasaModelData
 
         # keep the input tuple sizes in self.batch_in
         self.batch_tuple_sizes = batch_tuple_sizes
@@ -274,7 +268,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # number of entity tags
         self.num_tags = 0
 
-        self.data_example = None
+        self.data_example = None  # Dict[Text, List[np.ndarray]]
 
     @property
     def label_key(self) -> Optional[Text]:
@@ -793,30 +787,28 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self.model is None:
             return {"file": None}
 
-        tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
+        model_dir = Path(model_dir)
+        tf_model_file = model_dir / f"{file_name}.tf_model"
 
-        rasa.utils.io.create_directory_for_file(tf_model_file)
+        io_utils.create_directory_for_file(tf_model_file)
 
-        self.model.save(tf_model_file)
+        self.model.save(str(tf_model_file))
 
-        with open(os.path.join(model_dir, file_name + ".data_example.pkl"), "wb") as f:
-            pickle.dump(self.data_example, f)
-
-        with open(os.path.join(model_dir, file_name + ".label_data.pkl"), "wb") as f:
-            pickle.dump(self._label_data, f)
-
-        with open(
-            os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "wb"
-        ) as f:
-            pickle.dump(self.inverted_label_dict, f)
-
-        with open(os.path.join(model_dir, file_name + ".inv_tag_dict.pkl"), "wb") as f:
-            pickle.dump(self.inverted_tag_dict, f)
-
-        with open(
-            os.path.join(model_dir, file_name + ".batch_tuple_sizes.pkl"), "wb"
-        ) as f:
-            pickle.dump(self.batch_tuple_sizes, f)
+        io_utils.pickle_dump(
+            model_dir / f"{file_name}.data_example.pkl", self.data_example
+        )
+        io_utils.json_pickle(
+            model_dir / f"{file_name}.label_data.pkl", self._label_data
+        )
+        io_utils.json_pickle(
+            model_dir / f"{file_name}.inverted_label_dict.pkl", self.inverted_label_dict
+        )
+        io_utils.json_pickle(
+            model_dir / f"{file_name}.inverted_tag_dict.pkl", self.inverted_tag_dict
+        )
+        io_utils.pickle_dump(
+            model_dir / f"{file_name}.batch_tuple_sizes.pkl", self.batch_tuple_sizes
+        )
 
         return {"file": file_name}
 
@@ -863,29 +855,32 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _load_from_files(cls, meta: Dict[Text, Any], model_dir: Text):
         file_name = meta.get("file")
 
-        with open(os.path.join(model_dir, file_name + ".data_example.pkl"), "rb") as f:
-            data_example = pickle.load(f)
+        model_dir = Path(model_dir)
 
-        with open(os.path.join(model_dir, file_name + ".label_data.pkl"), "rb") as f:
-            label_data = pickle.load(f)
+        data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
+        label_data = io_utils.json_unpickle(model_dir / f"{file_name}.label_data.pkl")
+        inverted_label_dict = io_utils.json_unpickle(
+            model_dir / f"{file_name}.inverted_label_dict.pkl"
+        )
+        inverted_tag_dict = io_utils.json_unpickle(
+            model_dir / f"{file_name}.inverted_tag_dict.pkl"
+        )
+        batch_tuple_sizes = io_utils.pickle_load(
+            model_dir / f"{file_name}.batch_tuple_sizes.pkl"
+        )
 
-        with open(
-            os.path.join(model_dir, file_name + ".inv_label_dict.pkl"), "rb"
-        ) as f:
-            inv_label_dict = pickle.load(f)
-
-        with open(os.path.join(model_dir, file_name + ".inv_tag_dict.pkl"), "rb") as f:
-            inv_tag_dict = pickle.load(f)
-
-        with open(
-            os.path.join(model_dir, file_name + ".batch_tuple_sizes.pkl"), "rb"
-        ) as f:
-            batch_tuple_sizes = pickle.load(f)
+        # jsonpickle converts dictionary keys to strings
+        inverted_label_dict = {
+            int(key): value for key, value in inverted_label_dict.items()
+        }
+        inverted_tag_dict = {
+            int(key): value for key, value in inverted_tag_dict.items()
+        }
 
         return (
             batch_tuple_sizes,
-            inv_label_dict,
-            inv_tag_dict,
+            inverted_label_dict,
+            inverted_tag_dict,
             label_data,
             meta,
             data_example,

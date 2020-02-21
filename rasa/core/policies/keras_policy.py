@@ -164,14 +164,13 @@ class KerasPolicy(Policy):
         **kwargs: Any,
     ) -> None:
 
-        # set numpy random seed
+        # set random seed
         np.random.seed(self.random_seed)
+        tf.random.set_seed(self.random_seed)
 
         training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
         # noinspection PyPep8Naming
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
-
-        tf.random.set_seed(self.random_seed)
 
         if self.model is None:
             self.model = self.model_architecture(
@@ -179,9 +178,8 @@ class KerasPolicy(Policy):
             )
 
         logger.debug(
-            "Fitting model with {} total samples and a "
-            "validation split of {}"
-            "".format(training_data.num_examples(), self.validation_split)
+            f"Fitting model with {training_data.num_examples()} total samples and a "
+            f"validation split of {self.validation_split}."
         )
 
         # filter out kwargs that cannot be passed to fit
@@ -199,7 +197,8 @@ class KerasPolicy(Policy):
             **self._train_params,
         )
         self.current_epoch = self.epochs
-        logger.info("Done fitting keras policy model")
+
+        logger.debug("Done fitting Keras Policy model.")
 
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain

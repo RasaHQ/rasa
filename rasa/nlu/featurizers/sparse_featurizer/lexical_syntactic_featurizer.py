@@ -1,9 +1,8 @@
-import json
 import logging
 from collections import defaultdict, OrderedDict
+from pathlib import Path
 
 import numpy as np
-import os
 import scipy.sparse
 from typing import Any, Dict, Optional, Text, List
 
@@ -269,10 +268,8 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
 
         file_name = meta.get("file")
 
-        with open(
-            os.path.join(model_dir, file_name + ".feature_to_idx_dict.pkl"), "rb"
-        ) as f:
-            feature_to_idx_dict = json.load(f)
+        feature_to_idx_file = Path(model_dir) / f"{file_name}.feature_to_idx_dict.pkl"
+        feature_to_idx_dict = io_utils.json_unpickle(feature_to_idx_file)
 
         return LexicalSyntacticFeaturizer(meta, feature_to_idx_dict=feature_to_idx_dict)
 
@@ -280,9 +277,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         """Persist this model into the passed directory.
         Return the metadata necessary to load the model again."""
 
-        feature_to_idx_file = os.path.join(
-            model_dir, file_name + ".feature_to_idx_dict.pkl"
-        )
-        io_utils.dump_obj_as_json_to_file(feature_to_idx_file, self.feature_to_idx_dict)
+        feature_to_idx_file = Path(model_dir) / f"{file_name}.feature_to_idx_dict.pkl"
+        io_utils.json_pickle(feature_to_idx_file, self.feature_to_idx_dict)
 
         return {"file": file_name}

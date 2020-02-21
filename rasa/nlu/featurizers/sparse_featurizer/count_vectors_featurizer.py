@@ -6,9 +6,8 @@ from typing import Any, Dict, List, Optional, Text
 
 from rasa.constants import DOCS_URL_COMPONENTS
 import rasa.utils.common as common_utils
-
+import rasa.utils.io as io_utils
 from sklearn.feature_extraction.text import CountVectorizer
-from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
@@ -573,7 +572,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 else:
                     vocab = attribute_vocabularies
 
-                utils.json_pickle(featurizer_file, vocab)
+                io_utils.json_pickle(featurizer_file, vocab)
 
         return {"file": file_name}
 
@@ -647,7 +646,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         if not os.path.exists(featurizer_file):
             return cls(meta)
 
-        vocabulary = utils.json_unpickle(featurizer_file)
+        vocabulary = io_utils.json_unpickle(featurizer_file)
 
         share_vocabulary = meta["use_shared_vocab"]
 

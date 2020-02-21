@@ -3,6 +3,7 @@ import errno
 import json
 import logging
 import os
+import pickle
 import tarfile
 import tempfile
 import typing
@@ -157,6 +158,18 @@ def dump_obj_as_json_to_file(filename: Text, obj: Any) -> None:
     write_text_file(json.dumps(obj, indent=2), filename)
 
 
+def pickle_dump(filename: Union[Text, Path], obj: Any):
+    """Saves object to file."""
+    with open(filename, "wb") as f:
+        pickle.dump(obj, f)
+
+
+def pickle_load(filename: Union[Text, Path]) -> Any:
+    """Loads an object from a file."""
+    with open(filename, "rb") as f:
+        return pickle.load(f)
+
+
 def read_config_file(filename: Text) -> Dict[Text, Any]:
     """Parses a yaml configuration file. Content needs to be a dictionary
 
@@ -267,7 +280,7 @@ def create_path(file_path: Text) -> None:
         os.makedirs(parent_dir)
 
 
-def create_directory_for_file(file_path: Text) -> None:
+def create_directory_for_file(file_path: Union[Text, Path]) -> None:
     """Creates any missing parent directories of this file path."""
 
     create_directory(os.path.dirname(file_path))
@@ -394,3 +407,24 @@ def zip_folder(folder: Text) -> Text:
 
     # WARN: not thread-safe!
     return shutil.make_archive(zipped_path.name, "zip", folder)
+
+
+def json_unpickle(file_name: Union[Text, Path]) -> Any:
+    """Unpickle an object from file using json."""
+    import jsonpickle.ext.numpy as jsonpickle_numpy
+    import jsonpickle
+
+    jsonpickle_numpy.register_handlers()
+
+    file_content = read_file(file_name)
+    return jsonpickle.loads(file_content)
+
+
+def json_pickle(file_name: Union[Text, Path], obj: Any) -> None:
+    """Pickle an object to a file using json."""
+    import jsonpickle.ext.numpy as jsonpickle_numpy
+    import jsonpickle
+
+    jsonpickle_numpy.register_handlers()
+
+    write_text_file(jsonpickle.dumps(obj), file_name)

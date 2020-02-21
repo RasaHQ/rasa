@@ -49,6 +49,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         import tensorflow_text
 
         model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
+
         # required to take care of cases when other files are already
         # stored in the default TFHUB_CACHE_DIR
         try:
