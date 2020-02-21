@@ -19,7 +19,6 @@ def set_train_arguments(parser: argparse.ArgumentParser):
 
     add_augmentation_param(parser)
     add_debug_plots_param(parser)
-    add_dump_stories_param(parser)
 
     add_model_name_param(parser)
     add_persist_nlu_data_param(parser)
@@ -34,7 +33,6 @@ def set_train_core_arguments(parser: argparse.ArgumentParser):
 
     add_augmentation_param(parser)
     add_debug_plots_param(parser)
-    add_dump_stories_param(parser)
 
     add_force_param(parser)
 
@@ -106,17 +104,6 @@ def add_augmentation_param(
         type=int,
         default=50,
         help="How much data augmentation to use during training.",
-    )
-
-
-def add_dump_stories_param(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
-):
-    parser.add_argument(
-        "--dump-stories",
-        default=False,
-        action="store_true",
-        help="If enabled, save flattened stories to a file.",
     )
 
 
