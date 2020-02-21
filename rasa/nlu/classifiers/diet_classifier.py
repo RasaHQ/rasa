@@ -248,6 +248,12 @@ class DIETClassifier(EntityExtractor):
     ) -> None:
         """Declare instance variables with default values."""
 
+        if component_config is not None and EPOCHS not in component_config:
+            logger.warning(
+                f"Please configure the number of '{EPOCHS}' in your configuration file."
+                f" We will change the default value of '{EPOCHS}' in the future to 1. "
+            )
+
         super().__init__(component_config)
 
         self._check_config_parameters()
