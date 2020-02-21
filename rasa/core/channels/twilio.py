@@ -77,7 +77,7 @@ class TwilioOutput(Client, OutputChannel):
         if not json_message.get("media_url"):
             json_message.setdefault("body", "")
         if not json_message.get("messaging_service_sid"):
-            json_message.setdefault("from", self.twilio_number)
+            json_message.setdefault("from_", self.twilio_number)
 
         await self._send_message(json_message)
 
