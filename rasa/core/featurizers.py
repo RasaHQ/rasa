@@ -18,6 +18,9 @@ from rasa.core.training.data import DialogueTrainingData
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
+
+from rasa.core.interpreter import RasaNLPInterpreter, RasaNLUInterpreter
+from rasa.nlu.model import Trainer
 from rasa.nlu.constants import CLS_TOKEN
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import is_logging_disabled
@@ -70,8 +73,14 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
     ) -> None:
 
         super().__init__()
+        from rasa.nlu import config
+
+        self.config = config.load()
+        # self.pipeline = Trainer()
+
         self.delimiter = '_'
         self.intent_tokenization_flag = True
+        self.interpreter = RasaNLPInterpreter()
 
     def prepare_training_data_and_train(self, trackers_as_states):
         """
@@ -107,8 +116,9 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         """
 
         training_data = domain.input_states
+        translator = str.maketrans(string.punctuation, self.delimiter*len(string.punctuation))
         training_data = [
-            Message(key.replace(self.delimiter, " ") + " "+ CLS_TOKEN) for key in training_data
+            Message(key.translate(translator).replace(self.delimiter, " ") + " "+ CLS_TOKEN) for key in training_data
         ]
         training_data = TrainingData(training_examples=training_data)
         self.train(training_data)
@@ -137,12 +147,26 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
 
         state_keys = [key.replace(self.delimiter, " ") for key in list(state.keys())]
         attribute = "text"
+
         message = Message(" ".join(state_keys))
+        toks = self.interpreter.parse(message.text)
+
         message_tokens = self._get_processed_message_tokens_by_attribute(
             message, attribute
         )
+
+        if 'tokens' in list(toks.keys()):
+            toks = [tok.text for tok in toks['tokens']]
+        else:
+            toks = []
+
+        # toks = message_tokens
+
+
+
         # features shape (1, seq, dim)
-        features = self._create_sequence(attribute, [message_tokens + [CLS_TOKEN]])
+        # features = self._create_sequence(attribute, [message_tokens + [CLS_TOKEN]])
+        features = self._create_sequence(attribute, [toks + [CLS_TOKEN]])
 
         if type_output == "dense":
             return features[0].A[-1].astype(np.int32)
