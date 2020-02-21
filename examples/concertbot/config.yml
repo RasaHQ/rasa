@@ -1,6 +1,15 @@
 language: en
 
-pipeline: supervised_embeddings
+pipeline:
+  - name: "WhitespaceTokenizer"
+  - name: "RegexFeaturizer"
+  - name: "CountVectorsFeaturizer"
+  - name: "CountVectorsFeaturizer"
+    analyzer: "char_wb"
+    min_ngram: 1
+    max_ngram: 4
+  - name: "DIETClassifier"
+  - name: "EntitySynonymMapper"
 
 policies:
   - name: EmbeddingPolicy
