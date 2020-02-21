@@ -72,13 +72,14 @@ But here we want to make use of the fact that the reminder can carry entities, a
 
 .. warning::
 
-  Reminders are cancelled whenever you shutdown rasa.
+  Reminders are cancelled whenever you shutdown your Rasa server.
 
 
 .. warning::
 
-  Reminders currently (Rasa 1.7) don't work in `rasa shell`.
-  Use `rasa x` instead.
+  Reminders currently (Rasa 1.8) don't work in `rasa shell`.
+  You have to test them with a
+  `running Rasa X server <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`_ instead.
 
 
 .. note::
