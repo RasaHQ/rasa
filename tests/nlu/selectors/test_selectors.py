@@ -13,12 +13,7 @@ from rasa.utils.tensorflow.constants import EPOCHS
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
             {"name": "ResponseSelector", EPOCHS: 1},
-        ],
-        [
-            {"name": "WhitespaceTokenizer"},
-            {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETSelector", EPOCHS: 1},
-        ],
+        ]
     ],
 )
 def test_train_selector(pipeline, component_builder, tmpdir):

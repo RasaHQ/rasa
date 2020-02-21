@@ -38,7 +38,6 @@ def pipelines_for_tests():
                 "DIETClassifier",
                 "EmbeddingIntentClassifier",
                 "ResponseSelector",
-                "DIETSelector",
                 "EntitySynonymMapper",
             ),
         ),
@@ -65,21 +64,13 @@ def pipelines_for_tests():
         (
             "en",
             as_pipeline(
-                "MitieNLP",
-                "MitieTokenizer",
-                "MitieFeaturizer",
-                "MitieEntityExtractor",
-                "MitieIntentClassifier",
+                "MitieNLP", "MitieTokenizer", "MitieFeaturizer", "MitieIntentClassifier"
             ),
         ),
         (
             "zh",
             as_pipeline(
-                "MitieNLP",
-                "JiebaTokenizer",
-                "MitieFeaturizer",
-                "MitieEntityExtractor",
-                "MitieIntentClassifier",
+                "MitieNLP", "JiebaTokenizer", "MitieFeaturizer", "MitieEntityExtractor"
             ),
         ),
     ]

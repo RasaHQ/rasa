@@ -5,7 +5,6 @@ import rasa.utils.io as io_utils
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
-from rasa.nlu.selectors.diet_selector import DIETSelector
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.utils.tensorflow.constants import EPOCHS
 
@@ -33,7 +32,6 @@ def update_number_of_epochs(config_path: Text, output_file: Text):
             EmbeddingIntentClassifier.name,
             DIETClassifier.name,
             ResponseSelector.name,
-            DIETSelector.name,
         ]:
             component[EPOCHS] = 2
 

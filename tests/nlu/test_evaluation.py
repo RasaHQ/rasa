@@ -318,7 +318,7 @@ def test_run_cv_evaluation_with_response_selector():
                 {"name": "WhitespaceTokenizer"},
                 {"name": "CountVectorsFeaturizer"},
                 {"name": "DIETClassifier", EPOCHS: 2},
-                {"name": "DIETSelector", EPOCHS: 2},
+                {"name": "ResponseSelector", EPOCHS: 2},
             ],
         }
     )
