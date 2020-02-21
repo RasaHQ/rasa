@@ -109,22 +109,19 @@ def test_set_attr_on_component():
                 {"name": "SpacyNLP"},
                 {"name": "SpacyTokenizer"},
                 {"name": "SpacyFeaturizer"},
-                {"name": "RegexFeaturizer"},
-                {"name": "CRFEntityExtractor"},
-                {"name": "EntitySynonymMapper"},
-                {"name": "SklearnIntentClassifier"},
+                {"name": "DIETClassifier"},
             ],
         }
     )
-    idx_classifier = _config.component_names.index("SklearnIntentClassifier")
+    idx_classifier = _config.component_names.index("DIETClassifier")
     idx_tokenizer = _config.component_names.index("SpacyTokenizer")
 
-    _config.set_component_attr(idx_classifier, C=324)
+    _config.set_component_attr(idx_classifier, epochs=10)
 
     assert _config.for_component(idx_tokenizer) == {"name": "SpacyTokenizer"}
     assert _config.for_component(idx_classifier) == {
-        "name": "SklearnIntentClassifier",
-        "C": 324,
+        "name": "DIETClassifier",
+        "epochs": 10,
     }
 
 
@@ -138,13 +135,13 @@ def test_override_defaults_supervised_embeddings_pipeline():
                 {"name": "SpacyNLP"},
                 {"name": "SpacyTokenizer"},
                 {"name": "SpacyFeaturizer", "pooling": "max"},
-                {"name": "SklearnIntentClassifier", "max_cross_validation_folds": 1},
+                {"name": "DIETClassifier", "epochs": 10},
             ],
         }
     )
 
     idx_featurizer = _config.component_names.index("SpacyFeaturizer")
-    idx_classifier = _config.component_names.index("SklearnIntentClassifier")
+    idx_classifier = _config.component_names.index("DIETClassifier")
 
     component1 = builder.create_component(
         _config.for_component(idx_featurizer), _config
@@ -154,7 +151,7 @@ def test_override_defaults_supervised_embeddings_pipeline():
     component2 = builder.create_component(
         _config.for_component(idx_classifier), _config
     )
-    assert component2.component_config["max_cross_validation_folds"] == 1
+    assert component2.component_config["epochs"] == 10
 
 
 def config_files_in(config_directory: Text):

@@ -2,6 +2,7 @@ language: en
 
 pipeline:
   - name: WhitespaceTokenizer
+  - name: LexicalSyntacticFeaturizer
   - name: CountVectorsFeaturizer
     token_pattern: (?u)\b\w+\b
   - name: DucklingHTTPExtractor
@@ -9,6 +10,7 @@ pipeline:
     dimensions:
       - number
   - name: DIETClassifier
+    epochs: 100
   - name: EntitySynonymMapper
 
 policies:
