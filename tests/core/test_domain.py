@@ -317,8 +317,11 @@ slots:
   cuisine:
     type: text
 responses:
+  utter_goodbye:
+  - text: bye!
   utter_greet:
   - text: hey you!"""
+
 
     domain_1 = Domain.from_yaml(test_yaml_1)
     domain_2 = Domain.from_yaml(test_yaml_2)
