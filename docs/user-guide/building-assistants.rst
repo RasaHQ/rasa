@@ -782,10 +782,6 @@ We’ll need to add the intent and utterances we just added to our domain:
    - faq
    - explain
 
-   actions:
-   - utter_explain_why_budget
-   - utter_explain_why_email
-
    templates:
      utter_explain_why_budget:
      - text: We need to know your budget to recommend a subscription
