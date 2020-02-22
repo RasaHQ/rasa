@@ -295,9 +295,7 @@ slots: {}"""
 
 
 def test_merge_yaml_domains():
-    test_yaml_1 = """actions:
-- utter_greet
-config:
+    test_yaml_1 = """config:
   store_entities_as_slots: true
 entities: []
 intents: []
@@ -306,10 +304,7 @@ responses:
   utter_greet:
   - text: hey there!"""
 
-    test_yaml_2 = """actions:
-- utter_greet
-- utter_goodbye
-config:
+    test_yaml_2 = """config:
   store_entities_as_slots: false
 session_config:
     session_expiration_time: 20
