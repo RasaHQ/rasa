@@ -236,9 +236,7 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_typ
 
 
 def test_domain_to_yaml():
-    test_yaml = """actions:
-- utter_greet
-config:
+    test_yaml = """config:
   store_entities_as_slots: true
 entities: []
 forms: []
