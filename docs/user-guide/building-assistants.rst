@@ -274,9 +274,6 @@ to the list of actions. These actions always have to start with the ``respond_``
 .. code-block:: yaml
 
    actions:
-     - utter_greet
-     - utter_noworries
-     - utter_bye
      - respond_faq
 
 Next we’ll write a story so that Core knows which action to predict:
