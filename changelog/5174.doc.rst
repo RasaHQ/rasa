@@ -1,0 +1,1 @@
+Removed the need to explicitly add utterance actions to the domain.
