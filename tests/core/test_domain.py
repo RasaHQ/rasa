@@ -322,7 +322,6 @@ responses:
   utter_greet:
   - text: hey you!"""
 
-
     domain_1 = Domain.from_yaml(test_yaml_1)
     domain_2 = Domain.from_yaml(test_yaml_2)
     domain = domain_1.merge(domain_2)
