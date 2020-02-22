@@ -25,11 +25,5 @@ responses:
   utter_default:
     - text: default message
 
-actions:
-  - utter_default
-  - utter_greet
-  - utter_goodbye
-  - utter_ask_continue
-
 forms:
   - some_form
