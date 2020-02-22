@@ -1119,7 +1119,7 @@ components:
           type: array
           items:
             type: string
-          example: ['utter_greet', 'utter_goodbye', 'action_listen']
+          example: ['action_greet', 'action_goodbye', 'action_listen']
 
     BotMessage:
       type: object
