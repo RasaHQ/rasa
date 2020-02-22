@@ -93,11 +93,6 @@ We’ll also need to add the intents, actions and templates to our ``domain.yml`
      - bye
      - thank
 
-   actions:
-     - utter_greet
-     - utter_noworries
-     - utter_bye
-
    templates:
      utter_noworries:
        - text: No worries!
