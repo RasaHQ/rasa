@@ -1420,13 +1420,6 @@ components:
           - mood_great
           - mood_unhappy
 
-        actions:
-          - utter_greet
-          - utter_cheer_up
-          - utter_did_that_help
-          - utter_happy
-          - utter_goodbye
-
         responses:
           utter_greet:
           - text: "Hey! How are you?"
