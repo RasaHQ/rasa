@@ -225,10 +225,7 @@ def test_custom_slot_type(tmpdir: Path):
 
     responses:
         utter_greet:
-         - text: hey there!
-
-    actions:
-        - utter_greet""",
+         - text: hey there!""",
     ],
 )
 def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_type):
