@@ -328,8 +328,10 @@ responses:
     # single attribute should be taken from domain_1
     assert domain.store_entities_as_slots
     # conflicts should be taken from domain_1
-    assert domain.templates == {"utter_greet": [{"text": "hey there!"}],
-                                "utter_goodbye": [{"text": "bye!"}]}
+    assert domain.templates == {
+        "utter_greet": [{"text": "hey there!"}],
+        "utter_goodbye": [{"text": "bye!"}],
+    }
     # lists should be deduplicated and merged
     assert domain.intents == ["greet"]
     assert domain.entities == ["cuisine"]
@@ -342,8 +344,10 @@ responses:
     # single attribute should be taken from domain_2
     assert not domain.store_entities_as_slots
     # conflicts should take value from domain_2
-    assert domain.templates == {"utter_greet": [{"text": "hey you!"}],
-                                "utter_goodbye": [{"text": "bye!"}]}
+    assert domain.templates == {
+        "utter_greet": [{"text": "hey you!"}],
+        "utter_goodbye": [{"text": "bye!"}],
+    }
     assert domain.session_config == SessionConfig(20, True)
 
 
