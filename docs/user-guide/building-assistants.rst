@@ -889,9 +889,6 @@ And finally we’ll add a template to our domain file:
 
 .. code-block:: yaml
 
-   actions:
-   - utter_out_of_scope
-
    templates:
      utter_out_of_scope:
      - text: Sorry, I can’t handle that request.
