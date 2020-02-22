@@ -24,6 +24,8 @@ responses:
     - text: goodbye :(
   utter_default:
     - text: default message
+  utter_ask_continue:
+    - text: should I continue?
 
 forms:
   - some_form
