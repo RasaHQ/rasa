@@ -656,7 +656,8 @@ yet we don’t want the intent to affect the dialogue history. To do this, the r
 must be an action that returns the ``UserUtteranceReverted()`` event to remove the
 interaction from the dialogue history.
 
-First, open the ``domain.yml`` and modify the greet intent and add ``action_greet`` as shown here:
+First, open the ``domain.yml`` and modify the greet intent and add a new block ```actions``` in
+the file, next, add the ``action_greet`` as shown here:
 
 .. code-block:: yaml
 
@@ -668,11 +669,7 @@ First, open the ``domain.yml`` and modify the greet intent and add ``action_gree
      - contact_sales
      - inform
 
-   Actions:
-     - utter_greet
-     - utter_noworries
-     - utter_bye
-     - respond_faq
+   actions:
      - action_greet
 
 Remove any stories using the "greet" intent if you have them.
