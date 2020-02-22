@@ -341,7 +341,8 @@ responses:
     # single attribute should be taken from domain_2
     assert not domain.store_entities_as_slots
     # conflicts should take value from domain_2
-    assert domain.templates == {"utter_greet": [{"text": "hey you!"}]}
+    assert domain.templates == {"utter_greet": [{"text": "hey you!"}],
+                                "utter_goodbye": [{"text": "bye!"}]}
     assert domain.session_config == SessionConfig(20, True)
 
 
