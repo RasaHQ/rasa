@@ -217,10 +217,7 @@ def test_custom_slot_type(tmpdir: Path):
 
     responses:
         utter_greet:
-         - text: hey there!
-
-    actions:
-        - utter_greet""",
+         - text: hey there!""",
         """
     slots:
         custom:
