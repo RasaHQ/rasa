@@ -1,17 +1,11 @@
-import asyncio
 import inspect
 import json
 import logging
-import uuid
-from asyncio import Queue, CancelledError
-from sanic import Sanic, Blueprint, response
+from asyncio import CancelledError
+from sanic import Blueprint, response
 from sanic.request import Request
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable, Union
 
-import rasa.utils.endpoints
-from rasa.cli import utils as cli_utils
-from rasa.constants import DOCS_BASE_URL
-from rasa.core import utils
 from sanic.response import HTTPResponse
 from sanic.exceptions import abort
 from oauth2client import client
@@ -253,10 +247,11 @@ class HangoutsInput(InputChannel):
         try:
             token = client.verify_id_token(
                 bot_token,
-                self.project_id, 
-                cert_uri="https://www.googleapis.com/service_accounts/v1/metadata/x509/chat@system.gserviceaccount.com")
+                self.project_id,
+                cert_uri="https://www.googleapis.com/service_accounts/v1/metadata/x509/chat@system.gserviceaccount.com",
+            )
 
-            if token['iss'] != "chat@system.gserviceaccount.com":
+            if token["iss"] != "chat@system.gserviceaccount.com":
                 abort(401)
         except:
             abort(401)
