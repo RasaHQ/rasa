@@ -10,9 +10,10 @@ Google Hangouts Chat
 Hangouts Chat Setup
 -------------------
 
-It is possible to connect a bot to Google Hangouts Chat in synchronous mode without authentification.
-For more information see the official Google resources https://developers.google.com/hangouts/chat. 
-Therefore, you do not need any credentials in your ``credentials.yml`` file.
+In order to connect your Rasa bot to Google Hangouts Chat, you first need to create a project in 
+Google Developer Console that includes the Hangouts API. There you can specify your bot's endpoint
+and also obtain your project id, which determines the scope for the OAuth2 authorization.
+For more information see the official Google resources https://developers.google.com/hangouts/chat.
 
 This channel works similar to the standard Rasa REST channel. For each request from the channel, your bot will 
 send one response. The response will be displayed to the user either as text or a so-called card (for
@@ -24,20 +25,23 @@ to the usually synchronous nature of Rasa bots, this functionality is not includ
 Running On Hangouts Chat
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you want to connect to Facebook using the run script, e.g. using:
+If you want to connect to Hangouts Chat using the run script, e.g. using:
 
 .. code-block:: bash
 
   rasa run
 
+you need to supply a ``credentials.yml``.
+
 Except for ``MESSAGE`` and ``CARD_CLICKED``, Hangouts Chat knows two other event types, ``ADDED_TO_SPACE`` and 
 ``REMOVED_FROM_SPACE``, which are triggered when your bot is added or removed from a direct message or chat room
 space. In order to have full flexibility, you can specify the respective intents for these events 
-in your ``credentials.yml`` 
+in your ``credentials.yml``.
 
 .. code-block:: yaml
 
   hangouts:
+    project_id: "12345678901"
     user_added_intent: "/user_added"
     room_added_intent: "/room_added"
     removed_intent: "/bot_removed"
@@ -61,6 +65,7 @@ creating an interactive card, e.g. via ``dispatcher.utter_button_message()`` in 
 specify a payload for each button that is going to be returned with the ``CARD_CLICKED`` event and extracted 
 by the ``HangoutsInput`` channel (for example 
 ``buttons=[{"text":"Yes!", "payload":"/affirm"}, {"text":"Nope.", "payload":"/deny"}])``.
+Updating cards is not yet supported.
 
 For more detailed information on cards, visit the
 `Hangouts docs <https://developers.google.com/hangouts/chat/reference>`_.

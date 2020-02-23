@@ -89,6 +89,7 @@ install_requires = [
     # remove when tensorflow@1.15.x or a pre-release patch is released
     # https://github.com/tensorflow/tensorflow/issues/32319
     "gast==0.2.2",
+    "oauth2client==4.1.3",
 ]
 
 extras_requires = {

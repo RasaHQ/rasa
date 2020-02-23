@@ -13,6 +13,8 @@ from rasa.cli import utils as cli_utils
 from rasa.constants import DOCS_BASE_URL
 from rasa.core import utils
 from sanic.response import HTTPResponse
+from sanic.exceptions import abort
+from oauth2client import client
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 
@@ -181,8 +183,11 @@ class HangoutsInput(InputChannel):
 
     @classmethod
     def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
-        credentials = credentials or {}
+        if not credentials:
+            cls.raise_missing_credentials_exception()
+
         return cls(
+            credentials.get("project_id"),
             credentials.get("user_added_intent"),
             credentials.get("room_added_intent"),
             credentials.get("removed_intent"),
@@ -190,11 +195,13 @@ class HangoutsInput(InputChannel):
 
     def __init__(
         self,
+        project_id: Text,
         user_added_intent: Optional[Text] = None,
         room_added_intent: Optional[Text] = None,
         removed_intent: Optional[Text] = None,
     ) -> None:
 
+        self.project_id = project_id
         self.user_added_intent = user_added_intent
         self.room_added_intent = room_added_intent
         self.removed_intent = removed_intent
@@ -241,6 +248,19 @@ class HangoutsInput(InputChannel):
     def _extract_input_channel(self, req: Request) -> Text:
         return self.name()
 
+    def _check_token(self, bot_token):
+        # see https://developers.google.com/hangouts/chat/how-tos/bots-develop#verifying_bot_authenticity
+        try:
+            token = client.verify_id_token(
+                bot_token,
+                self.project_id, 
+                cert_uri="https://www.googleapis.com/service_accounts/v1/metadata/x509/chat@system.gserviceaccount.com")
+
+            if token['iss'] != "chat@system.gserviceaccount.com":
+                abort(401)
+        except:
+            abort(401)
+
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]
     ) -> Blueprint:
@@ -253,6 +273,9 @@ class HangoutsInput(InputChannel):
 
         @custom_webhook.route("/webhook", methods=["POST"])
         async def receive(request: Request) -> HTTPResponse:
+
+            token = request.headers.get("Authorization").replace("Bearer ", "")
+            self._check_token(token)
 
             sender_id = self._extract_sender(request)
             room_name = self._extract_room(request)
