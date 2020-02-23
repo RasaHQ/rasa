@@ -78,7 +78,7 @@ def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
 
 
 def configure_app(
-    conversation_id: str,
+    conversation_id: Text,
     input_channels: Optional[List["InputChannel"]] = None,
     cors: Optional[Union[Text, List[Text], None]] = None,
     auth_token: Optional[Text] = None,
