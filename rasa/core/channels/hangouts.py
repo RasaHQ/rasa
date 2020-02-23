@@ -9,6 +9,7 @@ from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitabl
 from sanic.response import HTTPResponse
 from sanic.exceptions import abort
 from oauth2client import client
+from oauth2client.crypt import AppIdentityError
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 
@@ -47,7 +48,7 @@ class HangoutsOutput(OutputChannel):
         }
         return card
 
-    def _text_button_card(self, text: Text, buttons: List) -> Dict:
+    def _text_button_card(self, text: Text, buttons: List) -> Union[Dict, None]:
         hangouts_buttons = []
         for b in buttons:
             try:
@@ -56,6 +57,7 @@ class HangoutsOutput(OutputChannel):
                 logger.error(
                     "Buttons must be a list of dicts with 'title' and 'payload' as keys"
                 )
+                return
 
             hangouts_buttons.append(
                 {
@@ -176,10 +178,11 @@ class HangoutsInput(InputChannel):
     """
 
     @classmethod
-    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
+    def from_credentials(cls, credentials: Dict[Text, Any]) -> InputChannel:
         if not credentials:
             cls.raise_missing_credentials_exception()
 
+        # pytype: disable=attribute-error
         return cls(
             credentials.get("project_id"),
             credentials.get("user_added_intent"),
@@ -242,7 +245,7 @@ class HangoutsInput(InputChannel):
     def _extract_input_channel(self, req: Request) -> Text:
         return self.name()
 
-    def _check_token(self, bot_token):
+    def _check_token(self, bot_token: Text) -> None:
         # see https://developers.google.com/hangouts/chat/how-tos/bots-develop#verifying_bot_authenticity
         try:
             token = client.verify_id_token(
@@ -253,7 +256,7 @@ class HangoutsInput(InputChannel):
 
             if token["iss"] != "chat@system.gserviceaccount.com":
                 abort(401)
-        except:
+        except AppIdentityError:
             abort(401)
 
     def blueprint(
