@@ -78,7 +78,6 @@ def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
 
 
 def configure_app(
-    conversation_id: Text,
     input_channels: Optional[List["InputChannel"]] = None,
     cors: Optional[Union[Text, List[Text], None]] = None,
     auth_token: Optional[Text] = None,
@@ -89,6 +88,7 @@ def configure_app(
     port: int = constants.DEFAULT_SERVER_PORT,
     endpoints: Optional[AvailableEndpoints] = None,
     log_file: Optional[Text] = None,
+    conversation_id: Optional[Text] = uuid.uuid4().hex,
 ):
     """Run the agent."""
     from rasa import server
@@ -167,7 +167,6 @@ def serve_application(
     input_channels = create_http_input_channels(channel, credentials)
 
     app = configure_app(
-        conversation_id,
         input_channels,
         cors,
         auth_token,
@@ -177,6 +176,7 @@ def serve_application(
         port=port,
         endpoints=endpoints,
         log_file=log_file,
+        conversation_id=conversation_id,
     )
 
     ssl_context = server.create_ssl_context(
