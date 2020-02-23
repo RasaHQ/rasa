@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import uuid
 import os
 import shutil
 from functools import partial
@@ -10,7 +11,7 @@ import rasa.utils
 import rasa.utils.common
 import rasa.utils.io
 from rasa import model, server
-from rasa.constants import ENV_SANIC_BACKLOG, DEFAULT_SENDER_ID
+from rasa.constants import ENV_SANIC_BACKLOG
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
@@ -77,6 +78,7 @@ def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
 
 
 def configure_app(
+    conversation_id: str,
     input_channels: Optional[List["InputChannel"]] = None,
     cors: Optional[Union[Text, List[Text], None]] = None,
     auth_token: Optional[Text] = None,
@@ -87,7 +89,6 @@ def configure_app(
     port: int = constants.DEFAULT_SERVER_PORT,
     endpoints: Optional[AvailableEndpoints] = None,
     log_file: Optional[Text] = None,
-    conversation_id: Optional[Text] = DEFAULT_SENDER_ID,
 ):
     """Run the agent."""
     from rasa import server
@@ -125,6 +126,7 @@ def configure_app(
         async def run_cmdline_io(running_app: Sanic):
             """Small wrapper to shut down the server once cmd io is done."""
             await asyncio.sleep(1)  # allow server to start
+
             await console.record_messages(
                 server_url=constants.DEFAULT_SERVER_FORMAT.format("http", port),
                 sender_id=conversation_id,
@@ -155,7 +157,7 @@ def serve_application(
     ssl_keyfile: Optional[Text] = None,
     ssl_ca_file: Optional[Text] = None,
     ssl_password: Optional[Text] = None,
-    conversation_id: Optional[Text] = DEFAULT_SENDER_ID,
+    conversation_id: Optional[Text] = uuid.uuid4().hex,
 ):
     from rasa import server
 
@@ -165,6 +167,7 @@ def serve_application(
     input_channels = create_http_input_channels(channel, credentials)
 
     app = configure_app(
+        conversation_id,
         input_channels,
         cors,
         auth_token,
@@ -174,7 +177,6 @@ def serve_application(
         port=port,
         endpoints=endpoints,
         log_file=log_file,
-        conversation_id=conversation_id,
     )
 
     ssl_context = server.create_ssl_context(

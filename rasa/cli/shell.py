@@ -1,12 +1,12 @@
 import argparse
 import logging
+import uuid
 
 from typing import List
 
 from rasa.cli.arguments import shell as arguments
 from rasa.cli.utils import print_error
 from rasa.exceptions import ModelNotFound
-from rasa.constants import DEFAULT_SENDER_ID
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def add_subparser(
 
     shell_parser.add_argument(
         "--conversation-id",
-        default=DEFAULT_SENDER_ID,
+        default=uuid.uuid4().hex,
         required=False,
         help="Set the conversation ID.",
     )
