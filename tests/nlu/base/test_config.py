@@ -5,11 +5,12 @@ from typing import Text
 import pytest
 
 import rasa.utils.io
-from rasa.nlu import config
-from rasa.nlu.components import ComponentBuilder
+from rasa.nlu import config, load_data
+from rasa.nlu.components import ComponentBuilder, validate_required_components_from_data
 from rasa.nlu.registry import registered_pipeline_templates
 from tests.nlu.conftest import CONFIG_DEFAULTS_PATH
 from tests.nlu.utilities import write_file_config
+from rasa.nlu.model import Trainer
 
 defaults = rasa.utils.io.read_config_file(CONFIG_DEFAULTS_PATH)
 
@@ -81,3 +82,55 @@ def test_override_defaults_supervised_embeddings_pipeline():
     component2_cfg = cfg.for_component(1)
     component2 = builder.create_component(component2_cfg, cfg)
     assert component2.epochs == 10
+
+
+def test_warn_no_pretrained_extractor():
+    cfg = config.load("data/test_config/config_pretrained_entity_extractor.yml")
+    trainer = Trainer(cfg)
+    training_data = load_data("data/test/demo-rasa-small.json")
+    with pytest.warns(UserWarning) as record:
+        validate_required_components_from_data(trainer.pipeline, training_data)
+
+    assert len(record) == 1
+
+
+def test_warn_missing_regex_featurizer():
+    cfg = config.load("data/test_config/config_crf_no_regex.yml")
+    trainer = Trainer(cfg)
+    training_data = load_data("data/test/multiple_files_markdown/demo-rasa-greet.md")
+    with pytest.warns(UserWarning) as record:
+        validate_required_components_from_data(trainer.pipeline, training_data)
+
+    assert len(record) == 1
+
+
+def test_warn_missing_pattern_feature_lookup_tables():
+    cfg = config.load("data/test_config/config_crf_no_pattern_feature.yml")
+    trainer = Trainer(cfg)
+    training_data = load_data(
+        "/Users/melinda/rasa/data/test/lookup_tables/lookup_table.md"
+    )
+    with pytest.warns(UserWarning) as record:
+        validate_required_components_from_data(trainer.pipeline, training_data)
+
+    assert len(record) == 1
+
+
+def test_warn_missing_synonym_mapper():
+    cfg = config.load("data/test_config/config_crf_no_synonyms.yml")
+    trainer = Trainer(cfg)
+    training_data = load_data("data/test/markdown_single_sections/synonyms_only.md")
+    with pytest.warns(UserWarning) as record:
+        validate_required_components_from_data(trainer.pipeline, training_data)
+
+    assert len(record) == 1
+
+
+def test_warn_missing_response_selector():
+    cfg = config.load("data/test_config/config_crf_no_regex.yml")
+    trainer = Trainer(cfg)
+    training_data = load_data("data/test/response_selector")
+    with pytest.warns(UserWarning) as record:
+        validate_required_components_from_data(trainer.pipeline, training_data)
+
+    assert len(record) == 1
