@@ -33,6 +33,3 @@ class PublishingError(RasaException):
 
     def __str__(self) -> Text:
         return str(self.timestamp)
-
-    def __float__(self) -> float:
-        return self.timestamp

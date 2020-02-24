@@ -22,7 +22,7 @@ from rasa.core.channels import channel
 from rasa.core.channels.channel import RestInput
 from rasa.core.domain import SessionConfig
 from rasa.core.events import UserUttered
-from rasa.core.migrator import Migrator
+from rasa.core.exporter import Exporter
 from rasa.core.policies import Policy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.core.run import _create_app_without_api
@@ -265,8 +265,8 @@ def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
     )
 
 
-class MockMigrator(Migrator):
-    """Mocked `Migrator` object."""
+class MockExporter(Exporter):
+    """Mocked `Exporter` object."""
 
     def __init__(
         self,

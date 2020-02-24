@@ -14,7 +14,7 @@ from rasa.exceptions import (
     NoEventsInTimeRangeError,
     PublishingError,
 )
-from tests.conftest import MockMigrator, random_user_uttered_event
+from tests.conftest import MockExporter, random_user_uttered_event
 
 
 def _write_endpoint_config_to_yaml(path: Path, data: Dict[Text, Any]) -> Path:
@@ -40,11 +40,11 @@ def test_get_conversation_ids_to_process(
     tracker_store = Mock()
     tracker_store.keys.return_value = available_ids
 
-    migrator = MockMigrator(tracker_store)
-    migrator.requested_conversation_ids = requested_ids
+    exporter = MockExporter(tracker_store)
+    exporter.requested_conversation_ids = requested_ids
 
     # noinspection PyProtectedMember
-    assert migrator._get_conversation_ids_to_process() == set(expected)
+    assert exporter._get_conversation_ids_to_process() == set(expected)
 
 
 @pytest.mark.parametrize(
@@ -66,12 +66,12 @@ def test_get_conversation_ids_to_process_error(
     tracker_store = Mock()
     tracker_store.keys.return_value = available_ids
 
-    migrator = MockMigrator(tracker_store)
-    migrator.requested_conversation_ids = requested_ids
+    exporter = MockExporter(tracker_store)
+    exporter.requested_conversation_ids = requested_ids
 
     with pytest.raises(exception):
         # noinspection PyProtectedMember
-        migrator._get_conversation_ids_to_process()
+        exporter._get_conversation_ids_to_process()
 
 
 def test_fetch_events_within_time_range():
@@ -96,11 +96,11 @@ def test_fetch_events_within_time_range():
     tracker_store.retrieve.side_effect = _get_tracker
     tracker_store.keys.return_value = conversation_ids
 
-    migrator = MockMigrator(tracker_store)
-    migrator.requested_conversation_ids = conversation_ids
+    exporter = MockExporter(tracker_store)
+    exporter.requested_conversation_ids = conversation_ids
 
     # noinspection PyProtectedMember
-    fetched_events = migrator._fetch_events_within_time_range()
+    fetched_events = exporter._fetch_events_within_time_range()
 
     # events should come back for all requested conversation IDs
     assert all(
@@ -118,12 +118,12 @@ def test_fetch_events_within_time_range_tracker_does_not_err():
     tracker_store.retrieve.return_value = None
     tracker_store.keys.return_value = [uuid.uuid4()]
 
-    migrator = MockMigrator(tracker_store)
+    exporter = MockExporter(tracker_store)
 
     # no events means `NoEventsInTimeRangeError`
     with pytest.raises(NoEventsInTimeRangeError):
         # noinspection PyProtectedMember
-        migrator._fetch_events_within_time_range()
+        exporter._fetch_events_within_time_range()
 
 
 def test_fetch_events_within_time_range_tracker_contains_no_events():
@@ -134,12 +134,12 @@ def test_fetch_events_within_time_range_tracker_contains_no_events():
     )
     tracker_store.keys.return_value = ["a great ID"]
 
-    migrator = MockMigrator(tracker_store)
+    exporter = MockExporter(tracker_store)
 
     # no events means `NoEventsInTimeRangeError`
     with pytest.raises(NoEventsInTimeRangeError):
         # noinspection PyProtectedMember
-        migrator._fetch_events_within_time_range()
+        exporter._fetch_events_within_time_range()
 
 
 # noinspection PyProtectedMember
@@ -154,9 +154,9 @@ def test_sort_and_select_events_by_timestamp():
     ]
 
     tracker_store = Mock()
-    migrator = MockMigrator(tracker_store)
+    exporter = MockExporter(tracker_store)
 
-    selected_events = migrator._sort_and_select_events_by_timestamp(events)
+    selected_events = exporter._sort_and_select_events_by_timestamp(events)
 
     # events are sorted
     assert selected_events == list(
@@ -164,57 +164,57 @@ def test_sort_and_select_events_by_timestamp():
     )
 
     # apply minimum timestamp requirement, expect to get only two events back
-    migrator.minimum_timestamp = 2.0
-    assert migrator._sort_and_select_events_by_timestamp(events) == [
+    exporter.minimum_timestamp = 2.0
+    assert exporter._sort_and_select_events_by_timestamp(events) == [
         events[1],
         events[0],
     ]
-    migrator.minimum_timestamp = None
+    exporter.minimum_timestamp = None
 
     # apply maximum timestamp requirement, expect to get only one
-    migrator.maximum_timestamp = 1.1
-    assert migrator._sort_and_select_events_by_timestamp(events) == [events[2]]
+    exporter.maximum_timestamp = 1.1
+    assert exporter._sort_and_select_events_by_timestamp(events) == [events[2]]
 
     # apply both requirements, get one event back
-    migrator.minimum_timestamp = 2.0
-    migrator.maximum_timestamp = 2.1
-    assert migrator._sort_and_select_events_by_timestamp(events) == [events[1]]
+    exporter.minimum_timestamp = 2.0
+    exporter.maximum_timestamp = 2.1
+    assert exporter._sort_and_select_events_by_timestamp(events) == [events[1]]
 
 
 # noinspection PyProtectedMember
 def test_sort_and_select_events_by_timestamp_error():
     tracker_store = Mock()
-    migrator = MockMigrator(tracker_store)
+    exporter = MockExporter(tracker_store)
 
     # no events given
     with pytest.raises(NoEventsInTimeRangeError):
-        migrator._sort_and_select_events_by_timestamp([])
+        exporter._sort_and_select_events_by_timestamp([])
 
     # supply list of events, apply timestamp constraint and no events survive
-    migrator.minimum_timestamp = 3.1
+    exporter.minimum_timestamp = 3.1
     events = [random_user_uttered_event(3).as_dict()]
     with pytest.raises(NoEventsInTimeRangeError):
-        migrator._sort_and_select_events_by_timestamp(events)
+        exporter._sort_and_select_events_by_timestamp(events)
 
 
 def _add_conversation_id_to_event(event: Dict, conversation_id: Text):
     event["sender_id"] = conversation_id
 
 
-def test_publishing_error(caplog: LogCaptureFixture):
+def test_publishing_error():
     # mock event broker so it raises on `publish()`
     event_broker = Mock()
     event_broker.publish.side_effect = ValueError()
 
-    migrator = MockMigrator(event_broker=event_broker)
+    exporter = MockExporter(event_broker=event_broker)
 
     user_event = random_user_uttered_event(1).as_dict()
     user_event["sender_id"] = uuid.uuid4().hex
 
     # noinspection PyProtectedMember
-    migrator._fetch_events_within_time_range = Mock(return_value=[user_event])
+    exporter._fetch_events_within_time_range = Mock(return_value=[user_event])
 
     # run the export function
     with pytest.raises(PublishingError):
         # noinspection PyProtectedMember
-        migrator.publish_events()
+        exporter.publish_events()

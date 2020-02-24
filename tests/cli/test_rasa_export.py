@@ -1,6 +1,6 @@
 import argparse
 from pathlib import Path
-from typing import Callable, Optional, Dict, Text, List
+from typing import Callable, Optional, Dict, Text, List, Tuple, Any
 from unittest.mock import Mock
 
 import pytest
@@ -10,9 +10,11 @@ from _pytest.pytester import RunResult
 import rasa.core.utils as rasa_core_utils
 from rasa.cli import export
 from rasa.core.brokers.pika import PikaEventBroker
+from rasa.core.events import UserUttered
 from rasa.core.trackers import DialogueStateTracker
+from rasa.exceptions import PublishingError, NoEventsToMigrateError
 from tests.conftest import (
-    MockMigrator,
+    MockExporter,
     random_user_uttered_event,
     write_endpoint_config_to_yaml,
 )
@@ -155,14 +157,14 @@ def test_get_continuation_command(
     requested_ids: Optional[List[Text]],
     expected: Text,
 ):
-    migrator = MockMigrator()
-    migrator.maximum_timestamp = maximum_timestamp
-    migrator.endpoints_path = endpoints_path
-    migrator.requested_conversation_ids = requested_ids
+    exporter = MockExporter()
+    exporter.maximum_timestamp = maximum_timestamp
+    exporter.endpoints_path = endpoints_path
+    exporter.requested_conversation_ids = requested_ids
 
     # noinspection PyProtectedMember
     assert (
-        export._get_continuation_command(migrator, current_timestamp)
+        export._get_continuation_command(exporter, current_timestamp)
         == f"rasa export {expected}"
     )
 
@@ -171,10 +173,12 @@ def _add_conversation_id_to_event(event: Dict, conversation_id: Text):
     event["sender_id"] = conversation_id
 
 
-# noinspection PyProtectedMember
-def test_export_trackers(tmp_path: Path, monkeypatch: MonkeyPatch):
+def prepare_namespace_and_mocked_tracker_store_with_events(
+    temporary_path: Path, monkeypatch: MonkeyPatch
+) -> Tuple[List[UserUttered], argparse.Namespace]:
     endpoints_path = write_endpoint_config_to_yaml(
-        tmp_path, {"event_broker": {"type": "pika"}, "tracker_store": {"type": "sql"}}
+        temporary_path,
+        {"event_broker": {"type": "pika"}, "tracker_store": {"type": "sql"}},
     )
 
     # export these conversation IDs
@@ -191,21 +195,16 @@ def test_export_trackers(tmp_path: Path, monkeypatch: MonkeyPatch):
     )
 
     # prepare events from different senders and different timestamps
-    event_1 = random_user_uttered_event(1)
-    event_2 = random_user_uttered_event(2)
-    event_3 = random_user_uttered_event(3)
-    event_4 = random_user_uttered_event(4)
-    event_5 = random_user_uttered_event(11)
-    event_6 = random_user_uttered_event(5)
-    events = {
-        all_conversation_ids[0]: [event_1, event_2],
-        all_conversation_ids[1]: [event_3, event_4, event_5],
-        all_conversation_ids[2]: [event_6],
+    events = [random_user_uttered_event(timestamp) for timestamp in [1, 2, 3, 4, 11, 5]]
+    events_for_conversation_id = {
+        all_conversation_ids[0]: [events[0], events[1]],
+        all_conversation_ids[1]: [events[2], events[3], events[4]],
+        all_conversation_ids[2]: [events[5]],
     }
 
     def _get_tracker(conversation_id: Text) -> DialogueStateTracker:
         return DialogueStateTracker.from_events(
-            conversation_id, events[conversation_id]
+            conversation_id, events_for_conversation_id[conversation_id]
         )
 
     # mock tracker store
@@ -214,6 +213,14 @@ def test_export_trackers(tmp_path: Path, monkeypatch: MonkeyPatch):
     tracker_store.retrieve.side_effect = _get_tracker
 
     monkeypatch.setattr(export, "_get_tracker_store", lambda _: tracker_store)
+
+    return events, namespace
+
+
+def test_export_trackers(tmp_path: Path, monkeypatch: MonkeyPatch):
+    events, namespace = prepare_namespace_and_mocked_tracker_store_with_events(
+        tmp_path, monkeypatch
+    )
 
     # mock event broker so we can check its `publish` method is called
     event_broker = Mock()
@@ -235,6 +242,22 @@ def test_export_trackers(tmp_path: Path, monkeypatch: MonkeyPatch):
     # args itself is a tuple, and we want to access the first one, hence `call[1][0]`
     # check that events 1-4 were published
     assert all(
-        any(call[1][0]["text"] == event.text for call in calls)
-        for event in [event_1, event_2, event_3, event_4]
+        any(call[1][0]["text"] == event.text for call in calls) for event in events[:4]
     )
+
+
+@pytest.mark.parametrize("exception", [NoEventsToMigrateError, PublishingError(123)])
+def test_export_trackers_publishing_exceptions(
+    tmp_path: Path, monkeypatch: MonkeyPatch, exception: Exception
+):
+    events, namespace = prepare_namespace_and_mocked_tracker_store_with_events(
+        tmp_path, monkeypatch
+    )
+
+    # mock event broker so we can check its `publish` method is called
+    event_broker = Mock()
+    event_broker.publish.side_effect = exception
+    monkeypatch.setattr(export, "_get_event_broker", lambda _: event_broker)
+
+    with pytest.raises(SystemExit):
+        export.export_trackers(namespace)

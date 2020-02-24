@@ -16,7 +16,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.brokers.pika import PikaEventBroker
     from rasa.core.tracker_store import TrackerStore
-    from rasa.core.migrator import Migrator
+    from rasa.core.exporter import Exporter
     from rasa.core.utils import AvailableEndpoints
 
 logger = logging.getLogger(__name__)
@@ -172,9 +172,9 @@ def export_trackers(args: argparse.Namespace) -> None:
     _prepare_event_broker(event_broker)
     requested_conversation_ids = _get_requested_conversation_ids(args.conversation_ids)
 
-    from rasa.core.migrator import Migrator
+    from rasa.core.exporter import Exporter
 
-    migrator = Migrator(
+    exporter = Exporter(
         tracker_store,
         event_broker,
         args.endpoints,
@@ -184,13 +184,13 @@ def export_trackers(args: argparse.Namespace) -> None:
     )
 
     try:
-        published_events = migrator.publish_events()
+        published_events = exporter.publish_events()
         cli_utils.print_success(
             f"Done! Successfully published {published_events} events 🎉"
         )
 
     except PublishingError as e:
-        command = _get_continuation_command(migrator, float(e))
+        command = _get_continuation_command(exporter, e.timestamp)
         cli_utils.print_error_and_exit(
             f"Encountered error while publishing event with timestamp '{e}'. To "
             f"continue where I left off, run the following command:"
@@ -201,30 +201,30 @@ def export_trackers(args: argparse.Namespace) -> None:
         cli_utils.print_error_and_exit(str(e))
 
 
-def _get_continuation_command(migrator: "Migrator", timestamp: float) -> Text:
+def _get_continuation_command(exporter: "Exporter", timestamp: float) -> Text:
     """Build CLI command to continue 'rasa export' where it was interrupted.
 
     Called when event publishing stops due to an error.
 
     Args:
-        migrator: Migrator object containing objects relevant for this export.
+        exporter: Exporter object containing objects relevant for this export.
         timestamp: Timestamp of the last event attempted to be published.
 
     """
     # build CLI command command based on supplied timestamp and options
     command = f"rasa export"
 
-    if migrator.endpoints_path is not None:
-        command += f" --endpoints {migrator.endpoints_path}"
+    if exporter.endpoints_path is not None:
+        command += f" --endpoints {exporter.endpoints_path}"
 
     command += f" --minimum-timestamp {timestamp}"
 
-    if migrator.maximum_timestamp is not None:
-        command += f" --maximum-timestamp {migrator.maximum_timestamp}"
+    if exporter.maximum_timestamp is not None:
+        command += f" --maximum-timestamp {exporter.maximum_timestamp}"
 
-    if migrator.requested_conversation_ids:
+    if exporter.requested_conversation_ids:
         command += (
-            f" --conversation-ids {','.join(migrator.requested_conversation_ids)}"
+            f" --conversation-ids {','.join(exporter.requested_conversation_ids)}"
         )
 
     return command

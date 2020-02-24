@@ -18,8 +18,22 @@ from rasa.exceptions import (
 logger = logging.getLogger(__name__)
 
 
-class Migrator:
-    """Manages the publishing of events in a tracker store to an event broker."""
+class Exporter:
+    """Manages the publishing of events in a tracker store to an event broker.
+
+    Attributes:
+        endpoints_path: Path to the endpoints file used to configure the event
+            broker and tracker store. If `None`, the default path ('endpoints.yml')
+            is used.
+        tracker_store: `TrackerStore` to export conversations from.
+        event_broker: `EventBroker` to export conversations to.
+        requested_conversation_ids: List of conversation IDs requested to be
+            processed.
+        minimum_timestamp: Minimum timestamp of events that are published.
+            If `None`, apply no such constraint.
+        maximum_timestamp: Maximum timestamp of events that are published.
+            If `None`, apply no such constraint.
+    """
 
     def __init__(
         self,
@@ -30,19 +44,6 @@ class Migrator:
         minimum_timestamp: Optional[float] = None,
         maximum_timestamp: Optional[float] = None,
     ) -> None:
-        """
-        Args:
-            endpoints_path: Path to the endpoints file used to configure the event
-                broker and tracker store. If `None`, the default path ('endpoints.yml')
-                is used.
-            requested_conversation_ids: List of conversation IDs requested to be
-                processed.
-            minimum_timestamp: Minimum timestamp of events that are published.
-                If `None`, apply no such constraint.
-            maximum_timestamp: Maximum timestamp of events that are published.
-                If `None`, apply no such constraint.
-
-        """
         self.endpoints_path = endpoints_path
         self.tracker_store = tracker_store
         self.event_broker = event_broker

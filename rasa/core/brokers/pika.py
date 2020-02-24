@@ -176,7 +176,9 @@ def _declare_pika_channel_with_queue(
 
 
 def close_pika_channel(
-    channel: "Channel", attempts: int = 1000, time_between_attempts: float = 0.001
+    channel: "Channel",
+    attempts: int = 1000,
+    time_between_attempts_in_seconds: float = 0.001,
 ) -> None:
     """Attempt to close Pika channel, and wait until it is closed.
 
@@ -184,7 +186,7 @@ def close_pika_channel(
         channel: Pika `Channel` to close.
         attempts: How many times to try to confirm that the channel has indeed been
             closed.
-        time_between_attempts: Wait time between attempts to confirm closed state.
+        time_between_attempts_in_seconds: Wait time between attempts to confirm closed state.
 
     """
     from pika.exceptions import AMQPError
@@ -200,7 +202,7 @@ def close_pika_channel(
             logger.debug("Successfully closed Pika channel.")
             return None
 
-        time.sleep(time_between_attempts)
+        time.sleep(time_between_attempts_in_seconds)
         attempts -= 1
 
     logger.exception("Failed to close Pika channel.")
@@ -327,7 +329,7 @@ class PikaEventBroker(EventBroker):
         self._pika_connection.ioloop.start()
 
     def is_ready(
-        self, attempts: int = 1000, wait_time_between_attempts: float = 0.01,
+        self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01,
     ) -> bool:
         """Spin until the pika channel is open.
 
@@ -336,7 +338,7 @@ class PikaEventBroker(EventBroker):
 
         Args:
             attempts: Number of retries.
-            wait_time_between_attempts: Wait time between retries.
+            wait_time_between_attempts_in_seconds: Wait time between retries.
 
         Returns:
             `True` if the channel is available, `False` otherwise.
@@ -345,7 +347,7 @@ class PikaEventBroker(EventBroker):
         while attempts:
             if self.channel:
                 return True
-            time.sleep(wait_time_between_attempts)
+            time.sleep(wait_time_between_attempts_in_seconds)
             attempts -= 1
 
         return False
