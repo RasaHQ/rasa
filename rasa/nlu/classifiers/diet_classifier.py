@@ -196,11 +196,7 @@ class DIETClassifier(EntityExtractor):
     }
 
     # init helpers
-    def _check_config_parameters(self) -> None:
-        self.component_config = train_utils.check_deprecated_options(
-            self.component_config
-        )
-
+    def _check_masked_lm(self) -> None:
         if (
             self.component_config[MASKED_LM]
             and self.component_config[NUM_TRANSFORMER_LAYERS] == 0
@@ -210,20 +206,31 @@ class DIETClassifier(EntityExtractor):
                 f"'{MASKED_LM}' option should be 'False'."
             )
 
+    def _check_share_hidden_layers_sizes(self) -> None:
         if self.component_config.get(SHARE_HIDDEN_LAYERS):
-            first_hidden_layer_size = next(
+            first_hidden_layer_sizes = next(
                 iter(self.component_config[HIDDEN_LAYERS_SIZES].values())
             )
-            if any(
-                current_hidden_layer_size != first_hidden_layer_size
-                for current_hidden_layer_size in self.component_config[
+            # check that all hidden layer sizes are the same
+            identical_hidden_layer_sizes = all(
+                current_hidden_layer_sizes == first_hidden_layer_sizes
+                for current_hidden_layer_sizes in self.component_config[
                     HIDDEN_LAYERS_SIZES
                 ].values()
-            ):
+            )
+            if not identical_hidden_layer_sizes:
                 raise ValueError(
                     f"If hidden layer weights are shared, "
                     f"{HIDDEN_LAYERS_SIZES} must coincide."
                 )
+
+    def _check_config_parameters(self) -> None:
+        self.component_config = train_utils.check_deprecated_options(
+            self.component_config
+        )
+
+        self._check_masked_lm()
+        self._check_share_hidden_layers_sizes()
 
         self.component_config = train_utils.update_similarity_type(
             self.component_config
