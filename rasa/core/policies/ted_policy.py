@@ -368,16 +368,16 @@ class TEDPolicy(Policy):
         self.model.save(str(tf_model_file))
 
         io_utils.json_pickle(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.priority.json", self.priority
+            model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl", self.priority
+        )
+        io_utils.pickle_dump(
+            model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl", self.config
         )
         io_utils.json_pickle(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.meta.json", self.config
+            model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl", self.data_example
         )
         io_utils.json_pickle(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.json", self.data_example
-        )
-        io_utils.json_pickle(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.json", self._label_data
+            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl", self._label_data
         )
 
     @classmethod
@@ -407,7 +407,7 @@ class TEDPolicy(Policy):
         label_data = io_utils.json_unpickle(
             model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl"
         )
-        meta = io_utils.json_unpickle(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
+        meta = io_utils.pickle_load(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
         priority = io_utils.json_unpickle(
             model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl"
         )
