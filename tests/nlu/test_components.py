@@ -2,10 +2,7 @@ import pytest
 
 from typing import Tuple
 from rasa.nlu import registry
-from rasa.nlu.components import (
-    find_unavailable_packages,
-    _required_component_in_pipeline,
-)
+from rasa.nlu.components import find_unavailable_packages
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from tests.nlu import utilities
@@ -39,11 +36,15 @@ def test_all_components_in_model_templates_exist(pipeline_template):
 def test_all_required_components_can_be_satisfied(component_class):
     """Checks that all required_components are present in the registry."""
 
+    def _required_component_in_registry(component):
+        for previous_component in registry.component_classes:
+            if issubclass(previous_component, component):
+                return True
+        return False
+
     missing_components = []
     for required_component in component_class.required_components():
-        if not _required_component_in_pipeline(
-            required_component, registry.component_classes
-        ):
+        if not _required_component_in_registry(required_component):
             missing_components.append(required_component.name)
 
     assert missing_components == [], (
