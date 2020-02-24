@@ -46,7 +46,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
         self._set_lm_features(message)
 
-    def _set_lm_features(self, message: Message, attribute: Text = TEXT):
+    def _set_lm_features(self, message: Message, attribute: Text = TEXT) -> None:
         """Adds the precomputed word vectors to the messages features."""
 
         doc = self.get_doc(message, attribute)
