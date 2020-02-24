@@ -872,9 +872,10 @@ class DIETClassifier(EntityExtractor):
         inverted_label_dict = {
             int(key): value for key, value in inverted_label_dict.items()
         }
-        inverted_tag_dict = {
-            int(key): value for key, value in inverted_tag_dict.items()
-        }
+        if inverted_tag_dict is not None:
+            inverted_tag_dict = {
+                int(key): value for key, value in inverted_tag_dict.items()
+            }
 
         return (
             batch_tuple_sizes,
