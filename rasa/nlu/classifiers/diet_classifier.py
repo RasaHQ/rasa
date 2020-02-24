@@ -290,7 +290,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _create_label_id_dict(
         training_data: TrainingData, attribute: Text
     ) -> Dict[Text, int]:
-        """Create label_id dictionary"""
+        """Create label_id dictionary."""
 
         distinct_label_ids = {
             example.get(attribute) for example in training_data.intent_examples
