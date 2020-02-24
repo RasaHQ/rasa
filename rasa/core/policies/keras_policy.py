@@ -164,7 +164,6 @@ class KerasPolicy(Policy):
         **kwargs: Any,
     ) -> None:
 
-        # set random seed
         np.random.seed(self.random_seed)
         tf.random.set_seed(self.random_seed)
 
