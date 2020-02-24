@@ -175,7 +175,7 @@ def validate_required_components_from_data(
 
     Args:
         pipeline: the list of components in the pipeline
-        data: the :class:`rasa.nlu.training_data.TrainingData`
+        data: the :class:`rasa.nlu.training_data.training_data.TrainingData`
 
     """
 
@@ -426,7 +426,7 @@ class Component(metaclass=ComponentMetaclass):
         of components previous to this one.
 
         Args:
-            training_data: the :class:`rasa.nlu.training_data.TrainingData`
+            training_data: the :class:`rasa.nlu.training_data.training_data.TrainingData`
             config: the model configuration parameters
 
         """
@@ -446,7 +446,7 @@ class Component(metaclass=ComponentMetaclass):
         of components previous to this one.
 
         Args:
-            message: the :class:`rasa.nlu.training_data.Message` to process
+            message: the :class:`rasa.nlu.training_data.message.Message` to process
 
         """
 
@@ -525,10 +525,10 @@ class Component(metaclass=ComponentMetaclass):
         previous to this one in the pipeline.
 
         Args:
-            message: the :class:`rasa.nlu.training_data.Message` to process
+            message: the :class:`rasa.nlu.training_data.message.Message` to process
 
         Returns:
-            the processed :class:`rasa.nlu.training_data.Message`
+            the processed :class:`rasa.nlu.training_data.message.Message`
 
         """
 
