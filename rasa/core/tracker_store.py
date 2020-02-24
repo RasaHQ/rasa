@@ -17,7 +17,7 @@ from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.conversation import Dialogue
 from rasa.core.domain import Domain
-from rasa.core.events import SessionStarted
+from rasa.core.events import SessionStarted, Event
 from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 from rasa.utils.common import class_from_module_path, raise_warning, arguments_of
 from rasa.utils.endpoints import EndpointConfig
@@ -449,7 +449,7 @@ class MongoTrackerStore(TrackerStore):
             upsert=True,
         )
 
-    def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
+    def _additional_events(self, tracker: DialogueStateTracker) -> Iterator[Event]:
         """Return events from the tracker which aren't currently stored.
 
         Args:
@@ -459,15 +459,14 @@ class MongoTrackerStore(TrackerStore):
             List of serialised events that aren't currently stored.
 
         """
-
         stored = self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
-        number_events_since_last_session = len(
-            self._events_since_last_session_start(stored)
-        )
 
-        return itertools.islice(
-            tracker.events, number_events_since_last_session, len(tracker.events)
-        )
+        if not stored.get("events"):
+            return tracker.events
+
+        timestamp_of_latest_event = stored["events"][-1]["timestamp"]
+
+        return tracker.events_greater_than_timestamp(timestamp_of_latest_event)
 
     @staticmethod
     def _events_since_last_session_start(serialised_tracker: Dict) -> List[Dict]:
@@ -490,7 +489,7 @@ class MongoTrackerStore(TrackerStore):
 
         return list(reversed(events))
 
-    def retrieve(self, sender_id):
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """
         Args:
             sender_id: the message owner ID
@@ -514,8 +513,6 @@ class MongoTrackerStore(TrackerStore):
         if stored is not None:
             events = self._events_since_last_session_start(stored)
             return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
-        else:
-            return None
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Mongo Tracker Store"""
@@ -741,7 +738,7 @@ class SQLTrackerStore(TrackerStore):
 
         with self.session_scope() as session:
 
-            serialised_events = self._event_query(session, sender_id).all()
+            serialised_events = self._session_started_query(session, sender_id).all()
 
             events = [json.loads(event.data) for event in serialised_events]
 
@@ -758,12 +755,14 @@ class SQLTrackerStore(TrackerStore):
                 )
                 return None
 
-    def _event_query(self, session: "Session", sender_id: Text) -> "Query":
-        """Provide the query to retrieve the conversation events for a specific sender.
+    def _session_started_query(
+        self, session: "Session", conversation_id: Text
+    ) -> "Query":
+        """Provide the query to retrieve events since the last `session_started` event.
 
         Args:
             session: Current database session.
-            sender_id: Sender id whose conversation events should be retrieved.
+            conversation_id: Sender id whose conversation events should be retrieved.
 
         Returns:
             Query to get the conversation events.
@@ -771,10 +770,12 @@ class SQLTrackerStore(TrackerStore):
         import sqlalchemy as sa
 
         # Subquery to find the timestamp of the latest `SessionStarted` event
+        query_label = "session_started"
+
         session_start_sub_query = (
-            session.query(sa.func.max(self.SQLEvent.timestamp).label("session_start"))
+            session.query(sa.func.max(self.SQLEvent.timestamp).label(query_label))
             .filter(
-                self.SQLEvent.sender_id == sender_id,
+                self.SQLEvent.sender_id == conversation_id,
                 self.SQLEvent.type_name == SessionStarted.type_name,
             )
             .subquery()
@@ -783,12 +784,11 @@ class SQLTrackerStore(TrackerStore):
         return (
             session.query(self.SQLEvent)
             .filter(
-                self.SQLEvent.sender_id == sender_id,
-                # Find events after the latest `SessionStarted` event or return all
-                # events
+                self.SQLEvent.sender_id == conversation_id,
                 sa.or_(
-                    self.SQLEvent.timestamp >= session_start_sub_query.c.session_start,
-                    session_start_sub_query.c.session_start.is_(None),
+                    self.SQLEvent.timestamp
+                    >= getattr(session_start_sub_query.c, query_label),
+                    getattr(session_start_sub_query.c, query_label).is_(None),
                 ),
             )
             .order_by(self.SQLEvent.timestamp)
@@ -821,21 +821,40 @@ class SQLTrackerStore(TrackerStore):
                         data=json.dumps(data),
                     )
                 )
+
             session.commit()
 
-        logger.debug(f"Tracker with sender_id '{tracker.sender_id}' stored to database")
+        logger.debug(
+            f"Tracker with conversation ID '{tracker.sender_id}' stored in database."
+        )
 
     def _additional_events(
         self, session: "Session", tracker: DialogueStateTracker
-    ) -> Iterator:
+    ) -> Iterator[Event]:
         """Return events from the tracker which aren't currently stored."""
 
-        number_of_events_since_last_session = self._event_query(
+        timestamp_of_latest_event = self._timestamp_of_latest_event(
             session, tracker.sender_id
-        ).count()
-        return itertools.islice(
-            tracker.events, number_of_events_since_last_session, len(tracker.events)
         )
+
+        if timestamp_of_latest_event is None:
+            return tracker.events
+
+        return tracker.events_greater_than_timestamp(timestamp_of_latest_event)
+
+    def _timestamp_of_latest_event(
+        self, session: "Session", conversation_id: Text
+    ) -> Optional[float]:
+        """Return the last event stored for `conversation_id`."""
+
+        latest_event = (
+            session.query(self.SQLEvent)
+            .filter(self.SQLEvent.sender_id == conversation_id)
+            .order_by(self.SQLEvent.id.desc())
+            .first()
+        )
+
+        return latest_event.timestamp if latest_event else None
 
 
 class FailSafeTrackerStore(TrackerStore):

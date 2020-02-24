@@ -1,0 +1,6 @@
+In ``SQLTrackerStore`` and ``MongoTrackerStore``, events to be saved in addition to
+the ones already stored were determined wrongly based on the last ``session_started``
+event. This led to the number of events to be stored to be off by one, leading to the
+first ``action_listen`` being saved twice in these tracker stores. Determining which
+events should be saved now happens based on the timestamp of the latest event stored
+in the database.

@@ -1,4 +1,5 @@
 import copy
+import itertools
 import logging
 from collections import deque
 from enum import Enum
@@ -583,3 +584,21 @@ class DialogueStateTracker:
             if e["entity"] in self.slots.keys()
         ]
         return new_slots
+
+    def events_greater_than_timestamp(self, timestamp: float) -> Iterator[Event]:
+        """Return events from tracker that have a timestamp greater than `timestamp`.
+
+        Args:
+            timestamp: Minimum timestamp.
+
+        Returns:
+            An iterator over tracker events.
+
+        """
+        return reversed(
+            list(
+                itertools.takewhile(
+                    lambda e: e.timestamp > timestamp, reversed(self.events),
+                )
+            )
+        )

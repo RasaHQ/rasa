@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import tempfile
-from typing import List
 
 import fakeredis
 import pytest
@@ -20,7 +19,6 @@ from rasa.core.events import (
     ActionReverted,
     UserUtteranceReverted,
     SessionStarted,
-    Event,
 )
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
@@ -647,3 +645,22 @@ def test_tracker_without_slots(key, value, caplog):
         v = tracker.get_slot(key)
         assert v == value
     assert len(caplog.records) == 0
+
+
+def test_events_greater_than_timestamp():
+    events = [
+        ActionExecuted("one", timestamp=1),
+        UserUttered("two", timestamp=2),
+        ActionExecuted(ACTION_LISTEN_NAME, timestamp=3),
+    ]
+
+    tracker = get_tracker(events)
+
+    # timestamp of 0 yieds all events
+    assert len(list(tracker.events_greater_than_timestamp(0))) == 3
+
+    # timestamp of 2 yieds one event (it is a ">" constraint)
+    assert len(list(tracker.events_greater_than_timestamp(2))) == 1
+
+    # timestamp of 3 yieds no event
+    assert not list(tracker.events_greater_than_timestamp(3))
