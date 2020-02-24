@@ -311,8 +311,8 @@ To create more sophisticated assistants, you will want to use :ref:`custom-actio
 Continuing the example from above, you might want to add an action which tells
 the user a joke to cheer them up.
 
-Creating a Custom Action
-########################
+Running a Custom Action in Docker-Compose
+#########################################
 
 Start by creating the custom actions in a directory ``actions``:
 
@@ -348,12 +348,16 @@ Continuing with the example bot from ``rasa init``, replace ``utter_cheer_up`` i
 ``data/stories.md`` with the custom action ``action_joke``, and add
 ``action_joke`` to the actions in the domain file.
 
-Adding the Action Server
-########################
+To instruct Rasa to use the action server you have to tell Rasa its location.
+Add this to your ``endpoints.yml`` (if it does not exist, create it):
 
-The custom actions are run by the action server.
-To spin it up together with the Rasa instance, add a service
-``action_server`` to the ``docker-compose.yml``:
+.. code-block:: yaml
+
+  action_endpoint:
+    url: http://app:5055/webhook
+
+To spin up the action server together with the Rasa instance, add a service
+``app`` to the ``docker-compose.yml``:
 
 .. code-block:: yaml
    :emphasize-lines: 11-14
@@ -368,7 +372,7 @@ To spin it up together with the Rasa instance, add a service
          - ./:/app
        command:
          - run
-     action_server:
+     app:
        image: rasa/rasa-sdk:latest
        volumes:
          - ./actions:/app/actions
@@ -376,44 +380,94 @@ To spin it up together with the Rasa instance, add a service
 This pulls the image for the Rasa SDK which includes the action server,
 mounts your custom actions into it, and starts the server.
 
-To instruct Rasa to use the action server you have to tell Rasa its location.
-Add this to your ``endpoints.yml`` (if it does not exist, create it):
+Run ``docker-compose up`` to start the action server together with Rasa.
 
-.. code-block:: yaml
+.. warning::
 
-  action_endpoint:
-    url: http://action_server:5055/webhook
+   If you create a more complicated
+   action that has extra library dependencies, you will need to
+   :ref:`build an action server image<building-an-action-server-image>` to run your code.
 
-Run ``docker-compose up`` to start the action server together
-with Rasa.
+.. _building-an-action-server-image:
 
-Adding Custom Dependencies
-##########################
+Deploying an Action Server Image
+################################
 
-If your custom action has additional dependencies of systems or Python libraries,
-you can add these by extending the official image.
+If you build an image that includes your action code and store it in a container registry, you can run it locally
+or as part of your Rasa X or Rasa Enterprise deployment, without having to move code between servers.
+In addition, you can add any additional dependencies of systems or Python libraries
+that are part of your action code but not included in the base ``rasa/rasa-sdk`` image.
 
-To do so, create a file named ``Dockerfile`` in which you extend the official
-image and add your custom dependencies. For example:
+This documentation assumes you are pushing your images to `DockerHub <https://hub.docker.com/>`_.
+DockerHub will let you host multiple public repositories and
+one private repository for free. Be sure to first `create an account <https://hub.docker.com/signup/>`_
+and `create a repository <https://hub.docker.com/signup/>`_ to store your images. You could also push images to
+a different Docker registry, such as `Google Container Registry <https://cloud.google.com/container-registry>`_,
+`Amazon Elastic Container Registry <https://aws.amazon.com/ecr/>`_, or
+`Azure Container Registry <https://azure.microsoft.com/en-us/services/container-registry/>`_.
+
+To create your image, first create a list of your custom actions requirements in a file,
+``actions/requirements-actions.txt``. Then create a file named ``Dockerfile`` in your project directory,
+in which you'll extend the official SDK image, copy over your code, and add any custom dependencies. For example:
 
 .. code-block:: docker
 
-    # Extend the official Rasa SDK image
-    FROM rasa/rasa-sdk:latest
+   # Extend the official Rasa SDK image
+   FROM rasa/rasa-sdk:latest
 
-    # Add a custom system library (e.g. git)
-    RUN apt-get update && \
-        apt-get install -y git
+   # Use subdirectory as working directory
+   WORKDIR /app
 
-    # Add a custom python library (e.g. jupyter)
-    RUN pip install --no-cache-dir jupyter
+   # Copy any additional custom requirements
+   COPY actions/requirements-actions.txt ./
 
-You can then build the image via the following command, and use it in your
-``docker-compose.yml`` instead of the ``rasa/rasa-sdk`` image.
+   # Install extra requirements for actions code
+   RUN pip install -r requirements-actions.txt
+
+   # Copy actions code to working directory
+   COPY ./actions /app/actions
+
+
+You can then build the image via the following command:
 
 .. code-block:: bash
 
-  docker build . -t <name of your custom image>:<tag of your custom image>
+  docker build . -t <account_username>/<repository_name>:<custom_image_tag>
+
+The ``<custom_image_tag>`` should reference how this image will be different from others. For
+example, you could version or date your tags, as well as create different tags that have different code for production
+and development servers. You should create a new tag any time you update your code and want to re-deploy it.
+
+If you are using docker-compose locally, you can use this image directly in your
+``docker-compose.yml``:
+
+.. code-block:: yaml
+
+   version: '3.0'
+   services:
+     app:
+       image: <account_username>/<repository_name>:<custom_image_tag>
+
+If you're building this image to make it available from another server,
+for example a Rasa X or Rasa Enterprise deployment, you should push the image to a cloud repository.
+You can push the image to DockerHub via:
+
+.. code-block:: bash
+
+  docker login --username <account_username> --password <account_password>
+  docker push <account_username>/<repository_name>:<custom_image_tag>
+
+To authenticate and push images to a different container registry, please refer to the documentation of
+your chosen container registry.
+
+Then, reference the new image tag in your ``docker-compose.override.yml``:
+
+.. code-block:: yaml
+
+   version: '3.0'
+   services:
+     app:
+       image: <account_username>/<repository_name>:<custom_image_tag>
 
 Adding a Custom Tracker Store
 *****************************
