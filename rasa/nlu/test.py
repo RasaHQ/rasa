@@ -1447,7 +1447,7 @@ def compare_nlu(
                 train_split_path, TRAIN_DATA_FILE
             )
             train_nlg_split_path = os.path.join(
-                model_output_path, "train", NLG_DATA_FILE
+                train_split_path, NLG_DATA_FILE
             )
             io_utils.create_path(train_nlu_split_path)
             write_to_file(train_nlu_split_path, train.nlu_as_markdown())
