@@ -1444,7 +1444,7 @@ def compare_nlu(
             model_output_path = os.path.join(run_path, percent_string)
             train_split_path = os.path.join(model_output_path, "train")
             train_nlu_split_path = os.path.join(
-                model_output_path, "train", TRAIN_DATA_FILE
+                train_split_path, TRAIN_DATA_FILE
             )
             train_nlg_split_path = os.path.join(
                 model_output_path, "train", NLG_DATA_FILE
