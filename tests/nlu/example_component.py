@@ -1,5 +1,5 @@
 import typing
-from typing import Any, Optional, Text, Dict, List
+from typing import Any, Optional, Text, Dict, List, Type
 
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
