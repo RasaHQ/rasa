@@ -796,7 +796,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         io_utils.pickle_dump(
             model_dir / f"{file_name}.data_example.pkl", self.data_example
         )
-        io_utils.json_pickle(
+        io_utils.pickle_dump(
             model_dir / f"{file_name}.label_data.pkl", self._label_data
         )
         io_utils.json_pickle(
@@ -805,7 +805,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         io_utils.json_pickle(
             model_dir / f"{file_name}.inverted_tag_dict.pkl", self.inverted_tag_dict
         )
-        io_utils.pickle_dump(
+        io_utils.json_pickle(
             model_dir / f"{file_name}.batch_tuple_sizes.pkl", self.batch_tuple_sizes
         )
 
@@ -857,14 +857,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_dir = Path(model_dir)
 
         data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
-        label_data = io_utils.json_unpickle(model_dir / f"{file_name}.label_data.pkl")
+        label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
         inverted_label_dict = io_utils.json_unpickle(
             model_dir / f"{file_name}.inverted_label_dict.pkl"
         )
         inverted_tag_dict = io_utils.json_unpickle(
             model_dir / f"{file_name}.inverted_tag_dict.pkl"
         )
-        batch_tuple_sizes = io_utils.pickle_load(
+        batch_tuple_sizes = io_utils.json_unpickle(
             model_dir / f"{file_name}.batch_tuple_sizes.pkl"
         )
 
