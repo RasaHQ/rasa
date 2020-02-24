@@ -3,7 +3,6 @@ import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple
 
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
-from rasa.nlu.constants import RESPONSE
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import raise_warning
 
@@ -35,7 +34,7 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
 
 
 def validate_requirements(component_names: List[Text]) -> None:
-    """Validates that all required importable python packages are installed
+    """Validates that all required importable python packages are installed.
 
     Args:
         component_names: the list of component names
@@ -62,6 +61,23 @@ def validate_requirements(component_names: List[Text]) -> None:
         )
 
 
+def validate_empty_pipeline(pipeline: List["Component"]) -> None:
+    """Ensures the pipeline is not empty.
+
+    Args:
+        pipeline: the list of components in the pipeline
+    """
+
+    if len(pipeline) == 0:
+        raise InvalidConfigError(
+            "Can not train an empty pipeline. "
+            "Make sure to specify a proper pipeline in "
+            "the configuration using the 'pipeline' key. "
+            "The 'backend' configuration key is "
+            "NOT supported anymore."
+        )
+
+
 def validate_tokenizers(pipeline: List["Component"]) -> None:
     """Validates that only one tokenizer is present in the pipeline.
 
@@ -83,6 +99,51 @@ def validate_tokenizers(pipeline: List["Component"]) -> None:
         )
 
 
+def _required_component_in_pipeline(
+    required_component: Any, pipeline: List["Component"]
+) -> bool:
+    """Checks that required component present in the pipeline.
+
+    Args:
+        required_component: a class name of the required component
+        pipeline: the list of the :class:`rasa.nlu.components.Component`
+
+    Returns:
+        `True` if required_component is in the pipeline, `False` otherwise
+    """
+
+    for previous_component in pipeline:
+        if isinstance(previous_component, required_component):
+            return True
+    return False
+
+
+def _check_deprecated_attributes(component: "Component") -> None:
+    """Checks that the component doesn't have deprecated attributes.
+
+    Args:
+        component: A class name of the component
+    """
+
+    if hasattr(component, "provides"):
+        raise_warning(
+            f"'{component.name}' contains property 'provides', "
+            f"which is deprecated. There is no need to specify "
+            f"the list of attributes that a component provides.",
+            category=FutureWarning,
+            docs="https://rasa.com/docs/rasa/migration-guide/",
+        )
+    if hasattr(component, "requires"):
+        raise_warning(
+            f"'{component.name}' contains property 'requires', "
+            f"which is deprecated. Use 'required_components()' method "
+            f"to specify which components are required to be present "
+            f"in the pipeline by this component.",
+            category=FutureWarning,
+            docs="https://rasa.com/docs/rasa/migration-guide/",
+        )
+
+
 def validate_required_components(pipeline: List["Component"]) -> None:
     """Validates that all required components are present in the pipeline.
 
@@ -90,84 +151,31 @@ def validate_required_components(pipeline: List["Component"]) -> None:
         pipeline: the list of the :class:`rasa.nlu.components.Component`
     """
 
-    unique_component_names = set()
-    for component in pipeline:
-        unique_component_names.add(component.name)
-        if not set(component.required_components).issubset(unique_component_names):
+    for i, component in enumerate(pipeline):
+        _check_deprecated_attributes(component)
+
+        missing_components = []
+        for required_component in component.required_components():
+            if not _required_component_in_pipeline(required_component, pipeline[:i]):
+                missing_components.append(required_component.name)
+
+        if missing_components:
             raise InvalidConfigError(
-                f"'{component.name}' requires {component.required_components}. "
+                f"'{component.name}' requires {missing_components}. "
                 f"Add required components to the pipeline."
             )
 
 
-def validate_arguments(
-    pipeline: List["Component"],
-    context: Dict[Text, Any],
-    allow_empty_pipeline: bool = False,
-) -> None:
-    """Validates that all arguments are present to train the pipeline.
+def validate_pipeline(pipeline: List["Component"]) -> None:
+    """Validates the pipeline.
 
     Args:
         pipeline: the list of the :class:`rasa.nlu.components.Component`
-        context: the component context
-        allow_empty_pipeline: whether to allow an empty pipeline or not
-
-    Returns:
-        `True` if all arguments are valid, `False` otherwise
     """
 
-    # Ensure the pipeline is not empty
-    if not allow_empty_pipeline and len(pipeline) == 0:
-        raise InvalidConfigError(
-            "Can not train an empty pipeline. "
-            "Make sure to specify a proper pipeline in "
-            "the configuration using the 'pipeline' key. "
-            "The 'backend' configuration key is "
-            "NOT supported anymore."
-        )
-
-    provided_properties = set(context.keys())
-
-    for component in pipeline:
-        for r in component.requires:
-            if isinstance(r, Tuple):
-                validate_requires_any_of(r, provided_properties, str(component.name))
-            else:
-                if r not in provided_properties:
-                    raise InvalidConfigError(
-                        f"Failed to validate component {component.name}. "
-                        f"Missing property: '{r}'"
-                    )
-
-        provided_properties.update(component.provides)
-
-
-def any_of(*args) -> Tuple[Any]:
-    """Helper function to define that one of the given arguments is required.
-
-    Should be used inside `requires`.
-    """
-
-    return args
-
-
-def validate_requires_any_of(
-    required_properties: Tuple[Text],
-    provided_properties: Set[Text],
-    component_name: Text,
-) -> None:
-    """Validates that at least one of the given required properties is present."""
-
-    property_present = any(
-        [property in provided_properties for property in required_properties]
-    )
-
-    if not property_present:
-        raise InvalidConfigError(
-            f"Failed to validate component '{component_name}'. "
-            f"Missing one of the following properties: "
-            f"{required_properties}."
-        )
+    validate_empty_pipeline(pipeline)
+    validate_tokenizers(pipeline)
+    validate_required_components(pipeline)
 
 
 def validate_required_components_from_data(
@@ -178,13 +186,14 @@ def validate_required_components_from_data(
     Args:
         pipeline: the list of the :class:`rasa.nlu.components.Component`
         data: the :class:`rasa.nlu.training_data.training_data.TrainingData`
-
     """
+
+    from rasa.nlu.selectors.response_selector import ResponseSelector
 
     response_selector_exists = False
     for component in pipeline:
         # check if a response selector is part of NLU pipeline
-        if RESPONSE in component.provides:
+        if isinstance(component, ResponseSelector):
             response_selector_exists = True
 
     if len(data.response_examples) and not response_selector_exists:
@@ -271,25 +280,13 @@ class Component(metaclass=ComponentMetaclass):
 
         return type(self).name
 
-    # Defines what attributes the pipeline component will
-    # provide when called. The listed attributes
-    # should be set by the component on the message object
-    # during test and train, e.g.
-    # ```message.set("entities", [...])```
-    provides = []
-
-    # Which attributes on a message are required by this
-    # component. E.g. if requires contains "tokens", than a
-    # previous component in the pipeline needs to have "tokens"
-    # within the above described `provides` property.
-    # Use `any_of("option_1", "option_2")` to define that either
-    # "option_1" or "option_2" needs to be present in the
-    # provided properties from the previous components.
-    requires = []
-
     # Which components are required by this component.
     # Listed components should appear before the component itself in the pipeline.
-    required_components = []
+    @classmethod
+    def required_components(cls) -> List[Any]:
+        """Specify which components need to be present in the pipeline."""
+
+        return []
 
     # Defines the default configuration parameters of a component
     # these values can be overwritten in the pipeline configuration

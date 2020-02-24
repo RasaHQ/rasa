@@ -9,8 +9,6 @@ from rasa.utils.io import DEFAULT_ENCODING
 
 class MitieTokenizer(Tokenizer):
 
-    provides = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
-
     defaults = {
         # Flag to check whether to split intents
         "intent_tokenization_flag": False,

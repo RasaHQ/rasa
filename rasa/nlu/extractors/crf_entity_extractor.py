@@ -7,7 +7,8 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union, NamedTuple
 import rasa.nlu.utils.bilou_utils as bilou_utils
 import rasa.utils.common as common_utils
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message, TrainingData
@@ -29,10 +30,9 @@ class CRFToken(NamedTuple):
 
 
 class CRFEntityExtractor(EntityExtractor):
-
-    provides = [ENTITIES]
-
-    requires = [TOKENS_NAMES[TEXT]]
+    @classmethod
+    def required_components(cls) -> List[Any]:
+        return [Tokenizer]
 
     defaults = {
         # BILOU_flag determines whether to use BILOU tagging or not.

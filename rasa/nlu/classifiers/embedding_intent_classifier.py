@@ -1,9 +1,9 @@
 import logging
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Optional, Text, List
 
-from rasa.nlu.components import any_of
+from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-from rasa.nlu.constants import TEXT, DENSE_FEATURE_NAMES, SPARSE_FEATURE_NAMES
+from rasa.nlu.constants import TEXT
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -54,9 +54,9 @@ class EmbeddingIntentClassifier(DIETClassifier):
     This algorithm also provides similarity rankings of the labels that did not "win".
     """
 
-    provides = ["intent", "intent_ranking"]
-
-    requires = [any_of(DENSE_FEATURE_NAMES[TEXT], SPARSE_FEATURE_NAMES[TEXT])]
+    @classmethod
+    def required_components(cls) -> List[Any]:
+        return [Featurizer]
 
     # please make sure to update the docs when changing a default parameter
     defaults = {

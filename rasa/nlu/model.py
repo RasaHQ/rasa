@@ -158,8 +158,7 @@ class Trainer:
             pipeline.append(component)
 
         if not self.skip_validation:
-            components.validate_tokenizers(pipeline)
-            components.validate_required_components(pipeline)
+            components.validate_pipeline(pipeline)
 
         return pipeline
 
@@ -179,7 +178,6 @@ class Trainer:
 
         # Before the training starts: check that all arguments are provided
         if not self.skip_validation:
-            components.validate_arguments(self.pipeline, context)
             components.validate_required_components_from_data(
                 self.pipeline, self.training_data
             )

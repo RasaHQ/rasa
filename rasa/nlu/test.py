@@ -994,43 +994,56 @@ def get_eval_data(
 
 def get_entity_extractors(interpreter: Interpreter) -> Set[Text]:
     """Finds the names of entity extractors used by the interpreter.
-    Processors are removed since they do not
-    detect the boundaries themselves."""
 
-    extractors = {c.name for c in interpreter.pipeline if "entities" in c.provides}
+    Processors are removed since they do not detect the boundaries themselves.
+    """
+
+    from rasa.nlu.extractors.extractor import EntityExtractor
+
+    extractors = {
+        c.name for c in interpreter.pipeline if isinstance(c, EntityExtractor)
+    }
     return extractors - ENTITY_PROCESSORS
 
 
 def is_entity_extractor_present(interpreter: Interpreter) -> bool:
-    """Checks whether entity extractor is present"""
+    """Checks whether entity extractor is present."""
 
     extractors = get_entity_extractors(interpreter)
     return extractors != []
 
 
 def is_intent_classifier_present(interpreter: Interpreter) -> bool:
-    """Checks whether intent classifier is present"""
+    """Checks whether intent classifier is present."""
+
+    from rasa.nlu.classifiers.classifier import IntentClassifier
 
     intent_classifiers = [
-        c.name for c in interpreter.pipeline if "intent" in c.provides
+        c.name for c in interpreter.pipeline if isinstance(c, IntentClassifier)
     ]
     return intent_classifiers != []
 
 
 def is_response_selector_present(interpreter: Interpreter) -> bool:
-    """Checks whether response selector is present"""
+    """Checks whether response selector is present."""
+
+    from rasa.nlu.selectors.response_selector import ResponseSelector
 
     response_selectors = [
-        c.name for c in interpreter.pipeline if "response" in c.provides
+        c.name for c in interpreter.pipeline if isinstance(c, ResponseSelector)
     ]
     return response_selectors != []
 
 
 def get_available_response_selector_types(interpreter: Interpreter) -> List[Text]:
-    """Gets all available response selector types"""
+    """Gets all available response selector types."""
+
+    from rasa.nlu.selectors.response_selector import ResponseSelector
 
     response_selector_types = [
-        c.retrieval_intent for c in interpreter.pipeline if "response" in c.provides
+        c.retrieval_intent
+        for c in interpreter.pipeline
+        if isinstance(c, ResponseSelector)
     ]
 
     return response_selector_types

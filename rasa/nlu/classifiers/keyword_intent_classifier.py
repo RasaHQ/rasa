@@ -1,12 +1,11 @@
 import os
 import logging
-import typing
 import re
 from typing import Any, Dict, Optional, Text
 
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import utils
-from rasa.nlu.components import Component
+from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.constants import INTENT
 from rasa.utils.common import raise_warning
 from rasa.nlu.config import RasaNLUModelConfig
@@ -17,7 +16,7 @@ from rasa.nlu.training_data import Message
 logger = logging.getLogger(__name__)
 
 
-class KeywordIntentClassifier(Component):
+class KeywordIntentClassifier(IntentClassifier):
     """Intent classifier using simple keyword matching.
 
 
@@ -25,8 +24,6 @@ class KeywordIntentClassifier(Component):
     A input sentence is checked for the keywords and the intent is returned.
 
     """
-
-    provides = [INTENT]
 
     defaults = {"case_sensitive": True}
 

@@ -5,9 +5,10 @@ from typing import Any, Dict, List, Optional, Text
 
 from rasa.nlu.constants import ENTITIES, TOKENS_NAMES, TEXT
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.utils.mitie_utils import MitieNLP
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
-from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import raise_warning
 
@@ -18,10 +19,9 @@ if typing.TYPE_CHECKING:
 
 
 class MitieEntityExtractor(EntityExtractor):
-
-    provides = [ENTITIES]
-
-    requires = [TOKENS_NAMES[TEXT], "mitie_feature_extractor", "mitie_file"]
+    @classmethod
+    def required_components(cls) -> List[Any]:
+        return [MitieNLP, Tokenizer]
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None, ner=None):
         """Construct a new intent classifier using the sklearn framework."""

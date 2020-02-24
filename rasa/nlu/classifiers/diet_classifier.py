@@ -12,11 +12,12 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
-from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
-from rasa.nlu.components import any_of
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
@@ -78,7 +79,7 @@ from rasa.utils.tensorflow.constants import (
 logger = logging.getLogger(__name__)
 
 
-class DIETClassifier(EntityExtractor):
+class DIETClassifier(IntentClassifier, EntityExtractor):
     """DIET (Dual Intent and Entity Transformer) is a multi-task architecture for
     intent classification and entity recognition.
 
@@ -91,9 +92,9 @@ class DIETClassifier(EntityExtractor):
     similarities with negative samples.
     """
 
-    provides = ["intent", "intent_ranking", "entities"]
-
-    requires = [any_of(DENSE_FEATURE_NAMES[TEXT], SPARSE_FEATURE_NAMES[TEXT])]
+    @classmethod
+    def required_components(cls) -> List[Any]:
+        return [Featurizer]
 
     # please make sure to update the docs when changing a default parameter
     defaults = {
@@ -802,7 +803,7 @@ class DIETClassifier(EntityExtractor):
         io_utils.pickle_dump(
             model_dir / f"{file_name}.data_example.pkl", self.data_example
         )
-        io_utils.json_pickle(
+        io_utils.pickle_dump(
             model_dir / f"{file_name}.label_data.pkl", self._label_data
         )
         io_utils.json_pickle(
@@ -811,7 +812,7 @@ class DIETClassifier(EntityExtractor):
         io_utils.json_pickle(
             model_dir / f"{file_name}.inverted_tag_dict.pkl", self.inverted_tag_dict
         )
-        io_utils.pickle_dump(
+        io_utils.json_pickle(
             model_dir / f"{file_name}.batch_tuple_sizes.pkl", self.batch_tuple_sizes
         )
 
@@ -863,14 +864,14 @@ class DIETClassifier(EntityExtractor):
         model_dir = Path(model_dir)
 
         data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
-        label_data = io_utils.json_unpickle(model_dir / f"{file_name}.label_data.pkl")
+        label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
         inverted_label_dict = io_utils.json_unpickle(
             model_dir / f"{file_name}.inverted_label_dict.pkl"
         )
         inverted_tag_dict = io_utils.json_unpickle(
             model_dir / f"{file_name}.inverted_tag_dict.pkl"
         )
-        batch_tuple_sizes = io_utils.pickle_load(
+        batch_tuple_sizes = io_utils.json_unpickle(
             model_dir / f"{file_name}.batch_tuple_sizes.pkl"
         )
 

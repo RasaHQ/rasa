@@ -8,7 +8,8 @@ from typing import Any, Dict, Optional, Text, List
 
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import TOKENS_NAMES, TEXT, SPARSE_FEATURE_NAMES
@@ -18,11 +19,10 @@ import rasa.utils.io as io_utils
 logger = logging.getLogger(__name__)
 
 
-class LexicalSyntacticFeaturizer(Featurizer):
-
-    provides = [SPARSE_FEATURE_NAMES[TEXT]]
-
-    requires = [TOKENS_NAMES[TEXT]]
+class LexicalSyntacticFeaturizer(SparseFeaturizer):
+    @classmethod
+    def required_components(cls) -> List[Any]:
+        return [Tokenizer]
 
     defaults = {
         # 'features' is [before, word, after] array with before, word,

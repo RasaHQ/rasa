@@ -144,8 +144,8 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
         )
 
     assert (
-        "Failed to validate component 'DIETClassifier'. Missing one of "
-        "the following properties: " in str(e.value)
+        "'DIETClassifier' requires ['Featurizer']. "
+        "Add required components to the pipeline." in str(e.value)
     )
 
 

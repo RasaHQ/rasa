@@ -33,27 +33,24 @@ def test_all_components_in_model_templates_exist(pipeline_template):
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
-def test_all_arguments_can_be_satisfied(component_class):
-    """Check that `train` method parameters can be filled
-    filled from the context. Similar to `pipeline_init` test."""
+def test_all_required_components_can_be_satisfied(component_class):
+    """Checks that all required_components are present in the registry."""
 
-    # All available context arguments that will ever be generated during train
-    # it might still happen, that in a certain pipeline
-    # configuration arguments can not be satisfied!
-    provided_properties = {
-        provided for c in registry.component_classes for provided in c.provides
-    }
+    def _required_component_in_registry(component):
+        for previous_component in registry.component_classes:
+            if issubclass(previous_component, component):
+                return True
+        return False
 
-    for req in component_class.requires:
-        if isinstance(req, Tuple):
-            for r in req:
-                assert (
-                    r in provided_properties
-                ), "No component provides required property."
-        else:
-            assert (
-                req in provided_properties
-            ), "No component provides required property."
+    missing_components = []
+    for required_component in component_class.required_components():
+        if not _required_component_in_registry(required_component):
+            missing_components.append(required_component.name)
+
+    assert missing_components == [], (
+        f"There is no required components {missing_components} "
+        f"for '{component_class.name}'."
+    )
 
 
 def test_find_unavailable_packages():
