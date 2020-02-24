@@ -107,9 +107,7 @@ def test_warn_missing_regex_featurizer():
 def test_warn_missing_pattern_feature_lookup_tables():
     cfg = config.load("sample_configs/config_crf_no_pattern_feature.yml")
     trainer = Trainer(cfg)
-    training_data = load_data(
-        "/Users/melinda/rasa/data/test/lookup_tables/lookup_table.md"
-    )
+    training_data = load_data("data/test/lookup_tables/lookup_table.md")
     with pytest.warns(UserWarning) as record:
         validate_required_components_from_data(trainer.pipeline, training_data)
 
