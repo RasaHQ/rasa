@@ -266,7 +266,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.model = model
 
         # encode all label_ids with numbers
-        self._label_data = None  # RasaModelData
+        self._label_data: Optional[RasaModelData] = None
 
         # keep the input tuple sizes in self.batch_in
         self.batch_tuple_sizes = batch_tuple_sizes
