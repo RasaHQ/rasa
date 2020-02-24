@@ -16,7 +16,6 @@ You can find a full example assistant that implements these features
 .. contents::
    :local:
 
-
 .. _reminders:
 
 Reminders
@@ -24,7 +23,6 @@ Reminders
 
 Instead of an external sensor, you might just want to be reminded about something after a certain amount of time.
 For this, Rasa provides the special event ``ReminderScheduled``, and another event, ``ReminderCancelled``, to unschedule a reminder.
-
 
 .. _scheduling-reminders-guide:
 
@@ -52,7 +50,6 @@ The custom action ``action_set_reminder`` should schedule a reminder that, 5 sec
 .. literalinclude:: ../../examples/reminderbot/actions.py
    :pyobject: ActionSetReminder
 
-
 Note that this requires the ``datetime`` and ``rasa_sdk.events`` packages.
 
 Finally, we define another custom action ``action_react_to_reminder`` and link it to the ``EXTERNAL_reminder`` intent:
@@ -74,20 +71,17 @@ But here we want to make use of the fact that the reminder can carry entities, a
 
   Reminders are cancelled whenever you shutdown your Rasa server.
 
-
 .. warning::
 
   Reminders currently (Rasa 1.8) don't work in `rasa shell`.
   You have to test them with a
   `running Rasa X server <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`_ instead.
 
-
 .. note::
 
    Proactively reaching out to the user is dependent on the abilities of a channel and
    hence not supported by every channel. If your channel does not support it, consider
    using the :ref:`callbackInput` channel to send messages to a `webhook <https://en.wikipedia.org/wiki/Webhook>`_.
-
 
 .. _cancelling-reminders-guide:
 
@@ -109,7 +103,6 @@ For example,
     - ``ReminderCancelled("...")`` cancels the one unique reminder with the given name "``...``" that you supplied
       during its creation
 
-
 .. _external-event-guide:
 
 External Events
@@ -125,7 +118,6 @@ So for Rasa it is almost as if you had entered a message that got classified wit
 Rasa then needs to respond to this input with an action such as ``action_warn_dry``.
 The easiest and most reliable way to connect this action with the intent is via the :ref:`mapping-policy`.
 
-
 .. _getting-conversation-id:
 
 Getting the Conversation ID
@@ -138,7 +130,6 @@ For example:
 .. literalinclude:: ../../examples/reminderbot/actions.py
    :pyobject: ActionTellID
 
-
 In addition, we also declare an intent ``ask_id``, define some NLU data for it, and add both ``action_tell_id`` and
 ``ask_id`` to the domain file, where we specify that one should trigger the other:
 
@@ -148,13 +139,11 @@ In addition, we also declare an intent ``ask_id``, define some NLU data for it, 
     - ask_id:
       triggers: action_tell_id
 
-
 Now, when you ask "What is the ID of this conversation?", the assistant replies with something like "The ID of this
 conversation is: 38cc25d7e23e4dde800353751b7c2d3e".
 
 If you want your assistant to link to the Raspberry Pi automatically, you will have to write a custom action that
 informs the Pi about the conversation id when your conversation starts (see :ref:`custom_session_start`).
-
 
 .. _responding_to_external_events:
 
@@ -171,12 +160,10 @@ In the domain file, we now connect the intent ``EXTERNAL_dry_plant`` with anothe
 .. literalinclude:: ../../examples/reminderbot/actions.py
    :pyobject: ActionWarnDry
 
-
 Now, when you are in a conversation with id ``38cc25d7e23e4dde800353751b7c2d3e``, then running
 
 .. code-block:: shell
 
   curl -H "Content-Type: application/json" -X POST -d '{"name": "EXTERNAL_dry_plant", "entities": {"plant": "Orchid"}}' http://localhost:5005/conversations/38cc25d7e23e4dde800353751b7c2d3e/trigger_intent
-
 
 in the terminal will cause your assistant to say "Your Orchid needs some water!".
