@@ -19,13 +19,13 @@ assistant on your local machine. The `reminderbot` consists of the following fil
 
 To train and chat with `reminderbot`, execute the following steps:
 
-1. Train a Rasa model containing the Rasa NLU and Rasa Core models by running:
+1. Train a Rasa Open Source model containing the Rasa NLU and Rasa Core models by running:
     ```
     rasa train
     ```
     The model will be stored in the `/models` directory as a zipped file.
     
-2. Run a rasa action server with
+2. Run a Rasa action server with
     ```
     rasa run actions
     ```
