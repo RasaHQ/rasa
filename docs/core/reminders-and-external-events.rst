@@ -28,7 +28,7 @@ For this, Rasa provides the special event ``ReminderScheduled``, and another eve
 
 .. _scheduling-reminders-guide:
 
-Scheduling reminders
+Scheduling Reminders
 ^^^^^^^^^^^^^^^^^^^^
 
 Let's say you want your assistant to remind you to call a friend in 5 seconds.
@@ -92,7 +92,7 @@ But here we want to make use of the fact that the reminder can carry entities, a
 
 .. _cancelling-reminders-guide:
 
-Cancelling reminders
+Cancelling Reminders
 ^^^^^^^^^^^^^^^^^^^^
 
 Sometimes the user may want to cancel a reminder that he has scheduled earlier.
@@ -113,7 +113,7 @@ For example,
 
 .. _external-event-guide:
 
-External events
+External Events
 ---------------
 
 Let's say you want to send a message from some other device to change the course of an ongoing conversation.
@@ -129,7 +129,7 @@ The easiest and most reliable way to connect this action with the intent is via 
 
 .. _getting-conversation-id:
 
-Getting the conversation ID
+Getting the Conversation ID
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The first thing we need is the Session ID of the conversation that your sensor should send a notification to.
@@ -159,7 +159,7 @@ informs the Pi about the conversation id when your conversation starts (see :ref
 
 .. _responding_to_external_events:
 
-Responding to external events
+Responding to External Events
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Now that we have our Session ID, we need to prepare the assistant so it responds to messages from the sensor.
