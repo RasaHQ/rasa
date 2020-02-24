@@ -7,4 +7,5 @@ pipeline:
 - name: "RegexFeaturizer"
 - name: "CRFEntityExtractor"
 - name: "EntitySynonymMapper"
+
 - name: "SklearnIntentClassifier"
