@@ -386,7 +386,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return sparse_features, dense_features
 
-    def check_input_dimension_consistency(self, model_data: RasaModelData):
+    def check_input_dimension_consistency(self, model_data: RasaModelData) -> None:
         """Checks if text features and label features have the same dimensionality if
         hidden layers are shared."""
         if self.component_config.get(SHARE_HIDDEN_LAYERS):
