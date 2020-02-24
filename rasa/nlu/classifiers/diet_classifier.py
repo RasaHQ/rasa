@@ -274,7 +274,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # number of entity tags
         self.num_tags = 0
 
-        self.data_example = None  # Dict[Text, List[np.ndarray]]
+        self.data_example: Dict[Text, List[np.ndarray]] = None
 
     @property
     def label_key(self) -> Optional[Text]:
