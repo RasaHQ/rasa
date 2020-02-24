@@ -29,7 +29,21 @@ As an example, the ``DefaultDomain`` has the following yaml definition:
 **What does this mean?**
 
 Your NLU model will define the ``intents`` and ``entities`` that you
-need to include in the domain.
+need to include in the domain. The ``entities`` section lists all entities
+extracted by any `entity extractor <_entity-extraction>`_ in your
+NLU pipeline.
+
+For example:
+
+.. code-block:: yaml
+
+         entities:
+            - PERSON          # entity extracted by SpacyEntityExtractor
+            - time            # entity extracted by DucklingHTTPExtractor
+            - membership_type # custom entity extracted by CRFEntityExtractor
+            - priority        # custom entity extracted by CRFEntityExtractor
+
+
 
 :ref:`slots` hold information you want to keep track of during a conversation.
 A categorical slot called ``risk_level`` would be
