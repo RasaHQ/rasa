@@ -67,7 +67,6 @@ redis = "^3.4"
 numpy = "^1.16"
 scipy = "^1.4.1"
 absl-py = "~0.9"
-tensor2tensor = "^1.15"
 apscheduler = "~3.6"
 tqdm = "==4.31.0"
 networkx = "==2.4.0"
@@ -114,6 +113,7 @@ tensorflow = "~2.1"
 tensorflow_hub = "~0.7"
 tensorflow-addons = "~0.7"
 tensorflow-probability = "~0.7"
+setuptools = ">=41.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.8.1"
@@ -160,7 +160,7 @@ version = ">=2.1,<2.2"
 optional = true
 
 [tool.poetry.dependencies.tensorflow_text]
-version = "~2.1.0rc0"
+version = ">=2.1.0rc0"
 optional = true
 
 [tool.poetry.dependencies.pypandoc]
