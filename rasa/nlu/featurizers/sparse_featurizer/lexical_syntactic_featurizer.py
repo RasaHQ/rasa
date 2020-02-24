@@ -4,9 +4,10 @@ from pathlib import Path
 
 import numpy as np
 import scipy.sparse
-from typing import Any, Dict, Optional, Text, List
+from typing import Any, Dict, Optional, Text, List, Type
 
 from rasa.constants import DOCS_URL_COMPONENTS
+from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class LexicalSyntacticFeaturizer(SparseFeaturizer):
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         return [Tokenizer]
 
     defaults = {

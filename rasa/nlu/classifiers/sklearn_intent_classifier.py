@@ -2,7 +2,7 @@ import logging
 import os
 import typing
 import warnings
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Type
 
 import numpy as np
 
@@ -10,6 +10,7 @@ import rasa.utils.io as io_utils
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.nlu.components import Component
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import DENSE_FEATURE_NAMES, TEXT
@@ -28,7 +29,7 @@ class SklearnIntentClassifier(IntentClassifier):
     """Intent classifier using the sklearn framework"""
 
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         return [DenseFeaturizer]
 
     defaults = {

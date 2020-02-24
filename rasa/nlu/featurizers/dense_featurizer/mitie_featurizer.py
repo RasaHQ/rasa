@@ -1,8 +1,9 @@
 import numpy as np
 import typing
-from typing import Any, List, Text, Optional, Dict
+from typing import Any, List, Text, Optional, Dict, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
@@ -20,7 +21,7 @@ if typing.TYPE_CHECKING:
 
 class MitieFeaturizer(DenseFeaturizer):
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         return [MitieNLP, Tokenizer]
 
     defaults = {

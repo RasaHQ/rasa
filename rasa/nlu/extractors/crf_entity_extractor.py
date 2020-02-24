@@ -2,12 +2,13 @@ import logging
 import os
 import typing
 import numpy as np
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, NamedTuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, NamedTuple, Type
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
 import rasa.utils.common as common_utils
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -31,7 +32,7 @@ class CRFToken(NamedTuple):
 
 class CRFEntityExtractor(EntityExtractor):
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         return [Tokenizer]
 
     defaults = {

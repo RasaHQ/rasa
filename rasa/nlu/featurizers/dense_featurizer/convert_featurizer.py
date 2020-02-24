@@ -1,9 +1,10 @@
 import logging
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Type
 from tqdm import tqdm
 
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
@@ -32,7 +33,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
     """
 
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         return [ConveRTTokenizer]
 
     def _load_from_tfhub(self, model_url: Text):

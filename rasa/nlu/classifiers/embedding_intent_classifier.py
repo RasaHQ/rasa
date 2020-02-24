@@ -1,7 +1,8 @@
 import logging
-from typing import Any, Dict, Optional, Text, List
+from typing import Any, Dict, Optional, Text, List, Type
 
 from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.components import Component
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.constants import TEXT
 from rasa.utils.tensorflow.constants import (
@@ -55,7 +56,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
     """
 
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         return [Featurizer]
 
     # please make sure to update the docs when changing a default parameter

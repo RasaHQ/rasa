@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-from typing import Any, Dict, List, Optional, Text, Union
+from typing import Any, Dict, List, Optional, Text, Union, Type
 
 import numpy as np
 
@@ -19,6 +19,7 @@ from rasa.nlu.constants import (
     TOKENS_NAMES,
 )
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.nlu.training_data import Message, TrainingData
 import rasa.utils.common as common_utils
@@ -29,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 class RegexFeaturizer(SparseFeaturizer):
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         return [Tokenizer]
 
     def __init__(

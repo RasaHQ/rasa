@@ -2,7 +2,7 @@ import logging
 import os
 import re
 import scipy.sparse
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.constants import DOCS_URL_COMPONENTS
 import rasa.utils.common as common_utils
@@ -10,6 +10,7 @@ import rasa.utils.io as io_utils
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
@@ -38,7 +39,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     """
 
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         return [Tokenizer]
 
     defaults = {

@@ -1,7 +1,8 @@
 import numpy as np
-from typing import Any, Optional, Text, List
+from typing import Any, Optional, Text, List, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
@@ -24,7 +25,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     """
 
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         return [HFTransformersNLP, LanguageModelTokenizer]
 
     def train(

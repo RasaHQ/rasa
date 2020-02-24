@@ -8,11 +8,12 @@ import warnings
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
 
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
 from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.components import Component
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.test import determine_token_labels
@@ -93,7 +94,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     """
 
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         return [Featurizer]
 
     # please make sure to update the docs when changing a default parameter
@@ -281,7 +282,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return "label_ids" if self.component_config[INTENT_CLASSIFICATION] else None
 
     @staticmethod
-    def model_class() -> Any:
+    def model_class() -> Type[RasaModel]:
         return DIET
 
     # training data helpers:

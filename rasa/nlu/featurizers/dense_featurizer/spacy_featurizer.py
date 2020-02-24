@@ -1,8 +1,9 @@
 import numpy as np
 import typing
-from typing import Any, Optional, Text, Dict, List
+from typing import Any, Optional, Text, Dict, List, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
@@ -20,7 +21,7 @@ if typing.TYPE_CHECKING:
 
 class SpacyFeaturizer(DenseFeaturizer):
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         return [SpacyNLP, SpacyTokenizer]
 
     defaults = {

@@ -3,9 +3,10 @@ import logging
 import numpy as np
 import tensorflow as tf
 
-from typing import Any, Dict, Optional, Text, Tuple, Union, List
+from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
 from rasa.nlu.training_data import TrainingData, Message
+from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier, DIET
 from rasa.utils.tensorflow.constants import (
@@ -80,7 +81,7 @@ class ResponseSelector(DIETClassifier):
     """
 
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         return [Featurizer]
 
     defaults = {
@@ -204,7 +205,7 @@ class ResponseSelector(DIETClassifier):
         return "label_ids"
 
     @staticmethod
-    def model_class():
+    def model_class() -> Type[RasaModel]:
         return DIET2DIET
 
     def _load_selector_params(self, config: Dict[Text, Any]) -> None:

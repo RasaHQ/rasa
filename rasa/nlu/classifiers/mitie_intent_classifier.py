@@ -1,10 +1,11 @@
 import os
 import typing
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Metadata
 from rasa.nlu.constants import TOKENS_NAMES, TEXT, INTENT
@@ -16,7 +17,7 @@ if typing.TYPE_CHECKING:
 
 class MitieIntentClassifier(IntentClassifier):
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         return [MitieNLP, Tokenizer]
 
     def __init__(

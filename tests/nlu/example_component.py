@@ -15,7 +15,7 @@ class MyComponent(Component):
     # Which components are required by this component.
     # Listed components should appear before the component itself in the pipeline.
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         """Specify which components need to be present in the pipeline."""
 
         return []

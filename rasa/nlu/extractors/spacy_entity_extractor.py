@@ -1,8 +1,9 @@
 import typing
-from typing import Any, Dict, List, Text, Optional
+from typing import Any, Dict, List, Text, Optional, Type
 
 from rasa.nlu.constants import ENTITIES
 from rasa.nlu.utils.spacy_utils import SpacyNLP
+from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.training_data import Message
 
@@ -12,7 +13,7 @@ if typing.TYPE_CHECKING:
 
 class SpacyEntityExtractor(EntityExtractor):
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         return [SpacyNLP]
 
     defaults = {

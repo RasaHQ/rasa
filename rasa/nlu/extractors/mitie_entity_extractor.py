@@ -1,12 +1,13 @@
 import logging
 import os
 import typing
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.nlu.constants import ENTITIES, TOKENS_NAMES, TEXT
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.components import Component
 from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
@@ -20,7 +21,7 @@ if typing.TYPE_CHECKING:
 
 class MitieEntityExtractor(EntityExtractor):
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type[Component]]:
         return [MitieNLP, Tokenizer]
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None, ner=None):

@@ -1,6 +1,6 @@
 import logging
 import typing
-from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple
+from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type
 
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.nlu.training_data import Message, TrainingData
@@ -100,7 +100,7 @@ def validate_tokenizers(pipeline: List["Component"]) -> None:
 
 
 def _required_component_in_pipeline(
-    required_component: Any, pipeline: List["Component"]
+    required_component: Type["Component"], pipeline: List["Component"]
 ) -> bool:
     """Checks that required component present in the pipeline.
 
@@ -283,7 +283,7 @@ class Component(metaclass=ComponentMetaclass):
     # Which components are required by this component.
     # Listed components should appear before the component itself in the pipeline.
     @classmethod
-    def required_components(cls) -> List[Any]:
+    def required_components(cls) -> List[Type["Component"]]:
         """Specify which components need to be present in the pipeline."""
 
         return []
