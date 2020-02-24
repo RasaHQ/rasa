@@ -1624,7 +1624,7 @@ def run_interactive_learning(
     else:
         p = None
 
-    app = run.configure_app(enable_api=True)
+    app = run.configure_app(enable_api=True, conversation_id="default")
     endpoints = AvailableEndpoints.read_endpoints(server_args.get("endpoints"))
 
     # before_server_start handlers make sure the agent is loaded before the
