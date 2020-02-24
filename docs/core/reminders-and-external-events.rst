@@ -86,8 +86,7 @@ But here we want to make use of the fact that the reminder can carry entities, a
 
    Proactively reaching out to the user is dependent on the abilities of a channel and
    hence not supported by every channel. If your channel does not support it, consider
-   using the :ref:`callbackInput` channel to send messages to a webhook.
-
+   using the :ref:`callbackInput` channel to send messages to a `webhook <https://en.wikipedia.org/wiki/Webhook>`_.
 
 
 .. _cancelling-reminders-guide:
