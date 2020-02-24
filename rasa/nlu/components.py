@@ -35,7 +35,11 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
 
 
 def validate_requirements(component_names: List[Text]) -> None:
-    """Validates that all required importable python packages are installed."""
+    """Validates that all required importable python packages are installed
+
+    Args:
+        component_names: the list of component names
+    """
 
     from rasa.nlu import registry
 
@@ -62,8 +66,7 @@ def validate_tokenizers(pipeline: List["Component"]) -> None:
     """Validates that only one tokenizer is present in the pipeline.
 
     Args:
-        pipeline: the list of components in the pipeline
-
+        pipeline: the list of the :class:`rasa.nlu.components.Component`
     """
 
     from rasa.nlu.tokenizers.tokenizer import Tokenizer
@@ -84,8 +87,7 @@ def validate_required_components(pipeline: List["Component"]) -> None:
     """Validates that all required components are present in the pipeline.
 
     Args:
-        pipeline: the list of components in the pipeline
-
+        pipeline: the list of the :class:`rasa.nlu.components.Component`
     """
 
     unique_component_names = set()
@@ -106,7 +108,7 @@ def validate_arguments(
     """Validates that all arguments are present to train the pipeline.
 
     Args:
-        pipeline: the list of components in the pipeline
+        pipeline: the list of the :class:`rasa.nlu.components.Component`
         context: the component context
         allow_empty_pipeline: whether to allow an empty pipeline or not
 
@@ -174,7 +176,7 @@ def validate_required_components_from_data(
     """Validates that all components are present in the pipeline based on data.
 
     Args:
-        pipeline: the list of components in the pipeline
+        pipeline: the list of the :class:`rasa.nlu.components.Component`
         data: the :class:`rasa.nlu.training_data.training_data.TrainingData`
 
     """
