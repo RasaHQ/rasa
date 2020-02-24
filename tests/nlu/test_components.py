@@ -36,7 +36,7 @@ def test_all_components_in_model_templates_exist(pipeline_template):
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
-def test_all_arguments_can_be_satisfied(component_class):
+def test_all_required_components_can_be_satisfied(component_class):
     """Checks that all required_components are present in the registry."""
 
     missing_components = []
