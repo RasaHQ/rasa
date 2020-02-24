@@ -1573,7 +1573,7 @@ def run_interactive_learning(
 
     if server_args.get("port"):
         port = server_args.get("port")
-
+    print("printin port number ", port)
     SAVE_IN_E2E = server_args["e2e"]
 
     if not skip_visualization:
