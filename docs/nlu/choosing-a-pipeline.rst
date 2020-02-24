@@ -28,8 +28,7 @@ If your training data is in English, a good starting point is the following pipe
 .. literalinclude:: ../../data/configs_for_docs/default_english_config.yml
     :language: yaml
 
-In case your training data is in a different language than English and is rich with domain specific vocabulary,
-use the following pipeline:
+In case your training data is in a different language than English, use the following pipeline:
 
 .. literalinclude:: ../../data/configs_for_docs/default_config.yml
     :language: yaml
@@ -38,14 +37,35 @@ use the following pipeline:
 A Longer Answer
 ---------------
 
-We encourage everyone to define their own pipeline by listing the names of the components you want to use.
-For example:
+We recommend to use the following pipeline, if your training data is in English:
 
-.. literalinclude:: ../../data/configs_for_docs/default_spacy_config.yml
+.. literalinclude:: ../../data/configs_for_docs/default_english_config.yml
     :language: yaml
 
-You can find the details of each component in :ref:`components`.
-If you want to use custom components in your pipeline, see :ref:`custom-nlu-components`.
+The pipeline contains the :ref:`ConveRTFeaturizer` that provides pre-trained word embeddings of the user utterance.
+Pre-trained word embeddings are helpful as they already encode some kind of linguistic knowledge.
+For example, if you have a sentence like "I want to buy apples" in your training data, and Rasa is asked to predict
+the intent for "get pears", your model already knows that the words "apples" and "pears" are very similar.
+This is especially useful if you don’t have enough training data.
+The advantage of the ``ConveRTFeaturizer`` is that it doesn't treat each word of the user message independently, but
+creates a contextual vector representation for the complete sentence.
+However, ``ConveRT`` is only available in English.
+If your training data is not in English, we recommend to use the following pipeline:
+
+.. literalinclude:: ../../data/configs_for_docs/default_config.yml
+    :language: yaml
+
+It uses the :ref:`SpacyFeaturizer` instead of the :ref:`ConveRTFeaturizer`.
+``SpacyFeaturizer`` provides pre-trained word embeddings in many different languages
+(see :ref:`pretrained-word-vectors`).
+
+.. note::
+    We encourage everyone to define their own pipeline by listing the names of the components you want to use.
+    You can find the details of each component in :ref:`components`.
+    If you want to use custom components in your pipeline, see :ref:`custom-nlu-components`.
+
+Choosing the right Components
+-----------------------------
 
 A pipeline usually consist of three main parts:
 
