@@ -1,14 +1,13 @@
 import logging
 import argparse
 import asyncio
-import sys
 from typing import List
 
 from rasa import data
 from rasa.cli.arguments import data as arguments
 import rasa.cli.utils
 from rasa.constants import DEFAULT_DATA_PATH
-from rasa.core.validator import Validator
+from rasa.validator import Validator
 from rasa.importers.rasa import RasaFileImporter
 
 logger = logging.getLogger(__name__)

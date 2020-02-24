@@ -8,6 +8,8 @@ from typing import Callable, Text
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 from rasa.cli import data
+from rasa.importers.importer import TrainingDataImporter
+from rasa.validator import Validator
 
 
 def test_data_split_nlu(run_in_default_project: Callable[..., RunResult]):
@@ -88,7 +90,7 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
 
     args = parser.parse_args(["data", "validate", "stories", "--max-history", 0])
 
-    async def mock_from_importer(importer: "TrainingDataImporter") -> "Validator":
+    async def mock_from_importer(importer: TrainingDataImporter) -> Validator:
         return Mock()
 
     monkeypatch.setattr("rasa.core.validator.Validator.from_importer", mock_from_importer)

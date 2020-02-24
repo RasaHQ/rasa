@@ -7,7 +7,7 @@ from rasa.core.training.story_conflict import (
     _get_previous_event,
 )
 from rasa.core.training.generator import TrainingDataGenerator, TrackerWithCachedStates
-from rasa.core.validator import Validator
+from rasa.validator import Validator
 from rasa.importers.rasa import RasaFileImporter
 from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
