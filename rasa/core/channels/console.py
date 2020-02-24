@@ -12,7 +12,6 @@ from prompt_toolkit.styles import Style
 from rasa.cli import utils as cli_utils
 from rasa.core import utils
 from rasa.core.channels.channel import RestInput
-from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import DEFAULT_SERVER_URL
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa.utils.io import DEFAULT_ENCODING
@@ -109,9 +108,9 @@ async def send_message_receive_stream(
 
 
 async def record_messages(
+    sender_id,
     server_url=DEFAULT_SERVER_URL,
     auth_token="",
-    sender_id=UserMessage.DEFAULT_SENDER_ID,
     max_message_limit=None,
     use_response_stream=True,
 ) -> int:
