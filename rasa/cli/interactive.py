@@ -59,7 +59,7 @@ def interactive(args: argparse.Namespace):
         zipped_model = train.train(args)
     else:
         zipped_model = get_provided_model(args.model)
-    print("before perform interactive")
+
     perform_interactive_learning(args, zipped_model)
 
 

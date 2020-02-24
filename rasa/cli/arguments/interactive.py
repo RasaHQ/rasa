@@ -17,7 +17,6 @@ from rasa.cli.arguments.train import (
     add_persist_nlu_data_param,
 )
 from rasa.core import constants
-from rasa.cli.arguments.run import add_server_arguments
 
 
 def set_interactive_arguments(parser: argparse.ArgumentParser):
@@ -42,7 +41,7 @@ def set_interactive_arguments(parser: argparse.ArgumentParser):
     add_dump_stories_param(train_arguments)
     add_force_param(train_arguments)
     add_persist_nlu_data_param(train_arguments)
-    add_server_arguments(parser)
+    add_port_param(train_arguments)
 
 
 def set_interactive_core_arguments(parser: argparse.ArgumentParser):
@@ -65,7 +64,7 @@ def set_interactive_core_arguments(parser: argparse.ArgumentParser):
     add_augmentation_param(train_arguments)
     add_debug_plots_param(train_arguments)
     add_dump_stories_param(train_arguments)
-    add_server_arguments(parser)
+    add_port_param(train_arguments)
 
 
 def add_skip_visualization_param(parser: argparse.ArgumentParser):
@@ -74,4 +73,13 @@ def add_skip_visualization_param(parser: argparse.ArgumentParser):
         default=False,
         action="store_true",
         help="Disable plotting the visualization during interactive learning.",
+    )
+
+
+def add_port_param(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "--port",
+        default=constants.DEFAULT_SERVER_PORT,
+        type=int,
+        help="Port to run the server at.",
     )
