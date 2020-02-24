@@ -37,6 +37,7 @@ DOCS_URL_PIPELINE = DOCS_BASE_URL + "/nlu/choosing-a-pipeline/"
 DOCS_URL_COMPONENTS = DOCS_BASE_URL + "/nlu/components/"
 DOCS_URL_TRAINING_DATA_NLU = DOCS_BASE_URL + "/nlu/training-data-format/"
 DOCS_URL_MIGRATE_GOOGLE = DOCS_BASE_URL + "/migrate-from/google-dialogflow-to-rasa/"
+DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide/"
 
 LEGACY_DOCS_BASE_URL = "http://legacy-docs.rasa.com"
 

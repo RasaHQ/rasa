@@ -3,11 +3,12 @@ import logging
 import numpy as np
 import tensorflow as tf
 
-from typing import Any, Dict, Optional, Text, Tuple, Union
+from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
 from rasa.nlu.training_data import TrainingData, Message
+from rasa.nlu.components import Component
+from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier, DIET
-from rasa.nlu.components import any_of
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -52,9 +53,7 @@ from rasa.nlu.constants import (
     RESPONSE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     DEFAULT_OPEN_UTTERANCE_TYPE,
-    DENSE_FEATURE_NAMES,
     TEXT,
-    SPARSE_FEATURE_NAMES,
 )
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.models import RasaModel
@@ -81,12 +80,9 @@ class ResponseSelector(DIETClassifier):
     and additional hidden layers are added together with dropout.
     """
 
-    provides = [RESPONSE, "response_ranking"]
-
-    requires = [
-        any_of(DENSE_FEATURE_NAMES[TEXT], SPARSE_FEATURE_NAMES[TEXT]),
-        any_of(DENSE_FEATURE_NAMES[RESPONSE], SPARSE_FEATURE_NAMES[RESPONSE]),
-    ]
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [Featurizer]
 
     defaults = {
         # ## Architecture of the used neural network
@@ -209,7 +205,7 @@ class ResponseSelector(DIETClassifier):
         return "label_ids"
 
     @staticmethod
-    def model_class():
+    def model_class() -> Type[RasaModel]:
         return DIET2DIET
 
     def _load_selector_params(self, config: Dict[Text, Any]) -> None:

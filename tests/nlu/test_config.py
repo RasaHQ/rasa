@@ -11,7 +11,6 @@ from rasa.nlu import config
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.registry import registered_pipeline_templates
 from rasa.nlu.model import Trainer
-from rasa.nlu.training_data.training_data import TrainingData
 from tests.nlu.utilities import write_file_config
 
 
@@ -73,12 +72,12 @@ def test_missing_required_component(_config):
 
 
 @pytest.mark.parametrize(
-    "_config", [{"pipeline": [{"name": "CountVectorsFeaturizer"}]}]
+    "pipeline_config", [{"pipeline": [{"name": "CountVectorsFeaturizer"}]}]
 )
-def test_missing_property(_config):
+def test_missing_property(pipeline_config):
     with pytest.raises(config.InvalidConfigError) as execinfo:
-        Trainer(config.RasaNLUModelConfig(_config)).train(TrainingData())
-    assert "Missing property" in str(execinfo.value)
+        Trainer(config.RasaNLUModelConfig(pipeline_config))
+    assert "Add required components to the pipeline" in str(execinfo.value)
 
 
 @pytest.mark.parametrize(

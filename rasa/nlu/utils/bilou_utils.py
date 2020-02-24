@@ -120,12 +120,12 @@ def _handle_entities(
         # Only interested if the tokenization is correct
         if start_token_idx is not None and end_token_idx is not None:
             if start_token_idx == end_token_idx:
-                bilou[start_token_idx] = "U-%s" % label
+                bilou[start_token_idx] = f"U-{label}"
             else:
-                bilou[start_token_idx] = "B-%s" % label
+                bilou[start_token_idx] = f"B-{label}"
                 for i in range(start_token_idx + 1, end_token_idx):
-                    bilou[i] = "I-%s" % label
-                bilou[end_token_idx] = "L-%s" % label
+                    bilou[i] = f"I-{label}"
+                bilou[end_token_idx] = f"L-{label}"
 
 
 def _get_entity_positions(entities: List[Tuple[int, int, Text]]) -> Set[int]:

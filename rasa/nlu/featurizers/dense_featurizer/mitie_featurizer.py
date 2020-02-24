@@ -1,17 +1,13 @@
 import numpy as np
 import typing
-from typing import Any, List, Text, Optional, Dict
+from typing import Any, List, Text, Optional, Dict, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers.featurizer import Featurizer
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.components import Component
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
-from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.training_data import Message, TrainingData
-
-if typing.TYPE_CHECKING:
-    import mitie
-
 from rasa.nlu.constants import (
     TEXT,
     TOKENS_NAMES,
@@ -19,18 +15,14 @@ from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
 )
 
+if typing.TYPE_CHECKING:
+    import mitie
 
-class MitieFeaturizer(Featurizer):
 
-    provides = [
-        DENSE_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
-    ]
-
-    requires = [
-        TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
-    ] + ["mitie_feature_extractor"]
-
-    required_components = [MitieNLP.name]
+class MitieFeaturizer(DenseFeaturizer):
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [MitieNLP, Tokenizer]
 
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of

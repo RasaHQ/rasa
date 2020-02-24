@@ -1,6 +1,9 @@
-from rasa.nlu.components import Component
 import typing
-from typing import Any, Optional, Text, Dict
+from typing import Any, Optional, Text, Dict, List
+
+from rasa.nlu.components import Component
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.training_data import Message, TrainingData
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
@@ -9,21 +12,13 @@ if typing.TYPE_CHECKING:
 class MyComponent(Component):
     """A new component"""
 
-    # Defines what attributes the pipeline component will
-    # provide when called. The listed attributes
-    # should be set by the component on the message object
-    # during test and train, e.g.
-    # ```message.set("entities", [...])```
-    provides = []
+    # Which components are required by this component.
+    # Listed components should appear before the component itself in the pipeline.
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        """Specify which components need to be present in the pipeline."""
 
-    # Which attributes on a message are required by this
-    # component. E.g. if requires contains "tokens", than a
-    # previous component in the pipeline needs to have "tokens"
-    # within the above described `provides` property.
-    # Use `any_of("option_1", "option_2")` to define that either
-    # "option_1" or "option_2" needs to be present in the
-    # provided properties from the previous components.
-    requires = []
+        return []
 
     # Defines the default configuration parameters of a component
     # these values can be overwritten in the pipeline configuration
@@ -37,10 +32,15 @@ class MyComponent(Component):
     # This is an important feature for backwards compatibility of components.
     language_list = None
 
-    def __init__(self, component_config=None):
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
         super().__init__(component_config)
 
-    def train(self, training_data, cfg, **kwargs):
+    def train(
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
+    ) -> None:
         """Train this component.
 
         This is the components chance to train itself provided
@@ -53,7 +53,7 @@ class MyComponent(Component):
         of components previous to this one."""
         pass
 
-    def process(self, message, **kwargs):
+    def process(self, message: Message, **kwargs: Any) -> None:
         """Process an incoming message.
 
         This is the components chance to process an incoming

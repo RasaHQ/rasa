@@ -1,11 +1,12 @@
 import typing
-from typing import Text, List, Any
+from typing import Text, List, Any, Type
 
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.components import Component
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.nlu.training_data import Message
 
-from rasa.nlu.constants import TOKENS_NAMES, SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
+from rasa.nlu.constants import SPACY_DOCS
 
 if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc  # pytype: disable=import-error
@@ -17,12 +18,9 @@ except ImportError:
 
 
 class SpacyTokenizer(Tokenizer):
-
-    provides = [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
-
-    requires = [SPACY_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
-
-    required_components = [SpacyNLP.name]
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [SpacyNLP]
 
     defaults = {
         # Flag to check whether to split intents

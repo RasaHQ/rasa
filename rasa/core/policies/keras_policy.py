@@ -19,6 +19,7 @@ from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 import rasa.utils.common as common_utils
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 
 
 # there are a number of issues with imports from tensorflow. hence the deactivation
@@ -76,7 +77,7 @@ class KerasPolicy(Policy):
             "'KerasPolicy' is deprecated and will be removed in version "
             "2.0. Use 'TEDPolicy' instead.",
             category=FutureWarning,
-            docs="https://rasa.com/docs/rasa/migration-guide/",
+            docs=DOCS_URL_MIGRATION_GUIDE,
         )
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
@@ -164,7 +165,6 @@ class KerasPolicy(Policy):
         **kwargs: Any,
     ) -> None:
 
-        # set random seed
         np.random.seed(self.random_seed)
         tf.random.set_seed(self.random_seed)
 

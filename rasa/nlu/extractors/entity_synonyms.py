@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Text
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.nlu.constants import ENTITIES
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.utils import write_json_to_file
@@ -13,9 +13,6 @@ from rasa.utils.common import raise_warning
 
 
 class EntitySynonymMapper(EntityExtractor):
-
-    provides = [ENTITIES]
-
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
