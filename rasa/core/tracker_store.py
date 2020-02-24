@@ -845,7 +845,7 @@ class SQLTrackerStore(TrackerStore):
     def _timestamp_of_latest_event(
         self, session: "Session", conversation_id: Text
     ) -> Optional[float]:
-        """Return the last event stored for `conversation_id`."""
+        """Return the timestamp of the last event stored for `conversation_id`."""
 
         latest_event = (
             session.query(self.SQLEvent)
