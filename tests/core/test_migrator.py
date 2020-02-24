@@ -9,9 +9,9 @@ from _pytest.logging import LogCaptureFixture
 import rasa.utils.io as io_utils
 from rasa.core.trackers import DialogueStateTracker
 from rasa.exceptions import (
-    NoConversationsInTrackerStore,
-    NoEventsToMigrate,
-    NoEventsInTimeRange,
+    NoConversationsInTrackerStoreError,
+    NoEventsToMigrateError,
+    NoEventsInTimeRangeError,
     PublishingError,
 )
 from tests.conftest import MockMigrator, random_user_uttered_event
@@ -44,18 +44,18 @@ def test_get_conversation_ids_to_process(
     migrator.requested_conversation_ids = requested_ids
 
     # noinspection PyProtectedMember
-    assert migrator.get_conversation_ids_to_process() == set(expected)
+    assert migrator._get_conversation_ids_to_process() == set(expected)
 
 
 @pytest.mark.parametrize(
     "requested_ids,available_ids,exception",
     [
-        (["1"], [], NoConversationsInTrackerStore),  # no IDs in tracker store
-        (None, [], NoConversationsInTrackerStore),  # without requested IDs
+        (["1"], [], NoConversationsInTrackerStoreError),  # no IDs in tracker store
+        (None, [], NoConversationsInTrackerStoreError),  # without requested IDs
         (
             ["1", "2", "3"],
             ["4", "5", "6"],
-            NoEventsToMigrate,
+            NoEventsToMigrateError,
         ),  # no overlap between requested IDs and those available
     ],
 )
@@ -71,10 +71,9 @@ def test_get_conversation_ids_to_process_error(
 
     with pytest.raises(exception):
         # noinspection PyProtectedMember
-        migrator.get_conversation_ids_to_process()
+        migrator._get_conversation_ids_to_process()
 
 
-# noinspection PyProtectedMember
 def test_fetch_events_within_time_range():
     conversation_ids = ["some-id", "another-id"]
 
@@ -100,6 +99,7 @@ def test_fetch_events_within_time_range():
     migrator = MockMigrator(tracker_store)
     migrator.requested_conversation_ids = conversation_ids
 
+    # noinspection PyProtectedMember
     fetched_events = migrator._fetch_events_within_time_range()
 
     # events should come back for all requested conversation IDs
@@ -120,8 +120,8 @@ def test_fetch_events_within_time_range_tracker_does_not_err():
 
     migrator = MockMigrator(tracker_store)
 
-    # no events means `NoEventsInTimeRange`
-    with pytest.raises(NoEventsInTimeRange):
+    # no events means `NoEventsInTimeRangeError`
+    with pytest.raises(NoEventsInTimeRangeError):
         # noinspection PyProtectedMember
         migrator._fetch_events_within_time_range()
 
@@ -136,8 +136,8 @@ def test_fetch_events_within_time_range_tracker_contains_no_events():
 
     migrator = MockMigrator(tracker_store)
 
-    # no events means `NoEventsInTimeRange`
-    with pytest.raises(NoEventsInTimeRange):
+    # no events means `NoEventsInTimeRangeError`
+    with pytest.raises(NoEventsInTimeRangeError):
         # noinspection PyProtectedMember
         migrator._fetch_events_within_time_range()
 
@@ -187,13 +187,13 @@ def test_sort_and_select_events_by_timestamp_error():
     migrator = MockMigrator(tracker_store)
 
     # no events given
-    with pytest.raises(NoEventsInTimeRange):
+    with pytest.raises(NoEventsInTimeRangeError):
         migrator._sort_and_select_events_by_timestamp([])
 
     # supply list of events, apply timestamp constraint and no events survive
     migrator.minimum_timestamp = 3.1
     events = [random_user_uttered_event(3).as_dict()]
-    with pytest.raises(NoEventsInTimeRange):
+    with pytest.raises(NoEventsInTimeRangeError):
         migrator._sort_and_select_events_by_timestamp(events)
 
 

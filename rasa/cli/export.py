@@ -1,19 +1,23 @@
 import argparse
 import logging
+import typing
 from typing import List, Text, Optional
 
 import rasa.cli.utils as cli_utils
 import rasa.core.utils as rasa_core_utils
 from rasa.cli.arguments import export as arguments
-from rasa.core.brokers.broker import EventBroker
-from rasa.core.brokers.pika import PikaEventBroker
-from rasa.core.migrator import Migrator
-from rasa.core.tracker_store import TrackerStore
-from rasa.core.utils import AvailableEndpoints
+from rasa.constants import DOCS_URL_TRACKER_STORES, DOCS_URL_EVENT_BROKERS
 from rasa.exceptions import (
     PublishingError,
     RasaException,
 )
+
+if typing.TYPE_CHECKING:
+    from rasa.core.brokers.broker import EventBroker
+    from rasa.core.brokers.pika import PikaEventBroker
+    from rasa.core.tracker_store import TrackerStore
+    from rasa.core.migrator import Migrator
+    from rasa.core.utils import AvailableEndpoints
 
 logger = logging.getLogger(__name__)
 
@@ -22,21 +26,20 @@ logger = logging.getLogger(__name__)
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
-    export_parser_args = {
-        "parents": parents,
-        "conflict_handler": "resolve",
-        "formatter_class": argparse.ArgumentDefaultsHelpFormatter,
-        "help": "Export conversations using an event broker.",
-    }
-
-    shell_parser = subparsers.add_parser("export", **export_parser_args)
+    shell_parser = subparsers.add_parser(
+        "export",
+        parents=parents,
+        conflict_handler="resolve",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        help="Export conversations using an event broker.",
+    )
     shell_parser.set_defaults(func=export_trackers)
 
     arguments.set_export_arguments(shell_parser)
 
 
-def _get_tracker_store(endpoints: AvailableEndpoints) -> TrackerStore:
-    """Get tracker store from `endpoints`.
+def _get_tracker_store(endpoints: "AvailableEndpoints") -> "TrackerStore":
+    """Get `TrackerStore` from `endpoints`.
 
     Prints an error and exits if no tracker store could be loaded.
 
@@ -49,17 +52,19 @@ def _get_tracker_store(endpoints: AvailableEndpoints) -> TrackerStore:
     """
     if not endpoints.tracker_store:
         cli_utils.print_error_and_exit(
-            "Could not find a `tracker_store` section in the supplied "
-            "endpoints file. Instructions on how to configure a tracker store "
-            "can be found here: https://rasa.com/docs/rasa/api/tracker-stores. "
-            "Exiting. "
+            f"Could not find a `tracker_store` section in the supplied "
+            f"endpoints file. Instructions on how to configure a tracker store "
+            f"can be found here: {DOCS_URL_TRACKER_STORES}. "
+            f"Exiting. "
         )
+
+    from rasa.core.tracker_store import TrackerStore
 
     return TrackerStore.create(endpoints.tracker_store)
 
 
-def _get_event_broker(endpoints: AvailableEndpoints) -> Optional[EventBroker]:
-    """Get event broker from `endpoints`.
+def _get_event_broker(endpoints: "AvailableEndpoints") -> Optional["EventBroker"]:
+    """Get `EventBroker` from `endpoints`.
 
     Prints an error and exits if no event broker could be loaded.
 
@@ -72,10 +77,12 @@ def _get_event_broker(endpoints: AvailableEndpoints) -> Optional[EventBroker]:
     """
     if not endpoints.event_broker:
         cli_utils.print_error_and_exit(
-            "Could not find an `event_broker` section in the supplied "
-            "endpoints file. Instructions on how to configure an event broker "
-            "can be found here: https://rasa.com/docs/rasa/api/event-brokers. Exiting."
+            f"Could not find an `event_broker` section in the supplied "
+            f"endpoints file. Instructions on how to configure an event broker "
+            f"can be found here: {DOCS_URL_EVENT_BROKERS}. Exiting."
         )
+
+    from rasa.core.brokers.broker import EventBroker
 
     return EventBroker.create(endpoints.event_broker)
 
@@ -100,7 +107,9 @@ def _get_requested_conversation_ids(
     return conversation_ids_arg.split(",")
 
 
-def _validate_timestamp_options(args: argparse.Namespace) -> None:
+def _assert_max_timestamp_is_greater_than_min_timestamp(
+    args: argparse.Namespace,
+) -> None:
     """Inspect CLI timestamp parameters.
 
     Prints an error and exits if a maximum timestamp is provided that is smaller
@@ -124,7 +133,7 @@ def _validate_timestamp_options(args: argparse.Namespace) -> None:
         )
 
 
-def _prepare_event_broker(event_broker: EventBroker) -> None:
+def _prepare_event_broker(event_broker: "EventBroker") -> None:
     """Sets `should_keep_unpublished_messages` flag to `False` if
     `self.event_broker` is a `PikaEventBroker`.
 
@@ -136,6 +145,8 @@ def _prepare_event_broker(event_broker: EventBroker) -> None:
     In addition, wait until the event broker reports a `ready` state.
 
     """
+    from rasa.core.brokers.pika import PikaEventBroker
+
     if isinstance(event_broker, PikaEventBroker):
         event_broker.should_keep_unpublished_messages = False
         event_broker.raise_on_failure = True
@@ -153,13 +164,15 @@ def export_trackers(args: argparse.Namespace) -> None:
         args: Command-line arguments to process.
 
     """
-    _validate_timestamp_options(args)
+    _assert_max_timestamp_is_greater_than_min_timestamp(args)
 
     endpoints = rasa_core_utils.read_endpoints_from_path(args.endpoints)
     tracker_store = _get_tracker_store(endpoints)
     event_broker = _get_event_broker(endpoints)
     _prepare_event_broker(event_broker)
     requested_conversation_ids = _get_requested_conversation_ids(args.conversation_ids)
+
+    from rasa.core.migrator import Migrator
 
     migrator = Migrator(
         tracker_store,
@@ -188,7 +201,7 @@ def export_trackers(args: argparse.Namespace) -> None:
         cli_utils.print_error_and_exit(str(e))
 
 
-def _get_continuation_command(migrator: Migrator, timestamp: float) -> Text:
+def _get_continuation_command(migrator: "Migrator", timestamp: float) -> Text:
     """Build CLI command to continue 'rasa export' where it was interrupted.
 
     Called when event publishing stops due to an error.

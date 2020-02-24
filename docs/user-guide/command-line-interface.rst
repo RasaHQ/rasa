@@ -253,7 +253,7 @@ You can specify the input file, output file, and the output format with the foll
 
 .. _section_export:
 
-Export conversations to an event broker
+Export Conversations to an Event Broker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To export events from a tracker store using an event broker, run:

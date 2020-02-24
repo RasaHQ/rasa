@@ -9,9 +9,9 @@ from rasa.core.brokers.broker import EventBroker
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import EventVerbosity
 from rasa.exceptions import (
-    NoEventsToMigrate,
-    NoConversationsInTrackerStore,
-    NoEventsInTimeRange,
+    NoEventsToMigrateError,
+    NoConversationsInTrackerStoreError,
+    NoEventsInTimeRangeError,
     PublishingError,
 )
 
@@ -29,7 +29,7 @@ class Migrator:
         requested_conversation_ids: Optional[Text] = None,
         minimum_timestamp: Optional[float] = None,
         maximum_timestamp: Optional[float] = None,
-    ):
+    ) -> None:
         """
         Args:
             endpoints_path: Path to the endpoints file used to configure the event
@@ -69,9 +69,7 @@ class Migrator:
         for event in tqdm(events, "events"):
             # noinspection PyBroadException
             try:
-                body = {"sender_id": event["sender_id"]}
-                body.update(event)
-                self.event_broker.publish(body)
+                self.event_broker.publish(event)
                 published_events += 1
                 current_timestamp = event["timestamp"]
             except Exception as e:
@@ -82,38 +80,42 @@ class Migrator:
 
         return published_events
 
-    def get_conversation_ids_to_process(self) -> Set[Text]:
-        """Get conversation IDs that are good for processing.
-
-        Finds the intersection of events that are contained in the tracker store with
-        those events requested as a command-line argument.
-
-        Prints an error and if no conversation IDs are found in the tracker, or if no
-        overlap is found between those contained in the tracker and those requested
-        by the user.
+    def _get_conversation_ids_in_tracker(self) -> Set[Text]:
+        """Fetch conversation IDs in `self.tracker_store`.
 
         Returns:
-            Conversation IDs that are both requested and contained in the tracker
-            store. If no conversation IDs are requested, all conversation IDs in the
-            tracker store are returned.
+            A set of conversation IDs in `self.tracker_store`.
+
+        Raises:
+            `NoConversationsInTrackerStoreError` if
+            `conversation_ids_in_tracker_store` is empty.
 
         """
         conversation_ids_in_tracker_store = set(self.tracker_store.keys())
 
-        if not conversation_ids_in_tracker_store:
-            raise NoConversationsInTrackerStore(
-                f"Could not find any conversations in connected tracker store. "
-                f"Please validate your `endpoints.yml` and make sure the defined "
-                f"tracker store exists. Exiting."
-            )
-
-        if not self.requested_conversation_ids:
+        if conversation_ids_in_tracker_store:
             return conversation_ids_in_tracker_store
 
+        raise NoConversationsInTrackerStoreError(
+            f"Could not find any conversations in connected tracker store. "
+            f"Please validate your `endpoints.yml` and make sure the defined "
+            f"tracker store exists. Exiting."
+        )
+
+    def _validate_all_requested_ids_exist(
+        self, conversation_ids_in_tracker_store: Set[Text],
+    ) -> None:
+        """Warn user if `self.requested_conversation_ids` contains IDs not found in
+        `conversation_ids_in_tracker_store`
+
+        Args:
+            conversation_ids_in_tracker_store: Set of conversation IDs contained in
+            the tracker store.
+
+        """
         missing_ids_in_tracker_store = (
             set(self.requested_conversation_ids) - conversation_ids_in_tracker_store
         )
-
         if missing_ids_in_tracker_store:
             cli_utils.print_warning(
                 f"Could not find the following requested "
@@ -121,12 +123,31 @@ class Migrator:
                 f"{', '.join(sorted(missing_ids_in_tracker_store))}"
             )
 
+    def _get_conversation_ids_to_process(self) -> Set[Text]:
+        """Get conversation IDs that are good for processing.
+
+        Finds the intersection of events that are contained in the tracker store with
+        those events requested as a command-line argument.
+
+        Returns:
+            Conversation IDs that are both requested and contained in the tracker
+            store. If no conversation IDs are requested, all conversation IDs in the
+            tracker store are returned.
+
+        """
+        conversation_ids_in_tracker_store = self._get_conversation_ids_in_tracker()
+
+        if not self.requested_conversation_ids:
+            return conversation_ids_in_tracker_store
+
+        self._validate_all_requested_ids_exist(conversation_ids_in_tracker_store)
+
         conversation_ids_to_process = conversation_ids_in_tracker_store & set(
             self.requested_conversation_ids
         )
 
         if not conversation_ids_to_process:
-            raise NoEventsToMigrate(
+            raise NoEventsToMigrateError(
                 "Could not find an overlap between the requested "
                 "conversation IDs and those found in the tracker store. Exiting."
             )
@@ -137,10 +158,10 @@ class Migrator:
         """Fetch all events for `conversation_ids` within the supplied time range.
 
         Returns:
-            List of serialized events with added `sender_id` field.
+            Serialized events with added `sender_id` field.
 
         """
-        conversation_ids_to_process = self.get_conversation_ids_to_process()
+        conversation_ids_to_process = self._get_conversation_ids_to_process()
 
         cli_utils.print_info(
             f"Fetching events for {len(conversation_ids_to_process)} "
@@ -167,19 +188,38 @@ class Migrator:
                 continue
 
             # the conversation IDs are needed in the event publishing
-            for event in _events:
-                event["sender_id"] = conversation_id
-                events.append(event)
+            events.extend(
+                self._get_events_for_conversation_id(_events, conversation_id)
+            )
 
         return self._sort_and_select_events_by_timestamp(events)
+
+    @staticmethod
+    def _get_events_for_conversation_id(
+        events: List[Dict[Text, Any]], conversation_id: Text
+    ) -> List[Dict[Text, Any]]:
+        """Get serialised events with added `sender_id` key.
+
+        Args:
+            events: Events to modify.
+            conversation_id: Conversation ID to add to events.
+
+        Returns:
+            Events with added `sender_id` key.
+
+        """
+        events_with_conversation_id = []
+
+        for event in events:
+            event["sender_id"] = conversation_id
+            events_with_conversation_id.append(event)
+
+        return events_with_conversation_id
 
     def _sort_and_select_events_by_timestamp(
         self, events: List[Dict[Text, Any]]
     ) -> List[Dict[Text, Any]]:
         """Sort list of events by ascending timestamp, and select events within time range.
-
-        Raises `NoEventsInTimeRange` error if no events are found within the requested
-        time range.
 
         Args:
             events: List of serialized events to be sorted and selected from.
@@ -187,6 +227,10 @@ class Migrator:
         Returns:
             List of serialized and sorted (by timestamp) events within the requested time
             range.
+
+        Raises:
+             `NoEventsInTimeRangeError` error if no events are found within the
+             requested time range.
 
         """
         logger.debug(f"Sorting and selecting from {len(events)} total events found.")
@@ -207,7 +251,7 @@ class Migrator:
 
         events = list(events)
         if not events:
-            raise NoEventsInTimeRange(
+            raise NoEventsInTimeRangeError(
                 "Could not find any events within requested time range. Exiting."
             )
 

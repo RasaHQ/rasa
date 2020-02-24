@@ -9,15 +9,15 @@ class ModelNotFound(RasaException):
     """Raised when a model is not found in the path provided by the user."""
 
 
-class NoEventsToMigrate(RasaException):
+class NoEventsToMigrateError(RasaException):
     """Raised when no events to be migrated are found."""
 
 
-class NoConversationsInTrackerStore(RasaException):
+class NoConversationsInTrackerStoreError(RasaException):
     """Raised when a tracker store does not contain any conversations."""
 
 
-class NoEventsInTimeRange(RasaException):
+class NoEventsInTimeRangeError(RasaException):
     """Raised when a tracker store does not contain events within a given time range."""
 
 

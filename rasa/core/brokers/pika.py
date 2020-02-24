@@ -182,8 +182,8 @@ def close_pika_channel(
 
     Args:
         channel: Pika `Channel` to close.
-        attempts: How many times to try to confirm that the channel has been close
-            indeed closed.
+        attempts: How many times to try to confirm that the channel has indeed been
+            closed.
         time_between_attempts: Wait time between attempts to confirm closed state.
 
     """
@@ -228,7 +228,7 @@ class PikaEventBroker(EventBroker):
         queue: Text = "rasa_core_events",
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
-        loglevel: Union[Text, int] = os.environ.get(
+        log_level: Union[Text, int] = os.environ.get(
             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
         ),
     ):
@@ -244,11 +244,11 @@ class PikaEventBroker(EventBroker):
                 maintain a queue of unpublished messages to be published later in
                 case of errors.
             raise_on_failure: Whether to raise an exception if publishing fails. If
-                `False` (default), keep retrying.
-            loglevel: Logging level.
+                `False`, keep retrying.
+            log_level: Logging level.
 
         """
-        logging.getLogger("pika").setLevel(loglevel)
+        logging.getLogger("pika").setLevel(log_level)
 
         self.queue = queue
         self.host = host
@@ -268,7 +268,7 @@ class PikaEventBroker(EventBroker):
             close_pika_channel(self.channel)
             close_pika_connection(self.channel.connection)
 
-    def close(self):
+    def close(self) -> None:
         """Close the pika channel and connection."""
         self.__del__()
 
@@ -482,7 +482,7 @@ class PikaProducer(PikaEventBroker):
         queue: Text = "rasa_core_events",
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
-        loglevel: Union[Text, int] = os.environ.get(
+        log_level: Union[Text, int] = os.environ.get(
             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
         ),
     ):
@@ -501,5 +501,5 @@ class PikaProducer(PikaEventBroker):
             queue,
             should_keep_unpublished_messages,
             raise_on_failure,
-            loglevel,
+            log_level,
         )

@@ -273,5 +273,5 @@ class MockMigrator(Migrator):
         tracker_store: TrackerStore = Mock(),
         event_broker: EventBroker = Mock(),
         endpoints_path: Text = "",
-    ):
+    ) -> None:
         super().__init__(tracker_store, event_broker, endpoints_path)

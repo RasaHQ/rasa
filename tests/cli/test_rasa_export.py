@@ -36,7 +36,7 @@ def test_export_help(run: Callable[..., RunResult]):
     "minimum_timestamp,maximum_timestamp",
     [(2, 3), (None, 5.5), (None, None), (5, None)],
 )
-def test_timestamps(
+def test_validate_timestamp_options(
     minimum_timestamp: Optional[float], maximum_timestamp: Optional[float],
 ):
     args = argparse.Namespace()
@@ -49,14 +49,14 @@ def test_timestamps(
 
     # no error is raised
     # noinspection PyProtectedMember
-    export._validate_timestamp_options(args)
+    export._assert_max_timestamp_is_greater_than_min_timestamp(args)
 
 
-def test_timestamp_error_exit():
+def test_validate_timestamp_options_with_invalid_timestamps():
     args = argparse.Namespace(minimum_timestamp=3, maximum_timestamp=2)
     with pytest.raises(SystemExit):
         # noinspection PyProtectedMember
-        export._validate_timestamp_options(args)
+        export._assert_max_timestamp_is_greater_than_min_timestamp(args)
 
 
 # noinspection PyProtectedMember
@@ -86,7 +86,6 @@ def test_get_event_broker_from_endpoint_config_error_exit(tmp_path: Path):
         assert export._get_event_broker(available_endpoints)
 
 
-# noinspection PyProtectedMember
 def test_get_tracker_store_from_endpoint_config_error_exit(tmp_path: Path):
     # write config without event broker to file
     endpoints_path = write_endpoint_config_to_yaml(tmp_path, {})
@@ -94,6 +93,7 @@ def test_get_tracker_store_from_endpoint_config_error_exit(tmp_path: Path):
     available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)
 
     with pytest.raises(SystemExit):
+        # noinspection PyProtectedMember
         assert export._get_tracker_store(available_endpoints)
 
 

@@ -1,11 +1,11 @@
 import argparse
 
-from rasa.cli.arguments.default_arguments import add_endpoint_param
+from rasa.cli.arguments import default_arguments
 from rasa.constants import DEFAULT_ENDPOINTS_PATH
 
 
 def set_export_arguments(parser: argparse.ArgumentParser) -> None:
-    add_endpoint_param(
+    default_arguments.add_endpoint_param(
         parser,
         default=DEFAULT_ENDPOINTS_PATH,
         help_text=(

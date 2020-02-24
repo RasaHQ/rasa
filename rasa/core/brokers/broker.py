@@ -32,8 +32,7 @@ class EventBroker:
 
         raise NotImplementedError("Event broker must implement the `publish` method.")
 
-    # noinspection PyMethodMayBeStatic
-    def is_ready(self, *args: Any, **kwargs: Any) -> bool:
+    def is_ready(self) -> bool:
         """Determine whether or not the event broker is ready.
 
         Returns:
