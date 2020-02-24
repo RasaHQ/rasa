@@ -166,7 +166,7 @@ description = "AWS SAM Translator is a library that transform SAM templates into
 name = "aws-sam-translator"
 optional = false
 python-versions = "*"
-version = "1.20.1"
+version = "1.21.0"
 
 [package.dependencies]
 boto3 = ">=1.5,<2.0"
@@ -283,10 +283,10 @@ description = "The AWS SDK for Python"
 name = "boto3"
 optional = false
 python-versions = "*"
-version = "1.12.4"
+version = "1.12.5"
 
 [package.dependencies]
-botocore = ">=1.15.4,<1.16.0"
+botocore = ">=1.15.5,<1.16.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.3.0,<0.4.0"
 
@@ -296,7 +296,7 @@ description = "Low-level, data-driven core of boto 3."
 name = "botocore"
 optional = false
 python-versions = "*"
-version = "1.15.4"
+version = "1.15.5"
 
 [package.dependencies]
 docutils = ">=0.10,<0.16"
@@ -348,7 +348,7 @@ description = "checks cloudformation for practices and behaviour         that co
 name = "cfn-lint"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "0.28.1"
+version = "0.28.2"
 
 [package.dependencies]
 aws-sam-translator = ">=1.19.1"
@@ -3583,7 +3583,7 @@ attrs = [
     {file = "attrs-19.3.0.tar.gz", hash = "sha256:f7b7ce16570fe9965acd6d30101a28f62fb4a7f9e926b3bbc9b61f8b04247e72"},
 ]
 aws-sam-translator = [
-    {file = "aws-sam-translator-1.20.1.tar.gz", hash = "sha256:ddf61fdabc94a66ca0a3e7d042d6a0e508bc45bd128c86fb02af0c87a59ac79e"},
+    {file = "aws-sam-translator-1.21.0.tar.gz", hash = "sha256:320a341d659580ad04e79c46fc93f50996363745a0c2728f9cd025ad78c43e36"},
 ]
 aws-xray-sdk = [
     {file = "aws-xray-sdk-2.4.3.tar.gz", hash = "sha256:263a38f3920d9dc625e3acb92e6f6d300f4250b70f538bd009ce6e485676ab74"},
@@ -3628,12 +3628,12 @@ boto = [
     {file = "boto-2.49.0.tar.gz", hash = "sha256:ea0d3b40a2d852767be77ca343b58a9e3a4b00d9db440efb8da74b4e58025e5a"},
 ]
 boto3 = [
-    {file = "boto3-1.12.4-py2.py3-none-any.whl", hash = "sha256:3307fee29388fe17dad155fa952887a99d8d794cf25ee0a5a6d5a8263ffb4616"},
-    {file = "boto3-1.12.4.tar.gz", hash = "sha256:850a40a509c63c12d1f61cb893fd6387c4f6d924603989db47a1d046cbe2af5a"},
+    {file = "boto3-1.12.5-py2.py3-none-any.whl", hash = "sha256:599608a8ed50dc184e83852e3050e6997d7825b404a6e3612c27425e4f12ec10"},
+    {file = "boto3-1.12.5.tar.gz", hash = "sha256:627a0c2366e420383065d9b191fa90a315a4d394fd007c2a85cfa5afa93ba974"},
 ]
 botocore = [
-    {file = "botocore-1.15.4-py2.py3-none-any.whl", hash = "sha256:2890f4eebbc561c477464cdecb46e2f88c5e8d8a53a5aab32d58935c0d3fbb0b"},
-    {file = "botocore-1.15.4.tar.gz", hash = "sha256:e1cd1c28eb858589af618eb09640fdef654c2d263d2e995ec6de773254fc491f"},
+    {file = "botocore-1.15.5-py2.py3-none-any.whl", hash = "sha256:8c9fa943e1890b44a7f31be2654cd4f4f88e634adadb931b0f298f1cf03a52a4"},
+    {file = "botocore-1.15.5.tar.gz", hash = "sha256:9de7885e9e9d6dbc30b9846d7edd8f98251db7f00395a6f4cfd765efc7098bdb"},
 ]
 bz2file = [
     {file = "bz2file-0.98.tar.gz", hash = "sha256:64c1f811e31556ba9931953c8ec7b397488726c63e09a4c67004f43bdd28da88"},
@@ -3677,8 +3677,8 @@ cffi = [
     {file = "cffi-1.14.0.tar.gz", hash = "sha256:2d384f4a127a15ba701207f7639d94106693b6cd64173d6c8988e2c25f3ac2b6"},
 ]
 cfn-lint = [
-    {file = "cfn-lint-0.28.1.tar.gz", hash = "sha256:017cfbe7f78a534114ed1bf45b438bdfd2eb735c4d428e35f478a1ca46953773"},
-    {file = "cfn_lint-0.28.1-py3-none-any.whl", hash = "sha256:1eaac38d8d48014ade3dc33824eab756d24f51f222157f30e76ccffe35824dcb"},
+    {file = "cfn-lint-0.28.2.tar.gz", hash = "sha256:91915e60c0c9971740895b20010bca3b6d016e7c6ed78b32cd9eb51529a5711f"},
+    {file = "cfn_lint-0.28.2-py3-none-any.whl", hash = "sha256:82d2d2872ed77bb6858e698c924267676c00878d8fbd612b903cb9fc71063bcb"},
 ]
 chardet = [
     {file = "chardet-3.0.4-py2.py3-none-any.whl", hash = "sha256:fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"},
