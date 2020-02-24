@@ -666,14 +666,11 @@ class SQLTrackerStore(TrackerStore):
         from sqlalchemy.engine.url import URL
 
         # Users might specify a url in the host
-        parsed = parse.urlsplit(host or "")
-        # We have to check `scheme` and `hostname` because Python 3.7.6 parses strings
-        # like `localhost:1234` as a URL with scheme `localhost`. However, `sqlite:///`
-        # a special case because it doesn't require a hostname.
-        if parsed.scheme and (parsed.hostname or parsed.scheme == SQLITE_SCHEME):
+        if host and "://" in host:
+            # assumes this is a complete database host name including
+            # e.g. `postgres://...`
             return host
-
-        if host:
+        elif host:
             # add fake scheme to properly parse components
             parsed = parse.urlsplit(f"scheme://{host}")
 

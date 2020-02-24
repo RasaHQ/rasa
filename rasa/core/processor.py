@@ -1,7 +1,6 @@
 import logging
 import os
 import time
-import warnings
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
@@ -329,7 +328,7 @@ class MessageProcessor:
             or not self._is_reminder_still_valid(tracker, reminder_event)
         ):
             logger.debug(
-                f"Canceled reminder because it is outdated. " f"({reminder_event})"
+                f"Canceled reminder because it is outdated ({reminder_event})."
             )
         else:
             intent = reminder_event.intent
@@ -471,7 +470,7 @@ class MessageProcessor:
             self._log_slots(tracker)
 
         logger.debug(
-            f"Logged UserUtterance - " f"tracker now has {len(tracker.events)} events."
+            f"Logged UserUtterance - tracker now has {len(tracker.events)} events."
         )
 
     @staticmethod

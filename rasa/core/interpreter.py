@@ -1,6 +1,5 @@
 import aiohttp
 
-import warnings
 import json
 import logging
 import re
@@ -288,7 +287,7 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
-        result = self.interpreter.parse(text, message_id)
+        result = self.interpreter.parse(text)
 
         return result
 

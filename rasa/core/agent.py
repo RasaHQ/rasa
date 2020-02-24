@@ -1,5 +1,4 @@
 import logging
-import warnings
 import os
 import shutil
 import tempfile
@@ -310,6 +309,7 @@ class Agent:
         if self.domain is not None:
             self.domain.add_requested_slot()
             self.domain.add_knowledge_base_slots()
+            self.domain.add_categorical_slot_default_value()
 
         PolicyEnsemble.check_domain_ensemble_compatibility(
             self.policy_ensemble, self.domain
@@ -590,21 +590,6 @@ class Agent:
             if type(p) == MemoizationPolicy:
                 p.toggle(activate)
 
-    def continue_training(
-        self, trackers: List[DialogueStateTracker], **kwargs: Any
-    ) -> None:
-        raise_warning(
-            "Continue training will be removed in the 2.0 release. It won't be "
-            "possible to continue the training, you should probably retrain instead.",
-            FutureWarning,
-        )
-
-        if not self.is_core_ready():
-            raise AgentNotReady("Can't continue training without a policy ensemble.")
-
-        self.policy_ensemble.continue_training(trackers, self.domain, **kwargs)
-        self._set_fingerprint()
-
     def _max_history(self) -> int:
         """Find maximum max_history."""
 
@@ -794,16 +779,8 @@ class Agent:
                 "overwritten.".format(model_path)
             )
 
-    def persist(self, model_path: Text, dump_flattened_stories: bool = False) -> None:
+    def persist(self, model_path: Text) -> None:
         """Persists this agent into a directory for later loading and usage."""
-
-        if dump_flattened_stories:
-            raise_warning(
-                "The `dump_flattened_stories` argument will be removed from "
-                "`Agent.persist` in the 2.0 release. Please dump your "
-                "training data separately if you need it to be part of the model.",
-                FutureWarning,
-            )
 
         if not self.is_core_ready():
             raise AgentNotReady("Can't persist without a policy ensemble.")
@@ -813,7 +790,7 @@ class Agent:
 
         self._clear_model_directory(model_path)
 
-        self.policy_ensemble.persist(model_path, dump_flattened_stories)
+        self.policy_ensemble.persist(model_path)
         self.domain.persist(os.path.join(model_path, DEFAULT_DOMAIN_PATH))
         self.domain.persist_specification(model_path)
 

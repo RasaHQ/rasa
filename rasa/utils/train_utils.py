@@ -1030,7 +1030,7 @@ def choose_loss(
         )
     else:
         raise ValueError(
-            f"Wrong loss type '{loss_type}', " f"should be 'margin' or 'softmax'"
+            f"Wrong loss type '{loss_type}', should be 'margin' or 'softmax'."
         )
 
 
