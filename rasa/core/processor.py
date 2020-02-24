@@ -174,8 +174,6 @@ class MessageProcessor:
                 nlg=self.nlg,
             )
 
-            self.tracker_store.save(tracker)
-
     async def get_tracker_with_session_start(
         self, sender_id: Text, output_channel: Optional[OutputChannel] = None,
     ) -> Optional[DialogueStateTracker]:
