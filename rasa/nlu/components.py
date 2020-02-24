@@ -82,7 +82,7 @@ def validate_tokenizers(pipeline: List["Component"]) -> None:
     """Validates that only one tokenizer is present in the pipeline.
 
     Args:
-        pipeline: the list of components in the pipeline
+        pipeline: the list of the :class:`rasa.nlu.components.Component`
     """
 
     from rasa.nlu.tokenizers.tokenizer import Tokenizer
@@ -105,8 +105,8 @@ def _required_component_in_pipeline(
     """Checks that required component present in the pipeline.
 
     Args:
-        required_component: A class name of the required component
-        pipeline: the list of components in the pipeline
+        required_component: a class name of the required component
+        pipeline: the list of the :class:`rasa.nlu.components.Component`
 
     Returns:
         `True` if required_component is in the pipeline, `False` otherwise
@@ -148,7 +148,7 @@ def validate_required_components(pipeline: List["Component"]) -> None:
     """Validates that all required components are present in the pipeline.
 
     Args:
-        pipeline: the list of components in the pipeline
+        pipeline: the list of the :class:`rasa.nlu.components.Component`
     """
 
     for i, component in enumerate(pipeline):
@@ -170,7 +170,7 @@ def validate_pipeline(pipeline: List["Component"]) -> None:
     """Validates the pipeline.
 
     Args:
-        pipeline: the list of components in the pipeline
+        pipeline: the list of the :class:`rasa.nlu.components.Component`
     """
 
     validate_empty_pipeline(pipeline)
@@ -184,7 +184,7 @@ def validate_required_components_from_data(
     """Validates that all components are present in the pipeline based on data.
 
     Args:
-        pipeline: the list of components in the pipeline
+        pipeline: the list of the :class:`rasa.nlu.components.Component`
         data: the :class:`rasa.nlu.training_data.training_data.TrainingData`
     """
 
