@@ -639,10 +639,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.data_example = {k: [v[:1] for v in vs] for k, vs in model_data.items()}
 
         self.model = self.model_class()(
-            model_data.get_signature(),
-            self._label_data,
-            self.inverted_tag_dict,
-            self.component_config,
+            data_signature=model_data.get_signature(),
+            label_data=self._label_data,
+            inverted_tag_dict=self.inverted_tag_dict,
+            config=self.component_config,
         )
 
         self.model.fit(
