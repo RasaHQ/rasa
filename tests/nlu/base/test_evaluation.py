@@ -48,11 +48,7 @@ import json
 import os
 from rasa.nlu import training_data, config
 from tests.nlu import utilities
-from tests.nlu.conftest import (
-    DEFAULT_DATA_PATH,
-    NLU_DEFAULT_CONFIG_PATH,
-    NLU_NLG_DATA_PATH,
-)
+from tests.nlu.conftest import DEFAULT_DATA_PATH, NLU_DEFAULT_CONFIG_PATH
 from rasa.nlu.selectors.embedding_response_selector import ResponseSelector
 from rasa.nlu.test import is_response_selector_present
 
@@ -721,12 +717,11 @@ def test_get_evaluation_metrics(
 def test_nlu_comparison(tmpdir):
     configs = [
         NLU_DEFAULT_CONFIG_PATH,
-        "sample_configs/config_supervised_embeddings_response_selector.yml",
+        "sample_configs/config_embedding_intent_response_selector.yml",
     ]
     output = tmpdir.strpath
-
     compare_nlu_models(
-        configs, NLU_NLG_DATA_PATH, output, runs=2, exclusion_percentages=[50, 80],
+        configs, DEFAULT_DATA_PATH, output, runs=2, exclusion_percentages=[50, 80],
     )
 
     assert set(os.listdir(output)) == {
@@ -740,7 +735,8 @@ def test_nlu_comparison(tmpdir):
     assert set(os.listdir(run_1_path)) == {"50%_exclusion", "80%_exclusion", "test.md"}
 
     exclude_50_path = os.path.join(run_1_path, "50%_exclusion")
-    modelnames = [os.path.basename(c)[:-4] for c in configs]
+    modelnames = [os.path.splitext(os.path.basename(config))[0] for config in configs]
+
     modeloutputs = set(
         ["train"]
         + [f"{m}_report" for m in modelnames]
