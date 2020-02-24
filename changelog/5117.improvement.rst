@@ -1,0 +1,3 @@
+New command-line argument --conversation-id will be added and wiil give the ability to
+set specific conversation ID for each shell session, if not passed will be random.
+
