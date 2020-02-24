@@ -5,3 +5,4 @@ pipeline:
     - name: "SpacyFeaturizer"
     - name: "RegexFeaturizer"
     - name: "SpacyEntityExtractor"
+    - name: "EntitySynonymMapper"

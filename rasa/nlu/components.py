@@ -131,10 +131,10 @@ def validate_required_components_from_data(
         NOT_PRETRAINED_EXTRACTORS, pipeline
     ):
         raise_warning(
-            f"You have defined training data consisting of entity examples, but "
+            "You have defined training data consisting of entity examples, but "
             "your NLU pipeline does not include an entity extractor trained on "
             "your training data. To extract entity examples, add one of "
-            "{NOT_PRETRAINED_EXTRACTORS} to your pipeline."
+            f"{NOT_PRETRAINED_EXTRACTORS} to your pipeline."
         )
 
     # Check for Regex data but RegexFeaturizer not enabled
