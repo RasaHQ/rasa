@@ -72,7 +72,6 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
-    EVALUATE_ONCE_PER_EPOCH,
 )
 
 
