@@ -93,9 +93,7 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
     async def mock_from_importer(importer: TrainingDataImporter) -> Validator:
         return Mock()
 
-    monkeypatch.setattr(
-        "rasa.validator.Validator.from_importer", mock_from_importer
-    )
+    monkeypatch.setattr("rasa.validator.Validator.from_importer", mock_from_importer)
 
     with pytest.raises(argparse.ArgumentTypeError):
         data.validate_files(args)
