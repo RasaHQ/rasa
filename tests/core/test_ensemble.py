@@ -115,10 +115,10 @@ def test_fallback_mapping_restart():
         tracker, domain
     )
     max_confidence_index = result.index(max(result))
-    i = 1
+    index_of_mapping_policy = 1
     next_action = domain.action_for_index(max_confidence_index, None)
 
-    assert best_policy == "policy_{}_{}".format(i, MappingPolicy.__name__)
+    assert best_policy == "policy_{}_{}".format(index_of_mapping_policy, MappingPolicy.__name__)
     assert next_action.name() == ACTION_RESTART_NAME
 
 
