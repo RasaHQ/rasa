@@ -50,6 +50,19 @@ def validate_requirements(component_names: List[Text]) -> None:
         )
 
 
+def validate_empty_pipeline(pipeline: List["Component"]) -> None:
+    """Ensures the pipeline is not empty."""
+
+    if len(pipeline) == 0:
+        raise InvalidConfigError(
+            "Can not train an empty pipeline. "
+            "Make sure to specify a proper pipeline in "
+            "the configuration using the 'pipeline' key. "
+            "The 'backend' configuration key is "
+            "NOT supported anymore."
+        )
+
+
 def validate_tokenizers(pipeline: List["Component"]) -> None:
     """Validates that only one tokenizer is present in the pipeline."""
 
@@ -78,33 +91,35 @@ def _required_component_in_pipeline(
     return False
 
 
+def _check_deprecated_attributes(component: "Component") -> None:
+    if hasattr(component, "provides"):
+        raise_warning(
+            f"'{component.name}' contains property 'provides', "
+            f"which is deprecated. There is no need to specify "
+            f"the list of attributes that a component provides.",
+            category=FutureWarning,
+            docs="https://rasa.com/docs/rasa/migration-guide/",
+        )
+    if hasattr(component, "requires"):
+        raise_warning(
+            f"'{component.name}' contains property 'requires', "
+            f"which is deprecated. Use 'required_components()' method "
+            f"to specify which components are required to be present "
+            f"in the pipeline by this component.",
+            category=FutureWarning,
+            docs="https://rasa.com/docs/rasa/migration-guide/",
+        )
+
+
 def validate_required_components(pipeline: List["Component"]) -> None:
     """Validates that all required components are present in the pipeline."""
 
     for i, component in enumerate(pipeline):
-        if hasattr(component, "provides"):
-            raise_warning(
-                f"'{component.name}' contains property 'provides', "
-                f"which is deprecated. There is no need to specify "
-                f"the list of attributes that a component provides.",
-                category=FutureWarning,
-                docs="https://rasa.com/docs/rasa/migration-guide/",
-            )
-        if hasattr(component, "requires"):
-            raise_warning(
-                f"'{component.name}' contains property 'requires', "
-                f"which is deprecated. Use 'required_components()' method "
-                f"to specify which components are required to be present "
-                f"in the pipeline by this component.",
-                category=FutureWarning,
-                docs="https://rasa.com/docs/rasa/migration-guide/",
-            )
+        _check_deprecated_attributes(component)
 
         missing_components = []
         for required_component in component.required_components():
-            if not _required_component_in_pipeline(
-                required_component, pipeline[: i + 1]
-            ):
+            if not _required_component_in_pipeline(required_component, pipeline[:i]):
                 missing_components.append(required_component.name)
 
         if missing_components:
@@ -112,6 +127,12 @@ def validate_required_components(pipeline: List["Component"]) -> None:
                 f"'{component.name}' requires {missing_components}. "
                 f"Add required components to the pipeline."
             )
+
+
+def validate_pipeline(pipeline: List["Component"]) -> None:
+    validate_empty_pipeline(pipeline)
+    validate_tokenizers(pipeline)
+    validate_required_components(pipeline)
 
 
 def validate_required_components_from_data(
