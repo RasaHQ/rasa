@@ -1563,7 +1563,6 @@ async def train_agent_on_start(
         model_directory,
         _interpreter,
         endpoints,
-        args.get("dump_stories"),
         args.get("config")[0],
         None,
         additional_arguments,
@@ -1625,7 +1624,7 @@ def run_interactive_learning(
     else:
         p = None
 
-    app = run.configure_app(enable_api=True)
+    app = run.configure_app(enable_api=True, conversation_id="default")
     endpoints = AvailableEndpoints.read_endpoints(server_args.get("endpoints"))
 
     # before_server_start handlers make sure the agent is loaded before the
