@@ -78,21 +78,12 @@ class HFTransformersNLP(Component):
 
         logger.debug(f"Loading Tokenizer and Model for {self.model_name}")
 
-        try:
-            self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
-                self.model_weights
-            )
-            self.model = model_class_dict[self.model_name].from_pretrained(
-                self.model_weights
-            )
-        except OSError:
-            # if loading of models weights fail, try to download them again
-            self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
-                self.model_weights, force_download=True
-            )
-            self.model = model_class_dict[self.model_name].from_pretrained(
-                self.model_weights, force_download=True
-            )
+        self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
+            self.model_weights
+        )
+        self.model = model_class_dict[self.model_name].from_pretrained(
+            self.model_weights
+        )
 
         # Use a universal pad token since all transformer architectures do not have a
         # consistent token. Instead of pad_token_id we use unk_token_id because
