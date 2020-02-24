@@ -67,9 +67,6 @@ VOLUME /tmp
 # Make sure the default group has the same permissions as the owner
 RUN chgrp -R 0 . && chmod -R g=u .
 
-# Don't run as root
-USER 1001
-
 EXPOSE 5005
 
 ENTRYPOINT ["rasa"]
