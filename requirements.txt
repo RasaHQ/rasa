@@ -29,7 +29,7 @@ twilio==6.26.3
 webexteamssdk==1.1.1
 rocketchat_API==0.6.31
 colorhash==1.0.2
-pika==1.0.1
+pika==1.1.0
 jsonschema==3.0.2
 packaging==19.0
 gevent==1.4.0
