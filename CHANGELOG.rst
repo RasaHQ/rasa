@@ -133,7 +133,6 @@ Bugfixes
   to the updated doc link.
 
 
->>>>>>> 5a3b9d254164a0f17892bb85747de2a73a9a0c63
 [1.6.1] - 2020-01-07
 ^^^^^^^^^^^^^^^^^^^^
 
