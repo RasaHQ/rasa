@@ -102,7 +102,7 @@ def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
                     "Conflict",
                     "No agent loaded. To continue processing, a "
                     "model of a trained agent needs to be loaded.",
-                    help_url=_docs("/user-guide/running-the-server/"),
+                    help_url=_docs("/user-guide/configuring-http-api/"),
                 )
 
             return f(*args, **kwargs)
@@ -168,7 +168,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                     "NotAuthorized",
                     "User has insufficient permissions.",
                     help_url=_docs(
-                        "/user-guide/running-the-server/#security-considerations"
+                        "/user-guide/configuring-http-api/#security-considerations"
                     ),
                 )
             elif token is None and app.config.get("USE_JWT") is None:
@@ -182,7 +182,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                 "NotAuthenticated",
                 "User is not authenticated.",
                 help_url=_docs(
-                    "/user-guide/running-the-server/#security-considerations"
+                    "/user-guide/configuring-http-api/#security-considerations"
                 ),
             )
 
