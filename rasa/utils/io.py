@@ -368,7 +368,7 @@ def list_directory(path: Text) -> List[Text]:
         return [path]
     elif os.path.isdir(path):
         results = []
-        for base, dirs, files in os.walk(path):
+        for base, dirs, files in os.walk(path, followlinks=True):
             # sort files for same order across runs
             files = sorted(files, key=_filename_without_prefix)
             # add not hidden files
