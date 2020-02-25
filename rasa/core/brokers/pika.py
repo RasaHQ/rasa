@@ -411,17 +411,17 @@ class PikaEventBroker(EventBroker):
 
         Returns:
             `pika.spec.BasicProperties` with the `RASA_ENVIRONMENT` environment variable
-            as the properties' `app_id` value and `delivery_mode`=2.
+            as the properties' `app_id` value, `delivery_mode`=2 and `headers` as the
+            properties' headers.
 
         """
         from pika.spec import BasicProperties
 
-        kwargs: Dict[Text, Any] = {
-            "app_id": self.rasa_environment
-        } if self.rasa_environment else {}
-
         # make message persistent
-        kwargs["delivery_mode"] = 2
+        kwargs = {"delivery_mode": 2}
+
+        if self.rasa_environment:
+            kwargs["app_id"] = self.rasa_environment
 
         if headers:
             kwargs["headers"] = headers
