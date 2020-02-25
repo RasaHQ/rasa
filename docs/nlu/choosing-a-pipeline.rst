@@ -51,7 +51,7 @@ Pre-trained word embeddings are helpful as they already encode some kind of ling
 For example, if you have a sentence like "I want to buy apples" in your training data, and Rasa is asked to predict
 the intent for "get pears", your model already knows that the words "apples" and "pears" are very similar.
 This is especially useful if you don’t have enough training data.
-The advantage of the ``ConveRTFeaturizer`` is that it doesn't treat each word of the user message independently, but
+The advantage of the :ref:`ConveRTFeaturizer` is that it doesn't treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence.
 However, ``ConveRT`` is only available in English.
 If your training data is not in English, but you still want to use pre-trained word embeddings, we recommend using
@@ -61,7 +61,7 @@ the following pipeline:
     :language: yaml
 
 It uses the :ref:`SpacyFeaturizer` instead of the :ref:`ConveRTFeaturizer`.
-``SpacyFeaturizer`` provides pre-trained word embeddings from either GloVe or fastText in many different languages
+:ref:`SpacyFeaturizer` provides pre-trained word embeddings from either GloVe or fastText in many different languages
 (see :ref:`pretrained-word-vectors`).
 
 If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
@@ -88,7 +88,7 @@ A pipeline usually consist of three main parts:
 Tokenization
 ~~~~~~~~~~~~
 If your chosen language is whitespace-tokenized (words are separated by spaces), you
-can use the ``WhitespaceTokenizer``. If this is not the case you should use a different tokenizer.
+can use the :ref:`WhitespaceTokenizer`. If this is not the case you should use a different tokenizer.
 We support a number of different :ref:`tokenizers <tokenizers>`, or you can
 create your own :ref:`custom tokenizer <custom-nlu-components>`.
 
@@ -106,7 +106,7 @@ and can train your model to be more domain specific. For example, in general Eng
 related to "symmetry", but very different to the word "cash". In a banking domain, "balance" and "cash" are closely
 related and you'd like your model to capture that.
 You should only use featurizers from the category :ref:`sparse featurizers <text-featurizers>`, such as
-``CountVectorsFeaturizer``, ``RegexFeaturizer`` or ``LexicalSyntacticFeaturizer``, if you don't want to use
+:ref:`CountVectorsFeaturizer`, :ref:`RegexFeaturizer` or :ref:`LexicalSyntacticFeaturizer`, if you don't want to use
 pre-trained word embeddings.
 
 The advantage of using pre-trained word embeddings in your pipeline is that if you have a training example like:
@@ -119,15 +119,15 @@ We support a few components that provide pre-trained word embeddings:
 3. :ref:`ConveRTFeaturizer`
 4. :ref:`LanguageModelFeaturizer`
 
-If your training data is in English, we recommend using the ``ConveRTFeaturizer``.
-The advantage of the ``ConveRTFeaturizer`` is that it doesn't treat each word of the user message independently, but
+If your training data is in English, we recommend using the :ref:`ConveRTFeaturizer`.
+The advantage of the :ref:`ConveRTFeaturizer` is that it doesn't treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence. For example, if you
-have a training example, like: "can I book a car?", and Rasa is asked to predict the intent for "I need a ride from
+have a training example, like: "Can I book a car?", and Rasa is asked to predict the intent for "I need a ride from
 my place", since the contextual vector representation for both examples are already very similar, the intent classified
 for both is highly likely to be the same. This is also useful if you don't have enough training data.
 
-An alternative to ``ConveRTFeaturizer`` is the ``LanguageModelFeaturizer`` which uses pre-trained language models such
-as BERT, GPT-2, etc. to extract similar contextual vector representations for the complete sentence. See
+An alternative to :ref:`ConveRTFeaturizer` is the :ref:`LanguageModelFeaturizer` which uses pre-trained language
+models such as BERT, GPT-2, etc. to extract similar contextual vector representations for the complete sentence. See
 :ref:`HFTransformersNLP` for a full list of supported language models.
 
 If your training data is not in English you can also use a different variant of a language model which
@@ -135,17 +135,16 @@ is pre-trained in the language specific to your training data.
 For example, there are chinese (``bert-base-chinese``) and japanese (``bert-base-japanese``) variants of the BERT model.
 A full list of different variants of
 these language models is available in the
-`official documentation of the transformers library <https://huggingface.co/transformers/pretrained_models.html>`_.
+`official documentation of the Transformers library <https://huggingface.co/transformers/pretrained_models.html>`_.
 
-``SpacyFeaturizer`` also provides word embeddings in many different languages (see :ref:`pretrained-word-vectors`),
+:ref:`SpacyFeaturizer` also provides word embeddings in many different languages (see :ref:`pretrained-word-vectors`),
 so you can use this as another alternative, depending on the language of your training data.
-So, this featurizer can also be an alternate option depending on the language of your training data.
 
 Entity Recognition / Intent Classification / Response Selectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Depending on your data you may want to only perform intent classification, entity recognition or response selection.
 Or you might want to combine multiple of those tasks.
-We support several components for each of the task. All of them are listed in :ref:`components`.
+We support several components for each of the tasks. All of them are listed in :ref:`components`.
 We recommend using :ref:`diet-classifier` for intent classification and entity recognition
 and :ref:`response-selector` for response selection.
 

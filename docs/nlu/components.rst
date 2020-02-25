@@ -156,6 +156,8 @@ modeling hierarchical intent structure, use these flags with any tokenizer:
     .. note:: All tokenizer add an additional token ``__CLS__`` to the end of the list of tokens when tokenizing
               text and responses.
 
+.. _WhitespaceTokenizer:
+
 WhitespaceTokenizer
 ~~~~~~~~~~~~~~~~~~~
 
@@ -435,6 +437,8 @@ LanguageModelFeaturizer
         pipeline:
         - name: "LanguageModelFeaturizer"
 
+
+.. _RegexFeaturizer:
 
 RegexFeaturizer
 ~~~~~~~~~~~~~~~
