@@ -18,7 +18,6 @@ from rasa.exceptions import (
     PublishingError,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -107,12 +106,13 @@ class Exporter:
     def _publish_with_message_headers(
         self, event: Dict[Text, Any], headers: Optional[Dict[Text, Text]]
     ) -> None:
-        """Generate a message header for publishing events to a `PikaEventBroker`.
+        """Publish `event` to a message broker with `headers`.
 
         Args:
             event: Serialized event to be published.
             headers: Message headers to be published if `self.event_broker` is a
                 `PikaEventBroker`.
+                
         """
         if isinstance(self.event_broker, (PikaEventBroker, PikaProducer)):
             self.event_broker.publish(event=event, headers=headers)
