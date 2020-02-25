@@ -89,11 +89,12 @@ Featurization
 ~~~~~~~~~~~~~
 You need to decide whether to use components that provide pre-trained word embeddings or not.
 
-If you do not use any pre-trained word embeddings, your word vectors will be customised for your domain. For example,
-in general English, the word "balance" is closely related to "symmetry", but very different to the word "cash". In a
-banking domain, "balance" and "cash" are closely related and you'd like your model to capture that. If you don't
+If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
+and can train your model to be more domain specific. For example, in general English, the word "balance" is closely
+related to "symmetry", but very different to the word "cash". In a banking domain, "balance" and "cash" are closely
+related and you'd like your model to capture that. If you don't
 use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language and domain.
-In those cases you should only use featurizers from the category `sparse` featurizers, such as
+In those cases you should only use featurizers from the category :ref:`sparse featurizers <text-featurizers>`, such as
 ``CountVectorsFeaturizer``, ``RegexFeaturizer`` or ``LexicalSyntacticFeaturizer``.
 
 The advantage of using pre-trained word embeddings in your pipeline is that if you have a training example like:
