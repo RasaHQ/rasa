@@ -412,9 +412,9 @@ To train a Rasa model in your preferred language, define the
 .. literalinclude:: ../../data/configs_for_docs/supervised_embeddings_config_1.yml
     :language: yaml
 
-The ``supervised_embeddings`` pipeline supports any language that can be tokenized.  By default it uses whitespace
-for tokenization. You can customize the setup of this pipeline by adding or changing components. Here are the default
-components that make up the ``supervised_embeddings`` pipeline:
+The ``supervised_embeddings`` pipeline supports any language that can be whitespace tokenized. By default it uses
+whitespace for tokenization. You can customize the setup of this pipeline by adding or changing components. Here are
+the default components that make up the ``supervised_embeddings`` pipeline:
 
 .. literalinclude:: ../../data/configs_for_docs/supervised_embeddings_config_2.yml
     :language: yaml

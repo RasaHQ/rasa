@@ -330,10 +330,11 @@ MitieFeaturizer
 
     .. note::
 
-        NOT used by the ``MitieIntentClassifier`` component.
+        NOT used by the ``MitieIntentClassifier`` component. But can be used by any component later in the pipeline
+        that makes use of ``dense_features``.
 
 :Configuration:
-    The sentence vector, e.g. the vector of the ``__CLS__`` token can be calculated in two different ways, either via
+    The sentence vector, i.e. the vector of the ``__CLS__`` token, can be calculated in two different ways, either via
     mean or via max pooling. You can specify the pooling method in your configuration file with the option ``pooling``.
     The default pooling method is set to ``mean``.
 
@@ -360,7 +361,7 @@ SpacyFeaturizer
     Creates features for entity extraction, intent classification, and response classification using the spaCy
     featurizer.
 :Configuration:
-    The sentence vector, e.g. the vector of the ``__CLS__`` token can be calculated in two different ways, either via
+    The sentence vector, i.e. the vector of the ``__CLS__`` token, can be calculated in two different ways, either via
     mean or via max pooling. You can specify the pooling method in your configuration file with the option ``pooling``.
     The default pooling method is set to ``mean``.
 
@@ -730,7 +731,7 @@ EmbeddingIntentClassifier
 
 :Short: Embedding intent classifier for intent classification
 :Outputs: ``intent`` and ``intent_ranking``
-:Requires: ``dense_features`` and/or ``sparse_features`` for user messages and intent (optional)
+:Requires: ``dense_features`` and/or ``sparse_features`` for user messages, and optionally the intent
 :Output-Example:
 
     .. code-block:: json
@@ -1404,7 +1405,7 @@ DIETClassifier
 
 :Short: Dual Intent Entity Transformer (DIET) used for intent classification and entity extraction
 :Outputs: ``entities``, ``intent`` and ``intent_ranking``
-:Requires: ``dense_features`` and/or ``sparse_features`` for user message and intent (optional)
+:Requires: ``dense_features`` and/or ``sparse_features`` for user message and, and optionally the intent
 :Output-Example:
 
     .. code-block:: json
