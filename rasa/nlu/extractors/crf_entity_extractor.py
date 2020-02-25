@@ -409,11 +409,9 @@ class CRFEntityExtractor(EntityExtractor):
                                 feature_name = prefix + ":" + feature + ":" + p_name
                                 word_features[feature_name] = matched
                             # pytype: enable=attribute-error
-                        elif feature == "pos" or feature == "pos2":
-                            if word is None:
-                                continue
+                        elif word and (feature == "pos" or feature == "pos2"):
                             value = self.function_dict[feature](word)
-                            word_features[prefix + ":" + feature] = value
+                            word_features[f"{prefix}:{feature}"] = value
                         else:
                             # append each feature to a feature vector
                             value = self.function_dict[feature](word)

@@ -27,16 +27,16 @@ logger = logging.getLogger(__name__)
 class ConveRTFeaturizer(DenseFeaturizer):
     """Featurizer using ConveRT model.
 
-        Loads the ConveRT(https://github.com/PolyAI-LDN/polyai-models#convert)
-        model from TFHub and computes sentence and sequence level feature representations
-        for dense featurizable attributes of each message object.
+    Loads the ConveRT(https://github.com/PolyAI-LDN/polyai-models#convert)
+    model from TFHub and computes sentence and sequence level feature representations
+    for dense featurizable attributes of each message object.
     """
 
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
         return [ConveRTTokenizer]
 
-    def _load_from_tfhub(self, model_url: Text):
+    def _load_from_tf_hub(self, model_url: Text):
         """Load model from TFHub"""
 
         import tensorflow_hub as tfhub
@@ -47,6 +47,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         """Load model from cache if possible, otherwise from TFHub"""
 
         # needed in order to load model
+        # noinspection PyUnresolvedReferences
         import tensorflow_text
 
         model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
@@ -54,10 +55,10 @@ class ConveRTFeaturizer(DenseFeaturizer):
         # required to take care of cases when other files are already
         # stored in the default TFHUB_CACHE_DIR
         try:
-            self._load_from_tfhub(model_url)
+            self._load_from_tf_hub(model_url)
         except OSError:
             os.environ["TFHUB_CACHE_DIR"] = "/tmp/tfhub"
-            self._load_from_tfhub(model_url)
+            self._load_from_tf_hub(model_url)
 
         self.sentence_encoding_signature = self.module.signatures["default"]
         self.sequence_encoding_signature = self.module.signatures["encode_sequence"]
@@ -207,11 +208,11 @@ class ConveRTFeaturizer(DenseFeaturizer):
                 filter(lambda x: x.get(attribute), training_data.training_examples)
             )
 
-            pbar = tqdm(
+            progress_bar = tqdm(
                 range(0, len(non_empty_examples), batch_size),
                 desc=attribute.capitalize() + " batches",
             )
-            for batch_start_index in pbar:
+            for batch_start_index in progress_bar:
                 batch_end_index = min(
                     batch_start_index + batch_size, len(non_empty_examples)
                 )
