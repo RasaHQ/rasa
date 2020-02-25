@@ -13,7 +13,13 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TOKENS_NAMES, TEXT, DENSE_FEATURE_NAMES, ENTITIES
+from rasa.nlu.constants import (
+    TOKENS_NAMES,
+    TEXT,
+    DENSE_FEATURE_NAMES,
+    ENTITIES,
+    NO_ENTITY_TAG,
+)
 from rasa.constants import (
     DOCS_URL_TRAINING_DATA_NLU,
     DOCS_URL_COMPONENTS,
@@ -327,7 +333,7 @@ class CRFEntityExtractor(EntityExtractor):
         for word_idx in range(len(tokens)):
             entity_label, confidence = self.most_likely_entity(word_idx, entities)
             word = tokens[word_idx]
-            if entity_label != "O":
+            if entity_label != NO_ENTITY_TAG:
                 ent = {
                     "start": word.start,
                     "end": word.end,

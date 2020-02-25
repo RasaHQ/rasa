@@ -27,6 +27,7 @@ from rasa.nlu.constants import (
     INTENT,
     TEXT,
     ENTITIES,
+    NO_ENTITY_TAG,
     SPARSE_FEATURE_NAMES,
     DENSE_FEATURE_NAMES,
     TOKENS_NAMES,
@@ -333,9 +334,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         tag_id_dict = {
             tag_id: idx for idx, tag_id in enumerate(sorted(distinct_tag_ids), 1)
         }
-        # "O" corresponds to non-entity which should correspond to 0 index
+        # NO_ENTITY_TAG corresponds to non-entity which should correspond to 0 index
         # needed for correct prediction for padding
-        tag_id_dict["O"] = 0
+        tag_id_dict[NO_ENTITY_TAG] = 0
 
         return tag_id_dict
 
@@ -739,9 +740,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         text: Text, tokens: List[Token], tags: List[Text]
     ) -> List[Dict[Text, Any]]:
         entities = []
-        last_tag = "O"
+        last_tag = NO_ENTITY_TAG
         for token, tag in zip(tokens, tags):
-            if tag == "O":
+            if tag == NO_ENTITY_TAG:
                 last_tag = tag
                 continue
 

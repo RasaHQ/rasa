@@ -3,7 +3,13 @@ from typing import List, Tuple, Text, Optional, Dict, Set
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.constants import ENTITIES, TOKENS_NAMES, TEXT, BILOU_ENTITIES
+from rasa.nlu.constants import (
+    ENTITIES,
+    TOKENS_NAMES,
+    TEXT,
+    BILOU_ENTITIES,
+    NO_ENTITY_TAG,
+)
 
 BILOU_PREFIXES = ["B-", "I-", "U-", "L-"]
 
@@ -29,11 +35,11 @@ def tags_to_ids(message: Message, tag_id_dict: Dict[Text, int]) -> List[int]:
 
     if message.get(BILOU_ENTITIES):
         _tags = [
-            tag_id_dict[_tag] if _tag in tag_id_dict else tag_id_dict["O"]
+            tag_id_dict[_tag] if _tag in tag_id_dict else tag_id_dict[NO_ENTITY_TAG]
             for _tag in message.get(BILOU_ENTITIES)
         ]
     else:
-        _tags = [tag_id_dict["O"] for _ in message.get(TOKENS_NAMES[TEXT])]
+        _tags = [tag_id_dict[NO_ENTITY_TAG] for _ in message.get(TOKENS_NAMES[TEXT])]
 
     return _tags
 
@@ -54,16 +60,16 @@ def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, int]:
             if example.get(BILOU_ENTITIES)
             for e in example.get(BILOU_ENTITIES)
         ]
-    ) - {"O"}
+    ) - {NO_ENTITY_TAG}
 
     tag_id_dict = {
         f"{prefix}{tag}": idx_1 * len(BILOU_PREFIXES) + idx_2 + 1
         for idx_1, tag in enumerate(sorted(distinct_tags))
         for idx_2, prefix in enumerate(BILOU_PREFIXES)
     }
-    # "O" corresponds to non-entity which should correspond to 0 index
+    # NO_ENTITY_TAG corresponds to non-entity which should correspond to 0 index
     # needed for correct prediction for padding
-    tag_id_dict["O"] = 0
+    tag_id_dict[NO_ENTITY_TAG] = 0
 
     return tag_id_dict
 
@@ -93,7 +99,9 @@ def map_message_entities(message: Message) -> List[Tuple[int, int, Text]]:
 
 
 def bilou_tags_from_offsets(
-    tokens: List[Token], entities: List[Tuple[int, int, Text]], missing: Text = "O"
+    tokens: List[Token],
+    entities: List[Tuple[int, int, Text]],
+    missing: Text = NO_ENTITY_TAG,
 ) -> List[Text]:
     """Creates a list of BILOU tags for the given list of tokens and entities."""
 

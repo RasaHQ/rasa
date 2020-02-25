@@ -27,6 +27,7 @@ from rasa.nlu.constants import (
     OPEN_UTTERANCE_PREDICTION_KEY,
     EXTRACTOR,
     PRETRAINED_EXTRACTORS,
+    NO_ENTITY_TAG,
 )
 from rasa.model import get_model
 from rasa.nlu import config, training_data, utils
@@ -682,13 +683,15 @@ def evaluate_entities(
 
     aligned_predictions = align_all_entity_predictions(entity_results, extractors)
     merged_targets = merge_labels(aligned_predictions)
-    merged_targets = substitute_labels(merged_targets, "O", NO_ENTITY)
+    merged_targets = substitute_labels(merged_targets, NO_ENTITY_TAG, NO_ENTITY)
 
     result = {}
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
-        merged_predictions = substitute_labels(merged_predictions, "O", NO_ENTITY)
+        merged_predictions = substitute_labels(
+            merged_predictions, NO_ENTITY_TAG, NO_ENTITY
+        )
         logger.info(f"Evaluation for entity extractor: {extractor} ")
         if output_directory:
             report_filename = f"{extractor}_report.json"
@@ -815,7 +818,7 @@ def pick_best_entity_fit(token: Token, candidates: List[Dict]) -> Text:
     """
 
     if len(candidates) == 0:
-        return "O"
+        return NO_ENTITY_TAG
     elif len(candidates) == 1:
         return candidates[0]["entity"]
     else:
@@ -836,7 +839,7 @@ def determine_token_labels(
     """
 
     if entities is None or len(entities) == 0:
-        return "O"
+        return NO_ENTITY_TAG
     if not do_extractors_support_overlap(extractors) and do_entities_overlap(entities):
         raise ValueError("The possible entities should not overlap")
 
@@ -1527,11 +1530,13 @@ def _compute_entity_metrics(
     aligned_predictions = align_all_entity_predictions(entity_results, extractors)
 
     merged_targets = merge_labels(aligned_predictions)
-    merged_targets = substitute_labels(merged_targets, "O", NO_ENTITY)
+    merged_targets = substitute_labels(merged_targets, NO_ENTITY_TAG, NO_ENTITY)
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
-        merged_predictions = substitute_labels(merged_predictions, "O", NO_ENTITY)
+        merged_predictions = substitute_labels(
+            merged_predictions, NO_ENTITY_TAG, NO_ENTITY
+        )
         _, precision, f1, accuracy = get_evaluation_metrics(
             merged_targets, merged_predictions, exclude_label=NO_ENTITY
         )

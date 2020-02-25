@@ -8,6 +8,7 @@ RESPONSE = "response"
 
 ENTITIES = "entities"
 BILOU_ENTITIES = "bilou_entities"
+NO_ENTITY_TAG = "O"
 
 EXTRACTOR = "extractor"
 
