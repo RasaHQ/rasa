@@ -21,7 +21,9 @@ class FeatureSignature(NamedTuple):
 
 
 class RasaModelData:
-    def __init__(self, label_key: Optional[Text] = None, data: Optional[Data] = None):
+    def __init__(
+        self, label_key: Optional[Text] = None, data: Optional[Data] = None
+    ) -> None:
         self.data = data or {}
         self.label_key = label_key
         # will be updated when features are added
