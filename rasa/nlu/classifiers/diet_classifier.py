@@ -969,7 +969,7 @@ class DIET(RasaModel):
         )
 
         # tf objects
-        self._tf_layers = {}
+        self._tf_layers: Dict[Text : tf.keras.layers.Layer] = {}
         self._prepare_layers()
 
         # tf training
