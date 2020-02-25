@@ -349,16 +349,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return None
 
     @staticmethod
-    def _find_example_for_tag(
-        tag: Text, examples: List[Message], attribute: Text
-    ) -> Optional[Message]:
-        for ex in examples:
-            for e in ex.get(attribute):
-                if e["entity"] == tag:
-                    return ex
-        return None
-
-    @staticmethod
     def _check_labels_features_exist(
         labels_example: List[Message], attribute: Text
     ) -> bool:
