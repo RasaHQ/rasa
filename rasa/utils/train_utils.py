@@ -147,6 +147,25 @@ def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
     return config
 
 
+def load_tf_hub_model(model_url: Text) -> Any:
+    """Load model from cache if possible, otherwise from TFHub"""
+
+    import tensorflow_hub as tfhub
+
+    # needed to load the ConveRT model
+    # noinspection PyUnresolvedReferences
+    import tensorflow_text
+    import os
+
+    # required to take care of cases when other files are already
+    # stored in the default TFHUB_CACHE_DIR
+    try:
+        return tfhub.load(model_url)
+    except OSError:
+        os.environ["TFHUB_CACHE_DIR"] = "/tmp/tfhub"
+        return tfhub.load(model_url)
+
+
 def _replace_deprecated_option(
     old_option: Text, new_option: Union[Text, List[Text]], config: Dict[Text, Any]
 ) -> Dict[Text, Any]:

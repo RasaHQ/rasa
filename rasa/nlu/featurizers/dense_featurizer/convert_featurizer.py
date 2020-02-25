@@ -17,8 +17,8 @@ from rasa.nlu.constants import (
 )
 import numpy as np
 import tensorflow as tf
-import os
 
+import rasa.utils.train_utils as train_utils
 import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
@@ -36,38 +36,15 @@ class ConveRTFeaturizer(DenseFeaturizer):
     def required_components(cls) -> List[Type[Component]]:
         return [ConveRTTokenizer]
 
-    def _load_from_tf_hub(self, model_url: Text):
-        """Load model from TFHub"""
-
-        import tensorflow_hub as tfhub
-
-        self.module = tfhub.load(model_url)
-
-    def _load_model(self) -> None:
-        """Load model from cache if possible, otherwise from TFHub"""
-
-        # needed in order to load model
-        # noinspection PyUnresolvedReferences
-        import tensorflow_text
-
-        model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
-
-        # required to take care of cases when other files are already
-        # stored in the default TFHUB_CACHE_DIR
-        try:
-            self._load_from_tf_hub(model_url)
-        except OSError:
-            os.environ["TFHUB_CACHE_DIR"] = "/tmp/tfhub"
-            self._load_from_tf_hub(model_url)
-
-        self.sentence_encoding_signature = self.module.signatures["default"]
-        self.sequence_encoding_signature = self.module.signatures["encode_sequence"]
-
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
 
         super(ConveRTFeaturizer, self).__init__(component_config)
 
-        self._load_model()
+        model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
+        self.module = train_utils.load_tf_hub_model(model_url)
+
+        self.sentence_encoding_signature = self.module.signatures["default"]
+        self.sequence_encoding_signature = self.module.signatures["encode_sequence"]
 
     @classmethod
     def required_packages(cls) -> List[Text]:
