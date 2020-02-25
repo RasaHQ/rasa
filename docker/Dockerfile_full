@@ -24,7 +24,7 @@ ENV PATH "/root/.poetry/bin:/opt/venv/bin:${PATH}"
 
 # copy files
 COPY . /app/
-COPY docker/configs/config_supervised_embeddings_duckling.yml /app/config.yml
+COPY docker/configs/config_pretrained_embeddings_spacy_en_duckling.yml /app/config.yml
 
 # download mitie model
 RUN wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
@@ -34,7 +34,8 @@ RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
   pip install --no-cache-dir -U pip && \
   cd /app && \
-  poetry install --extras full --no-dev --no-interaction
+  poetry install --extras full --no-dev --no-interaction && \
+  make install-mitie
 
 # spacy link
 RUN poetry run python -m spacy download en_core_web_md && \
