@@ -79,7 +79,8 @@ General
   Old configuration options will be mapped to the new names, and a warning will be thrown.
   However, these will be deprecated in a future release.
 
-- :ref:`embedding-intent-classifier` is now deprecated and will be replaced by :ref:`diet-classifier` in the future.
+- :ref:`embedding-intent-classifier` is now deprecated and will be replaced by :ref:`DIETClassifier <diet-classifier>`
+  in the future.
   ``DIETClassfier`` performs intent classification as well as entity recognition.
   If you want to get the same model behaviour as the current ``EmbeddingIntentClassifier``, you can use
   the following configuration of ``DIETClassifier``:
@@ -96,7 +97,7 @@ General
       number_of_transformer_layers: 0
       # ... any other parameters
 
-  See :ref:`diet-classifier` for more information about the new component.
+  See :ref:`DIETClassifier <diet-classifier>` for more information about the new component.
   Specifying ``EmbeddingIntentClassifier`` in the configuration maps to the above component definition, the
   behaviour is unchanged from previous versions.
 
@@ -138,6 +139,35 @@ General
   :ref:``diet-classifier``.
   Specifying ``CRFEntityExtractor`` in the configuration maps to the above component definition, the behaviour
   is unchanged from previous versions.
+
+- If your pipeline contains ``CRFEntityExtractor`` and ``EmbeddingIntentClassifier`` you can substitute both
+  components with :ref:`DIETClassifier <diet-classifier>`. You can use the following pipeline for that:
+
+  .. code-block:: yaml
+
+    pipeline:
+    # - ... other components
+    - name: LexicalSyntacticFeaturizer
+      features: [
+        ["low", "title", "upper"],
+        [
+          "BOS",
+          "EOS",
+          "low",
+          "prefix5",
+          "prefix2",
+          "suffix5",
+          "suffix3",
+          "suffix2",
+          "upper",
+          "title",
+          "digit",
+        ],
+        ["low", "title", "upper"],
+      ]
+    - name: DIETClassifier
+      number_of_transformer_layers: 0
+      # ... any other parameters
 
 .. _migration-to-rasa-1.7:
 
