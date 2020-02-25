@@ -30,30 +30,8 @@ class ConveRTTokenizer(WhitespaceTokenizer):
 
         super().__init__(component_config)
 
-        self._load_model()
-
-    def _load_from_tfhub(self, model_url: Text):
-
-        import tensorflow_hub as tfhub
-
-        self.module = tfhub.load(model_url)
-
-    def _load_model(self):
-
-        # needed to load the ConveRT model
-        import tensorflow_text
-
-        import os
-
         model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
-
-        # required to take care of cases when other files are already
-        # stored in the default TFHUB_CACHE_DIR
-        try:
-            self._load_from_tfhub(model_url)
-        except OSError:
-            os.environ["TFHUB_CACHE_DIR"] = "/tmp/tfhub"
-            self._load_from_tfhub(model_url)
+        self.module = train_utils.load_tf_hub_model(model_url)
 
         self.tokenize_signature = self.module.signatures["tokenize"]
 

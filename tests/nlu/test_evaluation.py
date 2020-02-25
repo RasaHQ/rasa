@@ -728,9 +728,9 @@ def test_get_evaluation_metrics(
 
 
 def test_nlu_comparison(tmpdir, config_path):
-    configs = [config_path]
-    output = tmpdir.strpath
+    configs = [config_path, config_path]
 
+    output = tmpdir.strpath
     compare_nlu_models(
         configs, DEFAULT_DATA_PATH, output, runs=2, exclusion_percentages=[50, 80]
     )
@@ -744,6 +744,16 @@ def test_nlu_comparison(tmpdir, config_path):
 
     run_1_path = os.path.join(output, "run_1")
     assert set(os.listdir(run_1_path)) == {"50%_exclusion", "80%_exclusion", "test.md"}
+
+    exclude_50_path = os.path.join(run_1_path, "50%_exclusion")
+    modelnames = [os.path.splitext(os.path.basename(config))[0] for config in configs]
+
+    modeloutputs = set(
+        ["train"]
+        + [f"{m}_report" for m in modelnames]
+        + [f"{m}.tar.gz" for m in modelnames]
+    )
+    assert set(os.listdir(exclude_50_path)) == modeloutputs
 
 
 @pytest.mark.parametrize(
