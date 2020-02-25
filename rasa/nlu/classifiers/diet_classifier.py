@@ -8,15 +8,17 @@ import warnings
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
 
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
-from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.components import Component
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
-from rasa.nlu.components import any_of
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
@@ -78,7 +80,7 @@ from rasa.utils.tensorflow.constants import (
 logger = logging.getLogger(__name__)
 
 
-class DIETClassifier(EntityExtractor):
+class DIETClassifier(IntentClassifier, EntityExtractor):
     """DIET (Dual Intent and Entity Transformer) is a multi-task architecture for
     intent classification and entity recognition.
 
@@ -91,9 +93,9 @@ class DIETClassifier(EntityExtractor):
     similarities with negative samples.
     """
 
-    provides = ["intent", "intent_ranking", "entities"]
-
-    requires = [any_of(DENSE_FEATURE_NAMES[TEXT], SPARSE_FEATURE_NAMES[TEXT])]
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [Featurizer]
 
     # please make sure to update the docs when changing a default parameter
     defaults = {
@@ -196,11 +198,7 @@ class DIETClassifier(EntityExtractor):
     }
 
     # init helpers
-    def _check_config_parameters(self) -> None:
-        self.component_config = train_utils.check_deprecated_options(
-            self.component_config
-        )
-
+    def _check_masked_lm(self) -> None:
         if (
             self.component_config[MASKED_LM]
             and self.component_config[NUM_TRANSFORMER_LAYERS] == 0
@@ -210,20 +208,31 @@ class DIETClassifier(EntityExtractor):
                 f"'{MASKED_LM}' option should be 'False'."
             )
 
+    def _check_share_hidden_layers_sizes(self) -> None:
         if self.component_config.get(SHARE_HIDDEN_LAYERS):
-            first_hidden_layer_size = next(
+            first_hidden_layer_sizes = next(
                 iter(self.component_config[HIDDEN_LAYERS_SIZES].values())
             )
-            if any(
-                current_hidden_layer_size != first_hidden_layer_size
-                for current_hidden_layer_size in self.component_config[
+            # check that all hidden layer sizes are the same
+            identical_hidden_layer_sizes = all(
+                current_hidden_layer_sizes == first_hidden_layer_sizes
+                for current_hidden_layer_sizes in self.component_config[
                     HIDDEN_LAYERS_SIZES
                 ].values()
-            ):
+            )
+            if not identical_hidden_layer_sizes:
                 raise ValueError(
                     f"If hidden layer weights are shared, "
                     f"{HIDDEN_LAYERS_SIZES} must coincide."
                 )
+
+    def _check_config_parameters(self) -> None:
+        self.component_config = train_utils.check_deprecated_options(
+            self.component_config
+        )
+
+        self._check_masked_lm()
+        self._check_share_hidden_layers_sizes()
 
         self.component_config = train_utils.update_similarity_type(
             self.component_config
@@ -247,6 +256,12 @@ class DIETClassifier(EntityExtractor):
     ) -> None:
         """Declare instance variables with default values."""
 
+        if component_config is not None and EPOCHS not in component_config:
+            logger.warning(
+                f"Please configure the number of '{EPOCHS}' in your configuration file."
+                f" We will change the default value of '{EPOCHS}' in the future to 1. "
+            )
+
         super().__init__(component_config)
 
         self._check_config_parameters()
@@ -257,23 +272,23 @@ class DIETClassifier(EntityExtractor):
 
         self.model = model
 
-        # encode all label_ids with numbers
-        self._label_data = None  # RasaModelData
-
         # keep the input tuple sizes in self.batch_in
         self.batch_tuple_sizes = batch_tuple_sizes
 
-        # number of entity tags
-        self.num_tags = 0
+        # encode all label_ids with numbers
+        self._label_data: Optional[RasaModelData] = None
 
-        self.data_example = None  # Dict[Text, List[np.ndarray]]
+        # number of entity tags
+        self.num_tags: Optional[int] = None
+
+        self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
 
     @property
     def label_key(self) -> Optional[Text]:
         return "label_ids" if self.component_config[INTENT_CLASSIFICATION] else None
 
     @staticmethod
-    def model_class() -> Any:
+    def model_class() -> Type[RasaModel]:
         return DIET
 
     # training data helpers:
@@ -281,7 +296,7 @@ class DIETClassifier(EntityExtractor):
     def _create_label_id_dict(
         training_data: TrainingData, attribute: Text
     ) -> Dict[Text, int]:
-        """Create label_id dictionary"""
+        """Create label_id dictionary."""
 
         distinct_label_ids = {
             example.get(attribute) for example in training_data.intent_examples
@@ -377,7 +392,7 @@ class DIETClassifier(EntityExtractor):
 
         return sparse_features, dense_features
 
-    def check_input_dimension_consistency(self, model_data: RasaModelData):
+    def check_input_dimension_consistency(self, model_data: RasaModelData) -> None:
         """Checks if text features and label features have the same dimensionality if
         hidden layers are shared."""
         if self.component_config.get(SHARE_HIDDEN_LAYERS):
@@ -624,10 +639,10 @@ class DIETClassifier(EntityExtractor):
         self.data_example = {k: [v[:1] for v in vs] for k, vs in model_data.items()}
 
         self.model = self.model_class()(
-            model_data.get_signature(),
-            self._label_data,
-            self.inverted_tag_dict,
-            self.component_config,
+            data_signature=model_data.get_signature(),
+            label_data=self._label_data,
+            inverted_tag_dict=self.inverted_tag_dict,
+            config=self.component_config,
         )
 
         self.model.fit(
@@ -795,7 +810,7 @@ class DIETClassifier(EntityExtractor):
         io_utils.pickle_dump(
             model_dir / f"{file_name}.data_example.pkl", self.data_example
         )
-        io_utils.json_pickle(
+        io_utils.pickle_dump(
             model_dir / f"{file_name}.label_data.pkl", self._label_data
         )
         io_utils.json_pickle(
@@ -804,7 +819,7 @@ class DIETClassifier(EntityExtractor):
         io_utils.json_pickle(
             model_dir / f"{file_name}.inverted_tag_dict.pkl", self.inverted_tag_dict
         )
-        io_utils.pickle_dump(
+        io_utils.json_pickle(
             model_dir / f"{file_name}.batch_tuple_sizes.pkl", self.batch_tuple_sizes
         )
 
@@ -856,14 +871,14 @@ class DIETClassifier(EntityExtractor):
         model_dir = Path(model_dir)
 
         data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
-        label_data = io_utils.json_unpickle(model_dir / f"{file_name}.label_data.pkl")
+        label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
         inverted_label_dict = io_utils.json_unpickle(
             model_dir / f"{file_name}.inverted_label_dict.pkl"
         )
         inverted_tag_dict = io_utils.json_unpickle(
             model_dir / f"{file_name}.inverted_tag_dict.pkl"
         )
-        batch_tuple_sizes = io_utils.pickle_load(
+        batch_tuple_sizes = io_utils.json_unpickle(
             model_dir / f"{file_name}.batch_tuple_sizes.pkl"
         )
 

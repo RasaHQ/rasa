@@ -9,7 +9,7 @@ from _pytest.tmpdir import TempdirFactory
 import rasa.utils.io
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.test import compare_nlu_models
-from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.nlu.model import Interpreter
@@ -271,13 +271,14 @@ def test_drop_intents_below_freq():
 
 
 def test_run_evaluation(unpacked_trained_moodbot_path):
-    data = DEFAULT_DATA_PATH
-
     result = run_evaluation(
-        data, os.path.join(unpacked_trained_moodbot_path, "nlu"), errors=False
+        DEFAULT_DATA_PATH,
+        os.path.join(unpacked_trained_moodbot_path, "nlu"),
+        errors=False,
     )
+
     assert result.get("intent_evaluation")
-    assert result.get("entity_evaluation").get("CRFEntityExtractor")
+    assert result.get("entity_evaluation").get("DIETClassifier")
 
 
 def test_run_cv_evaluation(pretrained_embeddings_spacy_config):

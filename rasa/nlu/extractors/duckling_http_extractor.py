@@ -8,7 +8,7 @@ from typing import Any, List, Optional, Text, Dict
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.constants import ENTITIES
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message
 from rasa.utils.common import raise_warning
@@ -52,8 +52,6 @@ def convert_duckling_format_to_rasa(
 
 class DucklingHTTPExtractor(EntityExtractor):
     """Searches for structured entites, e.g. dates, using a duckling server."""
-
-    provides = [ENTITIES]
 
     defaults = {
         # by default all dimensions recognized by duckling are returned

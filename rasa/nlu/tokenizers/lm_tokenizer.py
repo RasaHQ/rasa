@@ -1,14 +1,12 @@
-from typing import Text, List, Any, Dict
+from typing import Text, List, Any, Dict, Type
 
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.components import Component
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.nlu.training_data import Message
 
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
     LANGUAGE_MODEL_DOCS,
-    DENSE_FEATURIZABLE_ATTRIBUTES,
-    MESSAGE_ATTRIBUTES,
     TOKENS,
 )
 
@@ -20,13 +18,9 @@ class LanguageModelTokenizer(Tokenizer):
     for dense featurizable attributes of each message object.
     """
 
-    provides = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
-
-    requires = [
-        LANGUAGE_MODEL_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
-    ]
-
-    required_components = [HFTransformersNLP.name]
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [HFTransformersNLP]
 
     defaults = {
         # Flag to check whether to split intents

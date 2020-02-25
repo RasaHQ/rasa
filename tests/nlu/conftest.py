@@ -16,29 +16,25 @@ def component_builder():
 
 
 @pytest.fixture(scope="session")
-def spacy_nlp(component_builder, default_config):
+def spacy_nlp(component_builder, blank_config):
     spacy_nlp_config = {"name": "SpacyNLP"}
-    return component_builder.create_component(spacy_nlp_config, default_config).nlp
+    return component_builder.create_component(spacy_nlp_config, blank_config).nlp
 
 
 @pytest.fixture(scope="session")
-def spacy_nlp_component(component_builder, default_config):
+def spacy_nlp_component(component_builder, blank_config):
     spacy_nlp_config = {"name": "SpacyNLP"}
-    return component_builder.create_component(spacy_nlp_config, default_config)
+    return component_builder.create_component(spacy_nlp_config, blank_config)
 
 
 @pytest.fixture(scope="session")
-def mitie_feature_extractor(
-    component_builder: ComponentBuilder, default_config: RasaNLUModelConfig
-):
+def mitie_feature_extractor(component_builder: ComponentBuilder, blank_config):
     mitie_nlp_config = {"name": "MitieNLP"}
-    return component_builder.create_component(
-        mitie_nlp_config, default_config
-    ).extractor
+    return component_builder.create_component(mitie_nlp_config, blank_config).extractor
 
 
 @pytest.fixture(scope="session")
-def default_config() -> RasaNLUModelConfig:
+def blank_config() -> RasaNLUModelConfig:
     return RasaNLUModelConfig({"language": "en", "pipeline": []})
 
 

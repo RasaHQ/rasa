@@ -18,9 +18,6 @@ from rasa.nlu.constants import TEXT, SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
 
 
 class SpacyNLP(Component):
-    provides = ["spacy_nlp"] + [
-        SPACY_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
-    ]
 
     defaults = {
         # name of the language model to load - if it is not set

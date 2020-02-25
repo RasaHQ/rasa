@@ -5,7 +5,7 @@ import pytest
 from sanic import Sanic, response
 
 import rasa.core
-from rasa.core.policies.embedding_policy import EmbeddingPolicy
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
 import rasa.utils.io
 from rasa.core import jobs, utils
@@ -81,7 +81,7 @@ async def test_agent_train(trained_moodbot_path: Text):
     # test policies
     assert isinstance(loaded.policy_ensemble, SimplePolicyEnsemble)
     assert [type(p) for p in loaded.policy_ensemble.policies] == [
-        EmbeddingPolicy,
+        TEDPolicy,
         MemoizationPolicy,
         MappingPolicy,
     ]

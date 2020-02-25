@@ -4,8 +4,9 @@ pipeline:
   - name: "SpacyNLP"
   - name: "SpacyTokenizer"
   - name: "SpacyFeaturizer"
-  - name: "SklearnIntentClassifier"
-  - name: "CRFEntityExtractor"
+  - name: "LexicalSyntacticFeaturizer"
+  - name: "DIETClassifier"
+    epochs: 100
     features: [
       ["low", "title", "upper"],
       [

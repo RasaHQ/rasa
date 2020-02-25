@@ -45,7 +45,15 @@ class Policy:
 
     @staticmethod
     def _get_valid_params(func: Callable, **kwargs: Any) -> Dict:
-        # filter out kwargs that cannot be passed to func
+        """Filters out kwargs that cannot be passed to func.
+
+        Args:
+            func: a callable function
+
+        Returns:
+            the dictionary of parameters
+        """
+
         valid_keys = rasa.utils.common.arguments_of(func)
 
         params = {key: kwargs.get(key) for key in valid_keys if kwargs.get(key)}
@@ -62,8 +70,18 @@ class Policy:
         **kwargs: Any,
     ) -> DialogueTrainingData:
         """Transform training trackers into a vector representation.
+
         The trackers, consisting of multiple turns, will be transformed
-        into a float vector which can be used by a ML model."""
+        into a float vector which can be used by a ML model.
+
+        Args:
+            training_trackers:
+                the list of the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.core.domain.Domain`
+
+        Returns:
+            the :class:`rasa.core.training.data.DialogueTrainingData`
+        """
 
         training_data = self.featurizer.featurize_trackers(training_trackers, domain)
 
@@ -83,46 +101,79 @@ class Policy:
         domain: Domain,
         **kwargs: Any,
     ) -> None:
-        """Trains the policy on given training trackers."""
+        """Trains the policy on given training trackers.
+
+        Args:
+            training_trackers:
+                the list of the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.core.domain.Domain`
+        """
 
         raise NotImplementedError("Policy must have the capacity to train.")
 
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[float]:
-        """Predicts the next action the bot should take
-        after seeing the tracker.
+        """Predicts the next action the bot should take after seeing the tracker.
 
-        Returns the list of probabilities for the next actions"""
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.core.domain.Domain`
+
+        Returns:
+             the list of probabilities for the next actions
+        """
 
         raise NotImplementedError("Policy must have the capacity to predict.")
 
     def persist(self, path: Text) -> None:
-        """Persists the policy to a storage."""
+        """Persists the policy to a storage.
+
+        Args:
+            path: the path where to save the policy to
+        """
+
         raise NotImplementedError("Policy must have the capacity to persist itself.")
 
     @classmethod
     def load(cls, path: Text) -> "Policy":
         """Loads a policy from the storage.
-            Needs to load its featurizer"""
+
+        Needs to load its featurizer.
+
+        Args:
+            path: the path from where to load the policy
+        """
+
         raise NotImplementedError("Policy must have the capacity to load itself.")
 
     @staticmethod
     def _default_predictions(domain: Domain) -> List[float]:
+        """Creates a list of zeros.
+
+        Args:
+            domain: the :class:`rasa.core.domain.Domain`
+        Returns:
+            the list of the length of the number of actions
+        """
+
         return [0.0] * domain.num_actions
 
 
-def confidence_scores_for(action_name, value, domain) -> List[float]:
+def confidence_scores_for(
+    action_name: Text, value: float, domain: Domain
+) -> List[float]:
     """Returns confidence scores if a single action is predicted.
 
     Args:
-        action_name: Name of action for which the score should be set.
-        value: Confidence for `action_name`.
-        domain: Domain which contains all actions.
+        action_name: the name of the action for which the score should be set
+        value: the confidence for `action_name`
+        domain: the :class:`rasa.core.domain.Domain`
 
-    Returns: List of length `len(nr_actions)`.
-
+    Returns:
+        the list of the length of the number of actions
     """
+
     results = [0.0] * domain.num_actions
     idx = domain.index_for_action(action_name)
     results[idx] = value

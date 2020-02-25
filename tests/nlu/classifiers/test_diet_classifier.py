@@ -12,6 +12,7 @@ from rasa.utils.tensorflow.constants import (
     RANDOM_SEED,
     RANKING_LENGTH,
     EPOCHS,
+    MASKED_LM,
 )
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
@@ -91,16 +92,18 @@ def test_check_labels_features_exist(messages, expected):
             },
             {"name": "CountVectorsFeaturizer"},
             {"name": "ConveRTFeaturizer"},
-            {"name": "DIETClassifier", EPOCHS: 3},
+            {"name": "DIETClassifier", MASKED_LM: True, EPOCHS: 1},
         ],
         [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
-            {"name": "DIETClassifier", LOSS_TYPE: "margin", EPOCHS: 3},
+            {"name": "DIETClassifier", LOSS_TYPE: "margin", EPOCHS: 1},
         ],
     ],
 )
-async def test_train_persist_load(pipeline, component_builder, tmpdir):
+async def test_train_persist_load_with_different_settings(
+    pipeline, component_builder, tmpdir
+):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
     (trainer, trained, persisted_path) = await train(
@@ -116,10 +119,7 @@ async def test_train_persist_load(pipeline, component_builder, tmpdir):
     loaded = Interpreter.load(persisted_path, component_builder)
 
     assert loaded.pipeline
-    assert loaded.parse("hello") == trained.parse("hello")
-    assert loaded.parse("Hello today is Monday, again!") == trained.parse(
-        "Hello today is Monday, again!"
-    )
+    assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
 
 
 async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
@@ -129,7 +129,7 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
         {
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
-                {"name": "DIETClassifier", EPOCHS: 3},
+                {"name": "DIETClassifier", EPOCHS: 1},
             ],
             "language": "en",
         }
@@ -144,8 +144,8 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmpdir):
         )
 
     assert (
-        "Failed to validate component 'DIETClassifier'. Missing one of "
-        "the following properties: " in str(e.value)
+        "'DIETClassifier' requires ['Featurizer']. "
+        "Add required components to the pipeline." in str(e.value)
     )
 
 
@@ -157,31 +157,31 @@ def as_pipeline(*components):
     "classifier_params, data_path, output_length, output_should_sum_to_1",
     [
         (
-            {RANDOM_SEED: 42, EPOCHS: 3},
+            {RANDOM_SEED: 42, EPOCHS: 1},
             "data/test/many_intents.md",
             10,
             True,
         ),  # default config
         (
-            {RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 3},
+            {RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 1},
             "data/test/many_intents.md",
             LABEL_RANKING_LENGTH,
             False,
         ),  # no normalization
         (
-            {RANDOM_SEED: 42, RANKING_LENGTH: 3, EPOCHS: 3},
+            {RANDOM_SEED: 42, RANKING_LENGTH: 3, EPOCHS: 1},
             "data/test/many_intents.md",
             3,
             True,
         ),  # lower than default ranking_length
         (
-            {RANDOM_SEED: 42, RANKING_LENGTH: 12, EPOCHS: 3},
+            {RANDOM_SEED: 42, RANKING_LENGTH: 12, EPOCHS: 1},
             "data/test/many_intents.md",
             LABEL_RANKING_LENGTH,
             False,
         ),  # higher than default ranking_length
         (
-            {RANDOM_SEED: 42, EPOCHS: 3},
+            {RANDOM_SEED: 42, EPOCHS: 1},
             "examples/moodbot/data/nlu.md",
             7,
             True,
@@ -228,7 +228,7 @@ async def test_softmax_normalization(
 
 @pytest.mark.parametrize(
     "classifier_params, output_length",
-    [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 3}, LABEL_RANKING_LENGTH)],
+    [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1}, LABEL_RANKING_LENGTH)],
 )
 async def test_margin_loss_is_not_normalized(
     monkeypatch, component_builder, tmpdir, classifier_params, output_length
@@ -262,3 +262,41 @@ async def test_margin_loss_is_not_normalized(
 
     # make sure top ranking is reflected in intent prediction
     assert parse_data.get("intent") == intent_ranking[0]
+
+
+async def test_set_random_seed(component_builder, tmpdir):
+    """test if train result is the same for two runs of tf embedding"""
+
+    # set fixed random seed
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "DIETClassifier", RANDOM_SEED: 1, EPOCHS: 1},
+            ],
+            "language": "en",
+        }
+    )
+
+    # first run
+    (trained_a, _, persisted_path_a) = await train(
+        _config,
+        path=tmpdir.strpath + "_a",
+        data=DEFAULT_DATA_PATH,
+        component_builder=component_builder,
+    )
+    # second run
+    (trained_b, _, persisted_path_b) = await train(
+        _config,
+        path=tmpdir.strpath + "_b",
+        data=DEFAULT_DATA_PATH,
+        component_builder=component_builder,
+    )
+
+    loaded_a = Interpreter.load(persisted_path_a, component_builder)
+    loaded_b = Interpreter.load(persisted_path_b, component_builder)
+    result_a = loaded_a.parse("hello")["intent"]["confidence"]
+    result_b = loaded_b.parse("hello")["intent"]["confidence"]
+
+    assert result_a == result_b

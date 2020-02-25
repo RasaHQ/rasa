@@ -1,39 +1,32 @@
 import numpy as np
-from typing import Any, Optional, Text
+from typing import Any, Optional, Text, List, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.components import Component
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.training_data import Message, TrainingData
-
 from rasa.nlu.constants import (
     TEXT,
     LANGUAGE_MODEL_DOCS,
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    TOKENS_NAMES,
     SEQUENCE_FEATURES,
     SENTENCE_FEATURES,
 )
 
 
-class LanguageModelFeaturizer(Featurizer):
+class LanguageModelFeaturizer(DenseFeaturizer):
     """Featurizer using transformer based language models.
 
         Uses the output of HFTransformersNLP component to set the sequence and sentence
         level representations for dense featurizable attributes of each message object.
     """
 
-    provides = [
-        DENSE_FEATURE_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
-    ]
-
-    requires = [
-        LANGUAGE_MODEL_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
-    ] + [TOKENS_NAMES[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES]
-
-    required_components = [HFTransformersNLP.name, LanguageModelTokenizer.name]
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [HFTransformersNLP, LanguageModelTokenizer]
 
     def train(
         self,

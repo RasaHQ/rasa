@@ -31,10 +31,6 @@ class HFTransformersNLP(Component):
     message.
     """
 
-    provides = [
-        LANGUAGE_MODEL_DOCS[attribute] for attribute in DENSE_FEATURIZABLE_ATTRIBUTES
-    ]
-
     defaults = {
         # name of the language model to load.
         "model_name": "bert",
@@ -77,6 +73,7 @@ class HFTransformersNLP(Component):
             self.model_weights = model_weights_defaults[self.model_name]
 
         logger.debug(f"Loading Tokenizer and Model for {self.model_name}")
+
         self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
             self.model_weights
         )

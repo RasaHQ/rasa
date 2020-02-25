@@ -359,7 +359,7 @@ async def _request_free_text_utterance(
 
     question = questionary.text(
         message=(
-            f"Please type the message for your new utterance " f"template '{action}':"
+            f"Please type the message for your new utterance template '{action}':"
         ),
         validate=io_utils.not_empty_validator("Please enter a template message"),
     )
