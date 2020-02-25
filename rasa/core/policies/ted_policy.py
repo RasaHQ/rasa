@@ -305,10 +305,7 @@ class TEDPolicy(Policy):
             return
 
         # keep one example for persisting and loading
-        self.data_example = {
-            feature_name: [feature[:1] for feature in features]
-            for feature_name, features in model_data.items()
-        }
+        self.data_example = model_data.first_data_example()
 
         self.model = TED(
             model_data.get_signature(),
@@ -463,7 +460,9 @@ class TED(RasaModel):
         self._check_data()
 
         self.predict_data_signature = {
-            k: vs for k, vs in data_signature.items() if "dialogue" in k
+            feature_name: features
+            for feature_name, features in data_signature.items()
+            if DIALOGUE in feature_name
         }
 
         # optimizer

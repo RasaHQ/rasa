@@ -432,14 +432,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> List[np.ndarray]:
         """Computes one-hot representation for the labels."""
 
-        return [
-            np.array(
-                [
-                    np.expand_dims(a, 0)
-                    for a in np.eye(len(labels_example), dtype=np.float32)
-                ]
-            )
-        ]
+        eye_matrix = np.eye(len(labels_example), dtype=np.float32)
+        # add sequence dimension to one-hot labels
+        return [np.array([np.expand_dims(a, 0) for a in eye_matrix])]
 
     def _create_label_data(
         self,
@@ -488,14 +483,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return label_data
 
     def _use_default_label_features(self, label_ids: np.ndarray) -> List[np.ndarray]:
-        return [
-            np.array(
-                [
-                    self._label_data.get("label_features")[0][label_id]
-                    for label_id in label_ids
-                ]
-            )
-        ]
+        all_label_features = self._label_data.get("label_features")[0]
+        return [np.array([all_label_features[label_id] for label_id in label_ids])]
 
     def _create_model_data(
         self,
@@ -504,7 +493,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         tag_id_dict: Optional[Dict[Text, int]] = None,
         label_attribute: Optional[Text] = None,
     ) -> RasaModelData:
-        """Prepare data for training and create a SessionDataType object"""
+        """Prepare data for training and create a RasaModelData object"""
 
         X_sparse = []
         X_dense = []
@@ -552,7 +541,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data = RasaModelData(label_key=self.label_key)
         model_data.add_features("text_features", [X_sparse, X_dense])
         model_data.add_features("label_features", [Y_sparse, Y_dense])
-        if label_attribute and model_data.does_feature_exist("label_features"):
+        if label_attribute and model_data.feature_not_exist("label_features"):
             # no label features are present, get default features from _label_data
             model_data.add_features(
                 "label_features", self._use_default_label_features(label_ids)
@@ -574,6 +563,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         Performs sanity checks on training data, extracts encodings for labels.
         """
+
         if self.component_config[BILOU_FLAG]:
             bilou_utils.apply_bilou_schema(training_data)
 
@@ -637,7 +627,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 return
 
         # keep one example for persisting and loading
-        self.data_example = {k: [v[:1] for v in vs] for k, vs in model_data.items()}
+        self.data_example = self.data_example = model_data.first_data_example()
 
         self.model = self.model_class()(
             data_signature=model_data.get_signature(),
@@ -736,11 +726,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             tags = bilou_utils.remove_bilou_prefixes(tags)
 
         entities = self._convert_tags_to_entities(
-            message.text, message.get("tokens", []), tags
+            message.text, message.get(TOKENS_NAMES[TEXT], []), tags
         )
 
         extracted = self.add_extractor_name(entities)
-        entities = message.get("entities", []) + extracted
+        entities = message.get(ENTITIES, []) + extracted
 
         return entities
 
@@ -784,13 +774,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self.component_config[INTENT_CLASSIFICATION]:
             label, label_ranking = self._predict_label(out)
 
-            message.set("intent", label, add_to_output=True)
+            message.set(INTENT, label, add_to_output=True)
             message.set("intent_ranking", label_ranking, add_to_output=True)
 
         if self.component_config[ENTITY_RECOGNITION]:
             entities = self._predict_entities(out, message)
 
-            message.set("entities", entities, add_to_output=True)
+            message.set(ENTITIES, entities, add_to_output=True)
 
     def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
@@ -956,7 +946,9 @@ class DIET(RasaModel):
         self._check_data()
 
         self.predict_data_signature = {
-            k: vs for k, vs in data_signature.items() if "text" in k
+            feature_name: features
+            for feature_name, features in data_signature.items()
+            if TEXT in feature_name
         }
 
         label_batch = label_data.prepare_batch()

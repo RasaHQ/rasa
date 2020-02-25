@@ -42,7 +42,13 @@ class RasaModelData:
     def keys(self):
         return self.data.keys()
 
-    def does_feature_exist(self, key: Text) -> bool:
+    def first_data_example(self) -> Data:
+        return {
+            feature_name: [feature[:1] for feature in features]
+            for feature_name, features in self.data.items()
+        }
+
+    def feature_not_exist(self, key: Text) -> bool:
         """Check if feature key is present and features are available."""
         return key not in self.data or not self.data[key]
 

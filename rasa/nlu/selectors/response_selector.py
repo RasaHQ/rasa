@@ -238,8 +238,11 @@ class ResponseSelector(DIETClassifier):
         )
 
     def preprocess_train_data(self, training_data: TrainingData) -> RasaModelData:
-        """Performs sanity checks on training data, extracts encodings for labels
-        and prepares data for training"""
+        """Prepares data for training.
+
+        Performs sanity checks on training data, extracts encodings for labels.
+        """
+
         if self.retrieval_intent:
             training_data = training_data.filter_by_intent(self.retrieval_intent)
 
