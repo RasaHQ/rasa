@@ -3,7 +3,6 @@ from collections import defaultdict, OrderedDict
 from pathlib import Path
 
 import numpy as np
-import scipy.sparse
 from typing import Any, Dict, Optional, Text, List, Type
 
 from rasa.constants import DOCS_URL_COMPONENTS
@@ -19,8 +18,17 @@ import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
 
+END_OF_SENTENCE = "EOS"
+BEGIN_OF_SENTENCE = "BOS"
+
 
 class LexicalSyntacticFeaturizer(SparseFeaturizer):
+    """Creates features for entity extraction.
+
+    Moves with a sliding window over every token in the user message and creates
+    features according to the configuration.
+    """
+
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
         return [Tokenizer]
@@ -102,8 +110,8 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         all_features = []
         for example in training_data.training_examples:
             # [:-1] to remove CLS token
-            tokens = example.get(TOKENS_NAMES[TEXT])[:-1]
-            all_features.append(self._tokens_to_features(tokens))
+            tokens_without_cls = example.get(TOKENS_NAMES[TEXT])[:-1]
+            all_features.append(self._tokens_to_features(tokens_without_cls))
 
         # build vocabulary of features
         feature_vocabulary = self._build_feature_vocabulary(all_features)
@@ -148,6 +156,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
     def _create_sparse_features(self, message: Message) -> None:
         """Convert incoming messages into sparse features using the configured
         features."""
+        import scipy.sparse
 
         # [:-1] to remove CLS token
         tokens = message.get(TOKENS_NAMES[TEXT])[:-1]
@@ -194,7 +203,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
                 prefix = prefixes[current_feature_idx]
 
                 for feature in configured_features[current_feature_idx]:
-                    token_features[prefix + ":" + feature] = self._get_feature_value(
+                    token_features[f"{prefix}:{feature}"] = self._get_feature_value(
                         feature, token, token_idx, pointer_position, len(tokens)
                     )
 
@@ -213,14 +222,15 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
             [len(sentence_features) + 1, self.number_of_features]
         )
 
-        for token_idx, toke_features in enumerate(sentence_features):
-            for feature_name, feature_value in toke_features.items():
+        for token_idx, token_features in enumerate(sentence_features):
+            for feature_name, feature_value in token_features.items():
+                feature_value_str = str(feature_value)
                 if (
                     feature_name in self.feature_to_idx_dict
-                    and str(feature_value) in self.feature_to_idx_dict[feature_name]
+                    and feature_value_str in self.feature_to_idx_dict[feature_name]
                 ):
                     feature_idx = self.feature_to_idx_dict[feature_name][
-                        str(feature_value)
+                        feature_value_str
                     ]
                     one_hot_feature_vector[token_idx][feature_idx] = 1
 
@@ -237,10 +247,10 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         pointer_position: int,
         token_length: int,
     ) -> Any:
-        if feature == "EOS":
+        if feature == END_OF_SENTENCE:
             return token_idx + pointer_position == token_length - 1
 
-        if feature == "BOS":
+        if feature == BEGIN_OF_SENTENCE:
             return token_idx + pointer_position == 0
 
         if feature not in self.function_dict:
