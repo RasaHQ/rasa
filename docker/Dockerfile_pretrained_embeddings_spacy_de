@@ -45,7 +45,7 @@ COPY --from=python_builder /opt/venv /opt/venv
 COPY --from=python_builder /app /app
 ENV PATH="/opt/venv/bin:$PATH"
 
-# update permissions & change user
+# update permissions & change user to not run as root
 RUN chgrp -R 0 /app && chmod -R g=u /app
 USER 1001
 
@@ -56,6 +56,7 @@ VOLUME /tmp
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # the entry point
+WORKDIR /app
 EXPOSE 5005
 ENTRYPOINT ["rasa"]
 CMD ["--help"]
