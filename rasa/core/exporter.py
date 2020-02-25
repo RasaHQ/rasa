@@ -99,7 +99,7 @@ class Exporter:
             `PikaEventBroker`, else `None`.
 
         """
-        if isinstance(self.event_broker, (PikaEventBroker, PikaEventBroker)):
+        if isinstance(self.event_broker, (PikaEventBroker, PikaProducer)):
             return {RASA_EXPORT_PROCESS_ID_HEADER_NAME: uuid.uuid4().hex}
 
         return None
@@ -114,7 +114,7 @@ class Exporter:
             headers: Message headers to be published if `self.event_broker` is a
                 `PikaEventBroker`.
         """
-        if isinstance(self.event_broker, (PikaEventBroker, PikaEventBroker)):
+        if isinstance(self.event_broker, (PikaEventBroker, PikaProducer)):
             self.event_broker.publish(event=event, headers=headers)
         else:
             self.event_broker.publish(event)
