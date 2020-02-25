@@ -190,8 +190,8 @@ class ResponseSelector(DIETClassifier):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        inverted_label_dict: Optional[Dict[int, Text]] = None,
-        inverted_tag_dict: Optional[Dict[int, Text]] = None,
+        index_label_id_mapping: Optional[Dict[int, Text]] = None,
+        index_tag_id_mapping: Optional[Dict[int, Text]] = None,
         model: Optional[RasaModel] = None,
         batch_tuple_sizes: Optional[Dict] = None,
     ) -> None:
@@ -205,8 +205,8 @@ class ResponseSelector(DIETClassifier):
 
         super().__init__(
             component_config,
-            inverted_label_dict,
-            inverted_tag_dict,
+            index_label_id_mapping,
+            index_tag_id_mapping,
             model,
             batch_tuple_sizes,
         )
@@ -255,15 +255,19 @@ class ResponseSelector(DIETClassifier):
         if self.retrieval_intent:
             training_data = training_data.filter_by_intent(self.retrieval_intent)
 
-        label_id_dict = self._create_label_id_dict(training_data, attribute=RESPONSE)
-        self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
+        label_id_index_mapping = self._label_id_index_mapping(
+            training_data, attribute=RESPONSE
+        )
+        self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
 
         self._label_data = self._create_label_data(
-            training_data, label_id_dict, attribute=RESPONSE
+            training_data, label_id_index_mapping, attribute=RESPONSE
         )
 
         model_data = self._create_model_data(
-            training_data.intent_examples, label_id_dict, label_attribute=RESPONSE
+            training_data.intent_examples,
+            label_id_index_mapping,
+            label_attribute=RESPONSE,
         )
 
         self._check_input_dimension_consistency(model_data)

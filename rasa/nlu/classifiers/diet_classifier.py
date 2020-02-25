@@ -258,8 +258,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        inverted_label_dict: Optional[Dict[int, Text]] = None,
-        inverted_tag_dict: Optional[Dict[int, Text]] = None,
+        index_label_id_mapping: Optional[Dict[int, Text]] = None,
+        index_tag_id_mapping: Optional[Dict[int, Text]] = None,
         model: Optional[RasaModel] = None,
         batch_tuple_sizes: Optional[Dict] = None,
     ) -> None:
@@ -276,8 +276,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._check_config_parameters()
 
         # transform numbers to labels
-        self.inverted_label_dict = inverted_label_dict
-        self.inverted_tag_dict = inverted_tag_dict
+        self.index_label_id_mapping = index_label_id_mapping
+        self.index_tag_id_mapping = index_tag_id_mapping
 
         self.model = model
 
@@ -302,7 +302,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     # training data helpers:
     @staticmethod
-    def _create_label_id_dict(
+    def _label_id_index_mapping(
         training_data: TrainingData, attribute: Text
     ) -> Dict[Text, int]:
         """Create label_id dictionary."""
@@ -314,7 +314,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
         }
 
-    def _create_tag_id_dict(self, training_data: TrainingData) -> Dict[Text, int]:
+    @staticmethod
+    def _invert_mapping(mapping: Dict) -> Dict:
+        return {value: key for key, value in mapping.items()}
+
+    def _tag_id_index_mapping(self, training_data: TrainingData) -> Dict[Text, int]:
         """Create tag_id dictionary"""
 
         if self.component_config[BILOU_FLAG]:
@@ -574,15 +578,17 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self.component_config[BILOU_FLAG]:
             bilou_utils.apply_bilou_schema(training_data)
 
-        label_id_dict = self._create_label_id_dict(training_data, attribute=INTENT)
-        self.inverted_label_dict = {v: k for k, v in label_id_dict.items()}
+        label_id_index_mapping = self._label_id_index_mapping(
+            training_data, attribute=INTENT
+        )
+        self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
 
         self._label_data = self._create_label_data(
-            training_data, label_id_dict, attribute=INTENT
+            training_data, label_id_index_mapping, attribute=INTENT
         )
 
-        tag_id_dict = self._create_tag_id_dict(training_data)
-        self.inverted_tag_dict = {v: k for k, v in tag_id_dict.items()}
+        tag_id_index_mapping = self._tag_id_index_mapping(training_data)
+        self.index_tag_id_mapping = self._invert_mapping(tag_id_index_mapping)
 
         label_attribute = (
             INTENT if self.component_config[INTENT_CLASSIFICATION] else None
@@ -590,12 +596,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         model_data = self._create_model_data(
             training_data.training_examples,
-            label_id_dict,
-            tag_id_dict,
+            label_id_index_mapping,
+            tag_id_index_mapping,
             label_attribute=label_attribute,
         )
 
-        self.num_tags = len(self.inverted_tag_dict)
+        self.num_tags = len(self.index_tag_id_mapping)
 
         self._check_input_dimension_consistency(model_data)
 
@@ -639,7 +645,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.model = self.model_class()(
             data_signature=model_data.get_signature(),
             label_data=self._label_data,
-            inverted_tag_dict=self.inverted_tag_dict,
+            index_tag_id_mapping=self.index_tag_id_mapping,
             config=self.component_config,
         )
 
@@ -697,7 +703,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # if X contains all zeros do not predict some label
         if label_ids.size > 0:
             label = {
-                "name": self.inverted_label_dict[label_ids[0]],
+                "name": self.index_label_id_mapping[label_ids[0]],
                 "confidence": message_sim[0],
             }
 
@@ -712,7 +718,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ranking = list(zip(list(label_ids), message_sim))
             ranking = ranking[:output_length]
             label_ranking = [
-                {"name": self.inverted_label_dict[label_idx], "confidence": score}
+                {"name": self.index_label_id_mapping[label_idx], "confidence": score}
                 for label_idx, score in ranking
             ]
 
@@ -727,7 +733,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # load tf graph and session
         predictions = predict_out["e_ids"].numpy()
 
-        tags = [self.inverted_tag_dict[p] for p in predictions[0]]
+        tags = [self.index_tag_id_mapping[p] for p in predictions[0]]
 
         if self.component_config[BILOU_FLAG]:
             tags = bilou_utils.remove_bilou_prefixes(tags)
@@ -812,10 +818,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.label_data.pkl", self._label_data
         )
         io_utils.json_pickle(
-            model_dir / f"{file_name}.inverted_label_dict.pkl", self.inverted_label_dict
+            model_dir / f"{file_name}.index_label_id_mapping.pkl",
+            self.index_label_id_mapping,
         )
         io_utils.json_pickle(
-            model_dir / f"{file_name}.inverted_tag_dict.pkl", self.inverted_tag_dict
+            model_dir / f"{file_name}.index_tag_id_mapping.pkl",
+            self.index_tag_id_mapping,
         )
         io_utils.json_pickle(
             model_dir / f"{file_name}.batch_tuple_sizes.pkl", self.batch_tuple_sizes
@@ -843,8 +851,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         (
             batch_tuple_sizes,
-            inv_label_dict,
-            inv_tag_dict,
+            index_label_id_mapping,
+            index_tag_id_mapping,
             label_data,
             meta,
             data_example,
@@ -852,12 +860,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         meta = train_utils.update_similarity_type(meta)
 
-        model = cls._load_model(inv_tag_dict, label_data, meta, data_example, model_dir)
+        model = cls._load_model(
+            index_tag_id_mapping, label_data, meta, data_example, model_dir
+        )
 
         return cls(
             component_config=meta,
-            inverted_label_dict=inv_label_dict,
-            inverted_tag_dict=inv_tag_dict,
+            index_label_id_mapping=index_label_id_mapping,
+            index_tag_id_mapping=index_tag_id_mapping,
             model=model,
             batch_tuple_sizes=batch_tuple_sizes,
         )
@@ -870,29 +880,29 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
         label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
-        inverted_label_dict = io_utils.json_unpickle(
-            model_dir / f"{file_name}.inverted_label_dict.pkl"
+        index_label_id_mapping = io_utils.json_unpickle(
+            model_dir / f"{file_name}.index_label_id_mapping.pkl"
         )
-        inverted_tag_dict = io_utils.json_unpickle(
-            model_dir / f"{file_name}.inverted_tag_dict.pkl"
+        index_tag_id_mapping = io_utils.json_unpickle(
+            model_dir / f"{file_name}.index_tag_id_mapping.pkl"
         )
         batch_tuple_sizes = io_utils.json_unpickle(
             model_dir / f"{file_name}.batch_tuple_sizes.pkl"
         )
 
         # jsonpickle converts dictionary keys to strings
-        inverted_label_dict = {
-            int(key): value for key, value in inverted_label_dict.items()
+        index_label_id_mapping = {
+            int(key): value for key, value in index_label_id_mapping.items()
         }
-        if inverted_tag_dict is not None:
-            inverted_tag_dict = {
-                int(key): value for key, value in inverted_tag_dict.items()
+        if index_tag_id_mapping is not None:
+            index_tag_id_mapping = {
+                int(key): value for key, value in index_tag_id_mapping.items()
             }
 
         return (
             batch_tuple_sizes,
-            inverted_label_dict,
-            inverted_tag_dict,
+            index_label_id_mapping,
+            index_tag_id_mapping,
             label_data,
             meta,
             data_example,
@@ -901,7 +911,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     @classmethod
     def _load_model(
         cls,
-        inv_tag_dict: Dict[int, Text],
+        index_tag_id_mapping: Dict[int, Text],
         label_data: RasaModelData,
         meta: Dict[Text, Any],
         data_example: Dict[Text, List[np.ndarray]],
@@ -918,7 +928,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_data_example,
             data_signature=model_data_example.get_signature(),
             label_data=label_data,
-            inverted_tag_dict=inv_tag_dict,
+            index_tag_id_mapping=index_tag_id_mapping,
             config=meta,
         )
 
@@ -946,7 +956,7 @@ class DIET(RasaModel):
         self,
         data_signature: Dict[Text, List[FeatureSignature]],
         label_data: RasaModelData,
-        inverted_tag_dict: Optional[Dict[int, Text]],
+        index_tag_id_mapping: Optional[Dict[int, Text]],
         config: Dict[Text, Any],
     ) -> None:
         super().__init__(name="DIET", random_seed=config[RANDOM_SEED])
@@ -966,7 +976,9 @@ class DIET(RasaModel):
         self.tf_label_data = self.batch_to_model_data_format(
             label_batch, label_data.get_signature()
         )
-        self._num_tags = len(inverted_tag_dict) if inverted_tag_dict is not None else 0
+        self._num_tags = (
+            len(index_tag_id_mapping) if index_tag_id_mapping is not None else 0
+        )
 
         # tf objects
         self._tf_layers = {}

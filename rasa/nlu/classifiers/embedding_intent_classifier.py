@@ -137,8 +137,8 @@ class EmbeddingIntentClassifier(DIETClassifier):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        inverted_label_dict: Optional[Dict[int, Text]] = None,
-        inverted_tag_dict: Optional[Dict[int, Text]] = None,
+        index_label_id_mapping: Optional[Dict[int, Text]] = None,
+        index_tag_id_mapping: Optional[Dict[int, Text]] = None,
         model: Optional[RasaModel] = None,
         batch_tuple_sizes: Optional[Dict] = None,
     ) -> None:
@@ -154,8 +154,8 @@ class EmbeddingIntentClassifier(DIETClassifier):
 
         super().__init__(
             component_config,
-            inverted_label_dict,
-            inverted_tag_dict,
+            index_label_id_mapping,
+            index_tag_id_mapping,
             model,
             batch_tuple_sizes,
         )
