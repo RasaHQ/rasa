@@ -18,8 +18,8 @@ class EventBroker:
 
         if isinstance(obj, EventBroker):
             return obj
-        else:
-            return _create_from_endpoint_config(obj)
+
+        return _create_from_endpoint_config(obj)
 
     @classmethod
     def from_endpoint_config(cls, broker_config: EndpointConfig) -> "EventBroker":
@@ -31,6 +31,20 @@ class EventBroker:
         """Publishes a json-formatted Rasa Core event into an event queue."""
 
         raise NotImplementedError("Event broker must implement the `publish` method.")
+
+    def is_ready(self) -> bool:
+        """Determine whether or not the event broker is ready.
+
+        Returns:
+            `True` by default, but this may be overridden by subclasses.
+        """
+        return True
+
+    def close(self) -> None:
+        """Close the connection to an event broker."""
+
+        # default implementation does nothing
+        pass
 
 
 def _create_from_endpoint_config(
