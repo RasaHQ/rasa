@@ -4,9 +4,11 @@ from typing import Optional, Dict, Any, Text, List
 from unittest.mock import Mock
 
 import pytest
-from _pytest.logging import LogCaptureFixture
 
 import rasa.utils.io as io_utils
+from rasa.core.brokers.pika import PikaEventBroker
+from rasa.core.brokers.sql import SQLEventBroker
+from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
 from rasa.core.trackers import DialogueStateTracker
 from rasa.exceptions import (
     NoConversationsInTrackerStoreError,
@@ -197,8 +199,52 @@ def test_sort_and_select_events_by_timestamp_error():
         exporter._sort_and_select_events_by_timestamp(events)
 
 
-def _add_conversation_id_to_event(event: Dict, conversation_id: Text):
-    event["sender_id"] = conversation_id
+def test_get_message_headers_pika_event_broker():
+    event_broker = Mock(spec=PikaEventBroker)
+    exporter = MockExporter(event_broker=event_broker)
+
+    # noinspection PyProtectedMember
+    headers = exporter._get_message_headers()
+
+    assert headers.get(RASA_EXPORT_PROCESS_ID_HEADER_NAME)
+
+
+def test_get_message_headers_non_pika_broker():
+    event_broker = Mock()
+    exporter = MockExporter(event_broker=event_broker)
+
+    # noinspection PyProtectedMember
+    assert exporter._get_message_headers() is None
+
+
+def test_publish_with_headers_pika_event_broker():
+    event_broker = Mock(spec=PikaEventBroker)
+    exporter = MockExporter(event_broker=event_broker)
+
+    headers = {"some": "header"}
+    event = {"some": "event"}
+
+    # noinspection PyProtectedMember
+    exporter._publish_with_message_headers(event, headers)
+
+    # the `PikaEventBroker`'s `publish()` method was called with both
+    # the `event` and `headers` arguments
+    event_broker.publish.assert_called_with(event=event, headers=headers)
+
+
+def test_publish_with_headers_non_pika_event_broker():
+    event_broker = Mock(SQLEventBroker)
+    exporter = MockExporter(event_broker=event_broker)
+
+    headers = {"some": "header"}
+    event = {"some": "event"}
+
+    # noinspection PyProtectedMember
+    exporter._publish_with_message_headers(event, headers)
+
+    # the `SQLEventBroker`'s `publish()` method was called with only the `event`
+    # argument
+    event_broker.publish.assert_called_with(event)
 
 
 def test_publishing_error():

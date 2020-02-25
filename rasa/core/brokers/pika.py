@@ -5,7 +5,7 @@ import time
 import typing
 from collections import deque
 from threading import Thread
-from typing import Callable, Deque, Dict, Optional, Text, Union
+from typing import Callable, Deque, Dict, Optional, Text, Union, Any
 
 from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
@@ -326,6 +326,7 @@ class PikaEventBroker(EventBroker):
         thread.start()
 
     def _run_pika_io_loop(self) -> None:
+        # noinspection PyUnresolvedReferences
         self._pika_connection.ioloop.start()
 
     def is_ready(
@@ -353,18 +354,28 @@ class PikaEventBroker(EventBroker):
         return False
 
     def publish(
-        self, event: Dict, retries: int = 60, retry_delay_in_seconds: int = 5
+        self,
+        event: Dict[Text, Any],
+        retries: int = 60,
+        retry_delay_in_seconds: int = 5,
+        headers: Optional[Dict[Text, Text]] = None,
     ) -> None:
         """Publish `event` into Pika queue.
 
-        Perform `retries` publish attempts with `retry_delay_in_seconds` between them.
-        """
+        Args:
+            event: Serialised event to be published.
+            retries: Number of retries if publishing fails
+            retry_delay_in_seconds: Delay in seconds between retries.
+            headers: Message headers to append to the published message (key-value
+                dictionary). The headers can be retrieved in the consumer from the
+                `headers` attribute of the message's `BasicProperties`.
 
+        """
         body = json.dumps(event)
 
         while retries:
             try:
-                self._publish(body)
+                self._publish(body, headers)
                 return
             except Exception as e:
                 logger.error(
@@ -383,9 +394,19 @@ class PikaEventBroker(EventBroker):
             "'{}':\n{}".format(self.queue, self.host, body)
         )
 
-    @property
-    def _message_properties(self) -> "BasicProperties":
-        """Create RabbitMQ message properties.
+    def _get_message_properties(
+        self, headers: Optional[Dict[Text, Text]] = None
+    ) -> "BasicProperties":
+        """Create RabbitMQ message `BasicProperties`.
+
+        The `app_id` property is set to the value of `self.rasa_environment`. In
+        addition, the `headers` property is set if supplied.
+
+        Args:
+            headers: Message headers to add to the message properties of the
+                published message (key-value dictionary). The headers can be
+                retrieved in the consumer from the `headers` attribute of the message's
+                `BasicProperties`.
 
         Returns:
             pika.spec.BasicProperties with the `RASA_ENVIRONMENT` environment
@@ -395,16 +416,23 @@ class PikaEventBroker(EventBroker):
         """
         from pika.spec import BasicProperties
 
-        kwargs = {"app_id": self.rasa_environment} if self.rasa_environment else {}
+        kwargs: Dict[Text, Any] = {
+            "app_id": self.rasa_environment
+        } if self.rasa_environment else {}
+
+        if headers:
+            kwargs["headers"] = headers
 
         return BasicProperties(delivery_mode=2, **kwargs)  # make message persistent
 
-    def _basic_publish(self, body: Text) -> None:
+    def _basic_publish(
+        self, body: Text, headers: Optional[Dict[Text, Text]] = None
+    ) -> None:
         self.channel.basic_publish(
             "",
             self.queue,
             body.encode(DEFAULT_ENCODING),
-            properties=self._message_properties,
+            properties=self._get_message_properties(headers),
         )
 
         logger.debug(
@@ -412,11 +440,11 @@ class PikaEventBroker(EventBroker):
             f"'{self.host}':\n{body}"
         )
 
-    def _publish(self, body: Text) -> None:
+    def _publish(self, body: Text, headers: Optional[Dict[Text, Text]] = None) -> None:
         if self._pika_connection.is_closed:
             # Try to reset connection
             self._run_pika()
-            self._basic_publish(body)
+            self._basic_publish(body, headers)
         elif not self.channel and self.should_keep_unpublished_messages:
             logger.warning(
                 f"RabbitMQ channel has not been assigned. Adding message to "
@@ -426,7 +454,7 @@ class PikaEventBroker(EventBroker):
             )
             self._unpublished_messages.append(body)
         else:
-            self._basic_publish(body)
+            self._basic_publish(body, headers)
 
 
 def create_rabbitmq_ssl_options(
