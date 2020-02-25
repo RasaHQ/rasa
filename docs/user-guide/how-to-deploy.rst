@@ -2,7 +2,7 @@
 
 .. _deploying-your-rasa-assistant:
 
-Deploying your Rasa Assistant
+Deploying Your Rasa Assistant
 =============================
 
 .. edit-link::
@@ -15,7 +15,7 @@ It will allow you to make your assistant available to users and set you up with 
    :depth: 2
 
 
-When to deploy your assistant
+When to Deploy Your Assistant
 -----------------------------
 
 .. raw:: html
@@ -55,6 +55,7 @@ It is also possible to deploy a Rasa assistant using Docker Compose without Rasa
 
 .. contents::
    :local:
+   :depth: 2
 
 
 Installing Docker
@@ -76,18 +77,17 @@ See `Docker Installation <https://docs.docker.com/install/>`_ for details.
 Building an Assistant with Rasa and Docker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This section will cover the following:
+If you don't have a Rasa project yet, you can build one in Docker without having to install Rasa Open Source
+on your local machine. If you already have a model you're satisfied with, skip ahead to :ref:`running-the-rasa-server`
+to deploy your model.
 
-    - Setting up your Rasa project and training an initial model
-    - Talking to your AI assistant via Docker
-    - Choosing a Docker image tag
-    - Training your Rasa models using Docker
-    - Talking to your assistant using Docker
-    - Running a Rasa server with Docker
+.. contents::
+   :local:
+   :depth: 2
 
 
-Setup
-*****
+Setting up your Rasa Project
+****************************
 
 Just like in the :ref:`tutorial <rasa-tutorial>`, you'll use the ``rasa init`` command to create a project.
 The only difference is that you'll be running Rasa inside a Docker container, using
@@ -123,11 +123,11 @@ The initial project files should all be there, as well as a ``models`` directory
 
 .. note::
 
-   By default Docker runs containers as ``root`` user. Hence, all files created by
-   these containers will be owned by ``root``. See the `documentation of docker
+   By default Docker runs containers as user ``1001``. Hence, all files created by
+   these containers will be owned by this user. See the `documentation of docker
    <https://docs.docker.com/v17.12/edge/engine/reference/commandline/run/>`_
    and `docker-compose <https://docs.docker.com/compose/compose-file/>`_ if you want to
-   run the containers with a different user.
+   run the containers as a different user.
 
 Talking to Your Assistant
 *************************
@@ -147,10 +147,10 @@ you need to pass the ``-it`` flags.
 
 
 Customizing your Model
-~~~~~~~~~~~~~~~~~~~~~~
+**********************
 
 Choosing a Tag
-**************
+##############
 
 To keep images as small as possible, we publish different tags of the ``rasa/rasa`` image
 with different dependencies installed. See :ref:`choosing-a-pipeline` for more information
@@ -178,7 +178,7 @@ Alternatively, you can use the ``-full`` tag, which includes all pipeline depend
 .. _model_training_docker:
 
 Training a Custom Rasa Model with Docker
-****************************************
+########################################
 
 Edit the ``config.yml`` file to use the pipeline you want, and place
 your NLU and Core data into the ``data/`` directory.
@@ -214,6 +214,7 @@ You can also leave these out since we are passing the default values.
     that your module is in the Python module search path by setting the
     environment variable ``PYTHONPATH=$PYTHONPATH:<directory of your module>``.
 
+.. _running-the-rasa-server:
 
 Running the Rasa Server
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -252,6 +253,10 @@ To run Rasa together with other services, such as a server for custom actions, i
 recommend to use `Docker Compose <https://docs.docker.com/compose/>`_.
 Docker Compose provides an easy way to run multiple containers together without
 having to run multiple commands.
+
+.. contents::
+   :local:
+   :depth: 2
 
 Start by creating a file called ``docker-compose.yml``:
 
@@ -300,14 +305,14 @@ To run the services configured in your ``docker-compose.yml`` execute:
 
 
 Adding Custom Actions
-~~~~~~~~~~~~~~~~~~~~~
+*********************
 
 To create more sophisticated assistants, you will want to use :ref:`custom-actions`.
 Continuing the example from above, you might want to add an action which tells
 the user a joke to cheer them up.
 
 Creating a Custom Action
-************************
+########################
 
 Start by creating the custom actions in a directory ``actions``:
 
@@ -344,7 +349,7 @@ Continuing with the example bot from ``rasa init``, replace ``utter_cheer_up`` i
 ``action_joke`` to the actions in the domain file.
 
 Adding the Action Server
-************************
+########################
 
 The custom actions are run by the action server.
 To spin it up together with the Rasa instance, add a service
@@ -383,7 +388,7 @@ Run ``docker-compose up`` to start the action server together
 with Rasa.
 
 Adding Custom Dependencies
-**************************
+##########################
 
 If your custom action has additional dependencies of systems or Python libraries,
 you can add these by extending the official image.
@@ -411,7 +416,7 @@ You can then build the image via the following command, and use it in your
   docker build . -t <name of your custom image>:<tag of your custom image>
 
 Adding a Custom Tracker Store
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*****************************
 
 By default, all conversations are saved in memory. This means that all
 conversations are lost as soon as you restart the Rasa server.
@@ -419,7 +424,7 @@ If you want to persist your conversations, you can use a different
 :ref:`Tracker Store <tracker-stores>`.
 
 Using PostgreSQL as Tracker Store
-*********************************
+#################################
 
 Start by adding PostgreSQL to your docker-compose file:
 
@@ -440,7 +445,7 @@ configuration ``config/endpoints.yml``:
     db: rasa
 
 Using MongoDB as Tracker Store
-******************************
+##############################
 
 Start by adding MongoDB to your docker-compose file. The following example
 adds the MongoDB as well as a UI (you can skip this), which will be available
@@ -476,7 +481,7 @@ configuration ``endpoints.yml``:
 Then start all components with ``docker-compose up``.
 
 Using Redis as Tracker Store
-****************************
+##############################
 
 Start by adding Redis to your docker-compose file:
 
@@ -495,7 +500,7 @@ configuration ``endpoints.yml``:
     url: redis
 
 Using a Custom Tracker Store Implementation
-*******************************************
+###########################################
 
 If you have a custom implementation of a tracker store you have two options
 to add this store to Rasa:
