@@ -4,7 +4,6 @@ from pathlib import Path
 import numpy as np
 import os
 import scipy.sparse
-import warnings
 import tensorflow as tf
 import tensorflow_addons as tfa
 
@@ -80,6 +79,13 @@ from rasa.utils.tensorflow.constants import (
 
 
 logger = logging.getLogger(__name__)
+
+TEXT_FEATURES = "text_features"
+LABEL_FEATURES = "label_features"
+TEXT_MASK = "text_mask"
+LABEL_MASK = "label_mask"
+LABEL_IDS = "label_ids"
+TAG_IDS = "tag_ids"
 
 
 class DIETClassifier(IntentClassifier, EntityExtractor):
@@ -287,7 +293,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     @property
     def label_key(self) -> Optional[Text]:
-        return "label_ids" if self.component_config[INTENT_CLASSIFICATION] else None
+        return LABEL_IDS if self.component_config[INTENT_CLASSIFICATION] else None
 
     @staticmethod
     def model_class() -> Type[RasaModel]:
@@ -397,8 +403,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Checks if features have same dimensionality if hidden layers are shared."""
 
         if self.component_config.get(SHARE_HIDDEN_LAYERS):
-            num_text_features = model_data.feature_dimension("text_features")
-            num_label_features = model_data.feature_dimension("label_features")
+            num_text_features = model_data.feature_dimension(TEXT_FEATURES)
+            num_label_features = model_data.feature_dimension(LABEL_FEATURES)
 
             if num_text_features != num_label_features:
                 raise ValueError(
@@ -471,19 +477,19 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             features = self._compute_default_label_features(labels_example)
 
         label_data = RasaModelData()
-        label_data.add_features("label_features", features)
+        label_data.add_features(LABEL_FEATURES, features)
 
         label_ids = np.array([idx for (idx, _) in labels_idx_example])
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
-        label_data.add_features("label_ids", [np.expand_dims(label_ids, -1)])
+        label_data.add_features(LABEL_IDS, [np.expand_dims(label_ids, -1)])
 
-        label_data.add_mask("label_mask", "label_features")
+        label_data.add_mask(LABEL_MASK, LABEL_FEATURES)
 
         return label_data
 
     def _use_default_label_features(self, label_ids: np.ndarray) -> List[np.ndarray]:
-        all_label_features = self._label_data.get("label_features")[0]
+        all_label_features = self._label_data.get(LABEL_FEATURES)[0]
         return [np.array([all_label_features[label_id] for label_id in label_ids])]
 
     def _create_model_data(
@@ -539,21 +545,21 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         tag_ids = np.array(tag_ids)
 
         model_data = RasaModelData(label_key=self.label_key)
-        model_data.add_features("text_features", [X_sparse, X_dense])
-        model_data.add_features("label_features", [Y_sparse, Y_dense])
-        if label_attribute and model_data.feature_not_exist("label_features"):
+        model_data.add_features(TEXT_FEATURES, [X_sparse, X_dense])
+        model_data.add_features(LABEL_FEATURES, [Y_sparse, Y_dense])
+        if label_attribute and model_data.feature_not_exist(LABEL_FEATURES):
             # no label features are present, get default features from _label_data
             model_data.add_features(
-                "label_features", self._use_default_label_features(label_ids)
+                LABEL_FEATURES, self._use_default_label_features(label_ids)
             )
 
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
-        model_data.add_features("label_ids", [np.expand_dims(label_ids, -1)])
-        model_data.add_features("tag_ids", [tag_ids])
+        model_data.add_features(LABEL_IDS, [np.expand_dims(label_ids, -1)])
+        model_data.add_features(TAG_IDS, [tag_ids])
 
-        model_data.add_mask("text_mask", "text_features")
-        model_data.add_mask("label_mask", "label_features")
+        model_data.add_mask(TEXT_MASK, TEXT_FEATURES)
+        model_data.add_mask(LABEL_MASK, LABEL_FEATURES)
 
         return model_data
 
@@ -596,7 +602,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     @staticmethod
     def _check_enough_labels(model_data: RasaModelData) -> bool:
-        return len(np.unique(model_data.get("label_ids"))) >= 2
+        return len(np.unique(model_data.get(LABEL_IDS))) >= 2
 
     def train(
         self,
@@ -903,7 +909,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         file_name = meta.get("file")
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
-        label_key = "label_ids" if meta[INTENT_CLASSIFICATION] else None
+        label_key = LABEL_IDS if meta[INTENT_CLASSIFICATION] else None
         model_data_example = RasaModelData(label_key=label_key, data=data_example)
 
         model = cls.model_class().load(
@@ -918,7 +924,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # build the graph for prediction
         predict_data_example = RasaModelData(
             label_key=label_key,
-            data={k: vs for k, vs in model_data_example.items() if "text" in k},
+            data={
+                feature_name: features
+                for feature_name, features in model_data_example.items()
+                if TEXT in feature_name
+            },
         )
 
         model.build_for_predict(predict_data_example)
@@ -969,28 +979,28 @@ class DIET(RasaModel):
         self.all_labels_embed = None  # needed for efficient prediction
 
     def _check_data(self) -> None:
-        if "text_features" not in self.data_signature:
+        if TEXT_FEATURES not in self.data_signature:
             raise ValueError(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if self.config[INTENT_CLASSIFICATION]:
-            if "label_features" not in self.data_signature:
+            if LABEL_FEATURES not in self.data_signature:
                 raise ValueError(
                     f"No label features specified. "
                     f"Cannot train '{self.__class__.__name__}' model."
                 )
             if (
                 self.config[SHARE_HIDDEN_LAYERS]
-                and self.data_signature["text_features"]
-                != self.data_signature["label_features"]
+                and self.data_signature[TEXT_FEATURES]
+                != self.data_signature[LABEL_FEATURES]
             ):
                 raise ValueError(
                     "If hidden layer weights are shared, data signatures "
                     "for text_features and label_features must coincide."
                 )
 
-        if self.config[ENTITY_RECOGNITION] and "tag_ids" not in self.data_signature:
+        if self.config[ENTITY_RECOGNITION] and TAG_IDS not in self.data_signature:
             raise ValueError(
                 f"No tag ids present. "
                 f"Cannot train '{self.__class__.__name__}' model."
@@ -1246,10 +1256,10 @@ class DIET(RasaModel):
         return transformed, x, x_seq_ids, lm_mask_bool
 
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
-        all_label_ids = self.tf_label_data["label_ids"][0]
+        all_label_ids = self.tf_label_data[LABEL_IDS][0]
         x = self._create_bow(
-            self.tf_label_data["label_features"],
-            self.tf_label_data["label_mask"][0],
+            self.tf_label_data[LABEL_FEATURES],
+            self.tf_label_data[LABEL_MASK][0],
             self.label_name,
         )
         all_labels_embed = self._tf_layers["embed.label"](x)
@@ -1335,7 +1345,7 @@ class DIET(RasaModel):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        mask_text = tf_batch_data["text_mask"][0]
+        mask_text = tf_batch_data[TEXT_MASK][0]
         sequence_lengths = self._get_sequence_lengths(mask_text)
 
         (
@@ -1344,7 +1354,7 @@ class DIET(RasaModel):
             text_seq_ids,
             lm_mask_bool_text,
         ) = self._create_sequence(
-            tf_batch_data["text_features"],
+            tf_batch_data[TEXT_FEATURES],
             mask_text,
             self.text_name,
             self.config[MASKED_LM],
@@ -1365,10 +1375,10 @@ class DIET(RasaModel):
             # get _cls_ vector for intent classification
             cls = self._last_token(text_transformed, sequence_lengths)
 
-            label_ids = tf_batch_data["label_ids"][0]
+            label_ids = tf_batch_data[LABEL_IDS][0]
             label = self._create_bow(
-                tf_batch_data["label_features"],
-                tf_batch_data["label_mask"][0],
+                tf_batch_data[LABEL_FEATURES],
+                tf_batch_data[LABEL_MASK][0],
                 self.label_name,
             )
             loss, acc = self._label_loss(cls, label, label_ids)
@@ -1377,7 +1387,7 @@ class DIET(RasaModel):
             losses.append(loss)
 
         if self.config[ENTITY_RECOGNITION]:
-            tag_ids = tf_batch_data["tag_ids"][0]
+            tag_ids = tf_batch_data[TAG_IDS][0]
 
             loss, f1 = self._entity_loss(
                 text_transformed, tag_ids, mask_text, sequence_lengths
@@ -1395,11 +1405,11 @@ class DIET(RasaModel):
             batch_in, self.predict_data_signature
         )
 
-        mask_text = tf_batch_data["text_mask"][0]
+        mask_text = tf_batch_data[TEXT_MASK][0]
         sequence_lengths = self._get_sequence_lengths(mask_text)
 
         text_transformed, _, _, _ = self._create_sequence(
-            tf_batch_data["text_features"], mask_text, self.text_name
+            tf_batch_data[TEXT_FEATURES], mask_text, self.text_name
         )
 
         out = {}

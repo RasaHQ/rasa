@@ -62,6 +62,9 @@ from rasa.utils.tensorflow.constants import (
 
 logger = logging.getLogger(__name__)
 
+DIALOGUE_FEATURES = "dialogue_features"
+LABEL_FEATURES = "label_features"
+LABEL_IDS = "label_ids"
 
 SAVE_MODEL_FILE_NAME = "ted_policy"
 
@@ -219,27 +222,22 @@ class TEDPolicy(Policy):
     # noinspection PyPep8Naming
     def _label_features_for_Y(self, label_ids: np.ndarray) -> np.ndarray:
         """Prepare Y data for training: features for label_ids."""
+
+        all_label_features = self._label_data.get(LABEL_FEATURES)[0]
+
         is_full_dialogue_featurizer_used = len(label_ids.shape) == 2
         if is_full_dialogue_featurizer_used:
             return np.stack(
                 [
                     np.stack(
-                        [
-                            self._label_data.get("label_features")[0][label_idx]
-                            for label_idx in seq_label_ids
-                        ]
+                        [all_label_features[label_idx] for label_idx in seq_label_ids]
                     )
                     for seq_label_ids in label_ids
                 ]
             )
 
         # max history featurizer is used
-        return np.stack(
-            [
-                self._label_data.get("label_features")[0][label_idx]
-                for label_idx in label_ids
-            ]
-        )
+        return np.stack([all_label_features[label_idx] for label_idx in label_ids])
 
     # noinspection PyPep8Naming
     def _create_model_data(
@@ -257,10 +255,10 @@ class TEDPolicy(Policy):
             # to track correctly dynamic sequences
             label_ids = np.expand_dims(label_ids, -1)
 
-        model_data = RasaModelData(label_key="label_ids")
-        model_data.add_features("dialogue_features", [data_X])
-        model_data.add_features("label_features", [Y])
-        model_data.add_features("label_ids", [label_ids])
+        model_data = RasaModelData(label_key=LABEL_IDS)
+        model_data.add_features(DIALOGUE_FEATURES, [data_X])
+        model_data.add_features(LABEL_FEATURES, [Y])
+        model_data.add_features(LABEL_IDS, [label_ids])
 
         return model_data
 
@@ -271,7 +269,7 @@ class TEDPolicy(Policy):
         all_labels = all_labels.astype(np.float32)
 
         label_data = RasaModelData()
-        label_data.add_features("label_features", [all_labels])
+        label_data.add_features(LABEL_FEATURES, [all_labels])
         return label_data
 
     def train(
@@ -414,7 +412,7 @@ class TEDPolicy(Policy):
             model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl"
         )
 
-        model_data_example = RasaModelData(label_key="label_ids", data=loaded_data)
+        model_data_example = RasaModelData(label_key=LABEL_IDS, data=loaded_data)
         meta = train_utils.update_similarity_type(meta)
 
         model = TED.load(
@@ -430,8 +428,12 @@ class TEDPolicy(Policy):
 
         # build the graph for prediction
         predict_data_example = RasaModelData(
-            label_key="label_ids",
-            data={k: vs for k, vs in model_data_example.items() if "dialogue" in k},
+            label_key=LABEL_IDS,
+            data={
+                feature_name: features
+                for feature_name, features in model_data_example.items()
+                if DIALOGUE in feature_name
+            },
         )
         model.build_for_predict(predict_data_example)
 
@@ -485,12 +487,12 @@ class TED(RasaModel):
         self._prepare_layers()
 
     def _check_data(self) -> None:
-        if "dialogue_features" not in self.data_signature:
+        if DIALOGUE_FEATURES not in self.data_signature:
             raise ValueError(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
-        if "label_features" not in self.data_signature:
+        if LABEL_FEATURES not in self.data_signature:
             raise ValueError(
                 f"No label features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
@@ -551,7 +553,7 @@ class TED(RasaModel):
         )
 
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
-        all_labels = self.tf_label_data["label_features"][0]
+        all_labels = self.tf_label_data[LABEL_FEATURES][0]
         all_labels_embed = self._embed_label(all_labels)
 
         return all_labels, all_labels_embed
@@ -587,8 +589,8 @@ class TED(RasaModel):
     ) -> tf.Tensor:
         batch = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        dialogue_in = batch["dialogue_features"][0]
-        label_in = batch["label_features"][0]
+        dialogue_in = batch[DIALOGUE_FEATURES][0]
+        label_in = batch[LABEL_FEATURES][0]
 
         if self.max_history_tracker_featurizer_used:
             # add time dimension if max history featurizer is used
@@ -613,7 +615,7 @@ class TED(RasaModel):
     ) -> Dict[Text, tf.Tensor]:
         batch = self.batch_to_model_data_format(batch_in, self.predict_data_signature)
 
-        dialogue_in = batch["dialogue_features"][0]
+        dialogue_in = batch[DIALOGUE_FEATURES][0]
 
         if self.all_labels_embed is None:
             _, self.all_labels_embed = self._create_all_labels_embed()
