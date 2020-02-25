@@ -20,8 +20,8 @@ from rasa.nlu.constants import (
 class LanguageModelFeaturizer(DenseFeaturizer):
     """Featurizer using transformer based language models.
 
-        Uses the output of HFTransformersNLP component to set the sequence and sentence
-        level representations for dense featurizable attributes of each message object.
+    Uses the output of HFTransformersNLP component to set the sequence and sentence
+    level representations for dense featurizable attributes of each message object.
     """
 
     @classmethod
@@ -39,26 +39,32 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self._set_lm_features(example, attribute)
 
-    def get_doc(self, message: Message, attribute: Text) -> Any:
-
+    def _get_doc(self, message: Message, attribute: Text) -> Any:
+        """
+        Get the language model doc. A doc consists of
+        {'token_ids': ..., 'tokens': ...,
+        'sequence_features': ..., 'sentence_features': ...}
+        """
         return message.get(LANGUAGE_MODEL_DOCS[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
-
+        """Sets the dense features from the language model doc to the incoming
+        message."""
         self._set_lm_features(message)
 
     def _set_lm_features(self, message: Message, attribute: Text = TEXT) -> None:
         """Adds the precomputed word vectors to the messages features."""
+        doc = self._get_doc(message, attribute)
 
-        doc = self.get_doc(message, attribute)
+        if doc is None:
+            return
 
-        if doc is not None:
-            sequence_features = doc[SEQUENCE_FEATURES]
-            sentence_features = doc[SENTENCE_FEATURES]
+        sequence_features = doc[SEQUENCE_FEATURES]
+        sentence_features = doc[SENTENCE_FEATURES]
 
-            features = np.concatenate([sequence_features, sentence_features])
+        features = np.concatenate([sequence_features, sentence_features])
 
-            features = self._combine_with_existing_dense_features(
-                message, features, DENSE_FEATURE_NAMES[attribute]
-            )
-            message.set(DENSE_FEATURE_NAMES[attribute], features)
+        features = self._combine_with_existing_dense_features(
+            message, features, DENSE_FEATURE_NAMES[attribute]
+        )
+        message.set(DENSE_FEATURE_NAMES[attribute], features)

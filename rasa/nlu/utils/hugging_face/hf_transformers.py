@@ -214,8 +214,9 @@ class HFTransformersNLP(Component):
             actual_sequence_lengths.append(len(example_token_ids))
             max_seq_len = max(max_seq_len, len(example_token_ids))
         # Add padding according to max_seq_len
-        # Some models don't contain pad token, we use unknown token as padding token.This doesn't affect the computation
-        # since we compute an attention mask anyways.
+        # Some models don't contain pad token, we use unknown token as padding token.
+        # This doesn't affect the computation since we compute an attention mask
+        # anyways.
         for example_token_ids in batch_token_ids:
             padded_token_ids.append(
                 example_token_ids
@@ -297,7 +298,8 @@ class HFTransformersNLP(Component):
             batch_sequence_features,
         ) = self._get_model_features_for_batch(batch_token_ids)
 
-        # A doc consists of {'token_ids': ..., 'tokens': ..., 'sequence_features': ..., 'sentence_features': ...}
+        # A doc consists of
+        # {'token_ids': ..., 'tokens': ..., 'sequence_features': ..., 'sentence_features': ...}
         batch_docs = []
         for index in range(len(batch_examples)):
             doc = {
