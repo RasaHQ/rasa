@@ -1,28 +1,37 @@
 import asyncio
 import os
+import random
+import uuid
 
 from sanic.request import Request
 from sanic.testing import SanicTestClient
 
-from typing import Text, List, Tuple, Iterator
+from typing import Tuple, Iterator
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
+from pathlib import Path
 from sanic import Sanic
+from typing import Text, List, Optional, Dict, Any
+from unittest.mock import Mock
 
 from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
+from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel
 from rasa.core.channels.channel import RestInput
 from rasa.core.domain import SessionConfig
+from rasa.core.events import UserUttered
+from rasa.core.exporter import Exporter
 from rasa.core.policies import Policy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.core.run import _create_app_without_api
-from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
 from rasa.train import train_async
 from rasa.utils.common import TempDirectoryPath
+import rasa.utils.io as io_utils
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_NLU_DATA,
@@ -242,3 +251,32 @@ def get_test_client(server: Sanic) -> SanicTestClient:
     test_client = server.test_client
     test_client.port = None
     return test_client
+
+
+def write_endpoint_config_to_yaml(
+    path: Path, data: Dict[Text, Any], endpoints_filename: Text = "endpoints.yml"
+) -> Path:
+    endpoints_path = path / endpoints_filename
+
+    # write endpoints config to file
+    io_utils.write_yaml_file(data, endpoints_path)
+    return endpoints_path
+
+
+def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
+    return UserUttered(
+        uuid.uuid4().hex,
+        timestamp=timestamp if timestamp is not None else random.random(),
+    )
+
+
+class MockExporter(Exporter):
+    """Mocked `Exporter` object."""
+
+    def __init__(
+        self,
+        tracker_store: TrackerStore = Mock(),
+        event_broker: EventBroker = Mock(),
+        endpoints_path: Text = "",
+    ) -> None:
+        super().__init__(tracker_store, event_broker, endpoints_path)
