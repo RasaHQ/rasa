@@ -399,19 +399,19 @@ class PikaEventBroker(EventBroker):
     ) -> "BasicProperties":
         """Create RabbitMQ message `BasicProperties`.
 
-        The `app_id` property is set to the value of `self.rasa_environment`. In
+        The `app_id` property is set to the value of `self.rasa_environment` if
+        present, and the message delivery mode is set to 2 (persistent). In
         addition, the `headers` property is set if supplied.
 
         Args:
             headers: Message headers to add to the message properties of the
-                published message (key-value dictionary). The headers can be
-                retrieved in the consumer from the `headers` attribute of the message's
-                `BasicProperties`.
+            published message (key-value dictionary). The headers can be retrieved in
+            the consumer from the `headers` attribute of the message's
+            `BasicProperties`.
 
         Returns:
-            pika.spec.BasicProperties with the `RASA_ENVIRONMENT` environment
-            variable as the properties' `app_id` value. If this variable is unset, empty
-            pika.spec.BasicProperties.
+            `pika.spec.BasicProperties` with the `RASA_ENVIRONMENT` environment variable
+            as the properties' `app_id` value and `delivery_mode`=2.
 
         """
         from pika.spec import BasicProperties
@@ -420,10 +420,13 @@ class PikaEventBroker(EventBroker):
             "app_id": self.rasa_environment
         } if self.rasa_environment else {}
 
+        # make message persistent
+        kwargs["delivery_mode"] = 2
+
         if headers:
             kwargs["headers"] = headers
 
-        return BasicProperties(delivery_mode=2, **kwargs)  # make message persistent
+        return BasicProperties(**kwargs)
 
     def _basic_publish(
         self, body: Text, headers: Optional[Dict[Text, Text]] = None
