@@ -11,11 +11,6 @@ from rasa.nlu.constants import SPACY_DOCS
 if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc  # pytype: disable=import-error
 
-try:
-    import spacy
-except ImportError:
-    spacy = None
-
 
 POS_TAG_KEY = "pos"
 
@@ -47,6 +42,8 @@ class SpacyTokenizer(Tokenizer):
 
     @staticmethod
     def _tag_of_token(token: Any) -> Text:
+        import spacy
+
         if spacy.about.__version__ > "2" and token._.has("tag"):
             return token._.get("tag")
         else:

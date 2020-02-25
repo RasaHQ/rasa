@@ -197,8 +197,8 @@ class TEDPolicy(Policy):
 
         self.model = model
 
-        self._label_data = None  # RasaModelData
-        self.data_example = None  # Dict[Text, List[np.ndarray]]
+        self._label_data: Optional[RasaModelData] = None
+        self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         self.config = copy.deepcopy(self.defaults)

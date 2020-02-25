@@ -285,12 +285,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # keep the input tuple sizes in self.batch_in
         self.batch_tuple_sizes = batch_tuple_sizes
 
-        # encode all label_ids with numbers
+        self.num_tags: Optional[int] = None  # number of entity tags
         self._label_data: Optional[RasaModelData] = None
-
-        # number of entity tags
-        self.num_tags: Optional[int] = None
-
         self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
 
     @property
