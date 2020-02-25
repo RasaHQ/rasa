@@ -54,6 +54,7 @@ This is especially useful if you don’t have enough training data.
 The advantage of the :ref:`ConveRTFeaturizer` is that it doesn't treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence.
 However, ``ConveRT`` is only available in English.
+
 If your training data is not in English, but you still want to use pre-trained word embeddings, we recommend using
 the following pipeline:
 
@@ -66,7 +67,8 @@ It uses the :ref:`SpacyFeaturizer` instead of the :ref:`ConveRTFeaturizer`.
 
 If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
 and can train your model to be more domain specific.
-If you don't want to use pre-trained word embeddings, we recommend using the following pipeline:
+If there are no word embeddings for your language or you have very domain specific terminology,
+we recommend using the following pipeline:
 
 .. literalinclude:: ../../data/configs_for_docs/default_config.yml
     :language: yaml

@@ -397,7 +397,7 @@ ConveRTFeaturizer
         be used if your training data is in English language.
 
     .. note::
-        To use ``ConveRTFeaturizer`` you need to install additional TenorFlow libraries (``tensorflow_text`` and
+        To use ``ConveRTFeaturizer`` you need to install additional TensorFlow libraries (``tensorflow_text`` and
         ``tensorflow_hub``). You should do a pip install of Rasa with ``pip install rasa[convert]`` to install those.
 
 :Configuration:
