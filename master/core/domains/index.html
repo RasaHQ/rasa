@@ -289,7 +289,7 @@ for the things your bot can say.</p>
 </div>
 <div class="section" id="an-example-of-a-domain">
 <h2><a class="toc-backref" href="#id3">An example of a Domain</a><a class="headerlink" href="#an-example-of-a-domain" title="Permalink to this headline">¶</a></h2>
-<p>As an example, the <code class="docutils literal notranslate"><span class="pre">DefaultDomain</span></code> has the following yaml definition:</p>
+<p>As an example, the domain created by <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code> has the following yaml definition:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">goodbye</span>
@@ -334,7 +334,17 @@ for the things your bot can say.</p>
 </div>
 <p><strong>What does this mean?</strong></p>
 <p>Your NLU model will define the <code class="docutils literal notranslate"><span class="pre">intents</span></code> and <code class="docutils literal notranslate"><span class="pre">entities</span></code> that you
-need to include in the domain.</p>
+need to include in the domain. The <code class="docutils literal notranslate"><span class="pre">entities</span></code> section lists all entities
+extracted by any <a class="reference internal" href="../../nlu/entity-extraction/#entity-extraction"><span class="std std-ref">entity extractor</span></a> in your
+NLU pipeline.</p>
+<p>For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">entities</span><span class="p p-Indicator">:</span>
+   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">PERSON</span>          <span class="c1"># entity extracted by SpacyEntityExtractor</span>
+   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">time</span>            <span class="c1"># entity extracted by DucklingHTTPExtractor</span>
+   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">membership_type</span> <span class="c1"># custom entity extracted by CRFEntityExtractor</span>
+   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">priority</span>        <span class="c1"># custom entity extracted by CRFEntityExtractor</span>
+</pre></div>
+</div>
 <p><a class="reference internal" href="../slots/#slots"><span class="std std-ref">Slots</span></a> hold information you want to keep track of during a conversation.
 A categorical slot called <code class="docutils literal notranslate"><span class="pre">risk_level</span></code> would be
 defined like this:</p>
