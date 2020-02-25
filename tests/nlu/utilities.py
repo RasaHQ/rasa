@@ -1,5 +1,4 @@
 import tempfile
-
 import ruamel.yaml as yaml
 
 from rasa.nlu.config import RasaNLUModelConfig

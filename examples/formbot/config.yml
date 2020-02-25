@@ -2,15 +2,16 @@ language: en
 
 pipeline:
   - name: WhitespaceTokenizer
-  - name: CRFEntityExtractor
-  - name: EntitySynonymMapper
+  - name: LexicalSyntacticFeaturizer
   - name: CountVectorsFeaturizer
     token_pattern: (?u)\b\w+\b
-  - name: DIETClassifier
   - name: DucklingHTTPExtractor
     url: http://localhost:8000
     dimensions:
       - number
+  - name: DIETClassifier
+    epochs: 100
+  - name: EntitySynonymMapper
 
 policies:
   - name: FallbackPolicy

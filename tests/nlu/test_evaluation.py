@@ -271,13 +271,14 @@ def test_drop_intents_below_freq():
 
 
 def test_run_evaluation(unpacked_trained_moodbot_path):
-    data = DEFAULT_DATA_PATH
-
     result = run_evaluation(
-        data, os.path.join(unpacked_trained_moodbot_path, "nlu"), errors=False
+        DEFAULT_DATA_PATH,
+        os.path.join(unpacked_trained_moodbot_path, "nlu"),
+        errors=False,
     )
+
     assert result.get("intent_evaluation")
-    assert result.get("entity_evaluation").get("CRFEntityExtractor")
+    assert result.get("entity_evaluation").get("DIETClassifier")
 
 
 def test_run_cv_evaluation(pretrained_embeddings_spacy_config):

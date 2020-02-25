@@ -256,6 +256,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> None:
         """Declare instance variables with default values."""
 
+        if component_config is not None and EPOCHS not in component_config:
+            logger.warning(
+                f"Please configure the number of '{EPOCHS}' in your configuration file."
+                f" We will change the default value of '{EPOCHS}' in the future to 1. "
+            )
+
         super().__init__(component_config)
 
         self._check_config_parameters()
@@ -633,10 +639,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.data_example = {k: [v[:1] for v in vs] for k, vs in model_data.items()}
 
         self.model = self.model_class()(
-            model_data.get_signature(),
-            self._label_data,
-            self.inverted_tag_dict,
-            self.component_config,
+            data_signature=model_data.get_signature(),
+            label_data=self._label_data,
+            inverted_tag_dict=self.inverted_tag_dict,
+            config=self.component_config,
         )
 
         self.model.fit(
