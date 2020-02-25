@@ -1228,6 +1228,8 @@ EntitySynonymMapper
         pipeline:
         - name: "EntitySynonymMapper"
 
+.. _CRFEntityExtractor:
+
 CRFEntityExtractor
 ~~~~~~~~~~~~~~~~~~
 

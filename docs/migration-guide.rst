@@ -90,7 +90,8 @@ General
       # ... any other parameters
 
   See :ref:`diet-classifier` for more information about the new component.
-  The classifier ``EmbeddingIntentClassifier`` still exists out of now and behaves the same as before.
+  Specifying ``EmbeddingIntentClassifier`` in the configuration maps to the above component definition, the
+  behaviour is unchanged from previous versions.
 
 - ``CRFEntityExtractor`` is now deprecated and will be replaced by ``DIETClassifier`` in the future. If you want to
   get the same model behaviour as the current ``CRFEntityExtractor``, you can use the following configuration:
@@ -128,7 +129,8 @@ General
   We extracted the featurization from the component into the new featurizer :ref:``LexicalSyntacticFeaturizer``. Thus,
   in order to obtain the same results as before, you need to add this featurizer to your pipeline before the
   :ref:``diet-classifier``.
-  The entity extractor ``CRFEntityExtractor`` still exists out of now and behaves the same as before.
+   Specifying ``CRFEntityExtractor`` in the configuration maps to the above component definition, the behaviour
+  is unchanged from previous versions.
 
 .. _migration-to-rasa-1.7:
 
