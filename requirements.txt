@@ -15,6 +15,9 @@ absl-py>=0.8.0
 setuptools >= 41.0.0
 tensorflow-probability==0.7.0
 tensor2tensor==1.14.0
+# fixes https://github.com/RasaHQ/rasa/issues/5231
+# remove when removing `tensor2tensor`
+gym==0.15.4
 apscheduler==3.6.0
 tqdm==4.31.0
 networkx==2.4.0
@@ -29,7 +32,7 @@ twilio==6.26.3
 webexteamssdk==1.1.1
 rocketchat_API==0.6.31
 colorhash==1.0.2
-pika==1.0.1
+pika==1.1.0
 jsonschema==3.0.2
 packaging==19.0
 gevent==1.4.0
