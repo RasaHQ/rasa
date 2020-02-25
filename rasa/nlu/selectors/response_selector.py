@@ -48,6 +48,8 @@ from rasa.utils.tensorflow.constants import (
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
     RETRIEVAL_INTENT,
+    SOFTMAX,
+    AUTO,
 )
 from rasa.nlu.constants import (
     RESPONSE,
@@ -129,9 +131,9 @@ class ResponseSelector(DIETClassifier):
         # their similarity to the user input during training.
         NUM_NEG: 20,
         # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
-        SIMILARITY_TYPE: "auto",
+        SIMILARITY_TYPE: AUTO,
         # The type of the loss function, either 'softmax' or 'margin'.
-        LOSS_TYPE: "softmax",
+        LOSS_TYPE: SOFTMAX,
         # Number of top actions to normalize scores for loss type 'softmax'.
         # Set to 0 to turn off normalization.
         RANKING_LENGTH: 10,

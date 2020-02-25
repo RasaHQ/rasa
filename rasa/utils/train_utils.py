@@ -28,7 +28,11 @@ from rasa.utils.tensorflow.constants import (
     NEGATIVE_MARGIN_SCALE,
     DROP_RATE,
     EPOCHS,
-    EVALUATE_ONCE_PER_EPOCH,
+    SOFTMAX,
+    MARGIN,
+    AUTO,
+    INNER,
+    COSINE,
 )
 
 
@@ -60,11 +64,11 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
 
     Returns: updated model configuration
     """
-    if config.get(SIMILARITY_TYPE) == "auto":
-        if config[LOSS_TYPE] == "softmax":
-            config[SIMILARITY_TYPE] = "inner"
-        elif config[LOSS_TYPE] == "margin":
-            config[SIMILARITY_TYPE] = "cosine"
+    if config.get(SIMILARITY_TYPE) == AUTO:
+        if config[LOSS_TYPE] == SOFTMAX:
+            config[SIMILARITY_TYPE] = INNER
+        elif config[LOSS_TYPE] == MARGIN:
+            config[SIMILARITY_TYPE] = COSINE
 
     return config
 
@@ -123,7 +127,7 @@ def sequence_to_sentence_features(
 
 def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
     """
-    If EVAL_NUM_EPOCHS is set to -1, evaluate at the end of every epoch.
+    If EVAL_NUM_EPOCHS is set to -1, evaluate at the end of the training.
 
     Args:
         config: model configuration
@@ -131,7 +135,7 @@ def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
     Returns: updated model configuration
     """
 
-    if config[EVAL_NUM_EPOCHS] == EVALUATE_ONCE_PER_EPOCH:
+    if config[EVAL_NUM_EPOCHS] == -1:
         config[EVAL_NUM_EPOCHS] = config[EPOCHS]
     elif config[EVAL_NUM_EPOCHS] < 1:
         raise ValueError(

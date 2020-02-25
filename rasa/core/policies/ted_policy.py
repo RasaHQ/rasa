@@ -55,7 +55,8 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
-    EVALUATE_ONCE_PER_EPOCH,
+    SOFTMAX,
+    AUTO,
 )
 
 
@@ -123,9 +124,9 @@ class TEDPolicy(Policy):
         # their similarity to the user input during training.
         NUM_NEG: 20,
         # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
-        SIMILARITY_TYPE: "auto",
+        SIMILARITY_TYPE: AUTO,
         # The type of the loss function, either 'softmax' or 'margin'.
-        LOSS_TYPE: "softmax",
+        LOSS_TYPE: SOFTMAX,
         # Number of top actions to normalize scores for loss type 'softmax'.
         # Set to 0 to turn off normalization.
         RANKING_LENGTH: 10,
@@ -208,7 +209,10 @@ class TEDPolicy(Policy):
     # noinspection PyPep8Naming
     @staticmethod
     def _label_ids_for_Y(data_Y: np.ndarray) -> np.ndarray:
-        """Prepare Y data for training: extract label_ids."""
+        """Prepare Y data for training: extract label_ids.
+
+        label_ids are indices of labels, while `data_Y` contains one-hot encodings.
+        """
 
         return data_Y.argmax(axis=-1)
 
@@ -270,7 +274,6 @@ class TEDPolicy(Policy):
         label_data.add_features("label_features", [all_labels])
         return label_data
 
-    # training methods
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
@@ -330,6 +333,7 @@ class TEDPolicy(Policy):
 
         Return the list of probabilities for the next actions.
         """
+
         if self.model is None:
             return self._default_predictions(domain)
 
@@ -340,9 +344,10 @@ class TEDPolicy(Policy):
         output = self.model.predict(model_data)
 
         confidence = output["action_scores"].numpy()
+        # remove batch dimension and take the last prediction in the sequence
         confidence = confidence[0, -1, :]
 
-        if self.config[LOSS_TYPE] == "softmax" and self.config[RANKING_LENGTH] > 0:
+        if self.config[LOSS_TYPE] == SOFTMAX and self.config[RANKING_LENGTH] > 0:
             confidence = train_utils.normalize(confidence, self.config[RANKING_LENGTH])
 
         return confidence.tolist()

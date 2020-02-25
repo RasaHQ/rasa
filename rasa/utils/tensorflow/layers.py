@@ -4,7 +4,7 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
-from tensorflow.python.keras import initializers
+from rasa.utils.tensorflow.constants import SOFTMAX, MARGIN, COSINE, INNER
 
 logger = logging.getLogger(__name__)
 
@@ -139,10 +139,10 @@ class Embed(tf.keras.layers.Layer):
         super().__init__(name=f"embed_{layer_name_suffix}")
 
         self.similarity_type = similarity_type
-        if self.similarity_type and self.similarity_type not in {"cosine", "inner"}:
+        if self.similarity_type and self.similarity_type not in {COSINE, INNER}:
             raise ValueError(
                 f"Wrong similarity type '{self.similarity_type}', "
-                f"should be 'cosine' or 'inner'"
+                f"should be '{COSINE}' or '{INNER}'"
             )
 
         regularizer = tf.keras.regularizers.l2(reg_lambda)
@@ -155,7 +155,7 @@ class Embed(tf.keras.layers.Layer):
 
     def call(self, x: tf.Tensor) -> tf.Tensor:
         x = self._dense(x)
-        if self.similarity_type == "cosine":
+        if self.similarity_type == COSINE:
             x = tf.nn.l2_normalize(x, -1)
 
         return x
@@ -409,7 +409,7 @@ class DotProductLoss(tf.keras.layers.Layer):
 
     @staticmethod
     def confidence_from_sim(sim: tf.Tensor, similarity_type: Text) -> tf.Tensor:
-        if similarity_type == "cosine":
+        if similarity_type == COSINE:
             # clip negative values to zero
             return tf.nn.relu(sim)
         else:
@@ -555,14 +555,14 @@ class DotProductLoss(tf.keras.layers.Layer):
     def _chosen_loss(self) -> Callable:
         """Use loss depending on given option."""
 
-        if self.loss_type == "margin":
+        if self.loss_type == MARGIN:
             return self._loss_margin
-        elif self.loss_type == "softmax":
+        elif self.loss_type == SOFTMAX:
             return self._loss_softmax
         else:
             raise ValueError(
                 f"Wrong loss type '{self.loss_type}', "
-                f"should be 'margin' or 'softmax'"
+                f"should be '{MARGIN}' or '{SOFTMAX}'"
             )
 
     def call(

@@ -53,4 +53,8 @@ BILOU_FLAG = "BILOU_flag"
 
 RETRIEVAL_INTENT = "retrieval_intent"
 
-EVALUATE_ONCE_PER_EPOCH = -1
+SOFTMAX = "softmax"
+MARGIN = "margin"
+AUTO = "auto"
+INNER = "inner"
+COSINE = "cosine"
