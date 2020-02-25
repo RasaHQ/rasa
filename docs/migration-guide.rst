@@ -15,6 +15,11 @@ how you can migrate from one version to another.
 
 Rasa 1.7 to Rasa 1.8
 --------------------
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  It is not possible to load previously trained models. Please make sure to retrain a
+  model before trying to use it with this improved version.
 
 General
 ~~~~~~~
@@ -36,8 +41,10 @@ General
   ``epochs``. ``max_history`` is particularly important and strongly depends on your stories.
   Please see the docs of the :ref:`ted_policy` if you want to customize them.
 
-- All pre-defined pipeline templates are deprecated. Take a look at :ref:`choosing-a-pipeline`
-  to decide on what components you should use in your configuration file.
+- All pre-defined pipeline templates are deprecated. **Any templates you use will be
+  mapped to the new configuration, but the underlying architecture is the same**.
+  Take a look at :ref:`choosing-a-pipeline` to decide on what components you should use
+  in your configuration file.
 
 - The :ref:`embedding_policy` was renamed to :ref:`ted_policy`. The functionality of the policy stayed the same.
   Please update your configuration files to use ``TEDPolicy`` instead of ``EmbeddingPolicy``.
@@ -129,7 +136,7 @@ General
   We extracted the featurization from the component into the new featurizer :ref:``LexicalSyntacticFeaturizer``. Thus,
   in order to obtain the same results as before, you need to add this featurizer to your pipeline before the
   :ref:``diet-classifier``.
-   Specifying ``CRFEntityExtractor`` in the configuration maps to the above component definition, the behaviour
+  Specifying ``CRFEntityExtractor`` in the configuration maps to the above component definition, the behaviour
   is unchanged from previous versions.
 
 .. _migration-to-rasa-1.7:

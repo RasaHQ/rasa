@@ -123,7 +123,7 @@ is pre-trained in the language specific to your training data.
 For example, there are chinese (``bert-base-chinese``) and japanese (``bert-base-japanese``) variants of the BERT model.
 A full list of different variants of
 these language models is available in the
-`official documentation of the transformers library <https://huggingface.co/transformers/pretrained_models.html>_`.
+`official documentation of the transformers library <https://huggingface.co/transformers/pretrained_models.html>`_.
 
 ``SpacyFeaturizer`` also provides word embeddings in many different languages (see :ref:`pretrained-word-vectors`),
 so you can use this as another alternative, depending on the language of your training data.
@@ -419,14 +419,14 @@ the default components that make up the ``supervised_embeddings`` pipeline:
 
 .. literalinclude:: ../../data/configs_for_docs/supervised_embeddings_config_2.yml
     :language: yaml
-    
+
 So for example, if your chosen language is not whitespace-tokenized (words are not separated by spaces), you
 can replace the ``WhitespaceTokenizer`` with your own tokenizer. We support a number of different :ref:`tokenizers <tokenizers>`,
 or you can :ref:`create your own <custom-nlu-components>`.
 
-The pipeline uses two instances of ``CountVectorsFeaturizer``. The first one 
-featurizes text based on words. The second one featurizes text based on character 
-n-grams, preserving word boundaries. We empirically found the second featurizer 
+The pipeline uses two instances of ``CountVectorsFeaturizer``. The first one
+featurizes text based on words. The second one featurizes text based on character
+n-grams, preserving word boundaries. We empirically found the second featurizer
 to be more powerful, but we decided to keep the first featurizer as well to make
 featurization more robust.
 
