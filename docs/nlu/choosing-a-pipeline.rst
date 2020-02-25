@@ -17,7 +17,7 @@ it on your dataset.
     We deprecated all existing pipeline templates, e.g.
     :ref:`supervised_embeddings <section_supervised_embeddings_pipeline>`,
     :ref:`pretrained_embeddings_spacy <section_pretrained_embeddings_spacy_pipeline>` and
-    :ref:`pretrained_embeddings_convert <section_pretrained_embeddings_convert_pipeline>`. Please, list any
+    :ref:`pretrained_embeddings_convert <section_pretrained_embeddings_convert_pipeline>`. Please list any
     components you want to use directly in the configuration file.
 
 The Short Answer
@@ -37,7 +37,7 @@ In case your training data is in a different language than English, use the foll
 A Longer Answer
 ---------------
 
-We recommend to use the following pipeline, if your training data is in English:
+We recommend using following pipeline, if your training data is in English:
 
 .. literalinclude:: ../../data/configs_for_docs/default_english_config.yml
     :language: yaml
@@ -50,7 +50,7 @@ This is especially useful if you don’t have enough training data.
 The advantage of the ``ConveRTFeaturizer`` is that it doesn't treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence.
 However, ``ConveRT`` is only available in English.
-If your training data is not in English, we recommend to use the following pipeline:
+If your training data is not in English, we recommend using the following pipeline:
 
 .. literalinclude:: ../../data/configs_for_docs/default_config.yml
     :language: yaml
@@ -123,7 +123,7 @@ is pre-trained in the language specific to your training data.
 For example, there are chinese (``bert-base-chinese``) and japanese (``bert-base-japanese``) variants of the BERT model.
 A full list of different variants of
 these language models is available in the
-`official documentation of the transformers library <https://huggingface.co/transformers/pretrained_models.html>_`.
+`official documentation of the transformers library <https://huggingface.co/transformers/pretrained_models.html>`_.
 
 ``SpacyFeaturizer`` also provides word embeddings in many different languages (see :ref:`pretrained-word-vectors`),
 so you can use this as another alternative, depending on the language of your training data.
@@ -134,7 +134,7 @@ Entity Recognition / Intent Classification / Response Selectors
 Depending on your data you may want to only perform intent classification, entity recognition or response selection.
 Or you might want to combine multiple of those tasks.
 We support several components for each of the task. All of them are listed in :ref:`components`.
-We recommend to use :ref:`diet-classifier` for intent classification and entity recognition
+We recommend using :ref:`diet-classifier` for intent classification and entity recognition
 and :ref:`response-selector` for response selection.
 
 Comparing different pipelines for your data
@@ -181,7 +181,7 @@ You'll also need to define these flags in whichever tokenizer you are using:
     - ``intent_tokenization_flag``: Set it to ``True``, so that intent labels are tokenized.
     - ``intent_split_symbol``: Set it to the delimiter string that splits the intent labels. Default ``_``.
 
-Read a `tutotiral <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`__
+Read a `tutorial <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`__
 on how to use multiple intents in Rasa.
 
 Here's an example configuration:
@@ -419,14 +419,14 @@ the default components that make up the ``supervised_embeddings`` pipeline:
 
 .. literalinclude:: ../../data/configs_for_docs/supervised_embeddings_config_2.yml
     :language: yaml
-    
+
 So for example, if your chosen language is not whitespace-tokenized (words are not separated by spaces), you
 can replace the ``WhitespaceTokenizer`` with your own tokenizer. We support a number of different :ref:`tokenizers <tokenizers>`,
 or you can :ref:`create your own <custom-nlu-components>`.
 
-The pipeline uses two instances of ``CountVectorsFeaturizer``. The first one 
-featurizes text based on words. The second one featurizes text based on character 
-n-grams, preserving word boundaries. We empirically found the second featurizer 
+The pipeline uses two instances of ``CountVectorsFeaturizer``. The first one
+featurizes text based on words. The second one featurizes text based on character
+n-grams, preserving word boundaries. We empirically found the second featurizer
 to be more powerful, but we decided to keep the first featurizer as well to make
 featurization more robust.
 

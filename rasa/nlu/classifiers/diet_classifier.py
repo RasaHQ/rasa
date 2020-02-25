@@ -621,8 +621,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         model_data = self.preprocess_train_data(training_data)
         if model_data.is_empty():
-            logger.error(
-                f"Can not train '{self.__class__.__name__}'. No data was provided. "
+            logger.debug(
+                f"Cannot train '{self.__class__.__name__}'. No data was provided. "
                 f"Skipping training of the classifier."
             )
             return
@@ -630,7 +630,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self.component_config.get(INTENT_CLASSIFICATION):
             if not self._check_enough_labels(model_data):
                 logger.error(
-                    f"Can not train '{self.__class__.__name__}'. "
+                    f"Cannot train '{self.__class__.__name__}'. "
                     f"Need at least 2 different intent classes. "
                     f"Skipping training of classifier."
                 )
@@ -658,7 +658,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     # process helpers
     def _predict(self, message: Message) -> Optional[Dict[Text, tf.Tensor]]:
         if self.model is None:
-            logger.error(
+            logger.debug(
                 "There is no trained model: component is either not trained or "
                 "didn't receive enough training data."
             )
@@ -838,8 +838,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Loads the trained model from the provided directory."""
 
         if not model_dir or not meta.get("file"):
-            warnings.warn(
-                f"Failed to load nlu model. "
+            logger.debug(
+                f"Failed to load model. "
                 f"Maybe the path '{os.path.abspath(model_dir)}' doesn't exist?"
             )
             return cls(component_config=meta)

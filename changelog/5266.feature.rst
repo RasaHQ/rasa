@@ -1,12 +1,14 @@
-Added a new NLU component ``DIETClassifier`` and a new policy ``TEDPolicy``.
+Added a new NLU component :ref:`DIETClassifier <diet-classifier>` and a new policy :ref:`TEDPolicy <ted-policy>`.
 
 DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
 recognition. You can read more about this component in our :ref:`documentation <diet-classifier>`.
-The new component will replace the ``EmbeddingIntentClassifier`` and the ``CRFEntityExtractor`` in the future.
+The new component will replace the :ref:`EmbeddingIntentClassifier <embedding-intent-classifier>` and the
+:ref:`CRFEntityExtractor` in the future.
 Those two components are deprecated from now on.
 See :ref:`migration guide <migration-to-rasa-1.8>` for details on how to
 switch to the new component.
 
-``TEDPolicy`` is the new name for ``EmbeddingPolicy``. ``EmbeddingPolicy`` is deprecated from now on.
-The functionality of ``TEDPolicy`` and ``EmbeddingPolicy`` is the same. Please update your configuration file
-to use the new name for the policy.
+:ref:`TEDPolicy <ted-policy>` is the new name for :ref:`EmbeddingPolicy <embedding_policy>`.
+``EmbeddingPolicy`` is deprecated from now on.
+The functionality of ``TEDPolicy`` and ``EmbeddingPolicy`` is the same.
+Please update your configuration file to use the new name for the policy.

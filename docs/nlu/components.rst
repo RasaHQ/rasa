@@ -1017,90 +1017,90 @@ ResponseSelector
             # and labels.
             # The number of hidden layers is equal to the length of the corresponding
             # list.
-            hidden_layers_sizes: {"text": [256, 128], "label": [256, 128]},
+            hidden_layers_sizes: {"text": [256, 128], "label": [256, 128]}
             # Whether to share the hidden layer weights between input words and responses
-            "share_hidden_layers": False,
+            "share_hidden_layers": False
             # Number of units in transformer
-            "transformer_size": None,
+            "transformer_size": None
             # Number of transformer layers
-            "number_of_transformer_layers": 0,
+            "number_of_transformer_layers": 0
             # Number of attention heads in transformer
-            "number_of_attention_heads": 4,
+            "number_of_attention_heads": 4
             # If 'True' use key relative embeddings in attention
-            "use_key_relative_attention": False,
+            "use_key_relative_attention": False
             # If 'True' use key relative embeddings in attention
-            "use_value_relative_attention": False,
+            "use_value_relative_attention": False
             # Max position for relative embeddings
-            "max_relative_position": None,
+            "max_relative_position": None
             # Use a unidirectional or bidirectional encoder.
-            "unidirectional_encoder": False,
+            "unidirectional_encoder": False
             # ## Training parameters
             # Initial and final batch sizes:
             # Batch size will be linearly increased for each epoch.
-            "batch_size": [64, 256],
+            "batch_size": [64, 256]
             # Strategy used when creating batches.
             # Can be either 'sequence' or 'balanced'.
-            "batch_strategy": "balanced",
+            "batch_strategy": "balanced"
             # Number of epochs to train
-            "epochs": 300,
+            "epochs": 300
             # Set random seed to any 'int' to get reproducible results
-            "random_seed": None,
+            "random_seed": None
             # Initial learning rate for the optimizer
-            "learning_rate": 0.001,
+            "learning_rate": 0.001
             # ## Parameters for embeddings
             # Dimension size of embedding vectors
-            "embedding_dimension": 20,
+            "embedding_dimension": 20
             # Default dense dimension to use if no dense features are present.
-            "dense_dimension": {TEXT: 512, LABEL: 512},
+            "dense_dimension": {"text": 512, "label": 512}
             # The number of incorrect labels. The algorithm will minimize
             # their similarity to the user input during training.
-            "number_of_negative_examples": 20,
+            "number_of_negative_examples": 20
             # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
-            "similarity_type": "auto",
+            "similarity_type": "auto"
             # The type of the loss function, either 'softmax' or 'margin'.
-            "loss_type": "softmax",
+            "loss_type": "softmax"
             # Number of top actions to normalize scores for loss type 'softmax'.
             # Set to 0 to turn off normalization.
-            "ranking_length": 10,
+            "ranking_length": 10
             # Indicates how similar the algorithm should try to make embedding vectors
             # for correct labels.
             # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
-            "maximum_positive_similarity": 0.8,
+            "maximum_positive_similarity": 0.8
             # Maximum negative similarity for incorrect labels.
             # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
-            "maximum_negative_similarity": -0.4,
+            "maximum_negative_similarity": -0.4
             # If 'True' the algorithm only minimizes maximum similarity over
             # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
-            "use_maximum_negative_similarity": True,
+            "use_maximum_negative_similarity": True
             # Scale loss inverse proportionally to confidence of correct prediction
-            "scale_loss": True,
+            "scale_loss": True
             # ## Regularization parameters
             # The scale of regularization
-            "regularization_constant": 0.002,
+            "regularization_constant": 0.002
             # Sparsity of the weights in dense layers
-            "weight_sparsity": 0.8,
+            "weight_sparsity": 0.8
             # The scale of how important is to minimize the maximum similarity
             # between embeddings of different labels.
-            "negative_margin_scale": 0.8,
+            "negative_margin_scale": 0.8
             # Dropout rate for encoder
-            "drop_rate": 0.2,
+            "drop_rate": 0.2
             # Dropout rate for attention
-            "drop_rate_attention": 0,
+            "drop_rate_attention": 0
             # If 'True' apply dropout to sparse tensors
-            "use_sparse_input_dropout": False,
+            "use_sparse_input_dropout": False
             # ## Evaluation parameters
             # How often calculate validation accuracy.
             # Small values may hurt performance, e.g. model accuracy.
-            "evaluate_every_number_of_epochs": 20,
+            "evaluate_every_number_of_epochs": 20
             # How many examples to use for hold out validation set
             # Large values may hurt performance, e.g. model accuracy.
-            "evaluate_on_number_of_examples": 0,
+            "evaluate_on_number_of_examples": 0
             # ## Selector config
             # If 'True' random tokens of the input message will be masked and the model
             # should predict those tokens.
-            "use_masked_language_model": False,
+            "use_masked_language_model": False
             # Name of the intent for which this response selector is to be trained
-            "retrieval_intent: None,
+            "retrieval_intent: None
 
 
 Entity Extractors
@@ -1227,6 +1227,8 @@ EntitySynonymMapper
 
         pipeline:
         - name: "EntitySynonymMapper"
+
+.. _CRFEntityExtractor:
 
 CRFEntityExtractor
 ~~~~~~~~~~~~~~~~~~
