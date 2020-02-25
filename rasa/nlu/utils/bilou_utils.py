@@ -10,6 +10,7 @@ BILOU_PREFIXES = ["B-", "I-", "U-", "L-"]
 
 def bilou_prefix_from_tag(tag: Text) -> Optional[Text]:
     """Remove the BILOU prefix from the given tag."""
+
     if tag[:2] in BILOU_PREFIXES:
         return tag[0]
     return None
@@ -17,6 +18,7 @@ def bilou_prefix_from_tag(tag: Text) -> Optional[Text]:
 
 def entity_name_from_tag(tag: Text) -> Text:
     """Remove the BILOU prefix from the given tag."""
+
     if tag[:2] in BILOU_PREFIXES:
         return tag[2:]
     return tag
@@ -24,6 +26,7 @@ def entity_name_from_tag(tag: Text) -> Text:
 
 def tags_to_ids(message: Message, tag_id_dict: Dict[Text, int]) -> List[int]:
     """Maps the entity tags of the message to the ids of the provided dict."""
+
     if message.get(BILOU_ENTITIES):
         _tags = [
             tag_id_dict[_tag] if _tag in tag_id_dict else tag_id_dict["O"]
@@ -37,11 +40,13 @@ def tags_to_ids(message: Message, tag_id_dict: Dict[Text, int]) -> List[int]:
 
 def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
     """Remove the BILOU prefixes from the given tags."""
+
     return [entity_name_from_tag(t) for t in tags]
 
 
 def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, int]:
     """Create a mapping of unique tags to ids."""
+
     distinct_tags = set(
         [
             entity_name_from_tag(e)
@@ -56,14 +61,16 @@ def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, int]:
         for idx_1, tag in enumerate(sorted(distinct_tags))
         for idx_2, prefix in enumerate(BILOU_PREFIXES)
     }
+    # "O" corresponds to non-entity which should correspond to 0 index
+    # needed for correct prediction for padding
     tag_id_dict["O"] = 0
 
     return tag_id_dict
 
 
 def apply_bilou_schema(training_data: TrainingData):
-    """Obtains a list of BILOU entity tags and sets them on the corresponding
-    message."""
+    """Gets a list of BILOU entity tags and sets them on the corresponding message."""
+
     for message in training_data.training_examples:
         entities = message.get(ENTITIES)
 

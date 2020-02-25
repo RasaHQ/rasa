@@ -254,7 +254,7 @@ class ResponseSelector(DIETClassifier):
             training_data.intent_examples, label_id_dict, label_attribute=RESPONSE
         )
 
-        self.check_input_dimension_consistency(model_data)
+        self._check_input_dimension_consistency(model_data)
 
         return model_data
 

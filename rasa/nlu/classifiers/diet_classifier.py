@@ -308,22 +308,22 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         }
 
     def _create_tag_id_dict(self, training_data: TrainingData) -> Dict[Text, int]:
-        """Create label_id dictionary"""
+        """Create tag_id dictionary"""
 
         if self.component_config[BILOU_FLAG]:
             return bilou_utils.build_tag_id_dict(training_data)
 
         distinct_tag_ids = set(
-            [
-                e["entity"]
-                for example in training_data.entity_examples
-                for e in example.get(ENTITIES)
-            ]
+            e["entity"]
+            for example in training_data.entity_examples
+            for e in example.get(ENTITIES)
         ) - {None}
 
         tag_id_dict = {
             tag_id: idx for idx, tag_id in enumerate(sorted(distinct_tag_ids), 1)
         }
+        # "O" corresponds to non-entity which should correspond to 0 index
+        # needed for correct prediction for padding
         tag_id_dict["O"] = 0
 
         return tag_id_dict
@@ -351,15 +351,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _check_labels_features_exist(
         labels_example: List[Message], attribute: Text
     ) -> bool:
-        """Check if all labels have features set"""
+        """Checks if all labels have features set."""
 
-        for label_example in labels_example:
-            if (
-                label_example.get(SPARSE_FEATURE_NAMES[attribute]) is None
-                and label_example.get(DENSE_FEATURE_NAMES[attribute]) is None
-            ):
-                return False
-        return True
+        return all(
+            label_example.get(SPARSE_FEATURE_NAMES[attribute]) is not None
+            or label_example.get(DENSE_FEATURE_NAMES[attribute]) is not None
+            for label_example in labels_example
+        )
 
     def _extract_features(
         self, message: Message, attribute: Text
@@ -380,9 +378,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                     f"don't coincide in '{message.text}' for attribute '{attribute}'."
                 )
 
-        # To speed up training take only the CLS token vector as feature if we don't
-        # use the transformer and we don't want to do entity recognition. We would
-        # not make use of the sequence anyway in this setup.  Carrying over
+        # If we don't use the transformer and we don't want to do entity recognition,
+        # to speed up training take only the sentence features as feature vector.
+        # It corresponds to the feature vector for the last token - CLS token.
+        # We would not make use of the sequence anyway in this setup. Carrying over
         # those features to the actual training process takes quite some time.
         if (
             self.component_config[NUM_TRANSFORMER_LAYERS] == 0
@@ -394,9 +393,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return sparse_features, dense_features
 
-    def check_input_dimension_consistency(self, model_data: RasaModelData) -> None:
-        """Checks if text features and label features have the same dimensionality if
-        hidden layers are shared."""
+    def _check_input_dimension_consistency(self, model_data: RasaModelData) -> None:
+        """Checks if features have same dimensionality if hidden layers are shared."""
+
         if self.component_config.get(SHARE_HIDDEN_LAYERS):
             num_text_features = model_data.feature_dimension("text_features")
             num_label_features = model_data.feature_dimension("label_features")
@@ -410,7 +409,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _extract_labels_precomputed_features(
         self, label_examples: List[Message], attribute: Text = INTENT
     ) -> List[np.ndarray]:
-        """Collect precomputed encodings"""
+        """Collects precomputed encodings."""
 
         sparse_features = []
         dense_features = []
@@ -431,7 +430,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _compute_default_label_features(
         labels_example: List[Message],
     ) -> List[np.ndarray]:
-        """Compute one-hot representation for the labels"""
+        """Computes one-hot representation for the labels."""
 
         return [
             np.array(
@@ -601,7 +600,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         self.num_tags = len(self.inverted_tag_dict)
 
-        self.check_input_dimension_consistency(model_data)
+        self._check_input_dimension_consistency(model_data)
 
         return model_data
 
