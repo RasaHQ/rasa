@@ -827,11 +827,12 @@ EmbeddingIntentClassifier
 
         - regularization:
 
-            - ``regularization_constant`` sets the scale of L2 regularization.
+            - ``regularization_constant`` sets the scale of L2 regularization. Higher values will result in more
+              regularization.
             - ``negative_margin_scale`` sets the scale of how important is to minimize
               the maximum similarity between embeddings of different intent labels.
             - ``drop_rate`` sets the dropout rate, it should be
-              between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units.
+              between ``0`` and ``1``, e.g. ``drop_rate=0.1`` would drop out ``10%`` of input units.
             - ``weight_sparsity`` sets the sparsity of the weght kernels in dense layers.
             - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not.
 
@@ -1522,13 +1523,14 @@ DIETClassifier
 
         - regularization:
 
-            - ``regularization_constant`` sets the scale of L2 regularization.
+            - ``regularization_constant`` sets the scale of L2 regularization. Higher values will result in more
+              regularization.
             - ``negative_margin_scale`` sets the scale of how important is to minimize
               the maximum similarity between embeddings of different intent labels.
-            - ``droprate`` sets the dropout rate, it should be
-              between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units.
-            - ``droprate_attention`` sets the dropout rate for attention, it should be
-              between ``0`` and ``1``, e.g. ``droprate_attention=0.1`` would drop out ``10%`` of input units.
+            - ``drop_rate`` sets the dropout rate, it should be
+              between ``0`` and ``1``, e.g. ``drop_rate=0.1`` would drop out ``10%`` of input units.
+            - ``drop_rate_attention`` sets the dropout rate for attention, it should be
+              between ``0`` and ``1``, e.g. ``drop_rate_attention=0.1`` would drop out ``10%`` of input units.
             - ``weight_sparsity`` sets the sparsity of weight kernels in dense layers.
             - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not.
 

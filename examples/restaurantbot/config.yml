@@ -7,21 +7,6 @@ pipeline:
   - name: "LexicalSyntacticFeaturizer"
   - name: "DIETClassifier"
     epochs: 100
-    features: [
-      ["low", "title", "upper"],
-      [
-        "low",
-        "prefix5",
-        "prefix2",
-        "suffix5",
-        "suffix3",
-        "suffix2",
-        "upper",
-        "title",
-        "digit",
-      ],
-      ["low", "title", "upper"],
-    ]
   - name: "EntitySynonymMapper"
 
 policies:

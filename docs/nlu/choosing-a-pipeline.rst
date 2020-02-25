@@ -56,7 +56,7 @@ If your training data is not in English, we recommend to use the following pipel
     :language: yaml
 
 It uses the :ref:`SpacyFeaturizer` instead of the :ref:`ConveRTFeaturizer`.
-``SpacyFeaturizer`` provides pre-trained word embeddings in many different languages
+``SpacyFeaturizer`` provides pre-trained word embeddings from either GloVe or fastText in many different languages
 (see :ref:`pretrained-word-vectors`).
 
 .. note::
@@ -131,7 +131,8 @@ So, this featurizer can also be an alternate option depending on the language of
 
 Entity Recognition / Intent Classification / Response Selectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Depending on your data you may want to only perform intent classification or entity recognition.
+Depending on your data you may want to only perform intent classification, entity recognition or response selection.
+Or you might want to combine multiple of those tasks.
 We support several components for each of the task. All of them are listed in :ref:`components`.
 We recommend to use :ref:`diet-classifier` for intent classification and entity recognition
 and :ref:`response-selector` for response selection.
