@@ -1,4 +1,4 @@
-from typing import List, Tuple, Text, Optional, Dict, Set
+from typing import List, Tuple, Text, Optional, Dict, Set, Any
 
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message
@@ -74,7 +74,7 @@ def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, int]:
     return tag_id_dict
 
 
-def apply_bilou_schema(training_data: TrainingData):
+def apply_bilou_schema(training_data: TrainingData) -> None:
     """Gets a list of BILOU entity tags and sets them on the corresponding message."""
 
     for message in training_data.training_examples:
@@ -92,7 +92,7 @@ def apply_bilou_schema(training_data: TrainingData):
 def map_message_entities(message: Message) -> List[Tuple[int, int, Text]]:
     """Maps the entities of the given message to their start, end, and tag values."""
 
-    def convert_entity(entity):
+    def convert_entity(entity: Dict[Text, Any]) -> Tuple[int, int, Text]:
         return entity["start"], entity["end"], entity["entity"]
 
     return [convert_entity(entity) for entity in message.get(ENTITIES, [])]
@@ -113,7 +113,9 @@ def bilou_tags_from_offsets(
     bilou = ["-" for _ in tokens]
 
     # Handle entity cases
-    _handle_entities(bilou, entities, end_pos_to_token_idx, start_pos_to_token_idx)
+    _add_bilou_tags_to_entities(
+        bilou, entities, end_pos_to_token_idx, start_pos_to_token_idx
+    )
 
     # Now distinguish the O cases from ones where we miss the tokenization
     entity_positions = _get_entity_positions(entities)
@@ -122,7 +124,7 @@ def bilou_tags_from_offsets(
     return bilou
 
 
-def _handle_entities(
+def _add_bilou_tags_to_entities(
     bilou: List[Text],
     entities: List[Tuple[int, int, Text]],
     end_pos_to_token_idx: Dict[int, int],

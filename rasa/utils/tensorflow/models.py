@@ -82,21 +82,26 @@ class RasaModel(tf.keras.models.Model):
         val_results = {}  # validation is not performed every epoch
         progress_bar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
-        for ep in progress_bar:
-            ep_batch_size = self.linearly_increasing_batch_size(ep, batch_size, epochs)
+        for epoch in progress_bar:
+            epoch_batch_size = self.linearly_increasing_batch_size(
+                epoch, batch_size, epochs
+            )
 
             self._batch_loop(
-                train_dataset_function, tf_train_on_batch_function, ep_batch_size, True
+                train_dataset_function,
+                tf_train_on_batch_function,
+                epoch_batch_size,
+                True,
             )
 
             postfix_dict = self._get_metric_results()
 
             if evaluate_on_num_examples > 0:
-                if self._should_evaluate(evaluate_every_num_epochs, epochs, ep):
+                if self._should_evaluate(evaluate_every_num_epochs, epochs, epoch):
                     self._batch_loop(
                         evaluation_dataset_function,
                         tf_evaluation_on_batch_function,
-                        ep_batch_size,
+                        epoch_batch_size,
                         False,
                     )
                     val_results = self._get_metric_results(prefix="val_")
