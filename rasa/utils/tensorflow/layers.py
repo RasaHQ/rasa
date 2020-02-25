@@ -373,6 +373,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         neg_embeds = self._sample_idxs(target_size, embeds_flat, neg_ids)
         bad_negs = self._get_bad_mask(labels_flat, target_labels_flat, neg_ids)
 
+        # check if inputs have sequence dimension
         if len(target_labels.shape) == 3:
             # tensors were flattened for sampling, reshape back
             # add sequence dimension if it was present in the inputs
@@ -561,6 +562,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         if self.scale_loss:
             # mask loss by prediction confidence
             pos_pred = tf.stop_gradient(tf.nn.softmax(logits)[..., 0])
+            # the scaling parameters are found empirically
             scale_mask = mask * tf.pow(tf.minimum(0.5, 1 - pos_pred) / 0.5, 4)
             # scale loss
             loss *= scale_mask
