@@ -564,7 +564,7 @@ class TED(RasaModel):
 
         # mask different length sequences
         # if there is at least one `-1` it should be masked
-        mask = tf.sign(tf.reduce_max(dialogue_in, -1) + 1)
+        mask = tf.sign(tf.reduce_max(dialogue_in, axis=-1) + 1)
 
         dialogue = self._tf_layers[f"ffnn.{DIALOGUE}"](dialogue_in, self._training)
         dialogue_transformed = self._tf_layers["transformer"](

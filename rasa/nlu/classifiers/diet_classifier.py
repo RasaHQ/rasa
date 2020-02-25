@@ -1152,7 +1152,7 @@ class DIET(RasaModel):
 
     @staticmethod
     def _get_sequence_lengths(mask: tf.Tensor) -> tf.Tensor:
-        return tf.cast(tf.reduce_sum(mask[:, :, 0], 1), tf.int32)
+        return tf.cast(tf.reduce_sum(mask[:, :, 0], axis=1), tf.int32)
 
     def _combine_sparse_dense_features(
         self,
@@ -1359,7 +1359,7 @@ class DIET(RasaModel):
 
         if self.config[MASKED_LM]:
             loss, acc = self._mask_loss(
-                text_transformed, text_in, text_seq_ids, lm_mask_bool_text, "text"
+                text_transformed, text_in, text_seq_ids, lm_mask_bool_text, TEXT
             )
             self.mask_loss.update_state(loss)
             self.mask_acc.update_state(acc)

@@ -302,12 +302,10 @@ class MultiHeadAttention(tf.keras.layers.Layer):
           a Tensor with shape [batch, length, channels]
         """
 
-        x = tf.transpose(
-            x, perm=[0, 2, 1, 3]
-        )  # (batch_size, seq_len_q, num_heads, depth)
-        return tf.reshape(
-            x, (tf.shape(x)[0], -1, self.units)
-        )  # (batch_size, seq_len_q, units)
+        # (batch_size, seq_len_q, num_heads, depth)
+        x = tf.transpose(x, perm=[0, 2, 1, 3])
+        # (batch_size, seq_len_q, units)
+        return tf.reshape(x, (tf.shape(x)[0], -1, self.units))
 
     # noinspection PyMethodOverriding
     def call(
@@ -469,7 +467,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         angle_rads = tf.range(max_position)[:, tf.newaxis] * self._angles
 
         # transpose for easy slicing
-        angle_rads = tf.transpose(angle_rads, [1, 0])
+        angle_rads = tf.transpose(angle_rads, perm=[1, 0])
         shape = tf.shape(angle_rads)
         # apply sin to even indices in the array; 2i
         sin_even = tf.sin(tf.gather_nd(angle_rads, self._even_indices))
@@ -478,7 +476,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         cos_odd = tf.cos(tf.gather_nd(angle_rads, self._odd_indices))
         pos_encoding_odd = tf.scatter_nd(self._odd_indices, cos_odd, shape)
         # combine even and odd positions and transpose back
-        pos_encoding = tf.transpose(pos_encoding_even + pos_encoding_odd, [1, 0])
+        pos_encoding = tf.transpose(pos_encoding_even + pos_encoding_odd, perm=[1, 0])
         # add batch dimension
         return tf.stop_gradient(pos_encoding[tf.newaxis, ...])
 
@@ -493,8 +491,6 @@ class TransformerEncoder(tf.keras.layers.Layer):
         pad_mask: Optional[tf.Tensor] = None,
         training: Optional[Union[tf.Tensor, bool]] = None,
     ) -> tf.Tensor:
-        if training is None:
-            training = K.learning_phase()
 
         # adding embedding and position encoding.
         x = self._embedding(x)  # (batch_size, seq_len, units)
