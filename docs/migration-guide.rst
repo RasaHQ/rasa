@@ -39,7 +39,7 @@ General
 - All pre-defined pipeline templates are deprecated. Take a look at :ref:`choosing-a-pipeline`
   to decide on what components you should use in your configuration file.
 
-- The :ref:`embedding_policy` got renamed to :ref:`ted_policy`. The functionality of the policy stayed the same.
+- The :ref:`embedding_policy` was renamed to :ref:`ted_policy`. The functionality of the policy stayed the same.
   Please update your configuration files to use ``TEDPolicy`` instead of ``EmbeddingPolicy``.
 
 - Most of the model options for ``EmbeddingPolicy``, ``EmbeddingIntentClassifier``, and ``ResponseSelector`` got
@@ -69,30 +69,29 @@ General
   evaluate_on_num_examples       evaluate_on_number_of_examples
   =============================  =======================================================
 
-  A warning will be logged in case an old option is used. However, you can still use the old configuration options.
-  They will be mapped to the new names.
+  Old configuration options will be mapped to the new names, and a warning will be thrown.
+  However, these will be deprecated in a future release.
 
 - :ref:`embedding-intent-classifier` is now deprecated and will be replaced by :ref:`diet-classifier` in the future.
-  ``DIETClassfier`` is based on a multi-task architecture for intent classification and entity recognition.
-  However, if you want to get the same model behaviour as the current ``EmbeddingIntentClassifier``, you can use
+  ``DIETClassfier`` performs intent classification as well as entity recognition.
+  If you want to get the same model behaviour as the current ``EmbeddingIntentClassifier``, you can use
   the following configuration of ``DIETClassifier``:
 
   .. code-block:: yaml
 
     pipeline:
-    - ... # other components
+    # - ... other components
     - name: DIETClassifier
       intent_classification: True
       entity_recognition: False
       use_masked_language_model: False
       BILOU_flag: False
       number_of_transformer_layers: 0
-      ... # any other parameters
+      # ... any other parameters
 
   See :ref:`diet-classifier` for more information about the new component.
 
-- ``CRFEntityExtractor`` is now deprecated and will be replaced by ``DIETClassifier`` in the future. ``DIETClassfier``
-  is based on a multi-task architecture for intent classification and entity recognition. However, if you want to
+- ``CRFEntityExtractor`` is now deprecated and will be replaced by ``DIETClassifier`` in the future. If you want to
   get the same model behaviour as the current ``CRFEntityExtractor``, you can use the following configuration:
 
   .. code-block:: yaml
@@ -124,12 +123,10 @@ General
       number_of_transformer_layers: 0
       # ... any other parameters
 
-  As you can see in the configuration, you need to add the ``LexicalSyntacticFeaturizer`` before the ``DIETClassifier``
-  to your pipeline. ``CRFEntityExtractor`` featurizes user messages on its own, it does not depend on any featurizer.
-  We extracted the featurization from the component into the new featurizer ``LexicalSyntacticFeaturizer``. Thus,
+  ``CRFEntityExtractor`` featurizes user messages on its own, it does not depend on any featurizer.
+  We extracted the featurization from the component into the new featurizer :ref:``LexicalSyntacticFeaturizer``. Thus,
   in order to obtain the same results as before, you need to add this featurizer to your pipeline before the
-  ``DIETClassifier``. For more information about the ``DIETClassifier`` and the ``LexicalSyntacticFeaturizer``
-  see :ref:`components`.
+  :ref:``diet-classifier``.
 
 .. _migration-to-rasa-1.7:
 

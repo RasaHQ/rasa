@@ -2,10 +2,10 @@
 
 .. _tensorflow_usage:
 
-Setting up the TensorFlow Runtime
-=================================
+TensorFlow Configuration
+========================
 
-TensorFlow allows setting the runtime environment via
+TensorFlow allows configuring options in the runtime environment via
 `TF Config submodule <https://www.tensorflow.org/api_docs/python/tf/config>`_. Rasa Open Source supports a smaller subset of these
 configuration options and makes appropriate calls to the ``tf.config`` submodule.
 This smaller subset comprises of configurations that developers frequently use with Rasa Open Source.
@@ -17,14 +17,14 @@ Optimizing CPU Performance
 Parallelizing One Operation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Set ``TF_INTRA_OP_PARALLELISM_THREADS`` as an environment variable to specify maximum number of threads that can be used
+Set ``TF_INTRA_OP_PARALLELISM_THREADS`` as an environment variable to specify the maximum number of threads that can be used
 to parallelize the execution of one operation. If left unspecified, this value defaults to ``0`` which means TensorFlow should
 pick an appropriate value depending on the system configuration.
 
 Parallelizing Multiple Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Set ``TF_INTER_OP_PARALLELISM_THREADS`` as an environment variable to specify maximum number of threads that can be used
+Set ``TF_INTER_OP_PARALLELISM_THREADS`` as an environment variable to specify the maximum number of threads that can be used
 to parallelize the execution of multiple **non-blocking** operations. If left unspecified, this value defaults to ``0``
 which means TensorFlow should pick an appropriate value depending on the system configuration.
 
@@ -36,7 +36,7 @@ Limiting GPU Memory Growth
 
 TensorFlow by default blocks all the available GPU memory for the running process. This can be limiting if you are running
 multiple TensorFlow processes and want to distribute memory across them. To prevent this,
-set an environment variable ``TF_FORCE_GPU_ALLOW_GROWTH`` to ``True``.
+set the environment variable ``TF_FORCE_GPU_ALLOW_GROWTH`` to ``True``.
 
 Restricting Absolute GPU Memory Available
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

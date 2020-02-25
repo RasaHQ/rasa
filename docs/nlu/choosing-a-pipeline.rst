@@ -1,4 +1,4 @@
-:desc: Set up a pipeline of pre-trained components.
+:desc: Set up a pipeline of components.
 
 .. _choosing-a-pipeline:
 
@@ -14,20 +14,21 @@ it on your dataset.
    :local:
 
 .. warning::
-    We deprecated all existing pipeline templates, e.g. ``supervised_embeddings``, ``pretrained_embeddings_convert``
-    and ``pretrained_embeddings_spacy``. Please, list any components you want to use directly in the configuration
-    file.
+    We deprecated all existing pipeline templates, e.g.
+    :ref:`supervised_embeddings <section_supervised_embeddings_pipeline>`,
+    :ref:`pretrained_embeddings_spacy <section_pretrained_embeddings_spacy_pipeline>` and
+    :ref:`pretrained_embeddings_convert <section_pretrained_embeddings_convert_pipeline>`. Please, list any
+    components you want to use directly in the configuration file.
 
 The Short Answer
 ----------------
 
-If your training data is in english, a good starting point is the following pipeline:
+If your training data is in English, a good starting point is the following pipeline:
 
 .. literalinclude:: ../../data/configs_for_docs/default_english_config.yml
     :language: yaml
 
-In case your training data is multi-lingual and is rich with domain specific vocabulary,
-use the following pipeline:
+In case your training data is in a different language than English, use the following pipeline:
 
 .. literalinclude:: ../../data/configs_for_docs/default_config.yml
     :language: yaml
@@ -36,14 +37,35 @@ use the following pipeline:
 A Longer Answer
 ---------------
 
-We encourage everyone to define their own pipeline by listing the names of the components you want to use.
-For example:
+We recommend to use the following pipeline, if your training data is in English:
 
-.. literalinclude:: ../../data/configs_for_docs/default_spacy_config.yml
+.. literalinclude:: ../../data/configs_for_docs/default_english_config.yml
     :language: yaml
 
-You can find the details of each component in :ref:`components`.
-If you want to use custom components in your pipeline, see :ref:`custom-nlu-components`.
+The pipeline contains the :ref:`ConveRTFeaturizer` that provides pre-trained word embeddings of the user utterance.
+Pre-trained word embeddings are helpful as they already encode some kind of linguistic knowledge.
+For example, if you have a sentence like "I want to buy apples" in your training data, and Rasa is asked to predict
+the intent for "get pears", your model already knows that the words "apples" and "pears" are very similar.
+This is especially useful if you don’t have enough training data.
+The advantage of the ``ConveRTFeaturizer`` is that it doesn't treat each word of the user message independently, but
+creates a contextual vector representation for the complete sentence.
+However, ``ConveRT`` is only available in English.
+If your training data is not in English, we recommend to use the following pipeline:
+
+.. literalinclude:: ../../data/configs_for_docs/default_config.yml
+    :language: yaml
+
+It uses the :ref:`SpacyFeaturizer` instead of the :ref:`ConveRTFeaturizer`.
+``SpacyFeaturizer`` provides pre-trained word embeddings in many different languages
+(see :ref:`pretrained-word-vectors`).
+
+.. note::
+    We encourage everyone to define their own pipeline by listing the names of the components you want to use.
+    You can find the details of each component in :ref:`components`.
+    If you want to use custom components in your pipeline, see :ref:`custom-nlu-components`.
+
+Choosing the right Components
+-----------------------------
 
 A pipeline usually consist of three main parts:
 
@@ -56,7 +78,7 @@ Tokenization
 If your chosen language is whitespace-tokenized (words are separated by spaces), you
 can use the ``WhitespaceTokenizer``. If this is not the case you should use a different tokenizer.
 We support a number of different :ref:`tokenizers <tokenizers>`, or you can
-:ref:`create your own <custom-nlu-components>`.
+create your own :ref:`custom tokenizer <custom-nlu-components>`.
 
 .. note::
     Some components further down the pipeline may require a specific tokenizer. You can find those requirements
@@ -71,12 +93,12 @@ If you do not use any pre-trained word embeddings, your word vectors will be cus
 in general English, the word "balance" is closely related to "symmetry", but very different to the word "cash". In a
 banking domain, "balance" and "cash" are closely related and you'd like your model to capture that. If you don't
 use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language and domain.
-Thus, you should only use featurizers from the category `sparse` featuirzers, such as
+In those cases you should only use featurizers from the category `sparse` featurizers, such as
 ``CountVectorsFeaturizer``, ``RegexFeaturizer`` or ``LexicalSyntacticFeaturizer``.
 
 The advantage of using pre-trained word embeddings in your pipeline is that if you have a training example like:
 "I want to buy apples", and Rasa is asked to predict the intent for "get pears", your model already knows that the
-words "apples" and "pears" are very similar. This is especially useful if you don't have large enough training data.
+words "apples" and "pears" are very similar. This is especially useful if you don't have enough training data.
 We support a few components that provide pre-trained word embeddings:
 
 1. :ref:`MitieFeaturizer`
@@ -84,24 +106,26 @@ We support a few components that provide pre-trained word embeddings:
 3. :ref:`ConveRTFeaturizer`
 4. :ref:`LanguageModelFeaturizer`
 
-If your training data is in English, we recommend to use the ``ConveRTFeaturizer``.
+If your training data is in English, we recommend using the ``ConveRTFeaturizer``.
 The advantage of the ``ConveRTFeaturizer`` is that it doesn't treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence. For example, if you
 have a training example, like: "can I book a car?", and Rasa is asked to predict the intent for "I need a ride from
 my place", since the contextual vector representation for both examples are already very similar, the intent classified
-for both is highly likely to be the same. This is also useful if you don't have large enough training data.
+for both is highly likely to be the same. This is also useful if you don't have enough training data.
 
-An alternative to ``ConveRTFeaturizer`` can be ``LanguageModelFeaturizer`` which uses pre-trained language models such
+An alternative to ``ConveRTFeaturizer`` is the ``LanguageModelFeaturizer`` which uses pre-trained language models such
 as BERT, GPT-2, etc. to extract similar contextual vector representations for the complete sentence. See
 :ref:`HFTransformersNLP` for a full list of supported language models.
 
-In case, your training data is not in English you can also use a different variant of a language model which
-is pre-trained in the language specific to your training data. For example, there is a chinese language variant of
-BERT(``bert-base-chinese``) or a japanese variant of it(``bert-base-japanese``). A full list of different variants of
+If your training data is not in English you can also use a different variant of a language model which
+is pre-trained in the language specific to your training data.
+For example, there are chinese (``bert-base-chinese``) and japanese (``bert-base-japanese``) variants of the BERT model.
+A full list of different variants of
 these language models is available in the
-`official docs of Transformers library <https://huggingface.co/transformers/pretrained_models.html>_`.
+`official documentation of the transformers library <https://huggingface.co/transformers/pretrained_models.html>_`.
 
-``SpacyFeaturizer`` also provides word embeddings in many different languages (see :ref:`pretrained-word-vectors`).
+``SpacyFeaturizer`` also provides word embeddings in many different languages (see :ref:`pretrained-word-vectors`),
+so you can use this as another alternative, depending on the language of your training data.
 So, this featurizer can also be an alternate option depending on the language of your training data.
 
 Entity Recognition / Intent Classification / Response Selectors
@@ -149,15 +173,14 @@ Multiple Intents
 ----------------
 
 If you want to split intents into multiple labels, e.g. for predicting multiple intents or for modeling hierarchical
-intent structure, you need to use :ref:`diet-classifier` in your pipeline.
-To do this, use these flags in any tokenizer:
+intent structure, you need to use the :ref:`diet-classifier` in your pipeline.
+You'll also need to define these flags in whichever tokenizer you are using:
 
-    - ``intent_tokenization_flag``: indicates whether to tokenize intent labels or not. By default this flag is set to
-      ``False``, intent will not be tokenized.
-    - ``intent_split_symbol``: sets the delimiter string to split the intent labels. Default ``_``.
+    - ``intent_tokenization_flag``: Set it to ``True``, so that intent labels are tokenized.
+    - ``intent_split_symbol``: Set it to the delimiter string that splits the intent labels. Default ``_``.
 
-`Here <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`__ is a
-tutorial on how to use multiple intents in Rasa.
+Read a `tutotiral <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`__
+on how to use multiple intents in Rasa.
 
 Here's an example configuration:
 
@@ -277,6 +300,7 @@ exactly. Instead it will return the trained synonym.
     information and returns ``null``.
 
 
+
 Pipeline Templates (deprecated)
 -------------------------------
 
@@ -323,7 +347,7 @@ pretrained_embeddings_spacy
 The advantage of ``pretrained_embeddings_spacy`` pipeline is that if you have a training example like:
 "I want to buy apples", and Rasa is asked to predict the intent for "get pears", your model
 already knows that the words "apples" and "pears" are very similar. This is especially useful
-if you don't have large enough training data.
+if you don't have enough training data.
 
 To use the ``pretrained_embeddings_spacy`` template, use the following configuration:
 
@@ -341,17 +365,17 @@ To use the components and configure them separately:
 pretrained_embeddings_convert
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    .. warning::
+    .. note::
         Since ``ConveRT`` model is trained only on an **English** corpus of conversations, this pipeline should only
         be used if your training data is in English language.
 
-This pipeline uses `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model to extract vector representation of
-a sentence and feeds them to ``EmbeddingIntentClassifier`` for intent classification.
-The advantage of using ``pretrained_embeddings_convert`` pipeline is that it doesn't treat each word of the user
+This pipeline uses the `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model to extract a vector representation of
+a sentence and feeds them to the ``EmbeddingIntentClassifier`` for intent classification.
+The advantage of using the ``pretrained_embeddings_convert`` pipeline is that it doesn't treat each word of the user
 message independently, but creates a contextual vector representation for the complete sentence. For example, if you
 have a training example, like: "can I book a car?", and Rasa is asked to predict the intent for "I need a ride from
 my place", since the contextual vector representation for both examples are already very similar, the intent classified
-for both is highly likely to be the same. This is also useful if you don't have large enough training data.
+for both is highly likely to be the same. This is also useful if you don't have enough training data.
 
     .. note::
         To use ``pretrained_embeddings_convert`` pipeline, you should install Rasa with ``pip install rasa[convert]``.
@@ -379,7 +403,7 @@ but very different to the word "cash". In a banking domain, "balance" and "cash"
 and you'd like your model to capture that. This pipeline doesn't use a language-specific model,
 so it will work with any language that you can tokenize (on whitespace or using a custom tokenizer).
 
-You can read more about this topic `here <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`__ .
+You can read more about this topic `in this blog post <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`__ .
 
 To train a Rasa model in your preferred language, define the
 ``supervised_embeddings`` pipeline as your pipeline in your ``config.yml`` or other configuration file:

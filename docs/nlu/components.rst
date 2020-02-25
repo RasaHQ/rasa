@@ -148,8 +148,8 @@ Tokenizers split text into tokens.
 If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
 modeling hierarchical intent structure, use these flags with any tokenizer:
 
-- ``intent_tokenization_flag`` indicates whether to tokenize intent labels or not. By default this flag is set to
-  ``False``, intent will not be tokenized.
+- ``intent_tokenization_flag`` indicates whether to tokenize intent labels or not. Set it to ``True``, so that intent
+  labels are tokenized.
 - ``intent_split_symbol`` sets the delimiter string to split the intent labels, default is underscore
   (``_``).
 
@@ -160,13 +160,13 @@ WhitespaceTokenizer
 ~~~~~~~~~~~~~~~~~~~
 
 :Short: Tokenizer using whitespaces as a separator
-:Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
+:Outputs: ``tokens`` for user messages, responses (if present), and intents (if specified)
 :Requires: Nothing
 :Description:
     Creates a token for every whitespace separated character sequence.
 :Configuration:
-    Make the tokenizer not case sensitive by adding the ``case_sensitive: False`` option.
-    Default being ``case_sensitive: True``.
+    Make the tokenizer case insensitive by adding the ``case_sensitive: False`` option, the
+    default being ``case_sensitive: True``.
 
     .. code-block:: yaml
 
@@ -184,12 +184,11 @@ JiebaTokenizer
 ~~~~~~~~~~~~~~
 
 :Short: Tokenizer using Jieba for Chinese language
-:Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
+:Outputs: ``tokens`` for user messages, responses (if present), and intents (if specified)
 :Requires: Nothing
 :Description:
     Creates tokens using the Jieba tokenizer specifically for Chinese
-    language. For language other than Chinese, Jieba will work as
-    ``WhitespaceTokenizer``.
+    language. It will only work for the Chinese language.
 
     .. note::
         To use ``JiebaTokenizer`` you need to install Jieba with ``pip install jieba``.
@@ -213,7 +212,7 @@ MitieTokenizer
 ~~~~~~~~~~~~~~
 
 :Short: Tokenizer using MITIE
-:Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
+:Outputs: ``tokens`` for user messages, responses (if present), and intents (if specified)
 :Requires: :ref:`MitieNLP`
 :Description: Creates tokens using the MITIE tokenizer.
 :Configuration:
@@ -231,7 +230,7 @@ SpacyTokenizer
 ~~~~~~~~~~~~~~
 
 :Short: Tokenizer using spaCy
-:Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
+:Outputs: ``tokens`` for user messages, responses (if present), and intents (if specified)
 :Requires: :ref:`SpacyNLP`
 :Description:
     Creates tokens using the spaCy tokenizer.
@@ -252,13 +251,13 @@ ConveRTTokenizer
 ~~~~~~~~~~~~~~~~
 
 :Short: Tokenizer using `ConveRT <https://github.com/PolyAI-LDN/polyai-models#convert>`__ model.
-:Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
+:Outputs: ``tokens`` for user messages, responses (if present), and intents (if specified)
 :Requires: Nothing
 :Description:
     Creates tokens using the ConveRT tokenizer. Must be used whenever the :ref:`ConveRTFeaturizer` is used.
 :Configuration:
-    Make the tokenizer not case sensitive by adding the ``case_sensitive: False`` option.
-    Default being ``case_sensitive: True``.
+    Make the tokenizer case insensitive by adding the ``case_sensitive: False`` option, the
+    default being ``case_sensitive: True``.
 
     .. code-block:: yaml
 
@@ -278,7 +277,7 @@ LanguageModelTokenizer
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Short: Tokenizer from pre-trained language models
-:Outputs: ``tokens`` for texts, responses (if present), and intents (if specified)
+:Outputs: ``tokens`` for user messages, responses (if present), and intents (if specified)
 :Requires: :ref:`HFTransformersNLP`
 :Description:
     Creates tokens using the pre-trained language model specified in upstream :ref:`HFTransformersNLP` component.
@@ -289,6 +288,10 @@ LanguageModelTokenizer
 
         pipeline:
         - name: "LanguageModelTokenizer"
+          # Flag to check whether to split intents
+          "intent_tokenization_flag": False
+          # Symbol on which intent should be split
+          "intent_split_symbol": "_"
 
 
 
@@ -318,7 +321,7 @@ MitieFeaturizer
 
 :Short:
     Creates a vector representation of user message and response (if specified) using the MITIE featurizer.
-:Outputs: ``dense_features`` for texts and responses
+:Outputs: ``dense_features`` for user messages and responses
 :Requires: :ref:`MitieNLP`
 :Type: Dense featurizer
 :Description:
@@ -350,7 +353,7 @@ SpacyFeaturizer
 
 :Short:
     Creates a vector representation of user message and response (if specified) using the spaCy featurizer.
-:Outputs: ``dense_features`` for texts and responses
+:Outputs: ``dense_features`` for user messages and responses
 :Requires: :ref:`SpacyNLP`
 :Type: Dense featurizer
 :Description:
@@ -378,7 +381,7 @@ ConveRTFeaturizer
 :Short:
     Creates a vector representation of user message and response (if specified) using
     `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`__ model.
-:Outputs: ``dense_features`` for texts and responses
+:Outputs: ``dense_features`` for user messages and responses
 :Requires: :ref:`ConveRTTokenizer`
 :Type: Dense featurizer
 :Description:
@@ -409,7 +412,7 @@ LanguageModelFeaturizer
 
 :Short:
     Creates a vector representation of user message and response (if specified) using a pre-trained language model.
-:Outputs: ``dense_features`` for texts and responses
+:Outputs: ``dense_features`` for user messages and responses
 :Requires: :ref:`HFTransformersNLP`
 :Type: Dense featurizer
 :Description:
@@ -423,8 +426,8 @@ LanguageModelFeaturizer
 
 :Configuration:
 
-    Include ``HFTransformersNLP`` component before this component. Also, use :ref:`LanguageModelTokenizer` to ensure
-    tokens are correctly set for all components throughout the pipeline.
+    Include ``HFTransformersNLP`` and :ref:`LanguageModelTokenizer` components before this component. Use
+    :ref:`LanguageModelTokenizer` to ensure tokens are correctly set for all components throughout the pipeline.
 
     .. code-block:: yaml
 
@@ -436,12 +439,12 @@ RegexFeaturizer
 ~~~~~~~~~~~~~~~
 
 :Short: Creates a vector representation of user message using regular expressions.
-:Outputs: ``sparse_features`` for texts and ``tokens.pattern``
+:Outputs: ``sparse_features`` for user messages and ``tokens.pattern``
 :Requires: ``tokens``
 :Type: Sparse featurizer
 :Description:
     Creates features for entity extraction and intent classification.
-    During training ``RegexFeaturizer`` creates a list of `regular expressions` defined in the training
+    During training the ``RegexFeaturizer`` creates a list of `regular expressions` defined in the training
     data format.
     For each regex, a feature will be set marking whether this expression was found in the input, which will later
     be fed into intent classifier / entity extractor to simplify classification (assuming the classifier has learned
@@ -460,7 +463,7 @@ CountVectorsFeaturizer
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Short: Creates bag-of-words representation of user messages, intents, and responses.
-:Outputs: ``sparse_features`` for texts, intents, and responses
+:Outputs: ``sparse_features`` for user messages, intents, and responses
 :Requires: ``tokens``
 :Type: Sparse featurizer
 :Description:
@@ -572,14 +575,14 @@ CountVectorsFeaturizer
 LexicalSyntacticFeaturizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: Creates lexical and syntactic features for user message to support entity extraction.
-:Outputs: ``sparse_features`` for texts
+:Short: Creates lexical and syntactic features for a user message to support entity extraction.
+:Outputs: ``sparse_features`` for user messages
 :Requires: ``tokens``
 :Type: Sparse featurizer
 :Description:
     Creates features for entity extraction.
     Moves with a sliding window over every token in the user message and creates features according to the
-    configuration (see below).
+    configuration (see below). As a default configuration is present, you don't need to specify a configuration.
 :Configuration:
     You need to configure what kind of lexical and syntactic features the featurizer should extract.
     The following features are available:
@@ -606,9 +609,9 @@ LexicalSyntacticFeaturizer
 
     As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
     previous tokens, the current token, and the next tokens in the sliding window.
-    You define the features as [before, token, after] array.
-    If you, for example, want to define features for the token before, the current token, and the token after,
-    your features configuration could look like this:
+    You define the features as a [before, token, after] array.
+    If you want to define features for the token before, the current token, and the token after,
+    your features configuration would look like this:
 
     .. code-block:: yaml
 
@@ -675,7 +678,7 @@ SklearnIntentClassifier
 
 :Short: Sklearn intent classifier
 :Outputs: ``intent`` and ``intent_ranking``
-:Requires: ``dense_features`` for user message
+:Requires: ``dense_features`` for user messages
 :Output-Example:
 
     .. code-block:: json
@@ -699,6 +702,10 @@ SklearnIntentClassifier
     rankings of the labels that did not "win". The ``SklearnIntentClassifier`` needs to be preceded by a dense
     featurizer in the pipeline. This dense featurizer creates the features used for the classification.
 
+    .. warning::
+        ``SklearnIntentClassifier`` is deprecated and should be replaced by ``DIETClassifier``. See
+        :ref:`migration guide <migration-to-rasa-1.8>` for more details.
+
 :Configuration:
     During the training of the SVM a hyperparameter search is run to
     find the best parameter set. In the config, you can specify the parameters
@@ -721,9 +728,9 @@ SklearnIntentClassifier
 EmbeddingIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: Dual Intent Entity Transformer used for intent classification
+:Short: Embedding intent classifier for intent classification
 :Outputs: ``intent`` and ``intent_ranking``
-:Requires: ``dense_features`` and/or ``sparse_features`` for user message and intent (optional)
+:Requires: ``dense_features`` and/or ``sparse_features`` for user messages and intent (optional)
 :Output-Example:
 
     .. code-block:: json
@@ -960,7 +967,7 @@ ResponseSelector
 
 :Short: Response Selector
 :Outputs: A dictionary with key as ``direct_response_intent`` and value containing ``response`` and ``ranking``
-:Requires: ``dense_features`` and/or ``sparse_features`` for user message and response
+:Requires: ``dense_features`` and/or ``sparse_features`` for user messages and response
 
 :Output-Example:
 
@@ -1161,7 +1168,7 @@ SpacyEntityExtractor
         pipeline:
         - name: "SpacyEntityExtractor"
           # dimensions to extract
-          dimensions: None
+          dimensions: ["PERSON", "LOC", "ORG", "PRODUCT"]
 
 
 EntitySynonymMapper
@@ -1249,7 +1256,8 @@ CRFEntityExtractor
         :ref:`migration guide <migration-to-rasa-1.8>` for more details.
 
 :Configuration:
-    You need to configure what kind of features the CRF should use.
+    ``CRFEntityExtractor`` has a list of default features to use.
+    However, you can overwrite the default configuration.
     The following features are available:
 
     ===============  =============================================================================
@@ -1279,7 +1287,7 @@ CRFEntityExtractor
 
     Additional you can set a flag to determine whether to use the BILOU tagging schema or not.
 
-        - ``BILOU_flag`` determines whether to use BILOU tagging or not.
+        - ``BILOU_flag`` determines whether to use BILOU tagging or not. Default ``True``.
 
     .. code-block:: yaml
 
