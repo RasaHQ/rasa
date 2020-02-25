@@ -44,7 +44,6 @@ For example:
             - priority        # custom entity extracted by CRFEntityExtractor
 
 
-
 :ref:`slots` hold information you want to keep track of during a conversation.
 A categorical slot called ``risk_level`` would be
 defined like this:
