@@ -13,6 +13,10 @@ it on your dataset.
 .. contents::
    :local:
 
+.. note::
+    With Rasa 1.8.0 we updated some components and deprecated all existing pipeline templates.
+    However, **any of the old terminology will still behave the same way as it did before**!
+
 .. warning::
     We deprecated all existing pipeline templates, e.g.
     :ref:`supervised_embeddings <section_supervised_embeddings_pipeline>`,
