@@ -58,3 +58,6 @@ MARGIN = "margin"
 AUTO = "auto"
 INNER = "inner"
 COSINE = "cosine"
+
+BALANCED = "balanced"
+SEQUENCE = "sequence"

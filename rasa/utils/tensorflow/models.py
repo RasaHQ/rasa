@@ -6,6 +6,7 @@ from typing import List, Text, Dict, Tuple, Union, Optional, Callable
 from tqdm import tqdm
 from rasa.utils.common import is_logging_disabled
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
+from rasa.utils.tensorflow.constants import SEQUENCE
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +156,7 @@ class RasaModel(tf.keras.models.Model):
             batch_size=1,
             evaluate_every_num_epochs=0,
             evaluate_on_num_examples=0,
-            batch_strategy="sequence",
+            batch_strategy=SEQUENCE,
             silent=True,  # don't confuse users with training output
             eager=True,  # no need to build tf graph, eager is faster here
         )
@@ -241,7 +242,7 @@ class RasaModel(tf.keras.models.Model):
 
         def evaluation_dataset_function(_batch_size: int) -> tf.data.Dataset:
             return evaluation_model_data.as_tf_dataset(
-                _batch_size, "sequence", shuffle=False
+                _batch_size, SEQUENCE, shuffle=False
             )
 
         self._training = False  # needed for tf graph mode

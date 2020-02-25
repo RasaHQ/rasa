@@ -38,6 +38,7 @@ from rasa.utils.tensorflow.constants import (
     BILOU_FLAG,
     SOFTMAX,
     AUTO,
+    BALANCED,
 )
 import rasa.utils.common as common_utils
 from rasa.utils.tensorflow.models import RasaModel
@@ -77,7 +78,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         BATCH_SIZES: [64, 256],
         # Strategy used when creating batches.
         # Can be either 'sequence' or 'balanced'.
-        BATCH_STRATEGY: "balanced",
+        BATCH_STRATEGY: BALANCED,
         # Number of epochs to train
         EPOCHS: 300,
         # Set random seed to any 'int' to get reproducible results

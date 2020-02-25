@@ -57,14 +57,15 @@ from rasa.utils.tensorflow.constants import (
     MAX_RELATIVE_POSITION,
     SOFTMAX,
     AUTO,
+    BALANCED,
 )
 
 
 logger = logging.getLogger(__name__)
 
-DIALOGUE_FEATURES = "dialogue_features"
-LABEL_FEATURES = "label_features"
-LABEL_IDS = "label_ids"
+DIALOGUE_FEATURES = f"{DIALOGUE}_features"
+LABEL_FEATURES = f"{LABEL}_features"
+LABEL_IDS = f"{LABEL}_ids"
 
 SAVE_MODEL_FILE_NAME = "ted_policy"
 
@@ -115,7 +116,7 @@ class TEDPolicy(Policy):
         BATCH_SIZES: [8, 32],
         # Strategy used whenc creating batches.
         # Can be either 'sequence' or 'balanced'.
-        BATCH_STRATEGY: "balanced",
+        BATCH_STRATEGY: BALANCED,
         # Number of epochs to train
         EPOCHS: 1,
         # Set random seed to any 'int' to get reproducible results
@@ -499,7 +500,7 @@ class TED(RasaModel):
             )
 
     def _prepare_layers(self) -> None:
-        self._tf_layers["loss.label"] = layers.DotProductLoss(
+        self._tf_layers[f"loss.{LABEL}"] = layers.DotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
             self.config[MAX_POS_SIM],
@@ -510,14 +511,14 @@ class TED(RasaModel):
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,
         )
-        self._tf_layers["ffnn.dialogue"] = layers.Ffnn(
+        self._tf_layers[f"ffnn.{DIALOGUE}"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
             self.config[DROP_RATE_DIALOGUE],
             self.config[REGULARIZATION_CONSTANT],
             self.config[WEIGHT_SPARSITY],
             layer_name_suffix=DIALOGUE,
         )
-        self._tf_layers["ffnn.label"] = layers.Ffnn(
+        self._tf_layers[f"ffnn.{LABEL}"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES][LABEL],
             self.config[DROP_RATE_LABEL],
             self.config[REGULARIZATION_CONSTANT],
@@ -539,13 +540,13 @@ class TED(RasaModel):
             max_relative_position=self.config[MAX_RELATIVE_POSITION],
             name=DIALOGUE + "_encoder",
         )
-        self._tf_layers["embed.dialogue"] = layers.Embed(
+        self._tf_layers[f"embed.{DIALOGUE}"] = layers.Embed(
             self.config[EMBEDDING_DIMENSION],
             self.config[REGULARIZATION_CONSTANT],
             DIALOGUE,
             self.config[SIMILARITY_TYPE],
         )
-        self._tf_layers["embed.label"] = layers.Embed(
+        self._tf_layers[f"embed.{LABEL}"] = layers.Embed(
             self.config[EMBEDDING_DIMENSION],
             self.config[REGULARIZATION_CONSTANT],
             LABEL,
@@ -565,7 +566,7 @@ class TED(RasaModel):
         # if there is at least one `-1` it should be masked
         mask = tf.sign(tf.reduce_max(dialogue_in, -1) + 1)
 
-        dialogue = self._tf_layers["ffnn.dialogue"](dialogue_in, self._training)
+        dialogue = self._tf_layers[f"ffnn.{DIALOGUE}"](dialogue_in, self._training)
         dialogue_transformed = self._tf_layers["transformer"](
             dialogue, 1 - tf.expand_dims(mask, axis=-1), self._training
         )
@@ -576,13 +577,13 @@ class TED(RasaModel):
             dialogue_transformed = dialogue_transformed[:, -1:, :]
             mask = mask[:, -1:]
 
-        dialogue_embed = self._tf_layers["embed.dialogue"](dialogue_transformed)
+        dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
 
         return dialogue_embed, mask
 
     def _embed_label(self, label_in: Union[tf.Tensor, np.ndarray]) -> tf.Tensor:
-        label = self._tf_layers["ffnn.label"](label_in, self._training)
-        return self._tf_layers["embed.label"](label)
+        label = self._tf_layers[f"ffnn.{LABEL}"](label_in, self._training)
+        return self._tf_layers[f"embed.{LABEL}"](label)
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -601,7 +602,7 @@ class TED(RasaModel):
         dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
         label_embed = self._embed_label(label_in)
 
-        loss, acc = self._tf_layers["loss.label"](
+        loss, acc = self._tf_layers[f"loss.{LABEL}"](
             dialogue_embed, label_embed, label_in, all_labels_embed, all_labels, mask
         )
 
@@ -622,13 +623,13 @@ class TED(RasaModel):
 
         dialogue_embed, mask = self._emebed_dialogue(dialogue_in)
 
-        sim_all = self._tf_layers["loss.label"].sim(
+        sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
             dialogue_embed[:, :, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, tf.newaxis, :, :],
             mask,
         )
 
-        scores = self._tf_layers["loss.label"].confidence_from_sim(
+        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
             sim_all, self.config[SIMILARITY_TYPE]
         )
 

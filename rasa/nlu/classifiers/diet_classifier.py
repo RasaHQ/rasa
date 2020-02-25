@@ -75,16 +75,17 @@ from rasa.utils.tensorflow.constants import (
     MAX_RELATIVE_POSITION,
     SOFTMAX,
     AUTO,
+    BALANCED,
 )
 
 
 logger = logging.getLogger(__name__)
 
-TEXT_FEATURES = "text_features"
-LABEL_FEATURES = "label_features"
-TEXT_MASK = "text_mask"
-LABEL_MASK = "label_mask"
-LABEL_IDS = "label_ids"
+TEXT_FEATURES = f"{TEXT}_features"
+LABEL_FEATURES = f"{LABEL}_features"
+TEXT_MASK = f"{TEXT}_mask"
+LABEL_MASK = f"{LABEL}_mask"
+LABEL_IDS = f"{LABEL}_ids"
 TAG_IDS = "tag_ids"
 
 
@@ -135,7 +136,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         BATCH_SIZES: [64, 256],
         # Strategy used when creating batches.
         # Can be either 'sequence' or 'balanced'.
-        BATCH_STRATEGY: "balanced",
+        BATCH_STRATEGY: BALANCED,
         # Number of epochs to train
         EPOCHS: 300,
         # Set random seed to any 'int' to get reproducible results
@@ -1007,12 +1008,12 @@ class DIET(RasaModel):
             )
 
     def _create_metrics(self) -> None:
-        # self.metrics preserve order
-        # output losses first
+        # self.metrics will have the same order as they are created
+        # so create loss metrics first to output losses first
         self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
         self.intent_loss = tf.keras.metrics.Mean(name="i_loss")
         self.entity_loss = tf.keras.metrics.Mean(name="e_loss")
-        # output accuracies second
+        # create accuracy metrics second to output accuracies second
         self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
         self.response_acc = tf.keras.metrics.Mean(name="i_acc")
         self.entity_f1 = tf.keras.metrics.Mean(name="e_f1")
@@ -1083,11 +1084,32 @@ class DIET(RasaModel):
             name,
         )
 
+    def _prepare_embed_layers(self, name: Text) -> None:
+        self._tf_layers[f"embed.{name}"] = layers.Embed(
+            self.config[EMBEDDING_DIMENSION],
+            self.config[REGULARIZATION_CONSTANT],
+            name,
+            self.config[SIMILARITY_TYPE],
+        )
+
+    def _prepare_dot_product_loss(self, name: Text) -> None:
+        self._tf_layers[f"loss.{name}"] = layers.DotProductLoss(
+            self.config[NUM_NEG],
+            self.config[LOSS_TYPE],
+            self.config[MAX_POS_SIM],
+            self.config[MAX_NEG_SIM],
+            self.config[USE_MAX_NEG_SIM],
+            self.config[NEGATIVE_MARGIN_SCALE],
+            self.config[SCALE_LOSS],
+            # set to 1 to get deterministic behaviour
+            parallel_iterations=1 if self.random_seed is not None else 1000,
+        )
+
     def _prepare_sequence_layers(self, name: Text) -> None:
         self._prepare_input_layers(name)
 
-        self._tf_layers[f"{name}_transformer"] = (
-            TransformerEncoder(
+        if self.config[NUM_TRANSFORMER_LAYERS] > 0:
+            self._tf_layers[f"{name}_transformer"] = TransformerEncoder(
                 self.config[NUM_TRANSFORMER_LAYERS],
                 self.config[TRANSFORMER_SIZE],
                 self.config[NUM_HEADS],
@@ -1102,60 +1124,23 @@ class DIET(RasaModel):
                 max_relative_position=self.config[MAX_RELATIVE_POSITION],
                 name=f"{name}_encoder",
             )
-            if self.config[NUM_TRANSFORMER_LAYERS] > 0
-            else lambda x, mask, training: x
-        )
+        else:
+            # create lambda so that it can be used later without the check
+            self._tf_layers[f"{name}_transformer"] = lambda x, mask, training: x
 
     def _prepare_mask_lm_layers(self, name: Text) -> None:
         self._tf_layers[f"{name}_input_mask"] = layers.InputMask()
-        self._tf_layers[f"embed.{name}_lm_mask"] = layers.Embed(
-            self.config[EMBEDDING_DIMENSION],
-            self.config[REGULARIZATION_CONSTANT],
-            f"{name}_lm_mask",
-            self.config[SIMILARITY_TYPE],
-        )
-        self._tf_layers[f"embed.{name}_golden_token"] = layers.Embed(
-            self.config[EMBEDDING_DIMENSION],
-            self.config[REGULARIZATION_CONSTANT],
-            f"{name}_golden_token",
-            self.config[SIMILARITY_TYPE],
-        )
-        self._tf_layers[f"loss.{name}_mask"] = layers.DotProductLoss(
-            self.config[NUM_NEG],
-            self.config[LOSS_TYPE],
-            self.config[MAX_POS_SIM],
-            self.config[MAX_NEG_SIM],
-            self.config[USE_MAX_NEG_SIM],
-            self.config[NEGATIVE_MARGIN_SCALE],
-            self.config[SCALE_LOSS],
-            # set to 1 to get deterministic behaviour
-            parallel_iterations=1 if self.random_seed is not None else 1000,
-        )
+
+        self._prepare_embed_layers(f"{name}_lm_mask")
+        self._prepare_embed_layers(f"{name}_golden_token")
+
+        self._prepare_dot_product_loss(f"{name}_mask")
 
     def _prepare_label_classification_layers(self) -> None:
-        self._tf_layers["embed.text"] = layers.Embed(
-            self.config[EMBEDDING_DIMENSION],
-            self.config[REGULARIZATION_CONSTANT],
-            "text",
-            self.config[SIMILARITY_TYPE],
-        )
-        self._tf_layers["embed.label"] = layers.Embed(
-            self.config[EMBEDDING_DIMENSION],
-            self.config[REGULARIZATION_CONSTANT],
-            "label",
-            self.config[SIMILARITY_TYPE],
-        )
-        self._tf_layers["loss.label"] = layers.DotProductLoss(
-            self.config[NUM_NEG],
-            self.config[LOSS_TYPE],
-            self.config[MAX_POS_SIM],
-            self.config[MAX_NEG_SIM],
-            self.config[USE_MAX_NEG_SIM],
-            self.config[NEGATIVE_MARGIN_SCALE],
-            self.config[SCALE_LOSS],
-            # set to 1 to get deterministic behaviour
-            parallel_iterations=1 if self.random_seed is not None else 1000,
-        )
+        self._prepare_embed_layers(TEXT)
+        self._prepare_embed_layers(LABEL)
+
+        self._prepare_dot_product_loss(LABEL)
 
     def _prepare_entity_recognition_layers(self) -> None:
         self._tf_layers["embed.logits"] = layers.Embed(
@@ -1262,7 +1247,7 @@ class DIET(RasaModel):
             self.tf_label_data[LABEL_MASK][0],
             self.label_name,
         )
-        all_labels_embed = self._tf_layers["embed.label"](x)
+        all_labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
 
         return all_label_ids, all_labels_embed
 
@@ -1304,10 +1289,10 @@ class DIET(RasaModel):
     ) -> tf.Tensor:
         all_label_ids, all_labels_embed = self._create_all_labels()
 
-        a_embed = self._tf_layers["embed.text"](a)
-        b_embed = self._tf_layers["embed.label"](b)
+        a_embed = self._tf_layers[f"embed.{TEXT}"](a)
+        b_embed = self._tf_layers[f"embed.{LABEL}"](b)
 
-        return self._tf_layers["loss.label"](
+        return self._tf_layers[f"loss.{LABEL}"](
             a_embed, b_embed, label_ids, all_labels_embed, all_label_ids
         )
 
@@ -1419,13 +1404,13 @@ class DIET(RasaModel):
 
             # get _cls_ vector for intent classification
             cls = self._last_token(text_transformed, sequence_lengths)
-            cls_embed = self._tf_layers["embed.text"](cls)
+            cls_embed = self._tf_layers[f"embed.{TEXT}"](cls)
 
             # pytype: disable=attribute-error
-            sim_all = self._tf_layers["loss.label"].sim(
+            sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
                 cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :]
             )
-            scores = self._tf_layers["loss.label"].confidence_from_sim(
+            scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
                 sim_all, self.config[SIMILARITY_TYPE]
             )
             # pytype: enable=attribute-error

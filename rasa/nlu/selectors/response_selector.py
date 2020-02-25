@@ -8,7 +8,15 @@ from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import Featurizer
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier, DIET
+from rasa.nlu.classifiers.diet_classifier import (
+    DIETClassifier,
+    DIET,
+    TEXT_FEATURES,
+    LABEL_FEATURES,
+    TEXT_MASK,
+    LABEL_MASK,
+    LABEL_IDS,
+)
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -50,6 +58,7 @@ from rasa.utils.tensorflow.constants import (
     RETRIEVAL_INTENT,
     SOFTMAX,
     AUTO,
+    BALANCED,
 )
 from rasa.nlu.constants import (
     RESPONSE,
@@ -115,7 +124,7 @@ class ResponseSelector(DIETClassifier):
         BATCH_SIZES: [64, 256],
         # Strategy used when creating batches.
         # Can be either 'sequence' or 'balanced'.
-        BATCH_STRATEGY: "balanced",
+        BATCH_STRATEGY: BALANCED,
         # Number of epochs to train
         EPOCHS: 300,
         # Set random seed to any 'int' to get reproducible results
@@ -204,7 +213,7 @@ class ResponseSelector(DIETClassifier):
 
     @property
     def label_key(self) -> Text:
-        return "label_ids"
+        return LABEL_IDS
 
     @staticmethod
     def model_class() -> Type[RasaModel]:
@@ -284,20 +293,20 @@ class ResponseSelector(DIETClassifier):
 
 class DIET2DIET(DIET):
     def _check_data(self) -> None:
-        if "text_features" not in self.data_signature:
+        if TEXT_FEATURES not in self.data_signature:
             raise ValueError(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
-        if "label_features" not in self.data_signature:
+        if LABEL_FEATURES not in self.data_signature:
             raise ValueError(
                 f"No label features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if (
             self.config[SHARE_HIDDEN_LAYERS]
-            and self.data_signature["text_features"]
-            != self.data_signature["label_features"]
+            and self.data_signature[TEXT_FEATURES]
+            != self.data_signature[LABEL_FEATURES]
         ):
             raise ValueError(
                 "If hidden layer weights are shared, data signatures "
@@ -330,17 +339,17 @@ class DIET2DIET(DIET):
         self._prepare_label_classification_layers()
 
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
-        all_label_ids = self.tf_label_data["label_ids"][0]
+        all_label_ids = self.tf_label_data[LABEL_IDS][0]
 
-        mask_label = self.tf_label_data["label_mask"][0]
+        mask_label = self.tf_label_data[LABEL_MASK][0]
         sequence_lengths_label = self._get_sequence_lengths(mask_label)
 
         label_transformed, _, _, _ = self._create_sequence(
-            self.tf_label_data["label_features"], mask_label, self.label_name
+            self.tf_label_data[LABEL_FEATURES], mask_label, self.label_name
         )
         cls_label = self._last_token(label_transformed, sequence_lengths_label)
 
-        all_labels_embed = self._tf_layers["embed.label"](cls_label)
+        all_labels_embed = self._tf_layers[f"embed.{LABEL}"](cls_label)
 
         return all_label_ids, all_labels_embed
 
@@ -349,7 +358,7 @@ class DIET2DIET(DIET):
     ) -> tf.Tensor:
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        mask_text = tf_batch_data["text_mask"][0]
+        mask_text = tf_batch_data[TEXT_MASK][0]
         sequence_lengths_text = self._get_sequence_lengths(mask_text)
 
         (
@@ -358,18 +367,18 @@ class DIET2DIET(DIET):
             text_seq_ids,
             lm_mask_bool_text,
         ) = self._create_sequence(
-            tf_batch_data["text_features"],
+            tf_batch_data[TEXT_FEATURES],
             mask_text,
             self.text_name,
             self.config[MASKED_LM],
             sequence_ids=True,
         )
 
-        mask_label = tf_batch_data["label_mask"][0]
+        mask_label = tf_batch_data[LABEL_MASK][0]
         sequence_lengths_label = self._get_sequence_lengths(mask_label)
 
         label_transformed, _, _, _ = self._create_sequence(
-            tf_batch_data["label_features"], mask_label, self.label_name
+            tf_batch_data[LABEL_FEATURES], mask_label, self.label_name
         )
 
         losses = []
@@ -390,7 +399,7 @@ class DIET2DIET(DIET):
         # get _cls_ vector for label classification
         cls_text = self._last_token(text_transformed, sequence_lengths_text)
         cls_label = self._last_token(label_transformed, sequence_lengths_label)
-        label_ids = tf_batch_data["label_ids"][0]
+        label_ids = tf_batch_data[LABEL_IDS][0]
 
         loss, acc = self._label_loss(cls_text, cls_label, label_ids)
         self.response_loss.update_state(loss)
@@ -406,11 +415,11 @@ class DIET2DIET(DIET):
             batch_in, self.predict_data_signature
         )
 
-        mask_text = tf_batch_data["text_mask"][0]
+        mask_text = tf_batch_data[TEXT_MASK][0]
         sequence_lengths_text = self._get_sequence_lengths(mask_text)
 
         text_transformed, _, _, _ = self._create_sequence(
-            tf_batch_data["text_features"], mask_text, self.text_name
+            tf_batch_data[TEXT_FEATURES], mask_text, self.text_name
         )
 
         out = {}
@@ -420,12 +429,12 @@ class DIET2DIET(DIET):
 
         # get _cls_ vector for intent classification
         cls = self._last_token(text_transformed, sequence_lengths_text)
-        cls_embed = self._tf_layers["embed.text"](cls)
+        cls_embed = self._tf_layers[f"embed.{TEXT}"](cls)
 
-        sim_all = self._tf_layers["loss.label"].sim(
+        sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
             cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :]
         )
-        scores = self._tf_layers["loss.label"].confidence_from_sim(
+        scores = self._tf_layers[f"loss.{LABEL}"].confidence_from_sim(
             sim_all, self.config[SIMILARITY_TYPE]
         )
         out["i_scores"] = scores

@@ -36,6 +36,7 @@ from rasa.utils.tensorflow.constants import (
     MAX_RELATIVE_POSITION,
     SOFTMAX,
     AUTO,
+    BALANCED,
 )
 from rasa.utils.tensorflow.models import RasaModel
 import rasa.utils.common as common_utils
@@ -87,7 +88,7 @@ class EmbeddingPolicy(TEDPolicy):
         BATCH_SIZES: [8, 32],
         # Strategy used when creating batches.
         # Can be either 'sequence' or 'balanced'.
-        BATCH_STRATEGY: "balanced",
+        BATCH_STRATEGY: BALANCED,
         # Number of epochs to train
         EPOCHS: 1,
         # Set random seed to any 'int' to get reproducible results

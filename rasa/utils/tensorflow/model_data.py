@@ -7,7 +7,7 @@ import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from typing import Optional, Dict, Text, List, Tuple, Any, Union, Generator, NamedTuple
 from collections import defaultdict
-
+from rasa.utils.tensorflow.constants import BALANCED, SEQUENCE
 
 logger = logging.getLogger(__name__)
 
@@ -312,7 +312,7 @@ class RasaModelData:
         return tuple_sizes
 
     def as_tf_dataset(
-        self, batch_size: int, batch_strategy: Text = "sequence", shuffle: bool = False
+        self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
     ) -> tf.data.Dataset:
         """Create tf dataset."""
 
@@ -361,7 +361,7 @@ class RasaModelData:
         return tuple(shapes), tuple(types)
 
     def _gen_batch(
-        self, batch_size: int, batch_strategy: Text = "sequence", shuffle: bool = False
+        self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
     ) -> Generator[Tuple, None, None]:
         """Generate batches."""
 
@@ -370,7 +370,7 @@ class RasaModelData:
         if shuffle:
             data = self.shuffled_data(data)
 
-        if batch_strategy == "balanced":
+        if batch_strategy == BALANCED:
             data = self.balanced_data(data, batch_size, shuffle)
 
         num_batches = self.num_examples // batch_size + int(
