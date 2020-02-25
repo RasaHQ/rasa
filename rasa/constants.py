@@ -33,10 +33,13 @@ DOCS_URL_STORIES = DOCS_BASE_URL + "/core/stories/"
 DOCS_URL_ACTIONS = DOCS_BASE_URL + "/core/actions/"
 DOCS_URL_CONNECTORS = DOCS_BASE_URL + "/user-guide/connectors/"
 DOCS_URL_EVENT_BROKERS = DOCS_BASE_URL + "/api/event-brokers/"
+DOCS_URL_TRACKER_STORES = DOCS_BASE_URL + "/api/tracker-stores/"
 DOCS_URL_PIPELINE = DOCS_BASE_URL + "/nlu/choosing-a-pipeline/"
 DOCS_URL_COMPONENTS = DOCS_BASE_URL + "/nlu/components/"
 DOCS_URL_TRAINING_DATA_NLU = DOCS_BASE_URL + "/nlu/training-data-format/"
 DOCS_URL_MIGRATE_GOOGLE = DOCS_BASE_URL + "/migrate-from/google-dialogflow-to-rasa/"
+
+DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
 
 LEGACY_DOCS_BASE_URL = "http://legacy-docs.rasa.com"
 

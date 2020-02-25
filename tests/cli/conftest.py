@@ -52,6 +52,8 @@ def run_in_default_project(
 
     def do_run(*args):
         args = ["rasa"] + list(args)
-        return testdir.run(*args)
+        result = testdir.run(*args)
+        os.environ["LOG_LEVEL"] = "INFO"
+        return result
 
     return do_run
