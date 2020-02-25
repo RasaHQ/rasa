@@ -12,7 +12,7 @@ from rasa.utils.tensorflow.constants import BALANCED, SEQUENCE
 logger = logging.getLogger(__name__)
 
 
-Data = Optional[Dict[Text, List[np.ndarray]]]
+Data = Dict[Text, List[np.ndarray]]
 
 
 class FeatureSignature(NamedTuple):
@@ -21,7 +21,7 @@ class FeatureSignature(NamedTuple):
 
 
 class RasaModelData:
-    def __init__(self, label_key: Optional[Text] = None, data: Data = None):
+    def __init__(self, label_key: Optional[Text] = None, data: Optional[Data] = None):
         self.data = data or {}
         self.label_key = label_key
         # will be updated when features are added
@@ -401,7 +401,7 @@ class RasaModelData:
             )
 
     @staticmethod
-    def _data_for_ids(data: Data, ids: np.ndarray) -> Dict[Text, List[np.ndarray]]:
+    def _data_for_ids(data: Data, ids: np.ndarray) -> Data:
         """Filter session data by ids."""
 
         new_data = defaultdict(list)
