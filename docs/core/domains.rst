@@ -30,7 +30,7 @@ As an example, the ``DefaultDomain`` has the following yaml definition:
 
 Your NLU model will define the ``intents`` and ``entities`` that you
 need to include in the domain. The ``entities`` section lists all entities
-extracted by any `entity extractor <_entity-extraction>`_ in your
+extracted by any :ref:`entity extractor<entity-extraction>` in your
 NLU pipeline.
 
 For example:
