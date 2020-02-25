@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 from typing import Any, Dict, Optional, Text, List, Type
 
+from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -55,8 +56,10 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         "suffix3": lambda token: token.text[-3:],
         "suffix2": lambda token: token.text[-2:],
         "suffix1": lambda token: token.text[-1:],
-        "pos": lambda token: token.data.get("pos") if "pos" in token.data else None,
-        "pos2": lambda token: token.data.get("pos")[:2]
+        "pos": lambda token: token.data.get(POS_TAG_KEY)
+        if POS_TAG_KEY in token.data
+        else None,
+        "pos2": lambda token: token.data.get(POS_TAG_KEY)[:2]
         if "pos" in token.data
         else None,
         "upper": lambda token: token.text.isupper(),

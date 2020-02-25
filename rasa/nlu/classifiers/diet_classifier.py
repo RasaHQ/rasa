@@ -32,7 +32,7 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     TOKENS_NAMES,
 )
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa.nlu.training_data import TrainingData
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message
@@ -981,13 +981,13 @@ class DIET(RasaModel):
 
     def _check_data(self) -> None:
         if TEXT_FEATURES not in self.data_signature:
-            raise ValueError(
+            raise InvalidConfigError(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if self.config[INTENT_CLASSIFICATION]:
             if LABEL_FEATURES not in self.data_signature:
-                raise ValueError(
+                raise InvalidConfigError(
                     f"No label features specified. "
                     f"Cannot train '{self.__class__.__name__}' model."
                 )
