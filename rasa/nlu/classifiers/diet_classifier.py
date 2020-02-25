@@ -609,9 +609,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> None:
         """Train the embedding intent classifier on a data set."""
 
-        # set numpy random seed
-        np.random.seed(self.component_config[RANDOM_SEED])
-
         model_data = self.preprocess_train_data(training_data)
         if model_data.is_empty():
             logger.debug(
