@@ -57,6 +57,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    core/domains
    core/responses
    core/actions
+   core/reminders-and-external-events
    core/policies
    core/slots
    core/forms
