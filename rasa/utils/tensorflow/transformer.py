@@ -87,12 +87,12 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         if self.use_key_relative_position:
             self.key_relative_embeddings = self.add_weight(
-                shape=relative_embedding_shape, name="key_relative_embeddings",
+                shape=relative_embedding_shape, name="key_relative_embeddings"
             )
 
         if self.use_value_relative_position:
             self.value_relative_embeddings = self.add_weight(
-                shape=relative_embedding_shape, name="value_relative_embeddings",
+                shape=relative_embedding_shape, name="value_relative_embeddings"
             )
 
     def _pad_relative_embeddings(self, x: tf.Tensor, length: tf.Tensor) -> tf.Tensor:
@@ -356,7 +356,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
     ) -> None:
         super().__init__()
 
-        self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+        self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
         self._mha = MultiHeadAttention(
             units,
             num_heads,
@@ -391,7 +391,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         if training is None:
             training = K.learning_phase()
 
-        x_norm = self._layernorm(x)  # (batch_size, seq_len, units)
+        x_norm = self._layer_norm(x)  # (batch_size, seq_len, units)
         attn_out, _ = self._mha(
             x_norm, x_norm, x_norm, pad_mask=pad_mask, training=training
         )
@@ -456,7 +456,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
             )
             for _ in range(num_layers)
         ]
-        self._layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+        self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
     def _get_angles(self) -> np.ndarray:
         i = np.arange(self.units)[np.newaxis, :]
@@ -514,4 +514,4 @@ class TransformerEncoder(tf.keras.layers.Layer):
         # if normalization is done in encoding layers, then it should also be done
         # on the output, since the output can grow very large, being the sum of
         # a whole stack of unnormalized layer outputs.
-        return self._layernorm(x)  # (batch_size, seq_len, units)
+        return self._layer_norm(x)  # (batch_size, seq_len, units)

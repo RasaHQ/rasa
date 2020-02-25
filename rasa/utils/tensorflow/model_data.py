@@ -21,7 +21,9 @@ class FeatureSignature(NamedTuple):
 
 
 class RasaModelData:
-    def __init__(self, label_key: Optional[Text] = None, data: Optional[Data] = None):
+    def __init__(
+        self, label_key: Optional[Text] = None, data: Optional[Data] = None
+    ) -> None:
         self.data = data or {}
         self.label_key = label_key
         # will be updated when features are added
@@ -52,7 +54,7 @@ class RasaModelData:
         """Check if feature key is present and features are available."""
         return key not in self.data or not self.data[key]
 
-    def is_empty(self):
+    def is_empty(self) -> bool:
         """Checks if data is set."""
         return not self.data
 
@@ -331,7 +333,7 @@ class RasaModelData:
         types = []
         shapes = []
 
-        def append_shape(features: np.ndarray):
+        def append_shape(features: np.ndarray) -> None:
             if isinstance(features[0], scipy.sparse.spmatrix):
                 # scipy matrix is converted into indices, data, shape
                 shapes.append((None, features[0].ndim + 1))
@@ -344,7 +346,7 @@ class RasaModelData:
             else:
                 shapes.append((None, None, features[0].shape[-1]))
 
-        def append_type(features: np.ndarray):
+        def append_type(features: np.ndarray) -> None:
             if isinstance(features[0], scipy.sparse.spmatrix):
                 # scipy matrix is converted into indices, data, shape
                 types.append(tf.int64)
@@ -532,7 +534,7 @@ class RasaModelData:
 
     @staticmethod
     def _scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
-        """Convert a scipy matrix into inidces, data, and shape."""
+        """Convert a scipy matrix into indices, data, and shape."""
 
         if not isinstance(array_of_sparse[0], scipy.sparse.coo_matrix):
             array_of_sparse = [x.tocoo() for x in array_of_sparse]
