@@ -2,10 +2,14 @@ import copy
 import logging
 import os
 import ruamel.yaml as yaml
-from typing import Any, Dict, List, Optional, Text, Union, Tuple
+from typing import Any, Dict, List, Optional, Text, Union
 
 import rasa.utils.io
-from rasa.constants import DEFAULT_CONFIG_PATH, DOCS_URL_PIPELINE
+from rasa.constants import (
+    DEFAULT_CONFIG_PATH,
+    DOCS_URL_PIPELINE,
+    DOCS_URL_MIGRATION_GUIDE,
+)
 from rasa.nlu.utils import json_to_string
 import rasa.utils.common as common_utils
 
@@ -124,7 +128,7 @@ class RasaNLUModelConfig:
                     "the components you want to use directly to your configuration "
                     "file.",
                     FutureWarning,
-                    docs="https://rasa.com/docs/rasa/migration-guide/",
+                    docs=DOCS_URL_MIGRATION_GUIDE,
                 )
 
                 # replaces the template with the actual components

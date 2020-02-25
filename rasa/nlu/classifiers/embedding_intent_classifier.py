@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Dict, Optional, Text, List, Type
 
+from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.components import Component
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -163,5 +164,5 @@ class EmbeddingIntentClassifier(DIETClassifier):
             "'EmbeddingIntentClassifier' is deprecated and will be removed in version "
             "2.0. Use 'DIETClassifier' instead.",
             category=FutureWarning,
-            docs="https://rasa.com/docs/rasa/migration-guide/",
+            docs=DOCS_URL_MIGRATION_GUIDE,
         )

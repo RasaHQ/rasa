@@ -14,7 +14,11 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.nlu.constants import TOKENS_NAMES, TEXT, DENSE_FEATURE_NAMES, ENTITIES
-from rasa.constants import DOCS_URL_TRAINING_DATA_NLU, DOCS_URL_COMPONENTS
+from rasa.constants import (
+    DOCS_URL_TRAINING_DATA_NLU,
+    DOCS_URL_COMPONENTS,
+    DOCS_URL_MIGRATION_GUIDE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -106,8 +110,7 @@ class CRFEntityExtractor(EntityExtractor):
         common_utils.raise_warning(
             "'CRFEntityExtractor' is deprecated and will be removed in version "
             "2.0. Use 'DIETClassifier' instead.",
-            category=FutureWarning,
-            docs="https://rasa.com/docs/rasa/migration-guide/",
+            docs=DOCS_URL_MIGRATION_GUIDE,
         )
 
     def _validate_configuration(self) -> None:

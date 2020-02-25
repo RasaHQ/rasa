@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Dict, Optional, Text
 
+from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.ted_policy import TEDPolicy
@@ -155,5 +156,5 @@ class EmbeddingPolicy(TEDPolicy):
             f"'EmbeddingPolicy' is deprecated and will be removed in version 2.0. "
             f"Use 'TEDPolicy' instead.",
             category=FutureWarning,
-            docs="https://rasa.com/docs/rasa/migration-guide/",
+            docs=DOCS_URL_MIGRATION_GUIDE,
         )
