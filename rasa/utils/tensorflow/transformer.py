@@ -102,12 +102,12 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         # pad the right side to length
         if self.unidirectional:
-            m_right = 1  # current time
+            right_relative_length = 1  # current time
             pad_right = tf.zeros_like(x[:, :, :, -1:, :])
         else:
-            m_right = self.relative_length
+            right_relative_length = self.relative_length
             pad_right = x[:, :, :, -1:, :]
-        pad_right = tf.tile(pad_right, (1, 1, 1, length - m_right, 1))
+        pad_right = tf.tile(pad_right, (1, 1, 1, length - right_relative_length, 1))
 
         return tf.concat([pad_left, x, pad_right], axis=-2)
 
@@ -118,9 +118,9 @@ class MultiHeadAttention(tf.keras.layers.Layer):
             pad_right = tf.tile(pad_right, (1, 1, 1, self.relative_length - 1, 1))
             x = tf.concat([x, pad_right], axis=-2)
 
-        dl = self.relative_length - length
-        m = tf.shape(x)[-2]
-        return x[:, :, :, dl : m - dl, :]
+        extra_length = self.relative_length - length
+        full_length = tf.shape(x)[-2]
+        return x[:, :, :, extra_length : full_length - extra_length, :]
 
     def _relative_to_absolute_position(self, x: tf.Tensor) -> tf.Tensor:
         """Universal method to convert tensor from relative to absolute indexing.
