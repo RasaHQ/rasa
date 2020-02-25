@@ -1183,12 +1183,14 @@ class DIET(RasaModel):
     def _features_as_seq_ids(
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
     ) -> tf.Tensor:
-        # if there are dense features it's enough
+        """Creates dense labels for negative sampling."""
+
+        # if there are dense features - we can use them
         for f in features:
             if not isinstance(f, tf.SparseTensor):
                 return tf.stop_gradient(f)
 
-        # we need dense labels for negative sampling
+        # use additional sparse to dense layer
         for f in features:
             if isinstance(f, tf.SparseTensor):
                 return tf.stop_gradient(
@@ -1216,29 +1218,27 @@ class DIET(RasaModel):
         sequence_ids: bool = False,
     ) -> Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
         if sequence_ids:
-            x_seq_ids = self._features_as_seq_ids(features, name)
+            seq_ids = self._features_as_seq_ids(features, name)
         else:
-            x_seq_ids = None
+            seq_ids = None
 
-        x = self._combine_sparse_dense_features(
+        inputs = self._combine_sparse_dense_features(
             features, mask, name, sparse_dropout=self.config[SPARSE_INPUT_DROPOUT]
         )
 
-        pre = self._tf_layers[f"ffnn.{name}"](x, self._training)
+        x = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
 
         if masked_lm_loss:
-            pre, lm_mask_bool = self._tf_layers[f"{name}_input_mask"](
-                pre, mask, self._training
+            x, lm_mask_bool = self._tf_layers[f"{name}_input_mask"](
+                x, mask, self._training
             )
         else:
             lm_mask_bool = None
 
-        transformed = self._tf_layers[f"{name}_transformer"](
-            pre, 1 - mask, self._training
-        )
-        transformed = tfa.activations.gelu(transformed)
+        outputs = self._tf_layers[f"{name}_transformer"](x, 1 - mask, self._training)
+        outputs = tfa.activations.gelu(outputs)
 
-        return transformed, x, x_seq_ids, lm_mask_bool
+        return outputs, inputs, seq_ids, lm_mask_bool
 
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_IDS][0]
@@ -1253,15 +1253,34 @@ class DIET(RasaModel):
 
     @staticmethod
     def _last_token(x: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
-        last_index = tf.maximum(0, sequence_lengths - 1)
-        idxs = tf.stack([tf.range(tf.shape(last_index)[0]), last_index], axis=1)
-        return tf.gather_nd(x, idxs)
+        last_sequence_index = tf.maximum(0, sequence_lengths - 1)
+        batch_index = tf.range(tf.shape(last_sequence_index)[0])
+
+        indices = tf.stack([batch_index, last_sequence_index], axis=1)
+        return tf.gather_nd(x, indices)
+
+    def _f1_score_from_ids(
+        self, tag_ids: tf.Tensor, pred_ids: tf.Tensor, mask: tf.Tensor
+    ) -> tf.Tensor:
+        """Calculates f1 score for train predictions"""
+
+        mask_bool = tf.cast(mask[:, :, 0], tf.bool)
+        # pick only non padding values and flatten sequences
+        tag_ids_flat = tf.boolean_mask(tag_ids, mask_bool)
+        pred_ids_flat = tf.boolean_mask(pred_ids, mask_bool)
+        # set `0` prediction to not a prediction
+        tag_ids_flat_one_hot = tf.one_hot(tag_ids_flat - 1, self._num_tags - 1)
+        pred_ids_flat_one_hot = tf.one_hot(pred_ids_flat - 1, self._num_tags - 1)
+
+        return self._tf_layers["crf_f1_score"](
+            tag_ids_flat_one_hot, pred_ids_flat_one_hot
+        )
 
     def _mask_loss(
         self,
-        a_transformed: tf.Tensor,
-        a: tf.Tensor,
-        a_seq_ids: tf.Tensor,
+        outputs: tf.Tensor,
+        inputs: tf.Tensor,
+        seq_ids: tf.Tensor,
         lm_mask_bool: tf.Tensor,
         name: Text,
     ) -> tf.Tensor:
@@ -1273,15 +1292,16 @@ class DIET(RasaModel):
         )
 
         lm_mask_bool = tf.squeeze(lm_mask_bool, -1)
-        a_t_masked = tf.boolean_mask(a_transformed, lm_mask_bool)
-        a_masked = tf.boolean_mask(a, lm_mask_bool)
-        a_masked_ids = tf.boolean_mask(a_seq_ids, lm_mask_bool)
+        # pick elements that were masked
+        outputs = tf.boolean_mask(outputs, lm_mask_bool)
+        inputs = tf.boolean_mask(inputs, lm_mask_bool)
+        ids = tf.boolean_mask(seq_ids, lm_mask_bool)
 
-        a_t_masked_embed = self._tf_layers[f"embed.{name}_lm_mask"](a_t_masked)
-        a_masked_embed = self._tf_layers[f"embed.{name}_golden_token"](a_masked)
+        outputs_embed = self._tf_layers[f"embed.{name}_lm_mask"](outputs)
+        inputs_embed = self._tf_layers[f"embed.{name}_golden_token"](inputs)
 
         return self._tf_layers[f"loss.{name}_mask"](
-            a_t_masked_embed, a_masked_embed, a_masked_ids, a_masked_embed, a_masked_ids
+            outputs_embed, inputs_embed, ids, inputs_embed, ids
         )
 
     def _label_loss(
@@ -1297,12 +1317,16 @@ class DIET(RasaModel):
         )
 
     def _entity_loss(
-        self, a: tf.Tensor, tag_ids: tf.Tensor, mask: tf.Tensor, sequence_lengths
+        self,
+        outputs: tf.Tensor,
+        tag_ids: tf.Tensor,
+        mask: tf.Tensor,
+        sequence_lengths: tf.Tensor,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
 
         sequence_lengths = sequence_lengths - 1  # remove cls token
         tag_ids = tf.cast(tag_ids[:, :, 0], tf.int32)
-        logits = self._tf_layers["embed.logits"](a)
+        logits = self._tf_layers["embed.logits"](outputs)
 
         # should call first to build weights
         pred_ids = self._tf_layers["crf"](logits, sequence_lengths)
@@ -1310,18 +1334,7 @@ class DIET(RasaModel):
         loss = self._tf_layers["crf"].loss(logits, tag_ids, sequence_lengths)
         # pytype: enable=attribute-error
 
-        # calculate f1 score for train predictions
-        mask_bool = tf.cast(mask[:, :, 0], tf.bool)
-        # pick only non padding values and flatten sequences
-        tag_ids_flat = tf.boolean_mask(tag_ids, mask_bool)
-        pred_ids_flat = tf.boolean_mask(pred_ids, mask_bool)
-        # set `0` prediction to not a prediction
-        tag_ids_flat_one_hot = tf.one_hot(tag_ids_flat - 1, self._num_tags - 1)
-        pred_ids_flat_one_hot = tf.one_hot(pred_ids_flat - 1, self._num_tags - 1)
-
-        f1 = self._tf_layers["crf_f1_score"](
-            tag_ids_flat_one_hot, pred_ids_flat_one_hot
-        )
+        f1 = self._f1_score_from_ids(tag_ids, pred_ids, mask)
 
         return loss, f1
 
