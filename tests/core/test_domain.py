@@ -763,3 +763,42 @@ def test_domain_as_dict_with_session_config():
 )
 def test_are_sessions_enabled(session_config: SessionConfig, enabled: bool):
     assert session_config.are_sessions_enabled() == enabled
+
+
+def test_domain_utterance_actions_deprecated_templates():
+    new_yaml = """actions:
+    - utter_greet
+    - utter_goodbye
+    config:
+      store_entities_as_slots: true
+    entities: []
+    forms: []
+    intents: []
+    templates:
+      utter_greet:
+      - text: hey there!
+      utter_goodbye:
+      - text: bye!
+    session_config:
+      carry_over_slots_to_new_session: true
+      session_expiration_time: 60
+    slots: {}"""
+
+    old_yaml = """config:
+      store_entities_as_slots: true
+    entities: []
+    forms: []
+    intents: []
+    responses:
+      utter_greet:
+      - text: hey there!
+      utter_goodbye:
+      - text: bye!
+    session_config:
+      carry_over_slots_to_new_session: true
+      session_expiration_time: 60
+    slots: {}"""
+
+    old_domain = Domain.from_yaml(old_yaml)
+    new_domain = Domain.from_yaml(new_yaml)
+    assert old_domain == new_domain
