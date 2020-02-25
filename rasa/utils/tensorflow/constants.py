@@ -1,4 +1,4 @@
-# constants - configuration parameters
+# constants for configuration parameters of our tensorflow models
 
 LABEL = "label"
 HIDDEN_LAYERS_SIZES = "hidden_layers_sizes"
