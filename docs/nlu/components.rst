@@ -156,6 +156,8 @@ modeling hierarchical intent structure, use these flags with any tokenizer:
     .. note:: All tokenizer add an additional token ``__CLS__`` to the end of the list of tokens when tokenizing
               text and responses.
 
+.. _WhitespaceTokenizer:
+
 WhitespaceTokenizer
 ~~~~~~~~~~~~~~~~~~~
 
@@ -281,7 +283,7 @@ LanguageModelTokenizer
 :Requires: :ref:`HFTransformersNLP`
 :Description:
     Creates tokens using the pre-trained language model specified in upstream :ref:`HFTransformersNLP` component.
-    Must be used whenever the ``LanguageModelFeaturizer`` is used.
+    Must be used whenever the :ref:`LanguageModelFeaturizer` is used.
 :Configuration:
 
     .. code-block:: yaml
@@ -306,7 +308,7 @@ As those feature vectors would normally take up a lot of memory, we store them a
 Sparse features only store the values that are non zero and their positions in the vector.
 Thus, we save a lot of memory and are able to train on larger datasets.
 
-By default all featurizers will return a matrix of length (number-of-tokens x feature-dimension).
+By default all featurizers will return a matrix of length ``(number-of-tokens x feature-dimension)``.
 So, the returned matrix will have a feature vector for every token.
 This allows us to train sequence models.
 However, the additional token at the end (e.g. ``__CLS__``) contains features for the complete utterance.
@@ -390,12 +392,12 @@ ConveRTFeaturizer
     Uses the `default signature <https://github.com/PolyAI-LDN/polyai-models#tfhub-signatures>`_ to compute vector
     representations of input text.
 
-    .. warning::
-        Since ``ConveRT`` model is trained only on an english corpus of conversations, this featurizer should only
-        be used if your training data is in english language.
+    .. note::
+        Since ``ConveRT`` model is trained only on an English corpus of conversations, this featurizer should only
+        be used if your training data is in English language.
 
     .. note::
-        To use ``ConveRTFeaturizer`` you need to install additional tensorflow libraries (``tensorflow_text`` and
+        To use ``ConveRTFeaturizer`` you need to install additional TensorFlow libraries (``tensorflow_text`` and
         ``tensorflow_hub``). You should do a pip install of Rasa with ``pip install rasa[convert]`` to install those.
 
 :Configuration:
@@ -421,13 +423,13 @@ LanguageModelFeaturizer
     Uses the pre-trained language model specified in upstream :ref:`HFTransformersNLP` component to compute vector
     representations of input text.
 
-    .. warning::
+    .. note::
         Please make sure that you use a language model which is pre-trained on the same language corpus as that of your
         training data.
 
 :Configuration:
 
-    Include ``HFTransformersNLP`` and :ref:`LanguageModelTokenizer` components before this component. Use
+    Include :ref:`HFTransformersNLP` and :ref:`LanguageModelTokenizer` components before this component. Use
     :ref:`LanguageModelTokenizer` to ensure tokens are correctly set for all components throughout the pipeline.
 
     .. code-block:: yaml
@@ -435,6 +437,8 @@ LanguageModelFeaturizer
         pipeline:
         - name: "LanguageModelFeaturizer"
 
+
+.. _RegexFeaturizer:
 
 RegexFeaturizer
 ~~~~~~~~~~~~~~~
@@ -450,8 +454,8 @@ RegexFeaturizer
     For each regex, a feature will be set marking whether this expression was found in the input, which will later
     be fed into intent classifier / entity extractor to simplify classification (assuming the classifier has learned
     during the training phase, that this set feature indicates a certain intent / entity).
-    Regex features for entity extraction are currently only supported by the ``CRFEntityExtractor`` and the
-    ``DIETClassifier`` components!
+    Regex features for entity extraction are currently only supported by the :ref:`CRFEntityExtractor` and the
+    :ref:`diet-classifier` components!
 
 :Configuration:
 
@@ -459,6 +463,8 @@ RegexFeaturizer
 
         pipeline:
         - name: "RegexFeaturizer"
+
+.. _CountVectorsFeaturizer:
 
 CountVectorsFeaturizer
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -473,11 +479,6 @@ CountVectorsFeaturizer
     `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_.
     All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
-    .. note::
-        If the words in the model language cannot be split by whitespace,
-        a language-specific tokenizer is required in the pipeline before this component
-        (e.g. using ``JiebaTokenizer`` for Chinese).
-
 :Configuration:
     See `sklearn's CountVectorizer docs <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
     for detailed description of the configuration parameters.
@@ -489,11 +490,11 @@ CountVectorsFeaturizer
     .. note::
         Option ‘char_wb’ creates character n-grams only from text inside word boundaries;
         n-grams at the edges of words are padded with space.
-        This option can be used to create `Subword Semantic Hashing <https://arxiv.org/abs/1810.07150>`_
+        This option can be used to create `Subword Semantic Hashing <https://arxiv.org/abs/1810.07150>`_.
 
     .. note::
         For character n-grams do not forget to increase ``min_ngram`` and ``max_ngram`` parameters.
-        Otherwise the vocabulary will contain only single letters
+        Otherwise the vocabulary will contain only single letters.
 
     Handling Out-Of-Vacabulary (OOV) words:
 
@@ -585,28 +586,31 @@ LexicalSyntacticFeaturizer
     Moves with a sliding window over every token in the user message and creates features according to the
     configuration (see below). As a default configuration is present, you don't need to specify a configuration.
 :Configuration:
-    You need to configure what kind of lexical and syntactic features the featurizer should extract.
+    You can configure what kind of lexical and syntactic features the featurizer should extract.
     The following features are available:
 
-    ==============  =============================================================================================
-    Feature Name    Description
-    ==============  =============================================================================================
-    BOS             Checks if the token is at the beginning of the sentence.
-    EOS             Checks if the token is at the end of the sentence.
-    low             Checks if the token is lower case.
-    upper           Checks if the token is upper case.
-    title           Checks if the token starts with an uppercase character and all remaining characters are
-                    lowercased.
-    digit           Checks if the token contains just digits.
-    prefix5         Take the first five characters of the token.
-    prefix2         Take the first two characters of the token.
-    suffix5         Take the last five characters of the token.
-    suffix3         Take the last three characters of the token.
-    suffix2         Take the last two characters of the token.
-    suffix1         Take the last character of the token.
-    pos             Take the Part-of-Speech tag of the token (spaCy required).
-    pos2            Take the first two characters of the Part-of-Speech tag of the token (spaCy required).
-    ==============  =============================================================================================
+    .. code-block:: yaml
+
+        # ==============  ==========================================================================================
+        # Feature Name    Description
+        # ==============  ==========================================================================================
+        # BOS             Checks if the token is at the beginning of the sentence.
+        # EOS             Checks if the token is at the end of the sentence.
+        # low             Checks if the token is lower case.
+        # upper           Checks if the token is upper case.
+        # title           Checks if the token starts with an uppercase character and all remaining characters are
+        #                 lowercased.
+        # digit           Checks if the token contains just digits.
+        # prefix5         Take the first five characters of the token.
+        # prefix2         Take the first two characters of the token.
+        # suffix5         Take the last five characters of the token.
+        # suffix3         Take the last three characters of the token.
+        # suffix2         Take the last two characters of the token.
+        # suffix1         Take the last character of the token.
+        # pos             Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
+        # pos2            Take the first two characters of the Part-of-Speech tag of the token
+        #                 (``SpacyTokenizer`` required).
+        # ==============  ==========================================================================================
 
     As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
     previous tokens, the current token, and the next tokens in the sliding window.
@@ -624,11 +628,6 @@ LexicalSyntacticFeaturizer
               "BOS",
               "EOS",
               "low",
-              "prefix5",
-              "prefix2",
-              "suffix5",
-              "suffix3",
-              "suffix2",
               "upper",
               "title",
               "digit",
@@ -677,6 +676,10 @@ MitieIntentClassifier
 SklearnIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~~~
 
+.. warning::
+    ``SklearnIntentClassifier`` is deprecated and should be replaced by ``DIETClassifier``. See
+    :ref:`migration guide <migration-to-rasa-1.8>` for more details.
+
 :Short: Sklearn intent classifier
 :Outputs: ``intent`` and ``intent_ranking``
 :Requires: ``dense_features`` for user messages
@@ -703,10 +706,6 @@ SklearnIntentClassifier
     rankings of the labels that did not "win". The ``SklearnIntentClassifier`` needs to be preceded by a dense
     featurizer in the pipeline. This dense featurizer creates the features used for the classification.
 
-    .. warning::
-        ``SklearnIntentClassifier`` is deprecated and should be replaced by ``DIETClassifier``. See
-        :ref:`migration guide <migration-to-rasa-1.8>` for more details.
-
 :Configuration:
     During the training of the SVM a hyperparameter search is run to
     find the best parameter set. In the config, you can specify the parameters
@@ -728,6 +727,10 @@ SklearnIntentClassifier
 
 EmbeddingIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. warning::
+    ``EmbeddingIntentClassifier`` is deprecated and should be replaced by ``DIETClassifier``. See
+    :ref:`migration guide <migration-to-rasa-1.8>` for more details.
 
 :Short: Embedding intent classifier for intent classification
 :Outputs: ``intent`` and ``intent_ranking``
@@ -758,13 +761,11 @@ EmbeddingIntentClassifier
     additional hidden layers are added together with dropout.
     This algorithm also provides similarity rankings of the labels that did not "win".
 
-    .. note:: If during prediction time a message contains **only** words unseen during training,
-              and no Out-Of-Vacabulary preprocessor was used,
-              empty intent ``None`` is predicted with confidence ``0.0``.
-
-    .. warning::
-        ``EmbeddingIntentClassifier`` is deprecated and should be replaced by ``DIETClassifier``. See
-        :ref:`migration guide <migration-to-rasa-1.8>` for more details.
+    .. note:: If during prediction time a message contains **only** words unseen during training
+              and no Out-Of-Vacabulary preprocessor was used, an empty intent ``None`` is predicted with confidence
+              ``0.0``. This might happen if you only use the :ref:`CountVectorsFeaturizer` with a ``word`` analyzer
+              as featurizer. If you use the ``char_wb`` analyzer, you should always get an intent with a confidence
+              value ``> 0.0``.
 
 :Configuration:
 
@@ -948,7 +949,7 @@ KeywordIntentClassifier
     This means the entire example is the keyword, not the individual words in the example.
 
     .. note:: This classifier is intended only for small projects or to get started. If
-              you have few NLU training data you can use one of our pipelines
+              you have few NLU training data, you can take a look at the recommended pipelines in
               :ref:`choosing-a-pipeline`.
 
 :Configuration:
@@ -992,15 +993,17 @@ ResponseSelector
     Response Selector component can be used to build a response retrieval model to directly predict a bot response from
     a set of candidate responses. The prediction of this model is used by :ref:`retrieval-actions`.
     It embeds user inputs and response labels into the same space and follows the exact same
-    neural network architecture and optimization as the ``DIETClassifier``.
+    neural network architecture and optimization as the :ref:`diet-classifier`.
 
-    .. note:: If during prediction time a message contains **only** words unseen during training,
-              and no Out-Of-Vacabulary preprocessor was used,
-              empty response ``None`` is predicted with confidence ``0.0``.
+    .. note:: If during prediction time a message contains **only** words unseen during training
+              and no Out-Of-Vacabulary preprocessor was used, an empty intent ``None`` is predicted with confidence
+              ``0.0``. This might happen if you only use the :ref:`CountVectorsFeaturizer` with a ``word`` analyzer
+              as featurizer. If you use the ``char_wb`` analyzer, you should always get an intent with a confidence
+              value ``> 0.0``.
 
 :Configuration:
 
-    The algorithm includes all the hyperparameters that ``DIETClassifier`` uses.
+    The algorithm includes all the hyperparameters that :ref:`diet-classifier` uses.
     In addition, the component can also be configured to train a response selector for a particular retrieval intent.
 
         - ``retrieval_intent`` sets the name of the intent for which this response selector model is trained.
@@ -1106,7 +1109,7 @@ ResponseSelector
 Entity Extractors
 -----------------
 
-Entity extractors extract entities, such as person names or locations, from the user input.
+Entity extractors extract entities, such as person names or locations, from the user message.
 
 MitieEntityExtractor
 ~~~~~~~~~~~~~~~~~~~~
@@ -1242,7 +1245,7 @@ CRFEntityExtractor
 
         {
             "entities": [{
-                "value":"New York City",
+                "value": "New York City",
                 "start": 20,
                 "end": 33,
                 "entity": "city",
@@ -1273,26 +1276,28 @@ CRFEntityExtractor
     However, you can overwrite the default configuration.
     The following features are available:
 
-    ===============  =============================================================================
-    Feature Name     Description
-    ===============  =============================================================================
-    low              Checks if the token is lower case.
-    upper            Checks if the token is upper case.
-    title            Checks if the token starts with an uppercase character and all remaining
-                     characters are lowercased.
-    digit            Checks if the token contains just digits.
-    prefix5          Take the first five characters of the token.
-    prefix2          Take the first two characters of the token.
-    suffix5          Take the last five characters of the token.
-    suffix3          Take the last three characters of the token.
-    suffix2          Take the last two characters of the token.
-    suffix1          Take the last character of the token.
-    pos              Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
-    pos2             Take the first two characters of the Part-of-Speech tag of the token
-                     (``SpacyTokenizer`` required).
-    pattern          Take the patterns defined by ``RegexFeaturizer``.
-    bias             Add an additional "bias" feature to the list of features.
-    ===============  =============================================================================
+    .. code-block:: yaml
+
+        # ==============  ==========================================================================================
+        # Feature Name    Description
+        # ==============  ==========================================================================================
+        # low             Checks if the token is lower case.
+        # upper           Checks if the token is upper case.
+        # title           Checks if the token starts with an uppercase character and all remaining characters are
+        #                 lowercased.
+        # digit           Checks if the token contains just digits.
+        # prefix5         Take the first five characters of the token.
+        # prefix2         Take the first two characters of the token.
+        # suffix5         Take the last five characters of the token.
+        # suffix3         Take the last three characters of the token.
+        # suffix2         Take the last two characters of the token.
+        # suffix1         Take the last character of the token.
+        # pos             Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
+        # pos2            Take the first two characters of the Part-of-Speech tag of the token
+        #                 (``SpacyTokenizer`` required).
+        # pattern         Take the patterns defined by ``RegexFeaturizer``.
+        # bias            Add an additional "bias" feature to the list of features.
+        # ==============  ==========================================================================================
 
     As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
     previous tokens, the current token, and the next tokens in the sliding window.
@@ -1454,8 +1459,10 @@ DIETClassifier
     similarities with negative samples.
 
     .. note:: If during prediction time a message contains **only** words unseen during training
-              and no Out-Of-Vacabulary preprocessor was used,
-              an empty intent ``None`` is predicted with confidence ``0.0``.
+              and no Out-Of-Vacabulary preprocessor was used, an empty intent ``None`` is predicted with confidence
+              ``0.0``. This might happen if you only use the :ref:`CountVectorsFeaturizer` with a ``word`` analyzer
+              as featurizer. If you use the ``char_wb`` analyzer, you should always get an intent with a confidence
+              value ``> 0.0``.
 
 :Configuration:
 
