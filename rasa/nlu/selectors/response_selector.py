@@ -5,6 +5,7 @@ import tensorflow as tf
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
+from rasa.nlu.config import InvalidConfigError
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import Featurizer
@@ -237,7 +238,6 @@ class ResponseSelector(DIETClassifier):
     def _set_message_property(
         message: Message, prediction_dict: Dict[Text, Any], selector_key: Text
     ) -> None:
-
         message_selector_properties = message.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
         message_selector_properties[selector_key] = prediction_dict
         message.set(
@@ -298,12 +298,12 @@ class ResponseSelector(DIETClassifier):
 class DIET2DIET(DIET):
     def _check_data(self) -> None:
         if TEXT_FEATURES not in self.data_signature:
-            raise ValueError(
+            raise InvalidConfigError(
                 f"No text features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
         if LABEL_FEATURES not in self.data_signature:
-            raise ValueError(
+            raise InvalidConfigError(
                 f"No label features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )

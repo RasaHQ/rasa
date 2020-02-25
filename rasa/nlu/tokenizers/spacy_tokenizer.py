@@ -17,6 +17,9 @@ except ImportError:
     spacy = None
 
 
+POS_TAG_KEY = "pos"
+
+
 class SpacyTokenizer(Tokenizer):
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
@@ -36,7 +39,9 @@ class SpacyTokenizer(Tokenizer):
         doc = self.get_doc(message, attribute)
 
         return [
-            Token(t.text, t.idx, lemma=t.lemma_, data={"pos": self._tag_of_token(t)})
+            Token(
+                t.text, t.idx, lemma=t.lemma_, data={POS_TAG_KEY: self._tag_of_token(t)}
+            )
             for t in doc
         ]
 

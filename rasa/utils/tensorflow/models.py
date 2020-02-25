@@ -80,9 +80,9 @@ class RasaModel(tf.keras.models.Model):
         ) = self._get_tf_evaluation_functions(eager, evaluation_model_data)
 
         val_results = {}  # validation is not performed every epoch
-        pbar = tqdm(range(epochs), desc="Epochs", disable=disable)
+        progress_bar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
-        for ep in pbar:
+        for ep in progress_bar:
             ep_batch_size = self.linearly_increasing_batch_size(ep, batch_size, epochs)
 
             self._batch_loop(
@@ -103,7 +103,7 @@ class RasaModel(tf.keras.models.Model):
 
                 postfix_dict.update(val_results)
 
-            pbar.set_postfix(postfix_dict)
+            progress_bar.set_postfix(postfix_dict)
 
         self._training = None  # training phase should be defined when building a graph
         if not disable:

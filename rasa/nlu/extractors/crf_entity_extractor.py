@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union, NamedTuple, Ty
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
 import rasa.utils.common as common_utils
+from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.components import Component
@@ -520,7 +521,7 @@ class CRFEntityExtractor(EntityExtractor):
         for i, token in enumerate(tokens):
             pattern = self.__pattern_of_token(message, i)
             entity = entities[i] if entities else "N/A"
-            tag = token.get("pos")
+            tag = token.get(POS_TAG_KEY)
             dense_features = (
                 text_dense_features[i] if text_dense_features is not None else []
             )
