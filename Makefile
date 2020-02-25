@@ -59,15 +59,6 @@ lint:
 types:
 	poetry run pytype --keep-going rasa -j 16
 
-prepare-tests-macos: prepare-wget-macos prepare-tests-files
-	brew install graphviz || true
-
-prepare-wget-macos:
-	brew install wget || true
-
-prepare-tests-ubuntu: prepare-tests-files
-	sudo apt-get -y install graphviz graphviz-dev python-tk
-
 prepare-tests-files:
 	poetry install --extras spacy
 	poetry run python -m spacy download en_core_web_md
@@ -75,6 +66,15 @@ prepare-tests-files:
 	poetry run python -m spacy link en_core_web_md en --force
 	poetry run python -m spacy link de_core_news_sm de --force
 	wget --progress=dot:giga -N -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
+
+prepare-wget-macos:
+	brew install wget || true
+
+prepare-tests-macos: prepare-wget-macos prepare-tests-files
+	brew install graphviz || true
+
+prepare-tests-ubuntu: prepare-tests-files
+	sudo apt-get -y install graphviz graphviz-dev python-tk
 
 test: clean
 	# OMP_NUM_THREADS can improve overral performance using one thread by process (on tensorflow), avoiding overload
