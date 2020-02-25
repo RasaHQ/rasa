@@ -29,6 +29,7 @@ Command                    Effect
 ``rasa test``              Tests a trained Rasa model using your test NLU data and stories.
 ``rasa data split nlu``    Performs a split of your NLU data according to the specified percentages.
 ``rasa data convert nlu``  Converts NLU training data between different formats.
+``rasa export``            Export conversations from a tracker store to an event broker.
 ``rasa x``                 Launch Rasa X locally.
 ``rasa -h``                Shows all available commands.
 =========================  =============================================================================================
@@ -250,8 +251,25 @@ You can specify the input file, output file, and the output format with the foll
 .. program-output:: rasa data convert nlu --help
 
 
-.. _section_evaluation:
+.. _section_export:
 
+Export Conversations to an Event Broker
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To export events from a tracker store using an event broker, run:
+
+.. code:: bash
+
+   rasa export
+
+You can specify the location of the environments file, the minimum and maximum
+timestamps of events that should be published, as well as the conversation IDs that
+should be published.
+
+.. program-output:: rasa export --help
+
+
+.. _section_evaluation:
 
 Start Rasa X
 ~~~~~~~~~~~~
