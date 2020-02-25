@@ -1550,7 +1550,7 @@ description = "Pika Python AMQP Client Library"
 name = "pika"
 optional = false
 python-versions = "*"
-version = "1.0.1"
+version = "1.1.0"
 
 [package.extras]
 tornado = ["tornado"]
@@ -3122,7 +3122,7 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "6e53088e45b07899f0f7ab05f31f331514bf1b024c6a81a96882e9de6cf8ccd4"
+content-hash = "ddec4220c70d3ea2d44784ad537b2b3904f3450eb8f5a76e0056c5780458127e"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -3990,8 +3990,8 @@ pathtools = [
     {file = "pathtools-0.1.2.tar.gz", hash = "sha256:7c35c5421a39bb82e58018febd90e3b6e5db34c5443aaaf742b3f33d4655f1c0"},
 ]
 pika = [
-    {file = "pika-1.0.1-py2.py3-none-any.whl", hash = "sha256:0c50285f00a8b4816f2c9a44469107d9e738ba3a90386f14b625d8cceef4f6ae"},
-    {file = "pika-1.0.1.tar.gz", hash = "sha256:5ba83d3daffccb92788d24facdab62a3db6aa03b8a6d709b03dc792d35c0dfe8"},
+    {file = "pika-1.1.0-py2.py3-none-any.whl", hash = "sha256:4e1a1a6585a41b2341992ec32aadb7a919d649eb82904fd8e4a4e0871c8cf3af"},
+    {file = "pika-1.1.0.tar.gz", hash = "sha256:9fa76ba4b65034b878b2b8de90ff8660a59d925b087c5bb88f8fdbb4b64a1dbf"},
 ]
 plac = [
     {file = "plac-0.9.6-py2.py3-none-any.whl", hash = "sha256:854693ad90367e8267112ffbb8955f57d6fdeac3191791dc9ffce80f87fd2370"},
