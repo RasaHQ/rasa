@@ -20,7 +20,7 @@ for the things your bot can say.
 An example of a Domain
 ----------------------
 
-As an example, the ``DefaultDomain`` has the following yaml definition:
+As an example, the the domain created by ``rasa init`` has the following yaml definition:
 
 
 .. literalinclude:: ../../rasa/cli/initial_project/domain.yml
