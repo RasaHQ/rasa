@@ -1,7 +1,9 @@
 language: "en"
 
 pipeline:
-  - name: WhitespaceTokenizer
+  - name: SpacyNLP
+  - name: SpacyTokenizer
+  - name: SpacyFeaturizer
   - name: RegexFeaturizer
   - name: LexicalSyntacticFeaturizer
   - name: CountVectorsFeaturizer
@@ -12,3 +14,4 @@ pipeline:
   - name: DIETClassifier
   - name: EntitySynonymMapper
   - name: ResponseSelector
+

@@ -13,6 +13,10 @@ it on your dataset.
 .. contents::
    :local:
 
+.. note::
+    With Rasa 1.8.0 we updated some components and deprecated all existing pipeline templates.
+    However, **any of the old terminology will still behave the same way as it did before**!
+
 .. warning::
     We deprecated all existing pipeline templates, e.g.
     :ref:`supervised_embeddings <section_supervised_embeddings_pipeline>`,
@@ -50,14 +54,22 @@ This is especially useful if you don’t have enough training data.
 The advantage of the ``ConveRTFeaturizer`` is that it doesn't treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence.
 However, ``ConveRT`` is only available in English.
-If your training data is not in English, we recommend using the following pipeline:
+If your training data is not in English, but you still want to use pre-trained word embeddings, we recommend using
+the following pipeline:
 
-.. literalinclude:: ../../data/configs_for_docs/default_config.yml
+.. literalinclude:: ../../data/configs_for_docs/default_spacy_config.yml
     :language: yaml
 
 It uses the :ref:`SpacyFeaturizer` instead of the :ref:`ConveRTFeaturizer`.
 ``SpacyFeaturizer`` provides pre-trained word embeddings from either GloVe or fastText in many different languages
 (see :ref:`pretrained-word-vectors`).
+
+If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
+and can train your model to be more domain specific.
+If you don't want to use pre-trained word embeddings, we recommend using the following pipeline:
+
+.. literalinclude:: ../../data/configs_for_docs/default_config.yml
+    :language: yaml
 
 .. note::
     We encourage everyone to define their own pipeline by listing the names of the components you want to use.
@@ -92,10 +104,10 @@ You need to decide whether to use components that provide pre-trained word embed
 If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
 and can train your model to be more domain specific. For example, in general English, the word "balance" is closely
 related to "symmetry", but very different to the word "cash". In a banking domain, "balance" and "cash" are closely
-related and you'd like your model to capture that. If you don't
-use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language and domain.
-In those cases you should only use featurizers from the category :ref:`sparse featurizers <text-featurizers>`, such as
-``CountVectorsFeaturizer``, ``RegexFeaturizer`` or ``LexicalSyntacticFeaturizer``.
+related and you'd like your model to capture that.
+You should only use featurizers from the category :ref:`sparse featurizers <text-featurizers>`, such as
+``CountVectorsFeaturizer``, ``RegexFeaturizer`` or ``LexicalSyntacticFeaturizer``, if you don't want to use
+pre-trained word embeddings.
 
 The advantage of using pre-trained word embeddings in your pipeline is that if you have a training example like:
 "I want to buy apples", and Rasa is asked to predict the intent for "get pears", your model already knows that the
