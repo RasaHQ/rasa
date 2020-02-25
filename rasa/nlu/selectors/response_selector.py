@@ -93,19 +93,19 @@ class ResponseSelector(DIETClassifier):
         HIDDEN_LAYERS_SIZES: {TEXT: [256, 128], LABEL: [256, 128]},
         # Whether to share the hidden layer weights between input words and responses
         SHARE_HIDDEN_LAYERS: False,
-        # number of units in transformer
+        # Number of units in transformer
         TRANSFORMER_SIZE: None,
-        # number of transformer layers
+        # Number of transformer layers
         NUM_TRANSFORMER_LAYERS: 0,
-        # number of attention heads in transformer
+        # Number of attention heads in transformer
         NUM_HEADS: 4,
-        # if true use key relative embeddings in attention
+        # If 'True' use key relative embeddings in attention
         KEY_RELATIVE_ATTENTION: False,
-        # if true use key relative embeddings in attention
+        # If 'True' use key relative embeddings in attention
         VALUE_RELATIVE_ATTENTION: False,
-        # max position for relative embeddings
+        # Max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
-        # use a unidirectional or bidirectional encoder
+        # Use a unidirectional or bidirectional encoder.
         UNIDIRECTIONAL_ENCODER: False,
         # ## Training parameters
         # Initial and final batch sizes:
