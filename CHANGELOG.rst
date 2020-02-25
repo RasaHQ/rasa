@@ -17,6 +17,32 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.7.4] - 2020-02-24
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5068 <https://github.com/rasahq/rasa/issues/5068>`_: Tracker stores supporting conversation sessions (``SQLTrackerStore`` and
+  ``MongoTrackerStore``) do not save the tracker state to database immediately after
+  starting a new conversation session. This leads to the number of events being saved
+  in addition to the already-existing ones to be calculated correctly.
+
+  This fixes ``action_listen`` events being saved twice at the beginning of
+  conversation sessions.
+
+
+[1.7.3] - 2020-02-21
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5231 <https://github.com/rasahq/rasa/issues/5231>`_: Fix segmentation fault when running ``rasa train`` or ``rasa shell``.
+
+Improved Documentation
+----------------------
+- `#5286 <https://github.com/rasahq/rasa/issues/5286>`_: Fix doc links on "Deploying your Assistant" page
+
+
 [1.7.2] - 2020-02-13
 ^^^^^^^^^^^^^^^^^^^^
 

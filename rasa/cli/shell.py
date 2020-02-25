@@ -22,7 +22,10 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Loads your trained model and lets you talk to your assistant on the command line.",
+        help=(
+            "Loads your trained model and lets you talk to your "
+            "assistant on the command line."
+        ),
     )
     shell_parser.set_defaults(func=shell)
 
