@@ -1,10 +1,9 @@
 import itertools
 import logging
 import typing
-from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple
+from typing import Any, Dict, Hashable, Iterable, List, Optional, Set, Text, Tuple
 
-from rasa.nlu import config
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.config import RasaNLUModelConfig, override_defaults
 from rasa.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import raise_warning
@@ -115,6 +114,13 @@ def validate_requires_any_of(
         )
 
 
+def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]):
+    """Check if any of the provided components are listed in the pipeline."""
+    return any(
+        [any([component.name == c for component in pipeline]) for c in components]
+    )
+
+
 def validate_required_components_from_data(
     pipeline: List["Component"], data: TrainingData
 ):
@@ -124,7 +130,7 @@ def validate_required_components_from_data(
     process them, warn the user if the required component is missing.
     """
 
-    if data.entity_examples and not config.any_components_in_pipeline(
+    if data.entity_examples and not any_components_in_pipeline(
         TRAINABLE_EXTRACTORS, pipeline
     ):
         raise_warning(
@@ -134,7 +140,7 @@ def validate_required_components_from_data(
             f"{TRAINABLE_EXTRACTORS} to your pipeline."
         )
 
-    if data.regex_features and not config.any_components_in_pipeline(
+    if data.regex_features and not any_components_in_pipeline(
         ["RegexFeaturizer"], pipeline
     ):
         raise_warning(
@@ -144,7 +150,7 @@ def validate_required_components_from_data(
             "to have a RegexFeaturizer in your pipeline."
         )
 
-    if data.lookup_tables and not config.any_components_in_pipeline(
+    if data.lookup_tables and not any_components_in_pipeline(
         ["RegexFeaturizer"], pipeline
     ):
         raise_warning(
@@ -154,7 +160,7 @@ def validate_required_components_from_data(
         )
 
     if data.lookup_tables:
-        if not config.any_components_in_pipeline(["CRFEntityExtractor"], pipeline):
+        if not any_components_in_pipeline(["CRFEntityExtractor"], pipeline):
             raise_warning(
                 "You have defined training data consisting of lookup tables, but "
                 "your NLU pipeline does not include a CRFEntityExtractor. "
@@ -178,7 +184,7 @@ def validate_required_components_from_data(
                     "your pipeline."
                 )
 
-    if data.entity_synonyms and not config.any_components_in_pipeline(
+    if data.entity_synonyms and not any_components_in_pipeline(
         ["EntitySynonymMapper"], pipeline
     ):
         raise_warning(
@@ -187,7 +193,7 @@ def validate_required_components_from_data(
             "To map synonyms, add an EntitySynonymMapper to your pipeline."
         )
 
-    if data.response_examples and not config.any_components_in_pipeline(
+    if data.response_examples and not any_components_in_pipeline(
         ["ResponseSelector"], pipeline
     ):
         raise_warning(
@@ -312,9 +318,7 @@ class Component(metaclass=ComponentMetaclass):
         # this is important for e.g. persistence
         component_config["name"] = self.name
 
-        self.component_config = config.override_defaults(
-            self.defaults, component_config
-        )
+        self.component_config = override_defaults(self.defaults, component_config)
 
         self.partial_processing_pipeline = None
         self.partial_processing_context = None

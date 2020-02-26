@@ -2,16 +2,12 @@ import copy
 import logging
 import os
 import ruamel.yaml as yaml
-import typing
-from typing import Any, Dict, Iterable, List, Optional, Text, Union
+from typing import Any, Dict, List, Optional, Text, Union
 
 import rasa.utils.io
 from rasa.constants import DEFAULT_CONFIG_PATH, DOCS_URL_PIPELINE
 from rasa.nlu.utils import json_to_string
 from rasa.utils.common import raise_warning
-
-if typing.TYPE_CHECKING:
-    from rasa.nlu.components import Component
 
 logger = logging.getLogger(__name__)
 
@@ -79,13 +75,6 @@ def component_config_from_pipeline(
             docs=DOCS_URL_PIPELINE,
         )
         return override_defaults(defaults, {})
-
-
-def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]):
-    """Check if any of the provided components are listed in the pipeline."""
-    return any(
-        [any([component.name == c for component in pipeline]) for c in components]
-    )
 
 
 class RasaNLUModelConfig:
