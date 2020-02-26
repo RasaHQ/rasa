@@ -1,0 +1,1 @@
+Added `db-shm` and `db-wal` files to `.gitignore`

@@ -14,6 +14,7 @@ DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
 TEST_DATA_FILE = "test.md"
 TRAIN_DATA_FILE = "train.md"
+NLG_DATA_FILE = "responses.md"
 RESULTS_FILE = "results.json"
 NUMBER_OF_TRAINING_STORIES_FILE = "num_stories.json"
 PERCENTAGE_KEY = "__percentage__"

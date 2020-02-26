@@ -1,13 +1,16 @@
 import logging
 from collections import defaultdict
-from typing import List, Set, Text
-
-from rasa.constants import DOCS_URL_DOMAINS, DOCS_URL_ACTIONS
-from rasa.core.constants import UTTER_PREFIX
+from typing import Set, Text, Optional
 from rasa.core.domain import Domain
-from rasa.core.training.dsl import ActionExecuted, StoryStep, UserUttered
+from rasa.core.training.generator import TrainingDataGenerator
 from rasa.importers.importer import TrainingDataImporter
 from rasa.nlu.training_data import TrainingData
+from rasa.core.training.structures import StoryGraph
+from rasa.core.training.dsl import UserUttered
+from rasa.core.training.dsl import ActionExecuted
+from rasa.core.constants import UTTER_PREFIX
+import rasa.core.training.story_conflict
+from rasa.constants import DOCS_URL_DOMAINS, DOCS_URL_ACTIONS
 from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
@@ -16,22 +19,24 @@ logger = logging.getLogger(__name__)
 class Validator:
     """A class used to verify usage of intents and utterances."""
 
-    def __init__(self, domain: Domain, intents: TrainingData, stories: List[StoryStep]):
+    def __init__(
+        self, domain: Domain, intents: TrainingData, story_graph: StoryGraph
+    ) -> None:
         """Initializes the Validator object. """
 
         self.domain = domain
         self.intents = intents
-        self.stories = stories
+        self.story_graph = story_graph
 
     @classmethod
     async def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
         """Create an instance from the domain, nlu and story files."""
 
         domain = await importer.get_domain()
-        stories = await importer.get_stories()
+        story_graph = await importer.get_stories()
         intents = await importer.get_nlu_data()
 
-        return cls(domain, intents, stories.story_steps)
+        return cls(domain, intents, story_graph)
 
     def verify_intents(self, ignore_warnings: bool = True) -> bool:
         """Compares list of intents in domain with intents in NLU training data."""
@@ -95,7 +100,7 @@ class Validator:
 
         stories_intents = {
             event.intent["name"]
-            for story in self.stories
+            for story in self.story_graph.story_steps
             for event in story.events
             if type(event) == UserUttered
         }
@@ -165,7 +170,7 @@ class Validator:
         utterance_actions = self._gather_utterance_actions()
         stories_utterances = set()
 
-        for story in self.stories:
+        for story in self.story_graph.story_steps:
             for event in story.events:
                 if not isinstance(event, ActionExecuted):
                     continue
@@ -195,13 +200,49 @@ class Validator:
 
         return everything_is_alright
 
-    def verify_all(self, ignore_warnings: bool = True) -> bool:
+    def verify_story_structure(
+        self, ignore_warnings: bool = True, max_history: Optional[int] = None
+    ) -> bool:
+        """Verifies that the bot behaviour in stories is deterministic.
+
+        Args:
+            ignore_warnings: When `True`, return `True` even if conflicts were found.
+            max_history: Maximal number of events to take into account for conflict identification.
+
+        Returns:
+            `False` is a conflict was found and `ignore_warnings` is `False`.
+            `True` otherwise.
+        """
+
+        logger.info("Story structure validation...")
+
+        trackers = TrainingDataGenerator(
+            self.story_graph,
+            domain=self.domain,
+            remove_duplicates=False,
+            augmentation_factor=0,
+        ).generate()
+
+        # Create a list of `StoryConflict` objects
+        conflicts = rasa.core.training.story_conflict.find_story_conflicts(
+            trackers, self.domain, max_history
+        )
+
+        if not conflicts:
+            logger.info("No story structure conflicts found.")
+        else:
+            for conflict in conflicts:
+                logger.warning(conflict)
+
+        return ignore_warnings or not conflicts
+
+    def verify_nlu(self, ignore_warnings: bool = True) -> bool:
         """Runs all the validations on intents and utterances."""
 
         logger.info("Validating intents...")
         intents_are_valid = self.verify_intents_in_stories(ignore_warnings)
 
-        logger.info("Validating there is no duplications...")
+        logger.info("Validating uniqueness of intents and stories...")
         there_is_no_duplication = self.verify_example_repetition_in_intents(
             ignore_warnings
         )

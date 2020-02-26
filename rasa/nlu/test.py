@@ -20,7 +20,7 @@ from typing import (
 
 import rasa.utils.io as io_utils
 
-from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE
+from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE, NLG_DATA_FILE
 from rasa.nlu.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
@@ -1442,9 +1442,12 @@ def compare_nlu(
             training_examples_per_run.append(len(train.training_examples))
 
             model_output_path = os.path.join(run_path, percent_string)
-            train_split_path = os.path.join(model_output_path, TRAIN_DATA_FILE)
-            io_utils.create_path(train_split_path)
-            write_to_file(train_split_path, train.nlu_as_markdown())
+            train_split_path = os.path.join(model_output_path, "train")
+            train_nlu_split_path = os.path.join(train_split_path, TRAIN_DATA_FILE)
+            train_nlg_split_path = os.path.join(train_split_path, NLG_DATA_FILE)
+            io_utils.create_path(train_nlu_split_path)
+            write_to_file(train_nlu_split_path, train.nlu_as_markdown())
+            write_to_file(train_nlg_split_path, train.nlg_as_markdown())
 
             for nlu_config, model_name in zip(configs, model_names):
                 logger.info(

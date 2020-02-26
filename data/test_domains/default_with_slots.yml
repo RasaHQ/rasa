@@ -30,8 +30,3 @@ responses:
     - text: "bye bye 😢"
   utter_default:   # utterance sent by action_default_fallback
     - text: "sorry, I didn't get that, can you rephrase it?"
-
-actions:
-  - utter_default
-  - utter_greet
-  - utter_goodbye
