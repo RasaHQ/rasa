@@ -1318,6 +1318,7 @@ class DIET(RasaModel):
 
         # should call first to build weights
         pred_ids = self._tf_layers["crf"](logits, sequence_lengths)
+        # pytype cannot infer that 'self._tf_layers["crf"]' has the method '.loss'
         # pytype: disable=attribute-error
         loss = self._tf_layers["crf"].loss(logits, tag_ids, sequence_lengths)
         # pytype: enable=attribute-error
@@ -1407,6 +1408,8 @@ class DIET(RasaModel):
             cls = self._last_token(text_transformed, sequence_lengths)
             cls_embed = self._tf_layers[f"embed.{TEXT}"](cls)
 
+            # pytype cannot infer that 'self._tf_layers[f"loss.{LABEL}"]' has methods
+            # like '.sim' or '.confidence_from_sim'
             # pytype: disable=attribute-error
             sim_all = self._tf_layers[f"loss.{LABEL}"].sim(
                 cls_embed[:, tf.newaxis, :], self.all_labels_embed[tf.newaxis, :, :]

@@ -15,24 +15,40 @@ BILOU_PREFIXES = ["B-", "I-", "U-", "L-"]
 
 
 def bilou_prefix_from_tag(tag: Text) -> Optional[Text]:
-    """Remove the BILOU prefix from the given tag."""
+    """Returns the BILOU prefix from the given tag.
 
+    Args:
+        tag: the tag
+
+    Returns: the BILOU prefix of the tag
+    """
     if tag[:2] in BILOU_PREFIXES:
         return tag[0]
     return None
 
 
 def entity_name_from_tag(tag: Text) -> Text:
-    """Remove the BILOU prefix from the given tag."""
+    """Remove the BILOU prefix from the given tag.
 
+    Args:
+        tag: the tag
+
+    Returns: the tag without the BILOU prefix
+    """
     if tag[:2] in BILOU_PREFIXES:
         return tag[2:]
     return tag
 
 
 def tags_to_ids(message: Message, tag_id_dict: Dict[Text, int]) -> List[int]:
-    """Maps the entity tags of the message to the ids of the provided dict."""
+    """Maps the entity tags of the message to the ids of the provided dict.
 
+    Args:
+        message: the message
+        tag_id_dict: mapping of tags to ids
+
+    Returns: a list of tag ids
+    """
     if message.get(BILOU_ENTITIES):
         _tags = [
             tag_id_dict[_tag] if _tag in tag_id_dict else tag_id_dict[NO_ENTITY_TAG]
@@ -45,14 +61,24 @@ def tags_to_ids(message: Message, tag_id_dict: Dict[Text, int]) -> List[int]:
 
 
 def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
-    """Remove the BILOU prefixes from the given tags."""
+    """Removes the BILOU prefixes from the given list of tags.
 
+    Args:
+        tags: the list of tags
+
+    Returns: list of tags without BILOU prefix
+    """
     return [entity_name_from_tag(t) for t in tags]
 
 
 def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, int]:
-    """Create a mapping of unique tags to ids."""
+    """Create a mapping of unique tags to ids.
 
+    Args:
+        training_data: the training data
+
+    Returns: a mapping of tags to ids
+    """
     distinct_tags = set(
         [
             entity_name_from_tag(e)
@@ -75,8 +101,11 @@ def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, int]:
 
 
 def apply_bilou_schema(training_data: TrainingData) -> None:
-    """Gets a list of BILOU entity tags and sets them on the corresponding message."""
+    """Gets a list of BILOU entity tags and sets them on the given messages.
 
+    Args:
+        training_data: the training data
+    """
     for message in training_data.training_examples:
         entities = message.get(ENTITIES)
 
@@ -90,7 +119,13 @@ def apply_bilou_schema(training_data: TrainingData) -> None:
 
 
 def map_message_entities(message: Message) -> List[Tuple[int, int, Text]]:
-    """Maps the entities of the given message to their start, end, and tag values."""
+    """Maps the entities of the given message to their start, end, and tag values.
+
+    Args:
+        message: the message
+
+    Returns: a list of start, end, and tag value tuples
+    """
 
     def convert_entity(entity: Dict[Text, Any]) -> Tuple[int, int, Text]:
         return entity["start"], entity["end"], entity["entity"]
@@ -103,8 +138,15 @@ def bilou_tags_from_offsets(
     entities: List[Tuple[int, int, Text]],
     missing: Text = NO_ENTITY_TAG,
 ) -> List[Text]:
-    """Creates a list of BILOU tags for the given list of tokens and entities."""
+    """Creates a list of BILOU tags for the given list of tokens and entities.
 
+    Args:
+        tokens: the list of tokens
+        entities: the list of start, end, and tag tuples
+        missing: tag for missing entities
+
+    Returns: a list of BILOU tags
+    """
     # From spacy.spacy.GoldParse, under MIT License
 
     start_pos_to_token_idx = {token.start: i for i, token in enumerate(tokens)}

@@ -4,6 +4,7 @@ from typing import Any, Text, Union, Optional
 from rasa.nlu.training_data import Message
 from rasa.nlu.components import Component
 from rasa.nlu.constants import SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, TEXT
+from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
 
 
 def sequence_to_sentence_features(
@@ -60,14 +61,15 @@ class DenseFeaturizer(Featurizer):
         if non_zero_features.size == 0:
             return np.zeros([1, features.shape[-1]])
 
-        if pooling_operation == "mean":
+        if pooling_operation == MEAN_POOLING:
             return np.mean(non_zero_features, axis=0, keepdims=True)
-        elif pooling_operation == "max":
+        elif pooling_operation == MAX_POOLING:
             return np.max(non_zero_features, axis=0, keepdims=True)
         else:
             raise ValueError(
                 f"Invalid pooling operation specified. Available operations are "
-                f"'mean' or 'max', but provided value is '{pooling_operation}'."
+                f"'{MEAN_POOLING}' or '{MAX_POOLING}', but provided value is "
+                f"'{pooling_operation}'."
             )
 
 
