@@ -1,0 +1,1 @@
+Fixed issue where posting to certain callback channel URLs would return a 500 error on successful posts due to invalid response format
