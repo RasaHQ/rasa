@@ -29,8 +29,10 @@ class FeatureSignature(NamedTuple):
 
 
 class RasaModelData:
-    """Data object used for all RasaModels. It contains all features needed to train
-    the models."""
+    """Data object used for all RasaModels.
+
+    It contains all features needed to train the models.
+    """
 
     def __init__(
         self, label_key: Optional[Text] = None, data: Optional[Data] = None
@@ -42,6 +44,7 @@ class RasaModelData:
             label_key: the label_key used for balancing, etc.
             data: the data holding the features
         """
+
         self.data = data or {}
         self.label_key = label_key
         # should be updated when features are added
@@ -76,10 +79,12 @@ class RasaModelData:
 
     def feature_not_exist(self, key: Text) -> bool:
         """Check if feature key is present and features are available."""
+
         return key not in self.data or not self.data[key]
 
     def is_empty(self) -> bool:
         """Checks if data is set."""
+
         return not self.data
 
     def number_of_examples(self, data: Optional[Data] = None) -> int:
@@ -114,6 +119,46 @@ class RasaModelData:
                 number_of_features += data[0].shape[-1]
 
         return number_of_features
+
+    def add_features(self, key: Text, features: List[np.ndarray]):
+        """Add list of features to data under specified key.
+
+        Should update number of examples.
+        """
+
+        if not features:
+            return
+
+        if key in self.data:
+            raise ValueError(f"Key '{key}' already exists in RasaModelData.")
+
+        self.data[key] = []
+
+        for data in features:
+            if data.size > 0:
+                self.data[key].append(data)
+
+        if not self.data[key]:
+            del self.data[key]
+
+        # update number of examples
+        self.num_examples = self.number_of_examples()
+
+    def add_mask(self, key: Text, from_key: Text):
+        """Calculate mask for given key and put it under specified key."""
+
+        if not self.data.get(from_key):
+            return
+
+        self.data[key] = []
+
+        for data in self.data[from_key]:
+            if data.size > 0:
+                # explicitly add last dimension to mask
+                # to track correctly dynamic sequences
+                mask = np.array([np.ones((x.shape[0], 1)) for x in data])
+                self.data[key].append(mask)
+                break
 
     def split(
         self, number_of_test_examples: int, random_seed: int
@@ -158,51 +203,11 @@ class RasaModelData:
 
         return self._convert_train_test_split(output_values, solo_values)
 
-    def add_features(self, key: Text, features: List[np.ndarray]):
-        """Add list of features to data under specified key.
-
-        Should update number of examples.
-        """
-
-        if not features:
-            return
-
-        if key in self.data:
-            raise ValueError(f"Key '{key}' already exists in RasaModelData.")
-
-        self.data[key] = []
-
-        for data in features:
-            if data.size > 0:
-                self.data[key].append(data)
-
-        if not self.data[key]:
-            del self.data[key]
-
-        # update number of examples
-        self.num_examples = self.number_of_examples()
-
-    def add_mask(self, key: Text, from_key: Text):
-        """Calculate mask for given key and put it under specified key."""
-
-        if not self.data.get(from_key):
-            return
-
-        self.data[key] = []
-
-        for data in self.data[from_key]:
-            if data.size > 0:
-                # explicitly add last dimension to mask
-                # to track correctly dynamic sequences
-                mask = np.array([np.ones((x.shape[0], 1)) for x in data])
-                self.data[key].append(mask)
-                break
-
     def get_signature(self) -> Dict[Text, List[FeatureSignature]]:
         """Get signature of RasaModelData.
 
-        Signature stores the shape and whether features are sparse or not for every
-        key."""
+        Signature stores the shape and whether features are sparse or not for every key.
+        """
 
         return {
             key: [
@@ -214,6 +219,96 @@ class RasaModelData:
             ]
             for key, values in self.data.items()
         }
+
+    def as_tf_dataset(
+        self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
+    ) -> tf.data.Dataset:
+        """Create tf dataset."""
+
+        shapes, types = self._get_shapes_types()
+
+        return tf.data.Dataset.from_generator(
+            lambda batch_size_: self._gen_batch(batch_size_, batch_strategy, shuffle),
+            output_types=types,
+            output_shapes=shapes,
+            args=([batch_size]),
+        )
+
+    def prepare_batch(
+        self,
+        data: Optional[Data] = None,
+        start: Optional[int] = None,
+        end: Optional[int] = None,
+        tuple_sizes: Optional[Dict[Text, int]] = None,
+    ) -> Tuple[Optional[np.ndarray]]:
+        """Slices model data into batch using given start and end value."""
+
+        if not data:
+            data = self.data
+
+        batch_data = []
+
+        for key, values in data.items():
+            # add None for not present values during processing
+            if not values:
+                if tuple_sizes:
+                    batch_data += [None] * tuple_sizes[key]
+                else:
+                    batch_data.append(None)
+                continue
+
+            for v in values:
+                if start is not None and end is not None:
+                    _data = v[start:end]
+                elif start is not None:
+                    _data = v[start:]
+                elif end is not None:
+                    _data = v[:end]
+                else:
+                    _data = v[:]
+
+                if isinstance(_data[0], scipy.sparse.spmatrix):
+                    batch_data.extend(self._scipy_matrix_to_values(_data))
+                else:
+                    batch_data.append(self._pad_dense_data(_data))
+
+        # len of batch_data is equal to the number of keys in model data
+        return tuple(batch_data)
+
+    def _get_shapes_types(self) -> Tuple:
+        """Extract shapes and types from model data."""
+
+        types = []
+        shapes = []
+
+        def append_shape(features: np.ndarray) -> None:
+            if isinstance(features[0], scipy.sparse.spmatrix):
+                # scipy matrix is converted into indices, data, shape
+                shapes.append((None, features[0].ndim + 1))
+                shapes.append((None,))
+                shapes.append((features[0].ndim + 1))
+            elif features[0].ndim == 0:
+                shapes.append((None,))
+            elif features[0].ndim == 1:
+                shapes.append((None, features[0].shape[-1]))
+            else:
+                shapes.append((None, None, features[0].shape[-1]))
+
+        def append_type(features: np.ndarray) -> None:
+            if isinstance(features[0], scipy.sparse.spmatrix):
+                # scipy matrix is converted into indices, data, shape
+                types.append(tf.int64)
+                types.append(tf.float32)
+                types.append(tf.int64)
+            else:
+                types.append(tf.float32)
+
+        for values in self.data.values():
+            for v in values:
+                append_shape(v)
+                append_type(v)
+
+        return tuple(shapes), tuple(types)
 
     def _shuffled_data(self, data: Data) -> Data:
         """Shuffle model data."""
@@ -294,96 +389,6 @@ class RasaModelData:
                 final_data[k].append(np.concatenate(np.array(v)))
 
         return final_data
-
-    def prepare_batch(
-        self,
-        data: Optional[Data] = None,
-        start: Optional[int] = None,
-        end: Optional[int] = None,
-        tuple_sizes: Optional[Dict[Text, int]] = None,
-    ) -> Tuple[Optional[np.ndarray]]:
-        """Slices model data into batch using given start and end value."""
-
-        if not data:
-            data = self.data
-
-        batch_data = []
-
-        for key, values in data.items():
-            # add None for not present values during processing
-            if not values:
-                if tuple_sizes:
-                    batch_data += [None] * tuple_sizes[key]
-                else:
-                    batch_data.append(None)
-                continue
-
-            for v in values:
-                if start is not None and end is not None:
-                    _data = v[start:end]
-                elif start is not None:
-                    _data = v[start:]
-                elif end is not None:
-                    _data = v[:end]
-                else:
-                    _data = v[:]
-
-                if isinstance(_data[0], scipy.sparse.spmatrix):
-                    batch_data.extend(self._scipy_matrix_to_values(_data))
-                else:
-                    batch_data.append(self._pad_dense_data(_data))
-
-        # len of batch_data is equal to the number of keys in model data
-        return tuple(batch_data)
-
-    def as_tf_dataset(
-        self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
-    ) -> tf.data.Dataset:
-        """Create tf dataset."""
-
-        shapes, types = self._get_shapes_types()
-
-        return tf.data.Dataset.from_generator(
-            lambda batch_size_: self._gen_batch(batch_size_, batch_strategy, shuffle),
-            output_types=types,
-            output_shapes=shapes,
-            args=([batch_size]),
-        )
-
-    def _get_shapes_types(self) -> Tuple:
-        """Extract shapes and types from model data."""
-
-        types = []
-        shapes = []
-
-        def append_shape(features: np.ndarray) -> None:
-            if isinstance(features[0], scipy.sparse.spmatrix):
-                # scipy matrix is converted into indices, data, shape
-                shapes.append((None, features[0].ndim + 1))
-                shapes.append((None,))
-                shapes.append((features[0].ndim + 1))
-            elif features[0].ndim == 0:
-                shapes.append((None,))
-            elif features[0].ndim == 1:
-                shapes.append((None, features[0].shape[-1]))
-            else:
-                shapes.append((None, None, features[0].shape[-1]))
-
-        def append_type(features: np.ndarray) -> None:
-            if isinstance(features[0], scipy.sparse.spmatrix):
-                # scipy matrix is converted into indices, data, shape
-                types.append(tf.int64)
-                types.append(tf.float32)
-                types.append(tf.int64)
-            else:
-                types.append(tf.float32)
-
-        for values in self.data.values():
-            for v in values:
-                append_shape(v)
-                append_type(v)
-
-        return tuple(shapes), tuple(types)
 
     def _gen_batch(
         self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
