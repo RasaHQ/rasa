@@ -50,6 +50,7 @@ FROM base as runner
 
 # copy everything from /opt
 COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder /app /app
 
 # make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
