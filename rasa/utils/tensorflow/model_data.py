@@ -44,7 +44,7 @@ class RasaModelData:
         """
         self.data = data or {}
         self.label_key = label_key
-        # will be updated when features are added
+        # should be updated when features are added
         self.num_examples = self.number_of_examples()
 
     def get_only(self, key: Text) -> Optional[np.ndarray]:
@@ -82,21 +82,24 @@ class RasaModelData:
         """Checks if data is set."""
         return not self.data
 
-    def number_of_examples(self) -> int:
+    def number_of_examples(self, data: Optional[Data] = None) -> int:
         """Obtain number of examples in data.
 
         Raises: A ValueError if number of examples differ for different features.
         """
 
-        if not self.data:
+        if not data:
+            data = self.data
+
+        if not data:
             return 0
 
-        example_lengths = [v.shape[0] for values in self.data.values() for v in values]
+        example_lengths = [v.shape[0] for values in data.values() for v in values]
 
         # check if number of examples is the same for all values
         if not all(length == example_lengths[0] for length in example_lengths):
             raise ValueError(
-                f"Number of examples differs for keys '{self.data.keys()}'. Number of "
+                f"Number of examples differs for keys '{data.keys()}'. Number of "
                 f"examples should be the same for all data."
             )
 
@@ -156,7 +159,10 @@ class RasaModelData:
         return self._convert_train_test_split(output_values, solo_values)
 
     def add_features(self, key: Text, features: List[np.ndarray]):
-        """Add list of features to data under specified key."""
+        """Add list of features to data under specified key.
+
+        Should update number of examples.
+        """
 
         if not features:
             return
@@ -209,13 +215,13 @@ class RasaModelData:
             for key, values in self.data.items()
         }
 
-    def shuffled_data(self, data: Data) -> Data:
+    def _shuffled_data(self, data: Data) -> Data:
         """Shuffle model data."""
 
         ids = np.random.permutation(self.num_examples)
         return self._data_for_ids(data, ids)
 
-    def balanced_data(self, data: Data, batch_size: int, shuffle: bool) -> Data:
+    def _balanced_data(self, data: Data, batch_size: int, shuffle: bool) -> Data:
         """Mix model data to account for class imbalance.
 
         This batching strategy puts rare classes approximately in every other batch,
@@ -385,16 +391,17 @@ class RasaModelData:
         """Generate batches."""
 
         data = self.data
+        num_examples = self.num_examples
 
         if shuffle:
-            data = self.shuffled_data(data)
+            data = self._shuffled_data(data)
 
         if batch_strategy == BALANCED:
-            data = self.balanced_data(data, batch_size, shuffle)
+            data = self._balanced_data(data, batch_size, shuffle)
+            # after balancing, number of examples increased
+            num_examples = self.number_of_examples(data)
 
-        num_batches = self.num_examples // batch_size + int(
-            self.num_examples % batch_size > 0
-        )
+        num_batches = num_examples // batch_size + int(num_examples % batch_size > 0)
 
         for batch_num in range(num_batches):
             start = batch_num * batch_size
@@ -420,7 +427,7 @@ class RasaModelData:
             )
 
     @staticmethod
-    def _data_for_ids(data: Data, ids: np.ndarray) -> Data:
+    def _data_for_ids(data: Optional[Data], ids: np.ndarray) -> Data:
         """Filter model data by ids."""
 
         new_data = defaultdict(list)
@@ -434,7 +441,7 @@ class RasaModelData:
         return new_data
 
     def _split_by_label_ids(
-        self, data: Data, label_ids: np.ndarray, unique_label_ids: np.ndarray
+        self, data: Optional[Data], label_ids: np.ndarray, unique_label_ids: np.ndarray
     ) -> List["RasaModelData"]:
         """Reorganize model data into a list of model data with the same labels."""
 

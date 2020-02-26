@@ -67,7 +67,7 @@ def test_shuffle_session_data(model_data: RasaModelData):
         np.array(list(before.values())) == np.array(list(model_data.values()))
     )
 
-    data = model_data.shuffled_data(model_data.data)
+    data = model_data._shuffled_data(model_data.data)
 
     # check that original data didn't change
     assert np.all(
@@ -170,7 +170,7 @@ def test_gen_batch(model_data: RasaModelData):
 
 
 def test_balance_model_data(model_data: RasaModelData):
-    data = model_data.balanced_data(model_data.data, 2, False)
+    data = model_data._balanced_data(model_data.data, 2, False)
 
     assert np.all(data.get("intent_ids")[0] == np.array([0, 1, 1, 0, 1]))
 
@@ -178,7 +178,7 @@ def test_balance_model_data(model_data: RasaModelData):
 def test_not_balance_model_data(model_data: RasaModelData):
     test_model_data = RasaModelData(label_key="tag_ids", data=model_data.data)
 
-    data = test_model_data.balanced_data(test_model_data.data, 2, False)
+    data = test_model_data._balanced_data(test_model_data.data, 2, False)
 
     assert np.all(data.get("tag_ids") == test_model_data.get("tag_ids"))
 
