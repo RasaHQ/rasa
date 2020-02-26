@@ -566,7 +566,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         if not label_id_index_mapping:
-            # no responses present to train
+            # no labels are present to train
             return RasaModelData()
 
         self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
