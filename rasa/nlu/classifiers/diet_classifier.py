@@ -262,7 +262,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         index_tag_id_mapping: Optional[Dict[int, Text]] = None,
         model: Optional[RasaModel] = None,
-        batch_tuple_sizes: Optional[Dict] = None,
     ) -> None:
         """Declare instance variables with default values."""
 
@@ -281,9 +280,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.index_tag_id_mapping = index_tag_id_mapping
 
         self.model = model
-
-        # keep the input tuple sizes in self.batch_in
-        self.batch_tuple_sizes = batch_tuple_sizes
 
         self.num_tags: Optional[int] = None  # number of entity tags
         self._label_data: Optional[RasaModelData] = None
@@ -568,6 +564,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_id_index_mapping = self._label_id_index_mapping(
             training_data, attribute=INTENT
         )
+
+        if not label_id_index_mapping:
+            # no responses present to train
+            return RasaModelData()
+
         self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
 
         self._label_data = self._create_label_data(
@@ -809,9 +810,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.index_tag_id_mapping.pkl",
             self.index_tag_id_mapping,
         )
-        io_utils.json_pickle(
-            model_dir / f"{file_name}.batch_tuple_sizes.pkl", self.batch_tuple_sizes
-        )
 
         return {"file": file_name}
 
@@ -834,7 +832,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             return cls(component_config=meta)
 
         (
-            batch_tuple_sizes,
             index_label_id_mapping,
             index_tag_id_mapping,
             label_data,
@@ -853,7 +850,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             index_label_id_mapping=index_label_id_mapping,
             index_tag_id_mapping=index_tag_id_mapping,
             model=model,
-            batch_tuple_sizes=batch_tuple_sizes,
         )
 
     @classmethod
@@ -870,9 +866,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         index_tag_id_mapping = io_utils.json_unpickle(
             model_dir / f"{file_name}.index_tag_id_mapping.pkl"
         )
-        batch_tuple_sizes = io_utils.json_unpickle(
-            model_dir / f"{file_name}.batch_tuple_sizes.pkl"
-        )
 
         # jsonpickle converts dictionary keys to strings
         index_label_id_mapping = {
@@ -884,7 +877,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             }
 
         return (
-            batch_tuple_sizes,
             index_label_id_mapping,
             index_tag_id_mapping,
             label_data,
@@ -1300,7 +1292,7 @@ class DIET(RasaModel):
             outputs_embed, inputs_embed, ids, inputs_embed, ids
         )
 
-    def _label_loss(
+    def _calculate_label_loss(
         self, a: tf.Tensor, b: tf.Tensor, label_ids: tf.Tensor
     ) -> tf.Tensor:
         all_label_ids, all_labels_embed = self._create_all_labels()
@@ -1312,7 +1304,7 @@ class DIET(RasaModel):
             a_embed, b_embed, label_ids, all_labels_embed, all_label_ids
         )
 
-    def _entity_loss(
+    def _calculate_entity_loss(
         self,
         outputs: tf.Tensor,
         tag_ids: tf.Tensor,
@@ -1375,7 +1367,7 @@ class DIET(RasaModel):
                 tf_batch_data[LABEL_MASK][0],
                 self.label_name,
             )
-            loss, acc = self._label_loss(cls, label, label_ids)
+            loss, acc = self._calculate_label_loss(cls, label, label_ids)
             self.intent_loss.update_state(loss)
             self.response_acc.update_state(acc)
             losses.append(loss)
@@ -1383,7 +1375,7 @@ class DIET(RasaModel):
         if self.config[ENTITY_RECOGNITION]:
             tag_ids = tf_batch_data[TAG_IDS][0]
 
-            loss, f1 = self._entity_loss(
+            loss, f1 = self._calculate_entity_loss(
                 text_transformed, tag_ids, mask_text, sequence_lengths
             )
             self.entity_loss.update_state(loss)

@@ -295,24 +295,6 @@ class RasaModelData:
         # len of batch_data is equal to the number of keys in session data
         return tuple(batch_data)
 
-    def batch_tuple_sizes(self) -> Dict[Text, int]:
-
-        # save the amount of placeholders attributed to session data keys
-        tuple_sizes = defaultdict(int)
-
-        idx = 0
-        for k, values in self.data.items():
-            tuple_sizes[k] = 0
-            for v in values:
-                if isinstance(v[0], scipy.sparse.spmatrix):
-                    tuple_sizes[k] += 3
-                    idx += 3
-                else:
-                    tuple_sizes[k] += 1
-                    idx += 1
-
-        return tuple_sizes
-
     def as_tf_dataset(
         self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
     ) -> tf.data.Dataset:

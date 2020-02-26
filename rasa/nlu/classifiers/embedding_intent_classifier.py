@@ -140,7 +140,6 @@ class EmbeddingIntentClassifier(DIETClassifier):
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         index_tag_id_mapping: Optional[Dict[int, Text]] = None,
         model: Optional[RasaModel] = None,
-        batch_tuple_sizes: Optional[Dict] = None,
     ) -> None:
 
         component_config = component_config or {}
@@ -153,11 +152,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         component_config[NUM_TRANSFORMER_LAYERS] = 0
 
         super().__init__(
-            component_config,
-            index_label_id_mapping,
-            index_tag_id_mapping,
-            model,
-            batch_tuple_sizes,
+            component_config, index_label_id_mapping, index_tag_id_mapping, model
         )
 
         common_utils.raise_warning(
