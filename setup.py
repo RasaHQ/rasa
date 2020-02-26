@@ -38,6 +38,7 @@ install_requires = [
     "numpy~=1.16",
     "scipy~=1.2",
     "tensorflow~=2.1",
+    "tensorflow-addons~=0.8",
     # absl is a tensorflow dependency, but produces double logging before 0.8
     # should be removed once tensorflow requires absl > 0.8 on its own
     "absl-py>=0.8.0",
@@ -84,7 +85,6 @@ install_requires = [
     "SQLAlchemy~=1.3.0",
     "sklearn-crfsuite~=0.3.6",
     "PyJWT~=1.7",
-    "tensorflow-addons==0.7.0",
 ]
 
 extras_requires = {

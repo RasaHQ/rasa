@@ -60,4 +60,4 @@ PyJWT==1.7.1
 python-dateutil==2.8.0
 # for new featurizers
 tensorflow==2.1.0
-tensorflow-addons>=0.7.0
+tensorflow-addons==0.8.2
