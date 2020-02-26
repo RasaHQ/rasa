@@ -2401,13 +2401,14 @@ category = "main"
 description = "Slack API clients for Web API and RTM API"
 name = "slackclient"
 optional = false
-python-versions = "*"
-version = "1.3.2"
+python-versions = ">=3.6.0"
+version = "2.5.0"
 
 [package.dependencies]
-requests = ">=2.11,<3.0a0"
-six = ">=1.10,<2.0a0"
-websocket-client = ">=0.35,<0.55.0"
+aiohttp = ">3.5.2"
+
+[package.extras]
+optional = ["aiodns (>1.0)"]
 
 [[package]]
 category = "main"
@@ -3060,12 +3061,12 @@ requests = ">=2.4.2"
 requests-toolbelt = "*"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "WebSocket client for Python. hybi13 is supported."
 name = "websocket-client"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "0.54.0"
+version = "0.57.0"
 
 [package.dependencies]
 six = "*"
@@ -3150,7 +3151,7 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "3e02c73f53c5cb3b82adaf7e304f145c36d9ed61940e39132ba82715039a4523"
+content-hash = "ba1cc074ecfb2abf283727a503ef0b022fb48013566cc5c67911591a31b945af"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -4571,7 +4572,8 @@ sklearn-crfsuite = [
     {file = "sklearn_crfsuite-0.3.6-py2.py3-none-any.whl", hash = "sha256:6e9a42bc3de96941d5f7262335130955b8c380b1356147622368f385075705d9"},
 ]
 slackclient = [
-    {file = "slackclient-1.3.2.tar.gz", hash = "sha256:2623a76d9b94671d34c258366a1b726ba6e9499931bf1e515e4a61fea9855445"},
+    {file = "slackclient-2.5.0-py2.py3-none-any.whl", hash = "sha256:16ebbfa1c34374fa8c508d0c8e5c670e41bba4a3f62c469ab1ee1b8225a939fa"},
+    {file = "slackclient-2.5.0.tar.gz", hash = "sha256:d37e4f91be9cf9d5c1a1698f44a37671fc92823ff01146cd827415f35fabe636"},
 ]
 sniffio = [
     {file = "sniffio-1.1.0-py3-none-any.whl", hash = "sha256:20ed6d5b46f8ae136d00b9dcb807615d83ed82ceea6b2058cecb696765246da5"},
@@ -4832,8 +4834,8 @@ webexteamssdk = [
     {file = "webexteamssdk-1.1.1.tar.gz", hash = "sha256:534fc6426351e1754ce77975db3f4501b8dd49581532147b67b7ea6e30f89793"},
 ]
 websocket-client = [
-    {file = "websocket_client-0.54.0-py2.py3-none-any.whl", hash = "sha256:8c8bf2d4f800c3ed952df206b18c28f7070d9e3dcbd6ca6291127574f57ee786"},
-    {file = "websocket_client-0.54.0.tar.gz", hash = "sha256:e51562c91ddb8148e791f0155fdb01325d99bb52c4cdbb291aee7a3563fd0849"},
+    {file = "websocket_client-0.57.0-py2.py3-none-any.whl", hash = "sha256:0fc45c961324d79c781bab301359d5a1b00b13ad1b10415a4780229ef71a5549"},
+    {file = "websocket_client-0.57.0.tar.gz", hash = "sha256:d735b91d6d1692a6a181f2a8c9e0238e5f6373356f561bb9dc4c7af36f452010"},
 ]
 websockets = [
     {file = "websockets-8.0.2-cp36-cp36m-macosx_10_6_intel.whl", hash = "sha256:e906128532a14b9d264a43eb48f9b3080d53a9bda819ab45bf56b8039dc606ac"},
