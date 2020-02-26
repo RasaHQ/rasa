@@ -14,7 +14,7 @@ from rasa.exceptions import (
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
-    from rasa.core.brokers.pika import PikaEventBroker
+    from rasa.core.brokers.pika import PikaEventBroker, PikaProducer
     from rasa.core.tracker_store import TrackerStore
     from rasa.core.exporter import Exporter
     from rasa.core.utils import AvailableEndpoints
@@ -145,9 +145,9 @@ def _prepare_event_broker(event_broker: "EventBroker") -> None:
     In addition, wait until the event broker reports a `ready` state.
 
     """
-    from rasa.core.brokers.pika import PikaEventBroker
+    from rasa.core.brokers.pika import PikaEventBroker, PikaProducer
 
-    if isinstance(event_broker, PikaEventBroker):
+    if isinstance(event_broker, (PikaEventBroker, PikaProducer)):
         event_broker.should_keep_unpublished_messages = False
         event_broker.raise_on_failure = True
 

@@ -39,12 +39,12 @@ def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
 
     # unset RASA_ENVIRONMENT env var results in empty App ID
     monkeypatch.delenv("RASA_ENVIRONMENT", raising=False)
-    assert not pika_producer._message_properties.app_id
+    assert not pika_producer._get_message_properties().app_id
 
     # setting it to some value results in that value as the App ID
     rasa_environment = "some-test-environment"
     monkeypatch.setenv("RASA_ENVIRONMENT", rasa_environment)
-    assert pika_producer._message_properties.app_id == rasa_environment
+    assert pika_producer._get_message_properties().app_id == rasa_environment
 
 
 def test_no_broker_in_config():
