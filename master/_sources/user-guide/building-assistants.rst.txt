@@ -93,11 +93,6 @@ We’ll also need to add the intents, actions and templates to our ``domain.yml`
      - bye
      - thank
 
-   actions:
-     - utter_greet
-     - utter_noworries
-     - utter_bye
-
    templates:
      utter_noworries:
        - text: No worries!
@@ -279,9 +274,6 @@ to the list of actions. These actions always have to start with the ``respond_``
 .. code-block:: yaml
 
    actions:
-     - utter_greet
-     - utter_noworries
-     - utter_bye
      - respond_faq
 
 Next we’ll write a story so that Core knows which action to predict:
@@ -656,7 +648,8 @@ yet we don’t want the intent to affect the dialogue history. To do this, the r
 must be an action that returns the ``UserUtteranceReverted()`` event to remove the
 interaction from the dialogue history.
 
-First, open the ``domain.yml`` and modify the greet intent and add ``action_greet`` as shown here:
+First, open the ``domain.yml`` and modify the greet intent and add a new block ```actions``` in
+the file, next, add the ``action_greet`` as shown here:
 
 .. code-block:: yaml
 
@@ -668,11 +661,7 @@ First, open the ``domain.yml`` and modify the greet intent and add ``action_gree
      - contact_sales
      - inform
 
-   Actions:
-     - utter_greet
-     - utter_noworries
-     - utter_bye
-     - respond_faq
+   actions:
      - action_greet
 
 Remove any stories using the "greet" intent if you have them.
@@ -785,10 +774,6 @@ We’ll need to add the intent and utterances we just added to our domain:
    - faq
    - explain
 
-   actions:
-   - utter_explain_why_budget
-   - utter_explain_why_email
-
    templates:
      utter_explain_why_budget:
      - text: We need to know your budget to recommend a subscription
@@ -895,9 +880,6 @@ We’ll need to add NLU data for the ``out_of_scope`` intent as well:
 And finally we’ll add a template to our domain file:
 
 .. code-block:: yaml
-
-   actions:
-   - utter_out_of_scope
 
    templates:
      utter_out_of_scope:

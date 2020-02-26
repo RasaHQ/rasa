@@ -360,11 +360,6 @@ intents to the <code class="docutils literal notranslate"><span class="pre">stor
   <span class="k">-</span> bye
   <span class="k">-</span> thank
 
-actions:
-  <span class="k">-</span> utter_greet
-  <span class="k">-</span> utter_noworries
-  <span class="k">-</span> utter_bye
-
 templates:
   utter_noworries:
     <span class="k">-</span> text: No worries!
@@ -525,9 +520,6 @@ NLU pipeline in our <code class="docutils literal notranslate"><span class="pre"
 which takes care of sending the response predicted from the ResponseSelector back to the user,
 to the list of actions. These actions always have to start with the <code class="docutils literal notranslate"><span class="pre">respond_</span></code> prefix:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_greet</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_noworries</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_bye</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">respond_faq</span>
 </pre></div>
 </div>
@@ -850,7 +842,8 @@ you don’t need to write any stories either.</p>
 yet we don’t want the intent to affect the dialogue history. To do this, the response
 must be an action that returns the <code class="docutils literal notranslate"><span class="pre">UserUtteranceReverted()</span></code> event to remove the
 interaction from the dialogue history.</p>
-<p>First, open the <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> and modify the greet intent and add <code class="docutils literal notranslate"><span class="pre">action_greet</span></code> as shown here:</p>
+<p>First, open the <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> and modify the greet intent and add a new block <code class="docutils literal notranslate"><span class="pre">`actions`</span></code> in
+the file, next, add the <code class="docutils literal notranslate"><span class="pre">action_greet</span></code> as shown here:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span><span class="nv">triggers</span><span class="p p-Indicator">:</span> <span class="nv">action_greet</span><span class="p p-Indicator">}</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">bye</span>
@@ -859,11 +852,7 @@ interaction from the dialogue history.</p>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">contact_sales</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">inform</span>
 
-<span class="l l-Scalar l-Scalar-Plain">Actions</span><span class="p p-Indicator">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_greet</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_noworries</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_bye</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">respond_faq</span>
+<span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">action_greet</span>
 </pre></div>
 </div>
@@ -958,10 +947,6 @@ unfeaturized slots are only used for storing information. The stories for this s
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">faq</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">explain</span>
 
-<span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_explain_why_budget</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_explain_why_email</span>
-
 <span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_explain_why_budget</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">We need to know your budget to recommend a subscription</span>
@@ -1044,10 +1029,7 @@ the bot respond with a default message like “Sorry, I can’t handle that requ
 </pre></div>
 </div>
 <p>And finally we’ll add a template to our domain file:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_out_of_scope</span>
-
-<span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_out_of_scope</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">Sorry, I can’t handle that request.</span>
 </pre></div>
