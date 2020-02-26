@@ -3,7 +3,7 @@ from collections import defaultdict, OrderedDict
 from pathlib import Path
 
 import numpy as np
-from typing import Any, Dict, Optional, Text, List, Type
+from typing import Any, Dict, Optional, Text, List, Type, Union
 
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.constants import DOCS_URL_COMPONENTS
@@ -249,7 +249,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         token_idx: int,
         pointer_position: int,
         token_length: int,
-    ) -> Any:
+    ) -> Union[bool, int, Text]:
         if feature == END_OF_SENTENCE:
             return token_idx + pointer_position == token_length - 1
 
