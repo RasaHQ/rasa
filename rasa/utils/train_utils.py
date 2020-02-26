@@ -5,8 +5,7 @@ from typing import Optional, Text, Dict, Any, Union, List
 from rasa.core.constants import DIALOGUE
 from rasa.nlu.constants import TEXT
 from rasa.nlu.tokenizers.tokenizer import Token
-
-
+import rasa.utils.io as io_utils
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -162,7 +161,8 @@ def load_tf_hub_model(model_url: Text) -> Any:
     try:
         return tfhub.load(model_url)
     except OSError:
-        os.environ["TFHUB_CACHE_DIR"] = "/tmp/tfhub"
+        directory = io_utils.create_temporary_directory()
+        os.environ["TFHUB_CACHE_DIR"] = directory
         return tfhub.load(model_url)
 
 
