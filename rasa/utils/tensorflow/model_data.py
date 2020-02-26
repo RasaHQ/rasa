@@ -62,7 +62,7 @@ class RasaModelData:
         """Obtain number of examples in data.
 
         Raise a ValueError if number of examples differ for different data in
-        session data.
+        model data.
         """
         if not self.data:
             return 0
@@ -95,25 +95,30 @@ class RasaModelData:
 
         self._check_label_key()
 
-        if self.label_key is None:
-            multi_values = [v for values in self.data.values() for v in values]
-            solo_values = [[] for values in self.data.values() for v in values]
-            stratify = None
-        else:
+        if self.label_key is not None:
             label_ids = self._create_label_ids(self.data[self.label_key][0])
             label_counts = dict(zip(*np.unique(label_ids, return_counts=True, axis=0)))
 
             self._check_train_test_sizes(number_of_test_examples, label_counts)
 
             counts = np.array([label_counts[label] for label in label_ids])
+            # we perform stratified train test split,
+            # which insures every label is present in the test data
+            # this operation can be performed only for labels
+            # that contain several data points
             multi_values = [
                 v[counts > 1] for values in self.data.values() for v in values
             ]
+            # collect data points that are unique for their label
             solo_values = [
                 v[counts == 1] for values in self.data.values() for v in values
             ]
 
             stratify = label_ids[counts > 1]
+        else:
+            multi_values = [v for values in self.data.values() for v in values]
+            solo_values = [[] for values in self.data.values() for v in values]
+            stratify = None
 
         output_values = train_test_split(
             *multi_values,
@@ -179,13 +184,13 @@ class RasaModelData:
         }
 
     def shuffled_data(self, data: Data) -> Data:
-        """Shuffle session data."""
+        """Shuffle model data."""
 
         ids = np.random.permutation(self.num_examples)
         return self._data_for_ids(data, ids)
 
     def balanced_data(self, data: Data, batch_size: int, shuffle: bool) -> Data:
-        """Mix session data to account for class imbalance.
+        """Mix model data to account for class imbalance.
 
         This batching strategy puts rare classes approximately in every other batch,
         by repeating them. Mimics stratified batching, but also takes into account
@@ -205,11 +210,15 @@ class RasaModelData:
         )
         num_label_ids = len(unique_label_ids)
 
+        # group data points by their label
         # need to call every time, so that the data is shuffled inside each class
-        label_data = self._split_by_label_ids(data, label_ids, unique_label_ids)
+        data_by_label = self._split_by_label_ids(data, label_ids, unique_label_ids)
 
+        # running index inside each data grouped by labels
         data_idx = [0] * num_label_ids
+        # number of cycles each label was passed
         num_data_cycles = [0] * num_label_ids
+        # if a label was skipped in current batch
         skipped = [False] * num_label_ids
 
         new_data = defaultdict(list)
@@ -231,7 +240,7 @@ class RasaModelData:
                     int(counts_label_ids[index] / self.num_examples * batch_size) + 1
                 )
 
-                for k, values in label_data[index].items():
+                for k, values in data_by_label[index].items():
                     for i, v in enumerate(values):
                         if len(new_data[k]) < i + 1:
                             new_data[k].append([])
@@ -261,7 +270,7 @@ class RasaModelData:
         end: Optional[int] = None,
         tuple_sizes: Optional[Dict[Text, int]] = None,
     ) -> Tuple[Optional[np.ndarray]]:
-        """Slices session data into batch using given start and end value."""
+        """Slices model data into batch using given start and end value."""
 
         if not data:
             data = self.data
@@ -292,12 +301,12 @@ class RasaModelData:
                 else:
                     batch_data.append(self._pad_dense_data(_data))
 
-        # len of batch_data is equal to the number of keys in session data
+        # len of batch_data is equal to the number of keys in model data
         return tuple(batch_data)
 
     def batch_tuple_sizes(self) -> Dict[Text, int]:
 
-        # save the amount of placeholders attributed to session data keys
+        # save the amount of placeholders attributed to model data keys
         tuple_sizes = defaultdict(int)
 
         idx = 0
@@ -328,7 +337,7 @@ class RasaModelData:
         )
 
     def _get_shapes_types(self) -> Tuple:
-        """Extract shapes and types from session data."""
+        """Extract shapes and types from model data."""
 
         types = []
         shapes = []
@@ -404,7 +413,7 @@ class RasaModelData:
 
     @staticmethod
     def _data_for_ids(data: Data, ids: np.ndarray) -> Data:
-        """Filter session data by ids."""
+        """Filter model data by ids."""
 
         new_data = defaultdict(list)
 
@@ -419,7 +428,7 @@ class RasaModelData:
     def _split_by_label_ids(
         self, data: Data, label_ids: np.ndarray, unique_label_ids: np.ndarray
     ) -> List["RasaModelData"]:
-        """Reorganize session data into a list of session data with the same labels."""
+        """Reorganize model data into a list of model data with the same labels."""
 
         label_data = []
         for label_id in unique_label_ids:
@@ -438,14 +447,13 @@ class RasaModelData:
     def _convert_train_test_split(
         self, output_values: List[Any], solo_values: List[Any]
     ) -> Tuple["RasaModelData", "RasaModelData"]:
-        """Convert the output of sklearn.model_selection.train_test_split into train and
-        eval session data."""
+        """Converts the output of sklearn's train_test_split into model data."""
 
         data_train = defaultdict(list)
         data_val = defaultdict(list)
 
         # output_values = x_train, x_val, y_train, y_val, z_train, z_val, etc.
-        # order is kept, e.g. same order as session data keys
+        # order is kept, e.g. same order as model data keys
 
         # train datasets have an even index
         index = 0
