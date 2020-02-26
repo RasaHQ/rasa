@@ -89,11 +89,29 @@ also be asked to sign a
 
 
 ## Development Internals
-### Running and changing the documentation
-To build & edit the docs, first install all necessary dependencies:
+
+### Building from source
+
+Rasa uses Poetry for packaging and dependency management. If you want to build it from source,
+you have to install Poetry first. This is how it can be done:
 
 ```
-poetry install
+curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3
+```
+
+There are several other ways to install Poetry. Please, follow 
+[the official guide](https://python-poetry.org/docs/#installation) to see all possible options.
+
+To install dependencies and `rasa` itself in editable mode execute
+```
+make install
+```
+
+### Running and changing the documentation
+
+First of all, install all the required dependencies:
+```
+make install
 ```
 
 After the installation has finished, you can run and view the documentation

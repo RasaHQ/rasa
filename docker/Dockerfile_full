@@ -49,6 +49,8 @@ FROM python:3.6-slim
 # copy everything from /opt
 COPY --from=python_builder /opt/venv /opt/venv
 COPY --from=python_builder /app /app
+
+# make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # update permissions & change user to not run as root
