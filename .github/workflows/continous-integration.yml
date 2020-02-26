@@ -54,19 +54,27 @@ jobs:
       with:
         python-version: 3.7
 
-    - name: Load Pip Cached Artifacts ⬇
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+      shell: bash
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@v1
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Load Poetry Cached Libraries ⬇
       uses: actions/cache@v1
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-3.7-pip-${{ hashFiles('**/requirements-dev.txt') }}
-        restore-keys: ${{ runner.os }}-3.7-pip-
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-
 
     - name: Install Dependencies 📦
       run: |
         sudo apt-get -y install libpq-dev
-        python -m pip install -U 'pip<20'
-        pip install -r requirements-dev.txt
-        pip install -e .
+        make install-full
 
     - name: Lint Code 🎎
       run: make lint
@@ -78,7 +86,7 @@ jobs:
       # makes sure we catch any dependency error early. they will create strange
       # errors during the docs build, so easier to catch them early on by
       # trying to run the `rasa` command once before the docs build.
-      run: rasa --help
+      run: poetry run rasa --help
 
 # DOES NOT WORK YET DUE TO TENSORFLOW 1.5 (some issue with no tensorflow-cpu verison)
 #  -> should work with 2.0 and replace the below "Test Docs":
@@ -93,9 +101,9 @@ jobs:
 
     - name: Test Docs 📃
       run: |
-        pip install -r requirements-docs.txt
-        pip install -e .[sql]
-        cd docs && make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
+        make install-full
+        export SPHINXBUILD=$(poetry run which sphinx-build)
+        cd docs && make SPHINXBUILD=$SPHINXBUILD SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
 
   test:
     name: Run Tests
@@ -114,21 +122,28 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Load Pip Cached Artifacts ⬇
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+      shell: bash
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@v1
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Load Poetry Cached Libraries ⬇
       uses: actions/cache@v1
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('**/requirements-dev.txt') }}
-        restore-keys: ${{ runner.os }}-${{ matrix.python-version }}-pip-
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-
 
     - name: Install Dependencies 📦
       run: |
-        sudo apt-get update -qq
-        python -m pip install -U 'pip<20'
-        pip install -r requirements-dev.txt
-        pip install -e .
+        sudo apt-get -y install libpq-dev
+        make install-full
         make prepare-tests-ubuntu
-        pip list
 
     - name: Test Code 🔍
       run: JOBS=2 make test
@@ -138,7 +153,7 @@ jobs:
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_SERVICE_NAME: github
-      run: coveralls
+      run: poetry run coveralls
 
   deploy:
     name: Deploy to PyPI
@@ -157,10 +172,18 @@ jobs:
       with:
         python-version: 3.6
 
-    - name: Build ⚒️ Distributions
+    - name: Read Poetry Version 🔢
       run: |
-        python3 -m pip install --user --upgrade setuptools wheel
-        python setup.py sdist bdist_wheel
+        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+      shell: bash
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@v1
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Build ⚒️ Distributions
+      run: poetry build
 
     - name: Publish to PyPI 📦
       uses: pypa/gh-action-pypi-publish@37e305e7413032d8422456179fee28fac7d25187

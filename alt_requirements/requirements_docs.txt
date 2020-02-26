@@ -1,3 +1,0 @@
-# deprecated, will be removed. please use the `requirements-docs.txt`
-# in the mainfolder instead
--r ../requirements-docs.txt

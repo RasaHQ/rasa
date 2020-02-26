@@ -1,54 +1,201 @@
 [tool.black]
-    line-length = 88
-    target-version = ['py36', 'py37']
-    exclude = '''
-    (
-      /(
-          \.eggs
-        | \.git
-        | \.pytype
-        | \.pytest_cache
-        | build
-        | dist
-      )/
-    )
-    '''
+line-length = 88
+target-version = [ "py36", "py37",]
+exclude = "((.eggs | .git | .pytype | .pytest_cache | build | dist))"
+
+[tool.poetry]
+name = "rasa"
+version = "1.7.0"
+description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
+authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
+maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
+homepage = "https://rasa.com"
+repository = "https://github.com/rasahq/rasa"
+documentation = "https://rasa.com/docs"
+classifiers = [ "Development Status :: 4 - Beta", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Programming Language :: Python", "Programming Language :: Python :: 3.6", "Programming Language :: Python :: 3.7", "Topic :: Software Development :: Libraries",]
+keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
+include = [ "LICENSE.txt", "README.md", "rasa/core/schemas/*", "rasa/core/training/visualization.html", "rasa/nlu/schemas/*", "rasa/cli/default_config.yml",]
+readme = "README.md"
+license = "Apache-2.0"
 
 [tool.towncrier]
-    package = "rasa"
-    package_dir = "rasa"
-    filename = "CHANGELOG.rst"
-    directory = "./changelog"
-    underlines = "^-_"
-    title_format = "[{version}] - {project_date}"
-    template = "./changelog/_template.jinja2"
+package = "rasa"
+package_dir = "rasa"
+filename = "CHANGELOG.rst"
+directory = "./changelog"
+underlines = "^-_"
+title_format = "[{version}] - {project_date}"
+template = "./changelog/_template.jinja2"
+[[tool.towncrier.type]]
+directory = "removal"
+name = "Deprecations and Removals"
+showcontent = true
 
-    [[tool.towncrier.type]]
-        directory = "removal"
-        name = "Deprecations and Removals"
-        showcontent = true
+[[tool.towncrier.type]]
+directory = "feature"
+name = "Features"
+showcontent = true
 
-    [[tool.towncrier.type]]
-        directory = "feature"
-        name = "Features"
-        showcontent = true
+[[tool.towncrier.type]]
+directory = "improvement"
+name = "Improvements"
+showcontent = true
 
-    [[tool.towncrier.type]]
-        directory = "improvement"
-        name = "Improvements"
-        showcontent = true
+[[tool.towncrier.type]]
+directory = "bugfix"
+name = "Bugfixes"
+showcontent = true
 
-    [[tool.towncrier.type]]
-        directory = "bugfix"
-        name = "Bugfixes"
-        showcontent = true
+[[tool.towncrier.type]]
+directory = "doc"
+name = "Improved Documentation"
+showcontent = true
 
-    [[tool.towncrier.type]]
-        directory = "doc"
-        name = "Improved Documentation"
-        showcontent = true
+[[tool.towncrier.type]]
+directory = "misc"
+name = "Miscellaneous internal changes"
+showcontent = false
 
-    [[tool.towncrier.type]]
-        directory = "misc"
-        name = "Miscellaneous internal changes"
-        showcontent = false
+[tool.poetry.dependencies]
+python = "^3.6"
+boto3 = "^1.12"
+requests = "^2.23"
+matplotlib = "~3.1"
+attrs = "~19.3"
+jsonpickle = "~1.3"
+redis = "^3.4"
+numpy = "^1.16"
+scipy = "^1.4.1"
+absl-py = "~0.9"
+apscheduler = "~3.6"
+tqdm = "~4.31.0"
+networkx = "~2.4.0"
+fbmessenger = "~6.0.0"
+pykwalify = "~1.7.0"
+coloredlogs = "^10.0"
+"ruamel.yaml" = "~0.15"
+scikit-learn = "^0.22"
+slackclient = "~1.3"
+python-telegram-bot = "^11.1"
+twilio = "~6.26"
+webexteamssdk = "~1.1.1"
+mattermostwrapper = "~2.2"
+rocketchat_API = "~0.6.31"
+colorhash = "~1.0.2"
+pika = "~1.1.0"
+jsonschema = "~3.2"
+packaging = "~19.0"
+gevent = "~1.4.0"
+pytz = "^2019.1"
+rasa-sdk = "^1.7.0"
+colorclass = "~2.2"
+terminaltables = "~3.1.0"
+sanic = "~19.9.0"
+sanic-cors = "~0.9.9.post1"
+sanic-jwt = "~1.3.2"
+sanic-plugins-framework = "==0.8.2"
+cloudpickle = "~1.2.0"
+multidict = "^4.6"
+aiohttp = "~3.5"
+questionary = "~1.1.1"
+prompt-toolkit = "^2.0"
+python-socketio = "~4.4"
+python-engineio = "~3.11"
+pydot = "~1.4"
+async_generator = "~1.10"
+SQLAlchemy = "~1.3.3"
+sklearn-crfsuite = "~0.3"
+psycopg2-binary = "~2.8.2"
+PyJWT = "~1.7"
+python-dateutil = "~2.8"
+tensorflow = "~2.1"
+tensorflow_hub = "~0.7"
+tensorflow-addons = "~0.8"
+tensorflow-probability = "~0.7"
+setuptools = ">=41.0.0"
+
+[tool.poetry.dev-dependencies]
+pytest-cov = "^2.8.1"
+pytest-localserver = "^0.5.0"
+pytest-sanic = "~1.0"
+pytest-asyncio = "^0.10.0"
+pytest-xdist = "^1.31.0"
+pytest = "^5.3.4"
+freezegun = "^0.3.14"
+responses = "^0.10.9"
+nbsphinx = "~0.5"
+aioresponses = "^0.6.2"
+moto = "==1.3.8"
+fakeredis = "^1.1.0"
+mongomock = "^3.18.0"
+black = "^19.10b0"
+flake8 = "^3.7.9"
+pytype = "^2020.1.24"
+google-cloud-storage = "^1.25.0"
+azure-storage-blob = "^12.1.0"
+coveralls = "^1.10.0"
+towncrier = "^19.2.0"
+toml = "^0.10.0"
+semantic_version = "^2.8.4"
+sphinx = "==1.8.2"
+sphinx-autobuild = "==0.7.1"
+sphinxcontrib-programoutput = "==0.11"
+pygments = "==2.2.0"
+sphinxcontrib-httpdomain = "==1.6.1"
+sphinxcontrib-websupport = "==1.1.0"
+sphinxcontrib-trio = "==1.0.2"
+sphinx-tabs = "==1.1.11"
+sphinx-autodoc-typehints = "==1.6.0"
+
+[tool.poetry.extras]
+spacy = [ "spacy",]
+convert = [ "tensorflow_text",]
+transformers = [ "transformers",]
+full = [ "spacy","tensorflow_text", "transformers", "jieba",]
+kafka = [ "kafka-python",]
+gh-release-notes = [ "pypandoc", "github3.py",]
+
+[tool.poetry.dependencies.spacy]
+version = ">=2.1,<2.2"
+optional = true
+
+[tool.poetry.dependencies.tensorflow_text]
+version = "==2.1.0rc0"
+optional = true
+
+[tool.poetry.dependencies.pypandoc]
+version = "~1.4"
+optional = true
+
+[tool.poetry.dependencies."github3.py"]
+version = "~1.3.0"
+optional = true
+
+[tool.poetry.dependencies.transformers]
+version = "~2.3.0"
+optional = true
+
+[tool.poetry.dependencies.jieba]
+version = "==0.39"
+optional = true
+
+[tool.poetry.dependencies.kafka-python]
+version = "^1.4"
+optional = true
+
+[tool.poetry.dependencies.pymongo]
+version = "~3.8.0"
+extras = [ "tls", "srv",]
+
+[tool.poetry.dev-dependencies.rasabaster]
+url = "https://storage.googleapis.com/docs-theme/rasabaster-0.7.23.tar.gz"
+
+[tool.poetry.dev-dependencies.sphinxcontrib-versioning]
+git = "https://github.com/RasaHQ/sphinxcontrib-versioning.git"
+
+[tool.poetry.dev-dependencies.sphinx_rtd_theme]
+git = "https://github.com/RasaHQ/sphinx_rtd_theme.git"
+
+[tool.poetry.scripts]
+rasa = "rasa.__main__:main"
+
