@@ -25,8 +25,9 @@ from rasa.nlu.constants import (
     DEFAULT_OPEN_UTTERANCE_TYPE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
     OPEN_UTTERANCE_PREDICTION_KEY,
-    EXTRACTOR_ATTRIBUTE,
+    EXTRACTOR,
     PRETRAINED_EXTRACTORS,
+    NO_ENTITY_TAG,
 )
 from rasa.model import get_model
 from rasa.nlu import config, training_data, utils
@@ -39,7 +40,13 @@ from rasa.nlu.tokenizers.tokenizer import Token
 
 logger = logging.getLogger(__name__)
 
-ENTITY_PROCESSORS = {"EntitySynonymMapper"}
+# Exclude 'EmbeddingIntentClassifier' and 'ResponseSelector' as their super class
+# performs entity extraction but those two classifiers don't
+ENTITY_PROCESSORS = {
+    "EntitySynonymMapper",
+    "EmbeddingIntentClassifier",
+    "ResponseSelector",
+}
 
 CVEvaluationResult = namedtuple("Results", "train test")
 
@@ -682,13 +689,15 @@ def evaluate_entities(
 
     aligned_predictions = align_all_entity_predictions(entity_results, extractors)
     merged_targets = merge_labels(aligned_predictions)
-    merged_targets = substitute_labels(merged_targets, "O", NO_ENTITY)
+    merged_targets = substitute_labels(merged_targets, NO_ENTITY_TAG, NO_ENTITY)
 
     result = {}
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
-        merged_predictions = substitute_labels(merged_predictions, "O", NO_ENTITY)
+        merged_predictions = substitute_labels(
+            merged_predictions, NO_ENTITY_TAG, NO_ENTITY
+        )
         logger.info(f"Evaluation for entity extractor: {extractor} ")
         if output_directory:
             report_filename = f"{extractor}_report.json"
@@ -815,7 +824,7 @@ def pick_best_entity_fit(token: Token, candidates: List[Dict]) -> Text:
     """
 
     if len(candidates) == 0:
-        return "O"
+        return NO_ENTITY_TAG
     elif len(candidates) == 1:
         return candidates[0]["entity"]
     else:
@@ -836,7 +845,7 @@ def determine_token_labels(
     """
 
     if entities is None or len(entities) == 0:
-        return "O"
+        return NO_ENTITY_TAG
     if not do_extractors_support_overlap(extractors) and do_entities_overlap(entities):
         raise ValueError("The possible entities should not overlap")
 
@@ -872,7 +881,7 @@ def align_entity_predictions(
         extractor: [] for extractor in extractors
     }
     for p in result.entity_predictions:
-        entities_by_extractors[p[EXTRACTOR_ATTRIBUTE]].append(p)
+        entities_by_extractors[p[EXTRACTOR]].append(p)
     extractor_labels: Dict[Text, List] = {extractor: [] for extractor in extractors}
     for t in result.tokens:
         true_token_labels.append(determine_token_labels(t, result.entity_targets, None))
@@ -994,43 +1003,56 @@ def get_eval_data(
 
 def get_entity_extractors(interpreter: Interpreter) -> Set[Text]:
     """Finds the names of entity extractors used by the interpreter.
-    Processors are removed since they do not
-    detect the boundaries themselves."""
 
-    extractors = {c.name for c in interpreter.pipeline if "entities" in c.provides}
+    Processors are removed since they do not detect the boundaries themselves.
+    """
+
+    from rasa.nlu.extractors.extractor import EntityExtractor
+
+    extractors = {
+        c.name for c in interpreter.pipeline if isinstance(c, EntityExtractor)
+    }
     return extractors - ENTITY_PROCESSORS
 
 
 def is_entity_extractor_present(interpreter: Interpreter) -> bool:
-    """Checks whether entity extractor is present"""
+    """Checks whether entity extractor is present."""
 
     extractors = get_entity_extractors(interpreter)
     return extractors != []
 
 
 def is_intent_classifier_present(interpreter: Interpreter) -> bool:
-    """Checks whether intent classifier is present"""
+    """Checks whether intent classifier is present."""
+
+    from rasa.nlu.classifiers.classifier import IntentClassifier
 
     intent_classifiers = [
-        c.name for c in interpreter.pipeline if "intent" in c.provides
+        c.name for c in interpreter.pipeline if isinstance(c, IntentClassifier)
     ]
     return intent_classifiers != []
 
 
 def is_response_selector_present(interpreter: Interpreter) -> bool:
-    """Checks whether response selector is present"""
+    """Checks whether response selector is present."""
+
+    from rasa.nlu.selectors.response_selector import ResponseSelector
 
     response_selectors = [
-        c.name for c in interpreter.pipeline if "response" in c.provides
+        c.name for c in interpreter.pipeline if isinstance(c, ResponseSelector)
     ]
     return response_selectors != []
 
 
 def get_available_response_selector_types(interpreter: Interpreter) -> List[Text]:
-    """Gets all available response selector types"""
+    """Gets all available response selector types."""
+
+    from rasa.nlu.selectors.response_selector import ResponseSelector
 
     response_selector_types = [
-        c.retrieval_intent for c in interpreter.pipeline if "response" in c.provides
+        c.retrieval_intent
+        for c in interpreter.pipeline
+        if isinstance(c, ResponseSelector)
     ]
 
     return response_selector_types
@@ -1433,8 +1455,6 @@ def compare_nlu(
         train, test = data.train_test_split()
         write_to_file(test_path, test.nlu_as_markdown())
 
-        training_examples_per_run = []
-
         for percentage in exclusion_percentages:
             percent_string = f"{percentage}%_exclusion"
 
@@ -1514,11 +1534,13 @@ def _compute_entity_metrics(
     aligned_predictions = align_all_entity_predictions(entity_results, extractors)
 
     merged_targets = merge_labels(aligned_predictions)
-    merged_targets = substitute_labels(merged_targets, "O", NO_ENTITY)
+    merged_targets = substitute_labels(merged_targets, NO_ENTITY_TAG, NO_ENTITY)
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
-        merged_predictions = substitute_labels(merged_predictions, "O", NO_ENTITY)
+        merged_predictions = substitute_labels(
+            merged_predictions, NO_ENTITY_TAG, NO_ENTITY
+        )
         _, precision, f1, accuracy = get_evaluation_metrics(
             merged_targets, merged_predictions, exclude_label=NO_ENTITY
         )

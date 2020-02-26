@@ -1,0 +1,15 @@
+Refactor how GPU and CPU environments are configured for TensorFlow 2.0.
+
+Please refer to the :ref:`documentation <tensorflow_usage>` to understand
+which environment variables to set in what scenarios. A couple of examples are shown below as well:
+
+.. code-block:: python
+
+    # This specifies to use 1024 MB of memory from GPU with logical ID 0 and 2048 MB of memory from GPU with logical ID 1
+    TF_GPU_MEMORY_ALLOC="0:1024, 1:2048"
+
+    # Specifies that at most 3 CPU threads can be used to parallelize multiple non-blocking operations
+    TF_INTER_OP_PARALLELISM_THREADS="3"
+
+    # Specifies that at most 2 CPU threads can be used to parallelize a particular operation.
+    TF_INTRA_OP_PARALLELISM_THREADS="2"

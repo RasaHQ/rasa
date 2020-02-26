@@ -1,12 +1,12 @@
 import logging
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from typing import List, Optional, Dict, Text, Tuple, Generator, NamedTuple
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, Domain
 from rasa.core.events import ActionExecuted, Event
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
-from rasa.nlu.constants import INTENT_ATTRIBUTE
+from rasa.nlu.constants import INTENT
 from rasa.core.training.generator import TrackerWithCachedStates
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class StoryConflict:
                                    prior events (i.e. at the beginning of a dialogue).
     """
 
-    def __init__(self, sliced_states: List[Optional[Dict[Text, float]]],) -> None:
+    def __init__(self, sliced_states: List[Optional[Dict[Text, float]]]) -> None:
         """
         Creates a `StoryConflict` from a given state.
 
@@ -314,10 +314,10 @@ def _get_previous_event(
         ):
             # The `prev_...` was an action that was NOT `action_listen`
             return "action", turn_label.replace(PREV_PREFIX, "")
-        elif turn_label.startswith(INTENT_ATTRIBUTE + "_"):
+        elif turn_label.startswith(INTENT + "_"):
             # We found an intent, but it is only the previous event if
             # the `prev_...` was `prev_action_listen`, so we don't return.
             previous_event_type = "intent"
-            previous_event_name = turn_label.replace(INTENT_ATTRIBUTE + "_", "")
+            previous_event_name = turn_label.replace(INTENT + "_", "")
 
     return previous_event_type, previous_event_name

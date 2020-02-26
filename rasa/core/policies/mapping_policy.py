@@ -91,7 +91,7 @@ class MappingPolicy(Policy):
         predicted with the highest probability of all policies. If it is not
         the policy will predict zero for every action."""
 
-        prediction = [0.0] * domain.num_actions
+        prediction = self._default_predictions(domain)
         intent = tracker.latest_message.intent.get("name")
         if intent == USER_INTENT_RESTART:
             action = ACTION_RESTART_NAME

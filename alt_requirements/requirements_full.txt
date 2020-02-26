@@ -10,4 +10,7 @@
 # ConveRT Requirements
 -r requirements_pretrained_embeddings_convert.txt
 
+# Transformers Requirements
+-r requirements_pretrained_embeddings_transformers.txt
+
 jieba==0.39

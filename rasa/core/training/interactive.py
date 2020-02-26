@@ -1454,7 +1454,7 @@ async def record_messages(
 
 
 async def _get_tracker_events_to_plot(
-    domain: Dict[Text, Any], file_importer: TrainingDataImporter, conversation_id: Text,
+    domain: Dict[Text, Any], file_importer: TrainingDataImporter, conversation_id: Text
 ) -> List[Union[Text, List[Event]]]:
     training_trackers = await _get_training_trackers(file_importer, domain)
     number_of_trackers = len(training_trackers)

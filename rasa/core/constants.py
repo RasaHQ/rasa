@@ -57,6 +57,7 @@ FORM_POLICY_PRIORITY = 5
 UTTER_PREFIX = "utter_"
 RESPOND_PREFIX = "respond_"
 
+DIALOGUE = "dialogue"
 DEFAULT_CATEGORICAL_SLOT_VALUE = "__other__"
 
 # RabbitMQ message property header added to events published using `rasa export`

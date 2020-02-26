@@ -4,26 +4,9 @@ pipeline:
   - name: "SpacyNLP"
   - name: "SpacyTokenizer"
   - name: "SpacyFeaturizer"
-  - name: "SklearnIntentClassifier"
-  - name: "CRFEntityExtractor"
-    features: [
-      ["low", "title", "upper"],
-      [
-        "bias",
-        "low",
-        "prefix5",
-        "prefix2",
-        "suffix5",
-        "suffix3",
-        "suffix2",
-        "upper",
-        "title",
-        "digit",
-        "pattern",
-        "text_dense_features"
-      ],
-      ["low", "title", "upper"],
-    ]
+  - name: "LexicalSyntacticFeaturizer"
+  - name: "DIETClassifier"
+    epochs: 100
   - name: "EntitySynonymMapper"
 
 policies:
