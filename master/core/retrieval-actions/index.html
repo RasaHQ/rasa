@@ -194,6 +194,7 @@ in open source bot framework Rasa." />
 <li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
 </ul>
@@ -317,7 +318,7 @@ From a dialogue perspective, these single-turn exchanges can all be treated equa
 <span class="vm">   </span>- respond_chitchat
 </pre></div>
 </div>
-<p>A retrieval action uses the output of a <a class="reference internal" href="../../nlu/components/#response-selector"><span class="std std-ref">Response Selector</span></a> component from NLU which learns a
+<p>A retrieval action uses the output of a <a class="reference internal" href="../../nlu/components/#response-selector"><span class="std std-ref">ResponseSelector</span></a> component from NLU which learns a
 retrieval model to predict the correct response from a list of candidate responses given a user message text.</p>
 </div>
 <div class="section" id="training-data">
@@ -365,7 +366,7 @@ use it in the name of your intents.</p>
 </div>
 <div class="section" id="config-file">
 <h2><a class="toc-backref" href="#id5">Config File</a><a class="headerlink" href="#config-file" title="Permalink to this headline">¶</a></h2>
-<p>You need to include the <a class="reference internal" href="../../nlu/components/#response-selector"><span class="std std-ref">Response Selector</span></a> component in your config. The component needs a tokenizer, a featurizer and an
+<p>You need to include the <a class="reference internal" href="../../nlu/components/#response-selector"><span class="std std-ref">ResponseSelector</span></a> component in your config. The component needs a tokenizer, a featurizer and an
 intent classifier to operate on the user message before it can predict a response and hence these
 components should be placed before <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> in the NLU configuration. An example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>

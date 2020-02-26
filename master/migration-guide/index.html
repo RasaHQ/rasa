@@ -18,7 +18,7 @@
     <link rel="index" title="Index" href="../genindex/" />
     <link rel="search" title="Search" href="../search/" />
     <link rel="next" title="Rasa Open Source Change Log" href="../changelog/" />
-    <link rel="prev" title="Featurization of Conversations" href="../api/core-featurization/" />
+    <link rel="prev" title="TensorFlow Configuration" href="../api/tensorflow_usage/" />
 
   <!-- Google Tag Manager -->
   <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -194,6 +194,7 @@ Rasa Core and how you can migrate from one version to another." />
 <li class="toctree-l1"><a class="reference internal" href="../api/lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../api/training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/tensorflow_usage/">TensorFlow Configuration</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../changelog/">Rasa Open Source Change Log</a></li>
 </ul>
@@ -273,24 +274,198 @@ Rasa Core and how you can migrate from one version to another." />
 how you can migrate from one version to another.</p>
 <div class="section" id="rasa-1-7-to-rasa-1-8">
 <span id="migration-to-rasa-1-8"></span><h2>Rasa 1.7 to Rasa 1.8<a class="headerlink" href="#rasa-1-7-to-rasa-1-8" title="Permalink to this headline">¶</a></h2>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This is a release <strong>breaking backwards compatibility</strong>.
+It is not possible to load previously trained models. Please make sure to retrain a
+model before trying to use it with this improved version.</p>
+</div>
 <div class="section" id="general">
 <h3>General<a class="headerlink" href="#general" title="Permalink to this headline">¶</a></h3>
 <ul>
-<li><p class="first">The <a class="reference internal" href="../core/policies/#embedding-policy"><span class="std std-ref">Embedding Policy</span></a> replaced the <a class="reference internal" href="../core/policies/#keras-policy"><span class="std std-ref">Keras Policy</span></a> as recommended machine
+<li><p class="first">The <a class="reference internal" href="../core/policies/#ted-policy"><span class="std std-ref">TED Policy</span></a> replaced the <a class="reference internal" href="../core/policies/#keras-policy"><span class="std std-ref">Keras Policy</span></a> as recommended machine
 learning policy. New projects generated with <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code> will automatically use
 this policy. In case you want to change your existing model configuration to use the
-<a class="reference internal" href="../core/policies/#embedding-policy"><span class="std std-ref">Embedding Policy</span></a> add this to the <code class="docutils literal notranslate"><span class="pre">policies</span></code> section in your <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>
+<a class="reference internal" href="../core/policies/#ted-policy"><span class="std std-ref">TED Policy</span></a> add this to the <code class="docutils literal notranslate"><span class="pre">policies</span></code> section in your <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>
 and remove potentially existing <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> entries:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">...</span> <span class="c1"># other policies</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">EmbeddingPolicy</span>
+<span class="c1"># - ... other policies</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">TEDPolicy</span>
   <span class="l l-Scalar l-Scalar-Plain">max_history</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
   <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
 </pre></div>
 </div>
 <p>The given snippet specifies default values for the parameters <code class="docutils literal notranslate"><span class="pre">max_history</span></code> and
-<code class="docutils literal notranslate"><span class="pre">epochs</span></code>. <code class="docutils literal notranslate"><span class="pre">max_history</span></code> is particularly important and strongly depends on your stories. Please see the docs of the <a class="reference internal" href="../core/policies/#embedding-policy"><span class="std std-ref">Embedding Policy</span></a> if you want to
-customize them.</p>
+<code class="docutils literal notranslate"><span class="pre">epochs</span></code>. <code class="docutils literal notranslate"><span class="pre">max_history</span></code> is particularly important and strongly depends on your stories.
+Please see the docs of the <a class="reference internal" href="../core/policies/#ted-policy"><span class="std std-ref">TED Policy</span></a> if you want to customize them.</p>
+</li>
+<li><p class="first">All pre-defined pipeline templates are deprecated. <strong>Any templates you use will be
+mapped to the new configuration, but the underlying architecture is the same</strong>.
+Take a look at <a class="reference internal" href="../nlu/choosing-a-pipeline/#choosing-a-pipeline"><span class="std std-ref">Choosing a Pipeline</span></a> to decide on what components you should use
+in your configuration file.</p>
+</li>
+<li><p class="first">The <a class="reference internal" href="../core/policies/#embedding-policy"><span class="std std-ref">Embedding Policy</span></a> was renamed to <a class="reference internal" href="../core/policies/#ted-policy"><span class="std std-ref">TED Policy</span></a>. The functionality of the policy stayed the same.
+Please update your configuration files to use <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code> instead of <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>.</p>
+</li>
+<li><p class="first">Most of the model options for <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>, <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code>, and <code class="docutils literal notranslate"><span class="pre">ResponseSelector</span></code> got
+renamed. Please update your configuration files using the following mapping:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="35%" />
+<col width="65%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Old model option</th>
+<th class="head">New model option</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>hidden_layers_sizes_a</td>
+<td>dictionary “hidden_layers_sizes” with key “text”</td>
+</tr>
+<tr class="row-odd"><td>hidden_layers_sizes_b</td>
+<td>dictionary “hidden_layers_sizes” with key “label”</td>
+</tr>
+<tr class="row-even"><td>hidden_layers_sizes_pre_dial</td>
+<td>dictionary “hidden_layers_sizes” with key “dialogue”</td>
+</tr>
+<tr class="row-odd"><td>hidden_layers_sizes_bot</td>
+<td>dictionary “hidden_layers_sizes” with key “label”</td>
+</tr>
+<tr class="row-even"><td>num_transformer_layers</td>
+<td>number_of_transformer_layers</td>
+</tr>
+<tr class="row-odd"><td>num_heads</td>
+<td>number_of_attention_heads</td>
+</tr>
+<tr class="row-even"><td>max_seq_length</td>
+<td>maximum_sequence_length</td>
+</tr>
+<tr class="row-odd"><td>dense_dim</td>
+<td>dense_dimension</td>
+</tr>
+<tr class="row-even"><td>embed_dim</td>
+<td>embedding_dimension</td>
+</tr>
+<tr class="row-odd"><td>num_neg</td>
+<td>number_of_negative_examples</td>
+</tr>
+<tr class="row-even"><td>mu_pos</td>
+<td>maximum_positive_similarity</td>
+</tr>
+<tr class="row-odd"><td>mu_neg</td>
+<td>maximum_negative_similarity</td>
+</tr>
+<tr class="row-even"><td>use_max_sim_neg</td>
+<td>use_maximum_negative_similarity</td>
+</tr>
+<tr class="row-odd"><td>C2</td>
+<td>regularization_constant</td>
+</tr>
+<tr class="row-even"><td>C_emb</td>
+<td>negative_margin_scale</td>
+</tr>
+<tr class="row-odd"><td>droprate_a</td>
+<td>droprate_dialogue</td>
+</tr>
+<tr class="row-even"><td>droprate_b</td>
+<td>droprate_label</td>
+</tr>
+<tr class="row-odd"><td>evaluate_every_num_epochs</td>
+<td>evaluate_every_number_of_epochs</td>
+</tr>
+<tr class="row-even"><td>evaluate_on_num_examples</td>
+<td>evaluate_on_number_of_examples</td>
+</tr>
+</tbody>
+</table>
+<p>Old configuration options will be mapped to the new names, and a warning will be thrown.
+However, these will be deprecated in a future release.</p>
+</li>
+<li><p class="first"><a class="reference internal" href="../nlu/components/#embedding-intent-classifier"><span class="std std-ref">EmbeddingIntentClassifier</span></a> is now deprecated and will be replaced by <a class="reference internal" href="../nlu/components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a>
+in the future.
+<code class="docutils literal notranslate"><span class="pre">DIETClassfier</span></code> performs intent classification as well as entity recognition.
+If you want to get the same model behaviour as the current <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code>, you can use
+the following configuration of <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="c1"># - ... other components</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+  <span class="l l-Scalar l-Scalar-Plain">intent_classification</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+  <span class="l l-Scalar l-Scalar-Plain">entity_recognition</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+  <span class="l l-Scalar l-Scalar-Plain">use_masked_language_model</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+  <span class="l l-Scalar l-Scalar-Plain">BILOU_flag</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+  <span class="l l-Scalar l-Scalar-Plain">number_of_transformer_layers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="c1"># ... any other parameters</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="../nlu/components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a> for more information about the new component.
+Specifying <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> in the configuration maps to the above component definition, the
+behaviour is unchanged from previous versions.</p>
+</li>
+<li><p class="first"><code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> is now deprecated and will be replaced by <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> in the future. If you want to
+get the same model behaviour as the current <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code>, you can use the following configuration:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="c1"># - ... other components</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
+  <span class="l l-Scalar l-Scalar-Plain">features</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span>
+    <span class="p p-Indicator">[</span><span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">],</span>
+    <span class="p p-Indicator">[</span>
+      <span class="s">&quot;BOS&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;EOS&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;prefix5&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;prefix2&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;suffix5&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;suffix3&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;suffix2&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;digit&quot;</span><span class="p p-Indicator">,</span>
+    <span class="p p-Indicator">],</span>
+    <span class="p p-Indicator">[</span><span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">],</span>
+  <span class="p p-Indicator">]</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+  <span class="l l-Scalar l-Scalar-Plain">intent_classification</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+  <span class="l l-Scalar l-Scalar-Plain">entity_recognition</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+  <span class="l l-Scalar l-Scalar-Plain">use_masked_language_model</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+  <span class="l l-Scalar l-Scalar-Plain">number_of_transformer_layers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="c1"># ... any other parameters</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> featurizes user messages on its own, it does not depend on any featurizer.
+We extracted the featurization from the component into the new featurizer :ref:<code class="docutils literal notranslate"><span class="pre">LexicalSyntacticFeaturizer</span></code>. Thus,
+in order to obtain the same results as before, you need to add this featurizer to your pipeline before the
+:ref:<code class="docutils literal notranslate"><span class="pre">diet-classifier</span></code>.
+Specifying <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> in the configuration maps to the above component definition, the behaviour
+is unchanged from previous versions.</p>
+</li>
+<li><p class="first">If your pipeline contains <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> and <code class="docutils literal notranslate"><span class="pre">EmbeddingIntentClassifier</span></code> you can substitute both
+components with <a class="reference internal" href="../nlu/components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a>. You can use the following pipeline for that:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="c1"># - ... other components</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
+  <span class="l l-Scalar l-Scalar-Plain">features</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span>
+    <span class="p p-Indicator">[</span><span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">],</span>
+    <span class="p p-Indicator">[</span>
+      <span class="s">&quot;BOS&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;EOS&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;prefix5&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;prefix2&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;suffix5&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;suffix3&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;suffix2&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span>
+      <span class="s">&quot;digit&quot;</span><span class="p p-Indicator">,</span>
+    <span class="p p-Indicator">],</span>
+    <span class="p p-Indicator">[</span><span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">],</span>
+  <span class="p p-Indicator">]</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+  <span class="l l-Scalar l-Scalar-Plain">number_of_transformer_layers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="c1"># ... any other parameters</span>
+</pre></div>
+</div>
 </li>
 </ul>
 </div>
