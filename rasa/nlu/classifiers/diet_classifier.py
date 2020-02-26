@@ -445,16 +445,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """
 
         # Collect one example for each label
-        labels_idx_example = []
+        labels_idx_examples = []
         for label_name, idx in label_id_dict.items():
             label_example = self._find_example_for_label(
                 label_name, training_data.intent_examples, attribute
             )
-            labels_idx_example.append((idx, label_example))
+            labels_idx_examples.append((idx, label_example))
 
         # Sort the list of tuples based on label_idx
-        labels_idx_example = sorted(labels_idx_example, key=lambda x: x[0])
-        labels_example = [example for (_, example) in labels_idx_example]
+        labels_idx_examples = sorted(labels_idx_examples, key=lambda x: x[0])
+        labels_example = [example for (_, example) in labels_idx_examples]
 
         # Collect features, precomputed if they exist, else compute on the fly
         if self._check_labels_features_exist(labels_example, attribute):
@@ -467,7 +467,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_data = RasaModelData()
         label_data.add_features(LABEL_FEATURES, features)
 
-        label_ids = np.array([idx for (idx, _) in labels_idx_example])
+        label_ids = np.array([idx for (idx, _) in labels_idx_examples])
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         label_data.add_features(LABEL_IDS, [np.expand_dims(label_ids, -1)])

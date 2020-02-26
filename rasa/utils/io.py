@@ -283,6 +283,12 @@ def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Te
     return f.name
 
 
+def create_temporary_directory() -> Text:
+    """Creates a tempfile.TemporaryDirectory."""
+    f = tempfile.TemporaryDirectory()
+    return f.name
+
+
 def create_path(file_path: Text) -> None:
     """Makes sure all directories in the 'file_path' exists."""
 
