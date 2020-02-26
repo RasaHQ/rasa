@@ -430,10 +430,10 @@ Ubuntu / macOS / Windows</div>
 <div class="section" id="building-from-source">
 <span id="build-from-source"></span><h2>Building from Source<a class="headerlink" href="#building-from-source" title="Permalink to this headline">¶</a></h2>
 <p>If you want to use the development version of Rasa Open Source, you can get it from GitHub:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/RasaHQ/rasa.git
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py <span class="p">|</span> python
+$ git clone https://github.com/RasaHQ/rasa.git
 $ <span class="nb">cd</span> rasa
-$ pip install -r requirements.txt
-$ pip install -e .
+$ poetry install
 </pre></div>
 </div>
 <hr class="docutils" />
@@ -458,7 +458,7 @@ and sklearn_crfsuite get automatically installed. However, spaCy and MITIE need 
 this to install everything.</p>
 <p>You’ll first need to clone the repository and then run the following
 command to install all the packages:</p>
-<div class="last highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install -r alt_requirements/requirements_full.txt
+<div class="last highlight-bash notranslate"><div class="highlight"><pre><span></span>$ poetry install --extras full
 </pre></div>
 </div>
 </div>
