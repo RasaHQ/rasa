@@ -8,8 +8,6 @@
 * inform: im looking for a [moderately](price:moderate) priced restaurant in the [east](location) part of town
  - utter_on_it
  - utter_ask_cuisine
-* inform: [french](cuisine) food
- - utter_ask_numpeople
  
  ## story_with_multiple_entities_correction_and_search
 * greet: hello
