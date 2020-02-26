@@ -286,14 +286,6 @@ class TEDPolicy(Policy):
 
         self._label_data = self._create_label_data(domain)
 
-        # check if number of negatives is less than number of label_ids
-        if self.config[NUM_NEG] < domain.num_actions:
-            logger.debug(
-                f"Set '{NUM_NEG}' to the number of actions - 1, e.g. "
-                f"{domain.num_actions - 1}."
-            )
-        self.config[NUM_NEG] = min(self.config[NUM_NEG], domain.num_actions - 1)
-
         # extract actual training data to feed to model
         model_data = self._create_model_data(training_data.X, training_data.y)
         if model_data.is_empty():
