@@ -112,7 +112,6 @@ class Exporter:
             event: Serialized event to be published.
             headers: Message headers to be published if `self.event_broker` is a
                 `PikaEventBroker`.
-                
         """
         if isinstance(self.event_broker, (PikaEventBroker, PikaProducer)):
             self.event_broker.publish(event=event, headers=headers)
