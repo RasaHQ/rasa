@@ -12,18 +12,36 @@ from rasa.utils.tensorflow.constants import BALANCED, SEQUENCE
 logger = logging.getLogger(__name__)
 
 
+# Mapping of feature name to a list of numpy arrays representing the actual features
+# For example:
+# "text_features" -> [
+#   "numpy array containing dense features for every training example",
+#   "numpy array containing sparse features for every training example"
+# ]
 Data = Dict[Text, List[np.ndarray]]
 
 
 class FeatureSignature(NamedTuple):
+    """Stores the shape and the type (sparse vs dense) of features."""
+
     is_sparse: bool
     shape: List[int]
 
 
 class RasaModelData:
+    """Data object used for all RasaModels. It contains all features needed to train
+    the models."""
+
     def __init__(
         self, label_key: Optional[Text] = None, data: Optional[Data] = None
     ) -> None:
+        """
+        Initializes the RasaModelData object.
+
+        Args:
+            label_key: the label_key used for balancing, etc.
+            data: the data holding the features
+        """
         self.data = data or {}
         self.label_key = label_key
         # will be updated when features are added
@@ -67,8 +85,7 @@ class RasaModelData:
     def number_of_examples(self) -> int:
         """Obtain number of examples in data.
 
-        Raise a ValueError if number of examples differ for different data in
-        session data.
+        Raises: A ValueError if number of examples differ for different features.
         """
         if not self.data:
             return 0
@@ -102,10 +119,12 @@ class RasaModelData:
         self._check_label_key()
 
         if self.label_key is None:
+            # randomly split data as no label key is split
             multi_values = [v for values in self.data.values() for v in values]
             solo_values = [[] for values in self.data.values() for v in values]
             stratify = None
         else:
+            # make sure that examples for each label value are in both split sets
             label_ids = self._create_label_ids(self.data[self.label_key][0])
             label_counts = dict(zip(*np.unique(label_ids, return_counts=True, axis=0)))
 
@@ -352,7 +371,7 @@ class RasaModelData:
 
     def _gen_batch(
         self, batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False
-    ) -> Generator[Tuple, None, None]:
+    ) -> Generator[Tuple[Optional[np.ndarray]], None, None]:
         """Generate batches."""
 
         data = self.data
@@ -411,9 +430,9 @@ class RasaModelData:
 
         label_data = []
         for label_id in unique_label_ids:
-            ids = label_ids == label_id
+            matching_ids = label_ids == label_id
             label_data.append(
-                RasaModelData(self.label_key, self._data_for_ids(data, ids))
+                RasaModelData(self.label_key, self._data_for_ids(data, matching_ids))
             )
         return label_data
 
@@ -438,7 +457,7 @@ class RasaModelData:
         # train datasets have an even index
         index = 0
         for key, values in self.data.items():
-            for _ in range(len(values)):
+            for _ in values:
                 data_train[key].append(
                     self._combine_features(output_values[index * 2], solo_values[index])
                 )
@@ -524,22 +543,25 @@ class RasaModelData:
     def _scipy_matrix_to_values(array_of_sparse: np.ndarray) -> List[np.ndarray]:
         """Convert a scipy matrix into indices, data, and shape."""
 
+        # we need to make sure that the matrices are coo_matrices otherwise the
+        # transformation does not work (e.g. you cannot access x.row, x.col)
         if not isinstance(array_of_sparse[0], scipy.sparse.coo_matrix):
             array_of_sparse = [x.tocoo() for x in array_of_sparse]
 
         max_seq_len = max([x.shape[0] for x in array_of_sparse])
 
+        # get the indices of values
         indices = np.hstack(
             [
                 np.vstack([i * np.ones_like(x.row), x.row, x.col])
                 for i, x in enumerate(array_of_sparse)
             ]
         ).T
+
         data = np.hstack([x.data for x in array_of_sparse])
 
-        shape = np.array(
-            (len(array_of_sparse), max_seq_len, array_of_sparse[0].shape[-1])
-        )
+        number_of_features = array_of_sparse[0].shape[-1]
+        shape = np.array((len(array_of_sparse), max_seq_len, number_of_features))
 
         return [
             indices.astype(np.int64),
