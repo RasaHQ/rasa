@@ -1,11 +1,14 @@
 import itertools
 import logging
+import uuid
 from typing import Text, Optional, List, Set, Dict, Any
 
 from tqdm import tqdm
 
 import rasa.cli.utils as cli_utils
 from rasa.core.brokers.broker import EventBroker
+from rasa.core.brokers.pika import PikaProducer, PikaEventBroker
+from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import EventVerbosity
 from rasa.exceptions import (
@@ -57,6 +60,9 @@ class Exporter:
         Exits if the publishing of events is interrupted due to an error. In that case,
         the CLI command to continue the export where it was interrupted is printed.
 
+        Returns:
+            The number of successfully published events.
+
         """
         events = self._fetch_events_within_time_range()
 
@@ -67,10 +73,12 @@ class Exporter:
         published_events = 0
         current_timestamp = None
 
+        headers = self._get_message_headers()
+
         for event in tqdm(events, "events"):
             # noinspection PyBroadException
             try:
-                self.event_broker.publish(event)
+                self._publish_with_message_headers(event, headers)
                 published_events += 1
                 current_timestamp = event["timestamp"]
             except Exception as e:
@@ -80,6 +88,35 @@ class Exporter:
         self.event_broker.close()
 
         return published_events
+
+    def _get_message_headers(self) -> Optional[Dict[Text, Text]]:
+        """Generate a message header for publishing events to a `PikaEventBroker`.
+
+        Returns:
+            Message headers with a randomly generated uuid under the
+            `RASA_EXPORT_PROCESS_ID_HEADER_NAME` key if `self.event_broker` is a
+            `PikaEventBroker`, else `None`.
+
+        """
+        if isinstance(self.event_broker, (PikaEventBroker, PikaProducer)):
+            return {RASA_EXPORT_PROCESS_ID_HEADER_NAME: uuid.uuid4().hex}
+
+        return None
+
+    def _publish_with_message_headers(
+        self, event: Dict[Text, Any], headers: Optional[Dict[Text, Text]]
+    ) -> None:
+        """Publish `event` to a message broker with `headers`.
+
+        Args:
+            event: Serialized event to be published.
+            headers: Message headers to be published if `self.event_broker` is a
+                `PikaEventBroker`.
+        """
+        if isinstance(self.event_broker, (PikaEventBroker, PikaProducer)):
+            self.event_broker.publish(event=event, headers=headers)
+        else:
+            self.event_broker.publish(event)
 
     def _get_conversation_ids_in_tracker(self) -> Set[Text]:
         """Fetch conversation IDs in `self.tracker_store`.
