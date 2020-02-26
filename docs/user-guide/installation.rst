@@ -177,10 +177,10 @@ If you want to use the development version of Rasa Open Source, you can get it f
 
 .. code-block:: bash
 
+    $ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
     $ git clone https://github.com/RasaHQ/rasa.git
     $ cd rasa
-    $ pip install -r requirements.txt
-    $ pip install -e .
+    $ poetry install
 
 --------------------------------
 
@@ -216,7 +216,7 @@ and sklearn_crfsuite get automatically installed. However, spaCy and MITIE need 
 
     .. code-block:: bash
 
-        $ pip install -r alt_requirements/requirements_full.txt
+        $ poetry install --extras full
 
 .. _install-spacy:
 

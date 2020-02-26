@@ -18,6 +18,8 @@ from semantic_version import Version
 
 VERSION_FILE_PATH = "rasa/version.py"
 
+PYPROJECT_FILE_PATH = "pyproject.toml"
+
 REPO_BASE_URL = "https://github.com/RasaHQ/rasa"
 
 RELEASE_BRANCH_PREFIX = "prepare-release-"
@@ -46,6 +48,11 @@ def version_file_path() -> Path:
     return project_root() / VERSION_FILE_PATH
 
 
+def pyproject_file_path() -> Path:
+    """Path to the pyproject.toml."""
+    return project_root() / PYPROJECT_FILE_PATH
+
+
 def write_version_file(version: Text) -> None:
     """Dump a new version into the python version file."""
 
@@ -56,6 +63,26 @@ def write_version_file(version: Text) -> None:
             f'__version__ = "{version}"\n'
         )
     check_call(["git", "add", str(version_file_path().absolute())])
+
+
+def write_version_to_pyproject(version: Text) -> None:
+    """Dump a new version into the pyproject.toml."""
+
+    import toml
+
+    pyproject_file = pyproject_file_path()
+
+    try:
+        data = toml.load(pyproject_file)
+        data['tool']['poetry']['version'] = version
+        with pyproject_file.open("w", encoding="utf8") as f:
+            toml.dump(data, f)
+    except (FileNotFoundError, TypeError):
+        print(f"Unable to update {pyproject_file}: file not found.")
+        sys.exit(1)
+    except toml.TomlDecodeError:
+        print(f"Unable to parse {pyproject_file}: incorrect TOML file.")
+        sys.exit(1)
 
 
 def get_current_version() -> Text:
@@ -249,6 +276,7 @@ def main(args: argparse.Namespace) -> None:
     validate_code_is_release_ready(version)
 
     write_version_file(version)
+    write_version_to_pyproject(version)
 
     generate_changelog(version)
     base = git_current_branch()

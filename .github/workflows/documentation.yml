@@ -27,26 +27,19 @@ jobs:
       with:
         python-version: 3.6
 
-    - name: Load PIP Cached artifacts ⬇
-      uses: actions/cache@v1
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+      shell: bash
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@v1
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-3.6-pip-${{ hashFiles('**/requirements-dev.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-3.6-pip-
+        poetry-version: ${{ env.POETRY_VERSION }}
 
     - name: Install Dependencies 📦
-      env:
-        RASABASTER: rasabaster-0.7.23.tar.gz
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
-        pip install $RASABASTER
-        pip install -r requirements.txt
-        pip install -r requirements-docs.txt
-        pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
-        pip install -e .
-        pip list
+      run: make install
+
     - name: Build & Publish Docs 🏃‍♀️
       env:
         GITHUB_DOCS_KEY: ${{ secrets.GITHUB_DOCS_KEY }}
@@ -59,4 +52,4 @@ jobs:
         git config --global user.name "GitHub CI"
         git remote set-url --push origin "git@github.com:${{github.repository}}"
 
-        sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster
+        poetry run sphinx-versioning push docs docs . -- -b dirhtml -A html_theme=rasabaster
