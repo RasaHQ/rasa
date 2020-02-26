@@ -1,4 +1,15 @@
-FROM python:3.6-slim as python_builder
+FROM python:3.6-slim as base
+
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+    # required by psycopg2 at build and runtime
+    libpq-dev \
+     # required for health check
+    curl \
+ && apt-get autoremove -y
+
+FROM base as builder
+
 RUN apt-get update -qq && \
   apt-get install -y --no-install-recommends \
   build-essential \
@@ -11,10 +22,7 @@ RUN apt-get update -qq && \
   libssl-dev \
   libffi6 \
   libffi-dev \
-  libpng-dev \
-  # required by psycopg2 at build and runtime
-  libpq-dev \
-  curl
+  libpng-dev
 
 # install poetry
 # keep this in sync with the version in pyproject.toml and Dockerfile
@@ -38,15 +46,16 @@ RUN python -m venv /opt/venv && \
   make install-mitie
 
 # start a new build stage
-FROM python_builder as runner
+FROM base as runner
 
 # copy everything from /opt
-COPY --from=python_builder /opt/venv /opt/venv
+COPY --from=builder /opt/venv /opt/venv
 
 # make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # update permissions & change user to not run as root
+WORKDIR /app
 RUN chgrp -R 0 /app && chmod -R g=u /app
 USER 1001
 
@@ -57,7 +66,6 @@ VOLUME /tmp
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # the entry point
-WORKDIR /app
 EXPOSE 5005
 ENTRYPOINT ["rasa"]
 CMD ["--help"]
