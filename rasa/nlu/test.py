@@ -40,7 +40,13 @@ from rasa.nlu.tokenizers.tokenizer import Token
 
 logger = logging.getLogger(__name__)
 
-ENTITY_PROCESSORS = {"EntitySynonymMapper"}
+# Exclude 'EmbeddingIntentClassifier' and 'ResponseSelector' as their super class
+# performs entity extraction but those two classifiers don't
+ENTITY_PROCESSORS = {
+    "EntitySynonymMapper",
+    "EmbeddingIntentClassifier",
+    "ResponseSelector",
+}
 
 CVEvaluationResult = namedtuple("Results", "train test")
 
@@ -1448,8 +1454,6 @@ def compare_nlu(
 
         train, test = data.train_test_split()
         write_to_file(test_path, test.nlu_as_markdown())
-
-        training_examples_per_run = []
 
         for percentage in exclusion_percentages:
             percent_string = f"{percentage}%_exclusion"
