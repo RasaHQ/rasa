@@ -1157,7 +1157,7 @@ cryptography = ">=1.5"
 category = "main"
 description = "Pure Python client for Apache Kafka"
 name = "kafka-python"
-optional = true
+optional = false
 python-versions = "*"
 version = "1.4.7"
 
@@ -3130,12 +3130,11 @@ testing = ["jaraco.itertools", "func-timeout"]
 convert = ["tensorflow_text"]
 full = ["spacy", "tensorflow_text", "transformers", "jieba"]
 gh-release-notes = ["pypandoc", "github3.py"]
-kafka = ["kafka-python"]
 spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "cd7030ae221052ddea7521419a0a723881d379980180c177fbdbe2e71e9632c8"
+content-hash = "a67b35c6a7cc5cb06c793c32d4f20db3f8ee8e93e6ad591d354025e1e34d9f8d"
 python-versions = "^3.6"
 
 [metadata.files]
