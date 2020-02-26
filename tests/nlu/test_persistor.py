@@ -41,7 +41,7 @@ async def test_list_method_method_in_AWS_persistor(component_builder, tmpdir):
 def test_list_models_method_raise_exeception_in_AWS_persistor():
     os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
 
-    awspersistor = persistor.AWSPersistor("rasa-test")
+    awspersistor = persistor.AWSPersistor("rasa-test", region_name="foo")
     result = awspersistor.list_models()
 
     assert result == []
@@ -54,7 +54,9 @@ def test_retrieve_tar_archive_with_s3_namespace():
     destination = "dst"
     with patch.object(persistor.AWSPersistor, "_decompress") as decompress:
         with patch.object(persistor.AWSPersistor, "_retrieve_tar") as retrieve:
-            persistor.AWSPersistor("rasa-test").retrieve(model, destination)
+            persistor.AWSPersistor("rasa-test", region_name="foo").retrieve(
+                model, destination
+            )
         decompress.assert_called_once_with("model.tar.gz", destination)
         retrieve.assert_called_once_with(model)
 
@@ -65,7 +67,7 @@ def test_s3_private_retrieve_tar():
     # Ensure the S3 persistor writes to a filename `model.tar.gz`, whilst
     # passing the fully namespaced path to boto3
     model = "/my/s3/project/model.tar.gz"
-    awsPersistor = persistor.AWSPersistor("rasa-test")
+    awsPersistor = persistor.AWSPersistor("rasa-test", region_name="foo")
     with patch.object(awsPersistor.bucket, "download_fileobj") as download_fileobj:
         # noinspection PyProtectedMember
         awsPersistor._retrieve_tar(model)
