@@ -745,9 +745,6 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
     @pytest.fixture(scope="class")
     def default_domain(self):
         content = """
-        actions:
-          - utter_hello
-
         intents:
           - greet
           - bye

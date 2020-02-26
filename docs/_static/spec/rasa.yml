@@ -1119,7 +1119,7 @@ components:
           type: array
           items:
             type: string
-          example: ['utter_greet', 'utter_goodbye', 'action_listen']
+          example: ['action_greet', 'action_goodbye', 'action_listen']
 
     BotMessage:
       type: object
@@ -1419,13 +1419,6 @@ components:
           - deny
           - mood_great
           - mood_unhappy
-
-        actions:
-          - utter_greet
-          - utter_cheer_up
-          - utter_did_that_help
-          - utter_happy
-          - utter_goodbye
 
         responses:
           utter_greet:
