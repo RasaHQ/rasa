@@ -1,3 +1,8 @@
+[build-system]
+# keep the version of poetry in sync with the version in pyproject.toml and Dockerfile
+requires = [ "poetry>=1.0.3",]
+build-backend = "poetry.masonry.api"
+
 [tool.black]
 line-length = 88
 target-version = [ "py36", "py37",]
