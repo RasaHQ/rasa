@@ -194,7 +194,6 @@ class ResponseSelector(DIETClassifier):
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         index_tag_id_mapping: Optional[Dict[int, Text]] = None,
         model: Optional[RasaModel] = None,
-        batch_tuple_sizes: Optional[Dict] = None,
     ) -> None:
 
         component_config = component_config or {}
@@ -205,11 +204,7 @@ class ResponseSelector(DIETClassifier):
         component_config[BILOU_FLAG] = None
 
         super().__init__(
-            component_config,
-            index_label_id_mapping,
-            index_tag_id_mapping,
-            model,
-            batch_tuple_sizes,
+            component_config, index_label_id_mapping, index_tag_id_mapping, model
         )
 
     @property
@@ -410,7 +405,7 @@ class DIET2DIET(DIET):
         cls_label = self._last_token(label_transformed, sequence_lengths_label)
         label_ids = tf_batch_data[LABEL_IDS][0]
 
-        loss, acc = self._label_loss(cls_text, cls_label, label_ids)
+        loss, acc = self._calculate_label_loss(cls_text, cls_label, label_ids)
         self.response_loss.update_state(loss)
         self.response_acc.update_state(acc)
         losses.append(loss)

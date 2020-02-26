@@ -61,3 +61,7 @@ COSINE = "cosine"
 
 BALANCED = "balanced"
 SEQUENCE = "sequence"
+
+POOLING = "pooling"
+MAX_POOLING = "max"
+MEAN_POOLING = "mean"

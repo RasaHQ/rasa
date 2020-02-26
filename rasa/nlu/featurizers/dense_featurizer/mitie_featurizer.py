@@ -14,6 +14,7 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
 )
+from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 
 if typing.TYPE_CHECKING:
     import mitie
@@ -27,7 +28,7 @@ class MitieFeaturizer(DenseFeaturizer):
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of
         # the CLS token. Available options: 'mean' and 'max'
-        "pooling": "mean"
+        POOLING: MEAN_POOLING
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:

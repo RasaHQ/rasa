@@ -186,7 +186,7 @@ class TEDPolicy(Policy):
         model: Optional[RasaModel] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
-        """Declare instance variables with default values"""
+        """Declare instance variables with default values."""
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)

@@ -158,14 +158,25 @@ def dump_obj_as_json_to_file(filename: Text, obj: Any) -> None:
     write_text_file(json.dumps(obj, indent=2), filename)
 
 
-def pickle_dump(filename: Union[Text, Path], obj: Any):
-    """Saves object to file."""
+def pickle_dump(filename: Union[Text, Path], obj: Any) -> None:
+    """Saves object to file.
+
+    Args:
+        filename: the filename to save the object to
+        obj: the object to store
+    """
     with open(filename, "wb") as f:
         pickle.dump(obj, f)
 
 
 def pickle_load(filename: Union[Text, Path]) -> Any:
-    """Loads an object from a file."""
+    """Loads an object from a file.
+
+    Args:
+        filename: the filename to load the object from
+
+    Returns: the loaded object
+    """
     with open(filename, "rb") as f:
         return pickle.load(f)
 
@@ -410,7 +421,13 @@ def zip_folder(folder: Text) -> Text:
 
 
 def json_unpickle(file_name: Union[Text, Path]) -> Any:
-    """Unpickle an object from file using json."""
+    """Unpickle an object from file using json.
+
+    Args:
+        file_name: the file to load the object from
+
+    Returns: the object
+    """
     import jsonpickle.ext.numpy as jsonpickle_numpy
     import jsonpickle
 
@@ -421,7 +438,12 @@ def json_unpickle(file_name: Union[Text, Path]) -> Any:
 
 
 def json_pickle(file_name: Union[Text, Path], obj: Any) -> None:
-    """Pickle an object to a file using json."""
+    """Pickle an object to a file using json.
+
+    Args:
+        file_name: the file to store the object to
+        obj: the object to store
+    """
     import jsonpickle.ext.numpy as jsonpickle_numpy
     import jsonpickle
 

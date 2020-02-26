@@ -14,6 +14,7 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
 )
+from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
 
 if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
@@ -27,13 +28,13 @@ class SpacyFeaturizer(DenseFeaturizer):
     defaults = {
         # Specify what pooling operation should be used to calculate the vector of
         # the CLS token. Available options: 'mean' and 'max'
-        "pooling": "mean"
+        POOLING: MEAN_POOLING
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None):
         super().__init__(component_config)
 
-        self.pooling_operation = self.component_config["pooling"]
+        self.pooling_operation = self.component_config[POOLING]
 
     def _features_for_doc(self, doc: "Doc") -> np.ndarray:
         """Feature vector for a single document / sentence / tokens."""
