@@ -74,7 +74,7 @@ def write_version_to_pyproject(version: Text) -> None:
 
     try:
         data = toml.load(pyproject_file)
-        data['tool']['poetry']['version'] = version
+        data["tool"]["poetry"]["version"] = version
         with pyproject_file.open("w", encoding="utf8") as f:
             toml.dump(data, f)
     except (FileNotFoundError, TypeError):
@@ -83,6 +83,8 @@ def write_version_to_pyproject(version: Text) -> None:
     except toml.TomlDecodeError:
         print(f"Unable to parse {pyproject_file}: incorrect TOML file.")
         sys.exit(1)
+
+    check_call(["git", "add", str(pyproject_file.absolute())])
 
 
 def get_current_version() -> Text:
