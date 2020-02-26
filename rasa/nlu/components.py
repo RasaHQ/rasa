@@ -1,13 +1,11 @@
+import itertools
 import logging
 import typing
-from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Iterable
+from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple
 
-from rasa.nlu.config import RasaNLUModelConfig, override_defaults
-from rasa.nlu.constants import (
-    RESPONSE_ATTRIBUTE,
-    MESSAGE_ATTRIBUTES,
-    NOT_PRETRAINED_EXTRACTORS,
-)
+from rasa.nlu import config
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import raise_warning
 
@@ -117,48 +115,46 @@ def validate_requires_any_of(
         )
 
 
-###
 def validate_required_components_from_data(
     pipeline: List["Component"], data: TrainingData
 ):
-    # Check for entity examples but no entity extractory trained on own data
-    def components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]):
-        return any(
-            [any([component.name == c for component in pipeline]) for c in components]
-        )
+    """Check training data for features.
 
-    if data.entity_examples and not components_in_pipeline(
-        NOT_PRETRAINED_EXTRACTORS, pipeline
+    If those features require specific components to featurize or
+    process them, warn the user if the required component is missing.
+    """
+
+    if data.entity_examples and not config.any_components_in_pipeline(
+        TRAINABLE_EXTRACTORS, pipeline
     ):
         raise_warning(
             "You have defined training data consisting of entity examples, but "
             "your NLU pipeline does not include an entity extractor trained on "
             "your training data. To extract entity examples, add one of "
-            f"{NOT_PRETRAINED_EXTRACTORS} to your pipeline."
+            f"{TRAINABLE_EXTRACTORS} to your pipeline."
         )
 
-    # Check for Regex data but RegexFeaturizer not enabled
-    if data.regex_features and not components_in_pipeline(
+    if data.regex_features and not config.any_components_in_pipeline(
         ["RegexFeaturizer"], pipeline
     ):
         raise_warning(
             "You have defined training data with regexes, but "
-            "your NLU pipeline does not include an RegexFeaturizer. "
+            "your NLU pipeline does not include a RegexFeaturizer. "
             "To featurize regexes for entity extraction, you need "
-            "to have RegexFeaturizer in your pipeline."
+            "to have a RegexFeaturizer in your pipeline."
         )
 
-    # Check for lookup tables but no RegexFeaturizer
-    if data.lookup_tables and not components_in_pipeline(["RegexFeaturizer"], pipeline):
+    if data.lookup_tables and not config.any_components_in_pipeline(
+        ["RegexFeaturizer"], pipeline
+    ):
         raise_warning(
             "You have defined training data consisting of lookup tables, but "
             "your NLU pipeline does not include a RegexFeaturizer. "
             "To featurize lookup tables, add a RegexFeaturizer to your pipeline."
         )
 
-    # Lookup Tables config verification
     if data.lookup_tables:
-        if not components_in_pipeline(["CRFEntityExtractor"], pipeline):
+        if not config.any_components_in_pipeline(["CRFEntityExtractor"], pipeline):
             raise_warning(
                 "You have defined training data consisting of lookup tables, but "
                 "your NLU pipeline does not include a CRFEntityExtractor. "
@@ -166,20 +162,23 @@ def validate_required_components_from_data(
             )
         else:
             crf_components = [c for c in pipeline if c.name == "CRFEntityExtractor"]
-            crf_component = crf_components[-1]
-            crf_features = [
-                f for i in crf_component.component_config["features"] for f in i
-            ]
-            pattern_feature = "pattern" in crf_features
-            if not pattern_feature:
+            # check to see if any of the possible CRFEntityExtractors will featurize `pattern`
+            has_pattern_feature = False
+            for crf in crf_components:
+                crf_features = crf.component_config.get("features")
+                # iterate through [[before],[word],[after]] features
+                if "pattern" in itertools.chain(*crf_features):
+                    has_pattern_feature = True
+
+            if not has_pattern_feature:
                 raise_warning(
                     "You have defined training data consisting of lookup tables, but "
-                    "your NLU pipeline CRFEntityExtractor does not include pattern feature. "
-                    "To featurize lookup tables, add pattern feature to CRFEntityExtractor in pipeline."
+                    "your NLU pipeline's CRFEntityExtractor does not include the `pattern` feature. "
+                    "To featurize lookup tables, add the `pattern` feature to the CRFEntityExtractor in "
+                    "your pipeline."
                 )
 
-    # Check for synonyms but no EntitySynonymMapper
-    if data.entity_synonyms and not components_in_pipeline(
+    if data.entity_synonyms and not config.any_components_in_pipeline(
         ["EntitySynonymMapper"], pipeline
     ):
         raise_warning(
@@ -188,9 +187,8 @@ def validate_required_components_from_data(
             "To map synonyms, add an EntitySynonymMapper to your pipeline."
         )
 
-    # Check for response selector but no component for it
-    if data.response_examples and not any(
-        [MESSAGE_ATTRIBUTES in component.provides for component in pipeline]
+    if data.response_examples and not config.any_components_in_pipeline(
+        ["ResponseSelector"], pipeline
     ):
         raise_warning(
             "Your training data includes examples for training a response selector, but "
@@ -314,7 +312,9 @@ class Component(metaclass=ComponentMetaclass):
         # this is important for e.g. persistence
         component_config["name"] = self.name
 
-        self.component_config = override_defaults(self.defaults, component_config)
+        self.component_config = config.override_defaults(
+            self.defaults, component_config
+        )
 
         self.partial_processing_pipeline = None
         self.partial_processing_context = None

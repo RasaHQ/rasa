@@ -5,8 +5,9 @@ from typing import Text
 import pytest
 
 import rasa.utils.io
-from rasa.nlu import config, load_data
-from rasa.nlu.components import ComponentBuilder, validate_required_components_from_data
+from rasa.nlu import components, config, load_data
+from rasa.nlu.components import ComponentBuilder
+from rasa.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.registry import registered_pipeline_templates
 from tests.nlu.conftest import CONFIG_DEFAULTS_PATH, DEFAULT_DATA_PATH
 from tests.nlu.utilities import write_file_config
@@ -84,14 +85,17 @@ def test_override_defaults_supervised_embeddings_pipeline():
     assert component2.epochs == 10
 
 
-def test_warn_no_pretrained_extractor():
+def test_warn_no_trainable_extractor():
     cfg = config.load("sample_configs/config_spacy_entity_extractor.yml")
     trainer = Trainer(cfg)
     training_data = load_data(DEFAULT_DATA_PATH)
     with pytest.warns(UserWarning) as record:
-        validate_required_components_from_data(trainer.pipeline, training_data)
+        components.validate_required_components_from_data(
+            trainer.pipeline, training_data
+        )
 
     assert len(record) == 1
+    assert str(TRAINABLE_EXTRACTORS) in record[0].message.args[0]
 
 
 def test_warn_missing_regex_featurizer():
@@ -99,9 +103,12 @@ def test_warn_missing_regex_featurizer():
     trainer = Trainer(cfg)
     training_data = load_data(DEFAULT_DATA_PATH)
     with pytest.warns(UserWarning) as record:
-        validate_required_components_from_data(trainer.pipeline, training_data)
+        components.validate_required_components_from_data(
+            trainer.pipeline, training_data
+        )
 
     assert len(record) == 1
+    assert "RegexFeaturizer" in record[0].message.args[0]
 
 
 def test_warn_missing_pattern_feature_lookup_tables():
@@ -109,9 +116,12 @@ def test_warn_missing_pattern_feature_lookup_tables():
     trainer = Trainer(cfg)
     training_data = load_data("data/test/lookup_tables/lookup_table.md")
     with pytest.warns(UserWarning) as record:
-        validate_required_components_from_data(trainer.pipeline, training_data)
+        components.validate_required_components_from_data(
+            trainer.pipeline, training_data
+        )
 
     assert len(record) == 1
+    assert "`pattern` feature" in record[0].message.args[0]
 
 
 def test_warn_missing_synonym_mapper():
@@ -119,9 +129,12 @@ def test_warn_missing_synonym_mapper():
     trainer = Trainer(cfg)
     training_data = load_data("data/test/markdown_single_sections/synonyms_only.md")
     with pytest.warns(UserWarning) as record:
-        validate_required_components_from_data(trainer.pipeline, training_data)
+        components.validate_required_components_from_data(
+            trainer.pipeline, training_data
+        )
 
     assert len(record) == 1
+    assert "EntitySynonymMapper" in record[0].message.args[0]
 
 
 def test_warn_missing_response_selector():
@@ -129,6 +142,9 @@ def test_warn_missing_response_selector():
     trainer = Trainer(cfg)
     training_data = load_data("data/examples/rasa")
     with pytest.warns(UserWarning) as record:
-        validate_required_components_from_data(trainer.pipeline, training_data)
+        components.validate_required_components_from_data(
+            trainer.pipeline, training_data
+        )
 
     assert len(record) == 1
+    assert "ResponseSelector" in record[0].message.args[0]

@@ -12,7 +12,7 @@ EXTRACTOR_ATTRIBUTE = "extractor"
 
 PRETRAINED_EXTRACTORS = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
 
-NOT_PRETRAINED_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor"}
+TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor"}
 
 CLS_TOKEN = "__CLS__"
 
