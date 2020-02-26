@@ -67,7 +67,7 @@ class DenseForSparse(tf.keras.layers.Dense):
 
 
 class DenseWithSparseWeights(tf.keras.layers.Dense):
-    def __init__(self, sparsity: float = 0.8, **kwargs) -> None:
+    def __init__(self, sparsity: float = 0.8, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.sparsity = sparsity
 

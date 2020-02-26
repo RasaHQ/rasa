@@ -43,16 +43,19 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         self._depth = units // self.num_heads
 
+        # process queries
         self._wq = DenseWithSparseWeights(
             units=units, use_bias=False, sparsity=sparsity
         )
+        # process keys
         self._wk = DenseWithSparseWeights(
             units=units, use_bias=False, sparsity=sparsity
         )
+        # process values
         self._wv = DenseWithSparseWeights(
             units=units, use_bias=False, sparsity=sparsity
         )
-
+        # process attention output
         self._dense = DenseWithSparseWeights(units=units, sparsity=sparsity)
 
         self._create_relative_embeddings()
