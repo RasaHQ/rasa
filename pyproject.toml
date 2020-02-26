@@ -151,7 +151,7 @@ sphinx-autodoc-typehints = "==1.6.0"
 spacy = [ "spacy",]
 convert = [ "tensorflow_text",]
 transformers = [ "transformers",]
-full = [ "spacy","tensorflow_test", "transformers", "jieba",]
+full = [ "spacy","tensorflow_text", "transformers", "jieba",]
 kafka = [ "kafka-python",]
 gh-release-notes = [ "pypandoc", "github3.py",]
 

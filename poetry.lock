@@ -3128,14 +3128,14 @@ testing = ["jaraco.itertools", "func-timeout"]
 
 [extras]
 convert = ["tensorflow_text"]
-full = ["spacy", "transformers", "jieba"]
+full = ["spacy", "tensorflow_text", "transformers", "jieba"]
 gh-release-notes = ["pypandoc", "github3.py"]
 kafka = ["kafka-python"]
 spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "1aefc3b51984c2642c35dc36ae99aa524445488fc41547407d17bf46c8de4b2f"
+content-hash = "cd7030ae221052ddea7521419a0a723881d379980180c177fbdbe2e71e9632c8"
 python-versions = "^3.6"
 
 [metadata.files]
