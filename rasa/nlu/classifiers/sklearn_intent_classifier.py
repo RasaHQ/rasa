@@ -2,20 +2,22 @@ import logging
 import os
 import typing
 import warnings
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Type
 
 import numpy as np
 
-from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
-from rasa.nlu import utils
+import rasa.utils.io as io_utils
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU, DOCS_URL_MIGRATION_GUIDE
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.components import Component
+from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.constants import DENSE_FEATURE_NAMES, TEXT_ATTRIBUTE
+from rasa.nlu.constants import DENSE_FEATURE_NAMES, TEXT
 from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.utils.common import raise_warning
+import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +25,12 @@ if typing.TYPE_CHECKING:
     import sklearn
 
 
-class SklearnIntentClassifier(Component):
+class SklearnIntentClassifier(IntentClassifier):
     """Intent classifier using the sklearn framework"""
 
-    provides = ["intent", "intent_ranking"]
-
-    requires = [DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]]
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [DenseFeaturizer]
 
     defaults = {
         # C parameter of the svm - cross validation will select the best value
@@ -63,6 +65,13 @@ class SklearnIntentClassifier(Component):
             self.le = LabelEncoder()
         self.clf = clf
 
+        common_utils.raise_warning(
+            "'SklearnIntentClassifier' is deprecated and will be removed in version "
+            "2.0. Use 'DIETClassifier' instead.",
+            category=FutureWarning,
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
+
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["sklearn"]
@@ -82,7 +91,10 @@ class SklearnIntentClassifier(Component):
         return self.le.inverse_transform(y)
 
     def train(
-        self, training_data: TrainingData, cfg: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
         """Train the intent classifier on a data set."""
 
@@ -91,7 +103,7 @@ class SklearnIntentClassifier(Component):
         labels = [e.get("intent") for e in training_data.intent_examples]
 
         if len(set(labels)) < 2:
-            raise_warning(
+            common_utils.raise_warning(
                 "Can not train an intent classifier as there are not "
                 "enough intents. Need at least 2 different intents. "
                 "Skipping training of intent classifier.",
@@ -102,7 +114,7 @@ class SklearnIntentClassifier(Component):
             X = np.stack(
                 [
                     sequence_to_sentence_features(
-                        example.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+                        example.get(DENSE_FEATURE_NAMES[TEXT])
                     )
                     for example in training_data.intent_examples
                 ]
@@ -162,7 +174,7 @@ class SklearnIntentClassifier(Component):
             intent_ranking = []
         else:
             X = sequence_to_sentence_features(
-                message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+                message.get(DENSE_FEATURE_NAMES[TEXT])
             ).reshape(1, -1)
             intent_ids, probabilities = self.predict(X)
             intents = self.transform_labels_num2str(np.ravel(intent_ids))
@@ -219,10 +231,10 @@ class SklearnIntentClassifier(Component):
         classifier_file_name = file_name + "_classifier.pkl"
         encoder_file_name = file_name + "_encoder.pkl"
         if self.clf and self.le:
-            utils.json_pickle(
+            io_utils.json_pickle(
                 os.path.join(model_dir, encoder_file_name), self.le.classes_
             )
-            utils.json_pickle(
+            io_utils.json_pickle(
                 os.path.join(model_dir, classifier_file_name), self.clf.best_estimator_
             )
         return {"classifier": classifier_file_name, "encoder": encoder_file_name}
@@ -242,8 +254,8 @@ class SklearnIntentClassifier(Component):
         encoder_file = os.path.join(model_dir, meta.get("encoder"))
 
         if os.path.exists(classifier_file):
-            classifier = utils.json_unpickle(classifier_file)
-            classes = utils.json_unpickle(encoder_file)
+            classifier = io_utils.json_unpickle(classifier_file)
+            classes = io_utils.json_unpickle(encoder_file)
             encoder = LabelEncoder()
             encoder.classes_ = classes
             return cls(meta, classifier, encoder)

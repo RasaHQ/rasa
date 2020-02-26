@@ -1,0 +1,22 @@
+We updated our code to TensorFlow 2.
+
+We added a new docker image for ConveRT.
+The new images uses the following configuration
+
+```
+language: "en"
+
+pipeline:
+  - name: ConveRTTokenizer
+  - name: ConveRTFeaturizer
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: "char_wb"
+    min_ngram: 1
+    max_ngram: 4
+  - name: DIETClassifier
+  - name: EntitySynonymMapper
+  - name: ResponseSelector
+```

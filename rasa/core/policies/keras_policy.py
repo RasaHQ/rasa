@@ -5,7 +5,7 @@ import os
 import tensorflow as tf
 import numpy as np
 import warnings
-from typing import Any, List, Dict, Text, Optional, Tuple
+from typing import Any, List, Dict, Text, Optional, Tuple, Union
 
 import rasa.utils.io
 
@@ -17,12 +17,16 @@ from rasa.core.featurizers import (
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
-from rasa.utils.common import obtain_verbosity
+import rasa.utils.common as common_utils
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+from rasa.constants import DOCS_URL_MIGRATION_GUIDE
+
 
 # there are a number of issues with imports from tensorflow. hence the deactivation
 # pytype: disable=import-error
 # pytype: disable=module-attr
+
+
 try:
     import cPickle as pickle
 except ImportError:
@@ -56,8 +60,6 @@ class KerasPolicy(Policy):
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
         model: Optional[tf.keras.models.Sequential] = None,
-        graph: Optional[tf.Graph] = None,
-        session: Optional[tf.compat.v1.Session] = None,
         current_epoch: int = 0,
         max_history: Optional[int] = None,
         **kwargs: Any,
@@ -68,21 +70,21 @@ class KerasPolicy(Policy):
 
         self._load_params(**kwargs)
         self.model = model
-        # by default keras uses default tf graph and global tf session
-        # we are going to either load them or create them in train(...)
-        self.graph = graph
-        self.session = session
 
         self.current_epoch = current_epoch
 
-    def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
-        from rasa.utils.train_utils import load_tf_config
+        common_utils.raise_warning(
+            "'KerasPolicy' is deprecated and will be removed in version "
+            "2.0. Use 'TEDPolicy' instead.",
+            category=FutureWarning,
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
 
+    def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
         # filter out kwargs that are used explicitly
-        self._tf_config = load_tf_config(config)
         self.rnn_size = config.pop("rnn_size")
         self.epochs = config.pop("epochs")
         self.batch_size = config.pop("batch_size")
@@ -151,7 +153,7 @@ class KerasPolicy(Policy):
             loss="categorical_crossentropy", optimizer="rmsprop", metrics=["accuracy"]
         )
 
-        if obtain_verbosity() > 0:
+        if common_utils.obtain_verbosity() > 0:
             model.summary()
 
         return model
@@ -163,48 +165,40 @@ class KerasPolicy(Policy):
         **kwargs: Any,
     ) -> None:
 
-        # set numpy random seed
         np.random.seed(self.random_seed)
+        tf.random.set_seed(self.random_seed)
 
         training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
         # noinspection PyPep8Naming
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
 
-        self.graph = tf.Graph()
-        with self.graph.as_default():
-            # set random seed in tf
-            tf.set_random_seed(self.random_seed)
-            self.session = tf.compat.v1.Session(config=self._tf_config)
+        if self.model is None:
+            self.model = self.model_architecture(
+                shuffled_X.shape[1:], shuffled_y.shape[1:]
+            )
 
-            with self.session.as_default():
-                if self.model is None:
-                    self.model = self.model_architecture(
-                        shuffled_X.shape[1:], shuffled_y.shape[1:]
-                    )
+        logger.debug(
+            f"Fitting model with {training_data.num_examples()} total samples and a "
+            f"validation split of {self.validation_split}."
+        )
 
-                logger.info(
-                    "Fitting model with {} total samples and a "
-                    "validation split of {}"
-                    "".format(training_data.num_examples(), self.validation_split)
-                )
+        # filter out kwargs that cannot be passed to fit
+        self._train_params = self._get_valid_params(
+            self.model.fit, **self._train_params
+        )
 
-                # filter out kwargs that cannot be passed to fit
-                self._train_params = self._get_valid_params(
-                    self.model.fit, **self._train_params
-                )
+        self.model.fit(
+            shuffled_X,
+            shuffled_y,
+            epochs=self.epochs,
+            batch_size=self.batch_size,
+            shuffle=False,
+            verbose=common_utils.obtain_verbosity(),
+            **self._train_params,
+        )
+        self.current_epoch = self.epochs
 
-                self.model.fit(
-                    shuffled_X,
-                    shuffled_y,
-                    epochs=self.epochs,
-                    batch_size=self.batch_size,
-                    shuffle=False,
-                    verbose=obtain_verbosity(),
-                    **self._train_params,
-                )
-                # the default parameter for epochs in keras fit is 1
-                self.current_epoch = self.defaults.get("epochs", 1)
-                logger.info("Done fitting keras policy model")
+        logger.debug("Done fitting Keras Policy model.")
 
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain
@@ -213,8 +207,7 @@ class KerasPolicy(Policy):
         # noinspection PyPep8Naming
         X = self.featurizer.create_X([tracker], domain)
 
-        with self.graph.as_default(), self.session.as_default():
-            y_pred = self.model.predict(X, batch_size=1)
+        y_pred = self.model.predict(X, batch_size=1)
 
         if len(y_pred.shape) == 2:
             return y_pred[-1].tolist()
@@ -240,12 +233,8 @@ class KerasPolicy(Policy):
             model_file = os.path.join(path, meta["model"])
             # makes sure the model directory exists
             rasa.utils.io.create_directory_for_file(model_file)
-            with self.graph.as_default(), self.session.as_default():
-                self.model.save(model_file, overwrite=True)
+            self.model.save(model_file, overwrite=True)
 
-            tf_config_file = os.path.join(path, "keras_policy.tf_config.pkl")
-            with open(tf_config_file, "wb") as f:
-                pickle.dump(self._tf_config, f)
         else:
             logger.debug(
                 "Method `persist(...)` was called "
@@ -263,26 +252,16 @@ class KerasPolicy(Policy):
             if os.path.isfile(meta_file):
                 meta = json.loads(rasa.utils.io.read_file(meta_file))
 
-                tf_config_file = os.path.join(path, "keras_policy.tf_config.pkl")
-                with open(tf_config_file, "rb") as f:
-                    _tf_config = pickle.load(f)
-
                 model_file = os.path.join(path, meta["model"])
 
-                graph = tf.Graph()
-                with graph.as_default():
-                    session = tf.compat.v1.Session(config=_tf_config)
-                    with session.as_default():
-                        with warnings.catch_warnings():
-                            warnings.simplefilter("ignore")
-                            model = load_model(model_file)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    model = load_model(model_file)
 
                 return cls(
                     featurizer=featurizer,
                     priority=meta["priority"],
                     model=model,
-                    graph=graph,
-                    session=session,
                     current_epoch=meta["epochs"],
                 )
             else:

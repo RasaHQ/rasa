@@ -8,8 +8,6 @@ from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
 
 class WhitespaceTokenizer(Tokenizer):
 
-    provides = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
-
     defaults = {
         # Flag to check whether to split intents
         "intent_tokenization_flag": False,

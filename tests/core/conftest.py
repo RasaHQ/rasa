@@ -84,9 +84,7 @@ class ExamplePolicy(Policy):
 class MockedMongoTrackerStore(MongoTrackerStore):
     """In-memory mocked version of `MongoTrackerStore`."""
 
-    def __init__(
-        self, _domain: Domain,
-    ):
+    def __init__(self, _domain: Domain):
         from mongomock import MongoClient
 
         self.db = MongoClient().rasa
@@ -181,7 +179,7 @@ def tracker_with_six_scheduled_reminders(
         ),
         ReminderScheduled("default", datetime.now(), kill_on_user_message=False),
         ReminderScheduled(
-            "default", datetime.now(), kill_on_user_message=False, name="special",
+            "default", datetime.now(), kill_on_user_message=False, name="special"
         ),
     ]
     sender_id = uuid.uuid4().hex
