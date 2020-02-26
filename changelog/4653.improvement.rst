@@ -1,2 +1,0 @@
-Added a new command-line argument ``--init-dir`` to command ``rasa init`` to specify
-the directory in which the project is initialised.

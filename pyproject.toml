@@ -1,5 +1,4 @@
 [build-system]
-# keep the version of poetry in sync with the version in pyproject.toml and Dockerfile
 requires = [ "poetry>=1.0.3",]
 build-backend = "poetry.masonry.api"
 
@@ -10,7 +9,7 @@ exclude = "((.eggs | .git | .pytype | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "1.7.0"
+version = "1.8.0"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -157,8 +156,11 @@ sphinx-autodoc-typehints = "==1.6.0"
 spacy = [ "spacy",]
 convert = [ "tensorflow_text",]
 transformers = [ "transformers",]
-full = [ "spacy","tensorflow_text", "transformers", "jieba",]
+full = [ "spacy", "tensorflow_text", "transformers", "jieba",]
 gh-release-notes = [ "pypandoc", "github3.py",]
+
+[tool.poetry.scripts]
+rasa = "rasa.__main__:main"
 
 [tool.poetry.dependencies.spacy]
 version = ">=2.1,<2.2"
@@ -196,7 +198,3 @@ git = "https://github.com/RasaHQ/sphinxcontrib-versioning.git"
 
 [tool.poetry.dev-dependencies.sphinx_rtd_theme]
 git = "https://github.com/RasaHQ/sphinx_rtd_theme.git"
-
-[tool.poetry.scripts]
-rasa = "rasa.__main__:main"
-

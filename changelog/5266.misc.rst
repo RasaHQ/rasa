@@ -1,9 +1,0 @@
-We deprecated all existing NLU pipeline templates, ``SklearnIntentClassifier`` and ``KerasPolicy``.
-
-Please list the components you want to use directly in your configuration file.
-Check out :ref:`Choosing a Pipeline <choosing-a-pipeline>` to decide what components to
-include in your pipeline.
-
-Use ``DIETClassifier`` instead of ``SklearnIntentClassifier``.
-
-Use ``TEDPolicy`` instead of ``KerasPolicy``.
