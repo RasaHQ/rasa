@@ -110,7 +110,7 @@ PyJWT = "~1.7"
 python-dateutil = "~2.8"
 tensorflow = "~2.1"
 tensorflow_hub = "~0.7"
-tensorflow-addons = "~0.7"
+tensorflow-addons = "~0.8"
 tensorflow-probability = "~0.7"
 setuptools = ">=41.0.0"
 
@@ -151,8 +151,8 @@ sphinx-autodoc-typehints = "==1.6.0"
 spacy = [ "spacy",]
 convert = [ "tensorflow_text",]
 transformers = [ "transformers",]
+full = [ "spacy", "convert", "transformers", "jieba",]
 kafka = [ "kafka-python",]
-full = [ "spacy", "tensorflow_text", "transformers", "jieba",]
 gh-release-notes = [ "pypandoc", "github3.py",]
 
 [tool.poetry.dependencies.spacy]
@@ -160,7 +160,7 @@ version = ">=2.1,<2.2"
 optional = true
 
 [tool.poetry.dependencies.tensorflow_text]
-version = ">=2.1.0rc0"
+version = "==2.1.0rc0"
 optional = true
 
 [tool.poetry.dependencies.pypandoc]

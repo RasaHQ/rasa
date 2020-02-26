@@ -33,11 +33,10 @@ RUN python -m venv /opt/venv && \
   poetry install --no-dev --no-interaction
 
 # start a new build stage
-FROM python:3.6-slim
+FROM python_builder as runner
 
 # copy everything from /opt
 COPY --from=python_builder /opt/venv /opt/venv
-COPY --from=python_builder /app /app
 
 # make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
