@@ -34,16 +34,20 @@ ENV PATH "/root/.poetry/bin:/opt/venv/bin:${PATH}"
 COPY . /app/
 COPY docker/configs/config_pretrained_embeddings_spacy_de.yml /app/config.yml
 
+WORKDIR /app
+
 # install dependencies
 RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
   pip install --no-cache-dir -U 'pip<20' && \
-  cd /app && \
   poetry install --extras spacy --no-dev --no-interaction
 
+# make sure we use the virtualenv
+ENV PATH="/opt/venv/bin:$PATH"
+
 # spacy link
-RUN poetry run python -m spacy download de_core_news_sm && \
-  poetry run python -m spacy link de_core_news_sm de
+RUN python -m spacy download de_core_news_sm && \
+    python -m spacy link de_core_news_sm de
 
 # start a new build stage
 FROM base as runner
