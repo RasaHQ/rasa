@@ -197,6 +197,7 @@ jobs:
         SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
         GITHUB_TAG: ${{ github.ref }}
         GITHUB_REPO_SLUG: ${{ github.repository }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         sudo apt-get update
         sudo apt-get -y install pandoc
