@@ -2103,15 +2103,14 @@ description = "A configurable sidebar-enabled Sphinx theme"
 name = "rasabaster"
 optional = false
 python-versions = "*"
-version = "0.7.23"
+version = "0.7.24"
 
 [package.dependencies]
 "ruamel.yaml" = "0.15.85"
 
 [package.source]
-reference = ""
-type = "url"
-url = "https://storage.googleapis.com/docs-theme/rasabaster-0.7.23.tar.gz"
+reference = "rasa-pypi"
+url = "https://pypi.rasa.com/simple"
 
 [[package]]
 category = "main"
@@ -3151,7 +3150,7 @@ spacy = ["spacy"]
 transformers = ["transformers"]
 
 [metadata]
-content-hash = "ba1cc074ecfb2abf283727a503ef0b022fb48013566cc5c67911591a31b945af"
+content-hash = "f11b37a3b8735943cebca76d0c8307b67dd2723641c7455b26b19ffadc9be14f"
 python-versions = "^3.6"
 
 [metadata.files]

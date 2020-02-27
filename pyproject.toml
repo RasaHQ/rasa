@@ -22,6 +22,10 @@ include = [ "LICENSE.txt", "README.md", "rasa/core/schemas/*", "rasa/core/traini
 readme = "README.md"
 license = "Apache-2.0"
 
+[[tool.poetry.source]]
+name = "rasa-pypi"
+url = "https://pypi.rasa.com/simple/"
+
 [tool.towncrier]
 package = "rasa"
 package_dir = "rasa"
@@ -150,6 +154,7 @@ sphinxcontrib-websupport = "==1.1.0"
 sphinxcontrib-trio = "==1.0.2"
 sphinx-tabs = "==1.1.11"
 sphinx-autodoc-typehints = "==1.6.0"
+rasabaster = "^0.7.23"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
@@ -188,9 +193,6 @@ optional = true
 [tool.poetry.dependencies.pymongo]
 version = "~3.8.0"
 extras = [ "tls", "srv",]
-
-[tool.poetry.dev-dependencies.rasabaster]
-url = "https://storage.googleapis.com/docs-theme/rasabaster-0.7.23.tar.gz"
 
 [tool.poetry.dev-dependencies.sphinxcontrib-versioning]
 git = "https://github.com/RasaHQ/sphinxcontrib-versioning.git"
