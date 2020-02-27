@@ -37,19 +37,23 @@ COPY docker/configs/config_pretrained_embeddings_spacy_en_duckling.yml /app/conf
 # download mitie model
 RUN wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 
+WORKDIR /app
+
 # install dependencies
 RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
   pip install --no-cache-dir -U pip && \
-  cd /app && \
   poetry install --extras full --no-dev --no-interaction && \
   make install-mitie
 
+# make sure we use the virtualenv
+ENV PATH="/opt/venv/bin:$PATH"
+
 # spacy link
-RUN poetry run python -m spacy download en_core_web_md && \
-  poetry run python -m spacy download de_core_news_sm && \
-  poetry run python -m spacy link en_core_web_md en && \
-  poetry run python -m spacy link de_core_news_sm de
+RUN python -m spacy download en_core_web_md && \
+    python -m spacy download de_core_news_sm && \
+    python -m spacy link en_core_web_md en && \
+    python -m spacy link de_core_news_sm de
 
 # start a new build stage
 FROM base as runner
