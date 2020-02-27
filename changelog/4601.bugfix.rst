@@ -1,2 +1,0 @@
-Fixed issue with ``action_restart`` getting overridden by ``action_listen`` when the ``MappingPolicy`` and the
-`TwoStageFallbackPolicy <https://rasa.com/docs/rasa/core/policies/#two-stage-fallback-policy>`_ are used together.

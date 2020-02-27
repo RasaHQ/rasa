@@ -8,12 +8,12 @@ from rasa.utils.common import raise_warning
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
-from slackclient import SlackClient
+from slack import WebClient
 
 logger = logging.getLogger(__name__)
 
 
-class SlackBot(SlackClient, OutputChannel):
+class SlackBot(OutputChannel):
     """A Slack communication channel"""
 
     @classmethod
@@ -23,7 +23,8 @@ class SlackBot(SlackClient, OutputChannel):
     def __init__(self, token: Text, slack_channel: Optional[Text] = None) -> None:
 
         self.slack_channel = slack_channel
-        super().__init__(token)
+        self.client = WebClient(token, run_async=True)
+        super().__init__()
 
     @staticmethod
     def _get_text_from_slack_buttons(buttons: List[Dict]) -> Text:
@@ -34,12 +35,8 @@ class SlackBot(SlackClient, OutputChannel):
     ) -> None:
         recipient = self.slack_channel or recipient_id
         for message_part in text.split("\n\n"):
-            super().api_call(
-                "chat.postMessage",
-                channel=recipient,
-                as_user=True,
-                text=message_part,
-                type="mrkdwn",
+            await self.client.chat_postMessage(
+                channel=recipient, as_user=True, text=message_part, type="mrkdwn",
             )
 
     async def send_image_url(
@@ -47,24 +44,16 @@ class SlackBot(SlackClient, OutputChannel):
     ) -> None:
         recipient = self.slack_channel or recipient_id
         image_block = {"type": "image", "image_url": image, "alt_text": image}
-        return super().api_call(
-            "chat.postMessage",
-            channel=recipient,
-            as_user=True,
-            text=image,
-            blocks=[image_block],
+        await self.client.chat_postMessage(
+            channel=recipient, as_user=True, text=image, blocks=[image_block],
         )
 
     async def send_attachment(
         self, recipient_id: Text, attachment: Dict[Text, Any], **kwargs: Any
     ) -> None:
         recipient = self.slack_channel or recipient_id
-        return super().api_call(
-            "chat.postMessage",
-            channel=recipient,
-            as_user=True,
-            attachments=[attachment],
-            **kwargs,
+        await self.client.chat_postMessage(
+            channel=recipient, as_user=True, attachments=[attachment], **kwargs,
         )
 
     async def send_text_with_buttons(
@@ -94,8 +83,7 @@ class SlackBot(SlackClient, OutputChannel):
                     "value": button["payload"],
                 }
             )
-        super().api_call(
-            "chat.postMessage",
+        await self.client.chat_postMessage(
             channel=recipient,
             as_user=True,
             text=text,
@@ -107,7 +95,7 @@ class SlackBot(SlackClient, OutputChannel):
     ) -> None:
         json_message.setdefault("channel", self.slack_channel or recipient_id)
         json_message.setdefault("as_user", True)
-        return super().api_call("chat.postMessage", **json_message)
+        await self.client.chat_postMessage(**json_message)
 
 
 class SlackInput(InputChannel):

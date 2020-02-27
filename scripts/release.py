@@ -14,6 +14,7 @@ from typing import Text, Set
 
 import questionary
 import semantic_version
+import toml
 from semantic_version import Version
 
 VERSION_FILE_PATH = "rasa/version.py"
@@ -152,15 +153,14 @@ def ask_version() -> Text:
 def get_rasa_sdk_version() -> Text:
     """Find out what the referenced version of the Rasa SDK is."""
 
-    env_file = project_root() / "requirements.txt"
+    dependencies_filename = "pyproject.toml"
+    toml_data = toml.load(project_root() / dependencies_filename)
 
-    with env_file.open() as f:
-        for line in f:
-            if "rasa-sdk" in line:
-                version = line.split("=")[-1]
-                return version.strip()
-        else:
-            raise Exception("Failed to find Rasa SDK version in requirements.txt")
+    try:
+        sdk_version = toml_data["tool"]["poetry"]["dependencies"]["rasa-sdk"]
+        return sdk_version[1:].strip()
+    except AttributeError:
+        raise Exception(f"Failed to find Rasa SDK version in {dependencies_filename}")
 
 
 def validate_code_is_release_ready(version: Text) -> None:

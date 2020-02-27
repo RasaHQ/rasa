@@ -1,5 +1,0 @@
-Add :ref:`LexicalSyntacticFeaturizer` to sparse featurizers.
-
-``LexicalSyntacticFeaturizer`` does the same featurization as the ``CRFEntityExtractor``. We extracted the
-featurization into a separate component so that the features can be reused and featurization is independent from the
-entity extraction.

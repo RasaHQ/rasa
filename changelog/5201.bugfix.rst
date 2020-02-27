@@ -1,6 +1,0 @@
-Fixed incorrectly raised Error encountered in pipelines with a ``ResponseSelector`` and NLG.
-
-When NLU training data is split before NLU pipeline comparison, 
-NLG responses were not also persisted and therefore training for a pipeline including the ``ResponseSelector`` would fail.
-
-NLG responses are now persisted along with NLU data to a ``/train`` directory in the ``run_x/xx%_exclusion`` folder.

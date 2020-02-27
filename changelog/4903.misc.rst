@@ -1,1 +1,0 @@
-Switched our CI from Travis CI to GitHub Actions.

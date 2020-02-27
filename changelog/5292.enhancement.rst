@@ -1,1 +1,0 @@
-Added ``followlinks=True`` to os.walk calls, to allow the use of symlinks in training, NLU and domain data.

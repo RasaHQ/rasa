@@ -1,1 +1,0 @@
-Fixed sending custom json with Twilio channel

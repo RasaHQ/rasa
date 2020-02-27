@@ -1,7 +1,0 @@
-Integrate language models from HuggingFace's `Transformers <https://github.com/huggingface/transformers>`_ Library.
-
-Add a new NLP component :ref:`HFTransformersNLP` which tokenizes and featurizes incoming messages using a specified
-pre-trained model with the Transformers library as the backend.
-Add :ref:`LanguageModelTokenizer` and :ref:`LanguageModelFeaturizer` which use the information from
-:ref:`HFTransformersNLP` and sets them correctly for message object.
-Language models currently supported: BERT, OpenAIGPT, GPT-2, XLNet, DistilBert, RoBERTa.
