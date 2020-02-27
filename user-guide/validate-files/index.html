@@ -159,6 +159,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../core/domains/">Domains</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/responses/">Responses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/reminders-and-external-events/">Reminders and External Events</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
@@ -189,8 +190,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa OSS Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
 <ul>
@@ -209,12 +211,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.7.4
+          viewing: 1.8.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.8.0/user-guide/validate-files/">1.8.0</a>
               <a href="../.././1.7.4/user-guide/validate-files/">1.7.4</a>
               <a href="../.././1.7.3/user-guide/validate-files/">1.7.3</a>
               <a href="../.././1.7.2/user-guide/validate-files/">1.7.2</a>
@@ -268,7 +271,8 @@ You can run it with the following command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa data validate
 </pre></div>
 </div>
-<p>The script above runs all the validations on your files. Here is the list of options to
+<p>The script above runs all the validations on your files, except for story structure validation,
+which is omitted unless you provide the <code class="docutils literal notranslate"><span class="pre">--max-history</span></code> argument. Here is the list of options to
 the script:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa data validate [-h] [-v] [-vv] [--quiet]
                           [--max-history MAX_HISTORY] [--fail-on-warnings]
@@ -331,6 +335,49 @@ and the utterance actions you have defined.</p>
 
 <span class="n">validator</span><span class="o">.</span><span class="n">verify_all</span><span class="p">()</span>
 </pre></div>
+</div>
+</div>
+<div class="section" id="test-story-files-for-conflicts">
+<h2>Test Story Files for Conflicts<a class="headerlink" href="#test-story-files-for-conflicts" title="Permalink to this headline">¶</a></h2>
+<p>In addition to the default tests described above, you can also do a more in-depth structural test of your stories.
+In particular, you can test if your stories are inconsistent, i.e. if different bot actions follow from the same dialogue history.
+If this is not the case, then Rasa cannot learn the correct behaviour.</p>
+<p>Take, for example, the following two stories:</p>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> Story 1
+<span class="k">*</span> greet
+  <span class="k">-</span> utter_greet
+<span class="k">*</span> inform_happy
+  <span class="k">-</span> utter_happy
+  <span class="k">-</span> utter_goodbye
+
+<span class="gu">##</span> Story 2
+<span class="k">*</span> greet
+  <span class="k">-</span> utter_greet
+<span class="k">*</span> inform_happy
+  <span class="k">-</span> utter_goodbye
+</pre></div>
+</div>
+<p>These two stories are inconsistent, because Rasa doesn’t know if it should predict <code class="docutils literal notranslate"><span class="pre">utter_happy</span></code> or <code class="docutils literal notranslate"><span class="pre">utter_goodbye</span></code>
+after <code class="docutils literal notranslate"><span class="pre">inform_happy</span></code>, as there is nothing that would distinguish the dialogue states at <code class="docutils literal notranslate"><span class="pre">inform_happy</span></code> in the two
+stories and the subsequent actions are different in Story 1 and Story 2.</p>
+<p>This conflict can be automatically identified with our story structure validation tool.
+To do this, use <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">data</span> <span class="pre">validate</span></code> in the command line, as follows:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa data validate stories --max-history <span class="m">3</span>
+&gt; <span class="m">2019</span>-12-09 <span class="m">09</span>:32:13 INFO     rasa.core.validator  - Story structure validation...
+&gt; <span class="m">2019</span>-12-09 <span class="m">09</span>:32:13 INFO     rasa.core.validator  - Assuming <span class="nv">max_history</span> <span class="o">=</span> <span class="m">3</span>
+&gt;   Processed Story Blocks: <span class="m">100</span>% <span class="m">2</span>/2 <span class="o">[</span><span class="m">00</span>:00&lt;<span class="m">00</span>:00, <span class="m">3237</span>.59it/s, <span class="c1"># trackers=1]</span>
+&gt; <span class="m">2019</span>-12-09 <span class="m">09</span>:32:13 WARNING  rasa.core.validator  - CONFLICT after intent <span class="s1">&#39;inform_happy&#39;</span>:
+&gt;   utter_goodbye predicted in <span class="s1">&#39;Story 2&#39;</span>
+&gt;   utter_happy predicted in <span class="s1">&#39;Story 1&#39;</span>
+</pre></div>
+</div>
+<p>Here we specify a <code class="docutils literal notranslate"><span class="pre">max-history</span></code> value of 3.
+This means, that 3 events (user messages / bot actions) are taken into account for action predictions, but the particular setting does not matter for this example, because regardless of how long of a history you take into account, the conflict always exists.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">The <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">data</span> <span class="pre">validate</span> <span class="pre">stories</span></code> script assumes that all your <strong>story names are unique</strong>.
+If your stories are in the Markdown format, you may find duplicate names with a command like
+<code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">-h</span> <span class="pre">&quot;##&quot;</span> <span class="pre">data/*.md</span> <span class="pre">|</span> <span class="pre">uniq</span> <span class="pre">-c</span> <span class="pre">|</span> <span class="pre">grep</span> <span class="pre">&quot;^[^1]&quot;</span></code>.</p>
 </div>
 </div>
 </div>

@@ -169,6 +169,7 @@ Natural Lanaguage Understanding and Dialogue Management." />
 <li class="toctree-l1"><a class="reference internal" href="../../core/domains/">Domains</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/responses/">Responses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/reminders-and-external-events/">Reminders and External Events</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
@@ -199,8 +200,9 @@ Natural Lanaguage Understanding and Dialogue Management." />
 <li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa OSS Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
 <ul>
@@ -219,12 +221,13 @@ Natural Lanaguage Understanding and Dialogue Management." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.7.4
+          viewing: 1.8.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.8.0/user-guide/installation/">1.8.0</a>
               <a href="../.././1.7.4/user-guide/installation/">1.7.4</a>
               <a href="../.././1.7.3/user-guide/installation/">1.7.3</a>
               <a href="../.././1.7.2/user-guide/installation/">1.7.2</a>
@@ -425,10 +428,10 @@ Ubuntu / macOS / Windows</div>
 <div class="section" id="building-from-source">
 <span id="build-from-source"></span><h2>Building from Source<a class="headerlink" href="#building-from-source" title="Permalink to this headline">¶</a></h2>
 <p>If you want to use the development version of Rasa Open Source, you can get it from GitHub:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/RasaHQ/rasa.git
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py <span class="p">|</span> python
+$ git clone https://github.com/RasaHQ/rasa.git
 $ <span class="nb">cd</span> rasa
-$ pip install -r requirements.txt
-$ pip install -e .
+$ poetry install
 </pre></div>
 </div>
 <hr class="docutils" />
@@ -453,12 +456,12 @@ and sklearn_crfsuite get automatically installed. However, spaCy and MITIE need 
 this to install everything.</p>
 <p>You’ll first need to clone the repository and then run the following
 command to install all the packages:</p>
-<div class="last highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install -r alt_requirements/requirements_full.txt
+<div class="last highlight-bash notranslate"><div class="highlight"><pre><span></span>$ poetry install --extras full
 </pre></div>
 </div>
 </div>
 <div class="section" id="dependencies-for-spacy">
-<h4>Dependencies for spaCy<a class="headerlink" href="#dependencies-for-spacy" title="Permalink to this headline">¶</a></h4>
+<span id="install-spacy"></span><h4>Dependencies for spaCy<a class="headerlink" href="#dependencies-for-spacy" title="Permalink to this headline">¶</a></h4>
 <p>For more information on spaCy, check out the <a class="reference external" href="https://spacy.io/usage/models">spaCy docs</a>.</p>
 <p>You can install it with the following commands:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install rasa<span class="o">[</span>spacy<span class="o">]</span>

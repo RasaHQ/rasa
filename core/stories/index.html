@@ -163,6 +163,7 @@ from providing the basis for a scalable machine learning dialogue management." /
 <li class="toctree-l1"><a class="reference internal" href="../domains/">Domains</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../responses/">Responses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reminders-and-external-events/">Reminders and External Events</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../forms/">Forms</a></li>
@@ -193,8 +194,9 @@ from providing the basis for a scalable machine learning dialogue management." /
 <li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa OSS Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
 <ul>
@@ -213,12 +215,13 @@ from providing the basis for a scalable machine learning dialogue management." /
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.7.4
+          viewing: 1.8.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.8.0/core/stories/">1.8.0</a>
               <a href="../.././1.7.4/core/stories/">1.7.4</a>
               <a href="../.././1.7.3/core/stories/">1.7.3</a>
               <a href="../.././1.7.2/core/stories/">1.7.2</a>
@@ -345,7 +348,7 @@ entities (you can, however, change this behavior using the
 <p class="last"><code class="docutils literal notranslate"><span class="pre">/</span></code> symbol is reserved as a delimiter to separate retrieval intents from response text identifiers.
 Refer to <code class="docutils literal notranslate"><span class="pre">Training</span> <span class="pre">Data</span> <span class="pre">Format</span></code> section of <a class="reference internal" href="../retrieval-actions/#retrieval-actions"><span class="std std-ref">Retrieval Actions</span></a> for more details on this format.
 If any of the intent names contain the delimiter, the file containing these stories will be considered as a training
-file for <a class="reference internal" href="../../nlu/components/#response-selector"><span class="std std-ref">Response Selector</span></a> model and will be ignored for training Core models.</p>
+file for <a class="reference internal" href="../../nlu/components/#response-selector"><span class="std std-ref">ResponseSelector</span></a> model and will be ignored for training Core models.</p>
 </div>
 </div>
 <div class="section" id="actions">

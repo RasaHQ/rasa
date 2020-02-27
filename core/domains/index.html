@@ -163,6 +163,7 @@ AI Assistants and chatbots using open source bot framework Rasa." />
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Domains</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../responses/">Responses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reminders-and-external-events/">Reminders and External Events</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../forms/">Forms</a></li>
@@ -193,8 +194,9 @@ AI Assistants and chatbots using open source bot framework Rasa." />
 <li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa OSS Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
 <ul>
@@ -213,12 +215,13 @@ AI Assistants and chatbots using open source bot framework Rasa." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.7.4
+          viewing: 1.8.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.8.0/core/domains/">1.8.0</a>
               <a href="../.././1.7.4/core/domains/">1.7.4</a>
               <a href="../.././1.7.3/core/domains/">1.7.3</a>
               <a href="../.././1.7.2/core/domains/">1.7.2</a>
@@ -285,7 +288,7 @@ for the things your bot can say.</p>
 </div>
 <div class="section" id="an-example-of-a-domain">
 <h2><a class="toc-backref" href="#id3">An example of a Domain</a><a class="headerlink" href="#an-example-of-a-domain" title="Permalink to this headline">¶</a></h2>
-<p>As an example, the <code class="docutils literal notranslate"><span class="pre">DefaultDomain</span></code> has the following yaml definition:</p>
+<p>As an example, the domain created by <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">init</span></code> has the following yaml definition:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">goodbye</span>
@@ -294,14 +297,6 @@ for the things your bot can say.</p>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">mood_great</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">mood_unhappy</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">bot_challenge</span>
-
-<span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_greet</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_cheer_up</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_did_that_help</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_happy</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_goodbye</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_iamabot</span>
 
 <span class="l l-Scalar l-Scalar-Plain">responses</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_greet</span><span class="p p-Indicator">:</span>
@@ -330,7 +325,17 @@ for the things your bot can say.</p>
 </div>
 <p><strong>What does this mean?</strong></p>
 <p>Your NLU model will define the <code class="docutils literal notranslate"><span class="pre">intents</span></code> and <code class="docutils literal notranslate"><span class="pre">entities</span></code> that you
-need to include in the domain.</p>
+need to include in the domain. The <code class="docutils literal notranslate"><span class="pre">entities</span></code> section lists all entities
+extracted by any <a class="reference internal" href="../../nlu/entity-extraction/#entity-extraction"><span class="std std-ref">entity extractor</span></a> in your
+NLU pipeline.</p>
+<p>For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">entities</span><span class="p p-Indicator">:</span>
+   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">PERSON</span>          <span class="c1"># entity extracted by SpacyEntityExtractor</span>
+   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">time</span>            <span class="c1"># entity extracted by DucklingHTTPExtractor</span>
+   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">membership_type</span> <span class="c1"># custom entity extracted by CRFEntityExtractor</span>
+   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">priority</span>        <span class="c1"># custom entity extracted by CRFEntityExtractor</span>
+</pre></div>
+</div>
 <p><a class="reference internal" href="../slots/#slots"><span class="std std-ref">Slots</span></a> hold information you want to keep track of during a conversation.
 A categorical slot called <code class="docutils literal notranslate"><span class="pre">risk_level</span></code> would be
 defined like this:</p>

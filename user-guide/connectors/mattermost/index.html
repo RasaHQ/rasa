@@ -159,6 +159,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../core/domains/">Domains</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../core/responses/">Responses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/reminders-and-external-events/">Reminders and External Events</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../core/policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../core/slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../core/forms/">Forms</a></li>
@@ -189,8 +190,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../api/lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../api/training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../migration-guide/">Migration Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../changelog/">Rasa OSS Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog/">Rasa Open Source Change Log</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
 <ul>
@@ -209,12 +211,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.7.4
+          viewing: 1.8.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../.././1.8.0/user-guide/connectors/mattermost/">1.8.0</a>
               <a href="../../.././1.7.4/user-guide/connectors/mattermost/">1.7.4</a>
               <a href="../../.././1.7.3/user-guide/connectors/mattermost/">1.7.3</a>
               <a href="../../.././1.7.2/user-guide/connectors/mattermost/">1.7.2</a>
@@ -265,6 +268,12 @@
 Once you have them you can add these to your <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code>.</p>
 <div class="section" id="getting-credentials">
 <h2>Getting Credentials<a class="headerlink" href="#getting-credentials" title="Permalink to this headline">¶</a></h2>
+<p>Mattermost now uses bot accounts for better security.  So you can use their guide to create
+your bot to get your token required for the <cite>credentials.yml</cite> file.</p>
+<p>For more information on creating a bot account please see
+<a class="reference external" href="https://docs.mattermost.com/developer/bot-accounts.html#bot-account-creation">Bot Creation</a>.</p>
+<p>For information on converting existing user account into bot account please see
+<a class="reference external" href="https://docs.mattermost.com/developer/bot-accounts.html#how-do-i-convert-an-existing-account-to-a-bot-account">User Conversion</a>.</p>
 <p><strong>How to set up the outgoing webhook:</strong></p>
 <blockquote>
 <div><ol class="arabic simple">
@@ -296,9 +305,7 @@ run script, e.g. using:</p>
 <p>you need to supply a <code class="docutils literal notranslate"><span class="pre">credentials.yml</span></code> with the following content:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">mattermost</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">url</span><span class="p p-Indicator">:</span> <span class="s">&quot;https://chat.example.com/api/v4&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">team</span><span class="p p-Indicator">:</span> <span class="s">&quot;community&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">user</span><span class="p p-Indicator">:</span> <span class="s">&quot;user@user.com&quot;</span> <span class="c1">#  actual username of your bot user, not displayname</span>
-  <span class="l l-Scalar l-Scalar-Plain">pw</span><span class="p p-Indicator">:</span> <span class="s">&quot;password&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">token</span><span class="p p-Indicator">:</span> <span class="s">&quot;xxxxx&quot;</span> <span class="c1">#  the token for the bot account from creating the bot step.</span>
   <span class="l l-Scalar l-Scalar-Plain">webhook_url</span><span class="p p-Indicator">:</span> <span class="s">&quot;https://server.example.com/webhooks/mattermost/webhook&quot;</span>
 </pre></div>
 </div>

@@ -163,6 +163,7 @@ responses using Rasa as an open source chat assistant platform." />
 <li class="toctree-l1"><a class="reference internal" href="../domains/">Domains</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Responses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reminders-and-external-events/">Reminders and External Events</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../forms/">Forms</a></li>
@@ -193,8 +194,9 @@ responses using Rasa as an open source chat assistant platform." />
 <li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa OSS Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
 <ul>
@@ -213,12 +215,13 @@ responses using Rasa as an open source chat assistant platform." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.7.4
+          viewing: 1.8.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.8.0/core/responses/">1.8.0</a>
               <a href="../.././1.7.4/core/responses/">1.7.4</a>
               <a href="../.././1.7.3/core/responses/">1.7.3</a>
               <a href="../.././1.7.2/core/responses/">1.7.2</a>
@@ -313,11 +316,6 @@ available entities, slots and intents.</p>
     <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;bye</span><span class="nv"> </span><span class="s">bye</span><span class="nv"> </span><span class="s">😢&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_default</span><span class="p p-Indicator">:</span>   <span class="c1"># utterance sent by action_default_fallback</span>
     <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="s">&quot;sorry,</span><span class="nv"> </span><span class="s">I</span><span class="nv"> </span><span class="s">didn&#39;t</span><span class="nv"> </span><span class="s">get</span><span class="nv"> </span><span class="s">that,</span><span class="nv"> </span><span class="s">can</span><span class="nv"> </span><span class="s">you</span><span class="nv"> </span><span class="s">rephrase</span><span class="nv"> </span><span class="s">it?&quot;</span>
-
-<span class="l l-Scalar l-Scalar-Plain">actions</span><span class="p p-Indicator">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_default</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_greet</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">utter_goodbye</span>
 </pre></div>
 </div>
 <p>In this example domain file, the section <code class="docutils literal notranslate"><span class="pre">responses</span></code> contains the
@@ -458,24 +456,9 @@ like this:</p>
 <span id="external-events"></span><h2>Proactively Reaching Out to the User with External Events<a class="headerlink" href="#proactively-reaching-out-to-the-user-with-external-events" title="Permalink to this headline">¶</a></h2>
 <p>You may want to proactively reach out to the user,
 for example to display the output of a long running background operation
-or notify the user of an external event.</p>
-<p>To do so, you can <code class="docutils literal notranslate"><span class="pre">POST</span></code> an intent to the
-<a class="reference external" href="../../api/http-api/#operation/triggerConversationIntent">trigger_intent endpoint</a>.
-The intent, let’s call it <code class="docutils literal notranslate"><span class="pre">EXTERNAL_sensor</span></code>, will be treated as if the user had sent a message with this intent.
-You can even provide a dictionary of entities as parameters, e.g. <code class="docutils literal notranslate"><span class="pre">{&quot;temperature&quot;:</span> <span class="pre">&quot;high&quot;}</span></code>.
-For your bot to respond, we recommend you use the <a class="reference internal" href="../policies/#mapping-policy"><span class="std std-ref">Mapping Policy</span></a> to connect the sent intent <code class="docutils literal notranslate"><span class="pre">EXTERNAL_sensor</span></code>
-with the action you want your bot to execute, e.g. <code class="docutils literal notranslate"><span class="pre">utter_warn_temperature</span></code>.
-You can also use a custom action here, of course.</p>
-<p>Use the <code class="docutils literal notranslate"><span class="pre">output_channel</span></code> query parameter to specify which output
-channel should be used to communicate the assistant’s responses back to the user.
-Any messages that are dispatched in the custom action will be forwarded to the specified output channel.
-Set this parameter to <code class="docutils literal notranslate"><span class="pre">&quot;latest&quot;</span></code> if you want to use the latest input channel that the user has used.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Proactively reaching out to the user is dependent on the abilities of a channel and
-hence not supported by every channel. If your channel does not support it, consider
-using the <a class="reference internal" href="../../user-guide/connectors/your-own-website/#callbackinput"><span class="std std-ref">CallbackInput</span></a> channel to send messages to a webhook.</p>
-</div>
+or notify the user of an external event.
+To learn more, check out <a class="reference external" href="https://github.com/RasaHQ/rasa/tree/master/examples/reminderbot/README.md">reminderbot</a> in
+the Rasa examples directory, or the <a class="reference external" href="../../core/external-events-and-reminders">docs page on this topic</a>.</p>
 </div>
 </div>
 

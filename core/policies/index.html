@@ -18,7 +18,7 @@
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
     <link rel="next" title="Slots" href="../slots/" />
-    <link rel="prev" title="Actions" href="../actions/" />
+    <link rel="prev" title="Reminders and External Events" href="../reminders-and-external-events/" />
 
   <!-- Google Tag Manager -->
   <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -167,6 +167,7 @@ require generalization." />
 <li class="toctree-l1"><a class="reference internal" href="../domains/">Domains</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../responses/">Responses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reminders-and-external-events/">Reminders and External Events</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../forms/">Forms</a></li>
@@ -197,8 +198,9 @@ require generalization." />
 <li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa OSS Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
 <ul>
@@ -217,12 +219,13 @@ require generalization." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.7.4
+          viewing: 1.8.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.8.0/core/policies/">1.8.0</a>
               <a href="../.././1.7.4/core/policies/">1.7.4</a>
               <a href="../.././1.7.3/core/policies/">1.7.3</a>
               <a href="../.././1.7.2/core/policies/">1.7.2</a>
@@ -271,24 +274,25 @@ require generalization." />
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/core/policies.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
   </div><div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#configuring-policies" id="id5">Configuring Policies</a><ul>
-<li><a class="reference internal" href="#max-history" id="id6">Max History</a></li>
-<li><a class="reference internal" href="#data-augmentation" id="id7">Data Augmentation</a></li>
+<li><a class="reference internal" href="#configuring-policies" id="id7">Configuring Policies</a><ul>
+<li><a class="reference internal" href="#max-history" id="id8">Max History</a></li>
+<li><a class="reference internal" href="#data-augmentation" id="id9">Data Augmentation</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#action-selection" id="id8">Action Selection</a></li>
-<li><a class="reference internal" href="#keras-policy" id="id9">Keras Policy</a></li>
-<li><a class="reference internal" href="#embedding-policy" id="id10">Embedding Policy</a></li>
-<li><a class="reference internal" href="#mapping-policy" id="id11">Mapping Policy</a></li>
-<li><a class="reference internal" href="#memoization-policy" id="id12">Memoization Policy</a></li>
-<li><a class="reference internal" href="#augmented-memoization-policy" id="id13">Augmented Memoization Policy</a></li>
-<li><a class="reference internal" href="#fallback-policy" id="id14">Fallback Policy</a></li>
-<li><a class="reference internal" href="#two-stage-fallback-policy" id="id15">Two-Stage Fallback Policy</a></li>
-<li><a class="reference internal" href="#form-policy" id="id16">Form Policy</a></li>
+<li><a class="reference internal" href="#action-selection" id="id10">Action Selection</a></li>
+<li><a class="reference internal" href="#keras-policy" id="id11">Keras Policy</a></li>
+<li><a class="reference internal" href="#embedding-policy" id="id12">Embedding Policy</a></li>
+<li><a class="reference internal" href="#ted-policy" id="id13">TED Policy</a></li>
+<li><a class="reference internal" href="#mapping-policy" id="id14">Mapping Policy</a></li>
+<li><a class="reference internal" href="#memoization-policy" id="id15">Memoization Policy</a></li>
+<li><a class="reference internal" href="#augmented-memoization-policy" id="id16">Augmented Memoization Policy</a></li>
+<li><a class="reference internal" href="#fallback-policy" id="id17">Fallback Policy</a></li>
+<li><a class="reference internal" href="#two-stage-fallback-policy" id="id18">Two-Stage Fallback Policy</a></li>
+<li><a class="reference internal" href="#form-policy" id="id19">Form Policy</a></li>
 </ul>
 </div>
 <div class="section" id="configuring-policies">
-<span id="policy-file"></span><h2><a class="toc-backref" href="#id5">Configuring Policies</a><a class="headerlink" href="#configuring-policies" title="Permalink to this headline">¶</a></h2>
+<span id="policy-file"></span><h2><a class="toc-backref" href="#id7">Configuring Policies</a><a class="headerlink" href="#configuring-policies" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">rasa.core.policies.Policy</span></code> class decides which action to take
 at every step in the conversation.</p>
 <p>There are different policies to choose from, and you can include
@@ -322,7 +326,7 @@ policy class and pass arguments to it.</p>
 </pre></div>
 </div>
 <div class="section" id="max-history">
-<h3><a class="toc-backref" href="#id6">Max History</a><a class="headerlink" href="#max-history" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id8">Max History</a><a class="headerlink" href="#max-history" title="Permalink to this headline">¶</a></h3>
 <p>One important hyperparameter for Rasa Core policies is the <code class="docutils literal notranslate"><span class="pre">max_history</span></code>.
 This controls how much dialogue history the model looks at to decide which
 action to take next.</p>
@@ -354,7 +358,7 @@ affect the dialogue very far into the future, you should store it as a
 slot. Slot information is always available for every featurizer.</p>
 </div>
 <div class="section" id="data-augmentation">
-<h3><a class="toc-backref" href="#id7">Data Augmentation</a><a class="headerlink" href="#data-augmentation" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id9">Data Augmentation</a><a class="headerlink" href="#data-augmentation" title="Permalink to this headline">¶</a></h3>
 <p>When you train a model, by default Rasa Core will create
 longer stories by randomly gluing together
 the ones in your stories files.
@@ -385,7 +389,7 @@ ignore all augmented stories.</p>
 </div>
 </div>
 <div class="section" id="action-selection">
-<h2><a class="toc-backref" href="#id8">Action Selection</a><a class="headerlink" href="#action-selection" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id10">Action Selection</a><a class="headerlink" href="#action-selection" title="Permalink to this headline">¶</a></h2>
 <p>At every turn, each policy defined in your configuration will
 predict a next action with a certain confidence level. For more information
 about how each policy makes its decision, read into the policy’s description below.
@@ -400,7 +404,7 @@ expected outcome in the case of a tie. They look like this, where higher numbers
 <div class="line">4. <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code></div>
 <div class="line">3. <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">AugmentedMemoizationPolicy</span></code></div>
 <div class="line">2. <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code></div>
-<div class="line">1. <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>, <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code>, and <code class="docutils literal notranslate"><span class="pre">SklearnPolicy</span></code></div>
+<div class="line">1. <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code>, <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>, <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code>, and <code class="docutils literal notranslate"><span class="pre">SklearnPolicy</span></code></div>
 </div>
 </div></blockquote>
 <p>This priority hierarchy ensures that, for example, if there is an intent with a mapped action, but the NLU confidence is not
@@ -418,7 +422,7 @@ Doing so can lead to unexpected and undesired bot behavior.</p>
 </div>
 </div>
 <div class="section" id="keras-policy">
-<h2><a class="toc-backref" href="#id9">Keras Policy</a><a class="headerlink" href="#keras-policy" title="Permalink to this headline">¶</a></h2>
+<span id="id2"></span><h2><a class="toc-backref" href="#id11">Keras Policy</a><a class="headerlink" href="#keras-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> uses a neural network implemented in
 <a class="reference external" href="http://keras.io">Keras</a> to select the next action.
 The default architecture is based on an LSTM, but you can override the
@@ -476,7 +480,7 @@ The default architecture is based on an LSTM, but you can override the
         <span class="n">loss</span><span class="o">=</span><span class="s2">&quot;categorical_crossentropy&quot;</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="s2">&quot;rmsprop&quot;</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;accuracy&quot;</span><span class="p">]</span>
     <span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">obtain_verbosity</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">common_utils</span><span class="o">.</span><span class="n">obtain_verbosity</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="n">model</span>
@@ -490,48 +494,40 @@ The default architecture is based on an LSTM, but you can override the
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 
-    <span class="c1"># set numpy random seed</span>
     <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">)</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">set_seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">)</span>
 
     <span class="n">training_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">featurize_for_training</span><span class="p">(</span><span class="n">training_trackers</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="c1"># noinspection PyPep8Naming</span>
     <span class="n">shuffled_X</span><span class="p">,</span> <span class="n">shuffled_y</span> <span class="o">=</span> <span class="n">training_data</span><span class="o">.</span><span class="n">shuffled_X_y</span><span class="p">()</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">graph</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
-    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
-        <span class="c1"># set random seed in tf</span>
-        <span class="n">tf</span><span class="o">.</span><span class="n">set_random_seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">compat</span><span class="o">.</span><span class="n">v1</span><span class="o">.</span><span class="n">Session</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tf_config</span><span class="p">)</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_architecture</span><span class="p">(</span>
+            <span class="n">shuffled_X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">shuffled_y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="p">)</span>
 
-        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_architecture</span><span class="p">(</span>
-                    <span class="n">shuffled_X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">shuffled_y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
-                <span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="n">f</span><span class="s2">&quot;Fitting model with {training_data.num_examples()} total samples and a &quot;</span>
+        <span class="n">f</span><span class="s2">&quot;validation split of </span><span class="si">{self.validation_split}</span><span class="s2">.&quot;</span>
+    <span class="p">)</span>
 
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="s2">&quot;Fitting model with </span><span class="si">{}</span><span class="s2"> total samples and a &quot;</span>
-                <span class="s2">&quot;validation split of </span><span class="si">{}</span><span class="s2">&quot;</span>
-                <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">training_data</span><span class="o">.</span><span class="n">num_examples</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">validation_split</span><span class="p">)</span>
-            <span class="p">)</span>
+    <span class="c1"># filter out kwargs that cannot be passed to fit</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_valid_params</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span>
+    <span class="p">)</span>
 
-            <span class="c1"># filter out kwargs that cannot be passed to fit</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_valid_params</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span>
-            <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+        <span class="n">shuffled_X</span><span class="p">,</span>
+        <span class="n">shuffled_y</span><span class="p">,</span>
+        <span class="n">epochs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+        <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="o">=</span><span class="n">common_utils</span><span class="o">.</span><span class="n">obtain_verbosity</span><span class="p">(),</span>
+        <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epochs</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-                <span class="n">shuffled_X</span><span class="p">,</span>
-                <span class="n">shuffled_y</span><span class="p">,</span>
-                <span class="n">epochs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
-                <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
-                <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                <span class="n">verbose</span><span class="o">=</span><span class="n">obtain_verbosity</span><span class="p">(),</span>
-                <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_train_params</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="c1"># the default parameter for epochs in keras fit is 1</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">defaults</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;epochs&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Done fitting keras policy model&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Done fitting Keras Policy model.&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>You can implement the model of your choice by overriding these methods,
@@ -540,40 +536,42 @@ or initialize <code class="docutils literal notranslate"><span class="pre">Keras
 set the <code class="docutils literal notranslate"><span class="pre">random_seed</span></code> attribute of the <code class="docutils literal notranslate"><span class="pre">KerasPolicy</span></code> to any integer.</p>
 </div>
 <div class="section" id="embedding-policy">
-<span id="id2"></span><h2><a class="toc-backref" href="#id10">Embedding Policy</a><a class="headerlink" href="#embedding-policy" title="Permalink to this headline">¶</a></h2>
-<p>Transformer Embedding Dialogue Policy (TEDP)</p>
-<p>Transformer version of the Recurrent Embedding Dialogue Policy (REDP)
-used in our paper: <a class="reference external" href="https://arxiv.org/abs/1811.11707">https://arxiv.org/abs/1811.11707</a></p>
+<span id="id3"></span><h2><a class="toc-backref" href="#id12">Embedding Policy</a><a class="headerlink" href="#embedding-policy" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> was renamed to <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code>. Please use <a class="reference internal" href="#ted-policy"><span class="std std-ref">TED Policy</span></a> instead of <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>
+in your policy configuration. The functionality of the policy stayed the same.</p>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="ted-policy">
+<span id="id4"></span><h2><a class="toc-backref" href="#id13">TED Policy</a><a class="headerlink" href="#ted-policy" title="Permalink to this headline">¶</a></h2>
+<p>The Transformer Embedding Dialogue (TED) Policy is described in
+<a class="reference external" href="https://arxiv.org/abs/1910.00486">our paper</a>.</p>
 <p>This policy has a pre-defined architecture, which comprises the
 following steps:</p>
 <blockquote>
 <div><ul class="simple">
-<li>concatenate user input (user intent and entities),
-previous system action, slots and active form
-for each time step into an input vector
-to pre-transformer embedding layer;</li>
+<li>concatenate user input (user intent and entities), previous system actions, slots and active forms for each time
+step into an input vector to pre-transformer embedding layer;</li>
 <li>feed it to transformer;</li>
-<li>apply a dense layer to the output of the transformer
-to get embeddings of a dialogue for each time step;</li>
+<li>apply a dense layer to the output of the transformer to get embeddings of a dialogue for each time step;</li>
 <li>apply a dense layer to create embeddings for system actions for each time step;</li>
-<li>calculate the similarity between the
-dialogue embedding and embedded system actions.
-This step is based on the
-<a class="reference external" href="https://arxiv.org/abs/1709.03856">StarSpace</a> idea.</li>
+<li>calculate the similarity between the dialogue embedding and embedded system actions.
+This step is based on the <a class="reference external" href="https://arxiv.org/abs/1709.03856">StarSpace</a> idea.</li>
 </ul>
 </div></blockquote>
-<p>It is recommended to use
-<code class="docutils literal notranslate"><span class="pre">state_featurizer=LabelTokenizerSingleStateFeaturizer(...)</span></code>
+<p>It is recommended to use <code class="docutils literal notranslate"><span class="pre">state_featurizer=LabelTokenizerSingleStateFeaturizer(...)</span></code>
 (see <a class="reference internal" href="../../api/core-featurization/#featurization-conversations"><span class="std std-ref">Featurization of Conversations</span></a> for details).</p>
 <p><strong>Configuration:</strong></p>
 <blockquote>
 <div><p>Configuration parameters can be passed as parameters to the
-<code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code> within the policy configuration file.</p>
+<code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code> within the configuration file.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
-<p class="last">Pass an appropriate number of <code class="docutils literal notranslate"><span class="pre">epochs</span></code> to the <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy</span></code>,
-otherwise the policy will be trained only for <code class="docutils literal notranslate"><span class="pre">1</span></code>
-epoch.</p>
+<p class="last">Pass an appropriate number of <code class="docutils literal notranslate"><span class="pre">epochs</span></code> to the <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code>, otherwise the policy will be trained only
+for <code class="docutils literal notranslate"><span class="pre">1</span></code> epoch.</p>
 </div>
 <p>The algorithm also has hyper-parameters to control:</p>
 <blockquote>
@@ -581,16 +579,16 @@ epoch.</p>
 <li><p class="first">neural network’s architecture:</p>
 <blockquote>
 <div><ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">hidden_layers_sizes_b</span></code> sets a list of hidden layers
+<li><code class="docutils literal notranslate"><span class="pre">hidden_layers_sizes</span></code> sets a list of hidden layers
 sizes before embedding layer for system actions, the number
-of hidden layers is equal to the length of the list;</li>
-<li><code class="docutils literal notranslate"><span class="pre">transformer_size</span></code> sets the number of units in the transfomer;</li>
-<li><code class="docutils literal notranslate"><span class="pre">num_transformer_layers</span></code> sets the number of transformer layers;</li>
-<li><code class="docutils literal notranslate"><span class="pre">pos_encoding</span></code> sets the type of positional encoding in transformer,
-it should be either <code class="docutils literal notranslate"><span class="pre">timing</span></code> or <code class="docutils literal notranslate"><span class="pre">emb</span></code>;</li>
-<li><code class="docutils literal notranslate"><span class="pre">max_seq_length</span></code> sets maximum sequence length
-if embedding positional encodings are used;</li>
-<li><code class="docutils literal notranslate"><span class="pre">num_heads</span></code> sets the number of heads in multihead attention;</li>
+of hidden layers is equal to the length of the list.</li>
+<li><code class="docutils literal notranslate"><span class="pre">transformer_size</span></code> sets the number of units in the transfomer.</li>
+<li><code class="docutils literal notranslate"><span class="pre">number_of_transformer_layers</span></code> sets the number of transformer layers.</li>
+<li><code class="docutils literal notranslate"><span class="pre">maximum_sequence_length</span></code> sets maximum sequence length.</li>
+<li><code class="docutils literal notranslate"><span class="pre">number_of_attention_heads</span></code> sets the number of heads in multihead attention.</li>
+<li><code class="docutils literal notranslate"><span class="pre">use_key_relative_attention</span></code> if true use key relative embeddings in attention.</li>
+<li><code class="docutils literal notranslate"><span class="pre">use_value_relative_attention</span></code> if true use key relative embeddings in attention.</li>
+<li><code class="docutils literal notranslate"><span class="pre">max_relative_position</span></code> sets the max position for relative embeddings.</li>
 </ul>
 </div></blockquote>
 </li>
@@ -613,8 +611,8 @@ training results for the same inputs;</li>
 <li><p class="first">embedding:</p>
 <blockquote>
 <div><ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">embed_dim</span></code> sets the dimension of embedding space;</li>
-<li><code class="docutils literal notranslate"><span class="pre">num_neg</span></code> sets the number of incorrect intent labels,
+<li><code class="docutils literal notranslate"><span class="pre">embedding_dimension</span></code> sets the dimension of embedding space;</li>
+<li><code class="docutils literal notranslate"><span class="pre">number_of_negative_examples</span></code> sets the number of incorrect intent labels,
 the algorithm will minimize their similarity to the user
 input during training;</li>
 <li><code class="docutils literal notranslate"><span class="pre">similarity_type</span></code> sets the type of the similarity,
@@ -626,13 +624,13 @@ it should be either <code class="docutils literal notranslate"><span class="pre"
 <li><code class="docutils literal notranslate"><span class="pre">ranking_length</span></code> defines the number of top confidences over
 which to normalize ranking results if <code class="docutils literal notranslate"><span class="pre">loss_type:</span> <span class="pre">&quot;softmax&quot;</span></code>;
 to turn off normalization set it to 0</li>
-<li><code class="docutils literal notranslate"><span class="pre">mu_pos</span></code> controls how similar the algorithm should try
+<li><code class="docutils literal notranslate"><span class="pre">maximum_positive_similarity</span></code> controls how similar the algorithm should try
 to make embedding vectors for correct intent labels,
 used only if <code class="docutils literal notranslate"><span class="pre">loss_type</span></code> is set to <code class="docutils literal notranslate"><span class="pre">margin</span></code>;</li>
-<li><code class="docutils literal notranslate"><span class="pre">mu_neg</span></code> controls maximum negative similarity for
+<li><code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> controls maximum negative similarity for
 incorrect intents,
 used only if <code class="docutils literal notranslate"><span class="pre">loss_type</span></code> is set to <code class="docutils literal notranslate"><span class="pre">margin</span></code>;</li>
-<li><code class="docutils literal notranslate"><span class="pre">use_max_sim_neg</span></code> if <code class="docutils literal notranslate"><span class="pre">true</span></code> the algorithm only
+<li><code class="docutils literal notranslate"><span class="pre">use_maximum_negative_similarity</span></code> if <code class="docutils literal notranslate"><span class="pre">true</span></code> the algorithm only
 minimizes maximum similarity over incorrect intent labels,
 used only if <code class="docutils literal notranslate"><span class="pre">loss_type</span></code> is set to <code class="docutils literal notranslate"><span class="pre">margin</span></code>;</li>
 <li><code class="docutils literal notranslate"><span class="pre">scale_loss</span></code> if <code class="docutils literal notranslate"><span class="pre">true</span></code> the algorithm will downscale the loss
@@ -644,23 +642,24 @@ used only if <code class="docutils literal notranslate"><span class="pre">loss_t
 <li><p class="first">regularization:</p>
 <blockquote>
 <div><ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">C2</span></code> sets the scale of L2 regularization</li>
-<li><code class="docutils literal notranslate"><span class="pre">C_emb</span></code> sets the scale of how important is to minimize
+<li><code class="docutils literal notranslate"><span class="pre">regularization_constant</span></code> sets the scale of L2 regularization.</li>
+<li><code class="docutils literal notranslate"><span class="pre">negative_margin_scale</span></code> sets the scale of how important is to minimize
 the maximum similarity between embeddings of different
-intent labels, used only if <code class="docutils literal notranslate"><span class="pre">loss_type</span></code> is set to <code class="docutils literal notranslate"><span class="pre">margin</span></code>;</li>
-<li><code class="docutils literal notranslate"><span class="pre">droprate_a</span></code> sets the dropout rate between
-layers before embedding layer for user inputs;</li>
-<li><code class="docutils literal notranslate"><span class="pre">droprate_b</span></code> sets the dropout rate between layers
-before embedding layer for system actions;</li>
+intent labels, used only if <code class="docutils literal notranslate"><span class="pre">loss_type</span></code> is set to <code class="docutils literal notranslate"><span class="pre">margin</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">droprate_dialogue</span></code> sets the dropout rate between
+layers before embedding layer for user inputs.</li>
+<li><code class="docutils literal notranslate"><span class="pre">droprate_label</span></code> sets the dropout rate between layers
+before embedding layer for system actions.</li>
+<li><code class="docutils literal notranslate"><span class="pre">droprate_attention</span></code> sets the dropout rate for attention.</li>
 </ul>
 </div></blockquote>
 </li>
 <li><p class="first">train accuracy calculation:</p>
 <blockquote>
 <div><ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">evaluate_every_num_epochs</span></code> sets how often to calculate
-train accuracy, small values may hurt performance;</li>
-<li><code class="docutils literal notranslate"><span class="pre">evaluate_on_num_examples</span></code> how many examples to use for
+<li><code class="docutils literal notranslate"><span class="pre">evaluate_every_number_of_epochs</span></code> sets how often to calculate
+train accuracy, small values may hurt performance.</li>
+<li><code class="docutils literal notranslate"><span class="pre">evaluate_on_number_of_examples</span></code> how many examples to use for
 hold out validation set to calculate of validation accuracy,
 large values may hurt performance.</li>
 </ul>
@@ -679,11 +678,11 @@ We recommend to increase <code class="docutils literal notranslate"><span class=
 </div>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
-<p class="last">If <code class="docutils literal notranslate"><span class="pre">evaluate_on_num_examples</span></code> is non zero, random examples will be
+<p class="last">If <code class="docutils literal notranslate"><span class="pre">evaluate_on_number_of_examples</span></code> is non zero, random examples will be
 picked by stratified split and used as <strong>hold out</strong> validation set,
 so they will be excluded from training data.
 We suggest to set it to zero if data set contains a lot of unique examples
-of dialogue turns</p>
+of dialogue turns.</p>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -692,7 +691,7 @@ of dialogue turns</p>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">For <code class="docutils literal notranslate"><span class="pre">cosine</span></code> similarity <code class="docutils literal notranslate"><span class="pre">mu_pos</span></code> and <code class="docutils literal notranslate"><span class="pre">mu_neg</span></code> should
+<p class="last">For <code class="docutils literal notranslate"><span class="pre">cosine</span></code> similarity <code class="docutils literal notranslate"><span class="pre">maximum_positive_similarity</span></code> and <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> should
 be between <code class="docutils literal notranslate"><span class="pre">-1</span></code> and <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
 </div>
 <div class="admonition note">
@@ -704,87 +703,96 @@ In order to do it pass a list to <code class="docutils literal notranslate"><spa
 <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> is required, pass an <code class="docutils literal notranslate"><span class="pre">int</span></code>, e.g.
 <code class="docutils literal notranslate"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">8</span></code>.</p>
 </div>
-<p>These parameters can be specified in the policy configuration file.
-The default values are defined in <code class="docutils literal notranslate"><span class="pre">EmbeddingPolicy.defaults</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">defaults</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="c1"># nn architecture</span>
-    <span class="c1"># a list of hidden layers sizes before user embed layer</span>
-    <span class="c1"># number of hidden layers is equal to the length of this list</span>
-    <span class="s2">&quot;hidden_layers_sizes_pre_dial&quot;</span><span class="p">:</span> <span class="p">[],</span>
-    <span class="c1"># a list of hidden layers sizes before bot embed layer</span>
-    <span class="c1"># number of hidden layers is equal to the length of this list</span>
-    <span class="s2">&quot;hidden_layers_sizes_bot&quot;</span><span class="p">:</span> <span class="p">[],</span>
-    <span class="c1"># number of units in transformer</span>
-    <span class="s2">&quot;transformer_size&quot;</span><span class="p">:</span> <span class="mi">128</span><span class="p">,</span>
-    <span class="c1"># number of transformer layers</span>
-    <span class="s2">&quot;num_transformer_layers&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="c1"># type of positional encoding in transformer</span>
-    <span class="s2">&quot;pos_encoding&quot;</span><span class="p">:</span> <span class="s2">&quot;timing&quot;</span><span class="p">,</span>  <span class="c1"># string &#39;timing&#39; or &#39;emb&#39;</span>
-    <span class="c1"># max sequence length if pos_encoding=&#39;emb&#39;</span>
-    <span class="s2">&quot;max_seq_length&quot;</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span>
-    <span class="c1"># number of attention heads in transformer</span>
-    <span class="s2">&quot;num_heads&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
-    <span class="c1"># training parameters</span>
-    <span class="c1"># initial and final batch sizes:</span>
-    <span class="c1"># batch size will be linearly increased for each epoch</span>
-    <span class="s2">&quot;batch_size&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span>
-    <span class="c1"># how to create batches</span>
-    <span class="s2">&quot;batch_strategy&quot;</span><span class="p">:</span> <span class="s2">&quot;balanced&quot;</span><span class="p">,</span>  <span class="c1"># string &#39;sequence&#39; or &#39;balanced&#39;</span>
-    <span class="c1"># number of epochs</span>
-    <span class="s2">&quot;epochs&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="c1"># set random seed to any int to get reproducible results</span>
-    <span class="s2">&quot;random_seed&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="c1"># embedding parameters</span>
-    <span class="c1"># dimension size of embedding vectors</span>
-    <span class="s2">&quot;embed_dim&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
-    <span class="c1"># the type of the similarity</span>
-    <span class="s2">&quot;num_neg&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
-    <span class="c1"># flag if minimize only maximum similarity over incorrect labels</span>
-    <span class="s2">&quot;similarity_type&quot;</span><span class="p">:</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>  <span class="c1"># string &#39;auto&#39; or &#39;cosine&#39; or &#39;inner&#39;</span>
-    <span class="c1"># the type of the loss function</span>
-    <span class="s2">&quot;loss_type&quot;</span><span class="p">:</span> <span class="s2">&quot;softmax&quot;</span><span class="p">,</span>  <span class="c1"># string &#39;softmax&#39; or &#39;margin&#39;</span>
-    <span class="c1"># number of top actions to normalize scores for softmax loss_type</span>
-    <span class="c1"># set to 0 to turn off normalization</span>
-    <span class="s2">&quot;ranking_length&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-    <span class="c1"># how similar the algorithm should try</span>
-    <span class="c1"># to make embedding vectors for correct labels</span>
-    <span class="s2">&quot;mu_pos&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># should be 0.0 &lt; ... &lt; 1.0 for &#39;cosine&#39;</span>
-    <span class="c1"># maximum negative similarity for incorrect labels</span>
-    <span class="s2">&quot;mu_neg&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.2</span><span class="p">,</span>  <span class="c1"># should be -1.0 &lt; ... &lt; 1.0 for &#39;cosine&#39;</span>
-    <span class="c1"># the number of incorrect labels, the algorithm will minimize</span>
-    <span class="c1"># their similarity to the user input during training</span>
-    <span class="s2">&quot;use_max_sim_neg&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># flag which loss function to use</span>
-    <span class="c1"># scale loss inverse proportionally to confidence of correct prediction</span>
-    <span class="s2">&quot;scale_loss&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="c1"># regularization</span>
-    <span class="c1"># the scale of L2 regularization</span>
-    <span class="s2">&quot;C2&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span>
-    <span class="c1"># the scale of how important is to minimize the maximum similarity</span>
-    <span class="c1"># between embeddings of different labels</span>
-    <span class="s2">&quot;C_emb&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>
-    <span class="c1"># dropout rate for dial nn</span>
-    <span class="s2">&quot;droprate_a&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
-    <span class="c1"># dropout rate for bot nn</span>
-    <span class="s2">&quot;droprate_b&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
-    <span class="c1"># visualization of accuracy</span>
-    <span class="c1"># how often calculate validation accuracy</span>
-    <span class="s2">&quot;evaluate_every_num_epochs&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>  <span class="c1"># small values may hurt performance</span>
-    <span class="c1"># how many examples to use for hold out validation set</span>
-    <span class="s2">&quot;evaluate_on_num_examples&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>  <span class="c1"># large values may hurt performance</span>
-<span class="p">}</span>
+<p>These parameters can be specified in the configuration file.
+The following default values are set:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># ## Architecture of the used neural network</span>
+<span class="c1"># Hidden layer sizes for layers before the dialogue and label embedding layers.</span>
+<span class="c1"># The number of hidden layers is equal to the length of the corresponding</span>
+<span class="c1"># list.</span>
+<span class="s">&quot;hidden_layers_sizes&quot;</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span><span class="s">&quot;dialogue&quot;</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[],</span> <span class="s">&quot;label&quot;</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[]}</span>
+<span class="c1"># Number of units in transformer</span>
+<span class="s">&quot;transformer_size&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">128</span>
+<span class="c1"># Number of transformer layers</span>
+<span class="s">&quot;number_of_transformer_layers&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="c1"># If &#39;True&#39; use key relative embeddings in attention</span>
+<span class="s">&quot;use_key_relative_attention&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False,</span>
+<span class="c1"># If &#39;True&#39; use key relative embeddings in attention</span>
+<span class="s">&quot;use_value_relative_attention&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="c1"># Max position for relative embeddings</span>
+<span class="s">&quot;max_relative_position&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
+<span class="c1"># Max sequence length</span>
+<span class="s">&quot;maximum_sequence_length&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">256</span>
+<span class="c1"># Number of attention heads in transformer</span>
+<span class="s">&quot;number_of_attention_heads&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="c1"># ## Training parameters</span>
+<span class="c1"># Initial and final batch sizes:</span>
+<span class="c1"># Batch size will be linearly increased for each epoch.</span>
+<span class="s">&quot;batch_size&quot;</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">8</span><span class="p p-Indicator">,</span> <span class="nv">32</span><span class="p p-Indicator">]</span>
+<span class="c1"># Strategy used when creating batches.</span>
+<span class="c1"># Can be either &#39;sequence&#39; or &#39;balanced&#39;.</span>
+<span class="s">&quot;batch_strategy&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;balanced&quot;</span>
+<span class="c1"># Number of epochs to train</span>
+<span class="s">&quot;epochs&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="c1"># Set random seed to any &#39;int&#39; to get reproducible results</span>
+<span class="s">&quot;random_seed&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
+<span class="c1"># ## Parameters for embeddings</span>
+<span class="c1"># Dimension size of embedding vectors</span>
+<span class="s">&quot;embedding_dimension&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">20</span>
+<span class="c1"># The number of incorrect labels. The algorithm will minimize</span>
+<span class="c1"># their similarity to the user input during training.</span>
+<span class="s">&quot;number_of_negative_examples&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">20</span>
+<span class="c1"># Type of similarity measure to use, either &#39;auto&#39; or &#39;cosine&#39; or &#39;inner&#39;.</span>
+<span class="s">&quot;similarity_type&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;auto&quot;</span>
+<span class="c1"># The type of the loss function, either &#39;softmax&#39; or &#39;margin&#39;.</span>
+<span class="s">&quot;loss_type&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;softmax&quot;</span>
+<span class="c1"># Number of top actions to normalize scores for loss type &#39;softmax&#39;.</span>
+<span class="c1"># Set to 0 to turn off normalization.</span>
+<span class="s">&quot;ranking_length&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="c1"># Indicates how similar the algorithm should try to make embedding vectors</span>
+<span class="c1"># for correct labels.</span>
+<span class="c1"># Should be 0.0 &lt; ... &lt; 1.0 for &#39;cosine&#39; similarity type.</span>
+<span class="s">&quot;maximum_positive_similarity&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.8</span>
+<span class="c1"># Maximum negative similarity for incorrect labels.</span>
+<span class="c1"># Should be -1.0 &lt; ... &lt; 1.0 for &#39;cosine&#39; similarity type.</span>
+<span class="s">&quot;maximum_negative_similarity&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">-0.2</span>
+<span class="c1"># If &#39;True&#39; the algorithm only minimizes maximum similarity over</span>
+<span class="c1"># incorrect intent labels, used only if &#39;loss_type&#39; is set to &#39;margin&#39;.</span>
+<span class="s">&quot;use_maximum_negative_similarity&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="c1"># Scale loss inverse proportionally to confidence of correct prediction</span>
+<span class="s">&quot;scale_loss&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="c1"># ## Regularization parameters</span>
+<span class="c1"># The scale of regularization</span>
+<span class="s">&quot;regularization_constant&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.001</span>
+<span class="c1"># The scale of how important is to minimize the maximum similarity</span>
+<span class="c1"># between embeddings of different labels.</span>
+<span class="s">&quot;negative_margin_scale&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.8</span>
+<span class="c1"># Dropout rate for embedding layers of dialogue features.</span>
+<span class="s">&quot;drop_rate_dialogue&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
+<span class="c1"># Dropout rate for embedding layers of label, e.g. action, features.</span>
+<span class="s">&quot;drop_rate_label&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<span class="c1"># Dropout rate for attention.</span>
+<span class="s">&quot;drop_rate_attention&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="c1"># ## Evaluation parameters</span>
+<span class="c1"># How often calculate validation accuracy.</span>
+<span class="c1"># Small values may hurt performance, e.g. model accuracy.</span>
+<span class="s">&quot;evaluate_every_number_of_epochs&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">20</span>
+<span class="c1"># How many examples to use for hold out validation set</span>
+<span class="c1"># Large values may hurt performance, e.g. model accuracy.</span>
+<span class="s">&quot;evaluate_on_number_of_examples&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Parameter <code class="docutils literal notranslate"><span class="pre">mu_neg</span></code> is set to a negative value to mimic
+<p class="last">The parameter <code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span></code> is set to a negative value to mimic
 the original starspace algorithm in the case
-<code class="docutils literal notranslate"><span class="pre">mu_neg</span> <span class="pre">=</span> <span class="pre">mu_pos</span></code> and <code class="docutils literal notranslate"><span class="pre">use_max_sim_neg</span> <span class="pre">=</span> <span class="pre">False</span></code>. See
+<code class="docutils literal notranslate"><span class="pre">maximum_negative_similarity</span> <span class="pre">=</span> <span class="pre">maximum_positive_similarity</span></code> and
+<code class="docutils literal notranslate"><span class="pre">use_maximum_negative_similarity</span> <span class="pre">=</span> <span class="pre">False</span></code>. See
 <a class="reference external" href="https://arxiv.org/abs/1709.03856">starspace paper</a> for details.</p>
 </div>
 </div></blockquote>
 </div>
 <div class="section" id="mapping-policy">
-<span id="id3"></span><h2><a class="toc-backref" href="#id11">Mapping Policy</a><a class="headerlink" href="#mapping-policy" title="Permalink to this headline">¶</a></h2>
+<span id="id5"></span><h2><a class="toc-backref" href="#id14">Mapping Policy</a><a class="headerlink" href="#mapping-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> can be used to directly map intents to actions. The
 mappings are assigned by giving an intent the property <code class="docutils literal notranslate"><span class="pre">triggers</span></code>, e.g.:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
@@ -831,14 +839,14 @@ in your policy example these intents will not work.</p>
 </div>
 </div>
 <div class="section" id="memoization-policy">
-<h2><a class="toc-backref" href="#id12">Memoization Policy</a><a class="headerlink" href="#memoization-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id15">Memoization Policy</a><a class="headerlink" href="#memoization-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> just memorizes the conversations in your
 training data. It predicts the next action with confidence <code class="docutils literal notranslate"><span class="pre">1.0</span></code>
 if this exact conversation exists in the training data, otherwise it
 predicts <code class="docutils literal notranslate"><span class="pre">None</span></code> with confidence <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
 </div>
 <div class="section" id="augmented-memoization-policy">
-<h2><a class="toc-backref" href="#id13">Augmented Memoization Policy</a><a class="headerlink" href="#augmented-memoization-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id16">Augmented Memoization Policy</a><a class="headerlink" href="#augmented-memoization-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">AugmentedMemoizationPolicy</span></code> remembers examples from training
 stories for up to <code class="docutils literal notranslate"><span class="pre">max_history</span></code> turns, just like the <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code>.
 Additionally, it has a forgetting mechanism that will forget a certain amount
@@ -855,7 +863,7 @@ data as well.</p>
 </div>
 </div>
 <div class="section" id="fallback-policy">
-<span id="id4"></span><h2><a class="toc-backref" href="#id14">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
+<span id="id6"></span><h2><a class="toc-backref" href="#id17">Fallback Policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">FallbackPolicy</span></code> invokes a <a class="reference internal" href="../fallback-actions/#fallback-actions"><span class="std std-ref">fallback action</span></a> if at least one of the following occurs:</p>
 <ol class="arabic simple">
 <li>The intent recognition has a confidence below <code class="docutils literal notranslate"><span class="pre">nlu_threshold</span></code>.</li>
@@ -922,7 +930,7 @@ or action is below the respective threshold</td>
 </div></blockquote>
 </div>
 <div class="section" id="two-stage-fallback-policy">
-<h2><a class="toc-backref" href="#id15">Two-Stage Fallback Policy</a><a class="headerlink" href="#two-stage-fallback-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id18">Two-Stage Fallback Policy</a><a class="headerlink" href="#two-stage-fallback-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">TwoStageFallbackPolicy</span></code> handles low NLU confidence in multiple stages
 by trying to disambiguate the user input.</p>
 <ul>
@@ -1021,7 +1029,7 @@ intents</td>
 </div></blockquote>
 </div>
 <div class="section" id="form-policy">
-<h2><a class="toc-backref" href="#id16">Form Policy</a><a class="headerlink" href="#form-policy" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id19">Form Policy</a><a class="headerlink" href="#form-policy" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> is an extension of the <code class="docutils literal notranslate"><span class="pre">MemoizationPolicy</span></code> which
 handles the filling of forms. Once a <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> is called, the
 <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> will continually predict the <code class="docutils literal notranslate"><span class="pre">FormAction</span></code> until all required

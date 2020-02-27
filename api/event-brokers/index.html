@@ -163,6 +163,7 @@ you to stream events to a message broker." />
 <li class="toctree-l1"><a class="reference internal" href="../../core/domains/">Domains</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/responses/">Responses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/reminders-and-external-events/">Reminders and External Events</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
@@ -193,8 +194,9 @@ you to stream events to a message broker." />
 <li class="toctree-l1"><a class="reference internal" href="../lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorflow_usage/">TensorFlow Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa OSS Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
 <ul>
@@ -213,12 +215,13 @@ you to stream events to a message broker." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.7.4
+          viewing: 1.8.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.8.0/api/event-brokers/">1.8.0</a>
               <a href="../.././1.7.4/api/event-brokers/">1.7.4</a>
               <a href="../.././1.7.3/api/event-brokers/">1.7.3</a>
               <a href="../.././1.7.2/api/event-brokers/">1.7.2</a>
@@ -289,7 +292,7 @@ types, check out the <a class="reference internal" href="../events/#events"><spa
 <li><a class="reference internal" href="#sql-event-broker">SQL Event Broker</a></li>
 </ul>
 <div class="section" id="pika-event-broker">
-<h2>Pika Event Broker<a class="headerlink" href="#pika-event-broker" title="Permalink to this headline">¶</a></h2>
+<span id="event-brokers-pika"></span><h2>Pika Event Broker<a class="headerlink" href="#pika-event-broker" title="Permalink to this headline">¶</a></h2>
 <p>The example implementation we’re going to show you here uses <a class="reference external" href="https://pika.readthedocs.io">Pika</a> ,
 the Python client library for <a class="reference external" href="https://www.rabbitmq.com">RabbitMQ</a>.</p>
 <div class="section" id="adding-a-pika-event-broker-using-the-endpoint-configuration">

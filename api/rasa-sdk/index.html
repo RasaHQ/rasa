@@ -163,6 +163,7 @@ external APIs or improve dialogue with custom actions written in Python." />
 <li class="toctree-l1"><a class="reference internal" href="../../core/domains/">Domains</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/responses/">Responses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/reminders-and-external-events/">Reminders and External Events</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
@@ -193,8 +194,9 @@ external APIs or improve dialogue with custom actions written in Python." />
 <li class="toctree-l1"><a class="reference internal" href="../lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorflow_usage/">TensorFlow Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa OSS Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
 <ul>
@@ -213,12 +215,13 @@ external APIs or improve dialogue with custom actions written in Python." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.7.4
+          viewing: 1.8.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.8.0/api/rasa-sdk/">1.8.0</a>
               <a href="../.././1.7.4/api/rasa-sdk/">1.7.4</a>
               <a href="../.././1.7.3/api/rasa-sdk/">1.7.3</a>
               <a href="../.././1.7.2/api/rasa-sdk/">1.7.2</a>
@@ -373,7 +376,7 @@ which might look like this:</p>
       <span class="k">return</span> <span class="p">[</span><span class="n">SlotSet</span><span class="p">(</span><span class="s2">&quot;matches&quot;</span><span class="p">,</span> <span class="n">result</span> <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="k">else</span> <span class="p">[])]</span>
 </pre></div>
 </div>
-<p>You should add the the action name <code class="docutils literal notranslate"><span class="pre">action_check_restaurants</span></code> to
+<p>You should add the action name <code class="docutils literal notranslate"><span class="pre">action_check_restaurants</span></code> to
 the actions in your domain file. The action’s <code class="docutils literal notranslate"><span class="pre">run()</span></code> method receives
 three arguments. You can access the values of slots and the latest message
 sent by the user using the <code class="docutils literal notranslate"><span class="pre">tracker</span></code> object, and you can send messages

@@ -163,6 +163,7 @@ analysis to integrate with open source bot framework Rasa." />
 <li class="toctree-l1"><a class="reference internal" href="../../core/domains/">Domains</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/responses/">Responses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/reminders-and-external-events/">Reminders and External Events</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
@@ -193,8 +194,9 @@ analysis to integrate with open source bot framework Rasa." />
 <li class="toctree-l1"><a class="reference internal" href="../lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tensorflow_usage/">TensorFlow Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa OSS Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
 <ul>
@@ -213,12 +215,13 @@ analysis to integrate with open source bot framework Rasa." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.7.4
+          viewing: 1.8.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.8.0/api/custom-nlu-components/">1.8.0</a>
               <a href="../.././1.7.4/api/custom-nlu-components/">1.7.4</a>
               <a href="../.././1.7.3/api/custom-nlu-components/">1.7.3</a>
               <a href="../.././1.7.2/api/custom-nlu-components/">1.7.2</a>
@@ -370,9 +373,12 @@ methods that you should implement:</p>
 85
 86
 87
-88</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rasa.nlu.components</span> <span class="kn">import</span> <span class="n">Component</span>
-<span class="kn">import</span> <span class="nn">typing</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Text</span><span class="p">,</span> <span class="n">Dict</span>
+88</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">typing</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Text</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Type</span>
+
+<span class="kn">from</span> <span class="nn">rasa.nlu.components</span> <span class="kn">import</span> <span class="n">Component</span>
+<span class="kn">from</span> <span class="nn">rasa.nlu.config</span> <span class="kn">import</span> <span class="n">RasaNLUModelConfig</span>
+<span class="kn">from</span> <span class="nn">rasa.nlu.training_data</span> <span class="kn">import</span> <span class="n">Message</span><span class="p">,</span> <span class="n">TrainingData</span>
 
 <span class="k">if</span> <span class="n">typing</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">rasa.nlu.model</span> <span class="kn">import</span> <span class="n">Metadata</span>
@@ -381,21 +387,13 @@ methods that you should implement:</p>
 <span class="k">class</span> <span class="nc">MyComponent</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;A new component&quot;&quot;&quot;</span>
 
-    <span class="c1"># Defines what attributes the pipeline component will</span>
-    <span class="c1"># provide when called. The listed attributes</span>
-    <span class="c1"># should be set by the component on the message object</span>
-    <span class="c1"># during test and train, e.g.</span>
-    <span class="c1"># ```message.set(&quot;entities&quot;, [...])```</span>
-    <span class="n">provides</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Which components are required by this component.</span>
+    <span class="c1"># Listed components should appear before the component itself in the pipeline.</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">required_components</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Component</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Specify which components need to be present in the pipeline.&quot;&quot;&quot;</span>
 
-    <span class="c1"># Which attributes on a message are required by this</span>
-    <span class="c1"># component. E.g. if requires contains &quot;tokens&quot;, than a</span>
-    <span class="c1"># previous component in the pipeline needs to have &quot;tokens&quot;</span>
-    <span class="c1"># within the above described `provides` property.</span>
-    <span class="c1"># Use `any_of(&quot;option_1&quot;, &quot;option_2&quot;)` to define that either</span>
-    <span class="c1"># &quot;option_1&quot; or &quot;option_2&quot; needs to be present in the</span>
-    <span class="c1"># provided properties from the previous components.</span>
-    <span class="n">requires</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="p">[]</span>
 
     <span class="c1"># Defines the default configuration parameters of a component</span>
     <span class="c1"># these values can be overwritten in the pipeline configuration</span>
@@ -409,10 +407,15 @@ methods that you should implement:</p>
     <span class="c1"># This is an important feature for backwards compatibility of components.</span>
     <span class="n">language_list</span> <span class="o">=</span> <span class="bp">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component_config</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">component_config</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">training_data</span><span class="p">,</span> <span class="n">cfg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">training_data</span><span class="p">:</span> <span class="n">TrainingData</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RasaNLUModelConfig</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Train this component.</span>
 
 <span class="sd">        This is the components chance to train itself provided</span>
@@ -425,7 +428,7 @@ methods that you should implement:</p>
 <span class="sd">        of components previous to this one.&quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Process an incoming message.</span>
 
 <span class="sd">        This is the components chance to process an incoming</span>
@@ -495,6 +498,22 @@ components a component can use to do its own
 processing. For example, a featurizer component can provide
 features that are used by another component down
 the pipeline to do intent classification.</p>
+<dl class="classmethod">
+<dt id="rasa.nlu.components.Component.required_components">
+<em class="property">classmethod </em><code class="descname">required_components</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.required_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify which components need to be present in the pipeline.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The list of class names of required components.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Type</span></code>[<a class="reference internal" href="#rasa.nlu.components.Component" title="rasa.nlu.components.Component"><code class="xref py py-class docutils literal notranslate"><span class="pre">Component</span></code></a>]]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="classmethod">
 <dt id="rasa.nlu.components.Component.required_packages">
 <em class="property">classmethod </em><code class="descname">required_packages</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rasa.nlu.components.Component.required_packages" title="Permalink to this definition">¶</a></dt>

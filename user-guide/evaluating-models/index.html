@@ -167,6 +167,7 @@ AI Assistant." />
 <li class="toctree-l1"><a class="reference internal" href="../../core/domains/">Domains</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/responses/">Responses</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/actions/">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/reminders-and-external-events/">Reminders and External Events</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/policies/">Policies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/slots/">Slots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../core/forms/">Forms</a></li>
@@ -197,8 +198,9 @@ AI Assistant." />
 <li class="toctree-l1"><a class="reference internal" href="../../api/lock-stores/">Lock Stores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/training-data-importers/">Training Data Importers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api/core-featurization/">Featurization of Conversations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/tensorflow_usage/">TensorFlow Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../migration-guide/">Migration Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa OSS Change Log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog/">Rasa Open Source Change Log</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Migrate from (beta)</span></p>
 <ul>
@@ -217,12 +219,13 @@ AI Assistant." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.7.4
+          viewing: 1.8.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.8.0/user-guide/evaluating-models/">1.8.0</a>
               <a href="../.././1.7.4/user-guide/evaluating-models/">1.7.4</a>
               <a href="../.././1.7.3/user-guide/evaluating-models/">1.7.3</a>
               <a href="../.././1.7.2/user-guide/evaluating-models/">1.7.2</a>
@@ -397,11 +400,6 @@ blue and red bars respectively.
 Improving the quality of your training data will move the blue
 histogram bars to the right and the red histogram bars
 to the left of the plot.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">A confusion matrix will <strong>only</strong> be created if you are evaluating a model on a test set.
-In cross-validation mode, the confusion matrix will not be generated.</p>
-</div>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">If any of your entities are incorrectly annotated, your evaluation may fail. One common problem
