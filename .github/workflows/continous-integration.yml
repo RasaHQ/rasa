@@ -69,7 +69,7 @@ jobs:
       with:
         path: ~/.cache/pypoetry/virtualenvs
         key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-
+        restore-keys: ${{ runner.os }}-poetry-3.7
 
     - name: Install Dependencies 📦
       run: |
@@ -137,7 +137,7 @@ jobs:
       with:
         path: ~/.cache/pypoetry/virtualenvs
         key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: ${{ runner.os }}-poetry-
+        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
     - name: Install Dependencies 📦
       run: |
