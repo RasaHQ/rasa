@@ -81,13 +81,13 @@ async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent)
     assert num_stories == 1
 
 
-async def test_end_to_evaluation_with_forms(form_bot: Agent):
+async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     test_stories = await _generate_trackers(
-        "examples/formbot/tests/end-to-end-stories.md", form_bot, use_e2e=True
+        "data/test_evaluations/form-end-to-end-stories.md", form_bot_agent, use_e2e=True
     )
 
     story_evaluation, num_stories = collect_story_predictions(
-        test_stories, form_bot, use_e2e=True
+        test_stories, form_bot_agent, use_e2e=True
     )
 
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
