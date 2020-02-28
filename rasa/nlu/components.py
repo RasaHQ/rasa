@@ -1,8 +1,9 @@
 import logging
 import typing
-from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type
+from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
+from rasa.nlu.constants import PRETRAINED_EXTRACTORS, TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import raise_warning
@@ -179,6 +180,13 @@ def validate_pipeline(pipeline: List["Component"]) -> None:
     validate_required_components(pipeline)
 
 
+def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]):
+    """Check if any of the provided components are listed in the pipeline."""
+    return any(
+        [any([component.name == c for component in pipeline]) for c in components]
+    )
+
+
 def validate_required_components_from_data(
     pipeline: List["Component"], data: TrainingData
 ) -> None:
@@ -201,6 +209,69 @@ def validate_required_components_from_data(
         raise_warning(
             "Training data consists examples for training a response selector but "
             "no response selector component specified inside NLU pipeline."
+        )
+
+    if data.entity_examples and not any_components_in_pipeline(
+        TRAINABLE_EXTRACTORS, pipeline
+    ):
+        raise_warning(
+            "You have defined training data consisting of entity examples, but "
+            "your NLU pipeline does not include an entity extractor trained on "
+            "your training data. To extract entity examples, add one of "
+            f"{TRAINABLE_EXTRACTORS} to your pipeline."
+        )
+
+    if data.regex_features and not any_components_in_pipeline(
+        ["RegexFeaturizer"], pipeline
+    ):
+        raise_warning(
+            "You have defined training data with regexes, but "
+            "your NLU pipeline does not include a RegexFeaturizer. "
+            "To featurize regexes for entity extraction, you need "
+            "to have a RegexFeaturizer in your pipeline."
+        )
+
+    if data.lookup_tables and not any_components_in_pipeline(
+        ["RegexFeaturizer"], pipeline
+    ):
+        raise_warning(
+            "You have defined training data consisting of lookup tables, but "
+            "your NLU pipeline does not include a RegexFeaturizer. "
+            "To featurize lookup tables, add a RegexFeaturizer to your pipeline."
+        )
+
+    if data.lookup_tables:
+        if not any_components_in_pipeline(["CRFEntityExtractor"], pipeline):
+            raise_warning(
+                "You have defined training data consisting of lookup tables, but "
+                "your NLU pipeline does not include a CRFEntityExtractor. "
+                "To featurize lookup tables, add a CRFEntityExtractor to your pipeline."
+            )
+        else:
+            crf_components = [c for c in pipeline if c.name == "CRFEntityExtractor"]
+            # check to see if any of the possible CRFEntityExtractors will featurize `pattern`
+            has_pattern_feature = False
+            for crf in crf_components:
+                crf_features = crf.component_config.get("features")
+                # iterate through [[before],[word],[after]] features
+                if "pattern" in itertools.chain(*crf_features):
+                    has_pattern_feature = True
+
+            if not has_pattern_feature:
+                raise_warning(
+                    "You have defined training data consisting of lookup tables, but "
+                    "your NLU pipeline's CRFEntityExtractor does not include the `pattern` feature. "
+                    "To featurize lookup tables, add the `pattern` feature to the CRFEntityExtractor in "
+                    "your pipeline."
+                )
+
+    if data.entity_synonyms and not any_components_in_pipeline(
+        ["EntitySynonymMapper"], pipeline
+    ):
+        raise_warning(
+            "You have defined training data consisting of synonyms, but "
+            "your NLU pipeline does not include an EntitySynonymMapper. "
+            "To map synonyms, add an EntitySynonymMapper to your pipeline."
         )
 
 
