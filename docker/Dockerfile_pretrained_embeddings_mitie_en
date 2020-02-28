@@ -46,7 +46,9 @@ RUN python -m venv /opt/venv && \
   pip install --no-cache-dir -U pip && \
   poetry install --no-dev --no-root --no-interaction && \
   make install-mitie  && \
-  poetry run pip install .
+  poetry build -f wheel -n && \
+  pip install --no-deps dist/*.whl && \
+  rm -rf dist *.egg-info
 
 # start a new build stage
 FROM base as runner
