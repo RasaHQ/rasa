@@ -31,26 +31,30 @@ RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-
 ENV PATH "/root/.poetry/bin:/opt/venv/bin:${PATH}"
 
 # copy files
-COPY . /app/
-COPY docker/configs/config_pretrained_embeddings_mitie.yml /app/config.yml
+COPY . /build/
+COPY docker/configs/config_pretrained_embeddings_mitie.yml /build/config.yml
 
 # download mitie model
-RUN wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
+RUN wget -P /build/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
+
+# change working directory
+WORKDIR /build
 
 # install dependencies
 RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
-  pip install --no-cache-dir -U pip && \
-  cd /app && \
-  poetry install --no-dev --no-interaction && \
-  make install-mitie
+  pip install --no-cache-dir -U 'pip<20' && \
+  poetry install --no-dev --no-root --no-interaction && \
+  make install-mitie  && \
+  poetry build -f wheel -n && \
+  pip install --no-deps dist/*.whl && \
+  rm -rf dist *.egg-info
 
 # start a new build stage
 FROM base as runner
 
 # copy everything from /opt
 COPY --from=builder /opt/venv /opt/venv
-COPY --from=builder /app /app
 
 # make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"

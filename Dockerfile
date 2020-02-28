@@ -31,21 +31,25 @@ RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-
 ENV PATH "/root/.poetry/bin:/opt/venv/bin:${PATH}"
 
 # copy files
-COPY . /app/
+COPY . /build/
+
+# change working directory
+WORKDIR /build
 
 # install dependencies
 RUN python -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
   pip install --no-cache-dir -U 'pip<20' && \
-  cd /app && \
-  poetry install --no-dev --no-interaction
+  poetry install --no-dev --no-root --no-interaction && \
+  poetry build -f wheel -n && \
+  pip install --no-deps dist/*.whl && \
+  rm -rf dist *.egg-info
 
 # start a new build stage
 FROM base as runner
 
 # copy everything from /opt
 COPY --from=builder /opt/venv /opt/venv
-COPY --from=builder /app /app
 
 # make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
