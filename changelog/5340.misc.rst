@@ -1,0 +1,1 @@
+Expand the allowed range of ``tensorflow-addons`` versions to make it possible to install Rasa on MacOS Mojave.
