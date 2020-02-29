@@ -628,22 +628,7 @@ All expected user inputs should be handled by the form we defined above, i.e. if
 user provides the information the bot asks for. However, in real situations, the user
 will often behave differently.
 
-For example, a user might ask a question relating to the information requested:
-
-.. image:: /_static/images/generic_interjection.png
-   :width: 240
-   :alt: Generic Interjections
-   :align: center
-
-Ideally, we want our assistant to answer the question and then return to the form 
-it was filling:
-
-.. image:: /_static/images/generic_interjection_handled.png
-   :width: 240
-   :alt: Generic Interjection Handled
-   :align: center
-
-FAQs are one common kind of interjection. In this section we’ll go through various forms of
+In this section we’ll go through various forms of
 "interjections" and how to handle them within Rasa.
 
 The decision to handle these types of user input should always come from reviewing
@@ -660,6 +645,15 @@ If you have generic interjections that should always have the same single respon
 matter the context, you can use the :ref:`mapping-policy` to handle these. It will always
 predict the same action for an intent, and when combined with a forgetting mechanism,
 you don’t need to write any stories either.
+
+For example, let's say you see users having conversations like the following one with 
+your assistant, where they write a greeting in the middle of a conversation - 
+maybe because they were gone for a few minutes:
+
+.. image:: /_static/images/greet_interjection.png
+   :width: 240
+   :alt: Greeting Interjection
+   :align: center
 
 The greet intent is a good example where we will always give the same response and
 yet we don’t want the intent to affect the dialogue history. To do this, the response
@@ -714,6 +708,14 @@ Then we can retrain the model, and try out our additions:
    rasa train
    rasa shell
 
+FAQs are another kind of generic interjections that should always get the same response. 
+For example, a user might ask a related FAQ in the middle of filling a form:
+
+.. image:: /_static/images/generic_interjection.png
+   :width: 240
+   :alt: Generic Interjections
+   :align: center
+
 To handle FAQs defined with retrieval actions, you can add a simple story that will be handled by the MemoizationPolicy:
 
 .. code-block:: md
@@ -728,6 +730,13 @@ To handle FAQs defined with retrieval actions, you can add a simple story that w
        - form{"name": null}
 
 This will break out of the form and deal with the users FAQ question, and then return back to the original task.
+For example:
+
+.. image:: /_static/images/generic_interjection_handled.png
+   :width: 240
+   :alt: Generic Interjection Handled
+   :align: center
+
 If you find it difficult to write stories in this format, you can always use `Interactive Learning <https://rasa.com/docs/rasa/core/interactive-learning/>`_
 to help you create them.
 
@@ -738,7 +747,12 @@ Contextual questions
 
 You can also handle `contextual questions <https://rasa.com/docs/rasa/dialogue-elements/completing-tasks/#contextual-questions)>`_,
 like the user asking the question "Why do you need to know that". The user could ask this based on a certain slot
-the bot has requested, and the response should differ for each slot.
+the bot has requested, and the response should differ for each slot. For example:
+
+.. image:: /_static/images/contextual_interjection.png
+   :width: 240
+   :alt: Contextual Interjection
+   :align: center
 
 To handle this, we need to make the ``requested_slot`` featurized, and assign it the categorical type:
 
