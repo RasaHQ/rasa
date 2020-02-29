@@ -44,7 +44,7 @@ new Rasa project.
 
 
 Let's remove the default content from this bot, so that the ``nlu.md``, ``stories.md``
-and ``domain.yml`` are empty.
+and ``domain.yml`` files are empty.
 
 Memoization Policy
 ^^^^^^^^^^^^^^^^^^
@@ -101,7 +101,7 @@ We’ll also need to add the intents, actions and templates to our ``domain.yml`
      utter_bye:
        - text: Bye!
 
-Finally, we’ll copy over some NLU data from Sara into our ``nlu.md``
+Finally, we’ll copy over some NLU data from Sara into our ``nlu.md`` file
 (more can be found `here <https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md>`__):
 
 .. code-block:: md
@@ -400,7 +400,7 @@ Note: you can customise the required slots function not to be static. E.g. if th
 developer, you could add a ``required_slot`` about the users experience level with Rasa
 
 Once you’ve done that, you’ll need to specify how the bot should ask for this information. This
-is done by specifying ``utter_ask_{slotname}`` templates in your domain file. For the above
+is done by specifying ``utter_ask_{slotname}`` templates in your ``domain.yml`` file. For the above
 we’ll need to specify the following:
 
 .. code-block:: yaml
@@ -418,7 +418,7 @@ we’ll need to specify the following:
    utter_ask_use_case:
      - text: What's your use case?
 
-We’ll also need to define all these slots in our domain:
+We’ll also need to define all these slots in our ``domain.yml`` file:
 
 .. code-block:: yaml
 
@@ -455,7 +455,7 @@ In this case, we only tell the user that we’ll be in touch with them, however
 usually you would send this information to an API or a database. See the `rasa-demo <https://github.com/RasaHQ/rasa-demo/blob/master/demo/actions.py#L69>`_
 for an example of how to store this information in a spreadsheet.
 
-We’ll need to add the form we just created to a new section in the domain file:
+We’ll need to add the form we just created to a new section in our ``domain.yml`` file:
 
 .. code-block:: yaml
 
@@ -527,7 +527,7 @@ data to your NLU file:
     (e.g. :ref:`DucklingHTTPExtractor` or :ref:`SpacyEntityExtractor`), but for this tutorial
     we want to avoid any additional setup.
 
-The intents and entities will need to be added to your domain as well:
+The intents and entities will need to be added to your ``domain.yml`` file as well:
 
 .. code-block:: yaml
 
@@ -548,15 +548,16 @@ The intents and entities will need to be added to your domain as well:
      - use_case
 
 A story for a form is very simple, as all the slot collection form happens inside the form, and
-therefore doesn’t need to be covered in your stories.
+therefore doesn’t need to be covered in your stories. You just need to write stories showing when the form should be activated. For the sales form, add this story
+to your ``stories.md`` file:
 
 .. code-block:: md
 
    ## sales form
    * contact_sales
-       - sales_form
-       - form{"name": "sales_form"}
-       - form{"name": null}
+       - sales_form                   <!--Run the sales_form action-->
+       - form{"name": "sales_form"}   <!--Activate the form-->
+       - form{"name": null}           <!--Deactivate the form-->
 
 As a final step, let’s add the FormPolicy to our config file:
 
@@ -625,7 +626,24 @@ Handling unexpected user input
 
 All expected user inputs should be handled by the form we defined above, i.e. if the
 user provides the information the bot asks for. However, in real situations, the user
-will often behave differently. In this section we’ll go through various forms of
+will often behave differently.
+
+For example, a user might ask a question relating to the information requested:
+
+.. image:: /_static/images/generic_interjection.png
+   :width: 240
+   :alt: Generic Interjections
+   :align: center
+
+Ideally, we want our assistant to answer the question and then return to the form 
+it was filling:
+
+.. image:: /_static/images/generic_interjection_handled.png
+   :width: 240
+   :alt: Generic Interjection Handled
+   :align: center
+
+FAQs are one common kind of interjection. In this section we’ll go through various forms of
 "interjections" and how to handle them within Rasa.
 
 The decision to handle these types of user input should always come from reviewing
@@ -648,7 +666,7 @@ yet we don’t want the intent to affect the dialogue history. To do this, the r
 must be an action that returns the ``UserUtteranceReverted()`` event to remove the
 interaction from the dialogue history.
 
-First, open the ``domain.yml`` and modify the greet intent and add a new block ```actions``` in
+First, open the ``domain.yml`` file and modify the greet intent and add a new block ```actions``` in
 the file, next, add the ``action_greet`` as shown here:
 
 .. code-block:: yaml
@@ -763,7 +781,7 @@ unfeaturized slots are only used for storing information. The stories for this s
        - sales_form
        - form{"name": null}
 
-We’ll need to add the intent and utterances we just added to our domain:
+We’ll need to add the intent and utterances we just added to our ``domain.yml`` file:
 
 .. code-block:: yaml
 
@@ -823,7 +841,7 @@ the TwoStageFallbackPolicy. You can enable it by adding the following to your co
      - name: TwoStageFallbackPolicy
        nlu_threshold: 0.8
 
-and adding the ``out_of_scope`` intent to your domain file:
+and adding the ``out_of_scope`` intent to your ``domain.yml`` file:
 
 .. code-block:: yaml
 
@@ -856,7 +874,7 @@ We define some intent mappings to make it more intuitive to the user what an int
 Out of scope intent
 """""""""""""""""""
 
-It is good practice to also handle questions you know your users may ask, but you don’t necessarily have a skill
+It is good practice to also handle questions you know your users may ask, but for which you don’t necessarily have an action 
 implemented yet.
 
 You can define an ``out_of_scope`` intent to handle generic out of scope requests, like "I’m hungry" and have
@@ -877,7 +895,7 @@ We’ll need to add NLU data for the ``out_of_scope`` intent as well:
    - Who’s the US President?
    - I need a job
 
-And finally we’ll add a template to our domain file:
+And finally we’ll add a template to our ``domain.yml`` file:
 
 .. code-block:: yaml
 
@@ -964,7 +982,7 @@ question by storing this information in a slot.
      - utter_getstarted_new
      - utter_built_bot_before
 
-For this to work, keep in mind that the slot has to be featurized in your domain
+For this to work, keep in mind that the slot has to be featurized in your ``domain.yml``
 file. This time we can use the ``text`` slot type, as we only care about whether the
 `slot was set or not <https://rasa.com/docs/rasa/core/slots/>`_.
 
