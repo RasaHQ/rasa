@@ -1,15 +1,14 @@
 import logging
 import os
 import random
-import warnings
 from collections import Counter, OrderedDict
 from copy import deepcopy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
 import rasa.nlu.utils
-import rasa.utils.common as rasa_utils
-from rasa.nlu.constants import RESPONSE_ATTRIBUTE, RESPONSE_KEY_ATTRIBUTE
+from rasa.utils.common import raise_warning, lazy_property
+from rasa.nlu.constants import RESPONSE, RESPONSE_KEY_ATTRIBUTE
 from rasa.nlu.training_data.message import Message
 from rasa.nlu.training_data.util import check_duplicate_synonym
 from rasa.nlu.utils import list_to_str
@@ -114,29 +113,29 @@ class TrainingData:
 
         return list(OrderedDict.fromkeys(examples))
 
-    @rasa_utils.lazy_property
+    @lazy_property
     def intent_examples(self) -> List[Message]:
         return [ex for ex in self.training_examples if ex.get("intent")]
 
-    @rasa_utils.lazy_property
+    @lazy_property
     def response_examples(self) -> List[Message]:
         return [ex for ex in self.training_examples if ex.get("response")]
 
-    @rasa_utils.lazy_property
+    @lazy_property
     def entity_examples(self) -> List[Message]:
         return [ex for ex in self.training_examples if ex.get("entities")]
 
-    @rasa_utils.lazy_property
+    @lazy_property
     def intents(self) -> Set[Text]:
         """Returns the set of intents in the training data."""
         return {ex.get("intent") for ex in self.training_examples} - {None}
 
-    @rasa_utils.lazy_property
+    @lazy_property
     def responses(self) -> Set[Text]:
         """Returns the set of responses in the training data."""
         return {ex.get("response") for ex in self.training_examples} - {None}
 
-    @rasa_utils.lazy_property
+    @lazy_property
     def retrieval_intents(self) -> Set[Text]:
         """Returns the total number of response types in the training data"""
         return {
@@ -145,24 +144,24 @@ class TrainingData:
             if ex.get("response") is not None
         }
 
-    @rasa_utils.lazy_property
+    @lazy_property
     def examples_per_intent(self) -> Dict[Text, int]:
         """Calculates the number of examples per intent."""
         intents = [ex.get("intent") for ex in self.training_examples]
         return dict(Counter(intents))
 
-    @rasa_utils.lazy_property
+    @lazy_property
     def examples_per_response(self) -> Dict[Text, int]:
         """Calculates the number of examples per response."""
         return dict(Counter(self.responses))
 
-    @rasa_utils.lazy_property
+    @lazy_property
     def entities(self) -> Set[Text]:
         """Returns the set of entity types in the training data."""
         entity_types = [e.get("entity") for e in self.sorted_entities()]
         return set(entity_types)
 
-    @rasa_utils.lazy_property
+    @lazy_property
     def examples_per_entity(self) -> Dict[Text, int]:
         """Calculates the number of examples per entity."""
         entity_types = [e.get("entity") for e in self.sorted_entities()]
@@ -187,7 +186,7 @@ class TrainingData:
                 assistant_utterances = self.nlg_stories.get(story_lookup_intent, [])
                 if assistant_utterances:
                     # selecting only first assistant utterance for now
-                    example.set(RESPONSE_ATTRIBUTE, assistant_utterances[0])
+                    example.set(RESPONSE, assistant_utterances[0])
                 else:
                     raise ValueError(
                         "No response phrases found for {}. Check training data "
@@ -206,7 +205,7 @@ class TrainingData:
 
     def as_json(self) -> Text:
 
-        warnings.warn(
+        raise_warning(
             "Function 'as_json()' is deprecated and will be removed "
             "in future versions. Use 'nlu_as_json()' instead.",
             DeprecationWarning,
@@ -234,7 +233,7 @@ class TrainingData:
 
     def as_markdown(self) -> Text:
 
-        warnings.warn(
+        raise_warning(
             "Function 'as_markdown()' is deprecated and will be removed "
             "in future versions. Use 'nlu_as_markdown()' and 'nlg_as_markdown()' "
             "instead.",
@@ -310,14 +309,14 @@ class TrainingData:
 
         logger.debug("Validating training data...")
         if "" in self.intents:
-            warnings.warn(
+            raise_warning(
                 "Found empty intent, please check your "
                 "training data. This may result in wrong "
                 "intent predictions."
             )
 
         if "" in self.responses:
-            warnings.warn(
+            raise_warning(
                 "Found empty response, please check your "
                 "training data. This may result in wrong "
                 "response predictions."
@@ -326,7 +325,7 @@ class TrainingData:
         # emit warnings for intents with only a few training samples
         for intent, count in self.examples_per_intent.items():
             if count < self.MIN_EXAMPLES_PER_INTENT:
-                warnings.warn(
+                raise_warning(
                     f"Intent '{intent}' has only {count} training examples! "
                     f"Minimum is {self.MIN_EXAMPLES_PER_INTENT}, training may fail."
                 )
@@ -334,9 +333,10 @@ class TrainingData:
         # emit warnings for entities with only a few training samples
         for entity_type, count in self.examples_per_entity.items():
             if count < self.MIN_EXAMPLES_PER_ENTITY:
-                warnings.warn(
+                raise_warning(
                     f"Entity '{entity_type}' has only {count} training examples! "
-                    f"minimum is {self.MIN_EXAMPLES_PER_ENTITY}, training may fail."
+                    f"The minimum is {self.MIN_EXAMPLES_PER_ENTITY}, because of "
+                    f"this the training may fail."
                 )
 
     def train_test_split(
@@ -384,10 +384,8 @@ class TrainingData:
 
         nlg_stories = {}
         for ex in examples:
-            if ex.get(RESPONSE_KEY_ATTRIBUTE) and ex.get(RESPONSE_ATTRIBUTE):
-                nlg_stories[ex.get_combined_intent_response_key()] = [
-                    ex.get(RESPONSE_ATTRIBUTE)
-                ]
+            if ex.get(RESPONSE_KEY_ATTRIBUTE) and ex.get(RESPONSE):
+                nlg_stories[ex.get_combined_intent_response_key()] = [ex.get(RESPONSE)]
         return nlg_stories
 
     def split_nlu_examples(

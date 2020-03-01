@@ -1,5 +1,4 @@
 import logging
-import warnings
 import os
 import shutil
 import tempfile
@@ -46,7 +45,7 @@ from rasa.model import (
     get_model,
 )
 from rasa.nlu.utils import is_url
-from rasa.utils.common import update_sanic_log_level
+from rasa.utils.common import raise_warning, update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -273,7 +272,7 @@ async def load_agent(
             )
 
         else:
-            warnings.warn("No valid configuration given to load agent.")
+            raise_warning("No valid configuration given to load agent.")
             return None
 
     except Exception as e:
@@ -310,6 +309,7 @@ class Agent:
         if self.domain is not None:
             self.domain.add_requested_slot()
             self.domain.add_knowledge_base_slots()
+            self.domain.add_categorical_slot_default_value()
 
         PolicyEnsemble.check_domain_ensemble_compatibility(
             self.policy_ensemble, self.domain
@@ -336,7 +336,7 @@ class Agent:
         interpreter: Optional[NaturalLanguageInterpreter] = None,
         model_directory: Optional[Text] = None,
     ) -> None:
-        self.domain = domain
+        self.domain = self._create_domain(domain)
         self.policy_ensemble = policy_ensemble
 
         if interpreter:
@@ -463,7 +463,7 @@ class Agent:
         """Handle a single message."""
 
         if not isinstance(message, UserMessage):
-            warnings.warn(
+            raise_warning(
                 "Passing a text to `agent.handle_message(...)` is "
                 "deprecated. Rather use `agent.handle_text(...)`.",
                 DeprecationWarning,
@@ -521,6 +521,20 @@ class Agent:
             sender_id, action, output_channel, self.nlg, policy, confidence
         )
 
+    async def trigger_intent(
+        self,
+        intent_name: Text,
+        entities: List[Dict[Text, Any]],
+        output_channel: OutputChannel,
+        tracker: DialogueStateTracker,
+    ) -> None:
+        """Trigger a user intent, e.g. triggered by an external event."""
+
+        processor = self.create_processor()
+        await processor.trigger_external_user_uttered(
+            intent_name, entities, tracker, output_channel,
+        )
+
     async def handle_text(
         self,
         text_message: Union[Text, Dict[Text, Any]],
@@ -576,21 +590,6 @@ class Agent:
             if type(p) == MemoizationPolicy:
                 p.toggle(activate)
 
-    def continue_training(
-        self, trackers: List[DialogueStateTracker], **kwargs: Any
-    ) -> None:
-        warnings.warn(
-            "Continue training will be removed in the next release. It won't be "
-            "possible to continue the training, you should probably retrain instead.",
-            FutureWarning,
-        )
-
-        if not self.is_core_ready():
-            raise AgentNotReady("Can't continue training without a policy ensemble.")
-
-        self.policy_ensemble.continue_training(trackers, self.domain, **kwargs)
-        self._set_fingerprint()
-
     def _max_history(self) -> int:
         """Find maximum max_history."""
 
@@ -637,7 +636,7 @@ class Agent:
                 unique_last_num_states = max_history
         elif unique_last_num_states < max_history:
             # possibility of data loss
-            warnings.warn(
+            raise_warning(
                 f"unique_last_num_states={unique_last_num_states} but "
                 f"maximum max_history={max_history}. "
                 f"Possibility of data loss. "
@@ -719,7 +718,7 @@ class Agent:
 
         from rasa.core import run
 
-        warnings.warn(
+        raise_warning(
             "Using `handle_channels` is deprecated. "
             "Please use `rasa.run(...)` or see "
             "`rasa.core.run.configure_app(...)` if you want to implement "
@@ -780,16 +779,8 @@ class Agent:
                 "overwritten.".format(model_path)
             )
 
-    def persist(self, model_path: Text, dump_flattened_stories: bool = False) -> None:
+    def persist(self, model_path: Text) -> None:
         """Persists this agent into a directory for later loading and usage."""
-
-        if dump_flattened_stories:
-            warnings.warn(
-                "The `dump_flattened_stories` argument will be removed from "
-                "`Agent.persist` in the next release. Please dump your "
-                "training data separately if you need it to be part of the model.",
-                FutureWarning,
-            )
 
         if not self.is_core_ready():
             raise AgentNotReady("Can't persist without a policy ensemble.")
@@ -799,7 +790,7 @@ class Agent:
 
         self._clear_model_directory(model_path)
 
-        self.policy_ensemble.persist(model_path, dump_flattened_stories)
+        self.policy_ensemble.persist(model_path)
         self.domain.persist(os.path.join(model_path, DEFAULT_DOMAIN_PATH))
         self.domain.persist_specification(model_path)
 
@@ -858,7 +849,7 @@ class Agent:
         )
 
     @staticmethod
-    def _create_domain(domain: Union[Domain, Text]) -> Domain:
+    def _create_domain(domain: Union[Domain, Text, None]) -> Domain:
 
         if isinstance(domain, str):
             domain = Domain.load(domain)
@@ -929,7 +920,7 @@ class Agent:
             model_archive = get_latest_model(model_path)
 
         if model_archive is None:
-            warnings.warn(f"Could not load local model in '{model_path}'.")
+            raise_warning(f"Could not load local model in '{model_path}'.")
             return Agent()
 
         working_directory = tempfile.mkdtemp()

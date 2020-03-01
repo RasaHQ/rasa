@@ -1,10 +1,10 @@
 import json
 import logging
+import urllib.parse
 from typing import Dict
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, Mock
 
 import pytest
-import responses
 from aioresponses import aioresponses
 from sanic import Sanic
 
@@ -113,7 +113,9 @@ async def test_console_input():
             )
 
             await console.record_messages(
-                server_url="https://example.com", max_message_limit=3
+                server_url="https://example.com",
+                max_message_limit=3,
+                sender_id="default",
             )
 
             r = latest_request(
@@ -208,12 +210,9 @@ def test_mattermost_channel():
     input_channel = MattermostInput(
         # this is the url of the api for your mattermost instance
         url="http://chat.example.com/api/v4",
-        # the name of your team for mattermost
-        team="community",
-        # the username of your bot user that will post messages
-        user="user@email.com",
+        # the bot token of the bot account that will post messages
+        token="xxxxx",
         # the password of your bot user that will post messages
-        pw="password",
         # the webhook-url your bot should listen for messages
         webhook_url="YOUR_WEBHOOK_URL",
     )
@@ -461,6 +460,92 @@ def test_botframework_attachments():
     assert ch.add_attachments_to_metadata(payload, metadata) == updated_metadata
 
 
+def test_slack_metadata():
+    from rasa.core.channels.slack import SlackInput
+    from sanic.request import Request
+
+    user = "user1"
+    channel = "channel1"
+    authed_users = ["XXXXXXX", "YYYYYYY", "ZZZZZZZ"]
+    direct_message_event = {
+        "authed_users": authed_users,
+        "event": {
+            "client_msg_id": "XXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+            "type": "message",
+            "text": "hello world",
+            "user": user,
+            "ts": "1579802617.000800",
+            "team": "XXXXXXXXX",
+            "blocks": [
+                {
+                    "type": "rich_text",
+                    "block_id": "XXXXX",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [{"type": "text", "text": "hi"}],
+                        }
+                    ],
+                }
+            ],
+            "channel": channel,
+            "event_ts": "1579802617.000800",
+            "channel_type": "im",
+        },
+    }
+
+    input_channel = SlackInput(
+        slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
+    )
+
+    r = Mock()
+    r.json = direct_message_event
+    metadata = input_channel.get_metadata(request=r)
+    assert metadata["out_channel"] == channel
+    assert metadata["users"] == authed_users
+
+
+def test_slack_metadata_missing_keys():
+    from rasa.core.channels.slack import SlackInput
+    from sanic.request import Request
+
+    channel = "channel1"
+    direct_message_event = {
+        "event": {
+            "client_msg_id": "XXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+            "type": "message",
+            "text": "hello world",
+            "ts": "1579802617.000800",
+            "team": "XXXXXXXXX",
+            "blocks": [
+                {
+                    "type": "rich_text",
+                    "block_id": "XXXXX",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [{"type": "text", "text": "hi"}],
+                        }
+                    ],
+                }
+            ],
+            "channel": channel,
+            "event_ts": "1579802617.000800",
+            "channel_type": "im",
+        },
+    }
+
+    input_channel = SlackInput(
+        slack_token="YOUR_SLACK_TOKEN", slack_channel="YOUR_SLACK_CHANNEL"
+    )
+
+    r = Mock()
+    r.json = direct_message_event
+    metadata = input_channel.get_metadata(request=r)
+    assert metadata["users"] is None
+    assert metadata["out_channel"] == channel
+
+
 def test_slack_message_sanitization():
     from rasa.core.channels.slack import SlackInput
 
@@ -468,6 +553,8 @@ def test_slack_message_sanitization():
     target_message_1 = "You can sit here if you want"
     target_message_2 = "Hey, you can sit here if you want !"
     target_message_3 = "Hey, you can sit here if you want!"
+    target_message_4 = "convert garbled url to vicdb-f.net"
+    target_message_5 = "convert multiple garbled url to vicdb-f.net. Also eemdb-p.net"
 
     uid_token = f"<@{test_uid}>"
     raw_messages = [
@@ -483,6 +570,8 @@ def test_slack_message_sanitization():
             "You can sit here{uid}if you want",
             "Hey {uid}, you can sit here if you want{uid}!",
             "Hey{uid} , you can sit here if you want {uid}!",
+            "convert garbled url to <http://vicdb-f.net|vicdb-f.net>",
+            "convert multiple garbled url to <http://vicdb-f.net|vicdb-f.net>. Also <http://eemdb-p.net|eemdb-p.net>",
         ]
     ]
 
@@ -493,6 +582,8 @@ def test_slack_message_sanitization():
         target_message_1,
         target_message_2,
         target_message_3,
+        target_message_4,
+        target_message_5,
     ]
 
     sanitized_messages = [
@@ -572,7 +663,7 @@ def test_slackbot_init_one_parameter():
     from rasa.core.channels.slack import SlackBot
 
     ch = SlackBot("DummyToken")
-    assert ch.token == "DummyToken"
+    assert ch.client.token == "DummyToken"
     assert ch.slack_channel is None
 
 
@@ -580,171 +671,185 @@ def test_slackbot_init_two_parameter():
     from rasa.core.channels.slack import SlackBot
 
     bot = SlackBot("DummyToken", "General")
-    assert bot.token == "DummyToken"
+    assert bot.client.token == "DummyToken"
     assert bot.slack_channel == "General"
 
 
 # Use monkeypatch for sending attachments, images and plain text.
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@responses.activate
+@pytest.mark.asyncio
 async def test_slackbot_send_attachment_only():
     from rasa.core.channels.slack import SlackBot
 
-    responses.add(
-        responses.POST,
-        "https://slack.com/api/chat.postMessage",
-        body='{"ok":true,"purpose":"Testing bots"}',
-    )
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://www.slack.com/api/chat.postMessage",
+            payload={"ok": True, "purpose": "Testing bots"},
+        )
 
-    bot = SlackBot("DummyToken", "General")
-    attachment = {
-        "fallback": "Financial Advisor Summary",
-        "color": "#36a64f",
-        "author_name": "ABE",
-        "title": "Financial Advisor Summary",
-        "title_link": "http://tenfactorialrocks.com",
-        "image_url": "https://r.com/cancel/r12",
-        "thumb_url": "https://r.com/cancel/r12",
-        "actions": [
-            {
-                "type": "button",
-                "text": "\ud83d\udcc8 Dashboard",
-                "url": "https://r.com/cancel/r12",
-                "style": "primary",
-            },
-            {
-                "type": "button",
-                "text": "\ud83d\udccb Download XL",
-                "url": "https://r.com/cancel/r12",
-                "style": "danger",
-            },
-            {
-                "type": "button",
-                "text": "\ud83d\udce7 E-Mail",
-                "url": "https://r.com/cancel/r12",
-                "style": "danger",
-            },
-        ],
-        "footer": "Powered by 1010rocks",
-        "ts": 1531889719,
-    }
+        bot = SlackBot("DummyToken", "General")
+        attachment = {
+            "fallback": "Financial Advisor Summary",
+            "color": "#36a64f",
+            "author_name": "ABE",
+            "title": "Financial Advisor Summary",
+            "title_link": "http://tenfactorialrocks.com",
+            "image_url": "https://r.com/cancel/r12",
+            "thumb_url": "https://r.com/cancel/r12",
+            "actions": [
+                {
+                    "type": "button",
+                    "text": "\ud83d\udcc8 Dashboard",
+                    "url": "https://r.com/cancel/r12",
+                    "style": "primary",
+                },
+                {
+                    "type": "button",
+                    "text": "\ud83d\udccb Download XL",
+                    "url": "https://r.com/cancel/r12",
+                    "style": "danger",
+                },
+                {
+                    "type": "button",
+                    "text": "\ud83d\udce7 E-Mail",
+                    "url": "https://r.com/cancel/r12",
+                    "style": "danger",
+                },
+            ],
+            "footer": "Powered by 1010rocks",
+            "ts": 1531889719,
+        }
 
-    await bot.send_attachment("ID", attachment)
+        await bot.send_attachment("ID", attachment)
 
-    r = responses.calls[-1]
+        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
 
-    assert r.request.body == {
-        "channel": ["General"],
-        "as_user": ["True"],
-        "text": ["Attachment"],
-        "attachments": [json.dumps([attachment])],
-    }
+        assert r
+
+        request_params = json_of_latest_request(r)
+
+        assert request_params == {
+            "channel": "General",
+            "as_user": True,
+            "attachments": [attachment],
+        }
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@responses.activate
-async def test_slackbot_send_attachment_withtext():
+@pytest.mark.asyncio
+async def test_slackbot_send_attachment_with_text():
     from rasa.core.channels.slack import SlackBot
 
-    responses.add(
-        responses.POST,
-        "https://slack.com/api/chat.postMessage",
-        body='{"ok":true,"purpose":"Testing bots"}',
-    )
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://www.slack.com/api/chat.postMessage",
+            payload={"ok": True, "purpose": "Testing bots"},
+        )
 
-    bot = SlackBot("DummyToken", "General")
-    attachment = {
-        "fallback": "Financial Advisor Summary",
-        "color": "#36a64f",
-        "author_name": "ABE",
-        "title": "Financial Advisor Summary",
-        "title_link": "http://tenfactorialrocks.com",
-        "text": "Here is the summary:",
-        "image_url": "https://r.com/cancel/r12",
-        "thumb_url": "https://r.com/cancel/r12",
-        "actions": [
-            {
-                "type": "button",
-                "text": "\ud83d\udcc8 Dashboard",
-                "url": "https://r.com/cancel/r12",
-                "style": "primary",
-            },
-            {
-                "type": "button",
-                "text": "\ud83d\udccb XL",
-                "url": "https://r.com/cancel/r12",
-                "style": "danger",
-            },
-            {
-                "type": "button",
-                "text": "\ud83d\udce7 E-Mail",
-                "url": "https://r.com/cancel/r123",
-                "style": "danger",
-            },
-        ],
-        "footer": "Powered by 1010rocks",
-        "ts": 1531889719,
-    }
+        bot = SlackBot("DummyToken", "General")
+        attachment = {
+            "fallback": "Financial Advisor Summary",
+            "color": "#36a64f",
+            "author_name": "ABE",
+            "title": "Financial Advisor Summary",
+            "title_link": "http://tenfactorialrocks.com",
+            "text": "Here is the summary:",
+            "image_url": "https://r.com/cancel/r12",
+            "thumb_url": "https://r.com/cancel/r12",
+            "actions": [
+                {
+                    "type": "button",
+                    "text": "\ud83d\udcc8 Dashboard",
+                    "url": "https://r.com/cancel/r12",
+                    "style": "primary",
+                },
+                {
+                    "type": "button",
+                    "text": "\ud83d\udccb XL",
+                    "url": "https://r.com/cancel/r12",
+                    "style": "danger",
+                },
+                {
+                    "type": "button",
+                    "text": "\ud83d\udce7 E-Mail",
+                    "url": "https://r.com/cancel/r123",
+                    "style": "danger",
+                },
+            ],
+            "footer": "Powered by 1010rocks",
+            "ts": 1531889719,
+        }
 
-    await bot.send_attachment("ID", attachment)
+        await bot.send_attachment("ID", attachment)
 
-    r = responses.calls[-1]
+        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
 
-    assert r.request.body == {
-        "channel": ["General"],
-        "as_user": ["True"],
-        "text": ["Here is the summary:"],
-        "attachments": [json.dumps([attachment])],
-    }
+        assert r
+
+        request_params = json_of_latest_request(r)
+
+        assert request_params == {
+            "channel": "General",
+            "as_user": True,
+            "attachments": [attachment],
+        }
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@responses.activate
+@pytest.mark.asyncio
 async def test_slackbot_send_image_url():
     from rasa.core.channels.slack import SlackBot
 
-    responses.add(
-        responses.POST,
-        "https://slack.com/api/chat.postMessage",
-        body='{"ok":true,"purpose":"Testing bots"}',
-    )
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://www.slack.com/api/chat.postMessage",
+            payload={"ok": True, "purpose": "Testing bots"},
+        )
 
-    bot = SlackBot("DummyToken", "General")
-    url = "http://www.rasa.net"
-    await bot.send_image_url("ID", url)
+        bot = SlackBot("DummyToken", "General")
+        url = "http://www.rasa.net"
+        await bot.send_image_url("ID", url)
 
-    r = responses.calls[-1]
+        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
 
-    assert r.request.body["as_user"] == ["True"]
-    assert r.request.body["channel"] == ["General"]
-    assert len(r.request.body["blocks"]) == 1
-    assert '"type": "image"' in r.request.body["blocks"][0]
-    assert '"alt_text": "http://www.rasa.net"' in r.request.body["blocks"][0]
-    assert '"image_url": "http://www.rasa.net"' in r.request.body["blocks"][0]
+        assert r
+
+        request_params = json_of_latest_request(r)
+
+        assert request_params["as_user"] is True
+        assert request_params["channel"] == "General"
+        assert len(request_params["blocks"]) == 1
+        assert request_params["blocks"][0].get("type") == "image"
+        assert request_params["blocks"][0].get("alt_text") == "http://www.rasa.net"
+        assert request_params["blocks"][0].get("image_url") == "http://www.rasa.net"
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")
-@responses.activate
+@pytest.mark.asyncio
 async def test_slackbot_send_text():
     from rasa.core.channels.slack import SlackBot
 
-    responses.add(
-        responses.POST,
-        "https://slack.com/api/chat.postMessage",
-        body='{"ok":true,"purpose":"Testing bots"}',
-    )
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://www.slack.com/api/chat.postMessage",
+            payload={"ok": True, "purpose": "Testing bots"},
+        )
 
-    bot = SlackBot("DummyToken", "General")
-    await bot.send_text_message("ID", "my message")
+        bot = SlackBot("DummyToken", "General")
+        await bot.send_text_message("ID", "my message")
 
-    r = responses.calls[-1]
+        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
 
-    assert r.parsed_body == {
-        "as_user": ["True"],
-        "channel": ["General"],
-        "text": ["my message"],
-        "type": ["mrkdwn"],
-    }
+        assert r
+
+        request_params = json_of_latest_request(r)
+
+        assert request_params == {
+            "as_user": True,
+            "channel": "General",
+            "text": "my message",
+            "type": "mrkdwn",
+        }
 
 
 @pytest.mark.filterwarnings("ignore:unclosed.*:ResourceWarning")

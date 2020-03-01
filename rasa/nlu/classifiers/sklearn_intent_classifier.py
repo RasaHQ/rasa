@@ -1,18 +1,23 @@
 import logging
-import warnings
-import numpy as np
 import os
 import typing
-from typing import Any, Dict, List, Optional, Text, Tuple
+import warnings
+from typing import Any, Dict, List, Optional, Text, Tuple, Type
 
-from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
-from rasa.nlu import utils
+import numpy as np
+
+import rasa.utils.io as io_utils
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU, DOCS_URL_MIGRATION_GUIDE
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.components import Component
+from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.constants import DENSE_FEATURE_NAMES, TEXT
+from rasa.nlu.featurizers.featurizer import sequence_to_sentence_features
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import DENSE_FEATURE_NAMES, SPARSE_FEATURE_NAMES, TEXT_ATTRIBUTE
+import rasa.utils.common as common_utils
 
 logger = logging.getLogger(__name__)
 
@@ -20,12 +25,12 @@ if typing.TYPE_CHECKING:
     import sklearn
 
 
-class SklearnIntentClassifier(Component):
+class SklearnIntentClassifier(IntentClassifier):
     """Intent classifier using the sklearn framework"""
 
-    provides = ["intent", "intent_ranking"]
-
-    requires = [DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]]
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [DenseFeaturizer]
 
     defaults = {
         # C parameter of the svm - cross validation will select the best value
@@ -60,6 +65,13 @@ class SklearnIntentClassifier(Component):
             self.le = LabelEncoder()
         self.clf = clf
 
+        common_utils.raise_warning(
+            "'SklearnIntentClassifier' is deprecated and will be removed in version "
+            "2.0. Use 'DIETClassifier' instead.",
+            category=FutureWarning,
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
+
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["sklearn"]
@@ -79,7 +91,10 @@ class SklearnIntentClassifier(Component):
         return self.le.inverse_transform(y)
 
     def train(
-        self, training_data: TrainingData, cfg: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
         """Train the intent classifier on a data set."""
 
@@ -88,25 +103,33 @@ class SklearnIntentClassifier(Component):
         labels = [e.get("intent") for e in training_data.intent_examples]
 
         if len(set(labels)) < 2:
-            warnings.warn(
-                "Can not train an intent classifier. "
-                "Need at least 2 different classes. "
-                "Skipping training of intent classifier."
+            common_utils.raise_warning(
+                "Can not train an intent classifier as there are not "
+                "enough intents. Need at least 2 different intents. "
+                "Skipping training of intent classifier.",
+                docs=DOCS_URL_TRAINING_DATA_NLU,
             )
         else:
             y = self.transform_labels_str2num(labels)
             X = np.stack(
                 [
                     sequence_to_sentence_features(
-                        example.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+                        example.get(DENSE_FEATURE_NAMES[TEXT])
                     )
                     for example in training_data.intent_examples
                 ]
             )
+            # reduce dimensionality
+            X = np.reshape(X, (len(X), -1))
 
             self.clf = self._create_classifier(num_threads, y)
 
-            self.clf.fit(X, y)
+            with warnings.catch_warnings():
+                # sklearn raises lots of
+                # "UndefinedMetricWarning: F - score is ill - defined"
+                # if there are few intent examples, this is needed to prevent it
+                warnings.simplefilter("ignore")
+                self.clf.fit(X, y)
 
     def _num_cv_splits(self, y) -> int:
         folds = self.component_config["max_cross_validation_folds"]
@@ -138,6 +161,7 @@ class SklearnIntentClassifier(Component):
             cv=cv_splits,
             scoring=self.component_config["scoring_function"],
             verbose=1,
+            iid=False,
         )
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -150,7 +174,7 @@ class SklearnIntentClassifier(Component):
             intent_ranking = []
         else:
             X = sequence_to_sentence_features(
-                message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+                message.get(DENSE_FEATURE_NAMES[TEXT])
             ).reshape(1, -1)
             intent_ids, probabilities = self.predict(X)
             intents = self.transform_labels_num2str(np.ravel(intent_ids))
@@ -207,10 +231,10 @@ class SklearnIntentClassifier(Component):
         classifier_file_name = file_name + "_classifier.pkl"
         encoder_file_name = file_name + "_encoder.pkl"
         if self.clf and self.le:
-            utils.json_pickle(
+            io_utils.json_pickle(
                 os.path.join(model_dir, encoder_file_name), self.le.classes_
             )
-            utils.json_pickle(
+            io_utils.json_pickle(
                 os.path.join(model_dir, classifier_file_name), self.clf.best_estimator_
             )
         return {"classifier": classifier_file_name, "encoder": encoder_file_name}
@@ -230,8 +254,8 @@ class SklearnIntentClassifier(Component):
         encoder_file = os.path.join(model_dir, meta.get("encoder"))
 
         if os.path.exists(classifier_file):
-            classifier = utils.json_unpickle(classifier_file)
-            classes = utils.json_unpickle(encoder_file)
+            classifier = io_utils.json_unpickle(classifier_file)
+            classes = io_utils.json_unpickle(encoder_file)
             encoder = LabelEncoder()
             encoder.classes_ = classes
             return cls(meta, classifier, encoder)

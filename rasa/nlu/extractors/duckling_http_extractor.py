@@ -1,16 +1,17 @@
 import time
 import json
 import logging
-import warnings
 import os
 import requests
 from typing import Any, List, Optional, Text, Dict
 
-from rasa.nlu.constants import ENTITIES_ATTRIBUTE
+from rasa.constants import DOCS_URL_COMPONENTS
+from rasa.nlu.constants import ENTITIES
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message
+from rasa.utils.common import raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +52,6 @@ def convert_duckling_format_to_rasa(
 
 class DucklingHTTPExtractor(EntityExtractor):
     """Searches for structured entites, e.g. dates, using a duckling server."""
-
-    provides = [ENTITIES_ATTRIBUTE]
 
     defaults = {
         # by default all dimensions recognized by duckling are returned
@@ -178,18 +177,17 @@ class DucklingHTTPExtractor(EntityExtractor):
             )
         else:
             extracted = []
-            warnings.warn(
+            raise_warning(
                 "Duckling HTTP component in pipeline, but no "
                 "`url` configuration in the config "
                 "file nor is `RASA_DUCKLING_HTTP_URL` "
-                "set as an environment variable."
+                "set as an environment variable. No entities will be extracted!",
+                docs=DOCS_URL_COMPONENTS + "#ducklinghttpextractor",
             )
 
         extracted = self.add_extractor_name(extracted)
         message.set(
-            ENTITIES_ATTRIBUTE,
-            message.get(ENTITIES_ATTRIBUTE, []) + extracted,
-            add_to_output=True,
+            ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True,
         )
 
     @classmethod

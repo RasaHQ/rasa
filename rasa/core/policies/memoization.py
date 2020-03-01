@@ -163,20 +163,6 @@ class MemoizationPolicy(Policy):
         self._add_states_to_lookup(trackers_as_states, trackers_as_actions, domain)
         logger.debug("Memorized {} unique examples.".format(len(self.lookup)))
 
-    def continue_training(
-        self,
-        training_trackers: List[DialogueStateTracker],
-        domain: Domain,
-        **kwargs: Any,
-    ) -> None:
-
-        # add only the last tracker, because it is the only new one
-        (
-            trackers_as_states,
-            trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(training_trackers[-1:], domain)
-        self._add_states_to_lookup(trackers_as_states, trackers_as_actions, domain)
-
     def _recall_states(self, states: List[Dict[Text, float]]) -> Optional[int]:
 
         return self.lookup.get(self._create_feature_key(states))

@@ -1,12 +1,19 @@
-import typing
 import json
 import logging
-import numpy as np
 import os
 import pickle
-import warnings
+import typing
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple
 
+import numpy as np
+import rasa.utils.io
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+from rasa.core.domain import Domain
+from rasa.core.featurizers import MaxHistoryTrackerFeaturizer, TrackerFeaturizer
+from rasa.core.policies.policy import Policy
+from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
+from rasa.utils.common import raise_warning
 from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
@@ -14,14 +21,6 @@ from sklearn.preprocessing import LabelEncoder
 
 # noinspection PyProtectedMember
 from sklearn.utils import shuffle as sklearn_shuffle
-from typing import Optional, Any, List, Text, Dict, Callable, Tuple
-
-import rasa.utils.io
-from rasa.core.domain import Domain
-from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
-from rasa.core.policies.policy import Policy
-from rasa.core.trackers import DialogueStateTracker
-from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 logger = logging.getLogger(__name__)
 
@@ -177,10 +176,9 @@ class SklearnPolicy(Policy):
             rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
             filename = os.path.join(path, "sklearn_model.pkl")
-            with open(filename, "wb") as f:
-                pickle.dump(self._state, f)
+            rasa.utils.io.pickle_dump(filename, self._state)
         else:
-            warnings.warn(
+            raise_warning(
                 "Persist called without a trained model present. "
                 "Nothing to persist then!"
             )
@@ -202,10 +200,11 @@ class SklearnPolicy(Policy):
 
         meta_file = os.path.join(path, "sklearn_policy.json")
         meta = json.loads(rasa.utils.io.read_file(meta_file))
+
         policy = cls(featurizer=featurizer, priority=meta["priority"])
 
-        with open(filename, "rb") as f:
-            state = pickle.load(f)
+        state = rasa.utils.io.pickle_load(filename)
+
         vars(policy).update(state)
 
         logger.info("Loaded sklearn model")

@@ -12,6 +12,14 @@ Once you have them you can add these to your ``credentials.yml``.
 
 Getting Credentials
 ^^^^^^^^^^^^^^^^^^^
+Mattermost now uses bot accounts for better security.  So you can use their guide to create
+your bot to get your token required for the `credentials.yml` file.
+
+For more information on creating a bot account please see
+`Bot Creation <https://docs.mattermost.com/developer/bot-accounts.html#bot-account-creation>`_.
+
+For information on converting existing user account into bot account please see
+`User Conversion <https://docs.mattermost.com/developer/bot-accounts.html#how-do-i-convert-an-existing-account-to-a-bot-account>`_.
 
 **How to set up the outgoing webhook:**
 
@@ -22,9 +30,10 @@ Getting Credentials
       You will need to ensure the **trigger words** section is set up
       with ``@yourbotname`` so that the bot doesn't trigger on everything
       that is said.
-   4. Make sure **trigger when** is set to value
+   4. The **Content Type** must be set to ``application/json``.
+   5. Make sure **trigger when** is set to value
       **first word matches a trigger word exactly**.
-   5. The callback url needs to be either your localhost address for Rasa, or your ngrok url where you
+   6. The callback url needs to be either your localhost address for Rasa, or your ngrok url where you
       have your webhook running in Core or your public address, e.g.
       ``http://test.example.com/webhooks/mattermost/webhook`` or ``http://localhost:5005/webhooks/mattermost/webhook``.
 
@@ -48,9 +57,7 @@ you need to supply a ``credentials.yml`` with the following content:
 
    mattermost:
      url: "https://chat.example.com/api/v4"
-     team: "community"
-     user: "user@user.com" #  actual username of your bot user, not displayname
-     pw: "password"
+     token: "xxxxx" #  the token for the bot account from creating the bot step.
      webhook_url: "https://server.example.com/webhooks/mattermost/webhook"
 
 The endpoint for receiving Mattermost channel messages

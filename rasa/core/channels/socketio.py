@@ -1,14 +1,13 @@
 import logging
-import warnings
 import uuid
+from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text
+
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+from rasa.utils.common import raise_warning
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from socketio import AsyncServer
-from typing import Optional, Text, Any, List, Dict, Iterable, Callable, Awaitable
-
-from rasa.core.channels.channel import InputChannel
-from rasa.core.channels.channel import UserMessage, OutputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +43,8 @@ class SocketIOOutput(OutputChannel):
     ) -> None:
         """Send a message through this channel."""
 
-        await self._send_message(self.sid, {"text": text})
+        for message_part in text.split("\n\n"):
+            await self._send_message(self.sid, {"text": message_part})
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any
@@ -63,10 +63,15 @@ class SocketIOOutput(OutputChannel):
     ) -> None:
         """Sends buttons to the output."""
 
-        message = {"text": text, "quick_replies": []}
+        # split text and create a message for each text fragment
+        # the `or` makes sure there is at least one message we can attach the quick
+        # replies to
+        message_parts = text.split("\n\n") or [text]
+        messages = [{"text": message, "quick_replies": []} for message in message_parts]
 
+        # attach all buttons to the last text fragment
         for button in buttons:
-            message["quick_replies"].append(
+            messages[-1]["quick_replies"].append(
                 {
                     "content_type": "text",
                     "title": button["title"],
@@ -74,7 +79,8 @@ class SocketIOOutput(OutputChannel):
                 }
             )
 
-        await self._send_message(self.sid, message)
+        for message in messages:
+            await self._send_message(self.sid, message)
 
     async def send_elements(
         self, recipient_id: Text, elements: Iterable[Dict[Text, Any]], **kwargs: Any
@@ -176,8 +182,8 @@ class SocketIOInput(InputChannel):
 
             if self.session_persistence:
                 if not data.get("session_id"):
-                    warnings.warn(
-                        "A message without a valid sender_id "
+                    raise_warning(
+                        "A message without a valid session_id "
                         "was received. This message will be "
                         "ignored. Make sure to set a proper "
                         "session id using the "

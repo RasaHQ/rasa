@@ -80,7 +80,7 @@ def default_action_names() -> List[Text]:
     return [a.name() for a in default_actions()]
 
 
-def combine_user_with_default_actions(user_actions) -> list:
+def combine_user_with_default_actions(user_actions: List[Text]) -> List[Text]:
     # remove all user actions that overwrite default actions
     # this logic is a bit reversed, you'd think that we should remove
     # the action name from the default action names if the user overwrites
@@ -90,6 +90,14 @@ def combine_user_with_default_actions(user_actions) -> list:
     # action names from the users list instead of the defaults
     unique_user_actions = [a for a in user_actions if a not in default_action_names()]
     return default_action_names() + unique_user_actions
+
+
+def combine_with_templates(
+    actions: List[Text], templates: Dict[Text, Any]
+) -> List[Text]:
+    """Combines actions with utter actions listed in responses section."""
+    unique_template_names = [a for a in list(templates.keys()) if a not in actions]
+    return actions + unique_template_names
 
 
 def action_from_name(

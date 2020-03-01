@@ -52,7 +52,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Rasa"
-copyright = "2019, Rasa Technologies"
+copyright = "2020, Rasa Technologies"
 author = "Rasa Technologies"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -139,6 +139,7 @@ html_theme_options = {
     "fixed_sidebar": True,
     "product": "Rasa",
     "base_url": "https://rasa.com/docs/rasa/",
+    "canonical_url": "https://rasa.com/docs/rasa/"
 }
 # html_theme_options = {}
 
@@ -335,8 +336,10 @@ scv_whitelist_branches = (re.compile("^master$"),)
 scv_grm_exclude = ("README.md", ".gitignore", ".nojekyll", "CNAME")
 scv_whitelist_tags = (
     re.compile(r"^[2-9]+\.\d+\.\d+$"),
-    re.compile(r"^1\.[6789]+\.\d+$"),
-    re.compile(r"^1\.5\.\d+$"),
+    re.compile(r"^1\.[1-9][0-9]+\.\d+$"),
+    re.compile(r"^1\.[789]\.\d+$"),
+    re.compile(r"^1\.6\.2$"),
+    re.compile(r"^1\.5\.3$"),
     re.compile(r"^1\.4\.6$"),
     re.compile(r"^1\.3\.10$"),
     re.compile(r"^1\.2\.9$"),
@@ -364,6 +367,7 @@ nitpick_ignore = [
     ("py:class", "typing.Optional"),
     ("py:class", "typing.Generator"),
     ("py:class", "typing.Iterator"),
+    ("py:class", "typing.Type"),
     ("py:class", "collections.deque"),
     ("py:class", "sanic.app.Sanic"),
     ("py:data", "typing.Any"),

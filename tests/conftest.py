@@ -1,23 +1,37 @@
-import logging
-from contextlib import contextmanager
-from typing import Text, List
+import asyncio
+import os
+import random
+import uuid
+
+from sanic.request import Request
+from sanic.testing import SanicTestClient
+
+from typing import Tuple, Iterator
 
 import pytest
-from _pytest.logging import LogCaptureFixture
 from _pytest.tmpdir import TempdirFactory
+from pathlib import Path
 from sanic import Sanic
+from typing import Text, List, Optional, Dict, Any
+from unittest.mock import Mock
 
 from rasa import server
 from rasa.core import config
 from rasa.core.agent import Agent, load_agent
+from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel
 from rasa.core.channels.channel import RestInput
+from rasa.core.domain import SessionConfig
+from rasa.core.events import UserUttered
+from rasa.core.exporter import Exporter
 from rasa.core.policies import Policy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.core.run import _create_app_without_api
+from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
 from rasa.train import train_async
 from rasa.utils.common import TempDirectoryPath
+import rasa.utils.io as io_utils
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_NLU_DATA,
@@ -26,6 +40,7 @@ from tests.core.conftest import (
     END_TO_END_STORY_FILE,
     MOODBOT_MODEL_PATH,
 )
+from tests.utilities import update_number_of_epochs
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
@@ -33,21 +48,22 @@ DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 # from a separatedly installable pytest-cli plugin.
 pytest_plugins = ["pytester"]
 
+# https://github.com/pytest-dev/pytest-asyncio/issues/68
+# this event_loop is used by pytest-asyncio, and redefining it
+# is currently the only way of changing the scope of this fixture
+@pytest.yield_fixture(scope="session")
+def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
-@pytest.fixture(autouse=True)
-def set_log_level_debug(caplog: LogCaptureFixture) -> None:
-    # Set the post-test log level to DEBUG for failing tests.  For all tests
-    # (failing and successful), the live log level can be additionally set in
-    # `setup.cfg`. It should be set to WARNING.
-    caplog.set_level(logging.DEBUG)
 
-
-@pytest.fixture
-async def default_agent(tmpdir_factory: TempdirFactory) -> Agent:
+@pytest.fixture(scope="session")
+async def _trained_default_agent(tmpdir_factory: TempdirFactory) -> Tuple[Agent, str]:
     model_path = tmpdir_factory.mktemp("model").strpath
 
     agent = Agent(
-        "data/test_domains/default.yml",
+        "data/test_domains/default_with_slots.yml",
         policies=[AugmentedMemoizationPolicy(max_history=3)],
     )
 
@@ -57,11 +73,28 @@ async def default_agent(tmpdir_factory: TempdirFactory) -> Agent:
     return agent
 
 
+def reset_conversation_state(agent: Agent) -> Agent:
+    # Clean tracker store after each test so tests don't affect each other
+    agent.tracker_store = InMemoryTrackerStore(agent.domain)
+    agent.domain.session_config = SessionConfig.default()
+    return agent
+
+
+@pytest.fixture
+async def default_agent(_trained_default_agent: Agent) -> Agent:
+    return reset_conversation_state(_trained_default_agent)
+
+
 @pytest.fixture(scope="session")
-async def trained_moodbot_path() -> Text:
+async def trained_moodbot_path(tmpdir_factory: TempdirFactory) -> Text:
+    output = tmpdir_factory.mktemp("moodbot").strpath
+    tmp_config_file = os.path.join(output, "config.yml")
+
+    update_number_of_epochs("examples/moodbot/config.yml", tmp_config_file)
+
     return await train_async(
         domain="examples/moodbot/domain.yml",
-        config="examples/moodbot/config.yml",
+        config=tmp_config_file,
         training_files="examples/moodbot/data/",
         output_path=MOODBOT_MODEL_PATH,
     )
@@ -74,17 +107,17 @@ async def unpacked_trained_moodbot_path(
     return get_model(trained_moodbot_path)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 async def stack_agent(trained_rasa_model: Text) -> Agent:
     return await load_agent(model_path=trained_rasa_model)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 async def core_agent(trained_core_model: Text) -> Agent:
     return await load_agent(model_path=trained_core_model)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 async def nlu_agent(trained_nlu_model: Text) -> Agent:
     return await load_agent(model_path=trained_nlu_model)
 
@@ -130,16 +163,15 @@ def trained_async(tmpdir_factory):
     return _train
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 async def trained_rasa_model(
     trained_async,
     default_domain_path: Text,
-    default_config: List[Policy],
     default_nlu_data: Text,
     default_stories_file: Text,
 ) -> Text:
     trained_stack_model_path = await trained_async(
-        domain="data/test_domains/default.yml",
+        domain=default_domain_path,
         config=DEFAULT_STACK_CONFIG,
         training_files=[default_nlu_data, default_stories_file],
     )
@@ -147,11 +179,10 @@ async def trained_rasa_model(
     return trained_stack_model_path
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 async def trained_core_model(
     trained_async,
     default_domain_path: Text,
-    default_config: List[Policy],
     default_nlu_data: Text,
     default_stories_file: Text,
 ) -> Text:
@@ -164,7 +195,7 @@ async def trained_core_model(
     return trained_core_model_path
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 async def trained_nlu_model(
     trained_async,
     default_domain_path: Text,
@@ -216,54 +247,36 @@ async def rasa_server_without_api() -> Sanic:
     return app
 
 
-def get_test_client(server):
+def get_test_client(server: Sanic) -> SanicTestClient:
     test_client = server.test_client
     test_client.port = None
     return test_client
 
 
-@contextmanager
-def assert_log_emitted(
-    _caplog: LogCaptureFixture, logger_name: Text, log_level: int, text: Text = None
-) -> None:
-    """Context manager testing whether a logging message has been emitted.
+def write_endpoint_config_to_yaml(
+    path: Path, data: Dict[Text, Any], endpoints_filename: Text = "endpoints.yml"
+) -> Path:
+    endpoints_path = path / endpoints_filename
 
-    Provides a context in which an assertion is made about a logging message.
-    Raises an `AssertionError` if the log isn't emitted as expected.
+    # write endpoints config to file
+    io_utils.write_yaml_file(data, endpoints_path)
+    return endpoints_path
 
-    Example usage:
 
-    ```
-    with assert_log_emitted(caplog, LOGGER_NAME, LOGGING_LEVEL, TEXT):
-        <method supposed to emit TEXT at level LOGGING_LEVEL>
-    ```
+def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
+    return UserUttered(
+        uuid.uuid4().hex,
+        timestamp=timestamp if timestamp is not None else random.random(),
+    )
 
-    Args:
-        _caplog: `LogCaptureFixture` used to capture logs.
-        logger_name: Name of the logger being examined.
-        log_level: Log level to be tested.
-        text: Logging message to be tested (optional). If left blank, assertion is made
-            only about `log_level` and `logger_name`.
 
-    Yields:
-        `None`
+class MockExporter(Exporter):
+    """Mocked `Exporter` object."""
 
-    """
-
-    yield
-
-    record_tuples = _caplog.record_tuples
-
-    if not any(
-        (
-            record[0] == logger_name
-            and record[1] == log_level
-            and (text in record[2] if text else True)
-        )
-        for record in record_tuples
-    ):
-        raise AssertionError(
-            f"Did not detect expected logging output.\nExpected output is (logger "
-            f"name, log level, text): ({logger_name}, {log_level}, {text})\n"
-            f"Instead found records:\n{record_tuples}"
-        )
+    def __init__(
+        self,
+        tracker_store: TrackerStore = Mock(),
+        event_broker: EventBroker = Mock(),
+        endpoints_path: Text = "",
+    ) -> None:
+        super().__init__(tracker_store, event_broker, endpoints_path)

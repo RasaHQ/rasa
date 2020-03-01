@@ -1,9 +1,10 @@
 import logging
-import warnings
+from typing import Any, Dict, List, NoReturn, Optional, Text, Type
 
 from rasa.core import utils
-from rasa.utils.common import class_from_module_path
 from typing import Any, Dict, List, NoReturn, Optional, Text, Type
+from rasa.core.constants import DEFAULT_CATEGORICAL_SLOT_VALUE
+from rasa.utils.common import class_from_module_path, raise_warning
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,12 @@ class Slot:
         The dimensionality of the array returned by `as_feature` needs
         to correspond to this value."""
         return 1
+
+    def add_default_value(self) -> None:
+        """Add a default value to a slots user-defined values"""
+        raise NotImplementedError(
+            "Each slot type needs to specify its own" "default value to add, if any"
+        )
 
     def has_features(self) -> bool:
         """Indicate if the slot creates any features."""
@@ -112,10 +119,10 @@ class FloatSlot(Slot):
             )
 
         if initial_value is not None and not (min_value <= initial_value <= max_value):
-            warnings.warn(
+            raise_warning(
                 f"Float slot ('{self.name}') created with an initial value "
-                f"{self.value} outside of configured min ({self.min_value}) "
-                f"and max ({self.max_value}) values."
+                f"{self.value}. This value is outside of the configured min "
+                f"({self.min_value}) and max ({self.max_value}) values."
             )
 
     def as_feature(self) -> List[float]:
@@ -198,6 +205,11 @@ class CategoricalSlot(Slot):
         super().__init__(name, initial_value, value_reset_delay, auto_fill)
         self.values = [str(v).lower() for v in values] if values else []
 
+    def add_default_value(self) -> None:
+        values = set(self.values)
+        if DEFAULT_CATEGORICAL_SLOT_VALUE not in values:
+            self.values.append(DEFAULT_CATEGORICAL_SLOT_VALUE)
+
     def persistence_info(self) -> Dict[Text, Any]:
         d = super().persistence_info()
         d["values"] = self.values
@@ -213,15 +225,19 @@ class CategoricalSlot(Slot):
                     break
             else:
                 if self.value is not None:
-                    warnings.warn(
-                        f"Categorical slot '{self.name}' is set to a value "
-                        f"('{self.value}') "
-                        "that is not specified in the domain. "
-                        "Value will be ignored and the slot will "
-                        "behave as if no value is set. "
-                        "Make sure to add all values a categorical "
-                        "slot should store to the domain."
-                    )
+                    if DEFAULT_CATEGORICAL_SLOT_VALUE in self.values:
+                        i = self.values.index(DEFAULT_CATEGORICAL_SLOT_VALUE)
+                        r[i] = 1.0
+                    else:
+                        raise_warning(
+                            f"Categorical slot '{self.name}' is set to a value "
+                            f"('{self.value}') "
+                            "that is not specified in the domain. "
+                            "Value will be ignored and the slot will "
+                            "behave as if no value is set. "
+                            "Make sure to add all values a categorical "
+                            "slot should store to the domain."
+                        )
         except (TypeError, ValueError):
             logger.exception("Failed to featurize categorical slot.")
             return r

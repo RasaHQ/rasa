@@ -1,0 +1,206 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+    - master
+    tags:
+    - '*'
+  pull_request:
+
+# SECRETS
+# - GH_RELEASE_NOTES_TOKEN: personal access token of `rasabot` github account
+#                           (login for account in 1pw)
+# - SLACK_WEBHOOK_TOKEN: token to post to RasaHQ slack account (in 1password)
+# - PYPI_TOKEN: publishing token for amn41 account, needs to be maintainer of
+#               RasaHQ/rasa on pypi (account credentials in 1password)
+
+env:
+  # needed to fix issues with boto during testing:
+  # https://github.com/travis-ci/travis-ci/issues/7940
+  BOTO_CONFIG: /dev/null
+  PIP_USE_PEP517: false
+
+jobs:
+  api:
+    name: Test API specification
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Setup Node 🦝
+      uses: actions/setup-node@v1
+      with:
+        node-version: '10.x'
+
+    - name: Run Swagger 🕵️‍♀️
+      run: |
+        npm install -g swagger-cli
+        swagger-cli validate docs/_static/spec/action-server.yml
+        swagger-cli validate docs/_static/spec/rasa.yml
+
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.7 🐍
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+      shell: bash
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@v1
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Load Poetry Cached Libraries ⬇
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-3.7
+
+    - name: Install Dependencies 📦
+      run: |
+        sudo apt-get -y install libpq-dev
+        make install-full
+
+    - name: Lint Code 🎎
+      run: make lint
+
+    - name: Check Types 📚
+      run: make types
+
+    - name: Test CLI 🖥
+      # makes sure we catch any dependency error early. they will create strange
+      # errors during the docs build, so easier to catch them early on by
+      # trying to run the `rasa` command once before the docs build.
+      run: poetry run rasa --help
+
+# DOES NOT WORK YET DUE TO TENSORFLOW 1.5 (some issue with no tensorflow-cpu verison)
+#  -> should work with 2.0 and replace the below "Test Docs":
+#
+#    - name: Test Docs
+#      uses: ammaraskar/sphinx-action@0.3
+#      with:
+#        docs-folder: "docs/"
+#        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+#        build-command: "make SPHINXOPTS=\"-W --keep-going -A html_theme=rasabaster\" html"
+#        pre-build-command: "apt-get update -y && apt-get install -y git"
+
+    - name: Test Docs 📃
+      run: |
+        make install-full
+        export SPHINXBUILD=$(poetry run which sphinx-build)
+        cd docs && make SPHINXBUILD=$SPHINXBUILD SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version: [3.6, 3.7]
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }} 🐍
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+      shell: bash
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@v1
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Load Poetry Cached Libraries ⬇
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
+
+    - name: Install Dependencies 📦
+      run: |
+        sudo apt-get -y install libpq-dev
+        make install-full
+        make prepare-tests-ubuntu
+
+    - name: Test Code 🔍
+      run: JOBS=2 make test
+
+    - name: Send Coverage Report 📊
+      if: matrix.python-version == 3.6
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERALLS_SERVICE_NAME: github
+      run: poetry run coveralls
+
+  deploy:
+    name: Deploy to PyPI
+    runs-on: ubuntu-latest
+
+    # deploy will only be run when there is a tag available
+    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+    needs: [quality, test, api]     # only run after all other stages succeeded
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.6 🐍
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6
+
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+      shell: bash
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@v1
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Build ⚒️ Distributions
+      run: poetry build
+
+    - name: Publish to PyPI 📦
+      uses: pypa/gh-action-pypi-publish@37e305e7413032d8422456179fee28fac7d25187
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_TOKEN }}
+
+    - name: Notify Slack & Publish Release Notes 🗞
+      env:
+        GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
+        SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
+        GITHUB_TAG: ${{ github.ref }}
+        GITHUB_REPO_SLUG: ${{ github.repository }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install pandoc
+        pip install -U github3.py pypandoc
+        python3 scripts/publish_gh_release_notes.py
+        ./scripts/ping_slack_about_package_release.sh

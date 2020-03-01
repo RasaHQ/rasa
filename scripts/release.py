@@ -14,9 +14,12 @@ from typing import Text, Set
 
 import questionary
 import semantic_version
+import toml
 from semantic_version import Version
 
 VERSION_FILE_PATH = "rasa/version.py"
+
+PYPROJECT_FILE_PATH = "pyproject.toml"
 
 REPO_BASE_URL = "https://github.com/RasaHQ/rasa"
 
@@ -46,6 +49,11 @@ def version_file_path() -> Path:
     return project_root() / VERSION_FILE_PATH
 
 
+def pyproject_file_path() -> Path:
+    """Path to the pyproject.toml."""
+    return project_root() / PYPROJECT_FILE_PATH
+
+
 def write_version_file(version: Text) -> None:
     """Dump a new version into the python version file."""
 
@@ -56,6 +64,28 @@ def write_version_file(version: Text) -> None:
             f'__version__ = "{version}"\n'
         )
     check_call(["git", "add", str(version_file_path().absolute())])
+
+
+def write_version_to_pyproject(version: Text) -> None:
+    """Dump a new version into the pyproject.toml."""
+
+    import toml
+
+    pyproject_file = pyproject_file_path()
+
+    try:
+        data = toml.load(pyproject_file)
+        data["tool"]["poetry"]["version"] = version
+        with pyproject_file.open("w", encoding="utf8") as f:
+            toml.dump(data, f)
+    except (FileNotFoundError, TypeError):
+        print(f"Unable to update {pyproject_file}: file not found.")
+        sys.exit(1)
+    except toml.TomlDecodeError:
+        print(f"Unable to parse {pyproject_file}: incorrect TOML file.")
+        sys.exit(1)
+
+    check_call(["git", "add", str(pyproject_file.absolute())])
 
 
 def get_current_version() -> Text:
@@ -109,7 +139,7 @@ def ask_version() -> Text:
 
     version = questionary.text(
         "What is the version number you want to release "
-        "('major', 'minor', 'patch' or valid version number]?",
+        "('major', 'minor', 'patch' or valid version number)?",
         validate=is_valid_version_number,
     ).ask()
 
@@ -117,6 +147,38 @@ def ask_version() -> Text:
         return version
     else:
         print("Aborting.")
+        sys.exit(1)
+
+
+def get_rasa_sdk_version() -> Text:
+    """Find out what the referenced version of the Rasa SDK is."""
+
+    dependencies_filename = "pyproject.toml"
+    toml_data = toml.load(project_root() / dependencies_filename)
+
+    try:
+        sdk_version = toml_data["tool"]["poetry"]["dependencies"]["rasa-sdk"]
+        return sdk_version[1:].strip()
+    except AttributeError:
+        raise Exception(f"Failed to find Rasa SDK version in {dependencies_filename}")
+
+
+def validate_code_is_release_ready(version: Text) -> None:
+    """Make sure the code base is valid (e.g. Rasa SDK is up to date)."""
+
+    sdk = get_rasa_sdk_version()
+    sdk_version = (Version.coerce(sdk).major, Version.coerce(sdk).minor)
+    rasa_version = (Version.coerce(version).major, Version.coerce(version).minor)
+
+    if sdk_version != rasa_version:
+        print()
+        print(
+            f"\033[91m There is a mismatch between the Rasa SDK version ({sdk}) "
+            f"and the version you want to release ({version}). Before you can "
+            f"release Rasa OSS, you need to release the SDK and update "
+            f"the dependency. \033[0m"
+        )
+        print()
         sys.exit(1)
 
 
@@ -213,7 +275,10 @@ def main(args: argparse.Namespace) -> None:
     version = next_version(args)
     confirm_version(version)
 
+    validate_code_is_release_ready(version)
+
     write_version_file(version)
+    write_version_to_pyproject(version)
 
     generate_changelog(version)
     base = git_current_branch()

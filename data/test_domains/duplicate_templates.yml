@@ -12,7 +12,7 @@ slots:
 entities:
  - name
 
-templates:
+responses:
   utter_greet:
     - text: hey there!
   utter_goodbye:
@@ -21,8 +21,3 @@ templates:
     - text: default message
   utter_greet:
       - text: hey there!
-
-actions:
-  - utter_default
-  - utter_greet
-  - utter_goodbye

@@ -23,12 +23,13 @@ Command                    Effect
 ``rasa train``             Trains a model using your NLU data and stories, saves trained model in ``./models``.
 ``rasa interactive``       Starts an interactive learning session to create new training data by chatting.
 ``rasa shell``             Loads your trained model and lets you talk to your assistant on the command line.
-``rasa run``               Starts a Rasa server with your trained model. See the :ref:`running-the-server` docs for details.
+``rasa run``               Starts a Rasa server with your trained model. See the :ref:`configuring-http-api` docs for details.
 ``rasa run actions``       Starts an action server using the Rasa SDK.
 ``rasa visualize``         Visualizes stories.
 ``rasa test``              Tests a trained Rasa model using your test NLU data and stories.
 ``rasa data split nlu``    Performs a split of your NLU data according to the specified percentages.
 ``rasa data convert nlu``  Converts NLU training data between different formats.
+``rasa export``            Export conversations from a tracker store to an event broker.
 ``rasa x``                 Launch Rasa X locally.
 ``rasa -h``                Shows all available commands.
 =========================  =============================================================================================
@@ -161,7 +162,7 @@ The following arguments can be used to configure your Rasa server:
 
 .. program-output:: rasa run --help
 
-For more information on the additional parameters, see :ref:`running-the-server`.
+For more information on the additional parameters, see :ref:`configuring-http-api`.
 See the Rasa :ref:`http-api` docs for detailed documentation of all the endpoints.
 
 .. _run-action-server:
@@ -250,15 +251,32 @@ You can specify the input file, output file, and the output format with the foll
 .. program-output:: rasa data convert nlu --help
 
 
+.. _section_export:
+
+Export Conversations to an Event Broker
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To export events from a tracker store using an event broker, run:
+
+.. code:: bash
+
+   rasa export
+
+You can specify the location of the environments file, the minimum and maximum
+timestamps of events that should be published, as well as the conversation IDs that
+should be published.
+
+.. program-output:: rasa export --help
+
+
 .. _section_evaluation:
 
-
 Start Rasa X
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
 
 .. raw:: html
 
-    Rasa X is a tool that helps you build, improve, and deploy AI Assistants that are powered by the Rasa framework.
+    Rasa X is a toolset that helps you leverage conversations to improve your assistant.
     You can find more information about it <a class="reference external" href="https://rasa.com/docs/rasa-x/" target="_blank">here</a>.
 
 You can start Rasa X locally by executing
@@ -269,8 +287,7 @@ You can start Rasa X locally by executing
 
 .. raw:: html
 
-    To be able to start Rasa X you need to have Rasa X installed (instruction can be found
-    <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/" target="_blank">here</a>)
+    To be able to start Rasa X you need to have Rasa X local mode installed
     and you need to be in a Rasa project.
 
 .. note::

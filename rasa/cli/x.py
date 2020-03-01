@@ -22,6 +22,7 @@ from rasa.constants import (
     DEFAULT_LOG_LEVEL_RASA_X,
     DEFAULT_RASA_X_PORT,
     DEFAULT_RASA_PORT,
+    DOCS_BASE_URL_RASA_X,
 )
 from rasa.core.utils import AvailableEndpoints
 from rasa.utils.endpoints import EndpointConfig
@@ -153,10 +154,11 @@ def _get_event_broker_endpoint(
         return default_event_broker_endpoint
     elif not _is_correct_event_broker(event_broker_endpoint):
         cli_utils.print_error(
-            "Rasa X currently only supports a SQLite event broker with path '{}' "
-            "when running locally. You can deploy Rasa X with Docker "
-            "(https://rasa.com/docs/rasa-x/deploy/) if you want to use "
-            "other event broker configurations.".format(DEFAULT_EVENTS_DB)
+            f"Rasa X currently only supports a SQLite event broker with path "
+            f"'{DEFAULT_EVENTS_DB}' when running locally. You can deploy Rasa X "
+            f"with Docker ({DOCS_BASE_URL_RASA_X}/installation-and-setup/"
+            f"docker-compose-quick-install/) if you want to use other event broker "
+            f"configurations."
         )
         continue_with_default_event_broker = questionary.confirm(
             "Do you want to continue with the default SQLite event broker?"
@@ -270,7 +272,7 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
             "Rasa X is not installed. The `rasa x` "
             "command requires an installation of Rasa X. "
             "Instructions on how to install Rasa X can be found here: "
-            "https://rasa.com/docs/rasa-x/installation-and-setup/."
+            "https://rasa.com/docs/rasa-x/."
         )
 
     if args.port == args.rasa_x_port:

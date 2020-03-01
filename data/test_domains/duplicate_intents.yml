@@ -14,18 +14,13 @@ slots:
 entities:
  - name
 
-templates:
+responses:
   utter_greet:
     - text: hey there!
   utter_goodbye:
     - text: goodbye :(
   utter_default:
     - text: default message
-
-actions:
-  - utter_default
-  - utter_greet
-  - utter_goodbye
 
 session_config:
   session_expiration_time: 60

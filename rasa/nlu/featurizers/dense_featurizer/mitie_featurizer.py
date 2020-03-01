@@ -1,44 +1,40 @@
 import numpy as np
 import typing
-from typing import Any, List, Text, Dict, Optional
+from typing import Any, List, Text, Optional, Dict, Type
 
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers.featurizer import Featurizer
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.components import Component
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.training_data import Message, TrainingData
+from rasa.nlu.constants import (
+    TEXT,
+    TOKENS_NAMES,
+    DENSE_FEATURE_NAMES,
+    DENSE_FEATURIZABLE_ATTRIBUTES,
+)
+from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 
 if typing.TYPE_CHECKING:
     import mitie
 
-from rasa.nlu.constants import (
-    TEXT_ATTRIBUTE,
-    TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
-    DENSE_FEATURE_NAMES,
-    CLS_TOKEN,
-)
 
-
-class MitieFeaturizer(Featurizer):
-
-    provides = [DENSE_FEATURE_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
-
-    requires = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES] + [
-        "mitie_feature_extractor"
-    ]
+class MitieFeaturizer(DenseFeaturizer):
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [MitieNLP, Tokenizer]
 
     defaults = {
-        # if True return a sequence of features (return vector has size
-        # token-size x feature-dimension)
-        # if False token-size will be equal to 1
-        "return_sequence": False
+        # Specify what pooling operation should be used to calculate the vector of
+        # the CLS token. Available options: 'mean' and 'max'
+        POOLING: MEAN_POOLING
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
-
         super().__init__(component_config)
 
-        self.return_sequence = self.component_config["return_sequence"]
+        self.pooling_operation = self.component_config["pooling"]
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -52,12 +48,15 @@ class MitieFeaturizer(Featurizer):
         return example.get(TOKENS_NAMES[attribute])
 
     def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         for example in training_data.intent_examples:
-            for attribute in MESSAGE_ATTRIBUTES:
+            for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self.process_training_example(
                     example, attribute, mitie_feature_extractor
                 )
@@ -81,12 +80,12 @@ class MitieFeaturizer(Featurizer):
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         features = self.features_for_tokens(
-            message.get(TOKENS_NAMES[TEXT_ATTRIBUTE]), mitie_feature_extractor
+            message.get(TOKENS_NAMES[TEXT]), mitie_feature_extractor
         )
         message.set(
-            DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE],
+            DENSE_FEATURE_NAMES[TEXT],
             self._combine_with_existing_dense_features(
-                message, features, DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE]
+                message, features, DENSE_FEATURE_NAMES[TEXT]
             ),
         )
 
@@ -107,11 +106,9 @@ class MitieFeaturizer(Featurizer):
         tokens: List[Token],
         feature_extractor: "mitie.total_word_feature_extractor",
     ) -> np.ndarray:
-        cls_token_used = tokens[-1].text == CLS_TOKEN if tokens else False
 
-        tokens_without_cls = tokens
-        if cls_token_used:
-            tokens_without_cls = tokens[:-1]
+        # remove CLS token from tokens
+        tokens_without_cls = tokens[:-1]
 
         # calculate features
         features = []
@@ -119,12 +116,7 @@ class MitieFeaturizer(Featurizer):
             features.append(feature_extractor.get_feature_vector(token.text))
         features = np.array(features)
 
-        if cls_token_used and self.return_sequence:
-            # cls token is used, need to append a vector
-            cls_token_vec = np.mean(features, axis=0, keepdims=True)
-            features = np.concatenate([features, cls_token_vec])
-
-        if not self.return_sequence:
-            features = np.mean(features, axis=0, keepdims=True)
+        cls_token_vec = self._calculate_cls_vector(features, self.pooling_operation)
+        features = np.concatenate([features, cls_token_vec])
 
         return features

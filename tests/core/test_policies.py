@@ -1,9 +1,8 @@
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
 
-from rasa.utils import train_utils
 from rasa.core import training
 from rasa.core.actions.action import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
@@ -25,7 +24,7 @@ from rasa.core.featurizers import (
     FullDialogueTrackerFeaturizer,
 )
 from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-from rasa.core.policies.embedding_policy import EmbeddingPolicy
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.keras_policy import KerasPolicy
@@ -33,41 +32,24 @@ from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.sklearn_policy import SklearnPolicy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.utils.tensorflow.constants import (
+    SIMILARITY_TYPE,
+    RANKING_LENGTH,
+    LOSS_TYPE,
+    SCALE_LOSS,
+    EVAL_NUM_EXAMPLES,
+    EPOCHS,
+    KEY_RELATIVE_ATTENTION,
+    VALUE_RELATIVE_ATTENTION,
+    MAX_RELATIVE_POSITION,
+)
+from rasa.utils import train_utils
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_MAPPING,
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_STORIES_FILE,
 )
 from tests.core.utilities import get_tracker, read_dialogue_file, user_uttered
-
-
-def tf_defaults():
-    return {
-        "tf_config": {
-            "device_count": {"CPU": 4},
-            # tell tf.Session to use CPU limit, if you have
-            # more CPU, you can increase this value appropriately
-            "inter_op_parallelism_threads": 0,
-            # the number of threads in the thread pool available
-            # for each process for blocking operation nodes set to 0
-            # to allow the system to select the appropriate value.
-            "intra_op_parallelism_threads": 0,  # tells the degree of thread
-            # parallelism of the tf.Session operation.
-            # the smaller the value, the less reuse the thread will have
-            # and the more likely it will use more CPU cores.
-            # if the value is 0,
-            # tensorflow will automatically select an appropriate value.
-            "gpu_options": {"allow_growth": True}
-            # if set True, will try to allocate
-            # as much GPU memory as possible to support running
-        }
-    }
-
-
-def session_config():
-    import tensorflow as tf
-
-    return tf.ConfigProto(**tf_defaults()["tf_config"])
 
 
 async def train_trackers(domain, augmentation_factor=20):
@@ -105,6 +87,14 @@ class PolicyTestCollection:
         return 1
 
     @pytest.fixture(scope="module")
+    def default_domain(self):
+        return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+
+    @pytest.fixture(scope="module")
+    def tracker(self, default_domain):
+        return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID, default_domain.slots)
+
+    @pytest.fixture(scope="module")
     async def trained_policy(self, featurizer, priority):
         default_domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
         policy = self.create_policy(featurizer, priority)
@@ -124,12 +114,6 @@ class PolicyTestCollection:
         assert loaded.featurizer.max_history == self.max_history
         assert isinstance(
             loaded.featurizer.state_featurizer, BinarySingleStateFeaturizer
-        )
-
-    async def test_continue_training(self, trained_policy, default_domain):
-        training_trackers = await train_trackers(default_domain, augmentation_factor=0)
-        trained_policy.continue_training(
-            training_trackers, default_domain, **{"epochs": 1}
         )
 
     async def test_persist_and_load(self, trained_policy, default_domain, tmpdir):
@@ -166,17 +150,6 @@ class PolicyTestCollection:
         loaded = empty_policy.__class__.load(tmpdir.strpath)
         assert loaded is not None
 
-    def test_tf_config(self, trained_policy, tmpdir):
-        if hasattr(trained_policy, "session"):
-            import tensorflow as tf
-
-            # noinspection PyProtectedMember
-            assert trained_policy.session._config == tf.Session()._config
-            trained_policy.persist(tmpdir.strpath)
-            loaded = trained_policy.__class__.load(tmpdir.strpath)
-            # noinspection PyProtectedMember
-            assert loaded.session._config == tf.Session()._config
-
     @staticmethod
     def _get_next_action(policy, events, domain):
         tracker = get_tracker(events)
@@ -192,20 +165,6 @@ class TestKerasPolicy(PolicyTestCollection):
         return p
 
 
-class TestKerasPolicyWithTfConfig(PolicyTestCollection):
-    def create_policy(self, featurizer, priority):
-        p = KerasPolicy(featurizer, priority, **tf_defaults())
-        return p
-
-    def test_tf_config(self, trained_policy, tmpdir):
-        # noinspection PyProtectedMember
-        assert trained_policy.session._config == session_config()
-        trained_policy.persist(tmpdir.strpath)
-        loaded = trained_policy.__class__.load(tmpdir.strpath)
-        # noinspection PyProtectedMember
-        assert loaded.session._config == session_config()
-
-
 class TestSklearnPolicy(PolicyTestCollection):
     def create_policy(self, featurizer, priority, **kwargs):
         p = SklearnPolicy(featurizer, priority, **kwargs)
@@ -218,14 +177,6 @@ class TestSklearnPolicy(PolicyTestCollection):
             gs.best_score_ = 0.123
             gs.return_value = gs  # for __init__
             yield gs
-
-    @pytest.fixture(scope="module")
-    def default_domain(self):
-        return Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
-
-    @pytest.fixture
-    def tracker(self, default_domain):
-        return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID, default_domain.slots)
 
     @pytest.fixture(scope="module")
     async def trackers(self, default_domain):
@@ -329,76 +280,138 @@ class TestSklearnPolicy(PolicyTestCollection):
         policy.train(trackers, domain=default_domain)
 
 
-class TestEmbeddingPolicy(PolicyTestCollection):
+class TestTEDPolicy(PolicyTestCollection):
     def create_policy(self, featurizer, priority):
-        p = EmbeddingPolicy(featurizer=featurizer, priority=priority)
+        p = TEDPolicy(featurizer=featurizer, priority=priority)
         return p
 
     def test_similarity_type(self, trained_policy):
-        assert trained_policy.similarity_type == "inner"
+        assert trained_policy.config[SIMILARITY_TYPE] == "inner"
+
+    def test_ranking_length(self, trained_policy):
+        assert trained_policy.config[RANKING_LENGTH] == 10
+
+    def test_normalization(self, trained_policy, tracker, default_domain, monkeypatch):
+        # first check the output is what we expect
+        predicted_probabilities = trained_policy.predict_action_probabilities(
+            tracker, default_domain
+        )
+        # count number of non-zero confidences
+        assert (
+            sum([confidence > 0 for confidence in predicted_probabilities])
+            == trained_policy.config[RANKING_LENGTH]
+        )
+        # check that the norm is still 1
+        assert sum(predicted_probabilities) == pytest.approx(1)
+
+        # also check our function is called
+        mock = Mock()
+        monkeypatch.setattr(train_utils, "normalize", mock.normalize)
+        trained_policy.predict_action_probabilities(tracker, default_domain)
+
+        mock.normalize.assert_called_once()
 
     async def test_gen_batch(self, trained_policy, default_domain):
         training_trackers = await train_trackers(default_domain, augmentation_factor=0)
         training_data = trained_policy.featurize_for_training(
             training_trackers, default_domain
         )
-        session_data = trained_policy._create_session_data(
-            training_data.X, training_data.y
-        )
+        model_data = trained_policy._create_model_data(training_data.X, training_data.y)
         batch_size = 2
+        batch_x, batch_y, _ = next(model_data._gen_batch(batch_size=batch_size))
+        assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
+        assert (
+            batch_x[0].shape == model_data.get("dialogue_features")[0][0].shape
+            and batch_y[0].shape == model_data.get("label_features")[0][0].shape
+        )
         batch_x, batch_y, _ = next(
-            train_utils.gen_batch(
-                session_data=session_data, batch_size=batch_size, label_key="action_ids"
+            model_data._gen_batch(
+                batch_size=batch_size, batch_strategy="balanced", shuffle=True
             )
         )
         assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
         assert (
-            batch_x[0].shape == session_data["dialogue_features"][0][0].shape
-            and batch_y[0].shape == session_data["bot_features"][0][0].shape
-        )
-        batch_x, batch_y, _ = next(
-            train_utils.gen_batch(
-                session_data=session_data,
-                batch_size=batch_size,
-                label_key="action_ids",
-                batch_strategy="balanced",
-                shuffle=True,
-            )
-        )
-        assert batch_x.shape[0] == batch_size and batch_y.shape[0] == batch_size
-        assert (
-            batch_x[0].shape == session_data["dialogue_features"][0][0].shape
-            and batch_y[0].shape == session_data["bot_features"][0][0].shape
+            batch_x[0].shape == model_data.get("dialogue_features")[0][0].shape
+            and batch_y[0].shape == model_data.get("label_features")[0][0].shape
         )
 
 
-class TestEmbeddingPolicyMargin(TestEmbeddingPolicy):
+class TestTEDPolicyMargin(TestTEDPolicy):
     def create_policy(self, featurizer, priority):
-        p = EmbeddingPolicy(
-            featurizer=featurizer, priority=priority, **{"loss_type": "margin"}
-        )
+        p = TEDPolicy(featurizer=featurizer, priority=priority, **{LOSS_TYPE: "margin"})
         return p
 
     def test_similarity_type(self, trained_policy):
-        assert trained_policy.similarity_type == "cosine"
+        assert trained_policy.config[SIMILARITY_TYPE] == "cosine"
+
+    def test_normalization(self, trained_policy, tracker, default_domain, monkeypatch):
+        # Mock actual normalization method
+        mock = Mock()
+        monkeypatch.setattr(train_utils, "normalize", mock.normalize)
+        trained_policy.predict_action_probabilities(tracker, default_domain)
+
+        # function should not get called for margin loss_type
+        mock.normalize.assert_not_called()
 
 
-class TestEmbeddingPolicyWithEval(TestEmbeddingPolicy):
+class TestTEDPolicyWithEval(TestTEDPolicy):
     def create_policy(self, featurizer, priority):
-        p = EmbeddingPolicy(
+        p = TEDPolicy(
             featurizer=featurizer,
             priority=priority,
-            **{"scale_loss": False, "evaluate_on_num_examples": 4},
+            **{SCALE_LOSS: False, EVAL_NUM_EXAMPLES: 4},
         )
         return p
 
 
-class TestEmbeddingPolicyWithFullDialogue(TestEmbeddingPolicy):
+class TestTEDPolicyNoNormalization(TestTEDPolicy):
     def create_policy(self, featurizer, priority):
-        # use standard featurizer from EmbeddingPolicy,
+        p = TEDPolicy(featurizer=featurizer, priority=priority, **{RANKING_LENGTH: 0})
+        return p
+
+    def test_ranking_length(self, trained_policy):
+        assert trained_policy.config[RANKING_LENGTH] == 0
+
+    def test_normalization(self, trained_policy, tracker, default_domain, monkeypatch):
+        # first check the output is what we expect
+        predicted_probabilities = trained_policy.predict_action_probabilities(
+            tracker, default_domain
+        )
+        # there should be no normalization
+        assert all([confidence > 0 for confidence in predicted_probabilities])
+
+        # also check our function is not called
+        mock = Mock()
+        monkeypatch.setattr(train_utils, "normalize", mock.normalize)
+        trained_policy.predict_action_probabilities(tracker, default_domain)
+
+        mock.normalize.assert_not_called()
+
+
+class TestTEDPolicyLowRankingLength(TestTEDPolicy):
+    def create_policy(self, featurizer, priority):
+        p = TEDPolicy(featurizer=featurizer, priority=priority, **{RANKING_LENGTH: 3})
+        return p
+
+    def test_ranking_length(self, trained_policy):
+        assert trained_policy.config[RANKING_LENGTH] == 3
+
+
+class TestTEDPolicyHighRankingLength(TestTEDPolicy):
+    def create_policy(self, featurizer, priority):
+        p = TEDPolicy(featurizer=featurizer, priority=priority, **{RANKING_LENGTH: 11})
+        return p
+
+    def test_ranking_length(self, trained_policy):
+        assert trained_policy.config[RANKING_LENGTH] == 11
+
+
+class TestTEDPolicyWithFullDialogue(TestTEDPolicy):
+    def create_policy(self, featurizer, priority):
+        # use standard featurizer from TEDPolicy,
         # since it is using FullDialogueTrackerFeaturizer
         # if max_history is not specified
-        p = EmbeddingPolicy(priority=priority)
+        p = TEDPolicy(priority=priority)
         return p
 
     def test_featurizer(self, trained_policy, tmpdir):
@@ -415,12 +428,12 @@ class TestEmbeddingPolicyWithFullDialogue(TestEmbeddingPolicy):
         )
 
 
-class TestEmbeddingPolicyWithMaxHistory(TestEmbeddingPolicy):
+class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
     def create_policy(self, featurizer, priority):
-        # use standard featurizer from EmbeddingPolicy,
+        # use standard featurizer from TEDPolicy,
         # since it is using MaxHistoryTrackerFeaturizer
         # if max_history is specified
-        p = EmbeddingPolicy(priority=priority, max_history=self.max_history)
+        p = TEDPolicy(priority=priority, max_history=self.max_history)
         return p
 
     def test_featurizer(self, trained_policy, tmpdir):
@@ -439,18 +452,18 @@ class TestEmbeddingPolicyWithMaxHistory(TestEmbeddingPolicy):
         )
 
 
-class TestEmbeddingPolicyWithTfConfig(TestEmbeddingPolicy):
+class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
     def create_policy(self, featurizer, priority):
-        p = EmbeddingPolicy(featurizer=featurizer, priority=priority, **tf_defaults())
+        p = TEDPolicy(
+            featurizer=featurizer,
+            priority=priority,
+            **{
+                KEY_RELATIVE_ATTENTION: True,
+                VALUE_RELATIVE_ATTENTION: True,
+                MAX_RELATIVE_POSITION: 5,
+            },
+        )
         return p
-
-    def test_tf_config(self, trained_policy, tmpdir):
-        # noinspection PyProtectedMember
-        assert trained_policy.session._config == session_config()
-        trained_policy.persist(tmpdir.strpath)
-        loaded = trained_policy.__class__.load(tmpdir.strpath)
-        # noinspection PyProtectedMember
-        assert loaded.session._config == session_config()
 
 
 class TestMemoizationPolicy(PolicyTestCollection):
@@ -732,9 +745,6 @@ class TestTwoStageFallbackPolicy(TestFallbackPolicy):
     @pytest.fixture(scope="class")
     def default_domain(self):
         content = """
-        actions:
-          - utter_hello
-
         intents:
           - greet
           - bye

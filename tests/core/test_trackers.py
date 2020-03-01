@@ -92,9 +92,7 @@ def test_tracker_store_storage_and_retrieval(store):
     assert tracker.sender_id == "some-id"
 
     # Action listen should be in there
-    assert list(tracker.events) == [
-        ActionExecuted(ACTION_LISTEN_NAME),
-    ]
+    assert list(tracker.events) == [ActionExecuted(ACTION_LISTEN_NAME)]
 
     # lets log a test message
     intent = {"name": "greet", "confidence": 1.0}
@@ -155,7 +153,7 @@ async def test_tracker_state_regression_without_bot_utterance(default_agent: Age
     # (and wasn't reset in between them)
     expected = (
         "action_session_start;action_listen;greet;utter_greet;action_listen;"
-        "greet;action_listen"
+        "greet;utter_greet;action_listen"
     )
     assert (
         ";".join([e.as_story_string() for e in tracker.events if e.as_story_string()])
@@ -178,6 +176,8 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent)
         None,
         "action_listen",
         "greet",
+        "utter_greet",
+        None,
         "action_listen",
     ]
 
@@ -434,7 +434,7 @@ async def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
         assert restored_tracker == tracker
 
 
-def test_read_json_dump(default_agent):
+def test_read_json_dump(default_agent: Agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.utils.io.read_file(tracker_dump))
 

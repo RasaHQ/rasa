@@ -1,8 +1,8 @@
 import asyncio
 import logging
+import uuid
 import os
 import shutil
-import warnings
 from functools import partial
 from typing import Any, List, Optional, Text, Union
 
@@ -21,6 +21,7 @@ from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.lock_store import LockStore
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
+from rasa.utils.common import raise_warning
 from sanic import Sanic
 
 logger = logging.getLogger()  # get the root logger
@@ -87,6 +88,7 @@ def configure_app(
     port: int = constants.DEFAULT_SERVER_PORT,
     endpoints: Optional[AvailableEndpoints] = None,
     log_file: Optional[Text] = None,
+    conversation_id: Optional[Text] = uuid.uuid4().hex,
 ):
     """Run the agent."""
     from rasa import server
@@ -124,8 +126,10 @@ def configure_app(
         async def run_cmdline_io(running_app: Sanic):
             """Small wrapper to shut down the server once cmd io is done."""
             await asyncio.sleep(1)  # allow server to start
+
             await console.record_messages(
-                server_url=constants.DEFAULT_SERVER_FORMAT.format("http", port)
+                server_url=constants.DEFAULT_SERVER_FORMAT.format("http", port),
+                sender_id=conversation_id,
             )
 
             logger.info("Killing Sanic server now.")
@@ -153,6 +157,7 @@ def serve_application(
     ssl_keyfile: Optional[Text] = None,
     ssl_ca_file: Optional[Text] = None,
     ssl_password: Optional[Text] = None,
+    conversation_id: Optional[Text] = uuid.uuid4().hex,
 ):
     from rasa import server
 
@@ -171,6 +176,7 @@ def serve_application(
         port=port,
         endpoints=endpoints,
         log_file=log_file,
+        conversation_id=conversation_id,
     )
 
     ssl_context = server.create_ssl_context(
@@ -248,7 +254,7 @@ async def load_agent_on_start(
     )
 
     if not app.agent:
-        warnings.warn(
+        raise_warning(
             "Agent could not be loaded with the provided configuration. "
             "Load default agent without any model."
         )

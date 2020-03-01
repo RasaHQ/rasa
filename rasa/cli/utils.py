@@ -1,9 +1,8 @@
-import os
-import warnings
-import sys
 import json
-from typing import Any, Optional, Text, List, Dict, TYPE_CHECKING
 import logging
+import os
+import sys
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
 
 if TYPE_CHECKING:
     from questionary import Question
@@ -42,8 +41,11 @@ def get_validated_path(
             if current is None:
                 reason_str = f"Parameter '{parameter}' not set."
             else:
-                warnings.warn(
-                    f"'{current}' does not exist. Using default value '{default}' instead."
+                from rasa.utils.common import raise_warning  # avoid import cycle
+
+                raise_warning(
+                    f"The path '{current}' does not seem to exist. Using the "
+                    f"default value '{default}' instead."
                 )
 
             logger.debug(f"{reason_str} Using default location '{default}' instead.")
@@ -232,7 +234,7 @@ def print_error(*args: Any):
     print_color(*args, color=bcolors.FAIL)
 
 
-def print_error_and_exit(message: Text, exit_code: int = 1) -> None:
+def print_error_and_exit(message: Text, exit_code: int = 1) -> NoReturn:
     """Print error message and exit the application."""
 
     print_error(message)
