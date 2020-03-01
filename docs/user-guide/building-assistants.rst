@@ -25,8 +25,8 @@ build a basic FAQ assistant using features of Rasa designed specifically for thi
 
 In this section we’re going to cover the following topics:
 
-    - Responding to simple intents with the MemoizationPolicy
-    - Handling FAQs using the ResponseSelector
+    - `Responding to simple intents <respond-with-memoization-policy>`_ with the MemoizationPolicy
+    - `Handling FAQs <faqs-response-selector>`_ using the ResponseSelector
 
 We’re going to use content from `Sara <https://github.com/RasaHQ/rasa-demo>`_, the Rasa
 assistant that, amongst other things, helps the user get started with the Rasa products.
@@ -45,6 +45,8 @@ new Rasa project.
 
 Let's remove the default content from this bot, so that the ``nlu.md``, ``stories.md``
 and ``domain.yml`` files are empty.
+
+.. _respond-with-memoization-policy:
 
 Memoization Policy
 ^^^^^^^^^^^^^^^^^^
@@ -182,6 +184,8 @@ called ``failed_stories.md``, where any test cases that failed will be printed. 
 also specify whether it was an NLU or Core prediction that went wrong.  As part of a
 CI/CD pipeline, the test option ``--fail-on-prediction-errors`` can be used to throw
 an exception that stops the pipeline.
+
+.. _faqs-response-selector:
 
 Response Selectors
 ^^^^^^^^^^^^^^^^^^
@@ -325,10 +329,10 @@ your bot to handle contextual conversations.
 
 In this tutorial we’re going to cover a variety of topics:
 
-    - Handling business logic
-    - Handling unexpected user input
-    - Failing gracefully
-    - More complex contextual conversations
+    - :ref:`handling-business-logic`
+    - :ref:`handling-unexpected-user-input`
+    - :ref:`failing-gracefully`
+    - :ref:`more-complex-contextual-conversations`
 
 Please make sure you’ve got all the data from the :ref:`build-faq-assistant` section before starting this part.
 You will need to make some adjustments to your configuration file, since we now need to pay attention to context:
@@ -343,8 +347,10 @@ We removed the ``max_history: 1`` configuration. The default is ``5``,
 meaning Core will pay attention to the past 5 turns when making a prediction
 (see explanation of `max history <https://rasa.com/docs/rasa/core/policies/#max-history>`_).
 
-Business logic
-^^^^^^^^^^^^^^
+.. _handling-business-logic:
+
+Handling business logic
+^^^^^^^^^^^^^^^^^^^^^^^
 
 A lot of conversational assistants have user goals that involve collecting a bunch of information
 from the user before being able to do something for them. This is called slot filling. For
@@ -621,6 +627,8 @@ business logic. Read more about this `here <https://rasa.com/docs/rasa/core/form
 However, you should make sure not to handle any unhappy paths inside the form. These
 should be handled by writing regular stories, so your model can learn this behaviour.
 
+.. _handling-unexpected-user-input:
+
 Handling unexpected user input
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -836,6 +844,8 @@ Then you can retrain your bot and test it again:
 
 Don’t forget to add a few end to end stories to your ``test_stories.md`` for testing as well.
 
+.. _failing-gracefully:
+
 Failing gracefully
 ^^^^^^^^^^^^^^^^^^
 
@@ -934,6 +944,8 @@ let’s say the user asks "I want to apply for a job at Rasa", we can then reply
 
    * ask_job
      utter_job_not_handled
+
+.. _more-complex-contextual-conversations:
 
 More complex contextual conversations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
