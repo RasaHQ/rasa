@@ -49,6 +49,7 @@ from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.utils.common import raise_warning
 from rasa.utils.endpoints import EndpointConfig
+from rasa.core.interpreter import RasaCoreInterpreter
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +116,7 @@ class MessageProcessor:
         else:
             return None
 
-    async def predict_next(self, sender_id: Text) -> Optional[Dict[Text, Any]]:
+    async def predict_next(self, sender_id: Text, interpreter: Optional[RasaCoreInterpreter]) -> Optional[Dict[Text, Any]]:
 
         # we have a Tracker instance for each user
         # which maintains conversation state
@@ -135,7 +136,7 @@ class MessageProcessor:
             )
             return None
 
-        probabilities, policy = self._get_next_action_probabilities(tracker)
+        probabilities, policy = self._get_next_action_probabilities(tracker, interpreter)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
         scores = [
@@ -290,14 +291,14 @@ class MessageProcessor:
         return tracker
 
     def predict_next_action(
-        self, tracker: DialogueStateTracker
+        self, tracker: DialogueStateTracker, interpreter: Optional[RasaCoreInterpreter]
     ) -> Tuple[Action, Text, float]:
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
         ML to predict the action. Returns the index of the next action."""
 
-        action_confidences, policy = self._get_next_action_probabilities(tracker)
+        action_confidences, policy = self._get_next_action_probabilities(tracker, interpreter)
 
         max_confidence_index = int(np.argmax(action_confidences))
         action = self.domain.action_for_index(
@@ -533,7 +534,7 @@ class MessageProcessor:
         )
 
     async def _predict_and_execute_next_action(
-        self, output_channel: OutputChannel, tracker: DialogueStateTracker
+        self, output_channel: OutputChannel, tracker: DialogueStateTracker, interpreter: Optional[RasaCoreInterpreter]
     ):
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
@@ -546,7 +547,7 @@ class MessageProcessor:
             and num_predicted_actions < self.max_number_of_predictions
         ):
             # this actually just calls the policy's method by the same name
-            action, policy, confidence = self.predict_next_action(tracker)
+            action, policy, confidence = self.predict_next_action(tracker, interpreter)
 
             should_predict_another_action = await self._run_action(
                 action, tracker, output_channel, self.nlg, policy, confidence
@@ -776,7 +777,7 @@ class MessageProcessor:
             return None, None
 
     def _get_next_action_probabilities(
-        self, tracker: DialogueStateTracker
+        self, tracker: DialogueStateTracker, interpreter: Optional[RasaCoreInterpreter]
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
         """Collect predictions from ensemble and return action and predictions."""
 
@@ -794,5 +795,5 @@ class MessageProcessor:
                 )
 
         return self.policy_ensemble.probabilities_using_best_policy(
-            tracker, self.domain
+            tracker, self.domain, interpreter
         )
