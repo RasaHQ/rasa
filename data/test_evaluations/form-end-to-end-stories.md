@@ -15,7 +15,7 @@
 * request_restaurant: /request_restaurant
     - restaurant_form
     - form{"name": "restaurant_form"}
-* form: inform: /inform{"cuisine": "afghan"}
+* form: /inform{"cuisine": "afghan"} <!-- intent "inform" is ignored inside the form -->
     - form: restaurant_form
     - form{"name": null}
     - utter_slots_values
