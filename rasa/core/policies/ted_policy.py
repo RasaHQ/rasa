@@ -3,10 +3,14 @@ import logging
 import os
 <<<<<<< HEAD
 from pathlib import Path
+<<<<<<< HEAD
 =======
 import pickle
 import scipy.sparse
 >>>>>>> processing of sparse input features by TED
+=======
+import scipy.sparse
+>>>>>>> changed signature in all policies to take Interpreter as input
 
 import numpy as np
 import tensorflow as tf
@@ -25,6 +29,7 @@ from rasa.core.featurizers import (
 from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.interpreter import RasaCoreInterpreter
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
@@ -302,12 +307,13 @@ class TEDPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: Optional[RasaCoreInterpreter],
         **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
 
         # dealing with training data
-        training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
+        training_data = self.featurize_for_training(training_trackers, domain, interpreter, **kwargs)
 
         self._label_data = self._create_label_data(domain)
 
@@ -340,7 +346,7 @@ class TEDPolicy(Policy):
         )
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self, tracker: DialogueStateTracker, domain: Domain, interpreter: Optional[RasaCoreInterpreter]
     ) -> List[float]:
         """Predict the next action the bot should take.
 
@@ -351,7 +357,7 @@ class TEDPolicy(Policy):
             return self._default_predictions(domain)
 
         # create model data from tracker
-        data_X = self.featurizer.create_X([tracker], domain)
+        data_X = self.featurizer.create_X([tracker], domain, interpreter)
         model_data = self._create_model_data(data_X)
 
         output = self.model.predict(model_data)
@@ -391,7 +397,8 @@ class TEDPolicy(Policy):
         io_utils.pickle_dump(
             model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl", self.config
         )
-        io_utils.json_pickle(
+        # using pickle to be able to store and load both sparse and dense data_example
+        io_utils.pickle_dump(
             model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl", self.data_example
         )
         io_utils.json_pickle(
@@ -418,8 +425,8 @@ class TEDPolicy(Policy):
 
         if not (model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl").is_file():
             return cls(featurizer=featurizer)
-
-        loaded_data = io_utils.json_unpickle(
+        # using pickle to be able to store and load both sparse and dense data_example
+        loaded_data = io_utils.pickle_load(
             model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl"
         )
         label_data = io_utils.json_unpickle(
@@ -562,16 +569,23 @@ class TED(RasaModel):
             parallel_iterations=1 if self.random_seed is not None else 1000,
         )
 <<<<<<< HEAD
+<<<<<<< HEAD
         self._tf_layers[f"ffnn.{DIALOGUE}"] = layers.Ffnn(
 =======
+=======
+>>>>>>> changed signature in all policies to take Interpreter as input
 
         self._prepare_sparse_dense_layers(self.data_signature['dialogue_features'],
             'dialogue_features',
             self.config[REGULARIZATION_CONSTANT],
-            100)
+            self.data_signature['dialogue_features'][0][1][-1])
 
+<<<<<<< HEAD
         self._tf_layers["ffnn.dialogue"] = layers.Ffnn(
 >>>>>>> processing of sparse input features by TED
+=======
+        self._tf_layers[f"ffnn.{DIALOGUE}"] = layers.Ffnn(
+>>>>>>> changed signature in all policies to take Interpreter as input
             self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
             self.config[DROP_RATE_DIALOGUE],
             self.config[REGULARIZATION_CONSTANT],
@@ -625,12 +639,19 @@ class TED(RasaModel):
         # mask different length sequences
         # if there is at least one `-1` it should be masked
 <<<<<<< HEAD
+<<<<<<< HEAD
         mask = tf.sign(tf.reduce_max(dialogue_in, axis=-1) + 1)
 =======
         if isinstance(dialogue_in, tf.SparseTensor):
             dialogue_in = self._tf_layers["sparse_to_dense.dialogue_features"](dialogue_in)
         mask = tf.sign(tf.reduce_max(dialogue_in, -1) + 1)
 >>>>>>> processing of sparse input features by TED
+=======
+
+        if isinstance(dialogue_in, tf.SparseTensor):
+            dialogue_in = self._tf_layers["sparse_to_dense.dialogue_features"](dialogue_in)
+        mask = tf.sign(tf.reduce_max(dialogue_in, axis=-1) + 1)
+>>>>>>> changed signature in all policies to take Interpreter as input
 
         dialogue = self._tf_layers[f"ffnn.{DIALOGUE}"](dialogue_in, self._training)
         dialogue_transformed = self._tf_layers["transformer"](
