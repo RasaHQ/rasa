@@ -10,8 +10,3 @@ responses:
     - goodbye :(
   utter_default:
     - default message
-
-actions:
-  - utter_default
-  - utter_greet
-  - utter_goodbye

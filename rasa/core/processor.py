@@ -1,7 +1,6 @@
 import logging
 import os
 import time
-import warnings
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
@@ -150,7 +149,7 @@ class MessageProcessor:
         }
 
     async def _update_tracker_session(
-        self, tracker: DialogueStateTracker, output_channel: OutputChannel,
+        self, tracker: DialogueStateTracker, output_channel: OutputChannel
     ) -> None:
         """Check the current session in `tracker` and update it if expired.
 
@@ -175,10 +174,8 @@ class MessageProcessor:
                 nlg=self.nlg,
             )
 
-            self.tracker_store.save(tracker)
-
     async def get_tracker_with_session_start(
-        self, sender_id: Text, output_channel: Optional[OutputChannel] = None,
+        self, sender_id: Text, output_channel: Optional[OutputChannel] = None
     ) -> Optional[DialogueStateTracker]:
         """Get tracker for `sender_id` or create a new tracker for `sender_id`.
 
@@ -331,7 +328,7 @@ class MessageProcessor:
             or not self._is_reminder_still_valid(tracker, reminder_event)
         ):
             logger.debug(
-                f"Canceled reminder because it is outdated. " f"({reminder_event})"
+                f"Canceled reminder because it is outdated ({reminder_event})."
             )
         else:
             intent = reminder_event.intent
@@ -473,7 +470,7 @@ class MessageProcessor:
             self._log_slots(tracker)
 
         logger.debug(
-            f"Logged UserUtterance - " f"tracker now has {len(tracker.events)} events."
+            f"Logged UserUtterance - tracker now has {len(tracker.events)} events."
         )
 
     @staticmethod

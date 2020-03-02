@@ -1,8 +1,8 @@
-:desc: Rasa OSS Changelog
+:desc: Rasa Open Source Changelog
 
 
-Rasa OSS Change Log
-===================
+Rasa Open Source Change Log
+===========================
 
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 1.0.
@@ -16,6 +16,165 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
     https://github.com/RasaHQ/rasa/tree/master/changelog/ .
 
 .. towncrier release notes start
+
+[1.8.0] - 2020-02-26
+^^^^^^^^^^^^^^^^^^^^
+
+Deprecations and Removals
+-------------------------
+- `#4991 <https://github.com/rasahq/rasa/issues/4991>`_: Removed ``Agent.continue_training`` and the ``dump_flattened_stories`` parameter
+  from ``Agent.persist``.
+- `#5266 <https://github.com/rasahq/rasa/issues/5266>`_: Properties ``Component.provides`` and ``Component.requires`` are deprecated.
+  Use ``Component.required_components()`` instead.
+
+Features
+--------
+- `#2674 <https://github.com/rasahq/rasa/issues/2674>`_: Add default value ``__other__`` to ``values`` of a ``CategoricalSlot``. 
+
+  All values not mentioned in the list of values of a ``CategoricalSlot``
+  will be mapped to ``__other__`` for featurization.
+- `#4088 <https://github.com/rasahq/rasa/issues/4088>`_: Add story structure validation functionality (e.g. `rasa data validate stories --max-history 5`).
+- `#5065 <https://github.com/rasahq/rasa/issues/5065>`_: Add :ref:`LexicalSyntacticFeaturizer` to sparse featurizers.
+
+  ``LexicalSyntacticFeaturizer`` does the same featurization as the ``CRFEntityExtractor``. We extracted the
+  featurization into a separate component so that the features can be reused and featurization is independent from the
+  entity extraction.
+- `#5187 <https://github.com/rasahq/rasa/issues/5187>`_: Integrate language models from HuggingFace's `Transformers <https://github.com/huggingface/transformers>`_ Library.
+
+  Add a new NLP component :ref:`HFTransformersNLP` which tokenizes and featurizes incoming messages using a specified
+  pre-trained model with the Transformers library as the backend.
+  Add :ref:`LanguageModelTokenizer` and :ref:`LanguageModelFeaturizer` which use the information from
+  :ref:`HFTransformersNLP` and sets them correctly for message object.
+  Language models currently supported: BERT, OpenAIGPT, GPT-2, XLNet, DistilBert, RoBERTa.
+- `#5225 <https://github.com/rasahq/rasa/issues/5225>`_: Added a new CLI command ``rasa export`` to publish tracker events from a persistent
+  tracker store using an event broker. See :ref:`section_export`, :ref:`tracker-stores`
+  and :ref:`event-brokers` for more details.
+- `#5230 <https://github.com/rasahq/rasa/issues/5230>`_: Refactor how GPU and CPU environments are configured for TensorFlow 2.0.
+
+  Please refer to the :ref:`documentation <tensorflow_usage>` to understand
+  which environment variables to set in what scenarios. A couple of examples are shown below as well:
+
+  .. code-block:: python
+
+      # This specifies to use 1024 MB of memory from GPU with logical ID 0 and 2048 MB of memory from GPU with logical ID 1
+      TF_GPU_MEMORY_ALLOC="0:1024, 1:2048"
+
+      # Specifies that at most 3 CPU threads can be used to parallelize multiple non-blocking operations
+      TF_INTER_OP_PARALLELISM_THREADS="3"
+
+      # Specifies that at most 2 CPU threads can be used to parallelize a particular operation.
+      TF_INTRA_OP_PARALLELISM_THREADS="2"
+
+- `#5266 <https://github.com/rasahq/rasa/issues/5266>`_: Added a new NLU component :ref:`DIETClassifier <diet-classifier>` and a new policy :ref:`TEDPolicy <ted_policy>`.
+
+  DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
+  recognition. You can read more about this component in our :ref:`documentation <diet-classifier>`.
+  The new component will replace the :ref:`EmbeddingIntentClassifier <embedding-intent-classifier>` and the
+  :ref:`CRFEntityExtractor` in the future.
+  Those two components are deprecated from now on.
+  See :ref:`migration guide <migration-to-rasa-1.8>` for details on how to
+  switch to the new component.
+
+  :ref:`TEDPolicy <ted_policy>` is the new name for :ref:`EmbeddingPolicy <embedding_policy>`.
+  ``EmbeddingPolicy`` is deprecated from now on.
+  The functionality of ``TEDPolicy`` and ``EmbeddingPolicy`` is the same.
+  Please update your configuration file to use the new name for the policy.
+- `#663 <https://github.com/rasahq/rasa/issues/663>`_: The sentence vector of the ``SpacyFeaturizer`` and ``MitieFeaturizer`` can be calculated using max or mean pooling.
+
+  To specify the pooling operation, set the option ``pooling`` for the ``SpacyFeaturizer`` or the ``MitieFeaturizer``
+  in your configuration file. The default pooling operation is ``mean``. The mean pooling operation also does not take
+  into account words, that do not have a word vector.
+  See our :ref:`documentation <components>` for more details.
+
+Improvements
+------------
+- `#3975 <https://github.com/rasahq/rasa/issues/3975>`_: Added command line argument ``--conversation-id`` to ``rasa interactive``.
+  If the argument is not given, ``conversation_id`` defaults to a random uuid.
+- `#4653 <https://github.com/rasahq/rasa/issues/4653>`_: Added a new command-line argument ``--init-dir`` to command ``rasa init`` to specify
+  the directory in which the project is initialised.
+- `#4682 <https://github.com/rasahq/rasa/issues/4682>`_: Added support to send images with the twilio output channel.
+- `#4817 <https://github.com/rasahq/rasa/issues/4817>`_: Part of Slack sanitization: 
+  Multiple garbled URL's in a string coming from slack will be converted into actual strings.
+  ``Example: health check of <http://eemdb.net|eemdb.net> and <http://eemdb1.net|eemdb1.net> to health check of
+  eemdb.net and eemdb1.net``
+- `#5117 <https://github.com/rasahq/rasa/issues/5117>`_: New command-line argument --conversation-id will be added and wiil give the ability to
+  set specific conversation ID for each shell session, if not passed will be random.
+- `#5211 <https://github.com/rasahq/rasa/issues/5211>`_: Messages sent to the :ref:`event-brokers-pika` are now persisted. This guarantees
+  the RabbitMQ will re-send previously received messages after a crash. Note that this
+  does not help for the case where messages are sent to an unavailable RabbitMQ instance.
+- `#5250 <https://github.com/rasahq/rasa/issues/5250>`_: Added support for mattermost connector to use bot accounts.
+- `#5266 <https://github.com/rasahq/rasa/issues/5266>`_: We updated our code to TensorFlow 2.
+
+  We added a new docker image for ConveRT.
+  The new images uses the following configuration
+
+  .. code-block:: yaml
+  
+      language: "en"
+
+      pipeline:
+      - name: ConveRTTokenizer
+      - name: ConveRTFeaturizer
+      - name: RegexFeaturizer
+      - name: LexicalSyntacticFeaturizer
+      - name: CountVectorsFeaturizer
+      - name: CountVectorsFeaturizer
+         analyzer: "char_wb"
+         min_ngram: 1
+         max_ngram: 4
+      - name: DIETClassifier
+      - name: EntitySynonymMapper
+      - name: ResponseSelector
+- `#5317 <https://github.com/rasahq/rasa/issues/5317>`_: Events exported using ``rasa export`` receive a message header if published through a
+  ``PikaEventBroker``. The header is added to the message's ``BasicProperties.headers``
+  under the ``rasa-export-process-id`` key
+  (``rasa.core.constants.RASA_EXPORT_PROCESS_ID_HEADER_NAME``). The value is a
+  UUID4 generated at each call of ``rasa export``. The resulting header is a key-value
+  pair that looks as follows:
+
+  .. code-block:: text
+
+    'rasa-export-process-id': 'd3b3d3ffe2bd4f379ccf21214ccfb261'
+
+- `#5292 <https://github.com/rasahq/rasa/issues/5292>`_: Added ``followlinks=True`` to os.walk calls, to allow the use of symlinks in training, NLU and domain data.
+- `#4811 <https://github.com/rasahq/rasa/issues/4811>`_: Support invoking a ``SlackBot`` by direct messaging or ``@<app name>`` mentions.
+
+Bugfixes
+--------
+- `#4006 <https://github.com/rasahq/rasa/issues/4006>`_: Fixed timestamp parsing warning when using DucklingHTTPExtractor
+- `#4601 <https://github.com/rasahq/rasa/issues/4601>`_: Fixed issue with ``action_restart`` getting overridden by ``action_listen`` when the ``MappingPolicy`` and the
+  `TwoStageFallbackPolicy <https://rasa.com/docs/rasa/core/policies/#two-stage-fallback-policy>`_ are used together.
+- `#5201 <https://github.com/rasahq/rasa/issues/5201>`_: Fixed incorrectly raised Error encountered in pipelines with a ``ResponseSelector`` and NLG.
+
+  When NLU training data is split before NLU pipeline comparison, 
+  NLG responses were not also persisted and therefore training for a pipeline including the ``ResponseSelector`` would fail.
+
+  NLG responses are now persisted along with NLU data to a ``/train`` directory in the ``run_x/xx%_exclusion`` folder.
+- `#5277 <https://github.com/rasahq/rasa/issues/5277>`_: Fixed sending custom json with Twilio channel
+
+Improved Documentation
+----------------------
+- `#5174 <https://github.com/rasahq/rasa/issues/5174>`_: Updated the documentation to properly suggest not to explicitly add utterance actions to the domain.
+- `#5189 <https://github.com/rasahq/rasa/issues/5189>`_: Added user guide for reminders and external events, including ``reminderbot`` demo.
+
+Miscellaneous internal changes
+------------------------------
+- #3923, #4597, #4903, #5180, #5189, #5266, #699
+
+
+[1.7.4] - 2020-02-24
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5068 <https://github.com/rasahq/rasa/issues/5068>`_: Tracker stores supporting conversation sessions (``SQLTrackerStore`` and
+  ``MongoTrackerStore``) do not save the tracker state to database immediately after
+  starting a new conversation session. This leads to the number of events being saved
+  in addition to the already-existing ones to be calculated correctly.
+
+  This fixes ``action_listen`` events being saved twice at the beginning of
+  conversation sessions.
+
 
 [1.7.3] - 2020-02-21
 ^^^^^^^^^^^^^^^^^^^^

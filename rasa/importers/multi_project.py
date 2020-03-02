@@ -1,5 +1,4 @@
 import logging
-import warnings
 from functools import reduce
 from typing import Text, Set, Dict, Optional, List, Union, Any
 import os
@@ -89,7 +88,7 @@ class MultiProjectImporter(TrainingDataImporter):
         return not self.no_skills_selected() and self.is_imported(path)
 
     def _init_from_directory(self, path: Text):
-        for parent, _, files in os.walk(path):
+        for parent, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(parent, file)
                 if not self.is_imported(full_path):

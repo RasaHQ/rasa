@@ -15,7 +15,7 @@ def add_model_param(
     model_name: Text = "Rasa",
     add_positional_arg: bool = True,
     default: Optional[Text] = DEFAULT_MODELS_PATH,
-):
+) -> None:
     help_text = (
         "Path to a trained {} model. If a directory is specified, it will "
         "use the latest model in this directory.".format(model_name)
@@ -44,13 +44,13 @@ def add_nlu_data_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
     help_text: Text,
     default: Optional[Text] = DEFAULT_DATA_PATH,
-):
+) -> None:
     parser.add_argument("-u", "--nlu", type=str, default=default, help=help_text)
 
 
 def add_domain_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
-):
+) -> None:
     parser.add_argument(
         "-d",
         "--domain",
@@ -63,7 +63,7 @@ def add_domain_param(
 def add_config_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
     default: Optional[Text] = DEFAULT_CONFIG_PATH,
-):
+) -> None:
     parser.add_argument(
         "-c",
         "--config",
@@ -78,16 +78,18 @@ def add_out_param(
     help_text: Text,
     default: Optional[Text] = DEFAULT_MODELS_PATH,
     required: bool = False,
-):
+) -> None:
     parser.add_argument(
         "--out", type=str, default=default, help=help_text, required=required
     )
 
 
 def add_endpoint_param(
-    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer], help_text: Text
-):
-    parser.add_argument("--endpoints", type=str, default=None, help=help_text)
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+    help_text: Text,
+    default: Optional[Text] = None,
+) -> None:
+    parser.add_argument("--endpoints", type=str, default=default, help=help_text)
 
 
 def add_data_param(
@@ -95,7 +97,7 @@ def add_data_param(
     default: Optional[Text] = DEFAULT_DATA_PATH,
     required: bool = False,
     data_type: Text = "Rasa ",
-):
+) -> None:
     parser.add_argument(
         "--data",
         type=str,
@@ -105,7 +107,7 @@ def add_data_param(
     )
 
 
-def add_logging_options(parser: argparse.ArgumentParser):
+def add_logging_options(parser: argparse.ArgumentParser) -> None:
     """Add options to an argument parser to configure logging levels."""
 
     logging_arguments = parser.add_argument_group("Python Logging Options")

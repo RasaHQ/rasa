@@ -1,6 +1,5 @@
 import aiohttp
 
-import warnings
 import json
 import logging
 import re
@@ -219,7 +218,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         return result if result is not None else default_return
 
     async def _rasa_http_parse(
-        self, text: Text, message_id: Optional[Text] = None,
+        self, text: Text, message_id: Optional[Text] = None
     ) -> Optional[Dict[Text, Any]]:
         """Send a text message to a running rasa NLU http server.
         Return `None` on failure."""
@@ -288,7 +287,7 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
-        result = self.interpreter.parse(text, message_id)
+        result = self.interpreter.parse(text)
 
         return result
 

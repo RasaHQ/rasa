@@ -39,12 +39,12 @@ def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
 
     # unset RASA_ENVIRONMENT env var results in empty App ID
     monkeypatch.delenv("RASA_ENVIRONMENT", raising=False)
-    assert not pika_producer._message_properties.app_id
+    assert not pika_producer._get_message_properties().app_id
 
     # setting it to some value results in that value as the App ID
     rasa_environment = "some-test-environment"
     monkeypatch.setenv("RASA_ENVIRONMENT", rasa_environment)
-    assert pika_producer._message_properties.app_id == rasa_environment
+    assert pika_producer._get_message_properties().app_id == rasa_environment
 
 
 def test_no_broker_in_config():
@@ -96,26 +96,30 @@ def test_file_broker_from_config():
 
 
 def test_file_broker_logs_to_file(tmpdir):
-    fname = tmpdir.join("events.log").strpath
+    log_file_path = tmpdir.join("events.log").strpath
 
-    actual = EventBroker.create(EndpointConfig(**{"type": "file", "path": fname}))
+    actual = EventBroker.create(
+        EndpointConfig(**{"type": "file", "path": log_file_path})
+    )
 
     for e in TEST_EVENTS:
         actual.publish(e.as_dict())
 
     # reading the events from the file one event per line
     recovered = []
-    with open(fname, "r") as f:
-        for l in f:
-            recovered.append(Event.from_parameters(json.loads(l)))
+    with open(log_file_path, "r") as log_file:
+        for line in log_file:
+            recovered.append(Event.from_parameters(json.loads(line)))
 
     assert recovered == TEST_EVENTS
 
 
 def test_file_broker_properly_logs_newlines(tmpdir):
-    fname = tmpdir.join("events.log").strpath
+    log_file_path = tmpdir.join("events.log").strpath
 
-    actual = EventBroker.create(EndpointConfig(**{"type": "file", "path": fname}))
+    actual = EventBroker.create(
+        EndpointConfig(**{"type": "file", "path": log_file_path})
+    )
 
     event_with_newline = UserUttered("hello \n there")
 
@@ -123,9 +127,9 @@ def test_file_broker_properly_logs_newlines(tmpdir):
 
     # reading the events from the file one event per line
     recovered = []
-    with open(fname, "r") as f:
-        for l in f:
-            recovered.append(Event.from_parameters(json.loads(l)))
+    with open(log_file_path, "r") as log_file:
+        for line in log_file:
+            recovered.append(Event.from_parameters(json.loads(line)))
 
     assert recovered == [event_with_newline]
 

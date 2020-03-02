@@ -5,7 +5,7 @@ import time
 import typing
 from collections import deque
 from threading import Thread
-from typing import Callable, Deque, Dict, Optional, Text, Union
+from typing import Callable, Deque, Dict, Optional, Text, Union, Any
 
 from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
@@ -175,16 +175,37 @@ def _declare_pika_channel_with_queue(
     return channel
 
 
-def close_pika_channel(channel: "Channel") -> None:
-    """Attempt to close Pika channel."""
+def close_pika_channel(
+    channel: "Channel",
+    attempts: int = 1000,
+    time_between_attempts_in_seconds: float = 0.001,
+) -> None:
+    """Attempt to close Pika channel, and wait until it is closed.
 
+    Args:
+        channel: Pika `Channel` to close.
+        attempts: How many times to try to confirm that the channel has indeed been
+            closed.
+        time_between_attempts_in_seconds: Wait time between attempts to confirm closed state.
+
+    """
     from pika.exceptions import AMQPError
 
     try:
         channel.close()
-        logger.debug("Successfully closed Pika channel.")
+        logger.debug("Successfully initiated closing of Pika channel.")
     except AMQPError:
-        logger.exception("Failed to close Pika channel.")
+        logger.exception("Failed to initiate closing of Pika channel.")
+
+    while attempts:
+        if channel.is_closed:
+            logger.debug("Successfully closed Pika channel.")
+            return None
+
+        time.sleep(time_between_attempts_in_seconds)
+        attempts -= 1
+
+    logger.exception("Failed to close Pika channel.")
 
 
 def close_pika_connection(connection: "Connection") -> None:
@@ -207,7 +228,9 @@ class PikaEventBroker(EventBroker):
         password: Text,
         port: Union[int, Text] = 5672,
         queue: Text = "rasa_core_events",
-        loglevel: Union[Text, int] = os.environ.get(
+        should_keep_unpublished_messages: bool = True,
+        raise_on_failure: bool = False,
+        log_level: Union[Text, int] = os.environ.get(
             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
         ),
     ):
@@ -219,10 +242,15 @@ class PikaEventBroker(EventBroker):
             password: Password for authentication with Pika host.
             port: port of the Pika host.
             queue: Pika queue to declare.
-            loglevel: Logging level.
+            should_keep_unpublished_messages: Whether or not the event broker should
+                maintain a queue of unpublished messages to be published later in
+                case of errors.
+            raise_on_failure: Whether to raise an exception if publishing fails. If
+                `False`, keep retrying.
+            log_level: Logging level.
 
         """
-        logging.getLogger("pika").setLevel(loglevel)
+        logging.getLogger("pika").setLevel(log_level)
 
         self.queue = queue
         self.host = host
@@ -230,6 +258,8 @@ class PikaEventBroker(EventBroker):
         self.password = password
         self.port = port
         self.channel: Optional["Channel"] = None
+        self.should_keep_unpublished_messages = should_keep_unpublished_messages
+        self.raise_on_failure = raise_on_failure
 
         # List to store unpublished messages which hopefully will be published later
         self._unpublished_messages: Deque[Text] = deque()
@@ -239,6 +269,10 @@ class PikaEventBroker(EventBroker):
         if self.channel:
             close_pika_channel(self.channel)
             close_pika_connection(self.channel.connection)
+
+    def close(self) -> None:
+        """Close the pika channel and connection."""
+        self.__del__()
 
     @property
     def rasa_environment(self) -> Optional[Text]:
@@ -292,21 +326,56 @@ class PikaEventBroker(EventBroker):
         thread.start()
 
     def _run_pika_io_loop(self) -> None:
+        # noinspection PyUnresolvedReferences
         self._pika_connection.ioloop.start()
 
+    def is_ready(
+        self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01,
+    ) -> bool:
+        """Spin until the pika channel is open.
+
+        It typically takes 50 ms or so for the pika channel to open. We'll wait up
+        to 10 seconds just in case.
+
+        Args:
+            attempts: Number of retries.
+            wait_time_between_attempts_in_seconds: Wait time between retries.
+
+        Returns:
+            `True` if the channel is available, `False` otherwise.
+        """
+
+        while attempts:
+            if self.channel:
+                return True
+            time.sleep(wait_time_between_attempts_in_seconds)
+            attempts -= 1
+
+        return False
+
     def publish(
-        self, event: Dict, retries: int = 60, retry_delay_in_seconds: int = 5
+        self,
+        event: Dict[Text, Any],
+        retries: int = 60,
+        retry_delay_in_seconds: int = 5,
+        headers: Optional[Dict[Text, Text]] = None,
     ) -> None:
         """Publish `event` into Pika queue.
 
-        Perform `retries` publish attempts with `retry_delay_in_seconds` between them.
-        """
+        Args:
+            event: Serialised event to be published.
+            retries: Number of retries if publishing fails
+            retry_delay_in_seconds: Delay in seconds between retries.
+            headers: Message headers to append to the published message (key-value
+                dictionary). The headers can be retrieved in the consumer from the
+                `headers` attribute of the message's `BasicProperties`.
 
+        """
         body = json.dumps(event)
 
         while retries:
             try:
-                self._publish(body)
+                self._publish(body, headers)
                 return
             except Exception as e:
                 logger.error(
@@ -314,6 +383,8 @@ class PikaEventBroker(EventBroker):
                     "{}".format(self.host, e)
                 )
                 self.channel = None
+                if self.raise_on_failure:
+                    raise e
 
             retries -= 1
             time.sleep(retry_delay_in_seconds)
@@ -323,27 +394,61 @@ class PikaEventBroker(EventBroker):
             "'{}':\n{}".format(self.queue, self.host, body)
         )
 
-    @property
-    def _message_properties(self) -> "BasicProperties":
-        """Create RabbitMQ message properties.
+    def _get_message_properties(
+        self, headers: Optional[Dict[Text, Text]] = None
+    ) -> "BasicProperties":
+        """Create RabbitMQ message `BasicProperties`.
+
+        The `app_id` property is set to the value of `self.rasa_environment` if
+        present, and the message delivery mode is set to 2 (persistent). In
+        addition, the `headers` property is set if supplied.
+
+        Args:
+            headers: Message headers to add to the message properties of the
+            published message (key-value dictionary). The headers can be retrieved in
+            the consumer from the `headers` attribute of the message's
+            `BasicProperties`.
 
         Returns:
-            pika.spec.BasicProperties with the `RASA_ENVIRONMENT` environment
-            variable as the properties' `app_id` value. If this variable is unset, empty
-            pika.spec.BasicProperties.
+            `pika.spec.BasicProperties` with the `RASA_ENVIRONMENT` environment variable
+            as the properties' `app_id` value, `delivery_mode`=2 and `headers` as the
+            properties' headers.
 
         """
         from pika.spec import BasicProperties
 
-        kwargs = {"app_id": self.rasa_environment} if self.rasa_environment else {}
+        # make message persistent
+        kwargs = {"delivery_mode": 2}
+
+        if self.rasa_environment:
+            kwargs["app_id"] = self.rasa_environment
+
+        if headers:
+            kwargs["headers"] = headers
 
         return BasicProperties(**kwargs)
 
-    def _publish(self, body: Text) -> None:
+    def _basic_publish(
+        self, body: Text, headers: Optional[Dict[Text, Text]] = None
+    ) -> None:
+        self.channel.basic_publish(
+            "",
+            self.queue,
+            body.encode(DEFAULT_ENCODING),
+            properties=self._get_message_properties(headers),
+        )
+
+        logger.debug(
+            f"Published Pika events to queue '{self.queue}' on host "
+            f"'{self.host}':\n{body}"
+        )
+
+    def _publish(self, body: Text, headers: Optional[Dict[Text, Text]] = None) -> None:
         if self._pika_connection.is_closed:
             # Try to reset connection
             self._run_pika()
-        elif not self.channel:
+            self._basic_publish(body, headers)
+        elif not self.channel and self.should_keep_unpublished_messages:
             logger.warning(
                 f"RabbitMQ channel has not been assigned. Adding message to "
                 f"list of unpublished messages and trying to publish them "
@@ -352,17 +457,7 @@ class PikaEventBroker(EventBroker):
             )
             self._unpublished_messages.append(body)
         else:
-            self.channel.basic_publish(
-                "",
-                self.queue,
-                body.encode(DEFAULT_ENCODING),
-                properties=self._message_properties,
-            )
-
-            logger.debug(
-                f"Published Pika events to queue '{self.queue}' on host "
-                f"'{self.host}':\n{body}"
-            )
+            self._basic_publish(body, headers)
 
 
 def create_rabbitmq_ssl_options(
@@ -418,7 +513,9 @@ class PikaProducer(PikaEventBroker):
         password: Text,
         port: Union[int, Text] = 5672,
         queue: Text = "rasa_core_events",
-        loglevel: Union[Text, int] = os.environ.get(
+        should_keep_unpublished_messages: bool = True,
+        raise_on_failure: bool = False,
+        log_level: Union[Text, int] = os.environ.get(
             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
         ),
     ):
@@ -430,5 +527,12 @@ class PikaProducer(PikaEventBroker):
             docs=DOCS_URL_EVENT_BROKERS,
         )
         super(PikaProducer, self).__init__(
-            host, username, password, port, queue, loglevel
+            host,
+            username,
+            password,
+            port,
+            queue,
+            should_keep_unpublished_messages,
+            raise_on_failure,
+            log_level,
         )

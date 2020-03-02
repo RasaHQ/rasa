@@ -1,0 +1,1 @@
+Remove deprecation warnings for ``CRFEntityExtractor`` and ``SklearnIntentClassifier``.

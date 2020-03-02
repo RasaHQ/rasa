@@ -27,7 +27,11 @@ import aiohttp
 import numpy as np
 import rasa.utils.io as io_utils
 from aiohttp import InvalidURL
-from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
+from rasa.constants import (
+    DEFAULT_SANIC_WORKERS,
+    ENV_SANIC_WORKERS,
+    DEFAULT_ENDPOINTS_PATH,
+)
 
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
@@ -35,6 +39,7 @@ from rasa.core.lock_store import LockStore, RedisLockStore
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from sanic import Sanic
 from sanic.views import CompositionView
+import rasa.cli.utils as cli_utils
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +93,7 @@ def is_int(value: Any) -> bool:
         return False
 
 
-def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.array:
+def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarray:
     if hot_idx >= length:
         raise ValueError(
             "Can't create one hot. Index '{}' is out "
@@ -176,7 +181,7 @@ class HashableNDArray:
     def __hash__(self) -> int:
         return self.__hash
 
-    def unwrap(self) -> np.array:
+    def unwrap(self) -> np.ndarray:
         """Returns the encapsulated ndarray.
 
         If the wrapper is "tight", a copy of the encapsulated ndarray is
@@ -416,6 +421,25 @@ class AvailableEndpoints:
         self.tracker_store = tracker_store
         self.lock_store = lock_store
         self.event_broker = event_broker
+
+
+def read_endpoints_from_path(
+    endpoints_path: Union[Path, Text, None] = None
+) -> AvailableEndpoints:
+    """Get `AvailableEndpoints` object from specified path.
+
+    Args:
+        endpoints_path: Path of the endpoints file to be read. If `None` the
+            default path for that file is used (`endpoints.yml`).
+
+    Returns:
+        `AvailableEndpoints` object read from endpoints file.
+
+    """
+    endpoints_config_path = cli_utils.get_validated_path(
+        endpoints_path, "endpoints", DEFAULT_ENDPOINTS_PATH, True
+    )
+    return AvailableEndpoints.read_endpoints(endpoints_config_path)
 
 
 # noinspection PyProtectedMember

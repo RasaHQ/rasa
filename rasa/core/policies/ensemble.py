@@ -1,5 +1,4 @@
 import importlib
-import warnings
 import json
 import logging
 import os
@@ -12,7 +11,7 @@ import rasa.core
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL, DOCS_URL_POLICIES
 
-from rasa.core import utils, training
+from rasa.core import utils
 from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -40,7 +39,6 @@ class PolicyEnsemble:
         self, policies: List[Policy], action_fingerprints: Optional[Dict] = None
     ) -> None:
         self.policies = policies
-        self.training_trackers = None
         self.date_trained = None
 
         if action_fingerprints:
@@ -124,9 +122,11 @@ class PolicyEnsemble:
         if training_trackers:
             for policy in self.policies:
                 policy.train(training_trackers, domain, **kwargs)
+
+            training_events = self._training_events_from_trackers(training_trackers)
+            self.action_fingerprints = self._create_action_fingerprints(training_events)
         else:
             logger.info("Skipped training, because there are no training samples.")
-        self.training_trackers = training_trackers
         self.date_trained = datetime.now().strftime("%Y%m%d-%H%M%S")
 
     def probabilities_using_best_policy(
@@ -173,24 +173,17 @@ class PolicyEnsemble:
             except ImportError:
                 pass
 
-    def _persist_metadata(
-        self, path: Text, dump_flattened_stories: bool = False
-    ) -> None:
+    def _persist_metadata(self, path: Text) -> None:
         """Persists the domain specification to storage."""
 
         # make sure the directory we persist exists
         domain_spec_path = os.path.join(path, "metadata.json")
-        training_data_path = os.path.join(path, "stories.md")
         rasa.utils.io.create_directory_for_file(domain_spec_path)
 
         policy_names = [utils.module_path_from_instance(p) for p in self.policies]
 
-        training_events = self._training_events_from_trackers(self.training_trackers)
-
-        action_fingerprints = self._create_action_fingerprints(training_events)
-
         metadata = {
-            "action_fingerprints": action_fingerprints,
+            "action_fingerprints": self.action_fingerprints,
             "python": ".".join([str(s) for s in sys.version_info[:3]]),
             "max_histories": self._max_histories(),
             "ensemble_name": self.__module__ + "." + self.__class__.__name__,
@@ -202,15 +195,10 @@ class PolicyEnsemble:
 
         rasa.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
-        # if there are lots of stories, saving flattened stories takes a long
-        # time, so this is turned off by default
-        if dump_flattened_stories:
-            training.persist_data(self.training_trackers, training_data_path)
-
-    def persist(self, path: Text, dump_flattened_stories: bool = False) -> None:
+    def persist(self, path: Text) -> None:
         """Persists the policy to storage."""
 
-        self._persist_metadata(path, dump_flattened_stories)
+        self._persist_metadata(path)
 
         for i, policy in enumerate(self.policies):
             dir_name = "policy_{}_{}".format(i, type(policy).__name__)
@@ -356,14 +344,6 @@ class PolicyEnsemble:
         )
 
         return state_featurizer_func, state_featurizer_config
-
-    def continue_training(
-        self, trackers: List[DialogueStateTracker], domain: Domain, **kwargs: Any
-    ) -> None:
-
-        self.training_trackers.extend(trackers)
-        for p in self.policies:
-            p.continue_training(self.training_trackers, domain, **kwargs)
 
 
 class SimplePolicyEnsemble(PolicyEnsemble):
