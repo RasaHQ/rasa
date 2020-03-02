@@ -20,6 +20,7 @@ def test_x_help(run: Callable[..., RunResult]):
               [--no-prompt] [--production] [--rasa-x-port RASA_X_PORT]
               [--config-endpoint CONFIG_ENDPOINT] [--log-file LOG_FILE]
               [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
+              [--response-timeout RESPONSE_TIMEOUT]
               [--cors [CORS [CORS ...]]] [--enable-api]
               [--remote-storage REMOTE_STORAGE]
               [--ssl-certificate SSL_CERTIFICATE] [--ssl-keyfile SSL_KEYFILE]

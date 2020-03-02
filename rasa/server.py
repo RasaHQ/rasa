@@ -19,6 +19,7 @@ from rasa import model
 from rasa.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
+    DEFAULT_RESPONSE_TIMEOUT,
     DOCS_BASE_URL,
     MINIMUM_COMPATIBLE_VERSION,
 )
@@ -372,6 +373,7 @@ def create_app(
     agent: Optional["Agent"] = None,
     cors_origins: Union[Text, List[Text], None] = "*",
     auth_token: Optional[Text] = None,
+    response_timeout: int = DEFAULT_RESPONSE_TIMEOUT,
     jwt_secret: Optional[Text] = None,
     jwt_method: Text = "HS256",
     endpoints: Optional[AvailableEndpoints] = None,
@@ -379,7 +381,7 @@ def create_app(
     """Class representing a Rasa HTTP server."""
 
     app = Sanic(__name__)
-    app.config.RESPONSE_TIMEOUT = 60 * 60
+    app.config.RESPONSE_TIMEOUT = response_timeout
     configure_cors(app, cors_origins)
 
     # Setup the Sanic-JWT extension

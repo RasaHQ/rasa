@@ -57,6 +57,12 @@ def add_server_arguments(parser: argparse.ArgumentParser):
         help="Start the web server API in addition to the input channel.",
     )
     server_arguments.add_argument(
+        "--response-timeout",
+        default=constants.DEFAULT_RESPONSE_TIMEOUT,
+        type=int,
+        help="Maximum time a response can take to process (sec).",
+    )
+    server_arguments.add_argument(
         "--remote-storage",
         help="Set the remote location where your Rasa model is stored, e.g. on AWS.",
     )

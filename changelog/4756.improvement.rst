@@ -1,0 +1,2 @@
+Make Rasa server response timeout configurable.
+Rasa server can now be started with `--response-timeout <int>` to configure a response timeout of <int> seconds.

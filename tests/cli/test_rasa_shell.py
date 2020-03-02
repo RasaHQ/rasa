@@ -8,6 +8,7 @@ def test_shell_help(run: Callable[..., RunResult]):
     help_text = """usage: rasa shell [-h] [-v] [-vv] [--quiet]
                   [--conversation-id CONVERSATION_ID] [-m MODEL]
                   [--log-file LOG_FILE] [--endpoints ENDPOINTS] [-p PORT]
+                  [--response-timeout RESPONSE_TIMEOUT]
                   [-t AUTH_TOKEN] [--cors [CORS [CORS ...]]] [--enable-api]
                   [--remote-storage REMOTE_STORAGE]
                   [--ssl-certificate SSL_CERTIFICATE]

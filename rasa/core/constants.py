@@ -12,6 +12,8 @@ DEFAULT_FALLBACK_ACTION = "action_default_fallback"
 
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
+DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
+
 DEFAULT_LOCK_LIFETIME = 60  # in seconds
 
 REQUESTED_SLOT = "requested_slot"
