@@ -15,7 +15,7 @@
 * request_restaurant: /request_restaurant
     - restaurant_form
     - form{"name": "restaurant_form"}
-* form: /inform{"cuisine": "afghan"}
+* form: inform: /inform{"cuisine": "afghan"}
     - form: restaurant_form
     - form{"name": null}
     - utter_slots_values
