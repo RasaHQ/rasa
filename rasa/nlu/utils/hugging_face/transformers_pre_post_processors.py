@@ -2,6 +2,23 @@ from typing import List, Tuple, Text
 import numpy as np
 
 
+def cleanup_tokens(
+    token_ids_string: List[Tuple[int, Text]], delimiter: Text
+) -> Tuple[List[int], List[Text]]:
+    """Utility method to apply specific delimiter based cleanup on list of tokens"""
+
+    token_ids_string = [
+        (id, string.replace(delimiter, "")) for id, string in token_ids_string
+    ]
+
+    # remove empty strings
+    token_ids_string = [(id, string) for id, string in token_ids_string if string]
+
+    # return as individual token ids and token strings
+    token_ids, token_strings = zip(*token_ids_string)
+    return token_ids, token_strings
+
+
 def bert_tokens_pre_processor(token_ids: List[int]) -> List[int]:
     """Add BERT style special tokens(CLS and SEP)"""
     BERT_CLS_ID = 101
@@ -120,29 +137,33 @@ def xlm_embeddings_post_processor(
     return sentence_embedding, post_processed_embedding
 
 
-def bert_tokens_cleaner(token_strings: List[Text]) -> List[Text]:
+def bert_tokens_cleaner(
+    token_ids: List[int], token_strings: List[Text]
+) -> Tuple[List[int], List[Text]]:
     """Clean up tokens with the extra delimiters(##) BERT adds while breaking a token
     into sub-tokens"""
-    tokens = [string.replace("##", "") for string in token_strings]
-    return [string for string in tokens if string]
+    return cleanup_tokens(list(zip(token_ids, token_strings)), "##")
 
 
-def openaigpt_tokens_cleaner(token_strings: List[Text]) -> List[Text]:
+def openaigpt_tokens_cleaner(
+    token_ids: List[int], token_strings: List[Text]
+) -> Tuple[List[int], List[Text]]:
     """Clean up tokens with the extra delimiters(</w>) OpenAIGPT adds while breaking a
     token into sub-tokens"""
-    tokens = [string.replace("</w>", "") for string in token_strings]
-    return [string for string in tokens if string]
+    return cleanup_tokens(list(zip(token_ids, token_strings)), "</w>")
 
 
-def gpt2_tokens_cleaner(token_strings: List[Text]) -> List[Text]:
-    """Clean up tokens with the extra delimiters(</w>) GPT2 adds while breaking a token
+def gpt2_tokens_cleaner(
+    token_ids: List[int], token_strings: List[Text]
+) -> Tuple[List[int], List[Text]]:
+    """Clean up tokens with the extra delimiters(Ġ) GPT2 adds while breaking a token
     into sub-tokens"""
-    tokens = [string.replace("Ġ", "") for string in token_strings]
-    return [string for string in tokens if string]
+    return cleanup_tokens(list(zip(token_ids, token_strings)), "Ġ")
 
 
-def xlnet_tokens_cleaner(token_strings: List[Text]) -> List[Text]:
+def xlnet_tokens_cleaner(
+    token_ids: List[int], token_strings: List[Text]
+) -> Tuple[List[int], List[Text]]:
     """Clean up tokens with the extra delimiters(▁) XLNet adds while breaking a token
     into sub-tokens"""
-    tokens = [string.replace("▁", "") for string in token_strings]
-    return [string for string in tokens if string]
+    return cleanup_tokens(list(zip(token_ids, token_strings)), "_")
