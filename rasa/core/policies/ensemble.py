@@ -27,6 +27,7 @@ from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
+from rasa.core.interpreter import RasaCoreInterpreter
 from rasa.utils.common import class_from_module_path, raise_warning
 
 logger = logging.getLogger(__name__)
@@ -117,11 +118,12 @@ class PolicyEnsemble:
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: Optional[RasaCoreInterpreter], 
         **kwargs: Any,
     ) -> None:
         if training_trackers:
             for policy in self.policies:
-                policy.train(training_trackers, domain, **kwargs)
+                policy.train(training_trackers, domain, interpreter, **kwargs)
 
             training_events = self._training_events_from_trackers(training_trackers)
             self.action_fingerprints = self._create_action_fingerprints(training_events)

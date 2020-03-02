@@ -11,6 +11,7 @@ from rasa.core.featurizers import (
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
+from rasa.core.interpreter import RasaCoreInterpreter
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 
 
@@ -67,6 +68,7 @@ class Policy:
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: Optional[RasaCoreInterpreter],
         **kwargs: Any,
     ) -> DialogueTrainingData:
         """Transform training trackers into a vector representation.
@@ -86,7 +88,7 @@ class Policy:
         training_data = self.featurizer.featurize_trackers(
             training_trackers, domain, **kwargs
         )
-
+        
         max_training_samples = kwargs.get("max_training_samples")
         if max_training_samples is not None:
             logger.debug(

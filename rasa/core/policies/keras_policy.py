@@ -20,6 +20,8 @@ from rasa.core.trackers import DialogueStateTracker
 import rasa.utils.common as common_utils
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
+from rasa.core.interpreter import RasaCoreInterpreter
+
 
 
 # there are a number of issues with imports from tensorflow. hence the deactivation
@@ -166,13 +168,14 @@ class KerasPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: Optional[RasaCoreInterpreter],
         **kwargs: Any,
     ) -> None:
 
         np.random.seed(self.random_seed)
         tf.random.set_seed(self.random_seed)
 
-        training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
+        training_data = self.featurize_for_training(training_trackers, domain, interpreter, **kwargs)
         # noinspection PyPep8Naming
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
 
@@ -205,7 +208,7 @@ class KerasPolicy(Policy):
         logger.debug("Done fitting Keras Policy model.")
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self, tracker: DialogueStateTracker, domain: Domain, interpreter: Optional[RasaCoreInterpreter]
     ) -> List[float]:
 
         # noinspection PyPep8Naming

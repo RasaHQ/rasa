@@ -14,6 +14,7 @@ from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.interpreter import RasaCoreInterpreter
 from rasa.utils.common import is_logging_disabled
 from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
 
@@ -159,6 +160,7 @@ class MemoizationPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: Optional[RasaCoreInterpreter],
         **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers."""

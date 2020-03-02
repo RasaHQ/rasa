@@ -23,6 +23,7 @@ from rasa.core.featurizers import (
 from rasa.core.policies.policy import Policy
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.interpreter import RasaCoreInterpreter
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
@@ -365,12 +366,13 @@ class TEDPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: Optional[RasaCoreInterpreter],
         **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
 
         # dealing with training data
-        training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
+        training_data = self.featurize_for_training(training_trackers, domain, interpreter, **kwargs)
 
         self._label_data = self._create_label_data(domain)
 
@@ -416,7 +418,7 @@ class TEDPolicy(Policy):
             return self._default_predictions(domain)
 
         # create model data from tracker
-        data_X = self.featurizer.create_X([tracker], domain)
+        data_X = self.featurizer.create_X([tracker], domain, interpreter)
         model_data = self._create_model_data(data_X)
 
         output = self.model.predict(model_data)
@@ -714,6 +716,8 @@ class TED(RasaModel):
         """Create dialogue level embedding and mask."""
 
         mask = self._compute_mask(sequence_lengths)
+        if isinstance(dialogue_in, tf.SparseTensor):
+            dialogue_in = self._tf_layers["sparse_to_dense.dialogue_features"](dialogue_in)
 
         dialogue = self._tf_layers[f"ffnn.{DIALOGUE}"](dialogue_in, self._training)
         dialogue_transformed = self._tf_layers["transformer"](
