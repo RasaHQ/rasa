@@ -19,6 +19,7 @@ from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.interpreter import RegexInterpreter, RasaCoreInterpreter
 from rasa.utils.io import DEFAULT_ENCODING
 
 if typing.TYPE_CHECKING:
@@ -543,6 +544,7 @@ async def test(
     fail_on_prediction_errors: bool = False,
     e2e: bool = False,
     disable_plotting: bool = False,
+<<<<<<< HEAD
     successes: bool = False,
     errors: bool = True,
 ) -> Dict[Text, Any]:
@@ -565,8 +567,18 @@ async def test(
         Evaluation summary.
     """
     from rasa.test import get_evaluation_metrics
+=======
+):
+    """Run the evaluation of the stories, optionally plot the results."""
+    from rasa.nlu.test import get_evaluation_metrics
+    # change of interpreters: preprocess with the simplest one but pass into processing
+    # the one which has full NLU pipeline
+>>>>>>> pass interpreter through steps for testing
 
+    interpreter_temp = agent.interpreter
+    agent.interpreter = RegexInterpreter()
     completed_trackers = await _generate_trackers(stories, agent, max_stories, e2e)
+    agent.interpreter = interpreter_temp
 
     story_evaluation, _ = _collect_story_predictions(
         completed_trackers, agent, fail_on_prediction_errors, e2e
