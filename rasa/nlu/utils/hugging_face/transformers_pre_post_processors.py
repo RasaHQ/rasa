@@ -166,4 +166,4 @@ def xlnet_tokens_cleaner(
 ) -> Tuple[List[int], List[Text]]:
     """Clean up tokens with the extra delimiters(▁) XLNet adds while breaking a token
     into sub-tokens"""
-    return cleanup_tokens(list(zip(token_ids, token_strings)), "_")
+    return cleanup_tokens(list(zip(token_ids, token_strings)), "▁")
