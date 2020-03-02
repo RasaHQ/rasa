@@ -358,6 +358,16 @@ class StoryFileReader:
                         await self.add_e2e_messages(user_messages, line_num)
                     else:
                         await self.add_user_messages(user_messages, line_num)
+                #end-to-end USER message
+                elif line.startswith('?'):
+                    event_name, parameters = self._parse_event_line(line[1:])
+                    self.add_event(event_name, parameters)
+                elif line.startswith('!'):
+                    user_messages = [el.strip() for el in line[1:].split(" OR ")]
+                    if self.use_e2e:
+                        await self.add_e2e_messages(user_messages, line_num)
+                    else:
+                        await self.add_user_messages(user_messages, line_num)
                 else:
                     # reached an unknown type of line
                     logger.warning(
