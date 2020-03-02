@@ -1,13 +1,19 @@
 import pytest
 
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TEXT, INTENT, TOKENS_NAMES
+from rasa.nlu.constants import (
+    TEXT,
+    INTENT,
+    TOKENS_NAMES,
+    LANGUAGE_MODEL_DOCS,
+    TOKEN_IDS,
+)
 from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 
 
 @pytest.mark.parametrize(
-    "model_name, texts, expected_tokens, expected_indices",
+    "model_name, texts, expected_tokens, expected_indices, expected_num_token_ids",
     [
         (
             "bert",
@@ -56,6 +62,7 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
                     (39, 42),
                 ],
             ],
+            [4, 4, 5, 5, 13],
         ),
         (
             "gpt",
@@ -93,6 +100,7 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
                     (39, 42),
                 ],
             ],
+            [2, 1, 2, 3, 3, 9],
         ),
         (
             "gpt2",
@@ -144,6 +152,7 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
                     (39, 42),
                 ],
             ],
+            [3, 1, 2, 3, 3, 11],
         ),
         (
             "xlnet",
@@ -193,6 +202,7 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
                     (39, 42),
                 ],
             ],
+            [4, 3, 4, 5, 5, 12],
         ),
         (
             "distilbert",
@@ -241,6 +251,7 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
                     (39, 42),
                 ],
             ],
+            [4, 4, 5, 5, 13],
         ),
         (
             "roberta",
@@ -292,25 +303,32 @@ from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
                     (39, 42),
                 ],
             ],
+            [5, 3, 4, 5, 5, 13],
         ),
     ],
 )
-def test_lm_tokenizer_edge_cases(model_name, texts, expected_tokens, expected_indices):
+def test_lm_tokenizer_edge_cases(
+    model_name, texts, expected_tokens, expected_indices, expected_num_token_ids
+):
 
     transformers_config = {"model_name": model_name}
 
     transformers_nlp = HFTransformersNLP(transformers_config)
     lm_tokenizer = LanguageModelTokenizer()
 
-    for text, gt_tokens, gt_indices in zip(texts, expected_tokens, expected_indices):
+    for text, gt_tokens, gt_indices, gt_num_indices in zip(
+        texts, expected_tokens, expected_indices, expected_num_token_ids
+    ):
 
         message = Message.build(text=text)
         transformers_nlp.process(message)
         tokens = lm_tokenizer.tokenize(message, TEXT)
+        token_ids = message.get(LANGUAGE_MODEL_DOCS[TEXT])[TOKEN_IDS]
 
         assert [t.text for t in tokens] == gt_tokens
         assert [t.start for t in tokens] == [i[0] for i in gt_indices]
         assert [t.end for t in tokens] == [i[1] for i in gt_indices]
+        assert len(token_ids) == gt_num_indices
 
 
 @pytest.mark.parametrize(
