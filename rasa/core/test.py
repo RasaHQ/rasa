@@ -309,6 +309,7 @@ def _collect_action_executed_predictions(
         confidence = None
     else:
         action, policy, confidence = processor.predict_next_action(partial_tracker)
+
         predicted = action.name()
 
         if policy and predicted != gold and FormPolicy.__name__ in policy:
@@ -385,6 +386,7 @@ def _predict_tracker_actions(
                 event,
                 fail_on_prediction_errors,
                 circuit_breaker_tripped,)
+
             tracker_eval_store.merge_store(action_executed_result)
             tracker_actions.append(
                 {
@@ -522,6 +524,9 @@ async def test(
 ):
     """Run the evaluation of the stories, optionally plot the results."""
     from rasa.nlu.test import get_evaluation_metrics
+    # change of interpreters: preprocess with the simplest one but pass into processing
+    # the one which has full NLU pipeline
+
 
     # change of interpreters: preprocess with the simplest one but pass into processing
     # the one which has full NLU pipeline
