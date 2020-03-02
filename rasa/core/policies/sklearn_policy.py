@@ -18,6 +18,8 @@ from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import LabelEncoder
+from rasa.core.interpreter import RasaCoreInterpreter
+
 
 # noinspection PyProtectedMember
 from sklearn.utils import shuffle as sklearn_shuffle
@@ -118,10 +120,11 @@ class SklearnPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: Optional[RasaCoreInterpreter],
         **kwargs: Any,
     ) -> None:
 
-        training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
+        training_data = self.featurize_for_training(training_trackers, domain, interpreter, **kwargs)
 
         X, y = self._extract_training_data(training_data)
         self._train_params.update(kwargs)
@@ -158,7 +161,7 @@ class SklearnPolicy(Policy):
         return y_filled
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self, tracker: DialogueStateTracker, domain: Domain, interpreter: Optional[RasaCoreInterpreter]
     ) -> List[float]:
         X = self.featurizer.create_X([tracker], domain)
         Xt = self._preprocess_data(X)

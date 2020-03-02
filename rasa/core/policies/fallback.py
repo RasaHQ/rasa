@@ -12,6 +12,8 @@ from rasa.core.domain import Domain
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
+from rasa.core.interpreter import RasaCoreInterpreter
+
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +62,7 @@ class FallbackPolicy(Policy):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        interpreter: Optional[RasaCoreInterpreter],
         **kwargs: Any,
     ) -> None:
         """Does nothing. This policy is deterministic."""
@@ -134,7 +137,7 @@ class FallbackPolicy(Policy):
         return result
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain
+        self, tracker: DialogueStateTracker, domain: Domain, interpreter: Optional[RasaCoreInterpreter]
     ) -> List[float]:
         """Predicts a fallback action.
 
