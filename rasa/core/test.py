@@ -11,6 +11,7 @@ from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
 from rasa.core.trackers import DialogueStateTracker
+from rasa.core.interpreter import RegexInterpreter, RasaCoreInterpreter
 from rasa.utils.io import DEFAULT_ENCODING
 
 if typing.TYPE_CHECKING:
@@ -288,7 +289,7 @@ def _emulate_form_rejection(processor, partial_tracker):
 
 
 def _collect_action_executed_predictions(
-    processor, partial_tracker, event, fail_on_prediction_errors
+    processor, partial_tracker, event, fail_on_prediction_errors, interpreter,
 ):
     from rasa.core.policies.form_policy import FormPolicy
 
@@ -296,7 +297,7 @@ def _collect_action_executed_predictions(
 
     gold = event.action_name
 
-    action, policy, confidence = processor.predict_next_action(partial_tracker)
+    action, policy, confidence = processor.predict_next_action(partial_tracker, interpreter)
     predicted = action.name()
 
     if policy and predicted != gold and FormPolicy.__name__ in policy:
@@ -304,7 +305,7 @@ def _collect_action_executed_predictions(
         # but it might be Ok if form action is rejected
         _emulate_form_rejection(processor, partial_tracker)
         # try again
-        action, policy, confidence = processor.predict_next_action(partial_tracker)
+        action, policy, confidence = processor.predict_next_action(partial_tracker, interpreter)
         predicted = action.name()
 
     action_executed_eval_store.add_to_store(
@@ -360,7 +361,7 @@ def _predict_tracker_actions(
                 policy,
                 confidence,
             ) = _collect_action_executed_predictions(
-                processor, partial_tracker, event, fail_on_prediction_errors
+                processor, partial_tracker, event, fail_on_prediction_errors, agent.interpreter
             )
             tracker_eval_store.merge_store(action_executed_result)
             tracker_actions.append(
@@ -492,8 +493,13 @@ async def test(
 ):
     """Run the evaluation of the stories, optionally plot the results."""
     from rasa.nlu.test import get_evaluation_metrics
+    # change of interpreters: preprocess with the simplest one but pass into processing
+    # the one which has full NLU pipeline
 
+    interpreter_temp = agent.interpreter
+    agent.interpreter = RegexInterpreter()
     completed_trackers = await _generate_trackers(stories, agent, max_stories, e2e)
+    agent.interpreter = interpreter_temp
 
     story_evaluation, _ = collect_story_predictions(
         completed_trackers, agent, fail_on_prediction_errors, e2e
