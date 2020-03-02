@@ -19,7 +19,7 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
 
-from rasa.core.interpreter import RasaNLPInterpreter, RasaNLUInterpreter
+from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.nlu.model import Trainer
 from rasa.nlu.constants import CLS_TOKEN
 from rasa.nlu.training_data import Message, TrainingData
@@ -80,7 +80,6 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
 
         self.delimiter = '_'
         self.intent_tokenization_flag = True
-        self.interpreter = RasaNLPInterpreter()
 
     def prepare_training_data_and_train(self, trackers_as_states):
         """
@@ -134,7 +133,7 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
             - nparray(vocab_size,) or coo_matrix(1, vocab_size) 
         """
 
-        if state is None:
+        if state is None or list(state.keys())==[]::
             if type_output == "sparse":
                 return csr_matrix(
                     np.ones(len(self.vectorizers["text"].vocabulary_), dtype=np.int32) * -1
@@ -149,18 +148,18 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         attribute = "text"
 
         message = Message(" ".join(state_keys))
-        toks = self.interpreter.parse(message.text)
+        # toks = self.interpreter.parse(message.text)
 
         message_tokens = self._get_processed_message_tokens_by_attribute(
             message, attribute
         )
 
-        if 'tokens' in list(toks.keys()):
-            toks = [tok.text for tok in toks['tokens']]
-        else:
-            toks = []
+        # if 'tokens' in list(toks.keys()):
+        #     toks = [tok.text for tok in toks['tokens']]
+        # else:
+        #     toks = []
 
-        # toks = message_tokens
+        toks = message_tokens
 
 
 
