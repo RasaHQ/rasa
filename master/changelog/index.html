@@ -367,25 +367,6 @@ does not help for the case where messages are sent to an unavailable RabbitMQ in
 <li><p class="first"><a class="reference external" href="https://github.com/rasahq/rasa/issues/5250">#5250</a>: Added support for mattermost connector to use bot accounts.</p>
 </li>
 <li><p class="first"><a class="reference external" href="https://github.com/rasahq/rasa/issues/5266">#5266</a>: We updated our code to TensorFlow 2.</p>
-<p>We added a new docker image for ConveRT.
-The new images uses the following configuration</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
-
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ConveRTTokenizer</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ConveRTFeaturizer</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
-   <span class="l l-Scalar l-Scalar-Plain">analyzer</span><span class="p p-Indicator">:</span> <span class="s">&quot;char_wb&quot;</span>
-   <span class="l l-Scalar l-Scalar-Plain">min_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
-   <span class="l l-Scalar l-Scalar-Plain">max_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
-</pre></div>
-</div>
 </li>
 <li><p class="first"><a class="reference external" href="https://github.com/rasahq/rasa/issues/5317">#5317</a>: Events exported using <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">export</span></code> receive a message header if published through a
 <code class="docutils literal notranslate"><span class="pre">PikaEventBroker</span></code>. The header is added to the message’s <code class="docutils literal notranslate"><span class="pre">BasicProperties.headers</span></code>
