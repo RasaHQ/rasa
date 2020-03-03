@@ -57,7 +57,9 @@ def fake_send_message(*args, **kwargs):
 
 async def test_send_response(default_channel, default_tracker):
     text_only_message = {"text": "hey"}
-    multiline_text_message = {"text": "This message should come first:  \n\nThis is message two  \nThis as well\n\n"}
+    multiline_text_message = {
+        "text": "This message should come first:  \n\nThis is message two  \nThis as well\n\n"
+    }
     image_only_message = {"image": "https://i.imgur.com/nGF1K8f.jpg"}
     text_and_image_message = {
         "text": "look at this",
@@ -69,7 +71,9 @@ async def test_send_response(default_channel, default_tracker):
     }
 
     await default_channel.send_response(default_tracker.sender_id, text_only_message)
-    await default_channel.send_response(default_tracker.sender_id, multiline_text_message)
+    await default_channel.send_response(
+        default_tracker.sender_id, multiline_text_message
+    )
     await default_channel.send_response(default_tracker.sender_id, image_only_message)
     await default_channel.send_response(
         default_tracker.sender_id, text_and_image_message
@@ -83,8 +87,14 @@ async def test_send_response(default_channel, default_tracker):
     assert collected[0] == {"recipient_id": "my-sender", "text": "hey"}
 
     # multiline text message, should split on '\n\n'
-    assert collected[1] == {"recipient_id": "my-sender", "text": "This message should come first:  "}
-    assert collected[2] == {"recipient_id": "my-sender", "text": "This is message two  \nThis as well"}
+    assert collected[1] == {
+        "recipient_id": "my-sender",
+        "text": "This message should come first:  ",
+    }
+    assert collected[2] == {
+        "recipient_id": "my-sender",
+        "text": "This is message two  \nThis as well",
+    }
 
     # image only message
     assert collected[3] == {
