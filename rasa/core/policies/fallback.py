@@ -144,7 +144,10 @@ class FallbackPolicy(Policy):
 
         nlu_data = tracker.latest_message.parse_data
 
-        if tracker.latest_action_name == self.fallback_action_name:
+        if (
+            tracker.latest_action_name == self.fallback_action_name 
+            and tracker.latest_action_name != ACTION_LISTEN_NAME
+        ):
             result = self._default_predictions(domain)
             idx = domain.index_for_action(ACTION_LISTEN_NAME)
             result[idx] = 1.0
