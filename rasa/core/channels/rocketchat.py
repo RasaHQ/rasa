@@ -36,7 +36,7 @@ class RocketChatBot(OutputChannel):
     ) -> None:
         """Send message to output channel"""
 
-        for message_part in text.split("\n\n"):
+        for message_part in text.strip().split("\n\n"):
             self.rocket.chat_post_message(message_part, room_id=recipient_id)
 
     async def send_image_url(
