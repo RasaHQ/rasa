@@ -1214,16 +1214,18 @@ class DIET(RasaModel):
             features, mask, name, sparse_dropout=self.config[SPARSE_INPUT_DROPOUT]
         )
 
-        x = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
+        inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
 
         if masked_lm_loss:
-            x, lm_mask_bool = self._tf_layers[f"{name}_input_mask"](
-                x, mask, self._training
+            inputs, lm_mask_bool = self._tf_layers[f"{name}_input_mask"](
+                inputs, mask, self._training
             )
         else:
             lm_mask_bool = None
 
-        outputs = self._tf_layers[f"{name}_transformer"](x, 1 - mask, self._training)
+        outputs = self._tf_layers[f"{name}_transformer"](
+            inputs, 1 - mask, self._training
+        )
         outputs = tfa.activations.gelu(outputs)
 
         return outputs, inputs, seq_ids, lm_mask_bool
