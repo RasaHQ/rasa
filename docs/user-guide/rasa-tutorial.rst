@@ -3,8 +3,8 @@
 
 .. _rasa-tutorial:
 
-Tutorial: Rasa Basics
-=====================
+Rasa Basics
+===========
 
 .. edit-link::
 
