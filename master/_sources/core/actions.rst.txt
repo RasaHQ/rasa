@@ -48,7 +48,7 @@ Retrieval Actions
 -----------------
 
 Retrieval actions make it easier to work with a large number of similar intents like chitchat and FAQs.
-See :ref:`retrieval-actions` to learn moree.
+See :ref:`retrieval-actions` to learn more.
 
 .. _custom-actions:
 
