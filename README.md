@@ -9,7 +9,7 @@
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git.svg?type=shield)](https://app.fossa.com/projects/custom%2B8141%2Fgit%40github.com%3ARasaHQ%2Frasa.git?ref=badge_shield)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/orgs/RasaHQ/projects/23)
 
-<img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
+<img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png">
 
 Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contexual assistants on:
 - Facebook Messenger
