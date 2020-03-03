@@ -1,0 +1,2 @@
+Fixed issue with using language models like ``xlnet`` along with ``entity_recognition`` set to ``True`` inside
+``DIETClassifier``.
