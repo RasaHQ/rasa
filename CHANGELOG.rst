@@ -104,27 +104,6 @@ Improvements
   does not help for the case where messages are sent to an unavailable RabbitMQ instance.
 - `#5250 <https://github.com/rasahq/rasa/issues/5250>`_: Added support for mattermost connector to use bot accounts.
 - `#5266 <https://github.com/rasahq/rasa/issues/5266>`_: We updated our code to TensorFlow 2.
-
-  We added a new docker image for ConveRT.
-  The new images uses the following configuration
-
-  .. code-block:: yaml
-  
-      language: "en"
-
-      pipeline:
-      - name: ConveRTTokenizer
-      - name: ConveRTFeaturizer
-      - name: RegexFeaturizer
-      - name: LexicalSyntacticFeaturizer
-      - name: CountVectorsFeaturizer
-      - name: CountVectorsFeaturizer
-         analyzer: "char_wb"
-         min_ngram: 1
-         max_ngram: 4
-      - name: DIETClassifier
-      - name: EntitySynonymMapper
-      - name: ResponseSelector
 - `#5317 <https://github.com/rasahq/rasa/issues/5317>`_: Events exported using ``rasa export`` receive a message header if published through a
   ``PikaEventBroker``. The header is added to the message's ``BasicProperties.headers``
   under the ``rasa-export-process-id`` key
