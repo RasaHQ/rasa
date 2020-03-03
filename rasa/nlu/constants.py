@@ -13,7 +13,7 @@ NO_ENTITY_TAG = "O"
 EXTRACTOR = "extractor"
 
 PRETRAINED_EXTRACTORS = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
-TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor"}
+TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClassifier"}
 
 CLS_TOKEN = "__CLS__"
 
