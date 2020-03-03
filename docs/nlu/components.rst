@@ -676,10 +676,6 @@ MitieIntentClassifier
 SklearnIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. warning::
-    ``SklearnIntentClassifier`` is deprecated and should be replaced by ``DIETClassifier``. See
-    :ref:`migration guide <migration-to-rasa-1.8>` for more details.
-
 :Short: Sklearn intent classifier
 :Outputs: ``intent`` and ``intent_ranking``
 :Requires: ``dense_features`` for user messages
@@ -1266,10 +1262,6 @@ CRFEntityExtractor
 
     .. note::
         If "pattern" features are used, you need to have ``RegexFeaturizer`` in your pipeline.
-
-    .. warning::
-        ``CRFEntityExtractor`` is deprecated and should be replaced by ``DIETClassifier``. See
-        :ref:`migration guide <migration-to-rasa-1.8>` for more details.
 
 :Configuration:
     ``CRFEntityExtractor`` has a list of default features to use.

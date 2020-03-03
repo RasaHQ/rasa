@@ -65,13 +65,6 @@ class SklearnIntentClassifier(IntentClassifier):
             self.le = LabelEncoder()
         self.clf = clf
 
-        common_utils.raise_warning(
-            "'SklearnIntentClassifier' is deprecated and will be removed in version "
-            "2.0. Use 'DIETClassifier' instead.",
-            category=FutureWarning,
-            docs=DOCS_URL_MIGRATION_GUIDE,
-        )
-
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["sklearn"]

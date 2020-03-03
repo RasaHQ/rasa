@@ -1,3 +1,0 @@
-The :ref:`TEDPolicy <ted_policy>` replaces the ``KerasPolicy`` in new Rasa projects generated with ``rasa init``.
-The :ref:`TEDPolicy <ted_policy>` is now the recommended machine learning policy. Please see the
-:ref:`migration guide <migration-to-rasa-1.8>` if you want to switch to this new policy in an existing project.

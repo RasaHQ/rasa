@@ -39,10 +39,8 @@ def nlg_app(base_url="/"):
 
 # noinspection PyShadowingNames
 @pytest.fixture()
-async def http_nlg(test_server):
-    server = await test_server(nlg_app())
-    yield server
-    await server.close()
+def http_nlg(loop, sanic_client):
+    return loop.run_until_complete(sanic_client(nlg_app()))
 
 
 async def test_nlg(http_nlg, trained_rasa_model):
