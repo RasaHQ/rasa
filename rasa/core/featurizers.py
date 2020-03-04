@@ -132,45 +132,31 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         Returns:
             - nparray(vocab_size,) or coo_matrix(1, vocab_size) 
         """
-
-        if state is None or list(state.keys())==[]::
-            if type_output == "sparse":
+        if type_output == "sparse":
+            if state is None or list(state.keys())==[]:     
                 return csr_matrix(
                     np.ones(len(self.vectorizers["text"].vocabulary_), dtype=np.int32) * -1
                 )
-            else:
-                return (
-                    np.ones(len(self.vectorizers["text"].vocabulary_), dtype=np.int32) * -1
-                )
-
+        else:
+            if state is None:
+                return np.ones(len(self.vectorizers['text'].vocabulary_), dtype=np.int32) * -1
 
         state_keys = [key.replace(self.delimiter, " ") for key in list(state.keys())]
-        attribute = "text"
 
-        message = Message(" ".join(state_keys))
-        # toks = self.interpreter.parse(message.text)
-
-        message_tokens = self._get_processed_message_tokens_by_attribute(
-            message, attribute
-        )
-
-        # if 'tokens' in list(toks.keys()):
-        #     toks = [tok.text for tok in toks['tokens']]
-        # else:
-        #     toks = []
-
-        toks = message_tokens
-
-
+        attribute = 'text'        
+        message = Message(' '.join(state_keys))
+        message_tokens = self._get_processed_message_tokens_by_attribute(message, attribute)
 
         # features shape (1, seq, dim)
-        # features = self._create_sequence(attribute, [message_tokens + [CLS_TOKEN]])
-        features = self._create_sequence(attribute, [toks + [CLS_TOKEN]])
+        features = self._create_sequence(attribute, [message_tokens + [CLS_TOKEN]])
 
-        if type_output == "dense":
+        if type_output == 'dense':
             return features[0].A[-1].astype(np.int32)
         else:
             return features[0].getrow(-1)
+
+        
+
 
     def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
         """Create matrix with all actions from domain encoded in rows as bag of words"""
@@ -349,10 +335,11 @@ class TrackerFeaturizer:
             trackers, domain
         )
 
-        self._postprocess_trackers_as_states(trackers_as_states)
+        # self._postprocess_trackers_as_states(trackers_as_states)
 
         # noinspection PyPep8Naming
         X, true_lengths = self._featurize_states(trackers_as_states)
+
         y = self._featurize_labels(trackers_as_actions, domain)
 
         return DialogueTrainingData(X, y, true_lengths)
