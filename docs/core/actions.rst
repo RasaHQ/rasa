@@ -13,11 +13,11 @@ Actions are the things your bot runs in response to user input.
 There are four kinds of actions in Rasa:
 
  1. **Utterance actions**: start with ``utter_`` and send a specific message
-    to the user
- 2. **Retrieval actions**: start with ``respond_`` and send a message selected by a retrieval model
+    to the user.
+ 2. **Retrieval actions**: start with ``respond_`` and send a message selected by a retrieval model.
  3. **Custom actions**: run arbitrary code and send any number of messages (or none).
  4. **Default actions**: e.g. ``action_listen``, ``action_restart``,
-    ``action_default_fallback``
+    ``action_default_fallback``.
 
 .. contents::
    :local:
@@ -48,7 +48,7 @@ Retrieval Actions
 -----------------
 
 Retrieval actions make it easier to work with a large number of similar intents like chitchat and FAQs.
-See :ref:`retrieval-actions` to learn moree.
+See :ref:`retrieval-actions` to learn more.
 
 .. _custom-actions:
 
