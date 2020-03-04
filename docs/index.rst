@@ -19,20 +19,12 @@ Understand messages, hold conversations, and connect to messaging channels and A
 
 .. toctree::
    :maxdepth: 1
-   :caption: Tutorials
-   :hidden:
-
-   user-guide/rasa-tutorial
-   user-guide/faq-assistants
-   user-guide/contextual-assistants
-
-
-.. toctree::
-   :maxdepth: 1
    :caption: User Guide
    :hidden:
 
    user-guide/installation
+   user-guide/rasa-tutorial
+   user-guide/building-assistants
    user-guide/command-line-interface
    user-guide/architecture
    user-guide/messaging-and-voice-channels
