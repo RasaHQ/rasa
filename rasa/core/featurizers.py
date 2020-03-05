@@ -127,7 +127,7 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         Encode the state into a numpy array or a sparse sklearn
 
         Args:
-            - state: dictionary describing current state
+            - state: dictionary describing current state, state represented as a dicitonary {text: probability}
             - type output: type to return the features as (numpyarray or sklearn coo_matrix)
         Returns:
             - nparray(vocab_size,) or coo_matrix(1, vocab_size)
@@ -173,7 +173,7 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         Encode the state into a numpy array or a sparse sklearn
 
         Args:
-            - state: dictionary describing current state
+            - state: dictionary describing current state, state represented as a dicitonary {text: Event}, where Event is UserUttered/ActionExecuted
             - type output: type to return the features as (numpyarray or sklearn coo_matrix)
         Returns:
             - nparray(vocab_size,) or coo_matrix(1, vocab_size)
@@ -206,8 +206,6 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         message = Message(" ".join(input_strs))
         attribute = "text"
 
-        print(message.text)
-
         if isinstance(interpreter, RasaCoreInterpreter):
             toks = interpreter.parse(message.text)
             if 'tokens' in list(toks.keys()):
@@ -239,7 +237,7 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         for idx, name in enumerate(domain.action_names):
             name = name.translate(translator)
             for t in name.split(self.delimiter):
-                encoded_all_actions[idx, self.vectorizers["text"].vocabulary_[t.lower()]] = 1
+                encoded_all_actions[idx, self.vectorizers["text"].vocabulary_[t.lower()]] += 1
         return encoded_all_actions
 
 class TrackerFeaturizer:
@@ -645,7 +643,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     ) -> Tuple[List[List[Optional[Dict[Text, float]]]], List[List[Text]]]:
         trackers_as_states_e2e = []
         trackers_as_actions_e2e = []
-        pbar = tqdm(trackers[:5], desc="Processed trackers e2e", disable=is_logging_disabled())
+        pbar = tqdm(trackers, desc="Processed trackers e2e", disable=is_logging_disabled())
         for tracker in pbar:
         # tracker = trackers[0]
             states = self._create_states_e2e(tracker)
@@ -706,7 +704,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         for tracker in pbar:
             states = self._create_states(tracker, domain, True)
-
             idx = 0
             for event in tracker.applied_events():
                 if isinstance(event, ActionExecuted):
@@ -750,7 +747,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         """Transforms list of trackers to lists of states for prediction."""
 
         trackers_as_states = [
-            self._create_states(tracker, domain) for tracker in trackers
+            self._create_states_e2e(tracker) for tracker in trackers
         ]
         trackers_as_states = [
             self.slice_state_history(states, self.max_history)
