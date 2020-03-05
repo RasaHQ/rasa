@@ -9,18 +9,11 @@ Components
 .. edit-link::
 
 .. note::
-   For clarity, we have renamed the pre-defined pipelines to reflect
-   what they *do* rather than which libraries they use as of Rasa NLU
-   0.15. The ``tensorflow_embedding`` pipeline is now called
-   ``supervised_embeddings``, and ``spacy_sklearn`` is now known as
-   ``pretrained_embeddings_spacy``. Please update your code if you are using these.
-
-.. note::
     We deprecated all pre-defined pipeline templates. Take a look at :ref:`choosing-a-pipeline`
     to decide on what components you should use in your configuration file.
 
 This is a reference of the configuration options for every built-in
-component in Rasa NLU. If you want to build a custom component, check
+component in Rasa. If you want to build a custom component, check
 out :ref:`custom-nlu-components`.
 
 .. contents::
@@ -70,7 +63,8 @@ SpacyNLP
 :Configuration:
     Language model, default will use the configured language.
     If the spaCy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
-    the model name can be specified using this configuration variable. The name will be passed to ``spacy.load(name)``.
+    the model name can be specified using the configuration variable ``model``.
+    The name will be passed to ``spacy.load(name)``.
 
     .. code-block:: yaml
 
@@ -86,7 +80,7 @@ SpacyNLP
           # between these two words, therefore setting this to `true`.
           case_sensitive: false
 
-    For more information on how to obtain the spaCy models, head over to
+    For more information on how to download the spaCy models, head over to
     :ref:`installing SpaCy <install-spacy>`.
 
 .. _HFTransformersNLP:
@@ -150,7 +144,7 @@ Tokenizers
 
 Tokenizers split text into tokens.
 If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
-modeling hierarchical intent structure, use these flags with any tokenizer:
+modeling hierarchical intent structure, use the following flags with any tokenizer:
 
 - ``intent_tokenization_flag`` indicates whether to tokenize intent labels or not. Set it to ``True``, so that intent
   labels are tokenized.
@@ -542,39 +536,64 @@ CountVectorsFeaturizer
 
         pipeline:
         - name: "CountVectorsFeaturizer"
-          # whether to use a shared vocab
-          "use_shared_vocab": False,
-          # whether to use word or character n-grams
-          # 'char_wb' creates character n-grams only inside word boundaries
-          # n-grams at the edges of words are padded with space.
-          analyzer: 'word'  # use 'char' or 'char_wb' for character
-          # the parameters are taken from
-          # sklearn's CountVectorizer
-          # regular expression for tokens
-          token_pattern: r'(?u)\b\w\w+\b'
-          # remove accents during the preprocessing step
-          strip_accents: None  # {'ascii', 'unicode', None}
-          # list of stop words
-          stop_words: None  # string {'english'}, list, or None (default)
-          # min document frequency of a word to add to vocabulary
-          # float - the parameter represents a proportion of documents
-          # integer - absolute counts
-          min_df: 1  # float in range [0.0, 1.0] or int
-          # max document frequency of a word to add to vocabulary
-          # float - the parameter represents a proportion of documents
-          # integer - absolute counts
-          max_df: 1.0  # float in range [0.0, 1.0] or int
-          # set ngram range
-          min_ngram: 1  # int
-          max_ngram: 1  # int
-          # limit vocabulary size
-          max_features: None  # int or None
-          # if convert all characters to lowercase
-          lowercase: true  # bool
-          # handling Out-Of-Vacabulary (OOV) words
-          # will be converted to lowercase if lowercase is true
-          OOV_token: None  # string or None
-          OOV_words: []  # list of strings
+          analyzer: 'char_wb'
+          min_ngram: 1
+          max_ngram: 4
+
+    .. container:: toggle
+
+        .. container:: header
+
+            **Show/Hide all parameters**
+
+        .. code-block:: none
+
+         +-----------------------------+-----------------------+--------------------------------------------------------------+
+         | Parameter                   | Default Value         | Description                                                  |
+         +=============================+=======================+==============================================================+
+         | ``use_shared_vocab``        | ``False``             | If set to ``True`` a common vocabulary is used for labels    |
+         |                             |                       | and user message.                                            |
+         +-----------------------------+-----------------------+--------------------------------------------------------------+
+         | ``analyzer``                | ``word``              | Whether the feature should be made of word n-gram or         |
+         |                             |                       | character n-grams. Option ‘char_wb’ creates character        |
+         |                             |                       | n-grams only from text inside word boundaries;               |
+         |                             |                       | n-grams at the edges of words are padded with space.         |
+         |                             |                       | Valid values: ``word``, ``char``, ``char_wb``.               |
+         +-----------------------------+-----------------------+--------------------------------------------------------------+
+         | ``token_pattern``           | ``r"(?u)\b\w\w+\b"``  | Regular expression used to detect tokens.                    |
+         |                             |                       | Only used if ``analyzer`` is set to ``word``.                |
+         +-----------------------------+-----------------------+--------------------------------------------------------------+
+         | ``strip_accents``           | ``None``              | Remove accents during the pre-processing step.               |
+         |                             |                       | Valid values: ``ascii``, ``unicode``, ``None``.              |
+         +-----------------------------+-----------------------+--------------------------------------------------------------+
+         | ``stop_words``              | ``None``              | A list of stop words to use.                                 |
+         |                             |                       | Valid values: ``"english"`` (uses an internal list of        |
+         |                             |                       | English stop words), a list of custom stop words, or         |
+         |                             |                       | ``None``.                                                    |
+         +-----------------------------+-----------------------+--------------------------------------------------------------+
+         | ``min_df``                  | ``1``                 | When building the vocabulary ignore terms that have a        |
+         |                             |                       | document frequency strictly lower than the given threshold.  |
+         +-----------------------------+-----------------------+--------------------------------------------------------------+
+         | ``max_df``                  | ``1``                 | When building the vocabulary ignore terms that have a        |
+         |                             |                       | document frequency strictly higher than the given threshold  |
+         |                             |                       | (corpus-specific stop words).)                               |
+         +-----------------------------+-----------------------+--------------------------------------------------------------+
+         | ``min_ngram``               | ``1``                 | The lower boundary of the range of n-values for different    |
+         |                             |                       | word n-grams or char n-grams to be extracted.                |
+         +-----------------------------+-----------------------+--------------------------------------------------------------+
+         | ``max_ngram``               | ``1``                 | The upper boundary of the range of n-values for different    |
+         |                             |                       | word n-grams or char n-grams to be extracted.                |
+         +-----------------------------+-----------------------+--------------------------------------------------------------+
+         | ``max_features``            | ``None``              | If not None, build a vocabulary that only consider the top   |
+         |                             |                       | max_features ordered by term frequency across the corpus.    |
+         +-----------------------------+-----------------------+--------------------------------------------------------------+
+         | ``lowercase``               | ``True``              | Convert all characters to lowercase before tokenizing.       |
+         +-----------------------------+-----------------------+--------------------------------------------------------------+
+         | ``OOV_token``               | ``None``              | Keyword for unseen words.                                    |
+         +-----------------------------+-----------------------+--------------------------------------------------------------+
+         | ``OOV_words``               | ``[]``                | List of words to be treated as ``OOV_token`` during training.|
+         +-----------------------------+-----------------------+--------------------------------------------------------------+
+
 
 .. _LexicalSyntacticFeaturizer:
 
