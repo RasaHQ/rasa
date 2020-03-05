@@ -10,7 +10,7 @@ from typing import Optional, Any, Dict, List, Text
 import rasa.utils.io
 
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted
+from rasa.core.events import ActionExecuted, UserUttered
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
@@ -135,8 +135,23 @@ class MemoizationPolicy(Policy):
 
     def _create_feature_key(self, states: List[Dict]) -> Text:
         from rasa.utils import io
+        new_states = []
+        for state in states:
+            new_state = {}
+            for key, value in state.items():
+                if isinstance(value, ActionExecuted):
+                    new_state[key] = value.action_name
+                elif isinstance(value, UserUttered):
+                    new_state[key] = value.text
+                else:
+                    new_state[key] = value
+           
 
-        feature_str = json.dumps(states, sort_keys=True).replace('"', "")
+            new_states.append(new_state)
+
+
+        
+        feature_str = json.dumps(new_states, sort_keys=True).replace('"', "")
         if self.ENABLE_FEATURE_STRING_COMPRESSION:
             compressed = zlib.compress(bytes(feature_str, io.DEFAULT_ENCODING))
             return base64.b64encode(compressed).decode(io.DEFAULT_ENCODING)

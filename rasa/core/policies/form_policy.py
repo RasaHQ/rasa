@@ -4,7 +4,7 @@ from typing import List, Dict, Text, Optional
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain, InvalidDomain
-from rasa.core.events import FormValidation
+from rasa.core.events import FormValidation, ActionExecuted
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
@@ -83,11 +83,19 @@ class FormPolicy(MemoizationPolicy):
         if states[0] is None:
             action_before_listen = None
         else:
-            action_before_listen = {
-                state_name: prob
-                for state_name, prob in states[0].items()
-                if PREV_PREFIX in state_name and prob > 0
-            }
+            # action_before_listen = {
+            #     prob.action_name: 1.0
+            #     for state_name, prob in states[0].items()
+            #     if PREV_PREFIX in state_name
+            # }
+            action_before_listen = {}
+            for state_name, prob in states[0].items():
+                if PREV_PREFIX in state_name:
+                    if isinstance(prob, ActionExecuted):
+                        action_before_listen[prob.action_name] = 1.0
+                    else:
+                        action_before_listen[state_name] = prob
+
 
         return [action_before_listen, states[-1]]
 
