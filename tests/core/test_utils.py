@@ -3,6 +3,7 @@ import random
 
 from decimal import Decimal
 from typing import Optional, Text, Union
+from pathlib import Path
 
 import pytest
 
@@ -13,6 +14,7 @@ from rasa.core import utils
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.core.utils import replace_floats_with_decimals
 from rasa.utils.endpoints import EndpointConfig
+from tests.conftest import write_endpoint_config_to_yaml
 
 
 def test_is_int():
@@ -190,3 +192,43 @@ def test_all_subclasses():
     classes = [type(f"TestClass{i}", (TestClass,), {}) for i in range(num)]
 
     assert utils.all_subclasses(TestClass) == classes
+
+
+def test_read_endpoints_from_path(tmp_path: Path):
+    # write valid config to file
+    endpoints_path = write_endpoint_config_to_yaml(
+        tmp_path, {"event_broker": {"type": "pika"}, "tracker_store": {"type": "sql"}}
+    )
+
+    # noinspection PyProtectedMember
+    available_endpoints = utils.read_endpoints_from_path(endpoints_path)
+
+    # assert event broker and tracker store are valid, others are not
+    assert available_endpoints.tracker_store and available_endpoints.event_broker
+    assert not all(
+        (
+            available_endpoints.lock_store,
+            available_endpoints.nlg,
+            available_endpoints.action,
+            available_endpoints.model,
+            available_endpoints.nlu,
+        )
+    )
+
+
+def test_read_endpoints_from_wrong_path():
+    # noinspection PyProtectedMember
+    available_endpoints = utils.read_endpoints_from_path("/some/wrong/path")
+
+    # endpoint config is still initialised but does not contain anything
+    assert not all(
+        (
+            available_endpoints.lock_store,
+            available_endpoints.nlg,
+            available_endpoints.event_broker,
+            available_endpoints.tracker_store,
+            available_endpoints.action,
+            available_endpoints.model,
+            available_endpoints.nlu,
+        )
+    )

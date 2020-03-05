@@ -15,26 +15,159 @@ how you can migrate from one version to another.
 
 Rasa 1.7 to Rasa 1.8
 --------------------
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  It is not possible to load previously trained models. Please make sure to retrain a
+  model before trying to use it with this improved version.
 
 General
 ~~~~~~~
-- The :ref:`embedding_policy` replaced the :ref:`keras_policy` as recommended machine
+- The :ref:`ted_policy` replaced the :ref:`keras_policy` as recommended machine
   learning policy. New projects generated with ``rasa init`` will automatically use
   this policy. In case you want to change your existing model configuration to use the
-  :ref:`embedding_policy` add this to the ``policies`` section in your ``config.yml``
+  :ref:`ted_policy` add this to the ``policies`` section in your ``config.yml``
   and remove potentially existing ``KerasPolicy`` entries:
 
   .. code-block:: yaml
 
     policies:
-    - ... # other policies
-    - name: EmbeddingPolicy
+    # - ... other policies
+    - name: TEDPolicy
       max_history: 5
       epochs: 100
 
   The given snippet specifies default values for the parameters ``max_history`` and
-  ``epochs``. ``max_history`` is particularly important and strongly depends on your stories. Please see the docs of the :ref:`embedding_policy` if you want to
-  customize them.
+  ``epochs``. ``max_history`` is particularly important and strongly depends on your stories.
+  Please see the docs of the :ref:`ted_policy` if you want to customize them.
+
+- All pre-defined pipeline templates are deprecated. **Any templates you use will be
+  mapped to the new configuration, but the underlying architecture is the same**.
+  Take a look at :ref:`choosing-a-pipeline` to decide on what components you should use
+  in your configuration file.
+
+- The :ref:`embedding_policy` was renamed to :ref:`ted_policy`. The functionality of the policy stayed the same.
+  Please update your configuration files to use ``TEDPolicy`` instead of ``EmbeddingPolicy``.
+
+- Most of the model options for ``EmbeddingPolicy``, ``EmbeddingIntentClassifier``, and ``ResponseSelector`` got
+  renamed. Please update your configuration files using the following mapping:
+
+  =============================  =======================================================
+  Old model option               New model option
+  =============================  =======================================================
+  hidden_layers_sizes_a          dictionary "hidden_layers_sizes" with key "text"
+  hidden_layers_sizes_b          dictionary "hidden_layers_sizes" with key "label"
+  hidden_layers_sizes_pre_dial   dictionary "hidden_layers_sizes" with key "dialogue"
+  hidden_layers_sizes_bot        dictionary "hidden_layers_sizes" with key "label"
+  num_transformer_layers         number_of_transformer_layers
+  num_heads                      number_of_attention_heads
+  max_seq_length                 maximum_sequence_length
+  dense_dim                      dense_dimension
+  embed_dim                      embedding_dimension
+  num_neg                        number_of_negative_examples
+  mu_pos                         maximum_positive_similarity
+  mu_neg                         maximum_negative_similarity
+  use_max_sim_neg                use_maximum_negative_similarity
+  C2                             regularization_constant
+  C_emb                          negative_margin_scale
+  droprate_a                     droprate_dialogue
+  droprate_b                     droprate_label
+  evaluate_every_num_epochs      evaluate_every_number_of_epochs
+  evaluate_on_num_examples       evaluate_on_number_of_examples
+  =============================  =======================================================
+
+  Old configuration options will be mapped to the new names, and a warning will be thrown.
+  However, these will be deprecated in a future release.
+
+- :ref:`embedding-intent-classifier` is now deprecated and will be replaced by :ref:`DIETClassifier <diet-classifier>`
+  in the future.
+  ``DIETClassfier`` performs intent classification as well as entity recognition.
+  If you want to get the same model behaviour as the current ``EmbeddingIntentClassifier``, you can use
+  the following configuration of ``DIETClassifier``:
+
+  .. code-block:: yaml
+
+    pipeline:
+    # - ... other components
+    - name: DIETClassifier
+      intent_classification: True
+      entity_recognition: False
+      use_masked_language_model: False
+      BILOU_flag: False
+      number_of_transformer_layers: 0
+      # ... any other parameters
+
+  See :ref:`DIETClassifier <diet-classifier>` for more information about the new component.
+  Specifying ``EmbeddingIntentClassifier`` in the configuration maps to the above component definition, the
+  behaviour is unchanged from previous versions.
+
+- ``CRFEntityExtractor`` is now deprecated and will be replaced by ``DIETClassifier`` in the future. If you want to
+  get the same model behaviour as the current ``CRFEntityExtractor``, you can use the following configuration:
+
+  .. code-block:: yaml
+
+    pipeline:
+    # - ... other components
+    - name: LexicalSyntacticFeaturizer
+      features: [
+        ["low", "title", "upper"],
+        [
+          "BOS",
+          "EOS",
+          "low",
+          "prefix5",
+          "prefix2",
+          "suffix5",
+          "suffix3",
+          "suffix2",
+          "upper",
+          "title",
+          "digit",
+        ],
+        ["low", "title", "upper"],
+      ]
+    - name: DIETClassifier
+      intent_classification: False
+      entity_recognition: True
+      use_masked_language_model: False
+      number_of_transformer_layers: 0
+      # ... any other parameters
+
+  ``CRFEntityExtractor`` featurizes user messages on its own, it does not depend on any featurizer.
+  We extracted the featurization from the component into the new featurizer :ref:``LexicalSyntacticFeaturizer``. Thus,
+  in order to obtain the same results as before, you need to add this featurizer to your pipeline before the
+  :ref:``diet-classifier``.
+  Specifying ``CRFEntityExtractor`` in the configuration maps to the above component definition, the behaviour
+  is unchanged from previous versions.
+
+- If your pipeline contains ``CRFEntityExtractor`` and ``EmbeddingIntentClassifier`` you can substitute both
+  components with :ref:`DIETClassifier <diet-classifier>`. You can use the following pipeline for that:
+
+  .. code-block:: yaml
+
+    pipeline:
+    # - ... other components
+    - name: LexicalSyntacticFeaturizer
+      features: [
+        ["low", "title", "upper"],
+        [
+          "BOS",
+          "EOS",
+          "low",
+          "prefix5",
+          "prefix2",
+          "suffix5",
+          "suffix3",
+          "suffix2",
+          "upper",
+          "title",
+          "digit",
+        ],
+        ["low", "title", "upper"],
+      ]
+    - name: DIETClassifier
+      number_of_transformer_layers: 0
+      # ... any other parameters
 
 .. _migration-to-rasa-1.7:
 

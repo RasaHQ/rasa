@@ -8,21 +8,15 @@ from datetime import datetime
 from typing import Text, Iterator
 
 import pytest
-from _pytest.tmpdir import TempdirFactory
 
 import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
-from rasa.core.domain import Domain, SessionConfig
+from rasa.core.domain import Domain
 from rasa.core.events import ReminderScheduled, UserUttered, ActionExecuted
-from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
-from rasa.core.policies.memoization import (
-    AugmentedMemoizationPolicy,
-    MemoizationPolicy,
-    Policy,
-)
+from rasa.core.policies.ensemble import PolicyEnsemble
+from rasa.core.policies.memoization import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
@@ -84,9 +78,7 @@ class ExamplePolicy(Policy):
 class MockedMongoTrackerStore(MongoTrackerStore):
     """In-memory mocked version of `MongoTrackerStore`."""
 
-    def __init__(
-        self, _domain: Domain,
-    ):
+    def __init__(self, _domain: Domain):
         from mongomock import MongoClient
 
         self.db = MongoClient().rasa
@@ -181,7 +173,7 @@ def tracker_with_six_scheduled_reminders(
         ),
         ReminderScheduled("default", datetime.now(), kill_on_user_message=False),
         ReminderScheduled(
-            "default", datetime.now(), kill_on_user_message=False, name="special",
+            "default", datetime.now(), kill_on_user_message=False, name="special"
         ),
     ]
     sender_id = uuid.uuid4().hex
@@ -231,23 +223,11 @@ def project() -> Text:
 
 
 @pytest.fixture
-async def restaurantbot(trained_async) -> Text:
-    restaurant_domain = os.path.join(RESTAURANTBOT_PATH, "domain.yml")
-    restaurant_config = os.path.join(RESTAURANTBOT_PATH, "config.yml")
-    restaurant_data = os.path.join(RESTAURANTBOT_PATH, "data/")
-
-    return await trained_async(restaurant_domain, restaurant_config, restaurant_data)
-
-
-@pytest.fixture
-async def form_bot(trained_async) -> Agent:
+async def form_bot_agent(trained_async, tmpdir_factory) -> Agent:
     zipped_model = await trained_async(
         domain="examples/formbot/domain.yml",
         config="examples/formbot/config.yml",
-        training_files=[
-            "examples/formbot/data/stories.md",
-            "examples/formbot/data/nlu.md",
-        ],
+        training_files=["examples/formbot/data/stories.md"],
     )
 
     return Agent.load_local_model(zipped_model)

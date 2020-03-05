@@ -1,8 +1,7 @@
 import logging
 import os
 import re
-import typing
-from typing import Any, Dict, List, Optional, Text, Union
+from typing import Any, Dict, List, Optional, Text, Union, Type
 
 import numpy as np
 
@@ -14,26 +13,25 @@ from rasa.nlu import utils
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
     CLS_TOKEN,
-    RESPONSE_ATTRIBUTE,
+    RESPONSE,
     SPARSE_FEATURE_NAMES,
-    TEXT_ATTRIBUTE,
+    TEXT,
     TOKENS_NAMES,
 )
-from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.components import Component
+from rasa.nlu.featurizers.featurizer import SparseFeaturizer
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.utils.common import raise_warning
+import rasa.utils.common as common_utils
+from rasa.nlu.model import Metadata
 
 logger = logging.getLogger(__name__)
 
-if typing.TYPE_CHECKING:
-    from rasa.nlu.model import Metadata
 
-
-class RegexFeaturizer(Featurizer):
-
-    provides = [SPARSE_FEATURE_NAMES[TEXT_ATTRIBUTE]]
-
-    requires = [TOKENS_NAMES[TEXT_ATTRIBUTE]]
+class RegexFeaturizer(SparseFeaturizer):
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [Tokenizer]
 
     def __init__(
         self,
@@ -49,18 +47,21 @@ class RegexFeaturizer(Featurizer):
         self._add_lookup_table_regexes(lookup_tables)
 
     def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
+        self,
+        training_data: TrainingData,
+        config: Optional[RasaNLUModelConfig] = None,
+        **kwargs: Any,
     ) -> None:
 
         self.known_patterns = training_data.regex_features
         self._add_lookup_table_regexes(training_data.lookup_tables)
 
         for example in training_data.training_examples:
-            for attribute in [TEXT_ATTRIBUTE, RESPONSE_ATTRIBUTE]:
+            for attribute in [TEXT, RESPONSE]:
                 self._text_features_with_regex(example, attribute)
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        self._text_features_with_regex(message, TEXT_ATTRIBUTE)
+        self._text_features_with_regex(message, TEXT)
 
     def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
         if self.known_patterns:
@@ -94,6 +95,11 @@ class RegexFeaturizer(Featurizer):
             return None
 
         tokens = message.get(TOKENS_NAMES[attribute], [])
+
+        if not tokens:
+            # nothing to featurize
+            return
+
         seq_length = len(tokens)
 
         vec = np.zeros([seq_length, len(self.known_patterns)])
@@ -116,7 +122,7 @@ class RegexFeaturizer(Featurizer):
                     if t.start < match.end() and t.end > match.start():
                         patterns[pattern["name"]] = True
                         vec[token_index][pattern_index] = 1.0
-                        if attribute in [RESPONSE_ATTRIBUTE, TEXT_ATTRIBUTE]:
+                        if attribute in [RESPONSE, TEXT]:
                             # CLS token vector should contain all patterns
                             vec[-1][pattern_index] = 1.0
 
@@ -134,7 +140,7 @@ class RegexFeaturizer(Featurizer):
         # if it's a list, it should be the elements directly
         if isinstance(lookup_elements, list):
             elements_to_regex = lookup_elements
-            raise_warning(
+            common_utils.raise_warning(
                 f"Directly including lookup tables as a list is deprecated since Rasa "
                 f"1.6.",
                 FutureWarning,
@@ -170,7 +176,7 @@ class RegexFeaturizer(Featurizer):
         cls,
         meta: Dict[Text, Any],
         model_dir: Optional[Text] = None,
-        model_metadata: Optional["Metadata"] = None,
+        model_metadata: Optional[Metadata] = None,
         cached_component: Optional["RegexFeaturizer"] = None,
         **kwargs: Any,
     ) -> "RegexFeaturizer":

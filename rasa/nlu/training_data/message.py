@@ -1,11 +1,11 @@
 from typing import Any, Optional, Tuple, Text
 
 from rasa.nlu.constants import (
-    ENTITIES_ATTRIBUTE,
-    INTENT_ATTRIBUTE,
-    RESPONSE_ATTRIBUTE,
+    ENTITIES,
+    INTENT,
+    RESPONSE,
     RESPONSE_KEY_ATTRIBUTE,
-    TEXT_ATTRIBUTE,
+    TEXT,
     RESPONSE_IDENTIFIER_DELIMITER,
 )
 from rasa.nlu.utils import ordered
@@ -30,7 +30,7 @@ class Message:
             self.output_properties.add(prop)
 
     def get(self, prop, default=None) -> Any:
-        if prop == TEXT_ATTRIBUTE:
+        if prop == TEXT:
             return self.text
         return self.data.get(prop, default)
 
@@ -38,10 +38,10 @@ class Message:
         """Get dict representation of message as it would appear in training data"""
 
         d = self.as_dict()
-        if d.get(INTENT_ATTRIBUTE, None):
-            d[INTENT_ATTRIBUTE] = self.get_combined_intent_response_key()
+        if d.get(INTENT, None):
+            d[INTENT] = self.get_combined_intent_response_key()
         d.pop(RESPONSE_KEY_ATTRIBUTE, None)
-        d.pop(RESPONSE_ATTRIBUTE, None)
+        d.pop(RESPONSE, None)
         return d
 
     def as_dict(self, only_output_properties=False) -> dict:
@@ -73,17 +73,17 @@ class Message:
         data = {}
         if intent:
             split_intent, response_key = cls.separate_intent_response_key(intent)
-            data[INTENT_ATTRIBUTE] = split_intent
+            data[INTENT] = split_intent
             if response_key:
                 data[RESPONSE_KEY_ATTRIBUTE] = response_key
         if entities:
-            data[ENTITIES_ATTRIBUTE] = entities
+            data[ENTITIES] = entities
         return cls(text, data)
 
     def get_combined_intent_response_key(self) -> Text:
         """Get intent as it appears in training data"""
 
-        intent = self.get(INTENT_ATTRIBUTE)
+        intent = self.get(INTENT)
         response_key = self.get(RESPONSE_KEY_ATTRIBUTE)
         response_key_suffix = (
             f"{RESPONSE_IDENTIFIER_DELIMITER}{response_key}" if response_key else ""

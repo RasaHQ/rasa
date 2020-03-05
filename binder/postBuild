@@ -1,1 +1,1 @@
-python -m spacy download en
+poetry run python -m spacy download en

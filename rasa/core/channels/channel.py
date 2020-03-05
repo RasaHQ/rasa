@@ -115,7 +115,7 @@ class InputChannel:
         raise NotImplementedError("Component listener needs to provide blueprint.")
 
     @classmethod
-    def raise_missing_credentials_exception(cls) -> None:
+    def raise_missing_credentials_exception(cls) -> NoReturn:
         raise Exception(
             "To use the {} input channel, you need to "
             "pass a credentials file using '--credentials'. "
@@ -324,7 +324,7 @@ class CollectingOutputChannel(OutputChannel):
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
-        for message_part in text.split("\n\n"):
+        for message_part in text.strip().split("\n\n"):
             await self._persist_message(self._message(recipient_id, text=message_part))
 
     async def send_image_url(

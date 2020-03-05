@@ -5,7 +5,7 @@ import pytest
 from sanic import Sanic, response
 
 import rasa.core
-from rasa.core.policies.embedding_policy import EmbeddingPolicy
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
 import rasa.utils.io
 from rasa.core import jobs, utils
@@ -41,13 +41,10 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash"):
     return app
 
 
-@pytest.fixture
-async def model_server(test_server, trained_moodbot_path):
-    server = await test_server(
-        model_server_app(trained_moodbot_path, model_hash="somehash")
-    )
-    yield server
-    await server.close()
+@pytest.fixture()
+def model_server(loop, sanic_client, trained_moodbot_path):
+    app = model_server_app(trained_moodbot_path, model_hash="somehash")
+    return loop.run_until_complete(sanic_client(app))
 
 
 async def test_training_data_is_reproducible(tmpdir, default_domain):
@@ -81,7 +78,7 @@ async def test_agent_train(trained_moodbot_path: Text):
     # test policies
     assert isinstance(loaded.policy_ensemble, SimplePolicyEnsemble)
     assert [type(p) for p in loaded.policy_ensemble.policies] == [
-        EmbeddingPolicy,
+        TEDPolicy,
         MemoizationPolicy,
         MappingPolicy,
     ]
