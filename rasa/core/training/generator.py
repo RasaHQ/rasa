@@ -239,7 +239,7 @@ class TrainingDataGenerator:
         story_end_trackers = []
 
         phase = 0  # one phase is one traversal of all story steps.
-        min_num_aug_phases = 1 if self.config.augmentation_factor > 0 else 0
+        min_num_aug_phases = 3 if self.config.augmentation_factor > 0 else 0
         logger.debug(f"Number of augmentation rounds is {min_num_aug_phases}")
 
         # placeholder to track gluing process of checkpoints
