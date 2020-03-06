@@ -78,8 +78,9 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         self.config = config.load()
         # self.pipeline = Trainer()
 
-        self.delimiter = '_'
+        self.delimiter = ' '
         self.intent_tokenization_flag = True
+        self.token_pattern = r"(?u)\b\w+\b"
 
     def prepare_training_data_and_train(self, trackers_as_states):
         """
@@ -236,8 +237,14 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         translator = str.maketrans(string.punctuation, self.delimiter*len(string.punctuation))
         for idx, name in enumerate(domain.action_names):
             name = name.translate(translator)
+            name = name.replace('\t', self.delimiter)
             for t in name.split(self.delimiter):
-                encoded_all_actions[idx, self.vectorizers["text"].vocabulary_[t.lower()]] += 1
+                if not t=='':
+                    if t.lower() in self.vectorizers['text'].vocabulary_:
+                        encoded_all_actions[idx, self.vectorizers["text"].vocabulary_[t.lower()]] += 1
+                    else:
+                        print('OOV')
+                        print(t.lower())
         return encoded_all_actions
 
 class TrackerFeaturizer:
