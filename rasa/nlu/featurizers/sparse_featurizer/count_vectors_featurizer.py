@@ -279,7 +279,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         return tokens
 
     # noinspection PyPep8Naming
-    def _check_OOV_present(self, all_tokens: List[List[Text]]) -> None:
+    def _check_OOV_present(self, all_tokens: List[List[Text]], attribute: Text) -> None:
         """Check if an OOV word is present"""
         if not self.OOV_token or self.OOV_words or not all_tokens:
             return
@@ -292,11 +292,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     return
 
         if any(text for tokens in all_tokens for text in tokens):
+            training_data_type = "NLU" if attribute == TEXT else "response"
+
             # if there is some text in tokens, warn if there is no oov token
             common_utils.raise_warning(
                 f"The out of vocabulary token '{self.OOV_token}' was configured, but "
-                f"could not be found in any one of the NLU message training examples. "
-                f"All unseen words will be ignored during prediction.",
+                f"could not be found in any one of the {training_data_type} data "
+                f"training examples. All unseen words will be ignored during prediction.",
                 docs=DOCS_URL_COMPONENTS + "#countvectorsfeaturizer",
             )
 
@@ -313,7 +315,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             ]
             if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 # check for oov tokens only in text based attributes
-                self._check_OOV_present(all_tokens)
+                self._check_OOV_present(all_tokens, attribute)
             processed_attribute_tokens[attribute] = all_tokens
 
         return processed_attribute_tokens
