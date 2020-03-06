@@ -127,16 +127,6 @@ It is possible to use `Kafka <https://kafka.apache.org/>`_ as main broker for yo
 events. In this example we are going to use the `python-kafka <https://kafka-python
 .readthedocs.io/en/master/usage.html>`_ library, a Kafka client written in Python.
 
-.. note::
-
-  In order to use the Kafka event broker, ``rasa`` has to be installed with the
-  ``kafka`` option:
-
-  .. code-block:: bash
-
-    $ pip install rasa[kafka]
-
-
 .. contents::
    :local:
 
