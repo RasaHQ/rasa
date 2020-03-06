@@ -17,6 +17,19 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.8.1] - 2020-03-06
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5354 <https://github.com/rasahq/rasa/issues/5354>`_: Fixed issue with using language models like ``xlnet`` along with ``entity_recognition`` set to ``True`` inside
+  ``DIETClassifier``.
+
+Miscellaneous internal changes
+------------------------------
+- #5330, #5348
+
+
 [1.8.0] - 2020-02-26
 ^^^^^^^^^^^^^^^^^^^^
 
