@@ -13,9 +13,11 @@ dl.glossary dd {
 }
 
 .toggle .header:after {
-    content: " ▶";
+    content: "▶ show";
+    cursor: pointer;
 }
 
 .toggle .header.open:after {
-    content: " ▼";
+    content: "▼ hide";
+    cursor: pointer;
 }

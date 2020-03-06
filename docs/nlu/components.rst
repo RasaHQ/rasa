@@ -536,63 +536,68 @@ CountVectorsFeaturizer
 
         pipeline:
         - name: "CountVectorsFeaturizer"
-          analyzer: 'char_wb'
-          min_ngram: 1
-          max_ngram: 4
+          # Create character n-grams
+          "analyzer": "char_wb"
+          # Set the lower and upper boundaries for the n-grams
+          "min_ngram": 1
+          "max_ngram": 4
+          # Set the out-of-vocabulary token
+          "OOV_token": "_oov_"
 
     .. container:: toggle
 
         .. container:: header
 
-            **Show/Hide all parameters**
+            The above configuration parameters are the ones you most likely gonna change.
+            However, additional parameters exists that can be adapted.
 
         .. code-block:: none
 
-         +-----------------------------+-----------------------+--------------------------------------------------------------+
-         | Parameter                   | Default Value         | Description                                                  |
-         +=============================+=======================+==============================================================+
-         | ``use_shared_vocab``        | ``False``             | If set to ``True`` a common vocabulary is used for labels    |
-         |                             |                       | and user message.                                            |
-         +-----------------------------+-----------------------+--------------------------------------------------------------+
-         | ``analyzer``                | ``word``              | Whether the feature should be made of word n-gram or         |
-         |                             |                       | character n-grams. Option ‘char_wb’ creates character        |
-         |                             |                       | n-grams only from text inside word boundaries;               |
-         |                             |                       | n-grams at the edges of words are padded with space.         |
-         |                             |                       | Valid values: ``word``, ``char``, ``char_wb``.               |
-         +-----------------------------+-----------------------+--------------------------------------------------------------+
-         | ``token_pattern``           | ``r"(?u)\b\w\w+\b"``  | Regular expression used to detect tokens.                    |
-         |                             |                       | Only used if ``analyzer`` is set to ``word``.                |
-         +-----------------------------+-----------------------+--------------------------------------------------------------+
-         | ``strip_accents``           | ``None``              | Remove accents during the pre-processing step.               |
-         |                             |                       | Valid values: ``ascii``, ``unicode``, ``None``.              |
-         +-----------------------------+-----------------------+--------------------------------------------------------------+
-         | ``stop_words``              | ``None``              | A list of stop words to use.                                 |
-         |                             |                       | Valid values: ``"english"`` (uses an internal list of        |
-         |                             |                       | English stop words), a list of custom stop words, or         |
-         |                             |                       | ``None``.                                                    |
-         +-----------------------------+-----------------------+--------------------------------------------------------------+
-         | ``min_df``                  | ``1``                 | When building the vocabulary ignore terms that have a        |
-         |                             |                       | document frequency strictly lower than the given threshold.  |
-         +-----------------------------+-----------------------+--------------------------------------------------------------+
-         | ``max_df``                  | ``1``                 | When building the vocabulary ignore terms that have a        |
-         |                             |                       | document frequency strictly higher than the given threshold  |
-         |                             |                       | (corpus-specific stop words).)                               |
-         +-----------------------------+-----------------------+--------------------------------------------------------------+
-         | ``min_ngram``               | ``1``                 | The lower boundary of the range of n-values for different    |
-         |                             |                       | word n-grams or char n-grams to be extracted.                |
-         +-----------------------------+-----------------------+--------------------------------------------------------------+
-         | ``max_ngram``               | ``1``                 | The upper boundary of the range of n-values for different    |
-         |                             |                       | word n-grams or char n-grams to be extracted.                |
-         +-----------------------------+-----------------------+--------------------------------------------------------------+
-         | ``max_features``            | ``None``              | If not None, build a vocabulary that only consider the top   |
-         |                             |                       | max_features ordered by term frequency across the corpus.    |
-         +-----------------------------+-----------------------+--------------------------------------------------------------+
-         | ``lowercase``               | ``True``              | Convert all characters to lowercase before tokenizing.       |
-         +-----------------------------+-----------------------+--------------------------------------------------------------+
-         | ``OOV_token``               | ``None``              | Keyword for unseen words.                                    |
-         +-----------------------------+-----------------------+--------------------------------------------------------------+
-         | ``OOV_words``               | ``[]``                | List of words to be treated as ``OOV_token`` during training.|
-         +-----------------------------+-----------------------+--------------------------------------------------------------+
+         +------------------------+-----------------------+--------------------------------------------------------------+
+         | Parameter              | Default Value         | Description                                                  |
+         +========================+=======================+==============================================================+
+         | ``use_shared_vocab``   | ``False``             | If set to ``True`` a common vocabulary is used for labels    |
+         |                        |                       | and user message.                                            |
+         +------------------------+-----------------------+--------------------------------------------------------------+
+         | ``analyzer``           | ``word``              | Whether the feature should be made of word n-gram or         |
+         |                        |                       | character n-grams. Option ‘char_wb’ creates character        |
+         |                        |                       | n-grams only from text inside word boundaries;               |
+         |                        |                       | n-grams at the edges of words are padded with space.         |
+         |                        |                       | Valid values: ``word``, ``char``, ``char_wb``.               |
+         +------------------------+-----------------------+--------------------------------------------------------------+
+         | ``token_pattern``      | ``r"(?u)\b\w\w+\b"``  | Regular expression used to detect tokens.                    |
+         |                        |                       | Only used if ``analyzer`` is set to ``word``.                |
+         +------------------------+-----------------------+--------------------------------------------------------------+
+         | ``strip_accents``      | ``None``              | Remove accents during the pre-processing step.               |
+         |                        |                       | Valid values: ``ascii``, ``unicode``, ``None``.              |
+         +------------------------+-----------------------+--------------------------------------------------------------+
+         | ``stop_words``         | ``None``              | A list of stop words to use.                                 |
+         |                        |                       | Valid values: ``"english"`` (uses an internal list of        |
+         |                        |                       | English stop words), a list of custom stop words, or         |
+         |                        |                       | ``None``.                                                    |
+         +------------------------+-----------------------+--------------------------------------------------------------+
+         | ``min_df``             | ``1``                 | When building the vocabulary ignore terms that have a        |
+         |                        |                       | document frequency strictly lower than the given threshold.  |
+         +------------------------+-----------------------+--------------------------------------------------------------+
+         | ``max_df``             | ``1``                 | When building the vocabulary ignore terms that have a        |
+         |                        |                       | document frequency strictly higher than the given threshold  |
+         |                        |                       | (corpus-specific stop words).)                               |
+         +------------------------+-----------------------+--------------------------------------------------------------+
+         | ``min_ngram``          | ``1``                 | The lower boundary of the range of n-values for different    |
+         |                        |                       | word n-grams or char n-grams to be extracted.                |
+         +------------------------+-----------------------+--------------------------------------------------------------+
+         | ``max_ngram``          | ``1``                 | The upper boundary of the range of n-values for different    |
+         |                        |                       | word n-grams or char n-grams to be extracted.                |
+         +------------------------+-----------------------+--------------------------------------------------------------+
+         | ``max_features``       | ``None``              | If not None, build a vocabulary that only consider the top   |
+         |                        |                       | max_features ordered by term frequency across the corpus.    |
+         +------------------------+-----------------------+--------------------------------------------------------------+
+         | ``lowercase``          | ``True``              | Convert all characters to lowercase before tokenizing.       |
+         +------------------------+-----------------------+--------------------------------------------------------------+
+         | ``OOV_token``          | ``None``              | Keyword for unseen words.                                    |
+         +------------------------+-----------------------+--------------------------------------------------------------+
+         | ``OOV_words``          | ``[]``                | List of words to be treated as ``OOV_token`` during training.|
+         +------------------------+-----------------------+--------------------------------------------------------------+
 
 
 .. _LexicalSyntacticFeaturizer:
