@@ -61,6 +61,16 @@ class SingleStateFeaturizer:
         y[domain.index_for_action(action)] = 1
         return y
 
+    @staticmethod
+    def action_as_index(action: Text, domain: Domain) -> np.ndarray:
+        """Encode system action as one-hot vector."""
+
+        if action is None:
+            return np.ones(domain.num_actions, dtype=int) * -1
+
+        y = domain.index_for_action(action)
+        return y
+
     def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
         """Create matrix with all actions from domain encoded in rows."""
 
@@ -275,13 +285,14 @@ class TrackerFeaturizer:
                 tracker_actions = self._pad_states(tracker_actions)
 
             story_labels = [
-                self.state_featurizer.action_as_one_hot(action, domain)
+                self.state_featurizer.action_as_index(action, domain)
                 for action in tracker_actions
             ]
 
             labels.append(story_labels)
 
         y = np.array(labels)
+
         if y.ndim == 3 and isinstance(self, MaxHistoryTrackerFeaturizer):
             # if it is MaxHistoryFeaturizer, remove time axis
             y = y[:, 0, :]
