@@ -292,12 +292,12 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     return
 
         if any(text for tokens in all_tokens for text in tokens):
-            training_data_type = "NLU" if attribute == TEXT else "response"
+            training_data_type = "NLU" if attribute == TEXT else "ResponseSelector"
 
             # if there is some text in tokens, warn if there is no oov token
             common_utils.raise_warning(
                 f"The out of vocabulary token '{self.OOV_token}' was configured, but "
-                f"could not be found in any one of the {training_data_type} data "
+                f"could not be found in any one of the {training_data_type} "
                 f"training examples. All unseen words will be ignored during prediction.",
                 docs=DOCS_URL_COMPONENTS + "#countvectorsfeaturizer",
             )
