@@ -10,7 +10,7 @@ Event Brokers
 
 When running a Rasa Open Source assistant in production, you might want to
 connect your assistant to other services so that they can analyze the data
-that comes from your conversations. For example, you could `connect your
+coming in from your conversations. For example, you could `connect your
 live assistant to Rasa X <https://rasa.com/docs/rasa-x/installation-and-setup/existing-deployment/>`_
 to review and annotate conversations, or forward messages to an external analytics
 service. 
@@ -143,7 +143,7 @@ events. In this example we are going to use the `python-kafka <https://kafka-pyt
 Adding a Kafka Event Broker Using the Endpoint Configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can instruct Rasa to stream all events to your Kaf event broker by adding an ``event_broker`` section to your
+You can instruct Rasa to stream all events to your Kafka event broker by adding an ``event_broker`` section to your
 ``endpoints.yml``.
 
 Using ``SASL_PLAINTEXT`` protocol the endpoints file must have the following entries:
