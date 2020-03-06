@@ -5,12 +5,13 @@ import time
 import typing
 from collections import deque
 from threading import Thread
-from typing import Callable, Deque, Dict, Optional, Text, Union, Any
+from typing import Callable, Deque, Dict, Optional, Text, Union, Any, List
 
 from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_LIBRARIES,
     DOCS_URL_EVENT_BROKERS,
+    DOCS_URL_PIKA_EVENT_BROKER,
 )
 from rasa.core.brokers.broker import EventBroker
 from rasa.utils.common import raise_warning
@@ -221,38 +222,43 @@ def close_pika_connection(connection: "Connection") -> None:
 
 
 class PikaEventBroker(EventBroker):
+    """Pika-based event broker for publishing messages to RabbitMQ.
+
+    Attributes:
+        host: Pika host.
+        username: Username for authentication with Pika host.
+        password: Password for authentication with Pika host.
+        port: port of the Pika host.
+        queue: Pika queue(s) to declare.
+        queues: Pika queue(s) to declare. Takes precedence over `queue`.
+        should_keep_unpublished_messages: Whether or not the event broker should
+            maintain a queue of unpublished messages to be published later in
+            case of errors.
+        raise_on_failure: Whether to raise an exception if publishing fails. If
+            `False`, keep retrying.
+        log_level: Logging level.
+
+    """
+
     def __init__(
         self,
         host: Text,
         username: Text,
         password: Text,
         port: Union[int, Text] = 5672,
-        queue: Text = "rasa_core_events",
+        queue: Union[List[Text], Text] = "rasa_core_events",
+        queues: Optional[Union[List[Text], Text]] = None,
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
         log_level: Union[Text, int] = os.environ.get(
             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
         ),
     ):
-        """RabbitMQ event producer.
+        """Initialise RabbitMQ event broker."""
 
-        Args:
-            host: Pika host.
-            username: Username for authentication with Pika host.
-            password: Password for authentication with Pika host.
-            port: port of the Pika host.
-            queue: Pika queue to declare.
-            should_keep_unpublished_messages: Whether or not the event broker should
-                maintain a queue of unpublished messages to be published later in
-                case of errors.
-            raise_on_failure: Whether to raise an exception if publishing fails. If
-                `False`, keep retrying.
-            log_level: Logging level.
-
-        """
         logging.getLogger("pika").setLevel(log_level)
 
-        self.queue = queue
+        self.queues = self._get_queues_from_args(queue, queues)
         self.host = host
         self.username = username
         self.password = password
@@ -276,12 +282,59 @@ class PikaEventBroker(EventBroker):
 
     @property
     def rasa_environment(self) -> Optional[Text]:
+        """Get value of the `RASA_ENVIRONMENT` environment variable."""
         return os.environ.get("RASA_ENVIRONMENT")
+
+    @staticmethod
+    def _get_queues_from_args(
+        queue_arg: Union[List[Text], Text], queues_arg: Union[List[Text], Text]
+    ) -> List[Text]:
+        """Get list of queues for this event broker.
+
+        Args:
+            queue_arg: Value of the supplied `queue` argument.
+            queues_arg: Value of the supplied `queues` argument.
+
+        Returns:
+            List of queues this event broker publishes to.
+
+        """
+        if queues_arg and isinstance(queues_arg, str):
+            raise_warning(
+                "Found a string value under the `queues` key of the Pika event broker "
+                "config. Please use the `queue` key if you want to supply only a "
+                "single queue in the future.",
+                docs=DOCS_URL_PIKA_EVENT_BROKER,
+            )
+            return [queues_arg]
+
+        if queues_arg:
+            return queues_arg
+
+        if isinstance(queue_arg, list):
+            raise_warning(
+                "Found a list of queues under the `queue` key of the Pika event "
+                "broker config.. Please use the `queues` key if you want to supply "
+                "multiple queues in the future.",
+                docs=DOCS_URL_PIKA_EVENT_BROKER,
+            )
+            return queue_arg
+
+        return [queue_arg]
 
     @classmethod
     def from_endpoint_config(
         cls, broker_config: Optional["EndpointConfig"]
     ) -> Optional["PikaEventBroker"]:
+        """Initialise `PikaEventBroker` from `EndpointConfig`.
+
+        Args:
+            broker_config: `EndpointConfig` to read.
+
+        Returns:
+            `PikaEventBroker` if `broker_config` was supplied, else `None`.
+
+        """
         if broker_config is None:
             return None
 
@@ -308,7 +361,8 @@ class PikaEventBroker(EventBroker):
 
     def _on_channel_open(self, channel: "Channel") -> None:
         logger.debug("RabbitMQ channel was opened.")
-        channel.queue_declare(self.queue, durable=True)
+        for queue in self.queues:
+            channel.queue_declare(queue, durable=True)
 
         self.channel = channel
 
@@ -343,8 +397,8 @@ class PikaEventBroker(EventBroker):
 
         Returns:
             `True` if the channel is available, `False` otherwise.
-        """
 
+        """
         while attempts:
             if self.channel:
                 return True
@@ -390,8 +444,7 @@ class PikaEventBroker(EventBroker):
             time.sleep(retry_delay_in_seconds)
 
         logger.error(
-            "Failed to publish Pika event to queue '{}' on host "
-            "'{}':\n{}".format(self.queue, self.host, body)
+            f"Failed to publish Pika event to queues on host '{self.host}':\n{body}"
         )
 
     def _get_message_properties(
@@ -431,17 +484,18 @@ class PikaEventBroker(EventBroker):
     def _basic_publish(
         self, body: Text, headers: Optional[Dict[Text, Text]] = None
     ) -> None:
-        self.channel.basic_publish(
-            "",
-            self.queue,
-            body.encode(DEFAULT_ENCODING),
-            properties=self._get_message_properties(headers),
-        )
+        for queue in self.queues:
+            self.channel.basic_publish(
+                "",
+                queue,
+                body.encode(DEFAULT_ENCODING),
+                properties=self._get_message_properties(headers),
+            )
 
-        logger.debug(
-            f"Published Pika events to queue '{self.queue}' on host "
-            f"'{self.host}':\n{body}"
-        )
+            logger.debug(
+                f"Published Pika events to queue '{queue}' on host "
+                f"'{self.host}':\n{body}"
+            )
 
     def _publish(self, body: Text, headers: Optional[Dict[Text, Text]] = None) -> None:
         if self._pika_connection.is_closed:
@@ -512,7 +566,8 @@ class PikaProducer(PikaEventBroker):
         username: Text,
         password: Text,
         port: Union[int, Text] = 5672,
-        queue: Text = "rasa_core_events",
+        queue: Union[List[Text], Text] = "rasa_core_events",
+        queues: Optional[Union[List[Text], Text]] = None,
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
         log_level: Union[Text, int] = os.environ.get(
@@ -532,6 +587,7 @@ class PikaProducer(PikaEventBroker):
             password,
             port,
             queue,
+            queues,
             should_keep_unpublished_messages,
             raise_on_failure,
             log_level,

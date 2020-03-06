@@ -1,4 +1,7 @@
 import json
+from typing import Union, Text, List
+
+import pytest
 from unittest.mock import patch
 
 from _pytest.monkeypatch import MonkeyPatch
@@ -45,6 +48,28 @@ def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
     rasa_environment = "some-test-environment"
     monkeypatch.setenv("RASA_ENVIRONMENT", rasa_environment)
     assert pika_producer._get_message_properties().app_id == rasa_environment
+
+
+@pytest.mark.parametrize(
+    "queue_arg,queues_arg,expected",
+    [
+        ("rasa_core_events", None, ["rasa_core_events"]),  # default case
+        (["q1", "q2"], None, ["q1", "q2"]),  # supplying a list for `queue` works too
+        ("q1", "q2", ["q2"]),  # `queues` arg supplied, takes precedence
+        ("q1", ["q2", "q3"], ["q2", "q3"]),  # same, but with a list
+        (None, "q1", ["q1"]),  # only supplying `queues` works
+    ],
+)
+def test_pika_queues_from_args(
+    queue_arg: Union[Text, List[Text], None],
+    queues_arg: Union[Text, List[Text], None],
+    expected: List[Text],
+):
+    # patch PikaProducer so it doesn't try to connect to RabbitMQ on init
+    with patch.object(PikaEventBroker, "_run_pika", lambda _: None):
+        pika_producer = PikaEventBroker("", "", "", queue=queue_arg, queues=queues_arg)
+
+    assert pika_producer.queues == expected
 
 
 def test_no_broker_in_config():
