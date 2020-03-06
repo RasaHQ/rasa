@@ -433,8 +433,8 @@ class PikaEventBroker(EventBroker):
                 return
             except Exception as e:
                 logger.error(
-                    "Could not open Pika channel at host '{}'. Failed with error: "
-                    "{}".format(self.host, e)
+                    f"Could not open Pika channel at host '{self.host}'. "
+                    f"Failed with error: {e}"
                 )
                 self.channel = None
                 if self.raise_on_failure:
@@ -443,9 +443,7 @@ class PikaEventBroker(EventBroker):
             retries -= 1
             time.sleep(retry_delay_in_seconds)
 
-        logger.error(
-            f"Failed to publish Pika event to queues on host '{self.host}':\n{body}"
-        )
+        logger.error(f"Failed to publish Pika event on host '{self.host}':\n{body}")
 
     def _get_message_properties(
         self, headers: Optional[Dict[Text, Text]] = None

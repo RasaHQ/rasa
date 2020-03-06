@@ -1,5 +1,5 @@
-``PikaEventBroker`` support publishing to multiple queues. Multiple queues can be
-specified as a list in the ``endpoints.yml`` event broker config under a new key
+Added ``PikaEventBroker`` support for publishing to multiple queues. Multiple queues
+can be specified as a list in the ``endpoints.yml`` event broker config under a new key
 ``queues``. Example config:
 
 .. code-block:: yaml
