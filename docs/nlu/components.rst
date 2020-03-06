@@ -1492,9 +1492,9 @@ DIETClassifier
     recognition. The architecture is based on a transformer which is shared for both tasks.
     A sequence of entity labels is predicted through a Conditional Random Field (CRF) tagging layer on top of the
     transformer output sequence corresponding to the input sequence of tokens.
-    The transformer output for the ``__CLS__`` token and intent labels are embedded into a single semantic vector
-    space. We use the dot-product loss to maximize the similarity with the target label and minimize
-    similarities with negative samples.
+    For the intent labels the transformer output for the ``__CLS__`` token and intent labels are embedded into a
+    single semantic vector space. We use the dot-product loss to maximize the similarity with the target label and
+    minimize similarities with negative samples.
 
     .. note:: If during prediction time a message contains **only** words unseen during training
               and no Out-Of-Vacabulary preprocessor was used, an empty intent ``None`` is predicted with confidence
@@ -1504,102 +1504,45 @@ DIETClassifier
 
 :Configuration:
 
-    The following hyperparameters can be set:
-
-        - neural network's architecture:
-
-            - ``hidden_layers_sizes.text`` sets a list of hidden layer sizes before
-              the embedding layer for user inputs, the number of hidden layers
-              is equal to the length of the list.
-            - ``hidden_layers_sizes.label`` sets a list of hidden layer sizes before
-              the embedding layer for intent labels, the number of hidden layers
-              is equal to the length of the list.
-            - ``share_hidden_layers`` if set to True, shares the hidden layers between user inputs and intent label.
-            - ``transformer_size`` sets the size of the transformer.
-            - ``number_of_transformer_layers`` sets the number of transformer layers to use.
-            - ``number_of_attention_heads`` sets the number of attention heads to use.
-            - ``unidirectional_encoder`` specifies whether to use a unidirectional or bidirectional encoder.
-            - ``use_key_relative_attention`` if true use key relative embeddings in attention.
-            - ``use_value_relative_attention`` if true use key relative embeddings in attention.
-            - ``max_relative_position`` sets the max position for relative embeddings.
-
-        - training:
-
-            - ``batch_size`` sets the number of training examples in one
-              forward/backward pass, the higher the batch size, the more
-              memory space you'll need.
-            - ``batch_strategy`` sets the type of batching strategy,
-              it should be either ``sequence`` or ``balanced``.
-            - ``epochs`` sets the number of times the algorithm will see
-              training data, where one ``epoch`` equals one forward pass and
-              one backward pass of all the training examples.
-            - ``random_seed`` if set you will get reproducible
-              training results for the same inputs.
-            - ``learning_rate`` sets the initial learning rate of the optimizer.
-
-        - embedding:
-
-            - ``dense_dimension.text`` sets the dense dimensions for user inputs to use for sparse
-              tensors if no dense features are present.
-            - ``dense_dimension.label`` sets the dense dimensions for intent labels to use for sparse
-              tensors if no dense features are present.
-            - ``embedding_dimension`` sets the dimension of embedding space.
-            - ``number_of_negative_examples`` sets the number of incorrect intent labels.
-              The algorithm will minimize their similarity to the user
-              input during training.
-            - ``similarity_type`` sets the type of the similarity,
-              it should be either ``auto``, ``cosine`` or ``inner``,
-              if ``auto``, it will be set depending on ``loss_type``,
-              ``inner`` for ``softmax``, ``cosine`` for ``margin``.
-            - ``loss_type`` sets the type of the loss function,
-              it should be either ``softmax`` or ``margin``.
-            - ``ranking_length`` defines the number of top confidences over
-              which to normalize ranking results if ``loss_type: "softmax"``.
-              To turn off normalization set it to 0.
-            - ``maximum_positive_similarity`` controls how similar the algorithm should try
-              to make embedding vectors for correct intent labels,
-              used only if ``loss_type`` is set to ``margin``.
-            - ``maximum_negative_similarity`` controls maximum negative similarity for
-              incorrect intents, used only if ``loss_type`` is set to ``margin``.
-            - ``use_maximum_negative_similarity`` if ``true`` the algorithm only
-              minimizes maximum similarity over incorrect intent labels,
-              used only if ``loss_type`` is set to ``margin``.
-            - ``scale_loss`` if ``true`` the algorithm will downscale the loss
-              for examples where correct label is predicted with high confidence,
-              used only if ``loss_type`` is set to ``softmax``.
-
-        - regularization:
-
-            - ``regularization_constant`` sets the scale of L2 regularization. Higher values will result in more
-              regularization.
-            - ``negative_margin_scale`` sets the scale of how important is to minimize
-              the maximum similarity between embeddings of different intent labels.
-            - ``drop_rate`` sets the dropout rate, it should be
-              between ``0`` and ``1``, e.g. ``drop_rate=0.1`` would drop out ``10%`` of input units.
-            - ``drop_rate_attention`` sets the dropout rate for attention, it should be
-              between ``0`` and ``1``, e.g. ``drop_rate_attention=0.1`` would drop out ``10%`` of input units.
-            - ``weight_sparsity`` sets the sparsity of weight kernels in dense layers.
-            - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not.
+    You can set quite a few hyperparameters to adapt the model.
+    If you want to change some parameters, you should start by adapting the following parameters:
 
         - model configuration:
 
-            - ``use_masked_language_model`` specifies whether to apply masking or not.
-            - ``intent_classification`` indicates whether intent classification should be performed or not.
-            - ``entity_recognition`` indicates whether entity recognition should be performed or not.
-            - ``BILOU_flag`` determines whether to use BILOU tagging or not.
+            - ``intent_classification``:
+              This parameter indicates whether intent classification should be performed or not (default: ``True``).
+              If you set this parameter to ``False``, the model will not predict any intents.
+              This might be useful, if you want to use the model just for entity extraction and use a different
+              component for intent classification.
+            - ``entity_recognition``:
+              This parameter indicates whether entity recognition should be performed or not (default: ``True``).
+              If you set this parameter to ``False``, the model will not predict any entities.
+              This might be useful, if you don't have any entities in your data and you want to use the model only for
+              intent classification.
+            - ``use_masked_language_model``:
+              This parameter specifies whether to apply masking or not (default: ``False``).
+              If you set this parameter to ``True`` random tokens of the input are replaced by a special token
+              (``__MASK__``).
+              During training the model tries to predict what token should be at the ``__MASK__`` token position.
+              It might helped to learn a better contextual representation of the input.
+              However, keep in mind that is slows down training a bit.
+            - ``BILOU_flag``:
+              This parameter indicates whether the BILOU tagging schema should be used or not (default: ``True``).
+              The BILOU tagging schema is a stricter form of tagging entities in text.
 
-    .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
-              be between ``-1`` and ``1``.
+        - training:
 
-    .. note:: There is an option to use linearly increasing batch size. The idea comes from
-              `<https://arxiv.org/abs/1711.00489>`_.
-              In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
-              If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
+            - ``epochs``:
+              This parameter sets the number of times the algorithm will see the training data (default: ``300``).
+              One ``epoch`` is equals to one forward pass and one backward pass of all the training examples.
+              Sometimes the model needs more epochs to properly learn.
+              Sometimes more epochs don't influence the performance at all.
+              The lower the number of epochs the faster the model is trained.
+            - ``learning_rate`` sets the initial learning rate of the optimizer.
 
-    .. note:: Parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original
-              starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity``
-              and ``use_maximum_negative_similarity = False``.
-              See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+        - neural network's architecture:
+
+            - ``number_of_transformer_layers`` sets the number of transformer layers to use.
 
 
     .. container:: toggle
@@ -1684,43 +1627,44 @@ DIETClassifier
          | negative_margin_scale           | 0.8                   | The scale of how important is to minimize the maximum        |
          |                                 |                       | similarity between embeddings of different labels.           |
          +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | weight_sparsity                 | 0.8                   | Sparsity of the weights in dense layers.                     |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | drop_rate                       | 0.2                   | Dropout rate for encoder.                                    |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | drop_rate_attention             | 0.0                   | Dropout rate for attention.                                  |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | use_sparse_input_dropout        | True                  | If 'True' apply dropout to sparse tensors.                   |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | evaluate_every_number_of_epochs | 20                    | How often calculate validation accuracy.                     |
+         |                                 |                       | Small values may hurt performance, e.g. model accuracy.      |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | evaluate_on_number_of_examples  | 0                     | How many examples to use for hold out validation set.        |
+         |                                 |                       | Large values may hurt performance, e.g. model accuracy.      |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | intent_classification           | True                  | If 'True' intent classification is trained and intent        |
+         |                                 |                       | predicted.                                                   |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | entity_recognition              | True                  | If 'True' entity recognition is trained and entities are     |
+         |                                 |                       | extracted.                                                   |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | use_masked_language_model       | False                 | If 'True' random tokens of the input message will be masked  |
+         |                                 |                       | and the model should predict those tokens.                   |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | BILOU_flag                      | True                  | 'BILOU_flag' determines whether to use BILOU tagging or not. |
+         |                                 |                       | If set to 'True' labelling is more rigorous, however more    |
+         |                                 |                       | examples per entity are required. Rule of thumb:             |
+         |                                 |                       | you should have more than 100 examples per entity.           |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
 
+        .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
+                  be between ``-1`` and ``1``.
 
+        .. note:: There is an option to use linearly increasing batch size. The idea comes from
+                  `<https://arxiv.org/abs/1711.00489>`_.
+                  In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
+                  If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
 
-            # Sparsity of the weights in dense layers
-            "weight_sparsity": 0.8
-            # Dropout rate for encoder
-            "drop_rate": 0.2
-            # Dropout rate for attention
-            "drop_rate_attention": 0
-            # If 'True' apply dropout to sparse tensors
-            "use_sparse_input_dropout": True
-            # ## Evaluation parameters
-            # How often calculate validation accuracy.
-            # Small values may hurt performance, e.g. model accuracy.
-            "evaluate_every_number_of_epochs": 20
-            # How many examples to use for hold out validation set
-            # Large values may hurt performance, e.g. model accuracy.
-            "evaluate_on_number_of_examples": 0
-            # ## Model config
-            # If 'True' intent classification is trained and intent predicted.
-            "intent_classification": True
-            # If 'True' named entity recognition is trained and entities predicted.
-            "entity_recognition": True
-            # If 'True' random tokens of the input message will be masked and the model
-            # should predict those tokens.
-            "use_masked_language_model": False
-            # 'BILOU_flag' determines whether to use BILOU tagging or not.
-            # If set to 'True' labelling is more rigorous, however more
-            # examples per entity are required.
-            # Rule of thumb: you should have more than 100 examples per entity.
-            "BILOU_flag": True
-            # If you want to use tensorboard to visualize training metrics,
-            # set this option to a valid output directory.
-            # You can view the training metrics after training in tensorboard via
-            # ``tensorboard --logdir <path-to-given-directory>``
-            "tensorboard_log_directory": None
-            # Define when training metrics for tensorboard should be logged.
-            # Either after every epoch or for every training step.
-            # Valid values: 'epoch' and 'minibatch'
-            "tensorboard_log_level": "epoch"
+        .. note:: Parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original
+                  starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity``
+                  and ``use_maximum_negative_similarity = False``.
+                  See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
