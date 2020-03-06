@@ -1601,82 +1601,92 @@ DIETClassifier
               and ``use_maximum_negative_similarity = False``.
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
-    Default values:
 
-    .. code-block:: yaml
+    .. container:: toggle
 
-        pipeline:
-        - name: "DIETClassifier"
-            # ## Architecture of the used neural network
-            # Hidden layer sizes for layers before the embedding layers for user message
-            # and labels.
-            # The number of hidden layers is equal to the length of the corresponding
-            # list.
-            "hidden_layers_sizes": {TEXT: [], LABEL: []}
-            # Whether to share the hidden layer weights between user message and labels.
-            "share_hidden_layers": False
-            # Number of units in transformer
-            "transformer_size": 256
-            # Number of transformer layers
-            "number_of_transformer_layers": 2
-            # Number of attention heads in transformer
-            "number_of_attention_heads": 4
-            # If 'True' use key relative embeddings in attention
-            "use_key_relative_attention": False
-            # If 'True' use key relative embeddings in attention
-            "use_value_relative_attention": False
-            # Max position for relative embeddings
-            "max_relative_position": None
-            # Max sequence length
-            "maximum_sequence_length": 256
-            # Use a unidirectional or bidirectional encoder.
-            "unidirectional_encoder": False
-            # ## Training parameters
-            # Initial and final batch sizes:
-            # Batch size will be linearly increased for each epoch.
-            "batch_size": [64, 256]
-            # Strategy used when creating batches.
-            # Can be either 'sequence' or 'balanced'.
-            "batch_strategy": "balanced"
-            # Number of epochs to train
-            "epochs": 300
-            # Set random seed to any 'int' to get reproducible results
-            "random_seed": None
-            # Initial learning rate for the optimizer
-            "learning_rate": 0.001
-            # ## Parameters for embeddings
-            # Dimension size of embedding vectors
-            "embedding_dimension": 20
-            # Default dense dimension to use if no dense features are present.
-            "dense_dimension": {TEXT: 512, LABEL: 20}
-            # The number of incorrect labels. The algorithm will minimize
-            # their similarity to the user input during training.
-            "number_of_negative_examples": 20
-            # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
-            "similarity_type": "auto"
-            # The type of the loss function, either 'softmax' or 'margin'.
-            "loss_type": "softmax"
-            # Number of top actions to normalize scores for loss type 'softmax'.
-            # Set to 0 to turn off normalization.
-            "ranking_length": 10
-            # Indicates how similar the algorithm should try to make embedding vectors
-            # for correct labels.
-            # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
-            "maximum_positive_similarity": 0.8
-            # Maximum negative similarity for incorrect labels.
-            # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
-            "maximum_negative_similarity": -0.4
-            # If 'True' the algorithm only minimizes maximum similarity over
-            # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
-            "use_maximum_negative_similarity": True
-            # Scale loss inverse proportionally to confidence of correct prediction
-            "scale_loss": True
-            # ## Regularization parameters
-            # The scale of regularization
-            "regularization_constant": 0.002
-            # The scale of how important is to minimize the maximum similarity
-            # between embeddings of different labels.
-            "negative_margin_scale": 0.8
+        .. container:: header
+
+            The above configuration parameters are the ones you most likely gonna change.
+            However, additional parameters exists that can be adapted.
+
+        .. code-block:: none
+
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | Parameter                       | Default Value         | Description                                                  |
+         +=================================+=======================+==============================================================+
+         | hidden_layers_sizes             | text: []              | Hidden layer sizes for layers before the embedding layers    |
+         |                                 | label: []             | for user message and labels. The number of hidden layers is  |
+         |                                 |                       | equal to the length of the corresponding.                    |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | share_hidden_layers             | False                 | Whether to share the hidden layer weights between user       |
+         |                                 |                       | message and labels.                                          |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | transformer_size                | 256                   | Number of units in transformer.                              |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | number_of_transformer_layers    | 2                     | Number of transformer layers.                                |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | number_of_attention_heads       | 4                     | Number of attention heads in transformer                     |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | use_key_relative_attention      | False                 | If 'True' use key relative embeddings in attention           |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | use_value_relative_attention    | False                 | If 'True' use key relative embeddings in attention           |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | max_relative_position           | None                  | Maximum position for relative embeddings.                    |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | maximum_sequence_length         | 256                   | Maximum sequence length.                                     |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | unidirectional_encoder          | False                 | Use a unidirectional or bidirectional encoder.               |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | batch_size                      | [64, 256]             | Initial and final value for batch sizes.                     |
+         |                                 |                       | Batch size will be linearly increased for each epoch.        |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | batch_strategy                  | "balanced"            | Strategy used when creating batches.                         |
+         |                                 |                       | Can be either 'sequence' or 'balanced'.                      |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | epochs                          | 300                   | Number of epochs to train.                                   |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | random_seed                     | None                  | Set random seed to any 'int' to get reproducible results.    |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | learning_rate                   | 0.001                 | Initial learning rate for the optimizer.                     |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | embedding_dimension             | 20                    | Dimension size of embedding vectors.                         |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | dense_dimension                 | text: 512             | Default dense dimension to use if no dense features are      |
+         |                                 | label: 20             | present.                                                     |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | number_of_negative_examples     | 20                    | The number of incorrect labels. The algorithm will minimize  |
+         |                                 |                       | their similarity to the user input during training.          |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | similarity_type                 | "auto"                | Type of similarity measure to use, either 'auto' or 'cosine' |
+         |                                 |                       | or 'inner'.                                                  |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | loss_type                       | "softmax"             | The type of the loss function, either 'softmax' or 'margin'. |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | ranking_length                  | 10                    | Number of top actions to normalize scores for loss type      |
+         |                                 |                       | 'softmax'. Set to 0 to turn off normalization.               |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | maximum_positive_similarity     | 0.8                   | Indicates how similar the algorithm should try to make       |
+         |                                 |                       | embedding vectors for correct labels.                        |
+         |                                 |                       | Should be 0.0 < ... < 1.0 for 'cosine' similarity type.      |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | maximum_negative_similarity     | -0.4                  | Maximum negative similarity for incorrect labels.            |
+         |                                 |                       | Should be -1.0 < ... < 1.0 for 'cosine' similarity type.     |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | use_maximum_negative_similarity | True                  | If 'True' the algorithm only minimizes maximum similarity    |
+         |                                 |                       | over incorrect intent labels, used only if 'loss_type' is    |
+         |                                 |                       | set to 'margin'.                                             |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | scale_loss                      | True                  | Scale loss inverse proportionally to confidence of correct   |
+         |                                 |                       | prediction.                                                  |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | regularization_constant         | 0.002                 | The scale of regularization.                                 |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         | negative_margin_scale           | 0.8                   | The scale of how important is to minimize the maximum        |
+         |                                 |                       | similarity between embeddings of different labels.           |
+         +---------------------------------+-----------------------+--------------------------------------------------------------+
+
+
+
             # Sparsity of the weights in dense layers
             "weight_sparsity": 0.8
             # Dropout rate for encoder
