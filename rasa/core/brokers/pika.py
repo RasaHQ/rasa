@@ -121,7 +121,7 @@ def initialise_pika_select_connection(
 
     Returns:
         An callback based connection to the RabbitMQ event broker.
-        
+
     """
     import pika
 
@@ -235,6 +235,7 @@ class PikaEventBroker(EventBroker):
         log_level: Logging level.
 
     """
+
     def __init__(
         self,
         host: Text,
