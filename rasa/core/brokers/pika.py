@@ -50,7 +50,6 @@ def initialise_pika_connection(
         Pika `BlockingConnection` with provided parameters
 
     """
-
     import pika
 
     parameters = _get_pika_parameters(
@@ -79,8 +78,8 @@ def _get_pika_parameters(
 
     Returns:
         Pika `Paramaters` which can be used to create a new connection to a broker.
-    """
 
+    """
     import pika
 
     if host.startswith("amqp"):
@@ -122,8 +121,8 @@ def initialise_pika_select_connection(
 
     Returns:
         An callback based connection to the RabbitMQ event broker.
+        
     """
-
     import pika
 
     return pika.SelectConnection(
@@ -157,7 +156,6 @@ def initialise_pika_channel(
         Pika `BlockingChannel` with declared queue.
 
     """
-
     connection = initialise_pika_connection(
         host, username, password, port, connection_attempts, retry_delay_in_seconds
     )
@@ -169,7 +167,6 @@ def _declare_pika_channel_with_queue(
     connection: "BlockingConnection", queue: Text
 ) -> "BlockingChannel":
     """Declare a durable queue on Pika channel."""
-
     channel = connection.channel()
     channel.queue_declare(queue, durable=True)
 
@@ -211,7 +208,6 @@ def close_pika_channel(
 
 def close_pika_connection(connection: "Connection") -> None:
     """Attempt to close Pika connection."""
-
     from pika.exceptions import AMQPError
 
     try:
@@ -255,7 +251,6 @@ class PikaEventBroker(EventBroker):
         ),
     ):
         """Initialise RabbitMQ event broker."""
-
         logging.getLogger("pika").setLevel(log_level)
 
         self.queues = self._get_queues_from_args(queue, queues)
@@ -536,7 +531,6 @@ def create_rabbitmq_ssl_options(
         environment variables are valid paths, else `None`.
 
     """
-
     client_certificate_path = os.environ.get("RABBITMQ_SSL_CLIENT_CERTIFICATE")
     client_key_path = os.environ.get("RABBITMQ_SSL_CLIENT_KEY")
 
