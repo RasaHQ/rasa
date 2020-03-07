@@ -122,7 +122,7 @@ HFTransformersNLP
             
             # An optional path to a specific directory to download and cache the pre-trained model weights.
             # default cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
-            cache_dir: "~/.cache/torch/"
+            cache_dir: null
 
         #    +----------------+--------------+-------------------------+
         #    | Language Model | Parameter    | Default value for       |
