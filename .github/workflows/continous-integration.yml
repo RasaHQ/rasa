@@ -187,14 +187,14 @@ jobs:
       run: docker build . --file ${{ matrix.image.file }} --tag rasa/rasa:latest${{ matrix.image.tag_ext }} --cache-from rasa/rasa:latest${{ matrix.image.tag_ext }}
 
     - name: Push image with latest tag 📦
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      if: github.event_name == 'push' && github.event.ref == 'refs/heads/master'
       run: docker push rasa/rasa:latest${{ matrix.image.tag_ext }}
 
-    - name: Push image with ${{github.event.ref}} tag 📦
+    - name: Push image with ${{github.ref}} tag 📦
       if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
       run: |
-        docker tag rasa/rasa:latest${{ matrix.image.tag_ext }} rasa/rasa:${{github.event.ref}}${{ matrix.image.tag_ext }}
-        docker push rasa/rasa:${{github.event.ref}}${{ matrix.image.tag_ext }}
+        docker tag rasa/rasa:latest${{ matrix.image.tag_ext }} rasa/rasa:${{github.ref}}${{ matrix.image.tag_ext }}
+        docker push rasa/rasa:${{github.ref}}${{ matrix.image.tag_ext }}
 
   deploy:
     name: Deploy to PyPI
@@ -236,7 +236,7 @@ jobs:
       env:
         GH_RELEASE_NOTES_TOKEN: ${{ secrets.GH_RELEASE_NOTES_TOKEN }}
         SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
-        GITHUB_TAG: ${{ github.event.ref }}
+        GITHUB_TAG: ${{ github.ref }}
         GITHUB_REPO_SLUG: ${{ github.repository }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
