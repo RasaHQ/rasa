@@ -235,7 +235,6 @@ class PikaEventBroker(EventBroker):
         log_level: Logging level.
 
     """
-
     def __init__(
         self,
         host: Text,
