@@ -119,6 +119,10 @@ HFTransformersNLP
             # can be found at https://huggingface.co/transformers/pretrained_models.html . If left empty, it uses the
             # default model architecture that original transformers library loads
             model_weights: "bert-base-uncased"
+            
+            # An optional path to a specific directory to download and cache the pre-trained model weights.
+            # default cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
+            cache_dir: "~/.cache/torch/"
 
         #    +----------------+--------------+-------------------------+
         #    | Language Model | Parameter    | Default value for       |
