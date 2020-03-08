@@ -271,7 +271,8 @@ class TEDPolicy(Policy):
         Y = np.array([])
 
         if data_Y is not None:
-            label_ids = self._label_ids_for_Y(data_Y)
+            # label_ids = self._label_ids_for_Y(data_Y)
+            label_ids = np.squeeze(data_Y, axis=-1)
             Y = self._label_features_for_Y(label_ids)
             # explicitly add last dimension to label_ids
             # to track correctly dynamic sequences
@@ -296,7 +297,7 @@ class TEDPolicy(Policy):
     def _create_label_data(self, domain: Domain) -> RasaModelData:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        all_labels = state_featurizer.create_encoded_all_actions(domain)
+        all_labels = state_featurizer.create_encoded_all_actions_sparse(domain)
         all_labels = all_labels.astype(np.float32)
 
         label_data = RasaModelData()
@@ -568,24 +569,24 @@ class TED(RasaModel):
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,
         )
-<<<<<<< HEAD
-<<<<<<< HEAD
-        self._tf_layers[f"ffnn.{DIALOGUE}"] = layers.Ffnn(
-=======
-=======
->>>>>>> changed signature in all policies to take Interpreter as input
 
         self._prepare_sparse_dense_layers(self.data_signature['dialogue_features'],
             'dialogue_features',
             self.config[REGULARIZATION_CONSTANT],
             self.data_signature['dialogue_features'][0][1][-1])
 
-<<<<<<< HEAD
-        self._tf_layers["ffnn.dialogue"] = layers.Ffnn(
->>>>>>> processing of sparse input features by TED
-=======
+        for is_sparse, shape in self.data_signature['label_features']:
+            if is_sparse:
+                sparse_dim_label_features = shape[-1]
+            else:
+                sparse_dim_label_features = 100
+
+        self._prepare_sparse_dense_layers(self.data_signature['label_features'],
+            'label_features',
+            self.config[REGULARIZATION_CONSTANT],
+            sparse_dim_label_features)
+
         self._tf_layers[f"ffnn.{DIALOGUE}"] = layers.Ffnn(
->>>>>>> changed signature in all policies to take Interpreter as input
             self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
             self.config[DROP_RATE_DIALOGUE],
             self.config[REGULARIZATION_CONSTANT],
@@ -629,6 +630,9 @@ class TED(RasaModel):
 
     def _create_all_labels_embed(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_labels = self.tf_label_data[LABEL_FEATURES][0]
+        if isinstance(all_labels, tf.SparseTensor):
+            all_labels = self._tf_layers["sparse_to_dense.label_features"](all_labels)
+            all_labels = tf.squeeze(all_labels, axis=1)
         all_labels_embed = self._embed_label(all_labels)
 
         return all_labels, all_labels_embed
@@ -679,6 +683,9 @@ class TED(RasaModel):
 
         dialogue_in = batch[DIALOGUE_FEATURES][0]
         label_in = batch[LABEL_FEATURES][0]
+        if isinstance(label_in, tf.SparseTensor):
+                label_in = self._tf_layers["sparse_to_dense.label_features"](label_in)
+                label_in = tf.squeeze(label_in, axis=1)
 
         if self.max_history_tracker_featurizer_used:
             # add time dimension if max history featurizer is used
