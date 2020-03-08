@@ -294,7 +294,10 @@ class PikaEventBroker(EventBroker):
             List of queues this event broker publishes to.
 
         """
-        if queues_arg and isinstance(queues_arg, str):
+        if queues_arg and isinstance(queues_arg, list):
+            return queues_arg
+
+        elif queues_arg and isinstance(queues_arg, str):
             raise_warning(
                 "Found a string value under the `queues` key of the Pika event broker "
                 "config. Please use the `queue` key if you want to supply only a "
@@ -303,19 +306,16 @@ class PikaEventBroker(EventBroker):
             )
             return [queues_arg]
 
-        if queues_arg:
-            return queues_arg
+        elif queue_arg and isinstance(queue_arg, str):
+            return [queue_arg]
 
-        if isinstance(queue_arg, list):
-            raise_warning(
-                "Found a list of queues under the `queue` key of the Pika event "
-                "broker config.. Please use the `queues` key if you want to supply "
-                "multiple queues in the future.",
-                docs=DOCS_URL_PIKA_EVENT_BROKER,
-            )
-            return queue_arg
-
-        return [queue_arg]
+        raise_warning(
+            "Found a list of queues under the `queue` key of the Pika event "
+            "broker config.. Please use the `queues` key if you want to supply "
+            "multiple queues in the future.",
+            docs=DOCS_URL_PIKA_EVENT_BROKER,
+        )
+        return queue_arg  # pytype: disable=bad-return-type
 
     @classmethod
     def from_endpoint_config(
