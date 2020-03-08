@@ -18,6 +18,7 @@ from rasa.core.training.data import DialogueTrainingData
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
+import scipy.sparse
 
 from rasa.core.interpreter import RasaCoreInterpreter
 from rasa.nlu.model import Trainer
@@ -60,6 +61,17 @@ class SingleStateFeaturizer:
         y = np.zeros(domain.num_actions, dtype=int)
         y[domain.index_for_action(action)] = 1
         return y
+
+    @staticmethod
+    def action_as_index(action: Text, domain: Domain) -> np.ndarray:
+        """Encode system action as one-hot vector."""
+
+        if action is None:
+            return np.ones(domain.num_actions, dtype=int) * -1
+
+        y = domain.index_for_action(action)
+        return y
+
 
     def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
         """Create matrix with all actions from domain encoded in rows."""
@@ -247,6 +259,25 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
                         print(t.lower())
         return encoded_all_actions
 
+    def create_encoded_all_actions_sparse(self, domain: Domain) -> np.ndarray:
+        """Create matrix with all actions from domain encoded in rows as bag of words"""
+
+        # encoded_all_actions = np.zeros(
+        #     (domain.num_actions, len(self.vectorizers["text"].vocabulary_)), dtype=np.int32
+        # )
+        encoded_all_actions=  []
+        attribute = "text"
+        translator = str.maketrans(string.punctuation, self.delimiter*len(string.punctuation))
+        for idx, name in enumerate(domain.action_names):
+            name = name.translate(translator)
+            name = name.replace('\t', self.delimiter)
+            name = Message(name.replace(self.delimiter, ' '))
+            message_tokens = self._get_processed_message_tokens_by_attribute(name, attribute)
+            features = self._create_sequence(attribute, [message_tokens + [CLS_TOKEN]])
+            encoded_all_actions.append(features[0].getrow(-1))
+        encoded_all_actions = scipy.sparse.vstack(encoded_all_actions)
+        return encoded_all_actions
+
 class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
 
@@ -351,7 +382,7 @@ class TrackerFeaturizer:
                 tracker_actions = self._pad_states(tracker_actions)
 
             story_labels = [
-                self.state_featurizer.action_as_one_hot(action, domain)
+                self.state_featurizer.action_as_index(action, domain)
                 for action in tracker_actions
             ]
 
