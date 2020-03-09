@@ -33,7 +33,10 @@ tracker looks like this:
         "timestamp": 1528402837.617099,
         "event": "bot",
         "text": "what your bot said",
-        "data": "some data"
+        "data": "some data about e.g. attachments"
+        "metadata" {
+              "a key": "a value",
+         }
     }
 
 The ``event`` field takes the event's ``type_name`` (for more on event
@@ -70,14 +73,14 @@ Here is how you add it using Python code:
 .. code-block:: python
 
     from rasa.core.brokers.pika import PikaEventBroker
-    from rasa_platform.core.tracker_store import InMemoryTrackerStore
+    from rasa.core.tracker_store import InMemoryTrackerStore
 
     pika_broker = PikaEventBroker('localhost',
                                   'username',
                                   'password',
                                   queue='rasa_events')
 
-    tracker_store = InMemoryTrackerStore(db=db, event_broker=pika_broker)
+    tracker_store = InMemoryTrackerStore(domain=domain, event_broker=pika_broker)
 
 
 Implementing a Pika Event Consumer
@@ -153,7 +156,7 @@ The code below shows an example on how to instantiate a Kafka producer in you sc
     kafka_broker = KafkaEventBroker(host='localhost:9092',
                                     topic='rasa_events')
 
-    tracker_store = InMemoryTrackerStore(event_broker=kafka_broker)
+    tracker_store = InMemoryTrackerStore(domain=domain, event_broker=kafka_broker)
 
 
 The host variable can be either a list of brokers adresses or a single one.
