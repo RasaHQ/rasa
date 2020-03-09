@@ -544,6 +544,8 @@ CountVectorsFeaturizer
           # Set the out-of-vocabulary token
           "OOV_token": "_oov_"
 
+    |
+
     .. container:: toggle
 
         .. container:: header
@@ -553,51 +555,51 @@ CountVectorsFeaturizer
 
         .. code-block:: none
 
-         +------------------------+-----------------------+--------------------------------------------------------------+
-         | Parameter              | Default Value         | Description                                                  |
-         +========================+=======================+==============================================================+
-         | ``use_shared_vocab``   | ``False``             | If set to ``True`` a common vocabulary is used for labels    |
-         |                        |                       | and user message.                                            |
-         +------------------------+-----------------------+--------------------------------------------------------------+
-         | ``analyzer``           | ``word``              | Whether the feature should be made of word n-gram or         |
-         |                        |                       | character n-grams. Option ‘char_wb’ creates character        |
-         |                        |                       | n-grams only from text inside word boundaries;               |
-         |                        |                       | n-grams at the edges of words are padded with space.         |
-         |                        |                       | Valid values: ``word``, ``char``, ``char_wb``.               |
-         +------------------------+-----------------------+--------------------------------------------------------------+
-         | ``token_pattern``      | ``r"(?u)\b\w\w+\b"``  | Regular expression used to detect tokens.                    |
-         |                        |                       | Only used if ``analyzer`` is set to ``word``.                |
-         +------------------------+-----------------------+--------------------------------------------------------------+
-         | ``strip_accents``      | ``None``              | Remove accents during the pre-processing step.               |
-         |                        |                       | Valid values: ``ascii``, ``unicode``, ``None``.              |
-         +------------------------+-----------------------+--------------------------------------------------------------+
-         | ``stop_words``         | ``None``              | A list of stop words to use.                                 |
-         |                        |                       | Valid values: ``"english"`` (uses an internal list of        |
-         |                        |                       | English stop words), a list of custom stop words, or         |
-         |                        |                       | ``None``.                                                    |
-         +------------------------+-----------------------+--------------------------------------------------------------+
-         | ``min_df``             | ``1``                 | When building the vocabulary ignore terms that have a        |
-         |                        |                       | document frequency strictly lower than the given threshold.  |
-         +------------------------+-----------------------+--------------------------------------------------------------+
-         | ``max_df``             | ``1``                 | When building the vocabulary ignore terms that have a        |
-         |                        |                       | document frequency strictly higher than the given threshold  |
-         |                        |                       | (corpus-specific stop words).)                               |
-         +------------------------+-----------------------+--------------------------------------------------------------+
-         | ``min_ngram``          | ``1``                 | The lower boundary of the range of n-values for different    |
-         |                        |                       | word n-grams or char n-grams to be extracted.                |
-         +------------------------+-----------------------+--------------------------------------------------------------+
-         | ``max_ngram``          | ``1``                 | The upper boundary of the range of n-values for different    |
-         |                        |                       | word n-grams or char n-grams to be extracted.                |
-         +------------------------+-----------------------+--------------------------------------------------------------+
-         | ``max_features``       | ``None``              | If not None, build a vocabulary that only consider the top   |
-         |                        |                       | max_features ordered by term frequency across the corpus.    |
-         +------------------------+-----------------------+--------------------------------------------------------------+
-         | ``lowercase``          | ``True``              | Convert all characters to lowercase before tokenizing.       |
-         +------------------------+-----------------------+--------------------------------------------------------------+
-         | ``OOV_token``          | ``None``              | Keyword for unseen words.                                    |
-         +------------------------+-----------------------+--------------------------------------------------------------+
-         | ``OOV_words``          | ``[]``                | List of words to be treated as ``OOV_token`` during training.|
-         +------------------------+-----------------------+--------------------------------------------------------------+
+         +-------------------+-------------------+--------------------------------------------------------------+
+         | Parameter         | Default Value     | Description                                                  |
+         +===================+===================+==============================================================+
+         | use_shared_vocab  | False             | If set to ``True`` a common vocabulary is used for labels    |
+         |                   |                   | and user message.                                            |
+         +-------------------+-------------------+--------------------------------------------------------------+
+         | analyzer          | word              | Whether the feature should be made of word n-gram or         |
+         |                   |                   | character n-grams. Option ‘char_wb’ creates character        |
+         |                   |                   | n-grams only from text inside word boundaries;               |
+         |                   |                   | n-grams at the edges of words are padded with space.         |
+         |                   |                   | Valid values: ``word``, ``char``, ``char_wb``.               |
+         +-------------------+-------------------+--------------------------------------------------------------+
+         | token_pattern     | r"(?u)\b\w\w+\b"  | Regular expression used to detect tokens.                    |
+         |                   |                   | Only used if ``analyzer`` is set to ``word``.                |
+         +-------------------+-------------------+--------------------------------------------------------------+
+         | strip_accents     | None              | Remove accents during the pre-processing step.               |
+         |                   |                   | Valid values: ``ascii``, ``unicode``, ``None``.              |
+         +-------------------+-------------------+--------------------------------------------------------------+
+         | stop_words        | None              | A list of stop words to use.                                 |
+         |                   |                   | Valid values: ``"english"`` (uses an internal list of        |
+         |                   |                   | English stop words), a list of custom stop words, or         |
+         |                   |                   | ``None``.                                                    |
+         +-------------------+-------------------+--------------------------------------------------------------+
+         | min_df            | 1                 | When building the vocabulary ignore terms that have a        |
+         |                   |                   | document frequency strictly lower than the given threshold.  |
+         +-------------------+-------------------+--------------------------------------------------------------+
+         | max_df            | 1                 | When building the vocabulary ignore terms that have a        |
+         |                   |                   | document frequency strictly higher than the given threshold  |
+         |                   |                   | (corpus-specific stop words).)                               |
+         +-------------------+-------------------+--------------------------------------------------------------+
+         | min_ngram         | 1                 | The lower boundary of the range of n-values for different    |
+         |                   |                   | word n-grams or char n-grams to be extracted.                |
+         +-------------------+-------------------+--------------------------------------------------------------+
+         | max_ngram         | 1                 | The upper boundary of the range of n-values for different    |
+         |                   |                   | word n-grams or char n-grams to be extracted.                |
+         +-------------------+-------------------+--------------------------------------------------------------+
+         | max_features      | None              | If not None, build a vocabulary that only consider the top   |
+         |                   |                   | max_features ordered by term frequency across the corpus.    |
+         +-------------------+-------------------+--------------------------------------------------------------+
+         | lowercase         | True              | Convert all characters to lowercase before tokenizing.       |
+         +-------------------+-------------------+--------------------------------------------------------------+
+         | OOV_token         | None              | Keyword for unseen words.                                    |
+         +-------------------+-------------------+--------------------------------------------------------------+
+         | OOV_words         | []                | List of words to be treated as ``OOV_token`` during training.|
+         +-------------------+-------------------+--------------------------------------------------------------+
 
 
 .. _LexicalSyntacticFeaturizer:
@@ -793,169 +795,110 @@ EmbeddingIntentClassifier
 
 :Configuration:
 
-    The following hyperparameters can be set:
+    You can a number of hyperparameters to adapt the model.
+    If you want to adapt your model, start by modifying the following parameters:
 
-        - neural network's architecture:
+        - ``epochs``:
+          This parameter sets the number of times the algorithm will see the training data (default: ``300``).
+          One ``epoch`` is equals to one forward pass and one backward pass of all the training examples.
+          Sometimes the model needs more epochs to properly learn.
+          Sometimes more epochs don't influence the performance at all.
+          The lower the number of epochs the faster the model is trained.
 
-            - ``hidden_layers_sizes.text`` sets a list of hidden layer sizes before
-              the embedding layer for user inputs, the number of hidden layers
-              is equal to the length of the list.
-            - ``hidden_layers_sizes.label`` sets a list of hidden layer sizes before
-              the embedding layer for intent labels, the number of hidden layers
-              is equal to the length of the list.
-            - ``share_hidden_layers`` if set to True, shares the hidden layers between user inputs and intent label.
+    |
 
-        - training:
+    .. container:: toggle
 
-            - ``batch_size`` sets the number of training examples in one
-              forward/backward pass, the higher the batch size, the more
-              memory space you'll need.
-            - ``batch_strategy`` sets the type of batching strategy,
-              it should be either ``sequence`` or ``balanced``.
-            - ``epochs`` sets the number of times the algorithm will see
-              training data, where one ``epoch`` equals one forward pass and
-              one backward pass of all the training examples.
-            - ``random_seed`` if set you will get reproducible
-              training results for the same inputs.
-            - ``learning_rate`` sets the initial learning rate of the optimizer.
+        .. container:: header
 
-        - embedding:
+            The above configuration parameters are the ones you most likely gonna change.
+            However, additional parameters exists that can be adapted.
 
-            - ``dense_dimension.text`` sets the dense dimensions for user inputs to use for sparse
-              tensors if no dense features are present.
-            - ``dense_dimension.label`` sets the dense dimensions for intent labels to use for sparse
-              tensors if no dense features are present.
-            - ``embedding_dimension`` sets the dimension of embedding space.
-            - ``number_of_negative_examples`` sets the number of incorrect intent labels.
-              The algorithm will minimize their similarity to the user
-              input during training.
-            - ``similarity_type`` sets the type of the similarity,
-              it should be either ``auto``, ``cosine`` or ``inner``,
-              if ``auto``, it will be set depending on ``loss_type``,
-              ``inner`` for ``softmax``, ``cosine`` for ``margin``.
-            - ``loss_type`` sets the type of the loss function,
-              it should be either ``softmax`` or ``margin``.
-            - ``ranking_length`` defines the number of top confidences over
-              which to normalize ranking results if ``loss_type: "softmax"``.
-              To turn off normalization set it to 0.
-            - ``maximum_positive_similarity`` controls how similar the algorithm should try
-              to make embedding vectors for correct intent labels,
-              used only if ``loss_type`` is set to ``margin``.
-            - ``maximum_negative_similarity`` controls maximum negative similarity for
-              incorrect intents, used only if ``loss_type`` is set to ``margin``.
-            - ``use_maximum_negative_similarity`` if ``true`` the algorithm only
-              minimizes maximum similarity over incorrect intent labels,
-              used only if ``loss_type`` is set to ``margin``.
-            - ``scale_loss`` if ``true`` the algorithm will downscale the loss
-              for examples where correct label is predicted with high confidence,
-              used only if ``loss_type`` is set to ``softmax``.
+        .. code-block:: none
 
-        - regularization:
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | Parameter                       | Default Value    | Description                                                  |
+         +=================================+==================+==============================================================+
+         | hidden_layers_sizes             | text: [256, 128] | Hidden layer sizes for layers before the embedding layers    |
+         |                                 | label: []        | for user messages and labels. The number of hidden layers is |
+         |                                 |                  | equal to the length of the corresponding.                    |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | share_hidden_layers             | False            | Whether to share the hidden layer weights between user       |
+         |                                 |                  | messages and labels.                                          |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | batch_size                      | [64, 256]        | Initial and final value for batch sizes.                     |
+         |                                 |                  | Batch size will be linearly increased for each epoch.        |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | batch_strategy                  | "balanced"       | Strategy used when creating batches.                         |
+         |                                 |                  | Can be either 'sequence' or 'balanced'.                      |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | epochs                          | 300              | Number of epochs to train.                                   |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | random_seed                     | None             | Set random seed to any 'int' to get reproducible results.    |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | learning_rate                   | 0.001            | Initial learning rate for the optimizer.                     |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | embedding_dimension             | 20               | Dimension size of embedding vectors.                         |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | dense_dimension                 | text: 512        | Default dense dimension to use if no dense features are      |
+         |                                 | label: 20        | present.                                                     |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | number_of_negative_examples     | 20               | The number of incorrect labels. The algorithm will minimize  |
+         |                                 |                  | their similarity to the user input during training.          |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | similarity_type                 | "auto"           | Type of similarity measure to use, either 'auto' or 'cosine' |
+         |                                 |                  | or 'inner'.                                                  |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | loss_type                       | "softmax"        | The type of the loss function, either 'softmax' or 'margin'. |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | ranking_length                  | 10               | Number of top actions to normalize scores for loss type      |
+         |                                 |                  | 'softmax'. Set to 0 to turn off normalization.               |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | maximum_positive_similarity     | 0.8              | Indicates how similar the algorithm should try to make       |
+         |                                 |                  | embedding vectors for correct labels.                        |
+         |                                 |                  | Should be 0.0 < ... < 1.0 for 'cosine' similarity type.      |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | maximum_negative_similarity     | -0.4             | Maximum negative similarity for incorrect labels.            |
+         |                                 |                  | Should be -1.0 < ... < 1.0 for 'cosine' similarity type.     |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | use_maximum_negative_similarity | True             | If 'True' the algorithm only minimizes maximum similarity    |
+         |                                 |                  | over incorrect intent labels, used only if 'loss_type' is    |
+         |                                 |                  | set to 'margin'.                                             |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | scale_loss                      | True             | Scale loss inverse proportionally to confidence of correct   |
+         |                                 |                  | prediction.                                                  |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | regularization_constant         | 0.002            | The scale of regularization.                                 |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | negative_margin_scale           | 0.8              | The scale of how important is to minimize the maximum        |
+         |                                 |                  | similarity between embeddings of different labels.           |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | weight_sparsity                 | 0.8              | Sparsity of the weights in dense layers.                     |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | drop_rate                       | 0.2              | Dropout rate for encoder.                                    |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | use_sparse_input_dropout        | True             | If 'True' apply dropout to sparse tensors.                   |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | evaluate_every_number_of_epochs | 20               | How often to calculate validation accuracy.                  |
+         |                                 |                  | Small values may hurt performance, e.g. model accuracy.      |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | evaluate_on_number_of_examples  | 0                | How many examples to use for hold out validation set.        |
+         |                                 |                  | Large values may hurt performance, e.g. model accuracy.      |
+         +---------------------------------+------------------+--------------------------------------------------------------+
 
-            - ``regularization_constant`` sets the scale of L2 regularization. Higher values will result in more
-              regularization.
-            - ``negative_margin_scale`` sets the scale of how important is to minimize
-              the maximum similarity between embeddings of different intent labels.
-            - ``drop_rate`` sets the dropout rate, it should be
-              between ``0`` and ``1``, e.g. ``drop_rate=0.1`` would drop out ``10%`` of input units.
-            - ``weight_sparsity`` sets the sparsity of the weght kernels in dense layers.
-            - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not.
+        .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
+                  be between ``-1`` and ``1``.
 
-    .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
-              be between ``-1`` and ``1``.
+        .. note:: There is an option to use linearly increasing batch size. The idea comes from
+                  `<https://arxiv.org/abs/1711.00489>`_.
+                  In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
+                  If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
 
-    .. note:: There is an option to use linearly increasing batch size. The idea comes from
-              `<https://arxiv.org/abs/1711.00489>`_.
-              In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
-              If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
-
-    .. note:: Parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original
-              starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity``
-              and ``use_maximum_negative_similarity = False``.
-              See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
-
-    Default values:
-
-    .. code-block:: yaml
-
-        pipeline:
-        - name: "EmbeddingIntentClassifier"
-            # ## Architecture of the used neural network
-            # Hidden layer sizes for layers before the embedding layers for user message
-            # and labels.
-            # The number of hidden layers is equal to the length of the corresponding
-            # list.
-            "hidden_layers_sizes": {"text": [256, 128], "label": []}
-            # Whether to share the hidden layer weights between user message and labels.
-            "share_hidden_layers": False
-            # ## Training parameters
-            # Initial and final batch sizes:
-            # Batch size will be linearly increased for each epoch.
-            "batch_size": [64, 256]
-            # Strategy used when creating batches.
-            # Can be either 'sequence' or 'balanced'.
-            "batch_strategy": "balanced"
-            # Number of epochs to train
-            "epochs": 300
-            # Set random seed to any 'int' to get reproducible results
-            "random_seed": None
-            # Initial learning rate for the optimizer
-            "learning_rate": 0.001
-            # ## Parameters for embeddings
-            # Dimension size of embedding vectors
-            "embedding_dimension": 20
-            # Default dense dimension to use if no dense features are present.
-            "dense_dimension": {"text": 512, "label": 20}
-            # The number of incorrect labels. The algorithm will minimize
-            # their similarity to the user input during training.
-            "number_of_negative_examples": 20
-            # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
-            "similarity_type": "auto"
-            # The type of the loss function, either 'softmax' or 'margin'.
-            "loss_type": "softmax"
-            # Number of top actions to normalize scores for loss type 'softmax'.
-            # Set to 0 to turn off normalization.
-            "ranking_length": 10
-            # Indicates how similar the algorithm should try to make embedding vectors
-            # for correct labels.
-            # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
-            "maximum_positive_similarity": 0.8
-            # Maximum negative similarity for incorrect labels.
-            # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
-            "maximum_negative_similarity": -0.4
-            # If 'True' the algorithm only minimizes maximum similarity over
-            # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
-            "use_maximum_negative_similarity": True
-            # Scale loss inverse proportionally to confidence of correct prediction
-            "scale_loss": True
-            # ## Regularization parameters
-            # The scale of regularization
-            "regularization_constant": 0.002
-            # The scale of how important is to minimize the maximum similarity
-            # between embeddings of different labels.
-            "negative_margin_scale": 0.8
-            # Sparsity of the weights in dense layers
-            "weight_sparsity": 0.8
-            # Dropout rate for encoder
-            "drop_rate": 0.2
-            # If 'True' apply dropout to sparse tensors
-            "use_sparse_input_dropout": False
-            # ## Evaluation parameters
-            # How often calculate validation accuracy.
-            # Small values may hurt performance, e.g. model accuracy.
-            "evaluate_every_number_of_epochs": 20
-            # How many examples to use for hold out validation set
-            # Large values may hurt performance, e.g. model accuracy.
-            "evaluate_on_number_of_examples": 0
-            # If you want to use tensorboard to visualize training metrics,
-            # set this option to a valid output directory.
-            # You can view the training metrics after training in tensorboard via
-            # ``tensorboard --logdir <path-to-given-directory>``
-            "tensorboard_log_directory": None
-            # Define when training metrics for tensorboard should be logged.
-            # Either after every epoch or for every training step.
-            # Valid values: 'epoch' and 'minibatch'
-            "tensorboard_log_level": "epoch"
+        .. note:: Parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original
+                  starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity``
+                  and ``use_maximum_negative_similarity = False``.
+                  See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+>>>>>>> update components.rst
 
 .. _keyword_intent_classifier:
 
@@ -1036,116 +979,148 @@ ResponseSelector
 
 :Configuration:
 
-    The algorithm includes all the hyperparameters that :ref:`diet-classifier` uses.
+    The algorithm includes almost all the hyperparameters that :ref:`diet-classifier` uses.
+    If you want to adapt your model, start by modifying the following parameters:
+
+        - ``use_masked_language_model``:
+          This parameter specifies whether to apply masking or not (default: ``False``).
+          If you set this parameter to ``True`` random tokens of the input are replaced by a special token
+          (``__MASK__``).
+          During training the model tries to predict what token should be at the ``__MASK__`` token position.
+          It acts like a regularizer and helps to learn a better contextual representation of the input.
+          However, keep in mind that is slows down training a bit.
+        - ``epochs``:
+          This parameter sets the number of times the algorithm will see the training data (default: ``300``).
+          One ``epoch`` is equals to one forward pass and one backward pass of all the training examples.
+          Sometimes the model needs more epochs to properly learn.
+          Sometimes more epochs don't influence the performance at all.
+          The lower the number of epochs the faster the model is trained.
+        - ``number_of_transformer_layers``:
+          This parameter sets the number of transformer layers to use (default: ``2``).
+          Increasing the number of transformer layers might help to improve the performance on complex datasets.
+          However, the higher the value the longer training will take.
+
+    |
+
     In addition, the component can also be configured to train a response selector for a particular retrieval intent.
+    The parameter ``retrieval_intent`` sets the name of the intent for which this response selector model is trained.
+    Default is ``None``, i.e. the model is trained for all retrieval intents.
 
-        - ``retrieval_intent`` sets the name of the intent for which this response selector model is trained.
-          Default is ``None``, i.e. the model is trained for all retrieval intents.
+    |
 
-    Default values:
+    .. container:: toggle
 
-    .. code-block:: yaml
+        .. container:: header
 
-        pipeline:
-          - name: "ResponseSelector"
-            # ## Architecture of the used neural network
-            # Hidden layer sizes for layers before the embedding layers for user message
-            # and labels.
-            # The number of hidden layers is equal to the length of the corresponding
-            # list.
-            hidden_layers_sizes: {"text": [256, 128], "label": [256, 128]}
-            # Whether to share the hidden layer weights between input words and responses
-            "share_hidden_layers": False
-            # Number of units in transformer
-            "transformer_size": None
-            # Number of transformer layers
-            "number_of_transformer_layers": 0
-            # Number of attention heads in transformer
-            "number_of_attention_heads": 4
-            # If 'True' use key relative embeddings in attention
-            "use_key_relative_attention": False
-            # If 'True' use key relative embeddings in attention
-            "use_value_relative_attention": False
-            # Max position for relative embeddings
-            "max_relative_position": None
-            # Use a unidirectional or bidirectional encoder.
-            "unidirectional_encoder": False
-            # ## Training parameters
-            # Initial and final batch sizes:
-            # Batch size will be linearly increased for each epoch.
-            "batch_size": [64, 256]
-            # Strategy used when creating batches.
-            # Can be either 'sequence' or 'balanced'.
-            "batch_strategy": "balanced"
-            # Number of epochs to train
-            "epochs": 300
-            # Set random seed to any 'int' to get reproducible results
-            "random_seed": None
-            # Initial learning rate for the optimizer
-            "learning_rate": 0.001
-            # ## Parameters for embeddings
-            # Dimension size of embedding vectors
-            "embedding_dimension": 20
-            # Default dense dimension to use if no dense features are present.
-            "dense_dimension": {"text": 512, "label": 512}
-            # The number of incorrect labels. The algorithm will minimize
-            # their similarity to the user input during training.
-            "number_of_negative_examples": 20
-            # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
-            "similarity_type": "auto"
-            # The type of the loss function, either 'softmax' or 'margin'.
-            "loss_type": "softmax"
-            # Number of top actions to normalize scores for loss type 'softmax'.
-            # Set to 0 to turn off normalization.
-            "ranking_length": 10
-            # Indicates how similar the algorithm should try to make embedding vectors
-            # for correct labels.
-            # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
-            "maximum_positive_similarity": 0.8
-            # Maximum negative similarity for incorrect labels.
-            # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
-            "maximum_negative_similarity": -0.4
-            # If 'True' the algorithm only minimizes maximum similarity over
-            # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
-            "use_maximum_negative_similarity": True
-            # Scale loss inverse proportionally to confidence of correct prediction
-            "scale_loss": True
-            # ## Regularization parameters
-            # The scale of regularization
-            "regularization_constant": 0.002
-            # Sparsity of the weights in dense layers
-            "weight_sparsity": 0.8
-            # The scale of how important is to minimize the maximum similarity
-            # between embeddings of different labels.
-            "negative_margin_scale": 0.8
-            # Dropout rate for encoder
-            "drop_rate": 0.2
-            # Dropout rate for attention
-            "drop_rate_attention": 0
-            # If 'True' apply dropout to sparse tensors
-            "use_sparse_input_dropout": False
-            # ## Evaluation parameters
-            # How often calculate validation accuracy.
-            # Small values may hurt performance, e.g. model accuracy.
-            "evaluate_every_number_of_epochs": 20
-            # How many examples to use for hold out validation set
-            # Large values may hurt performance, e.g. model accuracy.
-            "evaluate_on_number_of_examples": 0
-            # ## Selector config
-            # If 'True' random tokens of the input message will be masked and the model
-            # should predict those tokens.
-            "use_masked_language_model": False
-            # Name of the intent for which this response selector is to be trained
-            "retrieval_intent": None
-            # If you want to use tensorboard to visualize training metrics,
-            # set this option to a valid output directory.
-            # You can view the training metrics after training in tensorboard via
-            # ``tensorboard --logdir <path-to-given-directory>``
-            "tensorboard_log_directory": None
-            # Define when training metrics for tensorboard should be logged.
-            # Either after every epoch or for every training step.
-            # Valid values: 'epoch' and 'minibatch'
-            "tensorboard_log_level": "epoch"
+            A number of hyperparameters exists that can be adapted to customize the ``ResponseSelector``.
+
+        .. code-block:: none
+
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | Parameter                       | Default Value     | Description                                                  |
+         +=================================+===================+==============================================================+
+         | hidden_layers_sizes             | text: [256, 128]  | Hidden layer sizes for layers before the embedding layers    |
+         |                                 | label: [256, 128] | for user messages and labels. The number of hidden layers is |
+         |                                 |                   | equal to the length of the corresponding.                    |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | share_hidden_layers             | False             | Whether to share the hidden layer weights between user       |
+         |                                 |                   | messages and labels.                                          |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | transformer_size                | None              | Number of units in transformer.                              |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | number_of_transformer_layers    | 0                 | Number of transformer layers.                                |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | number_of_attention_heads       | 4                 | Number of attention heads in transformer                     |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | use_key_relative_attention      | False             | If 'True' use key relative embeddings in attention           |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | use_value_relative_attention    | False             | If 'True' use key relative embeddings in attention           |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | max_relative_position           | None              | Maximum position for relative embeddings.                    |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | unidirectional_encoder          | False             | Use a unidirectional or bidirectional encoder.               |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | batch_size                      | [64, 256]         | Initial and final value for batch sizes.                     |
+         |                                 |                   | Batch size will be linearly increased for each epoch.        |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | batch_strategy                  | "balanced"        | Strategy used when creating batches.                         |
+         |                                 |                   | Can be either 'sequence' or 'balanced'.                      |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | epochs                          | 300               | Number of epochs to train.                                   |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | random_seed                     | None              | Set random seed to any 'int' to get reproducible results.    |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | learning_rate                   | 0.001             | Initial learning rate for the optimizer.                     |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | embedding_dimension             | 20                | Dimension size of embedding vectors.                         |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | dense_dimension                 | text: 512         | Default dense dimension to use if no dense features are      |
+         |                                 | label: 512        | present.                                                     |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | number_of_negative_examples     | 20                | The number of incorrect labels. The algorithm will minimize  |
+         |                                 |                   | their similarity to the user input during training.          |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | similarity_type                 | "auto"            | Type of similarity measure to use, either 'auto' or 'cosine' |
+         |                                 |                   | or 'inner'.                                                  |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | loss_type                       | "softmax"         | The type of the loss function, either 'softmax' or 'margin'. |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | ranking_length                  | 10                | Number of top actions to normalize scores for loss type      |
+         |                                 |                   | 'softmax'. Set to 0 to turn off normalization.               |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | maximum_positive_similarity     | 0.8               | Indicates how similar the algorithm should try to make       |
+         |                                 |                   | embedding vectors for correct labels.                        |
+         |                                 |                   | Should be 0.0 < ... < 1.0 for 'cosine' similarity type.      |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | maximum_negative_similarity     | -0.4              | Maximum negative similarity for incorrect labels.            |
+         |                                 |                   | Should be -1.0 < ... < 1.0 for 'cosine' similarity type.     |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | use_maximum_negative_similarity | True              | If 'True' the algorithm only minimizes maximum similarity    |
+         |                                 |                   | over incorrect intent labels, used only if 'loss_type' is    |
+         |                                 |                   | set to 'margin'.                                             |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | scale_loss                      | True              | Scale loss inverse proportionally to confidence of correct   |
+         |                                 |                   | prediction.                                                  |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | regularization_constant         | 0.002             | The scale of regularization.                                 |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | negative_margin_scale           | 0.8               | The scale of how important is to minimize the maximum        |
+         |                                 |                   | similarity between embeddings of different labels.           |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | weight_sparsity                 | 0.8               | Sparsity of the weights in dense layers.                     |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | drop_rate                       | 0.2               | Dropout rate for encoder.                                    |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | drop_rate_attention             | 0.0               | Dropout rate for attention.                                  |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | use_sparse_input_dropout        | False             | If 'True' apply dropout to sparse tensors.                   |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | evaluate_every_number_of_epochs | 20                | How often to calculate validation accuracy.                  |
+         |                                 |                   | Small values may hurt performance, e.g. model accuracy.      |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | evaluate_on_number_of_examples  | 0                 | How many examples to use for hold out validation set.        |
+         |                                 |                   | Large values may hurt performance, e.g. model accuracy.      |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | use_masked_language_model       | False             | If 'True' random tokens of the input message will be masked  |
+         |                                 |                   | and the model should predict those tokens.                   |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | retrieval_intent                | None              | Name of the intent for which this response selector model is |
+         |                                 |                   | trained.                                                     |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+
+        .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
+                  be between ``-1`` and ``1``.
+
+        .. note:: There is an option to use linearly increasing batch size. The idea comes from
+                  `<https://arxiv.org/abs/1711.00489>`_.
+                  In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
+                  If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
+
+        .. note:: Parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original
+                  starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity``
+                  and ``use_maximum_negative_similarity = False``.
+                  See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+>>>>>>> update components.rst
 
 
 Entity Extractors
@@ -1460,7 +1435,7 @@ DIETClassifier
 
 :Short: Dual Intent Entity Transformer (DIET) used for intent classification and entity extraction
 :Outputs: ``entities``, ``intent`` and ``intent_ranking``
-:Requires: ``dense_features`` and/or ``sparse_features`` for user message and, and optionally the intent
+:Requires: ``dense_features`` and/or ``sparse_features`` for user message and optionally the intent
 :Output-Example:
 
     .. code-block:: json
@@ -1504,46 +1479,42 @@ DIETClassifier
 
 :Configuration:
 
-    You can set quite a few hyperparameters to adapt the model.
-    If you want to change some parameters, you should start by adapting the following parameters:
+    You can a number of hyperparameters to adapt the model.
+    If you want to adapt your model, start by modifying the following parameters:
 
-        - model configuration:
+        - ``intent_classification``:
+          This parameter indicates whether intent classification should be performed or not (default: ``True``).
+          If you set this parameter to ``False``, the model will not predict any intents.
+          This might be useful, if you want to use the model just for entity extraction and use a different
+          component for intent classification.
+        - ``entity_recognition``:
+          This parameter indicates whether entity recognition should be performed or not (default: ``True``).
+          If you set this parameter to ``False``, the model will not predict any entities.
+          This might be useful, if you don't have any entities in your data and you want to use the model only for
+          intent classification.
+        - ``use_masked_language_model``:
+          This parameter specifies whether to apply masking or not (default: ``False``).
+          If you set this parameter to ``True`` random tokens of the input are replaced by a special token
+          (``__MASK__``).
+          During training the model tries to predict what token should be at the ``__MASK__`` token position.
+          It acts like a regularizer and helps to learn a better contextual representation of the input.
+          However, keep in mind that is slows down training a bit.
+        - ``BILOU_flag``:
+          This parameter indicates whether the BILOU tagging schema should be used or not (default: ``True``).
+          The BILOU tagging schema is a stricter form of tagging entities in text.
+          If the flag is set to ``True``, you should have ~100 examples per entity type.
+        - ``epochs``:
+          This parameter sets the number of times the algorithm will see the training data (default: ``300``).
+          One ``epoch`` is equals to one forward pass and one backward pass of all the training examples.
+          Sometimes the model needs more epochs to properly learn.
+          Sometimes more epochs don't influence the performance at all.
+          The lower the number of epochs the faster the model is trained.
+        - ``number_of_transformer_layers``:
+          This parameter sets the number of transformer layers to use (default: ``2``).
+          Increasing the number of transformer layers might help to improve the performance on complex datasets.
+          However, the higher the value the longer training will take.
 
-            - ``intent_classification``:
-              This parameter indicates whether intent classification should be performed or not (default: ``True``).
-              If you set this parameter to ``False``, the model will not predict any intents.
-              This might be useful, if you want to use the model just for entity extraction and use a different
-              component for intent classification.
-            - ``entity_recognition``:
-              This parameter indicates whether entity recognition should be performed or not (default: ``True``).
-              If you set this parameter to ``False``, the model will not predict any entities.
-              This might be useful, if you don't have any entities in your data and you want to use the model only for
-              intent classification.
-            - ``use_masked_language_model``:
-              This parameter specifies whether to apply masking or not (default: ``False``).
-              If you set this parameter to ``True`` random tokens of the input are replaced by a special token
-              (``__MASK__``).
-              During training the model tries to predict what token should be at the ``__MASK__`` token position.
-              It might helped to learn a better contextual representation of the input.
-              However, keep in mind that is slows down training a bit.
-            - ``BILOU_flag``:
-              This parameter indicates whether the BILOU tagging schema should be used or not (default: ``True``).
-              The BILOU tagging schema is a stricter form of tagging entities in text.
-
-        - training:
-
-            - ``epochs``:
-              This parameter sets the number of times the algorithm will see the training data (default: ``300``).
-              One ``epoch`` is equals to one forward pass and one backward pass of all the training examples.
-              Sometimes the model needs more epochs to properly learn.
-              Sometimes more epochs don't influence the performance at all.
-              The lower the number of epochs the faster the model is trained.
-            - ``learning_rate`` sets the initial learning rate of the optimizer.
-
-        - neural network's architecture:
-
-            - ``number_of_transformer_layers`` sets the number of transformer layers to use.
-
+    |
 
     .. container:: toggle
 
@@ -1554,107 +1525,102 @@ DIETClassifier
 
         .. code-block:: none
 
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | Parameter                       | Default Value         | Description                                                  |
-         +=================================+=======================+==============================================================+
-         | hidden_layers_sizes             | text: []              | Hidden layer sizes for layers before the embedding layers    |
-         |                                 | label: []             | for user message and labels. The number of hidden layers is  |
-         |                                 |                       | equal to the length of the corresponding.                    |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | share_hidden_layers             | False                 | Whether to share the hidden layer weights between user       |
-         |                                 |                       | message and labels.                                          |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | transformer_size                | 256                   | Number of units in transformer.                              |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | number_of_transformer_layers    | 2                     | Number of transformer layers.                                |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | number_of_attention_heads       | 4                     | Number of attention heads in transformer                     |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | use_key_relative_attention      | False                 | If 'True' use key relative embeddings in attention           |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | use_value_relative_attention    | False                 | If 'True' use key relative embeddings in attention           |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | max_relative_position           | None                  | Maximum position for relative embeddings.                    |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | maximum_sequence_length         | 256                   | Maximum sequence length.                                     |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | unidirectional_encoder          | False                 | Use a unidirectional or bidirectional encoder.               |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | batch_size                      | [64, 256]             | Initial and final value for batch sizes.                     |
-         |                                 |                       | Batch size will be linearly increased for each epoch.        |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | batch_strategy                  | "balanced"            | Strategy used when creating batches.                         |
-         |                                 |                       | Can be either 'sequence' or 'balanced'.                      |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | epochs                          | 300                   | Number of epochs to train.                                   |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | random_seed                     | None                  | Set random seed to any 'int' to get reproducible results.    |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | learning_rate                   | 0.001                 | Initial learning rate for the optimizer.                     |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | embedding_dimension             | 20                    | Dimension size of embedding vectors.                         |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | dense_dimension                 | text: 512             | Default dense dimension to use if no dense features are      |
-         |                                 | label: 20             | present.                                                     |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | number_of_negative_examples     | 20                    | The number of incorrect labels. The algorithm will minimize  |
-         |                                 |                       | their similarity to the user input during training.          |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | similarity_type                 | "auto"                | Type of similarity measure to use, either 'auto' or 'cosine' |
-         |                                 |                       | or 'inner'.                                                  |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | loss_type                       | "softmax"             | The type of the loss function, either 'softmax' or 'margin'. |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | ranking_length                  | 10                    | Number of top actions to normalize scores for loss type      |
-         |                                 |                       | 'softmax'. Set to 0 to turn off normalization.               |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | maximum_positive_similarity     | 0.8                   | Indicates how similar the algorithm should try to make       |
-         |                                 |                       | embedding vectors for correct labels.                        |
-         |                                 |                       | Should be 0.0 < ... < 1.0 for 'cosine' similarity type.      |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | maximum_negative_similarity     | -0.4                  | Maximum negative similarity for incorrect labels.            |
-         |                                 |                       | Should be -1.0 < ... < 1.0 for 'cosine' similarity type.     |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | use_maximum_negative_similarity | True                  | If 'True' the algorithm only minimizes maximum similarity    |
-         |                                 |                       | over incorrect intent labels, used only if 'loss_type' is    |
-         |                                 |                       | set to 'margin'.                                             |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | scale_loss                      | True                  | Scale loss inverse proportionally to confidence of correct   |
-         |                                 |                       | prediction.                                                  |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | regularization_constant         | 0.002                 | The scale of regularization.                                 |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | negative_margin_scale           | 0.8                   | The scale of how important is to minimize the maximum        |
-         |                                 |                       | similarity between embeddings of different labels.           |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | weight_sparsity                 | 0.8                   | Sparsity of the weights in dense layers.                     |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | drop_rate                       | 0.2                   | Dropout rate for encoder.                                    |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | drop_rate_attention             | 0.0                   | Dropout rate for attention.                                  |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | use_sparse_input_dropout        | True                  | If 'True' apply dropout to sparse tensors.                   |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | evaluate_every_number_of_epochs | 20                    | How often calculate validation accuracy.                     |
-         |                                 |                       | Small values may hurt performance, e.g. model accuracy.      |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | evaluate_on_number_of_examples  | 0                     | How many examples to use for hold out validation set.        |
-         |                                 |                       | Large values may hurt performance, e.g. model accuracy.      |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | intent_classification           | True                  | If 'True' intent classification is trained and intent        |
-         |                                 |                       | predicted.                                                   |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | entity_recognition              | True                  | If 'True' entity recognition is trained and entities are     |
-         |                                 |                       | extracted.                                                   |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | use_masked_language_model       | False                 | If 'True' random tokens of the input message will be masked  |
-         |                                 |                       | and the model should predict those tokens.                   |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
-         | BILOU_flag                      | True                  | 'BILOU_flag' determines whether to use BILOU tagging or not. |
-         |                                 |                       | If set to 'True' labelling is more rigorous, however more    |
-         |                                 |                       | examples per entity are required. Rule of thumb:             |
-         |                                 |                       | you should have more than 100 examples per entity.           |
-         +---------------------------------+-----------------------+--------------------------------------------------------------+
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | Parameter                       | Default Value    | Description                                                  |
+         +=================================+==================+==============================================================+
+         | hidden_layers_sizes             | text: []         | Hidden layer sizes for layers before the embedding layers    |
+         |                                 | label: []        | for user messages and labels. The number of hidden layers is |
+         |                                 |                  | equal to the length of the corresponding.                    |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | share_hidden_layers             | False            | Whether to share the hidden layer weights between user       |
+         |                                 |                  | messages and labels.                                          |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | transformer_size                | 256              | Number of units in transformer.                              |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | number_of_transformer_layers    | 2                | Number of transformer layers.                                |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | number_of_attention_heads       | 4                | Number of attention heads in transformer                     |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | use_key_relative_attention      | False            | If 'True' use key relative embeddings in attention           |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | use_value_relative_attention    | False            | If 'True' use key relative embeddings in attention           |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | max_relative_position           | None             | Maximum position for relative embeddings.                    |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | unidirectional_encoder          | False            | Use a unidirectional or bidirectional encoder.               |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | batch_size                      | [64, 256]        | Initial and final value for batch sizes.                     |
+         |                                 |                  | Batch size will be linearly increased for each epoch.        |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | batch_strategy                  | "balanced"       | Strategy used when creating batches.                         |
+         |                                 |                  | Can be either 'sequence' or 'balanced'.                      |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | epochs                          | 300              | Number of epochs to train.                                   |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | random_seed                     | None             | Set random seed to any 'int' to get reproducible results.    |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | learning_rate                   | 0.001            | Initial learning rate for the optimizer.                     |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | embedding_dimension             | 20               | Dimension size of embedding vectors.                         |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | dense_dimension                 | text: 512        | Default dense dimension to use if no dense features are      |
+         |                                 | label: 20        | present.                                                     |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | number_of_negative_examples     | 20               | The number of incorrect labels. The algorithm will minimize  |
+         |                                 |                  | their similarity to the user input during training.          |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | similarity_type                 | "auto"           | Type of similarity measure to use, either 'auto' or 'cosine' |
+         |                                 |                  | or 'inner'.                                                  |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | loss_type                       | "softmax"        | The type of the loss function, either 'softmax' or 'margin'. |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | ranking_length                  | 10               | Number of top actions to normalize scores for loss type      |
+         |                                 |                  | 'softmax'. Set to 0 to turn off normalization.               |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | maximum_positive_similarity     | 0.8              | Indicates how similar the algorithm should try to make       |
+         |                                 |                  | embedding vectors for correct labels.                        |
+         |                                 |                  | Should be 0.0 < ... < 1.0 for 'cosine' similarity type.      |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | maximum_negative_similarity     | -0.4             | Maximum negative similarity for incorrect labels.            |
+         |                                 |                  | Should be -1.0 < ... < 1.0 for 'cosine' similarity type.     |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | use_maximum_negative_similarity | True             | If 'True' the algorithm only minimizes maximum similarity    |
+         |                                 |                  | over incorrect intent labels, used only if 'loss_type' is    |
+         |                                 |                  | set to 'margin'.                                             |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | scale_loss                      | True             | Scale loss inverse proportionally to confidence of correct   |
+         |                                 |                  | prediction.                                                  |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | regularization_constant         | 0.002            | The scale of regularization.                                 |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | negative_margin_scale           | 0.8              | The scale of how important is to minimize the maximum        |
+         |                                 |                  | similarity between embeddings of different labels.           |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | weight_sparsity                 | 0.8              | Sparsity of the weights in dense layers.                     |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | drop_rate                       | 0.2              | Dropout rate for encoder.                                    |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | drop_rate_attention             | 0.0              | Dropout rate for attention.                                  |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | use_sparse_input_dropout        | True             | If 'True' apply dropout to sparse tensors.                   |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | evaluate_every_number_of_epochs | 20               | How often to calculate validation accuracy.                  |
+         |                                 |                  | Small values may hurt performance, e.g. model accuracy.      |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | evaluate_on_number_of_examples  | 0                | How many examples to use for hold out validation set.        |
+         |                                 |                  | Large values may hurt performance, e.g. model accuracy.      |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | intent_classification           | True             | If 'True' intent classification is trained and intents are   |
+         |                                 |                  | predicted.                                                   |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | entity_recognition              | True             | If 'True' entity recognition is trained and entities are     |
+         |                                 |                  | extracted.                                                   |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | use_masked_language_model       | False            | If 'True' random tokens of the input message will be masked  |
+         |                                 |                  | and the model should predict those tokens.                   |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | BILOU_flag                      | True             | 'BILOU_flag' determines whether to use BILOU tagging or not. |
+         +---------------------------------+------------------+--------------------------------------------------------------+
 
         .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
                   be between ``-1`` and ``1``.
