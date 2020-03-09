@@ -15,8 +15,8 @@ live assistant to Rasa X <https://rasa.com/docs/rasa-x/installation-and-setup/ex
 to review and annotate conversations, or forward messages to an external analytics
 service. 
 
-To do so, Rasa allows you to stream events to an event broker. The event broker
-uses a message streaming service, also known as a message broker,
+To do so, Rasa allows you to stream events using an event broker. The event broker
+publishes messages to a message streaming service, also known as a message broker,
 to forward Rasa :ref:`events` from the Rasa server to other services.
 
 .. contents::
