@@ -8,16 +8,12 @@ Event Brokers
 
 .. edit-link::
 
-When running a Rasa Open Source assistant in production, you might want to
-connect your assistant to other services so that they can analyze the data
-coming in from your conversations. For example, you could `connect your
-live assistant to Rasa X <https://rasa.com/docs/rasa-x/installation-and-setup/existing-deployment/>`_
-to review and annotate conversations, or forward messages to an external analytics
-service. 
-
-To do so, Rasa allows you to stream events using an event broker. The event broker
-publishes messages to a message streaming service, also known as a message broker,
-to forward Rasa :ref:`events` from the Rasa server to other services.
+An event broker allows you to connect your running assistant to other services that process the data coming 
+in from conversations. For example, you could `connect your live assistant to 
+Rasa X <https://rasa.com/docs/rasa-x/installation-and-setup/existing-deployment/>`_
+to review and annotate conversations or forward messages to an external analytics
+service. The event broker publishes messages to a message streaming service, 
+also known as a message broker, to forward Rasa :ref:`events` from the Rasa server to other services.
 
 .. contents::
    :local:
@@ -27,7 +23,7 @@ Format
 ------
 
 All events are streamed to the broker as serialised dictionaries every time
-the tracker updates it state. An example event emitted from the ``default``
+the tracker updates its state. An example event emitted from the ``default``
 tracker looks like this:
 
 .. code-block:: json
