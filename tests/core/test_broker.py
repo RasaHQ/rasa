@@ -31,7 +31,7 @@ def test_pika_broker_from_config():
     assert isinstance(actual, PikaEventBroker)
     assert actual.host == "localhost"
     assert actual.username == "username"
-    assert actual.queues == ["queue"]
+    assert actual.queues == ["queue-1"]
 
 
 # noinspection PyProtectedMember
