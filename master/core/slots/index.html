@@ -338,6 +338,10 @@ The policy just sees a <code class="docutils literal notranslate"><span class="p
     <span class="l l-Scalar l-Scalar-Plain">initial_value</span><span class="p p-Indicator">:</span> <span class="s">&quot;human&quot;</span>
 </pre></div>
 </div>
+<p>You can get the value of a slot using <code class="docutils literal notranslate"><span class="pre">.get_slot()</span></code> inside <code class="docutils literal notranslate"><span class="pre">actions.py</span></code> for example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">get_slot</span><span class="p">(</span><span class="s2">&quot;slot-name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <p>There are multiple ways that slots are set during a conversation:</p>
 <div class="section" id="slots-set-from-nlu">
 <h3><a class="toc-backref" href="#id6">Slots Set from NLU</a><a class="headerlink" href="#slots-set-from-nlu" title="Permalink to this headline">¶</a></h3>
