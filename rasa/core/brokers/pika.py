@@ -5,7 +5,7 @@ import time
 import typing
 from collections import deque
 from threading import Thread
-from typing import Callable, Deque, Dict, Optional, Text, Union, Any, List
+from typing import Callable, Deque, Dict, Optional, Text, Union, Any, List, Iterable
 
 from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
@@ -243,8 +243,8 @@ class PikaEventBroker(EventBroker):
         username: Text,
         password: Text,
         port: Union[int, Text] = 5672,
-        queue: Union[List[Text], Text] = "rasa_core_events",
-        queues: Optional[Union[List[Text], Text]] = None,
+        queue: Union[Iterable[Text], Text, None] = None,
+        queues: Union[Iterable[Text], Text, None] = ("rasa_core_events",),
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
         log_level: Union[Text, int] = os.environ.get(
@@ -307,7 +307,15 @@ class PikaEventBroker(EventBroker):
             )
             return [queues_arg]
 
-        elif queue_arg and isinstance(queue_arg, str):
+        if queue_arg:
+            raise_warning(
+                "Your `pika` event broker config contains the deprecated `queue` key. "
+                "Please use the `queues` key instead.",
+                FutureWarning,
+                docs=DOCS_URL_PIKA_EVENT_BROKER,
+            )
+
+        if queue_arg and isinstance(queue_arg, str):
             return [queue_arg]
 
         raise_warning(
@@ -559,8 +567,8 @@ class PikaProducer(PikaEventBroker):
         username: Text,
         password: Text,
         port: Union[int, Text] = 5672,
-        queue: Union[List[Text], Text] = "rasa_core_events",
-        queues: Optional[Union[List[Text], Text]] = None,
+        queue: Union[Iterable[Text], Text, None] = None,
+        queues: Union[Iterable[Text], Text, None] = ("rasa_core_events",),
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
         log_level: Union[Text, int] = os.environ.get(

@@ -3,8 +3,8 @@ event_broker:
   url: localhost
   username: username
   password: password
-  queue: queue  # to publish to a single queue
-#  alternatively, you can publish to multiple queues with:
-#  queues:
-#    - queue-1
-#    - queue-2
+  queues:
+    - queue-1
+#   you may supply more than one queue to publish to
+#   - queue-2
+#   - queue-3

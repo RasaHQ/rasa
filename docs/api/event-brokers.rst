@@ -73,7 +73,7 @@ Here is how you add it using Python code:
     pika_broker = PikaEventBroker('localhost',
                                   'username',
                                   'password',
-                                  queue='rasa_core_events')
+                                  queues=['rasa_core_events'])
 
     tracker_store = InMemoryTrackerStore(db=db, event_broker=pika_broker)
 
