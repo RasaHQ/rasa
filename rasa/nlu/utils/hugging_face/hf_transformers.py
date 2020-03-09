@@ -112,10 +112,12 @@ class HFTransformersNLP(Component):
         ]
         return augmented_tokens
 
-    def _lm_specific_token_cleanup(self, token_strings: List[Text]) -> List[Text]:
+    def _lm_specific_token_cleanup(
+        self, split_token_ids: List[int], token_strings: List[Text]
+    ) -> Tuple[List[int], List[Text]]:
         from rasa.nlu.utils.hugging_face.registry import model_tokens_cleaners
 
-        return model_tokens_cleaners[self.model_name](token_strings)
+        return model_tokens_cleaners[self.model_name](split_token_ids, token_strings)
 
     def _post_process_sequence_embeddings(
         self, sequence_embeddings: np.ndarray
@@ -156,7 +158,9 @@ class HFTransformersNLP(Component):
             # use lm specific tokenizer to further tokenize the text
             split_token_ids, split_token_strings = self._lm_tokenize(token.text)
 
-            split_token_strings = self._lm_specific_token_cleanup(split_token_strings)
+            split_token_ids, split_token_strings = self._lm_specific_token_cleanup(
+                split_token_ids, split_token_strings
+            )
 
             token_ids_out += split_token_ids
 

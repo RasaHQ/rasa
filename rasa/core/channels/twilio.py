@@ -52,7 +52,7 @@ class TwilioOutput(Client, OutputChannel):
         """Sends text message"""
 
         message_data = {"to": recipient_id, "from_": self.twilio_number}
-        for message_part in text.split("\n\n"):
+        for message_part in text.strip().split("\n\n"):
             message_data.update({"body": message_part})
             await self._send_message(message_data)
 
