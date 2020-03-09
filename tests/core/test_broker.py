@@ -36,7 +36,7 @@ def test_pika_broker_from_config():
 
 # noinspection PyProtectedMember
 def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
-    # patch PikaProducer so it doesn't try to connect to RabbitMQ on init
+    # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
     with patch.object(PikaEventBroker, "_run_pika", lambda _: None):
         pika_producer = PikaEventBroker("", "", "")
 
@@ -65,7 +65,7 @@ def test_pika_queues_from_args(
     queues_arg: Union[Text, List[Text], None],
     expected: List[Text],
 ):
-    # patch PikaProducer so it doesn't try to connect to RabbitMQ on init
+    # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
     with patch.object(PikaEventBroker, "_run_pika", lambda _: None):
         pika_producer = PikaEventBroker("", "", "", queue=queue_arg, queues=queues_arg)
 

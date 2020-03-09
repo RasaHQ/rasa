@@ -10,7 +10,6 @@ from typing import Callable, Deque, Dict, Optional, Text, Union, Any, List
 from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_LIBRARIES,
-    DOCS_URL_EVENT_BROKERS,
     DOCS_URL_PIKA_EVENT_BROKER,
 )
 from rasa.core.brokers.broker import EventBroker
@@ -47,7 +46,7 @@ def initialise_pika_connection(
         retry_delay_in_seconds: delay in seconds between channel attempts
 
     Returns:
-        Pika `BlockingConnection` with provided parameters
+        `pika.BlockingConnection` with provided parameters
 
     """
     import pika
@@ -77,7 +76,8 @@ def _get_pika_parameters(
         retry_delay_in_seconds: delay in seconds between channel attempts
 
     Returns:
-        Pika `Paramaters` which can be used to create a new connection to a broker.
+        `pika.ConnectionParameters` which can be used to create a new connection to a
+        broker.
 
     """
     import pika
@@ -120,7 +120,7 @@ def initialise_pika_select_connection(
             failed.
 
     Returns:
-        An callback based connection to the RabbitMQ event broker.
+        A callback-based connection to the RabbitMQ event broker.
 
     """
     import pika
@@ -178,13 +178,14 @@ def close_pika_channel(
     attempts: int = 1000,
     time_between_attempts_in_seconds: float = 0.001,
 ) -> None:
-    """Attempt to close Pika channel, and wait until it is closed.
+    """Attempt to close Pika channel and wait until it is closed.
 
     Args:
         channel: Pika `Channel` to close.
         attempts: How many times to try to confirm that the channel has indeed been
             closed.
-        time_between_attempts_in_seconds: Wait time between attempts to confirm closed state.
+        time_between_attempts_in_seconds: Wait time between attempts to confirm closed
+            state.
 
     """
     from pika.exceptions import AMQPError
@@ -263,7 +264,7 @@ class PikaEventBroker(EventBroker):
         self.raise_on_failure = raise_on_failure
 
         # List to store unpublished messages which hopefully will be published later
-        self._unpublished_messages: Deque[Text] = deque()
+        self._unpublished_messages: Optional[Deque[Text]] = deque()
         self._run_pika()
 
     def __del__(self) -> None:
@@ -571,7 +572,7 @@ class PikaProducer(PikaEventBroker):
             "from `PikaEventBroker` instead. `PikaProducer` will be "
             "removed in future Rasa versions.",
             FutureWarning,
-            docs=DOCS_URL_EVENT_BROKERS,
+            docs=DOCS_URL_PIKA_EVENT_BROKER,
         )
         super(PikaProducer, self).__init__(
             host,
