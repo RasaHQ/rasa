@@ -5,7 +5,7 @@ import time
 import typing
 from collections import deque
 from threading import Thread
-from typing import Callable, Deque, Dict, Optional, Text, Union, Any, List, Iterable
+from typing import Callable, Deque, Dict, Optional, Text, Union, Any, List, Tuple
 
 from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
@@ -226,8 +226,7 @@ class PikaEventBroker(EventBroker):
         username: Username for authentication with Pika host.
         password: Password for authentication with Pika host.
         port: port of the Pika host.
-        queue: Pika queue(s) to declare.
-        queues: Pika queue(s) to declare. Takes precedence over `queue`.
+        queues: Pika queues to declare and publish to.
         should_keep_unpublished_messages: Whether or not the event broker should
             maintain a queue of unpublished messages to be published later in
             case of errors.
@@ -243,8 +242,8 @@ class PikaEventBroker(EventBroker):
         username: Text,
         password: Text,
         port: Union[int, Text] = 5672,
-        queue: Union[Iterable[Text], Text, None] = None,
-        queues: Union[Iterable[Text], Text, None] = ("rasa_core_events",),
+        queue: Union[List[Text], Tuple[Text], Text, None] = None,
+        queues: Union[List[Text], Tuple[Text], Text, None] = ("rasa_core_events",),
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
         log_level: Union[Text, int] = os.environ.get(
@@ -264,7 +263,7 @@ class PikaEventBroker(EventBroker):
         self.raise_on_failure = raise_on_failure
 
         # List to store unpublished messages which hopefully will be published later
-        self._unpublished_messages: Optional[Deque[Text]] = deque()
+        self._unpublished_messages: Deque[Text] = deque()
         self._run_pika()
 
     def __del__(self) -> None:
@@ -283,47 +282,42 @@ class PikaEventBroker(EventBroker):
 
     @staticmethod
     def _get_queues_from_args(
-        queue_arg: Union[List[Text], Text], queues_arg: Union[List[Text], Text]
-    ) -> List[Text]:
-        """Get list of queues for this event broker.
+        queue_arg: Union[List[Text], Tuple[Text], Text, None],
+        queues_arg: Union[List[Text], Tuple[Text], Text, None],
+    ) -> Union[List[Text], Tuple[Text]]:
+        """Get queues for this event broker.
 
         Args:
             queue_arg: Value of the supplied `queue` argument.
             queues_arg: Value of the supplied `queues` argument.
 
         Returns:
-            List of queues this event broker publishes to.
+            Queues this event broker publishes to.
 
         """
-        if queues_arg and isinstance(queues_arg, list):
-            return queues_arg
-
-        elif queues_arg and isinstance(queues_arg, str):
-            raise_warning(
-                "Found a string value under the `queues` key of the Pika event broker "
-                "config. Please use the `queue` key if you want to supply only a "
-                "single queue in the future.",
-                docs=DOCS_URL_PIKA_EVENT_BROKER,
-            )
-            return [queues_arg]
-
         if queue_arg:
             raise_warning(
-                "Your `pika` event broker config contains the deprecated `queue` key. "
+                "Your Pika event broker config contains the deprecated `queue` key. "
                 "Please use the `queues` key instead.",
                 FutureWarning,
                 docs=DOCS_URL_PIKA_EVENT_BROKER,
             )
 
+        if queues_arg and isinstance(queues_arg, (list, tuple)):
+            return queues_arg
+
+        elif queues_arg and isinstance(queues_arg, str):
+            raise_warning(
+                "Found a string value under the `queues` key of the Pika event broker "
+                "config. Please supply a list of queues under this key, even if it is "
+                "just a single one.",
+                docs=DOCS_URL_PIKA_EVENT_BROKER,
+            )
+            return [queues_arg]
+
         if queue_arg and isinstance(queue_arg, str):
             return [queue_arg]
 
-        raise_warning(
-            "Found a list of queues under the `queue` key of the Pika event "
-            "broker config.. Please use the `queues` key if you want to supply "
-            "multiple queues in the future.",
-            docs=DOCS_URL_PIKA_EVENT_BROKER,
-        )
         return queue_arg  # pytype: disable=bad-return-type
 
     @classmethod
@@ -567,8 +561,8 @@ class PikaProducer(PikaEventBroker):
         username: Text,
         password: Text,
         port: Union[int, Text] = 5672,
-        queue: Union[Iterable[Text], Text, None] = None,
-        queues: Union[Iterable[Text], Text, None] = ("rasa_core_events",),
+        queue: Union[List[Text], Tuple[Text], Text, None] = None,
+        queues: Union[List[Text], Tuple[Text], Text, None] = ("rasa_core_events",),
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
         log_level: Union[Text, int] = os.environ.get(
