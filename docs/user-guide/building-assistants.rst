@@ -27,16 +27,6 @@ In this section we’re going to cover the following topics:
     - `Responding to simple intents <respond-with-memoization-policy>`_ with the MemoizationPolicy
     - `Handling FAQs <faqs-response-selector>`_ using the ResponseSelector
 
-.. note::
-    Here's a minimal checklist of what you need to build a basic FAQ assistant:
-
-      - ``data/nlu.md``: NLU training data for ``faq/`` intents
-      - ``data/responses.md``: responses associated with ``faq/`` intents
-      - ``config.yml``: ``ReponseSelector`` in your NLU pipeline
-      - ``domain.yml``: a retrieval action ``respond_faq`` and intent ``faq``
-      - ``data/stories.md``: a simple story for FAQs
-      - ``test_stories.md``: E2E test stories for your FAQs
-
 
 We’re going to use content from `Sara <https://github.com/RasaHQ/rasa-demo>`_, the Rasa
 assistant that, amongst other things, helps the user get started with the Rasa products.
@@ -348,6 +338,18 @@ You can read more in this `blog post <https://blog.rasa.com/response-retrieval-m
 Using the features we described in this tutorial, you can easily build a context-less assistant.
 When you’re ready to enhance your assistant with context, check out :ref:`tutorial-contextual-assistants`.
 
+
+.. note::
+    Here's a minimal checklist of what you need to build a basic FAQ assistant:
+
+      - ``data/nlu.md``: NLU training data for ``faq/`` intents
+      - ``data/responses.md``: responses associated with ``faq/`` intents
+      - ``config.yml``: ``ReponseSelector`` in your NLU pipeline
+      - ``domain.yml``: a retrieval action ``respond_faq`` and intent ``faq``
+      - ``data/stories.md``: a simple story for FAQs
+      - ``test_stories.md``: E2E test stories for your FAQs
+
+
 .. _tutorial-contextual-assistants:
 
 Building a contextual assistant
@@ -392,25 +394,6 @@ For this type of use case, we can use Forms and our FormPolicy. The `FormPolicy 
 works by predicting the form as the next action until all information is gathered from the user.
 
 
-.. note::
-    Here's a minimal checklist of what you need to do to handle business logic using a form action:
-
-      - ``actions.py``: Define the form action
-              - Define the ``required_slots``, ``slot_mappings`` and ``submit`` methods
-      - ``data/nlu.md``: 
-          - Add examples for an intent to activate the form
-          - Add examples for an ``inform`` intent to fill the form
-      - ``domain.yml``: 
-          - Add all slots required by the form
-          - Add ``utter_ask_{slot}`` responses for all required slots
-          - Add your form action to the ``forms`` section 
-          - Add all intents and entities from your NLU training data
-      - ``data/stories.md``: 
-          - add a story for the form
-      - ``config.yml``: 
-          - Add the ``FormPolicy`` to your policies
-          - Add entity extractors & dimensions (according to which entities will fill your slots) to your pipeline
-      - ``endpoints.yml``: Define the ``action_endpoint``
  
 As an example, we will build out the SalesForm from Sara. The user wants to contact
 our sales team, and for this we need to gather the following pieces of information:
@@ -691,6 +674,28 @@ All of the methods within a form can be customised to handle different branches 
 business logic. Read more about this `here <https://rasa.com/docs/rasa/core/forms/#>`_.
 However, you should make sure not to handle any unhappy paths inside the form. These
 should be handled by writing regular stories, so your model can learn this behaviour.
+
+
+.. note::
+    Here's a minimal checklist of what you need to do to handle business logic using a form action:
+
+      - ``actions.py``: Define the form action
+              - Define the ``required_slots``, ``slot_mappings`` and ``submit`` methods
+      - ``data/nlu.md``: 
+          - Add examples for an intent to activate the form
+          - Add examples for an ``inform`` intent to fill the form
+      - ``domain.yml``: 
+          - Add all slots required by the form
+          - Add ``utter_ask_{slot}`` responses for all required slots
+          - Add your form action to the ``forms`` section 
+          - Add all intents and entities from your NLU training data
+      - ``data/stories.md``: 
+          - add a story for the form
+      - ``config.yml``: 
+          - Add the ``FormPolicy`` to your policies
+          - Add entity extractors & dimensions (according to which entities will fill your slots) to your pipeline
+      - ``endpoints.yml``: Define the ``action_endpoint``
+
 
 .. _handling-unexpected-user-input:
 
