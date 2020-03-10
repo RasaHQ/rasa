@@ -195,7 +195,7 @@ class HFTransformersNLP(Component):
 
         Args:
             message: Single message object to be processed.
-            attribute: Property of message to be processed, one of ``INTENT`` or ``RESPONSE``.
+            attribute: Property of message to be processed, one of ``TEXT`` or ``RESPONSE``.
 
         Returns:
             List of token strings and token ids for the corresponding attribute of the message.
@@ -230,7 +230,7 @@ class HFTransformersNLP(Component):
 
         Args:
             batch_examples: Batch of message objects for which tokens need to be computed.
-            attribute: Property of message to be processed, one of ``INTENT`` or ``RESPONSE``.
+            attribute: Property of message to be processed, one of ``TEXT`` or ``RESPONSE``.
 
         Returns:
             List of token strings and token ids for each example in the batch.
@@ -402,7 +402,7 @@ class HFTransformersNLP(Component):
 
         Args:
             batch_examples: Batch of message objects for which language model docs need to be computed.
-            attribute: Property of message to be processed, one of ``INTENT`` or ``RESPONSE``.
+            attribute: Property of message to be processed, one of ``TEXT`` or ``RESPONSE``.
 
         Returns:
             List of language model docs for each message in batch.
