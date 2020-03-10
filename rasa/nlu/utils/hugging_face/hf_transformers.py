@@ -228,6 +228,7 @@ class HFTransformersNLP(Component):
     ) -> Tuple[List[List[Token]], List[List[int]]]:
         """Compute token ids and token strings for each example in batch.
 
+        A token id is the id of that token in the vocabulary of the language model.
         Args:
             batch_examples: Batch of message objects for which tokens need to be computed.
             attribute: Property of message to be processed, one of ``TEXT`` or ``RESPONSE``.
