@@ -150,7 +150,8 @@ class TEDPolicy(Policy):
         # The scale of regularization
         REGULARIZATION_CONSTANT: 0.001,
         # The scale of how important is to minimize the maximum similarity
-        # between embeddings of different labels.
+        # between embeddings of different labels,
+        # used only if 'loss_type' is set to 'margin'.
         NEGATIVE_MARGIN_SCALE: 0.8,
         # Dropout rate for embedding layers of dialogue features.
         DROP_RATE_DIALOGUE: 0.1,
