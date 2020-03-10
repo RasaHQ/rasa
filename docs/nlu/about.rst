@@ -26,4 +26,4 @@ and returning structured data like
       }
     }
 
-If you want to use Rasa NLU on its own, see :ref:`using-nlu-only`.
+Rasa NLU used to be a separate library, but it is now part of the Rasa framework.
