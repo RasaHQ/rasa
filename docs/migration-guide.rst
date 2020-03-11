@@ -90,11 +90,12 @@ General
     pipeline:
     # - ... other components
     - name: DIETClassifier
+      number_of_transformer_layers: 0
+      weight_sparsity: 0
       intent_classification: True
       entity_recognition: False
       use_masked_language_model: False
       BILOU_flag: False
-      number_of_transformer_layers: 0
       # ... any other parameters
 
   See :ref:`DIETClassifier <diet-classifier>` for more information about the new component.
