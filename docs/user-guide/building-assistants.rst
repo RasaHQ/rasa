@@ -677,7 +677,7 @@ should be handled by writing regular stories, so your model can learn this behav
 
 
 .. note::
-    Here's a minimal checklist of what you need to do to handle business logic using a form action:
+    Here's a minimal checklist of what we covered in this section on handling business logic using a form action:
 
       - ``actions.py``: Define the form action
               - Define the ``required_slots``, ``slot_mappings`` and ``submit`` methods
