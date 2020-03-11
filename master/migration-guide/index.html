@@ -396,6 +396,8 @@ the following configuration of <code class="docutils literal notranslate"><span 
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="c1"># - ... other components</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+  <span class="l l-Scalar l-Scalar-Plain">hidden_layers_sizes</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">256</span><span class="p p-Indicator">,</span> <span class="nv">128</span><span class="p p-Indicator">]</span>
   <span class="l l-Scalar l-Scalar-Plain">intent_classification</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
   <span class="l l-Scalar l-Scalar-Plain">entity_recognition</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
   <span class="l l-Scalar l-Scalar-Plain">use_masked_language_model</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
