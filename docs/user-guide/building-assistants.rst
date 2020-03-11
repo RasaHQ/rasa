@@ -8,7 +8,8 @@ Tutorial: Building Assistants
 .. edit-link::
 
 After following the basics of setting up an assistant in the `Rasa Tutorial <https://rasa.com/docs/rasa/user-guide/rasa-tutorial/>`_, we'll
-now walk through building a basic FAQ assistant.
+now walk through building a basic FAQ chatbot and then build a bot that can handle
+contextual conversations.
 
 .. contents::
    :local:
@@ -146,21 +147,11 @@ You can now train a first model and test the bot, by running the following comma
 
 This bot should now be able to reply to the intents we defined consistently, and in any order.
 
-For example, it should be able to do:
+For example:
 
-.. code-block:: bash
-
-    Bot loaded. Type a message and press enter (use '/stop' to exit): 
-    Your input ->  bye!
-    Bye!
-    Your input ->  thanks!
-    No worries!
-    Your input ->  hi!
-    Hi
-    Your input ->  goodbye
-    Bye!
-    Your input ->  thank you
-    No worries!
+.. image:: /_static/images/memoization_policy_convo.png
+   :alt: Memoization Policy Conversation
+   :align: center
 
 
 While it's good to test the bot interactively, we should also add end to end test cases that
@@ -600,18 +591,6 @@ to your ``stories.md`` file:
        - form{"name": null}           <!--Deactivate the form-->
 
 
-.. cssclass:: longtable
-
-+----------------------------------+--------------------------------------+
-|.. code-block:: md                |.. code-block:: md                    |
-|                                  |                                      |
-|   ## sales form                  |     <!--What's happening here-->     |
-|      - sales_form                |     <!--Run the sales_form action--> |
-|      - form{"name": "sales_form"}|     <!--Activate the form-->         |
-|      - form{"name": null}        |     <!--Deactivate the form-->       |
-+----------------------------------+--------------------------------------+
-
-
 
 As a final step, let’s add the FormPolicy to our config file:
 
@@ -704,9 +683,7 @@ Handling unexpected user input
 
 All expected user inputs should be handled by the form we defined above, i.e. if the
 user provides the information the bot asks for. However, in real situations, the user
-will often behave differently.
-
-In this section we’ll go through various forms of
+will often behave differently. In this section we’ll go through various forms of
 "interjections" and how to handle them within Rasa.
 
 The decision to handle these types of user input should always come from reviewing
@@ -914,6 +891,30 @@ Then you can retrain your bot and test it again:
 
 Don’t forget to add a few end to end stories to your ``test_stories.md`` for testing as well.
 
+
+.. note::
+    Here's a minimal checklist of what we covered in this section on handling
+    unexpected user input:
+
+      - ``actions.py``: 
+          - define ``action_greet``
+      - ``data/nlu.md``: 
+          - add training data for an ``explain`` intent
+      - ``domain.yml``:
+          - specify that intent ``greet`` should trigger ``action_greet_user`` in the ``intents`` section
+          - add ``action_greet_user`` to the ``actions`` section
+          - set the type of ``requested_slot`` to categorical 
+              - add all the required slots from the ``sales_form`` as values
+          - add the ``explain`` intent
+          - add responses for contextual question interruptions (``explain``)
+      - ``data/stories.md``: 
+          - remove stories using mapped intents if you have them
+          - add stories with FAQ interruptions in the middle of filling a form
+          - add stories with contextual question interruptions  (``explain``) in the middle of filling a form
+              - specify the value of ``requested_slot`` before the interruption
+              - the response to the interruption should match the value of ``requested_slot`` 
+
+
 .. _failing-gracefully:
 
 Failing gracefully
@@ -968,8 +969,7 @@ We define some intent mappings to make it more intuitive to the user what an int
 Out of scope intent
 """""""""""""""""""
 
-It is good practice to also handle questions you know your users may ask, but for which you don’t necessarily have an action 
-implemented yet.
+It is good practice to also handle questions you know your users may ask, but for which you don’t necessarily have a handled user goal yet.
 
 You can define an ``out_of_scope`` intent to handle generic out of scope requests, like "I’m hungry" and have
 the bot respond with a default message like "Sorry, I can’t handle that request":
@@ -1014,6 +1014,26 @@ let’s say the user asks "I want to apply for a job at Rasa", we can then reply
 
    * ask_job
      utter_job_not_handled
+
+.. note::
+    Here's a minimal checklist of what we covered in this section on failing gracefully:
+
+      - ``data/nlu.md``: 
+          - add training data for the ``out_of_scope`` intent
+          - add training data for any specific out of scope intents that you want to handle seperately
+      - ``data/stories.md``:
+          - add stories for any specific out of scope intents that you want to handle seperately
+      - ``domain.yml``: 
+          - add the ``out_of_scope`` intent
+          - add an ``utter_out_of_scope`` response
+          - add any specific out of scope intents that you want to handle seperately
+          - add responses for any specific out of scope intents that you want to handle seperately
+      - ``actions.py``: 
+          - customise ``ActionDefaultAskAffirmation`` to suggest intents for the user to choose from
+      - ``config.yml``: 
+          - add the TwoStageFallbackPolicy to the ``policies`` section
+          - define the ``nlu_threshold`` for the TwoStageFallbackPolicy
+
 
 .. _more-complex-contextual-conversations:
 
@@ -1103,7 +1123,7 @@ always have a higher priority (read more `here <https://rasa.com/docs/rasa/core/
 ML based policies give your assistant the chance not to fail, whereas if they are not
 used your assistant will definitely fail, like in state machine based dialogue systems.
 
-These types of unexpected user behaviors are something our `EmbeddingPolicy <https://blog.rasa.com/attention-dialogue-and-learning-reusable-patterns/>`_ deals with
+These types of unexpected user behaviors are something our `TEDPolicy <https://blog.rasa.com/unpacking-the-ted-policy-in-rasa-open-source/>`_ deals with
 very well. It can learn to bring the user back on track after some
 interjections during the main user goal the user is trying to complete. For example,
 in the conversation below (extracted from a conversation on `Rasa X <https://rasa.com/docs/rasa-x/user-guide/review-conversations/>`__):
@@ -1130,7 +1150,7 @@ in the conversation below (extracted from a conversation on `Rasa X <https://ras
      - utter_direct_to_step2
 
 Here we can see the user has completed a few chitchat tasks first, and then ultimately
-asks how they can get started with Rasa X. The EmbeddingPolicy correctly predicts that
+asks how they can get started with Rasa X. The TEDPolicy correctly predicts that
 Rasa X should be explained to the user, and then also takes them down the getting started
 path, without asking all the qualifying questions first.
 
@@ -1138,3 +1158,17 @@ Since the ML policy generalized well in this situation, it makes sense to add th
 to your training data to continuously improve your bot and help the ML generalize even
 better in future. `Rasa X <https://rasa.com/docs/rasa-x/>`_ is a tool that can help
 you improve your bot and make it more contextual.
+
+.. note::
+    Here's a minimal checklist of what we covered in this section on handling
+    more complex contextual conversations:
+
+      - ``domain.yml``: 
+          - set featurization of slots used by stories to guide the flow of a conversation
+      - ``data/stories.md``: 
+          - write stories using featurized slots to guide the flow of a conversation
+          - add user conversations successfully handled by an ML policy as stories
+      - ``config.yml`` (in the ``policies`` section): 
+          - set ``max_history`` high enough to account for contextual patterns
+          - replace the MemoizationPolicy with the AugmentedMemoizationPolicy
+          - add the TEDPolicy
