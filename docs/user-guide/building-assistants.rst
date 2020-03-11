@@ -340,7 +340,7 @@ When you’re ready to enhance your assistant with context, check out :ref:`tuto
 
 
 .. note::
-    Here's a minimal checklist of what you need to build a basic FAQ assistant:
+    Here's a minimal checklist of what we covered in this tutorial on building a basic FAQ assistant:
 
       - ``data/nlu.md``: NLU training data for ``faq/`` intents
       - ``data/responses.md``: responses associated with ``faq/`` intents
