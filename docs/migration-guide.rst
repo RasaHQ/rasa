@@ -90,6 +90,8 @@ General
     pipeline:
     # - ... other components
     - name: DIETClassifier
+      hidden_layers_sizes:
+        text: [256, 128]
       number_of_transformer_layers: 0
       weight_sparsity: 0
       intent_classification: True
