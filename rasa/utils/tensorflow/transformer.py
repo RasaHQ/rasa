@@ -432,10 +432,9 @@ class TransformerEncoder(tf.keras.layers.Layer):
         self.units = units
         self.unidirectional = unidirectional
 
-        self.l_ = tf.keras.regularizers.l2(reg_lambda)
-        l2_regularizer = self.l_
+        regularizer = tf.keras.regularizers.l2(reg_lambda)
         self._embedding = DenseWithSparseWeights(
-            units=units, kernel_regularizer=l2_regularizer, sparsity=sparsity
+            units=units, kernel_regularizer=regularizer, sparsity=sparsity
         )
         # positional encoding helpers
         self._angles = self._get_angles()
