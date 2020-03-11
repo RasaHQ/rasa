@@ -1109,37 +1109,34 @@ class DIET(RasaModel):
         # print('=======================================================')
 
         ## FIXME: Proof of concept to see whether it works in principle, refactor later!
-        #'''
-        self._tf_layers[f"{name}_transformer"] = LSTMEncoder(
-            num_layers=self.config[NUM_TRANSFORMER_LAYERS],
-            units=self.config[TRANSFORMER_SIZE],
-            reg_lambda=self.config[REGULARIZATION_CONSTANT],
-            dropout_rate=self.config[DROP_RATE],
-            sparsity=self.config[WEIGHT_SPARSITY],
-            unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
-            name=f"{name}_encoder",
-        )
-        """
         if self.config[NUM_TRANSFORMER_LAYERS] > 0:
-            self._tf_layers[f"{name}_transformer"] = TransformerEncoder(
-                self.config[NUM_TRANSFORMER_LAYERS],
-                self.config[TRANSFORMER_SIZE],
-                self.config[NUM_HEADS],
-                self.config[TRANSFORMER_SIZE] * 4,
-                self.config[REGULARIZATION_CONSTANT],
+            self._tf_layers[f"{name}_transformer"] = LSTMEncoder(
+                num_layers=self.config[NUM_TRANSFORMER_LAYERS],
+                units=self.config[TRANSFORMER_SIZE],
+                reg_lambda=self.config[REGULARIZATION_CONSTANT],
                 dropout_rate=self.config[DROP_RATE],
-                attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
                 sparsity=self.config[WEIGHT_SPARSITY],
                 unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
-                use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
-                use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
-                max_relative_position=self.config[MAX_RELATIVE_POSITION],
                 name=f"{name}_encoder",
             )
+            # self._tf_layers[f"{name}_transformer"] = TransformerEncoder(
+            #     self.config[NUM_TRANSFORMER_LAYERS],
+            #     self.config[TRANSFORMER_SIZE],
+            #     self.config[NUM_HEADS],
+            #     self.config[TRANSFORMER_SIZE] * 4,
+            #     self.config[REGULARIZATION_CONSTANT],
+            #     dropout_rate=self.config[DROP_RATE],
+            #     attention_dropout_rate=self.config[DROP_RATE_ATTENTION],
+            #     sparsity=self.config[WEIGHT_SPARSITY],
+            #     unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
+            #     use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
+            #     use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
+            #     max_relative_position=self.config[MAX_RELATIVE_POSITION],
+            #     name=f"{name}_encoder",
+            # )
         else:
             # create lambda so that it can be used later without the check
             self._tf_layers[f"{name}_transformer"] = lambda x, mask, training: x
-        """
         ### END OF HACK HERE
 
     def _prepare_mask_lm_layers(self, name: Text) -> None:

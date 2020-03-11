@@ -679,10 +679,11 @@ class LSTMEncoder(tf.keras.layers.Layer):
         x = self._dropout(x, training=training)
 
         if pad_mask is not None:
-            pad_mask = tf.squeeze(pad_mask, -1)  # (batch_size, length)
-            pad_mask = tf.cast(pad_mask, tf.bool)
+            mask = tf.cast(tf.squeeze(1 - pad_mask, -1), tf.bool)
+        else:
+            mask = None
 
         for layer in self._lstm_layers:
-            x = layer(x, mask=pad_mask, training=training)
+            x = layer(x, mask=mask, training=training)
 
         return x
