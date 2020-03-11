@@ -34,7 +34,6 @@ Understand messages, hold conversations, and connect to messaging channels and A
    user-guide/how-to-deploy
    user-guide/cloud-storage
 
-
 .. toctree::
    :maxdepth: 1
    :caption: NLU
