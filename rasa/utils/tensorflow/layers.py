@@ -664,7 +664,6 @@ class LSTMEncoder(tf.keras.layers.Layer):
         if unidirectional:
             layers = [
                 tf.keras.layers.LSTM(units=units, dropout=lstm_dropout_rate, recurrent_dropout=recurrent_dropout_rate)
-
                 for _ in range(num_layers)
             ]
         else:
@@ -673,12 +672,8 @@ class LSTMEncoder(tf.keras.layers.Layer):
                     tf.keras.layers.LSTM(units=units, dropout=lstm_dropout_rate, recurrent_dropout=recurrent_dropout_rate,
                                          return_sequences=True)
                 )
-
-                for _ in range(num_layers - 1)
+                for _ in range(num_layers)
             ]
-            layers.append(tf.keras.layers.Bidirectional(
-                tf.keras.layers.LSTM(units=units, dropout=lstm_dropout_rate, recurrent_dropout=recurrent_dropout_rate)
-            ))
 
         self._lstm_layers = tf.keras.Sequential(layers)
         self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
@@ -696,15 +691,15 @@ class LSTMEncoder(tf.keras.layers.Layer):
         x = self._embedding(x)  # (batch_size, seq_len, units)
         x = self._dropout(x, training=training)
 
-        if pad_mask is not None:
-            pad_mask = tf.squeeze(pad_mask, -1)  # (batch_size, seq_len)
-            pad_mask = pad_mask[:, tf.newaxis, tf.newaxis, :]
-            # pad_mask.shape = (batch_size, 1, 1, seq_len)
-            if self.unidirectional:
-                # add look ahead pad mask to emulate unidirectional behavior
-                pad_mask = tf.minimum(
-                    1.0, pad_mask + self._look_ahead_pad_mask(tf.shape(pad_mask)[-1])
-                )  # (batch_size, 1, seq_len, seq_len)
+        #if pad_mask is not None:
+        #    pad_mask = tf.squeeze(pad_mask, -1)  # (batch_size, seq_len)
+        #    pad_mask = pad_mask[:, tf.newaxis, tf.newaxis, :]
+        #    # pad_mask.shape = (batch_size, 1, 1, seq_len)
+        #    if self.unidirectional:
+        #        # add look ahead pad mask to emulate unidirectional behavior
+        #        pad_mask = tf.minimum(
+        #            1.0, pad_mask + self._look_ahead_pad_mask(tf.shape(pad_mask)[-1])
+        #        )  # (batch_size, 1, seq_len, seq_len)
 
         x = self._lstm_layers(x)
 

@@ -1111,8 +1111,11 @@ class DIET(RasaModel):
 
         ## FIXME: Proof of concept to see whether it works in principle, refactor later!
         #'''
+        print(f'NUM TRANSFORMER HEADS: {self.config[NUM_HEADS]}')
+        print(f'NUM LAYERS: {self.config[NUM_TRANSFORMER_LAYERS]}')
+        print('RUNNING THE LSTM MODEL')
         self._tf_layers[f"{name}_transformer"] = LSTMEncoder(
-            units=self.config[TRANSFORMER_SIZE],
+            units=self.config[TRANSFORMER_SIZE],# * 4, # num_heads (?)
             num_layers=self.config[NUM_TRANSFORMER_LAYERS],
             reg_lambda=self.config[REGULARIZATION_CONSTANT],
             dropout_rate=self.config[DROP_RATE],
