@@ -32,6 +32,9 @@ class SparseDropout(tf.keras.layers.Dropout):
 
         Returns:
             Output of dropout layer.
+
+        Raises:
+            A ValueError if inputs is not a sparse tensor
         """
         if not isinstance(inputs, tf.SparseTensor):
             raise ValueError("Input tensor should be sparse.")
@@ -79,8 +82,7 @@ class DenseForSparse(tf.keras.layers.Dense):
         use_bias: Boolean, whether the layer uses a bias vector.
         kernel_initializer: Initializer for the `kernel` weights matrix.
         bias_initializer: Initializer for the bias vector.
-        kernel_regularizer: Regularizer function applied to
-            the `kernel` weights matrix.
+        reg_lambda: Float, regularization factor.
         bias_regularizer: Regularizer function applied to the bias vector.
         activity_regularizer: Regularizer function applied to
             the output of the layer (its "activation")..
@@ -115,6 +117,9 @@ class DenseForSparse(tf.keras.layers.Dense):
 
         Returns:
             Output of dense layer.
+
+        Raises:
+            A ValueError if inputs is not a sparse tensor
         """
         if not isinstance(inputs, tf.SparseTensor):
             raise ValueError("Input tensor should be sparse.")
@@ -343,7 +348,18 @@ class InputMask(tf.keras.layers.Layer):
         mask: tf.Tensor,
         training: Optional[Union[tf.Tensor, bool]] = None,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Randomly mask input sequences."""
+        """Randomly mask input sequences.
+
+        Arguments:
+            x: Input sequence tensor of rank 3.
+            mask: A tensor representing sequence mask,
+                contains `1` for inputs and `0` for padding.
+            training: Python boolean indicating whether the layer should behave in
+                training mode (mask inputs) or in inference mode (doing nothing).
+
+        Returns:
+            A tuple of masked inputs and boolean mask.
+        """
 
         if training is None:
             training = K.learning_phase()
