@@ -824,8 +824,24 @@ EmbeddingIntentClassifier
           This parameter sets the number of times the algorithm will see the training data (default: ``300``).
           One ``epoch`` is equals to one forward pass and one backward pass of all the training examples.
           Sometimes the model needs more epochs to properly learn.
-          Sometimes more epochs don't influence the performance at all.
+          Sometimes more epochs don't influence the performance.
           The lower the number of epochs the faster the model is trained.
+        - ``hidden_layers_sizes``:
+          This parameter allows you to define the number of feed forward neural network layers and their output
+          dimensions for user messages and intents (default: ``text: [], label: []``).
+          Every entry in the list corresponds to a feed forward neural network layer.
+          For example, if you set ``text: [256, 128]``, we will add two feed forward neural network layers in front of
+          the transformer. The vectors of the input tokens (coming from the user message) will be passed on to those
+          layers. The first layer will have an output dimension of 256 and the second layer will have an output
+          dimension of 128. If an empty list is used (default behaviour), no feed forward neural network layer will be
+          added.
+          Make sure to use only positive integer values. Usually, numbers of power of two are used. Also, the integer
+          values in a list should decrease, values in the list should be smaller or equal the value before.
+        - ``embedding_dimension``:
+          This parameter defines the output dimension of the embedding layers used inside the model (default: ``20``).
+          We are using multiple embeddings layers inside the model architecture.
+          For example, the vector of the ``__CLS__`` token and the intent is passed on to an embedding layer before
+          they are compared and the loss is calculated.
 
     |
 
@@ -1006,23 +1022,34 @@ ResponseSelector
     The algorithm includes almost all the hyperparameters that :ref:`diet-classifier` uses.
     If you want to adapt your model, start by modifying the following parameters:
 
-        - ``use_masked_language_model``:
-          This parameter specifies whether to apply masking or not (default: ``False``).
-          If you set this parameter to ``True`` random tokens of the input are replaced by a special token
-          (``__MASK__``).
-          During training the model tries to predict what token should be at the ``__MASK__`` token position.
-          It acts like a regularizer and helps to learn a better contextual representation of the input.
-          However, keep in mind that is slows down training a bit.
         - ``epochs``:
           This parameter sets the number of times the algorithm will see the training data (default: ``300``).
           One ``epoch`` is equals to one forward pass and one backward pass of all the training examples.
           Sometimes the model needs more epochs to properly learn.
-          Sometimes more epochs don't influence the performance at all.
+          Sometimes more epochs don't influence the performance.
           The lower the number of epochs the faster the model is trained.
+        - ``hidden_layers_sizes``:
+          This parameter allows you to define the number of feed forward neural network layers and their output
+          dimensions for user messages and intents (default: ``text: [], label: []``).
+          Every entry in the list corresponds to a feed forward neural network layer.
+          For example, if you set ``text: [256, 128]``, we will add two feed forward neural network layers in front of
+          the transformer. The vectors of the input tokens (coming from the user message) will be passed on to those
+          layers. The first layer will have an output dimension of 256 and the second layer will have an output
+          dimension of 128. If an empty list is used (default behaviour), no feed forward neural network layer will be
+          added.
+          Make sure to use only positive integer values. Usually, numbers of power of two are used. Also, the integer
+          values in a list should decrease, values in the list should be smaller or equal the value before.
+        - ``embedding_dimension``:
+          This parameter defines the output dimension of the embedding layers used inside the model (default: ``20``).
+          We are using multiple embeddings layers inside the model architecture.
+          For example, the vector of the ``__CLS__`` token and the intent is passed on to an embedding layer before
+          they are compared and the loss is calculated.
         - ``number_of_transformer_layers``:
           This parameter sets the number of transformer layers to use (default: ``2``).
-          Increasing the number of transformer layers might help to improve the performance on complex datasets.
-          However, the higher the value the longer training will take.
+          The number of transformer layers corresponds to the transformer blocks to use for the model.
+        - ``transformer_size``:
+          This parameter sets the number of units in the transformer (default: ``256``).
+          The vectors coming out of the transformers will have the given ``transformer_size``.
 
     |
 
@@ -1506,40 +1533,42 @@ DIETClassifier
 
 :Configuration:
 
+    If you want to use the ``DIETClassifier`` just for intent classification, set ``entity_recognition`` to ``False``.
+    If you want to do only entity recognition, set ``intent_classification`` to ``False``.
+    By default ``DIETClassifier`` is doing both, i.e. ``entity_recognition`` and ``intent_classification`` is set to
+    ``True``.
+
     You can define a number of hyperparameters to adapt the model.
     If you want to adapt your model, start by modifying the following parameters:
 
-        - ``intent_classification``:
-          This parameter indicates whether intent classification should be performed or not (default: ``True``).
-          If you set this parameter to ``False``, the model will not predict any intents.
-          This might be useful, if you want to use the model just for entity extraction and use a different
-          component for intent classification.
-        - ``entity_recognition``:
-          This parameter indicates whether entity recognition should be performed or not (default: ``True``).
-          If you set this parameter to ``False``, the model will not predict any entities.
-          This might be useful, if you don't have any entities in your data and you want to use the model only for
-          intent classification.
-        - ``use_masked_language_model``:
-          This parameter specifies whether to apply masking or not (default: ``False``).
-          If you set this parameter to ``True`` random tokens of the input are replaced by a special token
-          (``__MASK__``).
-          During training the model tries to predict what token should be at the ``__MASK__`` token position.
-          It acts like a regularizer and helps to learn a better contextual representation of the input.
-          However, keep in mind that is slows down training a bit.
-        - ``BILOU_flag``:
-          This parameter indicates whether the BILOU tagging schema should be used or not (default: ``True``).
-          The BILOU tagging schema is a stricter form of tagging entities in text.
-          If the flag is set to ``True``, you should have ~100 examples per entity type.
         - ``epochs``:
           This parameter sets the number of times the algorithm will see the training data (default: ``300``).
           One ``epoch`` is equals to one forward pass and one backward pass of all the training examples.
           Sometimes the model needs more epochs to properly learn.
-          Sometimes more epochs don't influence the performance at all.
+          Sometimes more epochs don't influence the performance.
           The lower the number of epochs the faster the model is trained.
+        - ``hidden_layers_sizes``:
+          This parameter allows you to define the number of feed forward neural network layers and their output
+          dimensions for user messages and intents (default: ``text: [], label: []``).
+          Every entry in the list corresponds to a feed forward neural network layer.
+          For example, if you set ``text: [256, 128]``, we will add two feed forward neural network layers in front of
+          the transformer. The vectors of the input tokens (coming from the user message) will be passed on to those
+          layers. The first layer will have an output dimension of 256 and the second layer will have an output
+          dimension of 128. If an empty list is used (default behaviour), no feed forward neural network layer will be
+          added.
+          Make sure to use only positive integer values. Usually, numbers of power of two are used. Also, the integer
+          values in a list should decrease, values in the list should be smaller or equal the value before.
+        - ``embedding_dimension``:
+          This parameter defines the output dimension of the embedding layers used inside the model (default: ``20``).
+          We are using multiple embeddings layers inside the model architecture.
+          For example, the vector of the ``__CLS__`` token and the intent is passed on to an embedding layer before
+          they are compared and the loss is calculated.
         - ``number_of_transformer_layers``:
           This parameter sets the number of transformer layers to use (default: ``2``).
-          Increasing the number of transformer layers might help to improve the performance on complex datasets.
-          However, the higher the value the longer training will take.
+          The number of transformer layers corresponds to the transformer blocks to use for the model.
+        - ``transformer_size``:
+          This parameter sets the number of units in the transformer (default: ``256``).
+          The vectors coming out of the transformers will have the given ``transformer_size``.
 
     |
 
@@ -1647,10 +1676,15 @@ DIETClassifier
          |                                 |                  | extracted.                                                   |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | use_masked_language_model       | False            | If 'True' random tokens of the input message will be masked  |
-         |                                 |                  | and the model should predict those tokens.                   |
+         |                                 |                  | and the model has to predict those tokens. It acts like a    |
+         |                                 |                  | regularizer and should help to learn a better contextual     |
+         |                                 |                  | representation of the input.                                 |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | BILOU_flag                      | True             | 'BILOU_flag' determines whether to use BILOU tagging or not. |
+         |                                 |                  | The BILOU tagging schema is a stricter form of tagging       |
+         |                                 |                  | entities in text.                                            |
          +---------------------------------+------------------+--------------------------------------------------------------+
+
 
         .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
                   be between ``-1`` and ``1``.
