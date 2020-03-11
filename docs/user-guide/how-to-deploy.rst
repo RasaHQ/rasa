@@ -396,12 +396,19 @@ image and add your custom dependencies. For example:
     # Extend the official Rasa SDK image
     FROM rasa/rasa-sdk:latest
 
+    # The Rasa SDK image runs as non-root user by default. Hence, you have to switch
+    # back to the `root` user if you want to install additional dependencies.
+    USER root
+
     # Add a custom system library (e.g. git)
     RUN apt-get update && \
         apt-get install -y git
 
     # Add a custom python library (e.g. jupyter)
     RUN pip install --no-cache-dir jupyter
+
+   # Switch back to a non-root user
+   USER 1001
 
 You can then build the image via the following command, and use it in your
 ``docker-compose.yml`` instead of the ``rasa/rasa-sdk`` image.
