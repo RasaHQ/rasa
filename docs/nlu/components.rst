@@ -500,7 +500,7 @@ CountVectorsFeaturizer
     This featurizer can be configured to use word or character n-grams, using the ``analyzer`` configuration parameter.
     By default ``analyzer`` is set to ``word`` so word token counts are used as features.
     If you want to use character n-grams, set ``analyzer`` to ``char`` or ``char_wb``.
-    The lower and upper boundaries of the n-grams can be configured by the parameters ``min_ngram`` and ``max_ngram``.
+    The lower and upper boundaries of the n-grams can be configured via the parameters ``min_ngram`` and ``max_ngram``.
     By default both of them are set to ``1``.
 
     .. note::
@@ -539,6 +539,7 @@ CountVectorsFeaturizer
         .. note::
             This featurizer creates a bag-of-words representation by **counting** words,
             so the number of ``OOV_token`` in the sentence might be important.
+
         .. note::
             Providing ``OOV_words`` is optional, training data can contain ``OOV_token`` input manually or by custom
             additional preprocessor.
@@ -578,7 +579,7 @@ CountVectorsFeaturizer
          | use_shared_vocab  | False             | If set to 'True' a common vocabulary is used for labels      |
          |                   |                   | and user message.                                            |
          +-------------------+-------------------+--------------------------------------------------------------+
-         | analyzer          | word              | Whether the feature should be made of word n-gram or         |
+         | analyzer          | word              | Whether the features should be made of word n-gram or        |
          |                   |                   | character n-grams. Option ‘char_wb’ creates character        |
          |                   |                   | n-grams only from text inside word boundaries;               |
          |                   |                   | n-grams at the edges of words are padded with space.         |
