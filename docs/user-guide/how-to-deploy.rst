@@ -382,6 +382,8 @@ Add this to your ``endpoints.yml`` (if it does not exist, create it):
 Run ``docker-compose up`` to start the action server together
 with Rasa.
 
+.. _deploying-your-rasa-assistant_custom-dependencies:
+
 Adding Custom Dependencies
 **************************
 
