@@ -291,7 +291,7 @@ Now that we’ve defined the NLU side, we need to make Core aware of these chang
      - faq
 
 We’ll also need to add a `retrieval action <https://rasa.com/docs/rasa/core/retrieval-actions/>`_,
-which takes care of sending the response predicted from the  ResponseSelector back to the user,
+which takes care of sending the response predicted from the ResponseSelector back to the user,
 to the list of actions. These actions always have to start with the ``respond_`` prefix:
 
 .. code-block:: yaml
