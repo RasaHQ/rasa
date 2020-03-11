@@ -136,6 +136,9 @@ class Embed(tf.keras.layers.Layer):
     ) -> None:
         super().__init__(name=f"embed_{layer_name_suffix}")
 
+        print(f'NAME=embed_{layer_name_suffix}; EMBED_DIM={embed_dim}; REG_LAMBDA={reg_lambda}; '
+              f'SIM TYPE={similarity_type}')
+
         self.similarity_type = similarity_type
         if self.similarity_type and self.similarity_type not in {COSINE, INNER}:
             raise ValueError(
@@ -630,3 +633,79 @@ class DotProductLoss(tf.keras.layers.Layer):
         )
 
         return loss, acc
+
+
+class LSTMEncoder(tf.keras.layers.Layer):
+
+    def __init__(self,
+                 units: int,
+                 reg_lambda: float,
+                 num_layers: int = 1,
+                 unidirectional: bool = False,
+                 sparsity: float = 0.8,
+                 dropout_rate: float = 0.1,
+                 lstm_dropout_rate: float = 0.,
+                 recurrent_dropout_rate: float = 0.,
+                 name: Optional[Text] = None
+                 ) -> None:
+        super().__init__(name=name)
+
+        self.units = units
+        self.unidirectional = unidirectional
+
+        self.l_ = tf.keras.regularizers.l2(reg_lambda)
+        l2_regularizer = self.l_
+        self._embedding = DenseWithSparseWeights(
+            units=units, kernel_regularizer=l2_regularizer, sparsity=sparsity
+        )
+
+        self._dropout = tf.keras.layers.Dropout(dropout_rate)
+
+        if unidirectional:
+            layers = [
+                tf.keras.layers.LSTM(units=units, dropout=lstm_dropout_rate, recurrent_dropout=recurrent_dropout_rate)
+
+                for _ in range(num_layers)
+            ]
+        else:
+            layers = [
+                tf.keras.layers.Bidirectional(
+                    tf.keras.layers.LSTM(units=units, dropout=lstm_dropout_rate, recurrent_dropout=recurrent_dropout_rate,
+                                         return_sequences=True)
+                )
+
+                for _ in range(num_layers - 1)
+            ]
+            layers.append(tf.keras.layers.Bidirectional(
+                tf.keras.layers.LSTM(units=units, dropout=lstm_dropout_rate, recurrent_dropout=recurrent_dropout_rate)
+            ))
+
+        self._lstm_layers = tf.keras.Sequential(layers)
+        self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+
+    @staticmethod
+    def _look_ahead_pad_mask(max_position: tf.Tensor) -> tf.Tensor:
+        pad_mask = 1 - tf.linalg.band_part(tf.ones((max_position, max_position)), -1, 0)
+        return pad_mask[tf.newaxis, tf.newaxis, :, :]  # (1, 1, seq_len, seq_len)
+
+    def call(self,
+             x: tf.Tensor,
+             pad_mask: Optional[tf.Tensor] = None,
+             training: Optional[Union[tf.Tensor, bool]] = None,
+             ) -> tf.Tensor:
+        x = self._embedding(x)  # (batch_size, seq_len, units)
+        x = self._dropout(x, training=training)
+
+        if pad_mask is not None:
+            pad_mask = tf.squeeze(pad_mask, -1)  # (batch_size, seq_len)
+            pad_mask = pad_mask[:, tf.newaxis, tf.newaxis, :]
+            # pad_mask.shape = (batch_size, 1, 1, seq_len)
+            if self.unidirectional:
+                # add look ahead pad mask to emulate unidirectional behavior
+                pad_mask = tf.minimum(
+                    1.0, pad_mask + self._look_ahead_pad_mask(tf.shape(pad_mask)[-1])
+                )  # (batch_size, 1, seq_len, seq_len)
+
+        x = self._lstm_layers(x)
+
+        return self._layer_norm(x)

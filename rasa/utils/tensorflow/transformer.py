@@ -432,7 +432,8 @@ class TransformerEncoder(tf.keras.layers.Layer):
         self.units = units
         self.unidirectional = unidirectional
 
-        l2_regularizer = tf.keras.regularizers.l2(reg_lambda)
+        self.l_ = tf.keras.regularizers.l2(reg_lambda)
+        l2_regularizer = self.l_
         self._embedding = DenseWithSparseWeights(
             units=units, kernel_regularizer=l2_regularizer, sparsity=sparsity
         )
