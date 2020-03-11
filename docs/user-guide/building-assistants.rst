@@ -331,14 +331,14 @@ When you’re ready to enhance your assistant with context, check out :ref:`tuto
 
 
 .. note::
-    Here's a minimal checklist of what we covered in this tutorial on building a basic FAQ assistant:
+    Here's a minimal checklist of files we modified to build basic FAQ assistant:
 
-      - ``data/nlu.md``: NLU training data for ``faq/`` intents
-      - ``data/responses.md``: responses associated with ``faq/`` intents
-      - ``config.yml``: ``ReponseSelector`` in your NLU pipeline
-      - ``domain.yml``: a retrieval action ``respond_faq`` and intent ``faq``
-      - ``data/stories.md``: a simple story for FAQs
-      - ``test_stories.md``: E2E test stories for your FAQs
+      - ``data/nlu.md``: add NLU training data for ``faq/`` intents
+      - ``data/responses.md``: add responses associated with ``faq/`` intents
+      - ``config.yml``: add ``ReponseSelector`` in your NLU pipeline
+      - ``domain.yml``: add a retrieval action ``respond_faq`` and intent ``faq``
+      - ``data/stories.md``: add a simple story for FAQs
+      - ``test_stories.md``: add E2E test stories for your FAQs
 
 
 .. _tutorial-contextual-assistants:
@@ -656,7 +656,7 @@ should be handled by writing regular stories, so your model can learn this behav
 
 
 .. note::
-    Here's a minimal checklist of what we covered in this section on handling business logic using a form action:
+    Here's a minimal checklist of files we modified to handle business logic using a form action:
 
       - ``actions.py``: Define the form action
               - Define the ``required_slots``, ``slot_mappings`` and ``submit`` methods
@@ -893,8 +893,7 @@ Don’t forget to add a few end to end stories to your ``test_stories.md`` for t
 
 
 .. note::
-    Here's a minimal checklist of what we covered in this section on handling
-    unexpected user input:
+    Here's a minimal checklist of  of files we modified to handle unexpected user input:
 
       - ``actions.py``: 
           - define ``action_greet``
@@ -1016,7 +1015,7 @@ let’s say the user asks "I want to apply for a job at Rasa", we can then reply
      utter_job_not_handled
 
 .. note::
-    Here's a minimal checklist of what we covered in this section on failing gracefully:
+    Here's a minimal checklist of files we modified to help our assistant fail gracefully:
 
       - ``data/nlu.md``: 
           - add training data for the ``out_of_scope`` intent
@@ -1160,8 +1159,7 @@ better in future. `Rasa X <https://rasa.com/docs/rasa-x/>`_ is a tool that can h
 you improve your bot and make it more contextual.
 
 .. note::
-    Here's a minimal checklist of what we covered in this section on handling
-    more complex contextual conversations:
+    Here's a minimal checklist of files we modified to handle more complex contextual conversations:
 
       - ``domain.yml``: 
           - set featurization of slots used by stories to guide the flow of a conversation
