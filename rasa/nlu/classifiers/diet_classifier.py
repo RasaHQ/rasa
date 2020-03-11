@@ -125,7 +125,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         NUM_HEADS: 4,
         # If 'True' use key relative embeddings in attention
         KEY_RELATIVE_ATTENTION: False,
-        # If 'True' use key relative embeddings in attention
+        # If 'True' use value relative embeddings in attention
         VALUE_RELATIVE_ATTENTION: False,
         # Max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
@@ -169,13 +169,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # If 'True' the algorithm only minimizes maximum similarity over
         # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
         USE_MAX_NEG_SIM: True,
-        # Scale loss inverse proportionally to confidence of correct prediction
+        # If 'True' scale loss inverse proportionally to the confidence
+        # of the correct prediction
         SCALE_LOSS: True,
         # ## Regularization parameters
         # The scale of regularization
         REGULARIZATION_CONSTANT: 0.002,
         # The scale of how important is to minimize the maximum similarity
-        # between embeddings of different labels.
+        # between embeddings of different labels,
+        # used only if 'loss_type' is set to 'margin'.
         NEGATIVE_MARGIN_SCALE: 0.8,
         # Dropout rate for encoder
         DROP_RATE: 0.2,
