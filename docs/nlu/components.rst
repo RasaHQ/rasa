@@ -862,8 +862,8 @@ EmbeddingIntentClassifier
          +---------------------------------+------------------+--------------------------------------------------------------+
          | embedding_dimension             | 20               | Dimension size of embedding vectors.                         |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | dense_dimension                 | text: 512        | Default dense dimension to use if no dense features are      |
-         |                                 | label: 20        | present.                                                     |
+         | dense_dimension                 | text: 512        | Dense dimension for sparse features to use if no dense       |
+         |                                 | label: 20        | features are present.                                        |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | number_of_negative_examples     | 20               | The number of incorrect labels. The algorithm will minimize  |
          |                                 |                  | their similarity to the user input during training.          |
@@ -896,13 +896,15 @@ EmbeddingIntentClassifier
          |                                 |                  | similarity between embeddings of different labels.           |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | weight_sparsity                 | 0.8              | Sparsity of the weights in dense layers.                     |
+         |                                 |                  | Value should be between 0 and 1.                             |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | drop_rate                       | 0.2              | Dropout rate for encoder.                                    |
+         | drop_rate                       | 0.2              | Dropout rate for encoder. Value should be between 0 and 1.   |
+         |                                 |                  | The higher the value the higher the regularization effect.   |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | use_sparse_input_dropout        | True             | If 'True' apply dropout to sparse tensors.                   |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | evaluate_every_number_of_epochs | 20               | How often to calculate validation accuracy.                  |
-         |                                 |                  | Small values may hurt performance, e.g. model accuracy.      |
+         |                                 |                  | Set to '-1' to evaluate just once at the end of training.    |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | evaluate_on_number_of_examples  | 0                | How many examples to use for hold out validation set.        |
          |                                 |                  | Large values may hurt performance, e.g. model accuracy.      |
@@ -1046,17 +1048,17 @@ ResponseSelector
          |                                 |                   | equal to the length of the corresponding.                    |
          +---------------------------------+-------------------+--------------------------------------------------------------+
          | share_hidden_layers             | False             | Whether to share the hidden layer weights between user       |
-         |                                 |                   | messages and labels.                                          |
+         |                                 |                   | messages and labels.                                         |
          +---------------------------------+-------------------+--------------------------------------------------------------+
          | transformer_size                | None              | Number of units in transformer.                              |
          +---------------------------------+-------------------+--------------------------------------------------------------+
          | number_of_transformer_layers    | 0                 | Number of transformer layers.                                |
          +---------------------------------+-------------------+--------------------------------------------------------------+
-         | number_of_attention_heads       | 4                 | Number of attention heads in transformer                     |
+         | number_of_attention_heads       | 4                 | Number of attention heads in transformer.                    |
          +---------------------------------+-------------------+--------------------------------------------------------------+
-         | use_key_relative_attention      | False             | If 'True' use key relative embeddings in attention           |
+         | use_key_relative_attention      | False             | If 'True' use key relative embeddings in attention.          |
          +---------------------------------+-------------------+--------------------------------------------------------------+
-         | use_value_relative_attention    | False             | If 'True' use key relative embeddings in attention           |
+         | use_value_relative_attention    | False             | If 'True' use value relative embeddings in attention.        |
          +---------------------------------+-------------------+--------------------------------------------------------------+
          | max_relative_position           | None              | Maximum position for relative embeddings.                    |
          +---------------------------------+-------------------+--------------------------------------------------------------+
@@ -1076,8 +1078,8 @@ ResponseSelector
          +---------------------------------+-------------------+--------------------------------------------------------------+
          | embedding_dimension             | 20                | Dimension size of embedding vectors.                         |
          +---------------------------------+-------------------+--------------------------------------------------------------+
-         | dense_dimension                 | text: 512         | Default dense dimension to use if no dense features are      |
-         |                                 | label: 512        | present.                                                     |
+         | dense_dimension                 | text: 512         | Dense dimension for sparse features to use if no dense       |
+         |                                 | label: 512        | features are present.                                        |
          +---------------------------------+-------------------+--------------------------------------------------------------+
          | number_of_negative_examples     | 20                | The number of incorrect labels. The algorithm will minimize  |
          |                                 |                   | their similarity to the user input during training.          |
@@ -1110,15 +1112,18 @@ ResponseSelector
          |                                 |                   | similarity between embeddings of different labels.           |
          +---------------------------------+-------------------+--------------------------------------------------------------+
          | weight_sparsity                 | 0.8               | Sparsity of the weights in dense layers.                     |
+         |                                 |                   | Value should be between 0 and 1.                             |
          +---------------------------------+-------------------+--------------------------------------------------------------+
-         | drop_rate                       | 0.2               | Dropout rate for encoder.                                    |
+         | drop_rate                       | 0.2               | Dropout rate for encoder. Value should be between 0 and 1.   |
+         |                                 |                   | The higher the value the higher the regularization effect.   |
          +---------------------------------+-------------------+--------------------------------------------------------------+
-         | drop_rate_attention             | 0.0               | Dropout rate for attention.                                  |
+         | drop_rate_attention             | 0.0               | Dropout rate for attention. Value should be between 0 and 1. |
+         |                                 |                   | The higher the value the higher the regularization effect.   |
          +---------------------------------+-------------------+--------------------------------------------------------------+
          | use_sparse_input_dropout        | False             | If 'True' apply dropout to sparse tensors.                   |
          +---------------------------------+-------------------+--------------------------------------------------------------+
          | evaluate_every_number_of_epochs | 20                | How often to calculate validation accuracy.                  |
-         |                                 |                   | Small values may hurt performance, e.g. model accuracy.      |
+         |                                 |                   | Set to '-1' to evaluate just once at the end of training.    |
          +---------------------------------+-------------------+--------------------------------------------------------------+
          | evaluate_on_number_of_examples  | 0                 | How many examples to use for hold out validation set.        |
          |                                 |                   | Large values may hurt performance, e.g. model accuracy.      |
@@ -1555,7 +1560,7 @@ DIETClassifier
          |                                 |                  | equal to the length of the corresponding.                    |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | share_hidden_layers             | False            | Whether to share the hidden layer weights between user       |
-         |                                 |                  | messages and labels.                                          |
+         |                                 |                  | messages and labels.                                         |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | transformer_size                | 256              | Number of units in transformer.                              |
          +---------------------------------+------------------+--------------------------------------------------------------+
@@ -1585,8 +1590,8 @@ DIETClassifier
          +---------------------------------+------------------+--------------------------------------------------------------+
          | embedding_dimension             | 20               | Dimension size of embedding vectors.                         |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | dense_dimension                 | text: 512        | Default dense dimension to use if no dense features are      |
-         |                                 | label: 20        | present.                                                     |
+         | dense_dimension                 | text: 512        | Dense dimension for sparse features to use if no dense       |
+         |                                 | label: 20        | features are present.                                        |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | number_of_negative_examples     | 20               | The number of incorrect labels. The algorithm will minimize  |
          |                                 |                  | their similarity to the user input during training.          |
@@ -1615,19 +1620,22 @@ DIETClassifier
          +---------------------------------+------------------+--------------------------------------------------------------+
          | regularization_constant         | 0.002            | The scale of regularization.                                 |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | negative_margin_scale           | 0.8              | The scale of how important is to minimize the maximum        |
+         | negative_margin_scale           | 0.8              | The scale of how important it is to minimize the maximum     |
          |                                 |                  | similarity between embeddings of different labels.           |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | weight_sparsity                 | 0.8              | Sparsity of the weights in dense layers.                     |
+         |                                 |                  | Value should be between 0 and 1.                             |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | drop_rate                       | 0.2              | Dropout rate for encoder.                                    |
+         | drop_rate                       | 0.2              | Dropout rate for encoder. Value should be between 0 and 1.   |
+         |                                 |                  | The higher the value the higher the regularization effect.   |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | drop_rate_attention             | 0.0              | Dropout rate for attention.                                  |
+         | drop_rate_attention             | 0.0              | Dropout rate for attention. Value should be between 0 and 1. |
+         |                                 |                  | The higher the value the higher the regularization effect.   |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | use_sparse_input_dropout        | True             | If 'True' apply dropout to sparse tensors.                   |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | evaluate_every_number_of_epochs | 20               | How often to calculate validation accuracy.                  |
-         |                                 |                  | Small values may hurt performance, e.g. model accuracy.      |
+         |                                 |                  | Set to '-1' to evaluate just once at the end of training.    |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | evaluate_on_number_of_examples  | 0                | How many examples to use for hold out validation set.        |
          |                                 |                  | Large values may hurt performance, e.g. model accuracy.      |
