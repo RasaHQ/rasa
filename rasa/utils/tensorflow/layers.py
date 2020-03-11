@@ -667,8 +667,6 @@ class LSTMEncoder(tf.keras.layers.Layer):
             else:
                 self._lstm_layers.append(tf.keras.layers.Bidirectional(lstm))
 
-            # self._lstm_layers.append(tf.keras.layers.Dropout(dropout_rate))
-
     def call(
         self,
         x: tf.Tensor,
@@ -685,5 +683,6 @@ class LSTMEncoder(tf.keras.layers.Layer):
 
         for layer in self._lstm_layers:
             x = layer(x, mask=mask, training=training)
+            x = self._dropout(x, training=training)
 
         return x
