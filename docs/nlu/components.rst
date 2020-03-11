@@ -1175,6 +1175,9 @@ MitieEntityExtractor
     ``MitieEntityExtractor`` uses the MITIE entity extraction to find entities in a message. The underlying classifier
     is using a multi class linear SVM with a sparse linear kernel and custom features.
     The MITIE component does not provide entity confidence values.
+
+    .. note:: This entity extractor does not rely on any featurizer as it extracts features on its own.
+
 :Configuration:
 
     .. code-block:: yaml
@@ -1486,6 +1489,10 @@ DIETClassifier
     single semantic vector space. We use the dot-product loss to maximize the similarity with the target label and
     minimize similarities with negative samples.
 
+    If you want to learn more about the model, please take a look at our
+    `videos <https://www.youtube.com/playlist?list=PL75e0qA87dlG-za8eLI6t0_Pbxafk-cxb>`__ where we explain the model
+    architecture in detail.
+
     .. note:: If during prediction time a message contains **only** words unseen during training
               and no Out-Of-Vacabulary preprocessor was used, an empty intent ``None`` is predicted with confidence
               ``0.0``. This might happen if you only use the :ref:`CountVectorsFeaturizer` with a ``word`` analyzer
@@ -1494,7 +1501,7 @@ DIETClassifier
 
 :Configuration:
 
-    You can a number of hyperparameters to adapt the model.
+    You can define a number of hyperparameters to adapt the model.
     If you want to adapt your model, start by modifying the following parameters:
 
         - ``intent_classification``:
@@ -1554,11 +1561,11 @@ DIETClassifier
          +---------------------------------+------------------+--------------------------------------------------------------+
          | number_of_transformer_layers    | 2                | Number of transformer layers.                                |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | number_of_attention_heads       | 4                | Number of attention heads in transformer                     |
+         | number_of_attention_heads       | 4                | Number of attention heads in transformer.                    |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | use_key_relative_attention      | False            | If 'True' use key relative embeddings in attention           |
+         | use_key_relative_attention      | False            | If 'True' use key relative embeddings in attention.          |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | use_value_relative_attention    | False            | If 'True' use key relative embeddings in attention           |
+         | use_value_relative_attention    | False            | If 'True' use value relative embeddings in attention.        |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | max_relative_position           | None             | Maximum position for relative embeddings.                    |
          +---------------------------------+------------------+--------------------------------------------------------------+
