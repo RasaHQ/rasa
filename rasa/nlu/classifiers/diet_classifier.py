@@ -113,9 +113,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     # please make sure to update the docs when changing a default parameter
     defaults = {
         # FIXME: Thomas - make actual defaults from this gibberish
-        #LSTM_SIZE: 256,
-        #DIET_MODEL: "lstm",
-
+        # LSTM_SIZE: 256,
+        # DIET_MODEL: "lstm",
         # ## Architecture of the used neural network
         # Hidden layer sizes for layers before the embedding layers for user message
         # and labels.
@@ -1105,22 +1104,22 @@ class DIET(RasaModel):
     def _prepare_sequence_layers(self, name: Text) -> None:
         self._prepare_input_layers(name)
 
-        #import traceback, sys
-        #traceback.print_stack(file=sys.stdout)
-        #print('=======================================================')
+        # import traceback, sys
+        # traceback.print_stack(file=sys.stdout)
+        # print('=======================================================')
 
         ## FIXME: Proof of concept to see whether it works in principle, refactor later!
         #'''
         self._tf_layers[f"{name}_transformer"] = LSTMEncoder(
-            units=self.config[TRANSFORMER_SIZE],
             num_layers=self.config[NUM_TRANSFORMER_LAYERS],
+            units=self.config[TRANSFORMER_SIZE],
             reg_lambda=self.config[REGULARIZATION_CONSTANT],
             dropout_rate=self.config[DROP_RATE],
             sparsity=self.config[WEIGHT_SPARSITY],
             unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
-            name=f"{name}_encoder"
+            name=f"{name}_encoder",
         )
-        '''
+        """
         if self.config[NUM_TRANSFORMER_LAYERS] > 0:
             self._tf_layers[f"{name}_transformer"] = TransformerEncoder(
                 self.config[NUM_TRANSFORMER_LAYERS],
@@ -1140,7 +1139,7 @@ class DIET(RasaModel):
         else:
             # create lambda so that it can be used later without the check
             self._tf_layers[f"{name}_transformer"] = lambda x, mask, training: x
-        '''
+        """
         ### END OF HACK HERE
 
     def _prepare_mask_lm_layers(self, name: Text) -> None:
