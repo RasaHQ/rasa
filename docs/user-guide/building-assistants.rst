@@ -384,8 +384,6 @@ is clear how this information should be collected.
 For this type of use case, we can use Forms and our FormPolicy. The `FormPolicy <https://rasa.com/docs/rasa/core/policies/#form-policy>`_
 works by predicting the form as the next action until all information is gathered from the user.
 
-
- 
 As an example, we will build out the SalesForm from Sara. The user wants to contact
 our sales team, and for this we need to gather the following pieces of information:
 
@@ -578,7 +576,7 @@ The intents and entities will need to be added to your ``domain.yml`` file as we
      - use_case
 
 A story for a form is very simple, as all the slot collection form happens inside the form, and
-therefore doesn’t need to be covered in your stories. You just need to write stories showing when the form should be activated. For the sales form, add this story
+therefore doesn’t need to be covered in your stories. You just need to write a single story showing when the form should be activated. For the sales form, add this story
 to your ``stories.md`` file:
 
 
