@@ -578,7 +578,7 @@ The intents and entities will need to be added to your ``domain.yml`` file as we
      - use_case
 
 A story for a form is very simple, as all the slot collection form happens inside the form, and
-therefore doesn’t need to be covered in your stories. You just need to write stories showing when the form should be activated. For the sales form, add this story
+therefore doesn’t need to be covered in your stories. You just need to write a single story showing when the form should be activated. For the sales form, add this story
 to your ``stories.md`` file:
 
 
