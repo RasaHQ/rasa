@@ -32,9 +32,9 @@ MitieNLP
 :Outputs: Nothing
 :Requires: Nothing
 :Description:
-    Initializes mitie structures. Every mitie component relies on this,
+    Initializes MITIE structures. Every MITIE component relies on this,
     hence this should be put at the beginning
-    of every pipeline that uses any mitie components.
+    of every pipeline that uses any MITIE components.
 :Configuration:
     The MITIE library needs a language model file, that **must** be specified in
     the configuration:
@@ -61,7 +61,8 @@ SpacyNLP
     Initializes spaCy structures. Every spaCy component relies on this, hence this should be put at the beginning
     of every pipeline that uses any spaCy components.
 :Configuration:
-    Language model, default will use the configured language.
+    You need to specify the language model to use.
+    By default the configured language will be used as language model name.
     If the spaCy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
     the model name can be specified using the configuration variable ``model``.
     The name will be passed to ``spacy.load(name)``.
@@ -75,10 +76,10 @@ SpacyNLP
 
           # when retrieving word vectors, this will decide if the casing
           # of the word is relevant. E.g. `hello` and `Hello` will
-          # retrieve the same vector, if set to `false`. For some
+          # retrieve the same vector, if set to `False`. For some
           # applications and models it makes sense to differentiate
-          # between these two words, therefore setting this to `true`.
-          case_sensitive: false
+          # between these two words, therefore setting this to `True`.
+          case_sensitive: False
 
     For more information on how to download the spaCy models, head over to
     :ref:`installing SpaCy <install-spacy>`.
@@ -101,41 +102,47 @@ HFTransformersNLP
      .. note:: To use ``HFTransformersNLP`` component, install Rasa Open Source with ``pip install rasa[transformers]``.
 
 :Configuration:
+    You should specify what language model to load via the parameter ``model_name``. See the below table for the
+    available language models.
+    Additionally, you can also specify the the architecture variation of the chosen language model by specifying the
+    parameter ``model_weights``.
+    The full list of supported architectures can be found
+    `here <https://huggingface.co/transformers/pretrained_models.html>`__.
+    If left empty, it uses the default model architecture that original Transformers library loads (see table below).
+
+    .. code-block:: none
+
+        +----------------+--------------+-------------------------+
+        | Language Model | Parameter    | Default value for       |
+        |                | "model_name" | "model_weights"         |
+        +----------------+--------------+-------------------------+
+        | BERT           | bert         | bert-base-uncased       |
+        +----------------+--------------+-------------------------+
+        | GPT            | gpt          | openai-gpt              |
+        +----------------+--------------+-------------------------+
+        | GPT-2          | gpt2         | gpt2                    |
+        +----------------+--------------+-------------------------+
+        | XLNet          | xlnet        | xlnet-base-cased        |
+        +----------------+--------------+-------------------------+
+        | DistilBERT     | distilbert   | distilbert-base-uncased |
+        +----------------+--------------+-------------------------+
+        | RoBERTa        | roberta      | roberta-base            |
+        +----------------+--------------+-------------------------+
+
+    The following configuration loads the language model BERT:
+
     .. code-block:: yaml
 
         pipeline:
           - name: HFTransformersNLP
-
             # Name of the language model to use
             model_name: "bert"
-
-            # Shortcut name to specify architecture variation of the above model. Full list of supported architectures
-            # can be found at https://huggingface.co/transformers/pretrained_models.html . If left empty, it uses the
-            # default model architecture that original transformers library loads
+            # Pre-Trained weights to be loaded
             model_weights: "bert-base-uncased"
             
             # An optional path to a specific directory to download and cache the pre-trained model weights.
             # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
             cache_dir: null
-
-        #    +----------------+--------------+-------------------------+
-        #    | Language Model | Parameter    | Default value for       |
-        #    |                | "model_name" | "model_weights"         |
-        #    +----------------+--------------+-------------------------+
-        #    | BERT           | bert         | bert-base-uncased       |
-        #    +----------------+--------------+-------------------------+
-        #    | GPT            | gpt          | openai-gpt              |
-        #    +----------------+--------------+-------------------------+
-        #    | GPT-2          | gpt2         | gpt2                    |
-        #    +----------------+--------------+-------------------------+
-        #    | XLNet          | xlnet        | xlnet-base-cased        |
-        #    +----------------+--------------+-------------------------+
-        #    | DistilBERT     | distilbert   | distilbert-base-uncased |
-        #    +----------------+--------------+-------------------------+
-        #    | RoBERTa        | roberta      | roberta-base            |
-        #    +----------------+--------------+-------------------------+
-
-
 
 .. _tokenizers:
 
@@ -255,6 +262,16 @@ ConveRTTokenizer
 :Requires: Nothing
 :Description:
     Creates tokens using the ConveRT tokenizer. Must be used whenever the :ref:`ConveRTFeaturizer` is used.
+
+    .. note::
+        Since ``ConveRT`` model is trained only on an English corpus of conversations, this tokenizer should only
+        be used if your training data is in English language.
+
+    .. note::
+        To use ``ConveRTTokenizer`` you need to install additional TensorFlow libraries (``tensorflow_text`` and
+        ``tensorflow_hub``). You should do a pip install of Rasa with ``pip install rasa[convert]`` to install those.
+
+
 :Configuration:
     Make the tokenizer case insensitive by adding the ``case_sensitive: False`` option, the
     default being ``case_sensitive: True``.
@@ -269,7 +286,6 @@ ConveRTTokenizer
           "intent_split_symbol": "_"
           # Text will be tokenized with case sensitive as default
           "case_sensitive": True
-
 
 .. _LanguageModelTokenizer:
 
@@ -310,7 +326,7 @@ By default all featurizers will return a matrix of length ``(number-of-tokens x 
 So, the returned matrix will have a feature vector for every token.
 This allows us to train sequence models.
 However, the additional token at the end (e.g. ``__CLS__``) contains features for the complete utterance.
-This feature vector can be used in any non-sequence model.
+This feature vector can be used in any bag-of-words model.
 The corresponding classifier can therefore decide what kind of features to use.
 
 
@@ -387,7 +403,7 @@ ConveRTFeaturizer
 :Type: Dense featurizer
 :Description:
     Creates features for entity extraction, intent classification, and response selection.
-    Uses the `default signature <https://github.com/PolyAI-LDN/polyai-models#tfhub-signatures>`_ to compute vector
+    It uses the `default signature <https://github.com/PolyAI-LDN/polyai-models#tfhub-signatures>`_ to compute vector
     representations of input text.
 
     .. note::
@@ -409,12 +425,12 @@ ConveRTFeaturizer
 .. _LanguageModelFeaturizer:
 
 LanguageModelFeaturizer
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 :Short:
     Creates a vector representation of user message and response (if specified) using a pre-trained language model.
 :Outputs: ``dense_features`` for user messages and responses
-:Requires: :ref:`HFTransformersNLP`
+:Requires: :ref:`HFTransformersNLP` and :ref:`LanguageModelTokenizer`
 :Type: Dense featurizer
 :Description:
     Creates features for entity extraction, intent classification, and response selection.
@@ -449,9 +465,9 @@ RegexFeaturizer
     Creates features for entity extraction and intent classification.
     During training the ``RegexFeaturizer`` creates a list of `regular expressions` defined in the training
     data format.
-    For each regex, a feature will be set marking whether this expression was found in the input, which will later
-    be fed into intent classifier / entity extractor to simplify classification (assuming the classifier has learned
-    during the training phase, that this set feature indicates a certain intent / entity).
+    For each regex, a feature will be set marking whether this expression was found in the user message or not.
+    All features will later be fed into an intent classifier / entity extractor to simplify classification (assuming
+    the classifier has learned during the training phase, that this set feature indicates a certain intent / entity).
     Regex features for entity extraction are currently only supported by the :ref:`CRFEntityExtractor` and the
     :ref:`diet-classifier` components!
 
@@ -481,12 +497,14 @@ CountVectorsFeaturizer
     See `sklearn's CountVectorizer docs <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
     for detailed description of the configuration parameters.
 
-    This featurizer can be configured to use word or character n-grams, using ``analyzer`` config parameter.
+    This featurizer can be configured to use word or character n-grams, using the ``analyzer`` configuration parameter.
     By default ``analyzer`` is set to ``word`` so word token counts are used as features.
     If you want to use character n-grams, set ``analyzer`` to ``char`` or ``char_wb``.
+    The lower and upper boundaries of the n-grams can be configured by the parameters ``min_ngram`` and ``max_ngram``.
+    By default both of them are set to ``1``.
 
     .. note::
-        Option ‘char_wb’ creates character n-grams only from text inside word boundaries;
+        Option ``char_wb`` creates character n-grams only from text inside word boundaries;
         n-grams at the edges of words are padded with space.
         This option can be used to create `Subword Semantic Hashing <https://arxiv.org/abs/1810.07150>`_.
 
@@ -508,9 +526,7 @@ CountVectorsFeaturizer
         different number of ``OOV_token`` s and maybe some additional general words.
         Then an algorithm will likely classify a message with unknown words as this intent ``outofscope``.
 
-        .. note::
-            This featurizer creates a bag-of-words representation by **counting** words,
-            so the number of ``OOV_token`` in the sentence might be important.
+        You can either set the ``OOV_token`` or a list of words ``OOV_words``:
 
             - ``OOV_token`` set a keyword for unseen words; if training data contains ``OOV_token`` as words in some
               messages, during prediction the words that were not seen during training will be substituted with
@@ -521,30 +537,31 @@ CountVectorsFeaturizer
               changing it in trainig data or using custom preprocessor.
 
         .. note::
+            This featurizer creates a bag-of-words representation by **counting** words,
+            so the number of ``OOV_token`` in the sentence might be important.
+        .. note::
             Providing ``OOV_words`` is optional, training data can contain ``OOV_token`` input manually or by custom
             additional preprocessor.
             Unseen words will be substituted with ``OOV_token`` **only** if this token is present in the training
             data or ``OOV_words`` list is provided.
 
-    Sharing Vocabulary between user message and labels:
-
-        .. note:: Enabled only if ``use_shared_vocab`` is ``True``
-
-        Build a common vocabulary set between tokens in labels and user message.
+    If you want to share the vocabulary between user messages and intents, you need to set the option
+    ``use_shared_vocab`` to ``True``. In that case a common vocabulary set between tokens in intents and user messages
+    is build.
 
     .. code-block:: yaml
 
         pipeline:
         - name: "CountVectorsFeaturizer"
-          # Create character n-grams
-          "analyzer": "char_wb"
+          # Analyzer to use, either 'word', 'char', or 'char_wb'
+          "analyzer": "word"
           # Set the lower and upper boundaries for the n-grams
           "min_ngram": 1
-          "max_ngram": 4
+          "max_ngram": 1
           # Set the out-of-vocabulary token
           "OOV_token": "_oov_"
-
-    |
+          # Whether to use a shared vocab
+          "use_shared_vocab": False
 
     .. container:: toggle
 
@@ -558,32 +575,32 @@ CountVectorsFeaturizer
          +-------------------+-------------------+--------------------------------------------------------------+
          | Parameter         | Default Value     | Description                                                  |
          +===================+===================+==============================================================+
-         | use_shared_vocab  | False             | If set to ``True`` a common vocabulary is used for labels    |
+         | use_shared_vocab  | False             | If set to 'True' a common vocabulary is used for labels      |
          |                   |                   | and user message.                                            |
          +-------------------+-------------------+--------------------------------------------------------------+
          | analyzer          | word              | Whether the feature should be made of word n-gram or         |
          |                   |                   | character n-grams. Option ‘char_wb’ creates character        |
          |                   |                   | n-grams only from text inside word boundaries;               |
          |                   |                   | n-grams at the edges of words are padded with space.         |
-         |                   |                   | Valid values: ``word``, ``char``, ``char_wb``.               |
+         |                   |                   | Valid values: 'word', 'char', 'char_wb'.                     |
          +-------------------+-------------------+--------------------------------------------------------------+
          | token_pattern     | r"(?u)\b\w\w+\b"  | Regular expression used to detect tokens.                    |
-         |                   |                   | Only used if ``analyzer`` is set to ``word``.                |
+         |                   |                   | Only used if 'analyzer' is set to 'word'.                    |
          +-------------------+-------------------+--------------------------------------------------------------+
          | strip_accents     | None              | Remove accents during the pre-processing step.               |
-         |                   |                   | Valid values: ``ascii``, ``unicode``, ``None``.              |
+         |                   |                   | Valid values: 'ascii', 'unicode', 'None'.                    |
          +-------------------+-------------------+--------------------------------------------------------------+
          | stop_words        | None              | A list of stop words to use.                                 |
-         |                   |                   | Valid values: ``"english"`` (uses an internal list of        |
+         |                   |                   | Valid values: 'english' (uses an internal list of            |
          |                   |                   | English stop words), a list of custom stop words, or         |
-         |                   |                   | ``None``.                                                    |
+         |                   |                   | 'None'.                                                      |
          +-------------------+-------------------+--------------------------------------------------------------+
          | min_df            | 1                 | When building the vocabulary ignore terms that have a        |
          |                   |                   | document frequency strictly lower than the given threshold.  |
          +-------------------+-------------------+--------------------------------------------------------------+
          | max_df            | 1                 | When building the vocabulary ignore terms that have a        |
          |                   |                   | document frequency strictly higher than the given threshold  |
-         |                   |                   | (corpus-specific stop words).)                               |
+         |                   |                   | (corpus-specific stop words).                                |
          +-------------------+-------------------+--------------------------------------------------------------+
          | min_ngram         | 1                 | The lower boundary of the range of n-values for different    |
          |                   |                   | word n-grams or char n-grams to be extracted.                |
@@ -591,14 +608,14 @@ CountVectorsFeaturizer
          | max_ngram         | 1                 | The upper boundary of the range of n-values for different    |
          |                   |                   | word n-grams or char n-grams to be extracted.                |
          +-------------------+-------------------+--------------------------------------------------------------+
-         | max_features      | None              | If not None, build a vocabulary that only consider the top   |
+         | max_features      | None              | If not 'None', build a vocabulary that only consider the top |
          |                   |                   | max_features ordered by term frequency across the corpus.    |
          +-------------------+-------------------+--------------------------------------------------------------+
          | lowercase         | True              | Convert all characters to lowercase before tokenizing.       |
          +-------------------+-------------------+--------------------------------------------------------------+
          | OOV_token         | None              | Keyword for unseen words.                                    |
          +-------------------+-------------------+--------------------------------------------------------------+
-         | OOV_words         | []                | List of words to be treated as ``OOV_token`` during training.|
+         | OOV_words         | []                | List of words to be treated as 'OOV_token' during training.  |
          +-------------------+-------------------+--------------------------------------------------------------+
 
 
@@ -619,28 +636,28 @@ LexicalSyntacticFeaturizer
     You can configure what kind of lexical and syntactic features the featurizer should extract.
     The following features are available:
 
-    .. code-block:: yaml
+    .. code-block:: none
 
-        # ==============  ==========================================================================================
-        # Feature Name    Description
-        # ==============  ==========================================================================================
-        # BOS             Checks if the token is at the beginning of the sentence.
-        # EOS             Checks if the token is at the end of the sentence.
-        # low             Checks if the token is lower case.
-        # upper           Checks if the token is upper case.
-        # title           Checks if the token starts with an uppercase character and all remaining characters are
-        #                 lowercased.
-        # digit           Checks if the token contains just digits.
-        # prefix5         Take the first five characters of the token.
-        # prefix2         Take the first two characters of the token.
-        # suffix5         Take the last five characters of the token.
-        # suffix3         Take the last three characters of the token.
-        # suffix2         Take the last two characters of the token.
-        # suffix1         Take the last character of the token.
-        # pos             Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
-        # pos2            Take the first two characters of the Part-of-Speech tag of the token
-        #                 (``SpacyTokenizer`` required).
-        # ==============  ==========================================================================================
+        ==============  ==========================================================================================
+        Feature Name    Description
+        ==============  ==========================================================================================
+        BOS             Checks if the token is at the beginning of the sentence.
+        EOS             Checks if the token is at the end of the sentence.
+        low             Checks if the token is lower case.
+        upper           Checks if the token is upper case.
+        title           Checks if the token starts with an uppercase character and all remaining characters are
+                        lowercased.
+        digit           Checks if the token contains just digits.
+        prefix5         Take the first five characters of the token.
+        prefix2         Take the first two characters of the token.
+        suffix5         Take the last five characters of the token.
+        suffix3         Take the last three characters of the token.
+        suffix2         Take the last two characters of the token.
+        suffix1         Take the last character of the token.
+        pos             Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
+        pos2            Take the first two characters of the Part-of-Speech tag of the token
+                        (``SpacyTokenizer`` required).
+        ==============  ==========================================================================================
 
     As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
     previous tokens, the current token, and the next tokens in the sliding window.
@@ -654,14 +671,7 @@ LexicalSyntacticFeaturizer
         - name: "LexicalSyntacticFeaturizer":
           "features": [
             ["low", "title", "upper"],
-            [
-              "BOS",
-              "EOS",
-              "low",
-              "upper",
-              "title",
-              "digit",
-            ],
+            ["BOS", "EOS", "low", "upper", "title", "digit"],
             ["low", "title", "upper"],
           ]
 
@@ -682,7 +692,7 @@ MitieIntentClassifier
     MITIE intent classifier (using a
     `text categorizer <https://github.com/mit-nlp/MITIE/blob/master/examples/python/text_categorizer_pure_model.py>`_)
 :Outputs: ``intent``
-:Requires: ``tokens`` for user message
+:Requires: ``tokens`` for user message and :ref:`MitieNLP`
 :Output-Example:
 
     .. code-block:: json
@@ -695,6 +705,8 @@ MitieIntentClassifier
     This classifier uses MITIE to perform intent classification. The underlying classifier
     is using a multi-class linear SVM with a sparse linear kernel (see
     `MITIE trainer code <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222>`_).
+
+    .. note:: This classifier does not rely on any featurizer as it extracts features on its own.
 
 :Configuration:
 
@@ -731,11 +743,13 @@ SklearnIntentClassifier
     The sklearn intent classifier trains a linear SVM which gets optimized using a grid search. It also provides
     rankings of the labels that did not "win". The ``SklearnIntentClassifier`` needs to be preceded by a dense
     featurizer in the pipeline. This dense featurizer creates the features used for the classification.
+    For more information about the algorithm itself, take a look at the
+    `GridSearchCV <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html>`__
+    documentation.
 
 :Configuration:
-    During the training of the SVM a hyperparameter search is run to
-    find the best parameter set. In the config, you can specify the parameters
-    that will get tried.
+    During the training of the SVM a hyperparameter search is run to find the best parameter set.
+    In the configuration you can specify the parameters that will get tried.
 
     .. code-block:: yaml
 
@@ -748,6 +762,14 @@ SklearnIntentClassifier
           # Specifies the kernel to use with C-SVM.
           # This is used with the ``C`` hyperparameter in GridSearchCV.
           kernels: ["linear"]
+          # Gamma parameter of the C-SVM.
+          "gamma": [0.1]
+          # We try to find a good number of cross folds to use during
+          # intent training, this specifies the max number of folds.
+          "max_cross_validation_folds": 5
+          # Scoring function used for evaluating the hyper parameters.
+          # This can be a name or a function.
+          "scoring_function": "f1_weighted"
 
 .. _embedding-intent-classifier:
 
@@ -795,7 +817,7 @@ EmbeddingIntentClassifier
 
 :Configuration:
 
-    You can a number of hyperparameters to adapt the model.
+    You can define a number of hyperparameters to adapt the model.
     If you want to adapt your model, start by modifying the following parameters:
 
         - ``epochs``:
@@ -972,9 +994,9 @@ ResponseSelector
     neural network architecture and optimization as the :ref:`diet-classifier`.
 
     .. note:: If during prediction time a message contains **only** words unseen during training
-              and no Out-Of-Vacabulary preprocessor was used, an empty intent ``None`` is predicted with confidence
+              and no Out-Of-Vacabulary preprocessor was used, an empty response ``None`` is predicted with confidence
               ``0.0``. This might happen if you only use the :ref:`CountVectorsFeaturizer` with a ``word`` analyzer
-              as featurizer. If you use the ``char_wb`` analyzer, you should always get an intent with a confidence
+              as featurizer. If you use the ``char_wb`` analyzer, you should always get a response with a confidence
               value ``> 0.0``.
 
 :Configuration:
@@ -1278,39 +1300,33 @@ CRFEntityExtractor
     etc.) give probabilities to certain entity classes, as are transitions between
     neighbouring entity tags: the most likely set of tags is then calculated and returned.
 
-    .. note::
-        If POS features are used (pos or pos2), you need to have ``SpacyTokenizer`` in your pipeline.
-
-    .. note::
-        If "pattern" features are used, you need to have ``RegexFeaturizer`` in your pipeline.
-
 :Configuration:
     ``CRFEntityExtractor`` has a list of default features to use.
     However, you can overwrite the default configuration.
     The following features are available:
 
-    .. code-block:: yaml
+    .. code-block:: none
 
-        # ==============  ==========================================================================================
-        # Feature Name    Description
-        # ==============  ==========================================================================================
-        # low             Checks if the token is lower case.
-        # upper           Checks if the token is upper case.
-        # title           Checks if the token starts with an uppercase character and all remaining characters are
-        #                 lowercased.
-        # digit           Checks if the token contains just digits.
-        # prefix5         Take the first five characters of the token.
-        # prefix2         Take the first two characters of the token.
-        # suffix5         Take the last five characters of the token.
-        # suffix3         Take the last three characters of the token.
-        # suffix2         Take the last two characters of the token.
-        # suffix1         Take the last character of the token.
-        # pos             Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
-        # pos2            Take the first two characters of the Part-of-Speech tag of the token
-        #                 (``SpacyTokenizer`` required).
-        # pattern         Take the patterns defined by ``RegexFeaturizer``.
-        # bias            Add an additional "bias" feature to the list of features.
-        # ==============  ==========================================================================================
+        ==============  ==========================================================================================
+        Feature Name    Description
+        ==============  ==========================================================================================
+        low             Checks if the token is lower case.
+        upper           Checks if the token is upper case.
+        title           Checks if the token starts with an uppercase character and all remaining characters are
+                        lowercased.
+        digit           Checks if the token contains just digits.
+        prefix5         Take the first five characters of the token.
+        prefix2         Take the first two characters of the token.
+        suffix5         Take the last five characters of the token.
+        suffix3         Take the last three characters of the token.
+        suffix2         Take the last two characters of the token.
+        suffix1         Take the last character of the token.
+        pos             Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
+        pos2            Take the first two characters of the Part-of-Speech tag of the token
+                        (``SpacyTokenizer`` required).
+        pattern         Take the patterns defined by ``RegexFeaturizer``.
+        bias            Add an additional "bias" feature to the list of features.
+        ==============  ==========================================================================================
 
     As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
     previous tokens, the current token, and the next tokens in the sliding window.
@@ -1325,15 +1341,8 @@ CRFEntityExtractor
         pipeline:
         - name: "CRFEntityExtractor"
             # BILOU_flag determines whether to use BILOU tagging or not.
-            # More rigorous however requires more examples per entity
-            # rule of thumb: use only if more than 100 egs. per entity
             "BILOU_flag": True
-            # crf_features is [before, token, after] array with before, token,
-            # after holding keys about which features to use for each token,
-            # for example, 'title' in array before will have the feature
-            # "is the preceding token in title case?"
-            # POS features require SpacyTokenizer
-            # pattern feature require RegexFeaturizer
+            # features to extract in the sliding window
             "features": [
                 ["low", "title", "upper"],
                 [
@@ -1357,6 +1366,12 @@ CRFEntityExtractor
             "L1_c": 0.1
             # weight of the L2 regularization
             "L2_c": 0.1
+
+    .. note::
+        If POS features are used (pos or pos2), you need to have ``SpacyTokenizer`` in your pipeline.
+
+    .. note::
+        If "pattern" features are used, you need to have ``RegexFeaturizer`` in your pipeline.
 
 .. _DucklingHTTPExtractor:
 
