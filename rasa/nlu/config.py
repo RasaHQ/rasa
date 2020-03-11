@@ -59,7 +59,12 @@ def override_defaults(
         cfg = {}
 
     if custom:
-        cfg.update(custom)
+        for key in custom.keys():
+            if isinstance(cfg.get(key), dict):
+                cfg[key].update(custom[key])
+            else:
+                cfg[key] = custom[key]
+
     return cfg
 
 
