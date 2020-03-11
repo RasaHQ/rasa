@@ -384,8 +384,6 @@ is clear how this information should be collected.
 For this type of use case, we can use Forms and our FormPolicy. The `FormPolicy <https://rasa.com/docs/rasa/core/policies/#form-policy>`_
 works by predicting the form as the next action until all information is gathered from the user.
 
-
- 
 As an example, we will build out the SalesForm from Sara. The user wants to contact
 our sales team, and for this we need to gather the following pieces of information:
 
