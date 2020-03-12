@@ -829,7 +829,7 @@ EmbeddingIntentClassifier
           The lower the number of epochs the faster the model is trained.
         - ``hidden_layers_sizes``:
           This parameter allows you to define the number of feed forward layers and their output
-          dimensions for user messages and intents (default: ``text: [], label: []``).
+          dimensions for user messages and intents (default: ``text: [256, 128], label: []``).
           Every entry in the list corresponds to a feed forward layer.
           For example, if you set ``text: [256, 128]``, we will add two feed forward layers in front of
           the transformer. The vectors of the input tokens (coming from the user message) will be passed on to those
@@ -844,6 +844,12 @@ EmbeddingIntentClassifier
           We are using multiple embeddings layers inside the model architecture.
           For example, the vector of the ``__CLS__`` token and the intent is passed on to an embedding layer before
           they are compared and the loss is calculated.
+        - ``weight_sparsity``:
+          This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
+          in the model (default: ``0.8``). The value should be between 0 and 1. If you set ``weight_sparsity``
+          to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
+          set ``weight_sparsity`` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
+          to learn.
 
     |
 
@@ -1032,7 +1038,7 @@ ResponseSelector
           The lower the number of epochs the faster the model is trained.
         - ``hidden_layers_sizes``:
           This parameter allows you to define the number of feed forward layers and their output
-          dimensions for user messages and intents (default: ``text: [], label: []``).
+          dimensions for user messages and intents (default: ``text: [256, 128], label: [256, 128]``).
           Every entry in the list corresponds to a feed forward layer.
           For example, if you set ``text: [256, 128]``, we will add two feed forward layers in front of
           the transformer. The vectors of the input tokens (coming from the user message) will be passed on to those
@@ -1048,11 +1054,17 @@ ResponseSelector
           For example, the vector of the ``__CLS__`` token and the intent is passed on to an embedding layer before
           they are compared and the loss is calculated.
         - ``number_of_transformer_layers``:
-          This parameter sets the number of transformer layers to use (default: ``2``).
+          This parameter sets the number of transformer layers to use (default: ``0``).
           The number of transformer layers corresponds to the transformer blocks to use for the model.
         - ``transformer_size``:
-          This parameter sets the number of units in the transformer (default: ``256``).
+          This parameter sets the number of units in the transformer (default: ``None``).
           The vectors coming out of the transformers will have the given ``transformer_size``.
+        - ``weight_sparsity``:
+          This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
+          in the model (default: ``0.8``). The value should be between 0 and 1. If you set ``weight_sparsity``
+          to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
+          set ``weight_sparsity`` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
+          to learn.
 
     |
 
@@ -1573,6 +1585,12 @@ DIETClassifier
         - ``transformer_size``:
           This parameter sets the number of units in the transformer (default: ``256``).
           The vectors coming out of the transformers will have the given ``transformer_size``.
+        - ``weight_sparsity``:
+          This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
+          in the model (default: ``0.8``). The value should be between 0 and 1. If you set ``weight_sparsity``
+          to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
+          set ``weight_sparsity`` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
+          to learn.
 
     |
 
