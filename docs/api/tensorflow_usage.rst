@@ -15,11 +15,11 @@ Optimizing CPU Performance
 --------------------------
 
 .. note::
-    Since these options affect how operations are carried out under the hood in TensorFlow, it is advisable to
-    understand the implementation of different components first and then configure these options. You can always leave
-    them to their default value otherwise.
+    We recommend that you configure these options only if you are an advanced TensorFlow user and understand the 
+    implementation of the machine learning components in your pipeline. These options affect how operations are carried 
+    out under the hood in Tensorflow. Leaving them at their default values is fine.
 
-Depending on the TensorFlow operations an already existing or a custom component uses, you can leverage multi-core CPU
+Depending on the TensorFlow operations a NLU component or Core policy uses, you can leverage multi-core CPU
 parallelism by tuning these options.
 
 Parallelizing One Operation
@@ -36,7 +36,7 @@ Parallelizing Multiple Operations
 Set ``TF_INTER_OP_PARALLELISM_THREADS`` as an environment variable to specify the maximum number of threads that can be used
 to parallelize the execution of multiple **non-blocking** operations. These would include operations that do not have a
 directed path between them in the TensorFlow graph. In other words, the computation of one operation does not affect the
-computation of other operation. The default value for this variable is ``0`` which means TensorFlow would allocate one thread per CPU core.
+computation of the other operation. The default value for this variable is ``0`` which means TensorFlow would allocate one thread per CPU core.
 
 To understand more about how these two options differ from each other, refer to this
 `stackoverflow thread <https://stackoverflow.com/a/41233901/3001665>`_.
