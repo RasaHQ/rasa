@@ -331,14 +331,14 @@ When you’re ready to enhance your assistant with context, check out :ref:`tuto
 
 
 .. note::
-    Here's a minimal checklist of files we modified to build basic FAQ assistant:
+    Here's a minimal checklist of files we modified to build a basic FAQ assistant:
 
-      - ``data/nlu.md``: add NLU training data for ``faq/`` intents
-      - ``data/responses.md``: add responses associated with ``faq/`` intents
-      - ``config.yml``: add ``ReponseSelector`` in your NLU pipeline
-      - ``domain.yml``: add a retrieval action ``respond_faq`` and intent ``faq``
-      - ``data/stories.md``: add a simple story for FAQs
-      - ``test_stories.md``: add E2E test stories for your FAQs
+      - ``data/nlu.md``: Add NLU training data for ``faq/`` intents
+      - ``data/responses.md``: Add responses associated with ``faq/`` intents
+      - ``config.yml``: Add ``ReponseSelector`` in your NLU pipeline
+      - ``domain.yml``: Add a retrieval action ``respond_faq`` and intent ``faq``
+      - ``data/stories.md``: Add a simple story for FAQs
+      - ``test_stories.md``: Add E2E test stories for your FAQs
 
 
 .. _tutorial-contextual-assistants:
@@ -656,21 +656,21 @@ should be handled by writing regular stories, so your model can learn this behav
 .. note::
     Here's a minimal checklist of files we modified to handle business logic using a form action:
 
-      - ``actions.py``: Define the form action
-              - Define the ``required_slots``, ``slot_mappings`` and ``submit`` methods
-      - ``data/nlu.md``: 
+      - ``actions.py``:
+              - Define the form action, including the ``required_slots``, ``slot_mappings`` and ``submit`` methods
+      - ``data/nlu.md``:
           - Add examples for an intent to activate the form
           - Add examples for an ``inform`` intent to fill the form
-      - ``domain.yml``: 
+      - ``domain.yml``:
           - Add all slots required by the form
           - Add ``utter_ask_{slot}`` responses for all required slots
-          - Add your form action to the ``forms`` section 
+          - Add your form action to the ``forms`` section
           - Add all intents and entities from your NLU training data
-      - ``data/stories.md``: 
-          - add a story for the form
-      - ``config.yml``: 
+      - ``data/stories.md``:
+          - Add a story for the form
+      - ``config.yml``:
           - Add the ``FormPolicy`` to your policies
-          - Add entity extractors & dimensions (according to which entities will fill your slots) to your pipeline
+          - Add entity extractors to your pipeline
       - ``endpoints.yml``: Define the ``action_endpoint``
 
 
@@ -699,8 +699,8 @@ matter the context, you can use the :ref:`mapping-policy` to handle these. It wi
 predict the same action for an intent, and when combined with a forgetting mechanism,
 you don’t need to write any stories either.
 
-For example, let's say you see users having conversations like the following one with 
-your assistant, where they write a greeting in the middle of a conversation - 
+For example, let's say you see users having conversations like the following one with
+your assistant, where they write a greeting in the middle of a conversation -
 maybe because they were gone for a few minutes:
 
 .. image:: /_static/images/greet_interjection.png
@@ -761,7 +761,7 @@ Then we can retrain the model, and try out our additions:
    rasa train
    rasa shell
 
-FAQs are another kind of generic interjections that should always get the same response. 
+FAQs are another kind of generic interjections that should always get the same response.
 For example, a user might ask a related FAQ in the middle of filling a form:
 
 .. image:: /_static/images/generic_interjection.png
@@ -893,23 +893,23 @@ Don’t forget to add a few end to end stories to your ``test_stories.md`` for t
 .. note::
     Here's a minimal checklist of  of files we modified to handle unexpected user input:
 
-      - ``actions.py``: 
+      - ``actions.py``:
           - define ``action_greet``
-      - ``data/nlu.md``: 
+      - ``data/nlu.md``:
           - add training data for an ``explain`` intent
       - ``domain.yml``:
           - specify that intent ``greet`` should trigger ``action_greet_user`` in the ``intents`` section
           - add ``action_greet_user`` to the ``actions`` section
-          - set the type of ``requested_slot`` to categorical 
+          - set the type of ``requested_slot`` to categorical
               - add all the required slots from the ``sales_form`` as values
           - add the ``explain`` intent
           - add responses for contextual question interruptions (``explain``)
-      - ``data/stories.md``: 
+      - ``data/stories.md``:
           - remove stories using mapped intents if you have them
           - add stories with FAQ interruptions in the middle of filling a form
           - add stories with contextual question interruptions  (``explain``) in the middle of filling a form
               - specify the value of ``requested_slot`` before the interruption
-              - the response to the interruption should match the value of ``requested_slot`` 
+              - the response to the interruption should match the value of ``requested_slot``
 
 
 .. _failing-gracefully:
@@ -966,7 +966,7 @@ We define some intent mappings to make it more intuitive to the user what an int
 Out of scope intent
 """""""""""""""""""
 
-It is good practice to also handle questions you know your users may ask, but for which you don’t necessarily have a handled user goal yet.
+It is good practice to also handle questions you know your users may ask, but for which you haven't necessarily implemented a user goal yet.
 
 You can define an ``out_of_scope`` intent to handle generic out of scope requests, like "I’m hungry" and have
 the bot respond with a default message like "Sorry, I can’t handle that request":
@@ -1015,19 +1015,19 @@ let’s say the user asks "I want to apply for a job at Rasa", we can then reply
 .. note::
     Here's a minimal checklist of files we modified to help our assistant fail gracefully:
 
-      - ``data/nlu.md``: 
+      - ``data/nlu.md``:
           - add training data for the ``out_of_scope`` intent
           - add training data for any specific out of scope intents that you want to handle seperately
       - ``data/stories.md``:
           - add stories for any specific out of scope intents that you want to handle seperately
-      - ``domain.yml``: 
+      - ``domain.yml``:
           - add the ``out_of_scope`` intent
           - add an ``utter_out_of_scope`` response
           - add any specific out of scope intents that you want to handle seperately
           - add responses for any specific out of scope intents that you want to handle seperately
-      - ``actions.py``: 
+      - ``actions.py``:
           - customise ``ActionDefaultAskAffirmation`` to suggest intents for the user to choose from
-      - ``config.yml``: 
+      - ``config.yml``:
           - add the TwoStageFallbackPolicy to the ``policies`` section
           - define the ``nlu_threshold`` for the TwoStageFallbackPolicy
 
@@ -1159,12 +1159,12 @@ you improve your bot and make it more contextual.
 .. note::
     Here's a minimal checklist of files we modified to handle more complex contextual conversations:
 
-      - ``domain.yml``: 
+      - ``domain.yml``:
           - set featurization of slots used by stories to guide the flow of a conversation
-      - ``data/stories.md``: 
+      - ``data/stories.md``:
           - write stories using featurized slots to guide the flow of a conversation
           - add user conversations successfully handled by an ML policy as stories
-      - ``config.yml`` (in the ``policies`` section): 
+      - ``config.yml`` (in the ``policies`` section):
           - set ``max_history`` high enough to account for contextual patterns
           - replace the MemoizationPolicy with the AugmentedMemoizationPolicy
           - add the TEDPolicy
