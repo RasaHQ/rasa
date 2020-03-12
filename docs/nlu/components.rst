@@ -828,16 +828,17 @@ EmbeddingIntentClassifier
           Sometimes more epochs don't influence the performance.
           The lower the number of epochs the faster the model is trained.
         - ``hidden_layers_sizes``:
-          This parameter allows you to define the number of feed forward neural network layers and their output
+          This parameter allows you to define the number of feed forward layers and their output
           dimensions for user messages and intents (default: ``text: [], label: []``).
-          Every entry in the list corresponds to a feed forward neural network layer.
-          For example, if you set ``text: [256, 128]``, we will add two feed forward neural network layers in front of
+          Every entry in the list corresponds to a feed forward layer.
+          For example, if you set ``text: [256, 128]``, we will add two feed forward layers in front of
           the transformer. The vectors of the input tokens (coming from the user message) will be passed on to those
           layers. The first layer will have an output dimension of 256 and the second layer will have an output
-          dimension of 128. If an empty list is used (default behaviour), no feed forward neural network layer will be
+          dimension of 128. If an empty list is used (default behaviour), no feed forward layer will be
           added.
-          Make sure to use only positive integer values. Usually, numbers of power of two are used. Also, the integer
-          values in a list should decrease, values in the list should be smaller or equal the value before.
+          Make sure to use only positive integer values. Usually, numbers of power of two are used.
+          Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
+          value before.
         - ``embedding_dimension``:
           This parameter defines the output dimension of the embedding layers used inside the model (default: ``20``).
           We are using multiple embeddings layers inside the model architecture.
@@ -1030,16 +1031,17 @@ ResponseSelector
           Sometimes more epochs don't influence the performance.
           The lower the number of epochs the faster the model is trained.
         - ``hidden_layers_sizes``:
-          This parameter allows you to define the number of feed forward neural network layers and their output
+          This parameter allows you to define the number of feed forward layers and their output
           dimensions for user messages and intents (default: ``text: [], label: []``).
-          Every entry in the list corresponds to a feed forward neural network layer.
-          For example, if you set ``text: [256, 128]``, we will add two feed forward neural network layers in front of
+          Every entry in the list corresponds to a feed forward layer.
+          For example, if you set ``text: [256, 128]``, we will add two feed forward layers in front of
           the transformer. The vectors of the input tokens (coming from the user message) will be passed on to those
           layers. The first layer will have an output dimension of 256 and the second layer will have an output
-          dimension of 128. If an empty list is used (default behaviour), no feed forward neural network layer will be
+          dimension of 128. If an empty list is used (default behaviour), no feed forward layer will be
           added.
-          Make sure to use only positive integer values. Usually, numbers of power of two are used. Also, the integer
-          values in a list should decrease, values in the list should be smaller or equal the value before.
+          Make sure to use only positive integer values. Usually, numbers of power of two are used.
+          Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
+          value before.
         - ``embedding_dimension``:
           This parameter defines the output dimension of the embedding layers used inside the model (default: ``20``).
           We are using multiple embeddings layers inside the model architecture.
@@ -1549,16 +1551,17 @@ DIETClassifier
           Sometimes more epochs don't influence the performance.
           The lower the number of epochs the faster the model is trained.
         - ``hidden_layers_sizes``:
-          This parameter allows you to define the number of feed forward neural network layers and their output
+          This parameter allows you to define the number of feed forward layers and their output
           dimensions for user messages and intents (default: ``text: [], label: []``).
-          Every entry in the list corresponds to a feed forward neural network layer.
-          For example, if you set ``text: [256, 128]``, we will add two feed forward neural network layers in front of
+          Every entry in the list corresponds to a feed forward layer.
+          For example, if you set ``text: [256, 128]``, we will add two feed forward layers in front of
           the transformer. The vectors of the input tokens (coming from the user message) will be passed on to those
           layers. The first layer will have an output dimension of 256 and the second layer will have an output
-          dimension of 128. If an empty list is used (default behaviour), no feed forward neural network layer will be
+          dimension of 128. If an empty list is used (default behaviour), no feed forward layer will be
           added.
-          Make sure to use only positive integer values. Usually, numbers of power of two are used. Also, the integer
-          values in a list should decrease, values in the list should be smaller or equal the value before.
+          Make sure to use only positive integer values. Usually, numbers of power of two are used.
+          Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
+          value before.
         - ``embedding_dimension``:
           This parameter defines the output dimension of the embedding layers used inside the model (default: ``20``).
           We are using multiple embeddings layers inside the model architecture.
