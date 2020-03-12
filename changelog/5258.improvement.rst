@@ -4,12 +4,12 @@ Added ``PikaEventBroker`` support for publishing to multiple queues. The former
 
 .. code-block:: yaml
 
-  event_broker:
-    type: pika
-    url: localhost
-    username: username
-    password: password
-    queues:
-      - queue-1
-      - queue-2
-      - queue-3
+    event_broker:
+      type: pika
+      url: localhost
+      username: username
+      password: password
+      queues:
+        - queue-1
+        - queue-2
+        - queue-3
