@@ -4,8 +4,9 @@ LABEL = "label"
 HIDDEN_LAYERS_SIZES = "hidden_layers_sizes"
 SHARE_HIDDEN_LAYERS = "share_hidden_layers"
 
-DIET_MODEL = "diet_model"
+DIET_ENCODER = "diet_encoder"
 LSTM_SIZE = "lstm_size"
+LSTM_LAYERS = "lstm_layers"
 
 TRANSFORMER_SIZE = "transformer_size"
 NUM_TRANSFORMER_LAYERS = "number_of_transformer_layers"

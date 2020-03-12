@@ -644,7 +644,6 @@ class LSTMEncoder(tf.keras.layers.Layer):
         units: int,
         reg_lambda: float,
         dropout_rate: float = 0.1,
-        sparsity: float = 0.8,
         unidirectional: bool = False,
         name: Optional[Text] = None,
     ) -> None:
@@ -653,6 +652,7 @@ class LSTMEncoder(tf.keras.layers.Layer):
         self._dropout = tf.keras.layers.Dropout(dropout_rate)
 
         regularizer = tf.keras.regularizers.l2(reg_lambda)
+
         self._lstm_layers = []
         for _ in range(num_layers):
             lstm = tf.keras.layers.LSTM(

@@ -38,8 +38,9 @@ from rasa.nlu.training_data import TrainingData
 from rasa.nlu.model import Metadata
 from rasa.nlu.training_data import Message
 from rasa.utils.tensorflow.constants import (
-    DIET_MODEL,
+    DIET_ENCODER,
     LSTM_SIZE,
+    LSTM_LAYERS,
     LABEL,
     HIDDEN_LAYERS_SIZES,
     SHARE_HIDDEN_LAYERS,
@@ -113,7 +114,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     # please make sure to update the docs when changing a default parameter
     defaults = {
         # FIXME: Thomas - make actual defaults from this gibberish
-        # LSTM_SIZE: 256,
+        LSTM_SIZE: 256,
+        LSTM_LAYERS: 2,
         # DIET_MODEL: "lstm",
         # ## Architecture of the used neural network
         # Hidden layer sizes for layers before the embedding layers for user message
@@ -1109,13 +1111,12 @@ class DIET(RasaModel):
         # print('=======================================================')
 
         ## FIXME: Proof of concept to see whether it works in principle, refactor later!
-        if self.config[NUM_TRANSFORMER_LAYERS] > 0:
+        if self.config[LSTM_LAYERS] > 0:
             self._tf_layers[f"{name}_transformer"] = LSTMEncoder(
-                num_layers=self.config[NUM_TRANSFORMER_LAYERS],
-                units=self.config[TRANSFORMER_SIZE],
+                num_layers=self.config[LSTM_LAYERS],
+                units=self.config[LSTM_SIZE],
                 reg_lambda=self.config[REGULARIZATION_CONSTANT],
                 dropout_rate=self.config[DROP_RATE],
-                sparsity=self.config[WEIGHT_SPARSITY],
                 unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
                 name=f"{name}_encoder",
             )
