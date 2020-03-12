@@ -898,18 +898,13 @@ Don’t forget to add a few end to end stories to your ``test_stories.md`` for t
       - ``data/nlu.md``:
           - add training data for an ``explain`` intent
       - ``domain.yml``:
-          - specify that intent ``greet`` should trigger ``action_greet_user`` in the ``intents`` section
-          - add ``action_greet_user`` to the ``actions`` section
-          - set the type of ``requested_slot`` to categorical
-              - add all the required slots from the ``sales_form`` as values
+          - map intent ``greet`` to  ``action_greet_user``
+          - make ``requested_slot`` a categorical slots with all required slots as values
           - add the ``explain`` intent
-          - add responses for contextual question interruptions (``explain``)
+          - add responses for contextual question interruptions
       - ``data/stories.md``:
           - remove stories using mapped intents if you have them
-          - add stories with FAQ interruptions in the middle of filling a form
-          - add stories with contextual question interruptions  (``explain``) in the middle of filling a form
-              - specify the value of ``requested_slot`` before the interruption
-              - the response to the interruption should match the value of ``requested_slot``
+          - add stories with FAQ & contextual interruptions in the middle of filling a form
 
 
 .. _failing-gracefully:
