@@ -7,6 +7,7 @@ from rasa.cli.arguments import test as arguments
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
+    DEFAULT_E2E_TESTS_PATH,
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_MODELS_PATH,
     DEFAULT_RESULTS_PATH,
@@ -53,7 +54,7 @@ def add_subparser(
 
     test_core_parser.set_defaults(func=test_core)
     test_nlu_parser.set_defaults(func=test_nlu)
-    test_parser.set_defaults(func=test)
+    test_parser.set_defaults(func=test, e2e=True, stories=DEFAULT_E2E_TESTS_PATH)
 
 
 def test_core(args: argparse.Namespace) -> None:
