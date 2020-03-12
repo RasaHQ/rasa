@@ -656,8 +656,7 @@ should be handled by writing regular stories, so your model can learn this behav
 .. note::
     Here's a minimal checklist of files we modified to handle business logic using a form action:
 
-      - ``actions.py``:
-              - Define the form action, including the ``required_slots``, ``slot_mappings`` and ``submit`` methods
+      - ``actions.py``: Define the form action, including the ``required_slots``, ``slot_mappings`` and ``submit`` methods
       - ``data/nlu.md``:
           - Add examples for an intent to activate the form
           - Add examples for an ``inform`` intent to fill the form
@@ -666,8 +665,7 @@ should be handled by writing regular stories, so your model can learn this behav
           - Add ``utter_ask_{slot}`` responses for all required slots
           - Add your form action to the ``forms`` section
           - Add all intents and entities from your NLU training data
-      - ``data/stories.md``:
-          - Add a story for the form
+      - ``data/stories.md``: Add a story for the form
       - ``config.yml``:
           - Add the ``FormPolicy`` to your policies
           - Add entity extractors to your pipeline
@@ -893,18 +891,16 @@ Don’t forget to add a few end to end stories to your ``test_stories.md`` for t
 .. note::
     Here's a minimal checklist of  of files we modified to handle unexpected user input:
 
-      - ``actions.py``:
-          - define ``action_greet``
-      - ``data/nlu.md``:
-          - add training data for an ``explain`` intent
+      - ``actions.py``: Define ``action_greet``
+      - ``data/nlu.md``: Add training data for an ``explain`` intent
       - ``domain.yml``:
-          - map intent ``greet`` to  ``action_greet_user``
-          - make ``requested_slot`` a categorical slots with all required slots as values
-          - add the ``explain`` intent
-          - add responses for contextual question interruptions
+          - Map intent ``greet`` to  ``action_greet_user``
+          - Make ``requested_slot`` a categorical slots with all required slots as values
+          - Add the ``explain`` intent
+          - Add responses for contextual question interruptions
       - ``data/stories.md``:
-          - remove stories using mapped intents if you have them
-          - add stories with FAQ & contextual interruptions in the middle of filling a form
+          - Remove stories using mapped intents if you have them
+          - Add stories with FAQ & contextual interruptions in the middle of filling a form
 
 
 .. _failing-gracefully:
@@ -1011,20 +1007,16 @@ let’s say the user asks "I want to apply for a job at Rasa", we can then reply
     Here's a minimal checklist of files we modified to help our assistant fail gracefully:
 
       - ``data/nlu.md``:
-          - add training data for the ``out_of_scope`` intent
-          - add training data for any specific out of scope intents that you want to handle seperately
+          - Add training data for the ``out_of_scope`` intent & any specific out of scope intents that you want to handle seperately
       - ``data/stories.md``:
-          - add stories for any specific out of scope intents that you want to handle seperately
+          - Add stories for any specific out of scope intents
       - ``domain.yml``:
-          - add the ``out_of_scope`` intent
-          - add an ``utter_out_of_scope`` response
-          - add any specific out of scope intents that you want to handle seperately
-          - add responses for any specific out of scope intents that you want to handle seperately
+          - Add the ``out_of_scope`` intent & any specific out of scope intents
+          - Add an ``utter_out_of_scope`` response & responses for any specific out of scope intents
       - ``actions.py``:
-          - customise ``ActionDefaultAskAffirmation`` to suggest intents for the user to choose from
+          - Customise ``ActionDefaultAskAffirmation`` to suggest intents for the user to choose from
       - ``config.yml``:
-          - add the TwoStageFallbackPolicy to the ``policies`` section
-          - define the ``nlu_threshold`` for the TwoStageFallbackPolicy
+          - Add the TwoStageFallbackPolicy to the ``policies`` section
 
 
 .. _more-complex-contextual-conversations:
@@ -1150,16 +1142,3 @@ Since the ML policy generalized well in this situation, it makes sense to add th
 to your training data to continuously improve your bot and help the ML generalize even
 better in future. `Rasa X <https://rasa.com/docs/rasa-x/>`_ is a tool that can help
 you improve your bot and make it more contextual.
-
-.. note::
-    Here's a minimal checklist of files we modified to handle more complex contextual conversations:
-
-      - ``domain.yml``:
-          - set featurization of slots used by stories to guide the flow of a conversation
-      - ``data/stories.md``:
-          - write stories using featurized slots to guide the flow of a conversation
-          - add user conversations successfully handled by an ML policy as stories
-      - ``config.yml`` (in the ``policies`` section):
-          - set ``max_history`` high enough to account for contextual patterns
-          - replace the MemoizationPolicy with the AugmentedMemoizationPolicy
-          - add the TEDPolicy
