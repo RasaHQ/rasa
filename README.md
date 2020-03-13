@@ -71,9 +71,7 @@ questions.
 - [License](#license)
 
 ### How to contribute
-We are very happy to receive and merge your contributions! 
-You can find more information about how to contribute to Rasa (in lots of
-different ways!) [here](http://rasa.com/community/contribute).
+We are very happy to receive and merge your contributions into this repository! 
 
 To contribute via pull request, follow these steps:
 
@@ -83,6 +81,9 @@ To contribute via pull request, follow these steps:
 3. Create a pull request describing your changes
 
 For more detailed instructions on how to contribute code, check out these [code contributor guidelines](CONTRIBUTING.md).
+
+You can find more information about how to contribute to Rasa (in lots of
+different ways!) [on our website.](http://rasa.com/community/contribute).
 
 Your pull request will be reviewed by a maintainer, who will get
 back to you about any necessary changes or questions. You will
