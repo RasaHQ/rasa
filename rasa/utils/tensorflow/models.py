@@ -233,8 +233,8 @@ class RasaModel(tf.keras.models.Model):
         for batch_in in dataset_function(batch_size):
             call_model_function(batch_in)
 
+    @staticmethod
     def _get_tf_call_model_function(
-        self,
         dataset_function: Callable,
         call_model_function: Callable,
         eager: bool,
