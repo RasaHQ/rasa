@@ -1,3 +1,4 @@
+import itertools
 import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
@@ -188,7 +189,7 @@ def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Compo
         pipeline: A list of :class:`rasa.nlu.components.Component`s.
 
     Returns:
-        True if any of the `components` are in the `pipeline`, else False.
+        `True` if any of the `components` are in the `pipeline`, else `False`.
 
     """
     return any(
@@ -253,7 +254,7 @@ def validate_required_components_from_data(
                 "To featurize lookup tables, add a 'DIETClassifier' or a 'CRFEntityExtractor' with "
                 "the 'pattern' feature to your pipeline."
             )
-        else:
+        elif any_components_in_pipeline(["CRFEntityExtractor"], pipeline):
             crf_components = [c for c in pipeline if c.name == "CRFEntityExtractor"]
             # check to see if any of the possible CRFEntityExtractors will featurize `pattern`
             has_pattern_feature = False
