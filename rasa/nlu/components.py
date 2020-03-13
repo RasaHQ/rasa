@@ -181,7 +181,16 @@ def validate_pipeline(pipeline: List["Component"]) -> None:
 
 
 def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]):
-    """Check if any of the provided components are listed in the pipeline."""
+    """Check if any of the provided components are listed in the pipeline.
+
+    Args:
+        components: A list of :class:`rasa.nlu.components.Component`s to check.
+        pipeline: A list of :class:`rasa.nlu.components.Component`s.
+
+    Returns:
+        True if any of the `components` are in the `pipeline`, else False.
+
+    """
     return any(
         [any([component.name == c for component in pipeline]) for c in components]
     )
@@ -193,7 +202,7 @@ def validate_required_components_from_data(
     """Validates that all components are present in the pipeline based on data.
 
     Args:
-        pipeline: The list of the :class:`rasa.nlu.components.Component`.
+        pipeline: The list of the :class:`rasa.nlu.components.Component`s.
         data: The :class:`rasa.nlu.training_data.training_data.TrainingData`.
     """
 
@@ -235,7 +244,9 @@ def validate_required_components_from_data(
         )
 
     if data.lookup_tables:
-        if not any_components_in_pipeline(["CRFEntityExtractor", "DIETClassifier"], pipeline):
+        if not any_components_in_pipeline(
+            ["CRFEntityExtractor", "DIETClassifier"], pipeline
+        ):
             raise_warning(
                 "You have defined training data consisting of lookup tables, but "
                 "your NLU pipeline does not include any components that use these features. "
