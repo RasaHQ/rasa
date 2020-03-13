@@ -1100,6 +1100,11 @@ ResponseSelector
             "use_masked_language_model": False
             # Name of the intent for which this response selector is to be trained
             "retrieval_intent: None
+            # If you want to use tensorboard to visualize training metrics,
+            # set this option to a valid output directory.
+            # You can view the training metrics after training via tensorboard via
+            # ``tensorboard --logdir <path-to-given-directory>``
+            "tensorboard_log_directory": None
 
 
 Entity Extractors
@@ -1659,3 +1664,8 @@ DIETClassifier
             # examples per entity are required.
             # Rule of thumb: you should have more than 100 examples per entity.
             "BILOU_flag": True
+            # If you want to use tensorboard to visualize training metrics,
+            # set this option to a valid output directory.
+            # You can view the training metrics after training via tensorboard via
+            # ``tensorboard --logdir <path-to-given-directory>``
+            "tensorboard_log_directory": None
