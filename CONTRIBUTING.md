@@ -33,9 +33,9 @@
 
 ## How to open a GitHub issue & file a bug report
 
-### Working on a new feature or filing a bug report
+### Working on a new feature or fixing a bug
 
-If you would like to add a new feature or file a new bug report, we prefer that you open a new issue on the Rasa repository before creating a pull request.
+If you would like to add a new feature or fix an existing bug, we prefer that you open a new issue on the Rasa repository before creating a pull request.
 
 It’s important to note that when opening an issue, you should first do a quick search of existing issues to make sure your suggestion hasn’t already been added as an issue.
 If your issue doesn’t already exist, and you’re ready to create a new one, make sure to state what you would like to implement, improve or bugfix. We have provided a template to make this process easier for you.
