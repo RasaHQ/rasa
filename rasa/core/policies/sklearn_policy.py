@@ -124,7 +124,9 @@ class SklearnPolicy(Policy):
         **kwargs: Any,
     ) -> None:
 
-        training_data = self.featurize_for_training(training_trackers, domain, interpreter, **kwargs)
+        training_data = self.featurize_for_training(
+            training_trackers, domain, interpreter, **kwargs
+        )
 
         X, y = self._extract_training_data(training_data)
         self._train_params.update(kwargs)
@@ -161,7 +163,10 @@ class SklearnPolicy(Policy):
         return y_filled
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain, interpreter: Optional[RasaCoreInterpreter]
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: Optional[RasaCoreInterpreter],
     ) -> List[float]:
         X = self.featurizer.create_X([tracker], domain)
         Xt = self._preprocess_data(X)

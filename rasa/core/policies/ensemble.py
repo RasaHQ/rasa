@@ -118,7 +118,7 @@ class PolicyEnsemble:
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        interpreter: Optional[RasaCoreInterpreter], 
+        interpreter: Optional[RasaCoreInterpreter],
         **kwargs: Any,
     ) -> None:
         if training_trackers:
@@ -358,7 +358,10 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         return not (is_memo or is_augmented)
 
     def probabilities_using_best_policy(
-        self, tracker: DialogueStateTracker, domain: Domain, interpreter: Optional[RasaCoreInterpreter]
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: Optional[RasaCoreInterpreter],
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
         import numpy as np
 
