@@ -48,7 +48,7 @@ The Rasa team will then get in touch with you to discuss if the proposed feature
 
 ### Working on an existing feature
 
-If you choose to work on an existing issue, check out the Rasa contributors board to find existing open issues you can work on.
+If you want to contribute code, but don't know what to work on, check out the Rasa contributors board to find existing open issues.
 
 The issues are handpicked by the Rasa team to have labels which correspond to the difficulty/estimated time needed to resolve the issue.
 
