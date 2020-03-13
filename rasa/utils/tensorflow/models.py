@@ -46,6 +46,8 @@ class RasaModel(tf.keras.models.Model):
 
         self.train_summary_writer = None
         self.test_summary_writer = None
+        self.model_summary_file = None
+
         self._set_up_tensorboard_writer(tensorboard_log_dir)
 
     def _set_up_tensorboard_writer(
@@ -63,6 +65,8 @@ class RasaModel(tf.keras.models.Model):
 
             self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
             self.test_summary_writer = tf.summary.create_file_writer(test_log_dir)
+
+            self.model_summary_file = f"{tensorboard_log_dir}/model_summary.txt"
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -145,6 +149,9 @@ class RasaModel(tf.keras.models.Model):
                 postfix_dict.update(val_results)
 
             progress_bar.set_postfix(postfix_dict)
+
+        if self.model_summary_file is not None:
+            self._write_model_summary()
 
         self._training = None  # training phase should be defined when building a graph
         if not disable:
@@ -385,6 +392,37 @@ class RasaModel(tf.keras.models.Model):
             )
         else:
             return int(batch_size[0])
+
+    def _write_model_summary(self):
+        total_number_of_variables = np.sum(
+            [np.prod(v.shape) for v in self.trainable_variables]
+        )
+        layers = [
+            f"{layer.name} ({layer.dtype.name}) "
+            f"[{'x'.join([str(s) for s in layer.shape])}]"
+            for layer in self.trainable_variables
+        ]
+        layers.reverse()
+
+        file = open(self.model_summary_file, "w")
+
+        file.write("-" * 100)
+        file.write("\n")
+        file.write("Variables: name (type) [shape]")
+        file.write("\n")
+        file.write("-" * 100)
+        file.write("\n")
+        for layer in layers:
+            file.write(layer)
+            file.write("\n")
+        file.write("-" * 100)
+        file.write("\n")
+        file.write(f"Total size of variables: {total_number_of_variables}")
+        file.write("\n")
+        file.write("-" * 100)
+        file.write("\n")
+
+        file.close()
 
     def compile(self, *args, **kwargs) -> None:
         raise Exception(
