@@ -202,4 +202,4 @@ Let the world know that you have become a contributor to the Rasa open source pr
 
 #### 10. Non-code contributions
 
-Contributing doesn’t start and end with code. You can support the project by planning community events, creating tutorials, helping fellow community members find answers to their questions or translating documentation and news. Every contribution matters! You can find more details [here](https://rasa.com/community/contribute/).
+Contributing doesn’t start and end with code. You can support the project by planning community events, creating tutorials, helping fellow community members find answers to their questions or translating documentation and news. Every contribution matters! You can find more details [on our website](https://rasa.com/community/contribute/).
