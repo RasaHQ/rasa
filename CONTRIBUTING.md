@@ -197,7 +197,7 @@ Finally, if your contribution is accepted, the Rasa team member will merge it to
 
 #### 9. Share your contributions with the world!
 
-Contributing to open source can take a lot of time and effort so you should be proud of the great work you have done!
+Contributing to open source can take a lot of time and effort, so you should be proud of the great work you have done!
 Let the world know that you have become a contributor to the Rasa open source project by posting about it on your social media (make sure to tag @RasaHQ as well), mention the contribution on your CV and get ready to get some really cool [Rasa contributor swag](https://blog.rasa.com/announcing-the-rasa-contributor-program/)!
 
 #### 10. Non-code contributions
