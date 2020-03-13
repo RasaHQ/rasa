@@ -82,7 +82,7 @@ To contribute via pull request, follow these steps:
 2. Write your code, tests and documentation, and format them with ``black``
 3. Create a pull request describing your changes
 
-For more detailed instructions on how to contribute code, check out these [code contributor guidelines](https://github.com/RasaHQ/rasa/blob/master/CONTRIBUTING.md). 
+For more detailed instructions on how to contribute code, check out these [code contributor guidelines](CONTRIBUTING.md).
 
 Your pull request will be reviewed by a maintainer, who will get
 back to you about any necessary changes or questions. You will
