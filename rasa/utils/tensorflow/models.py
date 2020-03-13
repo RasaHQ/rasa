@@ -406,21 +406,12 @@ class RasaModel(tf.keras.models.Model):
 
         file = open(self.model_summary_file, "w")
 
-        file.write("-" * 100)
-        file.write("\n")
-        file.write("Variables: name (type) [shape]")
-        file.write("\n")
-        file.write("-" * 100)
-        file.write("\n")
+        file.write("Variables: name (type) [shape]\n\n")
         for layer in layers:
             file.write(layer)
             file.write("\n")
-        file.write("-" * 100)
         file.write("\n")
         file.write(f"Total size of variables: {total_number_of_variables}")
-        file.write("\n")
-        file.write("-" * 100)
-        file.write("\n")
 
         file.close()
 
