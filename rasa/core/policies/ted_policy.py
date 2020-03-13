@@ -1,16 +1,10 @@
 import copy
 import logging
 import os
-<<<<<<< HEAD
 from pathlib import Path
-<<<<<<< HEAD
-=======
+
 import pickle
 import scipy.sparse
->>>>>>> processing of sparse input features by TED
-=======
-import scipy.sparse
->>>>>>> changed signature in all policies to take Interpreter as input
 
 import numpy as np
 import tensorflow as tf
@@ -642,20 +636,10 @@ class TED(RasaModel):
 
         # mask different length sequences
         # if there is at least one `-1` it should be masked
-<<<<<<< HEAD
-<<<<<<< HEAD
-        mask = tf.sign(tf.reduce_max(dialogue_in, axis=-1) + 1)
-=======
-        if isinstance(dialogue_in, tf.SparseTensor):
-            dialogue_in = self._tf_layers["sparse_to_dense.dialogue_features"](dialogue_in)
-        mask = tf.sign(tf.reduce_max(dialogue_in, -1) + 1)
->>>>>>> processing of sparse input features by TED
-=======
 
         if isinstance(dialogue_in, tf.SparseTensor):
             dialogue_in = self._tf_layers["sparse_to_dense.dialogue_features"](dialogue_in)
         mask = tf.sign(tf.reduce_max(dialogue_in, axis=-1) + 1)
->>>>>>> changed signature in all policies to take Interpreter as input
 
         dialogue = self._tf_layers[f"ffnn.{DIALOGUE}"](dialogue_in, self._training)
         dialogue_transformed = self._tf_layers["transformer"](
