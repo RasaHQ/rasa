@@ -6,7 +6,8 @@ import os
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Any
 from scipy.sparse import csr_matrix
-import re, string
+import re
+import string
 
 import rasa.utils.io
 from rasa.core import utils
@@ -713,6 +714,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     ) -> Tuple[List[List[Optional[Dict[Text, float]]]], List[List[Text]]]:
         trackers_as_states_e2e = []
         trackers_as_actions_e2e = []
+        hashed_examples = set()
         pbar = tqdm(
             trackers, desc="Processed trackers e2e", disable=is_logging_disabled()
         )
