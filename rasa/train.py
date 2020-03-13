@@ -20,8 +20,6 @@ from rasa.cli.utils import (
 from rasa.constants import DEFAULT_MODELS_PATH, DEFAULT_CORE_SUBDIRECTORY_NAME
 from rasa.core.interpreter import RasaCoreInterpreter
 
-
-
 def train(
     domain: Text,
     config: Text,
@@ -375,7 +373,7 @@ async def _train_core_with_validated_data(
             output_path=os.path.join(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME),
             policy_config=config,
             additional_arguments=additional_arguments,
-            interpreter = interpreter
+            interpreter=interpreter,
         )
         print_color("Core model training completed.", color=bcolors.OKBLUE)
 
