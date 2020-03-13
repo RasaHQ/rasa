@@ -53,11 +53,9 @@ class RasaModel(tf.keras.models.Model):
             test_log_dir = (
                 f"{tensorboard_log_dir}/logs/gradient_tape/{current_time}/test"
             )
-            func_log_dir = f"{tensorboard_log_dir}/logs/func/{current_time}/func"
 
             self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
             self.test_summary_writer = tf.summary.create_file_writer(test_log_dir)
-            self.func_summary_writer = tf.summary.create_file_writer(func_log_dir)
 
             self.tensorboard_usage = True
 
@@ -248,15 +246,7 @@ class RasaModel(tf.keras.models.Model):
         tf_call_model_function = tf.function(
             call_model_function, input_signature=[init_dataset.element_spec]
         )
-
-        if self.tensorboard_usage:
-            tf.summary.trace_on(graph=True)
-
         tf_call_model_function(next(iter(init_dataset)))
-
-        if self.tensorboard_usage:
-            with self.func_summary_writer.as_default():
-                tf.summary.trace_export(name="rasa_model", step=0)
 
         logger.debug(f"Finished building tensorflow {phase} graph.")
 
