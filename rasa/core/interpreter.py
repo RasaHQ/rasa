@@ -282,16 +282,14 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         self.interpreter = Interpreter.load(self.model_directory)
 
+
 class RasaCoreInterpreter(NaturalLanguageInterpreter):
-    def __init__(
-        self,
-    ):
+    def __init__(self,):
         self._load_interpreter()
 
     def parse(self, text: Text):
         result = self.interpreter.parse(text, only_output_properties=False)
         return result
-
 
     def _load_interpreter(self) -> None:
         from rasa.nlu.model import Interpreter, Trainer

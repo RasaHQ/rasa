@@ -135,6 +135,7 @@ class MemoizationPolicy(Policy):
 
     def _create_feature_key(self, states: List[Dict]) -> Text:
         from rasa.utils import io
+
         new_states = []
         for state in states:
             new_state = {}
@@ -145,12 +146,9 @@ class MemoizationPolicy(Policy):
                     new_state[key] = value.text
                 else:
                     new_state[key] = value
-           
 
             new_states.append(new_state)
 
-
-        
         feature_str = json.dumps(new_states, sort_keys=True).replace('"', "")
         if self.ENABLE_FEATURE_STRING_COMPRESSION:
             compressed = zlib.compress(bytes(feature_str, io.DEFAULT_ENCODING))
@@ -194,7 +192,10 @@ class MemoizationPolicy(Policy):
         return self._recall_states(states)
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain, interpreter: Optional[RasaCoreInterpreter]
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: Optional[RasaCoreInterpreter],
     ) -> List[float]:
         """Predicts the next action the bot should take after seeing the tracker.
 
