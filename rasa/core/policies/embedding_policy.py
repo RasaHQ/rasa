@@ -38,6 +38,7 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     AUTO,
     BALANCED,
+    TENSORBOARD_LOG_DIR,
 )
 from rasa.utils.tensorflow.models import RasaModel
 import rasa.utils.common as common_utils
@@ -140,6 +141,9 @@ class EmbeddingPolicy(TEDPolicy):
         # How many examples to use for hold out validation set
         # Large values may hurt performance, e.g. model accuracy.
         EVAL_NUM_EXAMPLES: 0,
+        # If you want to use tensorboard to visualize training and validation metrics,
+        # set this option to a valid output directory.
+        TENSORBOARD_LOG_DIR: None,
     }
 
     def __init__(
