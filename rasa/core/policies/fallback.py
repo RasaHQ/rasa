@@ -148,6 +148,11 @@ class FallbackPolicy(Policy):
             tracker.latest_action_name == self.fallback_action_name
             and tracker.latest_action_name != ACTION_LISTEN_NAME
         ):
+            logger.debug(
+                "Predicted 'action_listen' after fallback action '{}'".format(
+                    self.fallback_action_name
+                )
+            )
             result = self._default_predictions(domain)
             idx = domain.index_for_action(ACTION_LISTEN_NAME)
             result[idx] = 1.0
