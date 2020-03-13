@@ -1,0 +1,7 @@
+Add option ``tensorboard_log_directory`` to ``DIETClasifier``, ``ResponseSelector`` and
+``TEDPolicy``.
+
+By default ``tensorboard_log_directory`` is ``None``. If a valid directory is provided,
+metrics are written during training. After the model is trained you can take a look
+at the training metrics in tensorboard. Execute ``tensorboard --logdir <path-to-given-directory>``.
+Make sure tensorboard is installed (``pip install tensorboard``).
