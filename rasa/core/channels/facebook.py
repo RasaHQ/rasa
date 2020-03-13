@@ -148,7 +148,7 @@ class MessengerBot(OutputChannel):
     ) -> None:
         """Send a message through this channel."""
 
-        for message_part in text.split("\n\n"):
+        for message_part in text.strip().split("\n\n"):
             self.send(recipient_id, FBText(text=message_part))
 
     async def send_image_url(
