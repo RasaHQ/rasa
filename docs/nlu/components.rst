@@ -15,6 +15,10 @@ Components
    ``supervised_embeddings``, and ``spacy_sklearn`` is now known as
    ``pretrained_embeddings_spacy``. Please update your code if you are using these.
 
+.. note::
+    We deprecated all pre-defined pipeline templates. Take a look at :ref:`choosing-a-pipeline`
+    to decide on what components you should use in your configuration file.
+
 This is a reference of the configuration options for every built-in
 component in Rasa NLU. If you want to build a custom component, check
 out :ref:`custom-nlu-components`.
@@ -32,8 +36,8 @@ MitieNLP
 ~~~~~~~~
 
 :Short: MITIE initializer
-:Outputs: nothing
-:Requires: nothing
+:Outputs: Nothing
+:Requires: Nothing
 :Description:
     Initializes mitie structures. Every mitie component relies on this,
     hence this should be put at the beginning
@@ -57,15 +61,15 @@ MitieNLP
 SpacyNLP
 ~~~~~~~~
 
-:Short: spacy language initializer
-:Outputs: nothing
-:Requires: nothing
+:Short: spaCy language initializer
+:Outputs: Nothing
+:Requires: Nothing
 :Description:
-    Initializes spacy structures. Every spacy component relies on this, hence this should be put at the beginning
-    of every pipeline that uses any spacy components.
+    Initializes spaCy structures. Every spaCy component relies on this, hence this should be put at the beginning
+    of every pipeline that uses any spaCy components.
 :Configuration:
     Language model, default will use the configured language.
-    If the spacy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
+    If the spaCy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
     the model name can be specified using this configuration variable. The name will be passed to ``spacy.load(name)``.
 
     .. code-block:: yaml
@@ -82,6 +86,217 @@ SpacyNLP
           # between these two words, therefore setting this to `true`.
           case_sensitive: false
 
+    For more information on how to obtain the spaCy models, head over to
+    :ref:`installing SpaCy <install-spacy>`.
+
+.. _HFTransformersNLP:
+
+HFTransformersNLP
+~~~~~~~~~~~~~~~~~
+
+:Short: HuggingFace's Transformers based pre-trained language model initializer
+:Outputs: Nothing
+:Requires: Nothing
+:Description:
+    Initializes specified pre-trained language model from HuggingFace's `Transformers library
+    <https://huggingface.co/transformers/>`__.  The component applies language model specific tokenization and
+    featurization to compute sequence and sentence level representations for each example in the training data.
+    Include :ref:`LanguageModelTokenizer` and :ref:`LanguageModelFeaturizer` to utilize the output of this
+    component for downstream NLU models.
+
+     .. note:: To use ``HFTransformersNLP`` component, install Rasa Open Source with ``pip install rasa[transformers]``.
+
+:Configuration:
+    .. code-block:: yaml
+
+        pipeline:
+          - name: HFTransformersNLP
+
+            # Name of the language model to use
+            model_name: "bert"
+
+            # Shortcut name to specify architecture variation of the above model. Full list of supported architectures
+            # can be found at https://huggingface.co/transformers/pretrained_models.html . If left empty, it uses the
+            # default model architecture that original transformers library loads
+            model_weights: "bert-base-uncased"
+
+        #    +----------------+--------------+-------------------------+
+        #    | Language Model | Parameter    | Default value for       |
+        #    |                | "model_name" | "model_weights"         |
+        #    +----------------+--------------+-------------------------+
+        #    | BERT           | bert         | bert-base-uncased       |
+        #    +----------------+--------------+-------------------------+
+        #    | GPT            | gpt          | openai-gpt              |
+        #    +----------------+--------------+-------------------------+
+        #    | GPT-2          | gpt2         | gpt2                    |
+        #    +----------------+--------------+-------------------------+
+        #    | XLNet          | xlnet        | xlnet-base-cased        |
+        #    +----------------+--------------+-------------------------+
+        #    | DistilBERT     | distilbert   | distilbert-base-uncased |
+        #    +----------------+--------------+-------------------------+
+        #    | RoBERTa        | roberta      | roberta-base            |
+        #    +----------------+--------------+-------------------------+
+
+
+
+.. _tokenizers:
+
+Tokenizers
+----------
+
+Tokenizers split text into tokens.
+If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
+modeling hierarchical intent structure, use these flags with any tokenizer:
+
+- ``intent_tokenization_flag`` indicates whether to tokenize intent labels or not. Set it to ``True``, so that intent
+  labels are tokenized.
+- ``intent_split_symbol`` sets the delimiter string to split the intent labels, default is underscore
+  (``_``).
+
+    .. note:: All tokenizer add an additional token ``__CLS__`` to the end of the list of tokens when tokenizing
+              text and responses.
+
+.. _WhitespaceTokenizer:
+
+WhitespaceTokenizer
+~~~~~~~~~~~~~~~~~~~
+
+:Short: Tokenizer using whitespaces as a separator
+:Outputs: ``tokens`` for user messages, responses (if present), and intents (if specified)
+:Requires: Nothing
+:Description:
+    Creates a token for every whitespace separated character sequence.
+:Configuration:
+    Make the tokenizer case insensitive by adding the ``case_sensitive: False`` option, the
+    default being ``case_sensitive: True``.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "WhitespaceTokenizer"
+          # Flag to check whether to split intents
+          "intent_tokenization_flag": False
+          # Symbol on which intent should be split
+          "intent_split_symbol": "_"
+          # Text will be tokenized with case sensitive as default
+          "case_sensitive": True
+
+
+JiebaTokenizer
+~~~~~~~~~~~~~~
+
+:Short: Tokenizer using Jieba for Chinese language
+:Outputs: ``tokens`` for user messages, responses (if present), and intents (if specified)
+:Requires: Nothing
+:Description:
+    Creates tokens using the Jieba tokenizer specifically for Chinese
+    language. It will only work for the Chinese language.
+
+    .. note::
+        To use ``JiebaTokenizer`` you need to install Jieba with ``pip install jieba``.
+
+:Configuration:
+    User's custom dictionary files can be auto loaded by specifying the files' directory path via ``dictionary_path``.
+    If the ``dictionary_path`` is ``None`` (the default), then no custom dictionary will be used.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "JiebaTokenizer"
+          dictionary_path: "path/to/custom/dictionary/dir"
+          # Flag to check whether to split intents
+          "intent_tokenization_flag": False
+          # Symbol on which intent should be split
+          "intent_split_symbol": "_"
+
+
+MitieTokenizer
+~~~~~~~~~~~~~~
+
+:Short: Tokenizer using MITIE
+:Outputs: ``tokens`` for user messages, responses (if present), and intents (if specified)
+:Requires: :ref:`MitieNLP`
+:Description: Creates tokens using the MITIE tokenizer.
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "MitieTokenizer"
+          # Flag to check whether to split intents
+          "intent_tokenization_flag": False
+          # Symbol on which intent should be split
+          "intent_split_symbol": "_"
+
+SpacyTokenizer
+~~~~~~~~~~~~~~
+
+:Short: Tokenizer using spaCy
+:Outputs: ``tokens`` for user messages, responses (if present), and intents (if specified)
+:Requires: :ref:`SpacyNLP`
+:Description:
+    Creates tokens using the spaCy tokenizer.
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "SpacyTokenizer"
+          # Flag to check whether to split intents
+          "intent_tokenization_flag": False
+          # Symbol on which intent should be split
+          "intent_split_symbol": "_"
+
+.. _ConveRTTokenizer:
+
+ConveRTTokenizer
+~~~~~~~~~~~~~~~~
+
+:Short: Tokenizer using `ConveRT <https://github.com/PolyAI-LDN/polyai-models#convert>`__ model.
+:Outputs: ``tokens`` for user messages, responses (if present), and intents (if specified)
+:Requires: Nothing
+:Description:
+    Creates tokens using the ConveRT tokenizer. Must be used whenever the :ref:`ConveRTFeaturizer` is used.
+:Configuration:
+    Make the tokenizer case insensitive by adding the ``case_sensitive: False`` option, the
+    default being ``case_sensitive: True``.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "ConveRTTokenizer"
+          # Flag to check whether to split intents
+          "intent_tokenization_flag": False
+          # Symbol on which intent should be split
+          "intent_split_symbol": "_"
+          # Text will be tokenized with case sensitive as default
+          "case_sensitive": True
+
+
+.. _LanguageModelTokenizer:
+
+LanguageModelTokenizer
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Short: Tokenizer from pre-trained language models
+:Outputs: ``tokens`` for user messages, responses (if present), and intents (if specified)
+:Requires: :ref:`HFTransformersNLP`
+:Description:
+    Creates tokens using the pre-trained language model specified in upstream :ref:`HFTransformersNLP` component.
+    Must be used whenever the :ref:`LanguageModelFeaturizer` is used.
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "LanguageModelTokenizer"
+          # Flag to check whether to split intents
+          "intent_tokenization_flag": False
+          # Symbol on which intent should be split
+          "intent_split_symbol": "_"
+
+
+
 .. _text-featurizers:
 
 Text Featurizers
@@ -93,76 +308,96 @@ As those feature vectors would normally take up a lot of memory, we store them a
 Sparse features only store the values that are non zero and their positions in the vector.
 Thus, we save a lot of memory and are able to train on larger datasets.
 
-By default all featurizers will return a matrix of length (number-of-tokens x feature-dimension).
+By default all featurizers will return a matrix of length ``(number-of-tokens x feature-dimension)``.
 So, the returned matrix will have a feature vector for every token.
 This allows us to train sequence models.
 However, the additional token at the end (e.g. ``__CLS__``) contains features for the complete utterance.
 This feature vector can be used in any non-sequence model.
 The corresponding classifier can therefore decide what kind of features to use.
 
+
+.. _MitieFeaturizer:
+
 MitieFeaturizer
 ~~~~~~~~~~~~~~~
 
-:Short: MITIE intent featurizer
-:Outputs: nothing, used as an input to intent classifiers that need intent features (e.g. ``SklearnIntentClassifier``)
+:Short:
+    Creates a vector representation of user message and response (if specified) using the MITIE featurizer.
+:Outputs: ``dense_features`` for user messages and responses
 :Requires: :ref:`MitieNLP`
 :Type: Dense featurizer
 :Description:
-    Creates feature for intent classification using the MITIE featurizer.
+    Creates features for entity extraction, intent classification, and response classification using the MITIE
+    featurizer.
 
     .. note::
 
-        NOT used by the ``MitieIntentClassifier`` component. Currently, only ``SklearnIntentClassifier`` is able
-        to use precomputed features.
+        NOT used by the ``MitieIntentClassifier`` component. But can be used by any component later in the pipeline
+        that makes use of ``dense_features``.
 
 :Configuration:
+    The sentence vector, i.e. the vector of the ``__CLS__`` token, can be calculated in two different ways, either via
+    mean or via max pooling. You can specify the pooling method in your configuration file with the option ``pooling``.
+    The default pooling method is set to ``mean``.
 
     .. code-block:: yaml
 
         pipeline:
         - name: "MitieFeaturizer"
+          # Specify what pooling operation should be used to calculate the vector of
+          # the __CLS__ token. Available options: 'mean' and 'max'.
+          "pooling": "mean"
 
 
+.. _SpacyFeaturizer:
 
 SpacyFeaturizer
 ~~~~~~~~~~~~~~~
 
-:Short: spacy intent featurizer
-:Outputs: nothing, used as an input to intent classifiers that need intent features (e.g. ``SklearnIntentClassifier``)
+:Short:
+    Creates a vector representation of user message and response (if specified) using the spaCy featurizer.
+:Outputs: ``dense_features`` for user messages and responses
 :Requires: :ref:`SpacyNLP`
 :Type: Dense featurizer
 :Description:
-    Creates feature for intent classification using the spacy featurizer.
+    Creates features for entity extraction, intent classification, and response classification using the spaCy
+    featurizer.
 :Configuration:
+    The sentence vector, i.e. the vector of the ``__CLS__`` token, can be calculated in two different ways, either via
+    mean or via max pooling. You can specify the pooling method in your configuration file with the option ``pooling``.
+    The default pooling method is set to ``mean``.
 
     .. code-block:: yaml
 
         pipeline:
         - name: "SpacyFeaturizer"
+          # Specify what pooling operation should be used to calculate the vector of
+          # the __CLS__ token. Available options: 'mean' and 'max'.
+          "pooling": "mean"
 
+
+.. _ConveRTFeaturizer:
 
 ConveRTFeaturizer
 ~~~~~~~~~~~~~~~~~
 
 :Short:
     Creates a vector representation of user message and response (if specified) using
-    `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`_ model.
-:Outputs:
-    nothing, used as an input to intent classifiers and response selectors that need intent features and response
-    features respectively (e.g. ``EmbeddingIntentClassifier`` and ``ResponseSelector``)
+    `ConveRT <https://github.com/PolyAI-LDN/polyai-models>`__ model.
+:Outputs: ``dense_features`` for user messages and responses
 :Requires: :ref:`ConveRTTokenizer`
 :Type: Dense featurizer
 :Description:
-    Creates features for intent classification and response selection.
+    Creates features for entity extraction, intent classification, and response selection.
     Uses the `default signature <https://github.com/PolyAI-LDN/polyai-models#tfhub-signatures>`_ to compute vector
     representations of input text.
 
-    .. warning::
-        Since ``ConveRT`` model is trained only on an english corpus of conversations, this featurizer should only
-        be used if your training data is in english language.
+    .. note::
+        Since ``ConveRT`` model is trained only on an English corpus of conversations, this featurizer should only
+        be used if your training data is in English language.
 
     .. note::
-        To use ``ConveRTFeaturizer`` you need to install additional tensorflow libraries (``tensorflow_text`` and
+        To use ``ConveRTFeaturizer`` you need to install additional TensorFlow libraries (``tensorflow_text`` and
         ``tensorflow_hub``). You should do a pip install of Rasa with ``pip install rasa[convert]`` to install those.
 
 :Configuration:
@@ -173,45 +408,76 @@ ConveRTFeaturizer
         - name: "ConveRTFeaturizer"
 
 
+.. _LanguageModelFeaturizer:
+
+LanguageModelFeaturizer
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Short:
+    Creates a vector representation of user message and response (if specified) using a pre-trained language model.
+:Outputs: ``dense_features`` for user messages and responses
+:Requires: :ref:`HFTransformersNLP`
+:Type: Dense featurizer
+:Description:
+    Creates features for entity extraction, intent classification, and response selection.
+    Uses the pre-trained language model specified in upstream :ref:`HFTransformersNLP` component to compute vector
+    representations of input text.
+
+    .. note::
+        Please make sure that you use a language model which is pre-trained on the same language corpus as that of your
+        training data.
+
+:Configuration:
+
+    Include :ref:`HFTransformersNLP` and :ref:`LanguageModelTokenizer` components before this component. Use
+    :ref:`LanguageModelTokenizer` to ensure tokens are correctly set for all components throughout the pipeline.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "LanguageModelFeaturizer"
+
+
+.. _RegexFeaturizer:
+
 RegexFeaturizer
 ~~~~~~~~~~~~~~~
 
-:Short: regex feature creation to support intent and entity classification
-:Outputs: ``text_features`` and ``tokens.pattern``
-:Requires: nothing
+:Short: Creates a vector representation of user message using regular expressions.
+:Outputs: ``sparse_features`` for user messages and ``tokens.pattern``
+:Requires: ``tokens``
 :Type: Sparse featurizer
 :Description:
     Creates features for entity extraction and intent classification.
-    During training, the regex intent featurizer creates a list of `regular expressions` defined in the training
+    During training the ``RegexFeaturizer`` creates a list of `regular expressions` defined in the training
     data format.
     For each regex, a feature will be set marking whether this expression was found in the input, which will later
     be fed into intent classifier / entity extractor to simplify classification (assuming the classifier has learned
-    during the training phase, that this set feature indicates a certain intent).
-    Regex features for entity extraction are currently only supported by the ``CRFEntityExtractor`` component!
+    during the training phase, that this set feature indicates a certain intent / entity).
+    Regex features for entity extraction are currently only supported by the :ref:`CRFEntityExtractor` and the
+    :ref:`diet-classifier` components!
 
-    .. note:: There needs to be a tokenizer previous to this featurizer in the pipeline!
+:Configuration:
 
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "RegexFeaturizer"
+
+.. _CountVectorsFeaturizer:
 
 CountVectorsFeaturizer
 ~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: Creates bag-of-words representation of user message and label (intent and response) features
-:Outputs:
-   nothing, used as an input to intent classifiers that
-   need bag-of-words representation of intent features
-   (e.g. ``EmbeddingIntentClassifier``)
-:Requires: nothing
+:Short: Creates bag-of-words representation of user messages, intents, and responses.
+:Outputs: ``sparse_features`` for user messages, intents, and responses
+:Requires: ``tokens``
 :Type: Sparse featurizer
 :Description:
     Creates features for intent classification and response selection.
-    Creates bag-of-words representation of user message and label features using
+    Creates bag-of-words representation of user message, intent, and response using
     `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_.
     All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
-
-    .. note::
-        If the words in the model language cannot be split by whitespace,
-        a language-specific tokenizer is required in the pipeline before this component
-        (e.g. using ``JiebaTokenizer`` for Chinese).
 
 :Configuration:
     See `sklearn's CountVectorizer docs <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
@@ -224,11 +490,11 @@ CountVectorsFeaturizer
     .. note::
         Option ‘char_wb’ creates character n-grams only from text inside word boundaries;
         n-grams at the edges of words are padded with space.
-        This option can be used to create `Subword Semantic Hashing <https://arxiv.org/abs/1810.07150>`_
+        This option can be used to create `Subword Semantic Hashing <https://arxiv.org/abs/1810.07150>`_.
 
     .. note::
         For character n-grams do not forget to increase ``min_ngram`` and ``max_ngram`` parameters.
-        Otherwise the vocabulary will contain only single letters
+        Otherwise the vocabulary will contain only single letters.
 
     Handling Out-Of-Vacabulary (OOV) words:
 
@@ -306,10 +572,78 @@ CountVectorsFeaturizer
           OOV_token: None  # string or None
           OOV_words: []  # list of strings
 
+.. _LexicalSyntacticFeaturizer:
+
+LexicalSyntacticFeaturizer
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Short: Creates lexical and syntactic features for a user message to support entity extraction.
+:Outputs: ``sparse_features`` for user messages
+:Requires: ``tokens``
+:Type: Sparse featurizer
+:Description:
+    Creates features for entity extraction.
+    Moves with a sliding window over every token in the user message and creates features according to the
+    configuration (see below). As a default configuration is present, you don't need to specify a configuration.
+:Configuration:
+    You can configure what kind of lexical and syntactic features the featurizer should extract.
+    The following features are available:
+
+    .. code-block:: yaml
+
+        # ==============  ==========================================================================================
+        # Feature Name    Description
+        # ==============  ==========================================================================================
+        # BOS             Checks if the token is at the beginning of the sentence.
+        # EOS             Checks if the token is at the end of the sentence.
+        # low             Checks if the token is lower case.
+        # upper           Checks if the token is upper case.
+        # title           Checks if the token starts with an uppercase character and all remaining characters are
+        #                 lowercased.
+        # digit           Checks if the token contains just digits.
+        # prefix5         Take the first five characters of the token.
+        # prefix2         Take the first two characters of the token.
+        # suffix5         Take the last five characters of the token.
+        # suffix3         Take the last three characters of the token.
+        # suffix2         Take the last two characters of the token.
+        # suffix1         Take the last character of the token.
+        # pos             Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
+        # pos2            Take the first two characters of the Part-of-Speech tag of the token
+        #                 (``SpacyTokenizer`` required).
+        # ==============  ==========================================================================================
+
+    As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
+    previous tokens, the current token, and the next tokens in the sliding window.
+    You define the features as a [before, token, after] array.
+    If you want to define features for the token before, the current token, and the token after,
+    your features configuration would look like this:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "LexicalSyntacticFeaturizer":
+          "features": [
+            ["low", "title", "upper"],
+            [
+              "BOS",
+              "EOS",
+              "low",
+              "upper",
+              "title",
+              "digit",
+            ],
+            ["low", "title", "upper"],
+          ]
+
+    This configuration is also the default configuration.
+
+    .. note:: If you want to make use of ``pos`` or ``pos2`` you need to add ``SpacyTokenizer`` to your pipeline.
+
 
 Intent Classifiers
 ------------------
 
+Intent classifiers assign one of the intents defined in the domain file to incoming user messages.
 
 MitieIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~
@@ -318,7 +652,7 @@ MitieIntentClassifier
     MITIE intent classifier (using a
     `text categorizer <https://github.com/mit-nlp/MITIE/blob/master/examples/python/text_categorizer_pure_model.py>`_)
 :Outputs: ``intent``
-:Requires: A tokenizer and a featurizer
+:Requires: ``tokens`` for user message
 :Output-Example:
 
     .. code-block:: json
@@ -342,9 +676,9 @@ MitieIntentClassifier
 SklearnIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: sklearn intent classifier
+:Short: Sklearn intent classifier
 :Outputs: ``intent`` and ``intent_ranking``
-:Requires: A featurizer
+:Requires: ``dense_features`` for user messages
 :Output-Example:
 
     .. code-block:: json
@@ -364,15 +698,14 @@ SklearnIntentClassifier
         }
 
 :Description:
-    The sklearn intent classifier trains a linear SVM which gets optimized using a grid search. In addition
-    to other classifiers it also provides rankings of the labels that did not "win". The spacy intent classifier
-    needs to be preceded by a featurizer in the pipeline. This featurizer creates the features used for the
-    classification.
+    The sklearn intent classifier trains a linear SVM which gets optimized using a grid search. It also provides
+    rankings of the labels that did not "win". The ``SklearnIntentClassifier`` needs to be preceded by a dense
+    featurizer in the pipeline. This dense featurizer creates the features used for the classification.
 
 :Configuration:
     During the training of the SVM a hyperparameter search is run to
     find the best parameter set. In the config, you can specify the parameters
-    that will get tried
+    that will get tried.
 
     .. code-block:: yaml
 
@@ -386,130 +719,206 @@ SklearnIntentClassifier
           # This is used with the ``C`` hyperparameter in GridSearchCV.
           kernels: ["linear"]
 
+.. _embedding-intent-classifier:
+
 EmbeddingIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: Embedding intent classifier
+.. warning::
+    ``EmbeddingIntentClassifier`` is deprecated and should be replaced by ``DIETClassifier``. See
+    :ref:`migration guide <migration-to-rasa-1.8>` for more details.
+
+:Short: Embedding intent classifier for intent classification
 :Outputs: ``intent`` and ``intent_ranking``
-:Requires: A featurizer
+:Requires: ``dense_features`` and/or ``sparse_features`` for user messages, and optionally the intent
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "intent": {"name": "greet", "confidence": 0.8343},
+            "intent": {"name": "greet", "confidence": 0.78343},
             "intent_ranking": [
                 {
-                    "confidence": 0.385910906220309,
+                    "confidence": 0.1485910906220309,
                     "name": "goodbye"
                 },
                 {
-                    "confidence": 0.28161531595656784,
+                    "confidence": 0.08161531595656784,
                     "name": "restaurant_search"
                 }
             ]
         }
 
 :Description:
-    The embedding intent classifier embeds user inputs and intent labels into the same space.
+    The ``EmbeddingIntentClassifier`` embeds user inputs and intent labels into the same space.
     Supervised embeddings are trained by maximizing similarity between them.
     This algorithm is based on `StarSpace <https://arxiv.org/abs/1709.03856>`_.
     However, in this implementation the loss function is slightly different and
     additional hidden layers are added together with dropout.
     This algorithm also provides similarity rankings of the labels that did not "win".
 
-    The embedding intent classifier needs to be preceded by a featurizer in the pipeline.
-    This featurizer creates the features used for the embeddings.
-    It is recommended to use ``CountVectorsFeaturizer`` that can be optionally preceded
-    by ``SpacyNLP`` and ``SpacyTokenizer``.
-
-    .. note:: If during prediction time a message contains **only** words unseen during training,
-              and no Out-Of-Vacabulary preprocessor was used,
-              empty intent ``None`` is predicted with confidence ``0.0``.
+    .. note:: If during prediction time a message contains **only** words unseen during training
+              and no Out-Of-Vacabulary preprocessor was used, an empty intent ``None`` is predicted with confidence
+              ``0.0``. This might happen if you only use the :ref:`CountVectorsFeaturizer` with a ``word`` analyzer
+              as featurizer. If you use the ``char_wb`` analyzer, you should always get an intent with a confidence
+              value ``> 0.0``.
 
 :Configuration:
 
-    The algorithm also has hyperparameters to control:
+    The following hyperparameters can be set:
 
         - neural network's architecture:
 
-            - ``hidden_layers_sizes_a`` sets a list of hidden layer sizes before
+            - ``hidden_layers_sizes.text`` sets a list of hidden layer sizes before
               the embedding layer for user inputs, the number of hidden layers
-              is equal to the length of the list
-            - ``hidden_layers_sizes_b`` sets a list of hidden layer sizes before
+              is equal to the length of the list.
+            - ``hidden_layers_sizes.label`` sets a list of hidden layer sizes before
               the embedding layer for intent labels, the number of hidden layers
-              is equal to the length of the list
-            - ``share_hidden`` if set to True, shares the hidden layers between user inputs and intent label
+              is equal to the length of the list.
+            - ``share_hidden_layers`` if set to True, shares the hidden layers between user inputs and intent label.
 
         - training:
 
             - ``batch_size`` sets the number of training examples in one
               forward/backward pass, the higher the batch size, the more
-              memory space you'll need;
+              memory space you'll need.
             - ``batch_strategy`` sets the type of batching strategy,
-              it should be either ``sequence`` or ``balanced``;
+              it should be either ``sequence`` or ``balanced``.
             - ``epochs`` sets the number of times the algorithm will see
               training data, where one ``epoch`` equals one forward pass and
-              one backward pass of all the training examples;
-            - ``random_seed`` if set to any int will get reproducible
-              training results for the same inputs;
+              one backward pass of all the training examples.
+            - ``random_seed`` if set you will get reproducible
+              training results for the same inputs.
+            - ``learning_rate`` sets the initial learning rate of the optimizer.
 
         - embedding:
 
-            - ``embed_dim`` sets the dimension of embedding space;
-            - ``num_neg`` sets the number of incorrect intent labels,
-              the algorithm will minimize their similarity to the user
-              input during training;
+            - ``dense_dimension.text`` sets the dense dimensions for user inputs to use for sparse
+              tensors if no dense features are present.
+            - ``dense_dimension.label`` sets the dense dimensions for intent labels to use for sparse
+              tensors if no dense features are present.
+            - ``embedding_dimension`` sets the dimension of embedding space.
+            - ``number_of_negative_examples`` sets the number of incorrect intent labels.
+              The algorithm will minimize their similarity to the user
+              input during training.
             - ``similarity_type`` sets the type of the similarity,
               it should be either ``auto``, ``cosine`` or ``inner``,
               if ``auto``, it will be set depending on ``loss_type``,
-              ``inner`` for ``softmax``, ``cosine`` for ``margin``;
+              ``inner`` for ``softmax``, ``cosine`` for ``margin``.
             - ``loss_type`` sets the type of the loss function,
-              it should be either ``softmax`` or ``margin``;
+              it should be either ``softmax`` or ``margin``.
             - ``ranking_length`` defines the number of top confidences over
-              which to normalize ranking results if ``loss_type: "softmax"``;
-              to turn off normalization set it to 0
-            - ``mu_pos`` controls how similar the algorithm should try
+              which to normalize ranking results if ``loss_type: "softmax"``.
+              To turn off normalization set it to 0.
+            - ``maximum_positive_similarity`` controls how similar the algorithm should try
               to make embedding vectors for correct intent labels,
-              used only if ``loss_type`` is set to ``margin``;
-            - ``mu_neg`` controls maximum negative similarity for
-              incorrect intents,
-              used only if ``loss_type`` is set to ``margin``;
-            - ``use_max_sim_neg`` if ``true`` the algorithm only
+              used only if ``loss_type`` is set to ``margin``.
+            - ``maximum_negative_similarity`` controls maximum negative similarity for
+              incorrect intents, used only if ``loss_type`` is set to ``margin``.
+            - ``use_maximum_negative_similarity`` if ``true`` the algorithm only
               minimizes maximum similarity over incorrect intent labels,
-              used only if ``loss_type`` is set to ``margin``;
+              used only if ``loss_type`` is set to ``margin``.
             - ``scale_loss`` if ``true`` the algorithm will downscale the loss
               for examples where correct label is predicted with high confidence,
-              used only if ``loss_type`` is set to ``softmax``;
+              used only if ``loss_type`` is set to ``softmax``.
 
         - regularization:
 
-            - ``C2`` sets the scale of L2 regularization
-            - ``C_emb`` sets the scale of how important is to minimize
-              the maximum similarity between embeddings of different intent labels;
-            - ``droprate`` sets the dropout rate, it should be
-              between ``0`` and ``1``, e.g. ``droprate=0.1``
-              would drop out ``10%`` of input units;
+            - ``regularization_constant`` sets the scale of L2 regularization. Higher values will result in more
+              regularization.
+            - ``negative_margin_scale`` sets the scale of how important is to minimize
+              the maximum similarity between embeddings of different intent labels.
+            - ``drop_rate`` sets the dropout rate, it should be
+              between ``0`` and ``1``, e.g. ``drop_rate=0.1`` would drop out ``10%`` of input units.
+            - ``weight_sparsity`` sets the sparsity of the weght kernels in dense layers.
+            - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not.
 
-    .. note:: For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should be between ``-1`` and ``1``.
+    .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
+              be between ``-1`` and ``1``.
 
     .. note:: There is an option to use linearly increasing batch size. The idea comes from
               `<https://arxiv.org/abs/1711.00489>`_.
               In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
               If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
 
-    In the config, you can specify these parameters.
-    The default values are defined in ``EmbeddingIntentClassifier.defaults``:
-
-    .. literalinclude:: ../../rasa/nlu/classifiers/embedding_intent_classifier.py
-       :dedent: 4
-       :start-after: # default properties (DOC MARKER - don't remove)
-       :end-before: # end default properties (DOC MARKER - don't remove)
-
-    .. note:: Parameter ``mu_neg`` is set to a negative value to mimic the original
-              starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
+    .. note:: Parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original
+              starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity``
+              and ``use_maximum_negative_similarity = False``.
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
+    Default values:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "EmbeddingIntentClassifier"
+            # ## Architecture of the used neural network
+            # Hidden layer sizes for layers before the embedding layers for user message
+            # and labels.
+            # The number of hidden layers is equal to the length of the corresponding
+            # list.
+            "hidden_layers_sizes": {"text": [256, 128], "label": []}
+            # Whether to share the hidden layer weights between user message and labels.
+            "share_hidden_layers": False
+            # ## Training parameters
+            # Initial and final batch sizes:
+            # Batch size will be linearly increased for each epoch.
+            "batch_size": [64, 256]
+            # Strategy used when creating batches.
+            # Can be either 'sequence' or 'balanced'.
+            "batch_strategy": "balanced"
+            # Number of epochs to train
+            "epochs": 300
+            # Set random seed to any 'int' to get reproducible results
+            "random_seed": None
+            # Initial learning rate for the optimizer
+            "learning_rate": 0.001
+            # ## Parameters for embeddings
+            # Dimension size of embedding vectors
+            "embedding_dimension": 20
+            # Default dense dimension to use if no dense features are present.
+            "dense_dimension": {"text": 512, "label": 20}
+            # The number of incorrect labels. The algorithm will minimize
+            # their similarity to the user input during training.
+            "number_of_negative_examples": 20
+            # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
+            "similarity_type": "auto"
+            # The type of the loss function, either 'softmax' or 'margin'.
+            "loss_type": "softmax"
+            # Number of top actions to normalize scores for loss type 'softmax'.
+            # Set to 0 to turn off normalization.
+            "ranking_length": 10
+            # Indicates how similar the algorithm should try to make embedding vectors
+            # for correct labels.
+            # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
+            "maximum_positive_similarity": 0.8
+            # Maximum negative similarity for incorrect labels.
+            # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
+            "maximum_negative_similarity": -0.4
+            # If 'True' the algorithm only minimizes maximum similarity over
+            # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
+            "use_maximum_negative_similarity": True
+            # Scale loss inverse proportionally to confidence of correct prediction
+            "scale_loss": True
+            # ## Regularization parameters
+            # The scale of regularization
+            "regularization_constant": 0.002
+            # The scale of how important is to minimize the maximum similarity
+            # between embeddings of different labels.
+            "negative_margin_scale": 0.8
+            # Sparsity of the weights in dense layers
+            "weight_sparsity": 0.8
+            # Dropout rate for encoder
+            "drop_rate": 0.2
+            # If 'True' apply dropout to sparse tensors
+            "use_sparse_input_dropout": False
+            # ## Evaluation parameters
+            # How often calculate validation accuracy.
+            # Small values may hurt performance, e.g. model accuracy.
+            "evaluate_every_number_of_epochs": 20
+            # How many examples to use for hold out validation set
+            # Large values may hurt performance, e.g. model accuracy.
+            "evaluate_on_number_of_examples": 0
 
 .. _keyword_intent_classifier:
 
@@ -518,7 +927,7 @@ KeywordIntentClassifier
 
 :Short: Simple keyword matching intent classifier, intended for small, short-term projects.
 :Outputs: ``intent``
-:Requires: nothing
+:Requires: Nothing
 
 :Output-Example:
 
@@ -536,7 +945,7 @@ KeywordIntentClassifier
     This means the entire example is the keyword, not the individual words in the example.
 
     .. note:: This classifier is intended only for small projects or to get started. If
-              you have few NLU training data you can use one of our pipelines
+              you have few NLU training data, you can take a look at the recommended pipelines in
               :ref:`choosing-a-pipeline`.
 
 :Configuration:
@@ -552,25 +961,18 @@ Selectors
 
 .. _response-selector:
 
-Response Selector
-~~~~~~~~~~~~~~~~~~
+ResponseSelector
+~~~~~~~~~~~~~~~~
 
 :Short: Response Selector
 :Outputs: A dictionary with key as ``direct_response_intent`` and value containing ``response`` and ``ranking``
-:Requires: A featurizer
+:Requires: ``dense_features`` and/or ``sparse_features`` for user messages and response
 
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "text": "What is the recommend python version to install?",
-            "entities": [],
-            "intent": {"confidence": 0.6485910906220309, "name": "faq"},
-            "intent_ranking": [
-                {"confidence": 0.6485910906220309, "name": "faq"},
-                {"confidence": 0.1416153159565678, "name": "greet"}
-            ],
             "response_selector": {
               "faq": {
                 "response": {"confidence": 0.7356462617, "name": "Supports 3.5, 3.6 and 3.7, recommended version is 3.6"},
@@ -587,151 +989,147 @@ Response Selector
     Response Selector component can be used to build a response retrieval model to directly predict a bot response from
     a set of candidate responses. The prediction of this model is used by :ref:`retrieval-actions`.
     It embeds user inputs and response labels into the same space and follows the exact same
-    neural network architecture and optimization as the ``EmbeddingIntentClassifier``.
+    neural network architecture and optimization as the :ref:`diet-classifier`.
 
-    The response selector needs to be preceded by a featurizer in the pipeline.
-    This featurizer creates the features used for the embeddings.
-    It is recommended to use ``CountVectorsFeaturizer`` that can be optionally preceded
-    by ``SpacyNLP``.
-
-    .. note:: If during prediction time a message contains **only** words unseen during training,
-              and no Out-Of-Vacabulary preprocessor was used,
-              empty response ``None`` is predicted with confidence ``0.0``.
+    .. note:: If during prediction time a message contains **only** words unseen during training
+              and no Out-Of-Vacabulary preprocessor was used, an empty intent ``None`` is predicted with confidence
+              ``0.0``. This might happen if you only use the :ref:`CountVectorsFeaturizer` with a ``word`` analyzer
+              as featurizer. If you use the ``char_wb`` analyzer, you should always get an intent with a confidence
+              value ``> 0.0``.
 
 :Configuration:
 
-    The algorithm includes all the hyperparameters that ``EmbeddingIntentClassifier`` uses.
-    In addition, the component can also be configured to train a response selector for a particular retrieval intent
+    The algorithm includes all the hyperparameters that :ref:`diet-classifier` uses.
+    In addition, the component can also be configured to train a response selector for a particular retrieval intent.
 
-        - ``retrieval_intent``: sets the name of the intent for which this response selector model is trained. Default ``None``
+        - ``retrieval_intent`` sets the name of the intent for which this response selector model is trained.
+          Default is ``None``, i.e. the model is trained for all retrieval intents.
 
-    In the config, you can specify these parameters.
-    The default values are defined in ``ResponseSelector.defaults``:
-
-    .. literalinclude:: ../../rasa/nlu/selectors/embedding_response_selector.py
-       :dedent: 4
-       :start-after: # default properties (DOC MARKER - don't remove)
-       :end-before: # end default properties (DOC MARKER - don't remove)
-
-.. _tokenizers:
-
-Tokenizers
-----------
-
-If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
-modeling hierarchical intent structure, use these flags with any tokenizer:
-
-- ``intent_tokenization_flag`` indicates whether to tokenize intent labels or not. By default this flag is set to
-  ``False``, intent will not be tokenized.
-- ``intent_split_symbol`` sets the delimiter string to split the intent labels, default is underscore
-  (``_``).
-
-    .. note:: All tokenizer add an additional token ``__CLS__`` to the end of the list of tokens when tokenizing
-              text and responses.
-
-WhitespaceTokenizer
-~~~~~~~~~~~~~~~~~~~
-
-:Short: Tokenizer using whitespaces as a separator
-:Outputs: nothing
-:Requires: nothing
-:Description:
-    Creates a token for every whitespace separated character sequence. Can be used to define tokens for the MITIE entity
-    extractor.
-:Configuration:
-    Make the tokenizer not case sensitive by adding the ``case_sensitive: false`` option. Default being ``case_sensitive: true``.
+    Default values:
 
     .. code-block:: yaml
 
         pipeline:
-        - name: "WhitespaceTokenizer"
-          case_sensitive: false
-
-JiebaTokenizer
-~~~~~~~~~~~~~~
-
-:Short: Tokenizer using Jieba for Chinese language
-:Outputs: nothing
-:Requires: nothing
-:Description:
-    Creates tokens using the Jieba tokenizer specifically for Chinese
-    language. For language other than Chinese, Jieba will work as
-    ``WhitespaceTokenizer``. Can be used to define tokens for the
-    MITIE entity extractor. Make sure to install Jieba, ``pip install jieba``.
-:Configuration:
-    User's custom dictionary files can be auto loaded by specific the files' directory path via ``dictionary_path``
-
-    .. code-block:: yaml
-
-        pipeline:
-        - name: "JiebaTokenizer"
-          dictionary_path: "path/to/custom/dictionary/dir"
-
-If the ``dictionary_path`` is ``None`` (the default), then no custom dictionary will be used.
-
-MitieTokenizer
-~~~~~~~~~~~~~~
-
-:Short: Tokenizer using MITIE
-:Outputs: nothing
-:Requires: :ref:`MitieNLP`
-:Description:
-    Creates tokens using the MITIE tokenizer. Can be used to define
-    tokens for the MITIE entity extractor.
-:Configuration:
-
-    .. code-block:: yaml
-
-        pipeline:
-        - name: "MitieTokenizer"
-
-SpacyTokenizer
-~~~~~~~~~~~~~~
-
-:Short: Tokenizer using spacy
-:Outputs: nothing
-:Requires: :ref:`SpacyNLP`
-:Description:
-    Creates tokens using the spacy tokenizer. Can be used to define
-    tokens for the MITIE entity extractor.
-
-.. _ConveRTTokenizer:
-
-ConveRTTokenizer
-~~~~~~~~~~~~~~~~
-
-:Short: Tokenizer using ConveRT
-:Outputs: nothing
-:Requires: nothing
-:Description:
-    Creates tokens using the ConveRT tokenizer. Must be used whenever the ``ConveRTFeaturizer`` is used.
-
+          - name: "ResponseSelector"
+            # ## Architecture of the used neural network
+            # Hidden layer sizes for layers before the embedding layers for user message
+            # and labels.
+            # The number of hidden layers is equal to the length of the corresponding
+            # list.
+            hidden_layers_sizes: {"text": [256, 128], "label": [256, 128]}
+            # Whether to share the hidden layer weights between input words and responses
+            "share_hidden_layers": False
+            # Number of units in transformer
+            "transformer_size": None
+            # Number of transformer layers
+            "number_of_transformer_layers": 0
+            # Number of attention heads in transformer
+            "number_of_attention_heads": 4
+            # If 'True' use key relative embeddings in attention
+            "use_key_relative_attention": False
+            # If 'True' use key relative embeddings in attention
+            "use_value_relative_attention": False
+            # Max position for relative embeddings
+            "max_relative_position": None
+            # Use a unidirectional or bidirectional encoder.
+            "unidirectional_encoder": False
+            # ## Training parameters
+            # Initial and final batch sizes:
+            # Batch size will be linearly increased for each epoch.
+            "batch_size": [64, 256]
+            # Strategy used when creating batches.
+            # Can be either 'sequence' or 'balanced'.
+            "batch_strategy": "balanced"
+            # Number of epochs to train
+            "epochs": 300
+            # Set random seed to any 'int' to get reproducible results
+            "random_seed": None
+            # Initial learning rate for the optimizer
+            "learning_rate": 0.001
+            # ## Parameters for embeddings
+            # Dimension size of embedding vectors
+            "embedding_dimension": 20
+            # Default dense dimension to use if no dense features are present.
+            "dense_dimension": {"text": 512, "label": 512}
+            # The number of incorrect labels. The algorithm will minimize
+            # their similarity to the user input during training.
+            "number_of_negative_examples": 20
+            # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
+            "similarity_type": "auto"
+            # The type of the loss function, either 'softmax' or 'margin'.
+            "loss_type": "softmax"
+            # Number of top actions to normalize scores for loss type 'softmax'.
+            # Set to 0 to turn off normalization.
+            "ranking_length": 10
+            # Indicates how similar the algorithm should try to make embedding vectors
+            # for correct labels.
+            # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
+            "maximum_positive_similarity": 0.8
+            # Maximum negative similarity for incorrect labels.
+            # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
+            "maximum_negative_similarity": -0.4
+            # If 'True' the algorithm only minimizes maximum similarity over
+            # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
+            "use_maximum_negative_similarity": True
+            # Scale loss inverse proportionally to confidence of correct prediction
+            "scale_loss": True
+            # ## Regularization parameters
+            # The scale of regularization
+            "regularization_constant": 0.002
+            # Sparsity of the weights in dense layers
+            "weight_sparsity": 0.8
+            # The scale of how important is to minimize the maximum similarity
+            # between embeddings of different labels.
+            "negative_margin_scale": 0.8
+            # Dropout rate for encoder
+            "drop_rate": 0.2
+            # Dropout rate for attention
+            "drop_rate_attention": 0
+            # If 'True' apply dropout to sparse tensors
+            "use_sparse_input_dropout": False
+            # ## Evaluation parameters
+            # How often calculate validation accuracy.
+            # Small values may hurt performance, e.g. model accuracy.
+            "evaluate_every_number_of_epochs": 20
+            # How many examples to use for hold out validation set
+            # Large values may hurt performance, e.g. model accuracy.
+            "evaluate_on_number_of_examples": 0
+            # ## Selector config
+            # If 'True' random tokens of the input message will be masked and the model
+            # should predict those tokens.
+            "use_masked_language_model": False
+            # Name of the intent for which this response selector is to be trained
+            "retrieval_intent: None
 
 
 Entity Extractors
 -----------------
 
+Entity extractors extract entities, such as person names or locations, from the user message.
+
 MitieEntityExtractor
 ~~~~~~~~~~~~~~~~~~~~
 
 :Short: MITIE entity extraction (using a `MITIE NER trainer <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/ner_trainer.cpp>`_)
-:Outputs: appends ``entities``
-:Requires: :ref:`MitieNLP`
+:Outputs: ``entities``
+:Requires: :ref:`MitieNLP` and ``tokens``
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "entities": [{"value": "New York City",
-                          "start": 20,
-                          "end": 33,
-                          "confidence": null,
-                          "entity": "city",
-                          "extractor": "MitieEntityExtractor"}]
+            "entities": [{
+                "value": "New York City",
+                "start": 20,
+                "end": 33,
+                "confidence": null,
+                "entity": "city",
+                "extractor": "MitieEntityExtractor"
+            }]
         }
 
 :Description:
-    This uses the MITIE entity extraction to find entities in a message. The underlying classifier
+    ``MitieEntityExtractor`` uses the MITIE entity extraction to find entities in a message. The underlying classifier
     is using a multi class linear SVM with a sparse linear kernel and custom features.
     The MITIE component does not provide entity confidence values.
 :Configuration:
@@ -747,28 +1145,30 @@ SpacyEntityExtractor
 ~~~~~~~~~~~~~~~~~~~~
 
 :Short: spaCy entity extraction
-:Outputs: appends ``entities``
+:Outputs: ``entities``
 :Requires: :ref:`SpacyNLP`
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "entities": [{"value": "New York City",
-                          "start": 20,
-                          "end": 33,
-                          "entity": "city",
-                          "confidence": null,
-                          "extractor": "SpacyEntityExtractor"}]
+            "entities": [{
+                "value": "New York City",
+                "start": 20,
+                "end": 33,
+                "confidence": null,
+                "entity": "city",
+                "extractor": "SpacyEntityExtractor"
+            }]
         }
 
 :Description:
-    Using spaCy this component predicts the entities of a message. spacy uses a statistical BILOU transition model.
-    As of now, this component can only use the spacy builtin entity extraction models and can not be retrained.
+    Using spaCy this component predicts the entities of a message. spaCy uses a statistical BILOU transition model.
+    As of now, this component can only use the spaCy builtin entity extraction models and can not be retrained.
     This extractor does not provide any confidence scores.
 
 :Configuration:
-    Configure which dimensions, i.e. entity types, the spacy component
+    Configure which dimensions, i.e. entity types, the spaCy component
     should extract. A full list of available dimensions can be found in
     the `spaCy documentation <https://spacy.io/api/annotation#section-named-entities>`_.
     Leaving the dimensions option unspecified will extract all available dimensions.
@@ -784,100 +1184,158 @@ SpacyEntityExtractor
 EntitySynonymMapper
 ~~~~~~~~~~~~~~~~~~~
 
-
 :Short: Maps synonymous entity values to the same value.
-:Outputs: modifies existing entities that previous entity extraction components found
-:Requires: nothing
+:Outputs: Modifies existing entities that previous entity extraction components found.
+:Requires: Nothing
 :Description:
-    If the training data contains defined synonyms (by using the ``value`` attribute on the entity examples).
-    this component will make sure that detected entity values will be mapped to the same value. For example,
-    if your training data contains the following examples:
+    If the training data contains defined synonyms, this component will make sure that detected entity values will
+    be mapped to the same value. For example, if your training data contains the following examples:
 
     .. code-block:: json
 
-        [{
-          "text": "I moved to New York City",
-          "intent": "inform_relocation",
-          "entities": [{"value": "nyc",
-                        "start": 11,
-                        "end": 24,
-                        "entity": "city",
-                       }]
-        },
-        {
-          "text": "I got a new flat in NYC.",
-          "intent": "inform_relocation",
-          "entities": [{"value": "nyc",
-                        "start": 20,
-                        "end": 23,
-                        "entity": "city",
-                       }]
-        }]
+        [
+            {
+              "text": "I moved to New York City",
+              "intent": "inform_relocation",
+              "entities": [{
+                "value": "nyc",
+                "start": 11,
+                "end": 24,
+                "entity": "city",
+              }]
+            },
+            {
+              "text": "I got a new flat in NYC.",
+              "intent": "inform_relocation",
+              "entities": [{
+                "value": "nyc",
+                "start": 20,
+                "end": 23,
+                "entity": "city",
+              }]
+            }
+        ]
 
-    This component will allow you to map the entities ``New York City`` and ``NYC`` to ``nyc``. The entitiy
+    This component will allow you to map the entities ``New York City`` and ``NYC`` to ``nyc``. The entity
     extraction will return ``nyc`` even though the message contains ``NYC``. When this component changes an
-    exisiting entity, it appends itself to the processor list of this entity.
+    existing entity, it appends itself to the processor list of this entity.
+
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "EntitySynonymMapper"
+
+.. _CRFEntityExtractor:
 
 CRFEntityExtractor
 ~~~~~~~~~~~~~~~~~~
 
-:Short: conditional random field entity extraction
-:Outputs: appends ``entities``
-:Requires: A tokenizer
+:Short: Conditional random field (CRF) entity extraction
+:Outputs: ``entities``
+:Requires: ``tokens`` and ``dense_features`` (optional)
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "entities": [{"value":"New York City",
-                          "start": 20,
-                          "end": 33,
-                          "entity": "city",
-                          "confidence": 0.874,
-                          "extractor": "CRFEntityExtractor"}]
+            "entities": [{
+                "value": "New York City",
+                "start": 20,
+                "end": 33,
+                "entity": "city",
+                "confidence": 0.874,
+                "extractor": "CRFEntityExtractor"
+            }]
         }
 
 :Description:
-    This component implements conditional random fields to do named entity recognition.
+    This component implements a conditional random fields (CRF) to do named entity recognition.
     CRFs can be thought of as an undirected Markov chain where the time steps are words
     and the states are entity classes. Features of the words (capitalisation, POS tagging,
     etc.) give probabilities to certain entity classes, as are transitions between
     neighbouring entity tags: the most likely set of tags is then calculated and returned.
-    If POS features are used (pos or pos2), spaCy has to be installed. If you want to use
-    additional features, such as pre-trained word embeddings, from any provided dense
-    featurizer, use ``"text_dense_features"``.
+
+    .. note::
+        If POS features are used (pos or pos2), you need to have ``SpacyTokenizer`` in your pipeline.
+
+    .. note::
+        If "pattern" features are used, you need to have ``RegexFeaturizer`` in your pipeline.
+
 :Configuration:
-   .. code-block:: yaml
+    ``CRFEntityExtractor`` has a list of default features to use.
+    However, you can overwrite the default configuration.
+    The following features are available:
+
+    .. code-block:: yaml
+
+        # ==============  ==========================================================================================
+        # Feature Name    Description
+        # ==============  ==========================================================================================
+        # low             Checks if the token is lower case.
+        # upper           Checks if the token is upper case.
+        # title           Checks if the token starts with an uppercase character and all remaining characters are
+        #                 lowercased.
+        # digit           Checks if the token contains just digits.
+        # prefix5         Take the first five characters of the token.
+        # prefix2         Take the first two characters of the token.
+        # suffix5         Take the last five characters of the token.
+        # suffix3         Take the last three characters of the token.
+        # suffix2         Take the last two characters of the token.
+        # suffix1         Take the last character of the token.
+        # pos             Take the Part-of-Speech tag of the token (``SpacyTokenizer`` required).
+        # pos2            Take the first two characters of the Part-of-Speech tag of the token
+        #                 (``SpacyTokenizer`` required).
+        # pattern         Take the patterns defined by ``RegexFeaturizer``.
+        # bias            Add an additional "bias" feature to the list of features.
+        # ==============  ==========================================================================================
+
+    As the featurizer is moving over the tokens in a user message with a sliding window, you can define features for
+    previous tokens, the current token, and the next tokens in the sliding window.
+    You define the features as [before, token, after] array.
+
+    Additional you can set a flag to determine whether to use the BILOU tagging schema or not.
+
+        - ``BILOU_flag`` determines whether to use BILOU tagging or not. Default ``True``.
+
+    .. code-block:: yaml
 
         pipeline:
         - name: "CRFEntityExtractor"
-          # The features are a ``[before, word, after]`` array with
-          # before, word, after holding keys about which
-          # features to use for each word, for example, ``"title"``
-          # in array before will have the feature
-          # "is the preceding word in title case?".
-          # Available features are:
-          # ``low``, ``title``, ``suffix5``, ``suffix3``, ``suffix2``,
-          # ``suffix1``, ``pos``, ``pos2``, ``prefix5``, ``prefix2``,
-          # ``bias``, ``upper``, ``digit``, ``pattern``, and ``text_dense_features``
-          features: [["low", "title"], ["bias", "suffix3"], ["upper", "pos", "pos2"]]
-
-          # The flag determines whether to use BILOU tagging or not. BILOU
-          # tagging is more rigorous however
-          # requires more examples per entity. Rule of thumb: use only
-          # if more than 100 examples per entity.
-          BILOU_flag: true
-
-          # This is the value given to sklearn_crfcuite.CRF tagger before training.
-          max_iterations: 50
-
-          # This is the value given to sklearn_crfcuite.CRF tagger before training.
-          # Specifies the L1 regularization coefficient.
-          L1_c: 0.1
-
-          # This is the value given to sklearn_crfcuite.CRF tagger before training.
-          # Specifies the L2 regularization coefficient.
-          L2_c: 0.1
+            # BILOU_flag determines whether to use BILOU tagging or not.
+            # More rigorous however requires more examples per entity
+            # rule of thumb: use only if more than 100 egs. per entity
+            "BILOU_flag": True
+            # crf_features is [before, token, after] array with before, token,
+            # after holding keys about which features to use for each token,
+            # for example, 'title' in array before will have the feature
+            # "is the preceding token in title case?"
+            # POS features require SpacyTokenizer
+            # pattern feature require RegexFeaturizer
+            "features": [
+                ["low", "title", "upper"],
+                [
+                    "bias",
+                    "low",
+                    "prefix5",
+                    "prefix2",
+                    "suffix5",
+                    "suffix3",
+                    "suffix2",
+                    "upper",
+                    "title",
+                    "digit",
+                    "pattern",
+                ],
+                ["low", "title", "upper"],
+            ]
+            # The maximum number of iterations for optimization algorithms.
+            "max_iterations": 50
+            # weight of the L1 regularization
+            "L1_c": 0.1
+            # weight of the L2 regularization
+            "L2_c": 0.1
 
 .. _DucklingHTTPExtractor:
 
@@ -886,19 +1344,21 @@ DucklingHTTPExtractor
 
 :Short: Duckling lets you extract common entities like dates,
         amounts of money, distances, and others in a number of languages.
-:Outputs: appends ``entities``
-:Requires: nothing
+:Outputs: ``entities``
+:Requires: Nothing
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "entities": [{"end": 53,
-                          "entity": "time",
-                          "start": 48,
-                          "value": "2017-04-10T00:00:00.000+02:00",
-                          "confidence": 1.0,
-                          "extractor": "DucklingHTTPExtractor"}]
+            "entities": [{
+                "end": 53,
+                "entity": "time",
+                "start": 48,
+                "value": "2017-04-10T00:00:00.000+02:00",
+                "confidence": 1.0,
+                "extractor": "DucklingHTTPExtractor"
+            }]
         }
 
 :Description:
@@ -942,3 +1402,260 @@ DucklingHTTPExtractor
           # Timeout for receiving response from http url of the running duckling server
           # if not set the default timeout of duckling http url is set to 3 seconds.
           timeout : 3
+
+
+Combined Entity Extractors and Intent Classifiers
+-------------------------------------------------
+
+.. _diet-classifier:
+
+DIETClassifier
+~~~~~~~~~~~~~~
+
+:Short: Dual Intent Entity Transformer (DIET) used for intent classification and entity extraction
+:Outputs: ``entities``, ``intent`` and ``intent_ranking``
+:Requires: ``dense_features`` and/or ``sparse_features`` for user message and, and optionally the intent
+:Output-Example:
+
+    .. code-block:: json
+
+        {
+            "intent": {"name": "greet", "confidence": 0.8343},
+            "intent_ranking": [
+                {
+                    "confidence": 0.385910906220309,
+                    "name": "goodbye"
+                },
+                {
+                    "confidence": 0.28161531595656784,
+                    "name": "restaurant_search"
+                }
+            ],
+            "entities": [{
+                "end": 53,
+                "entity": "time",
+                "start": 48,
+                "value": "2017-04-10T00:00:00.000+02:00",
+                "confidence": 1.0,
+                "extractor": "DIETClassifier"
+            }]
+        }
+
+:Description:
+    DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
+    recognition. The architecture is based on a transformer which is shared for both tasks.
+    A sequence of entity labels is predicted through a Conditional Random Field (CRF) tagging layer on top of the
+    transformer output sequence corresponding to the input sequence of tokens.
+    The transformer output for the ``__CLS__`` token and intent labels are embedded into a single semantic vector
+    space. We use the dot-product loss to maximize the similarity with the target label and minimize
+    similarities with negative samples.
+
+    .. note:: If during prediction time a message contains **only** words unseen during training
+              and no Out-Of-Vacabulary preprocessor was used, an empty intent ``None`` is predicted with confidence
+              ``0.0``. This might happen if you only use the :ref:`CountVectorsFeaturizer` with a ``word`` analyzer
+              as featurizer. If you use the ``char_wb`` analyzer, you should always get an intent with a confidence
+              value ``> 0.0``.
+
+:Configuration:
+
+    The following hyperparameters can be set:
+
+        - neural network's architecture:
+
+            - ``hidden_layers_sizes.text`` sets a list of hidden layer sizes before
+              the embedding layer for user inputs, the number of hidden layers
+              is equal to the length of the list.
+            - ``hidden_layers_sizes.label`` sets a list of hidden layer sizes before
+              the embedding layer for intent labels, the number of hidden layers
+              is equal to the length of the list.
+            - ``share_hidden_layers`` if set to True, shares the hidden layers between user inputs and intent label.
+            - ``transformer_size`` sets the size of the transformer.
+            - ``number_of_transformer_layers`` sets the number of transformer layers to use.
+            - ``number_of_attention_heads`` sets the number of attention heads to use.
+            - ``unidirectional_encoder`` specifies whether to use a unidirectional or bidirectional encoder.
+            - ``use_key_relative_attention`` if true use key relative embeddings in attention.
+            - ``use_value_relative_attention`` if true use key relative embeddings in attention.
+            - ``max_relative_position`` sets the max position for relative embeddings.
+
+        - training:
+
+            - ``batch_size`` sets the number of training examples in one
+              forward/backward pass, the higher the batch size, the more
+              memory space you'll need.
+            - ``batch_strategy`` sets the type of batching strategy,
+              it should be either ``sequence`` or ``balanced``.
+            - ``epochs`` sets the number of times the algorithm will see
+              training data, where one ``epoch`` equals one forward pass and
+              one backward pass of all the training examples.
+            - ``random_seed`` if set you will get reproducible
+              training results for the same inputs.
+            - ``learning_rate`` sets the initial learning rate of the optimizer.
+
+        - embedding:
+
+            - ``dense_dimension.text`` sets the dense dimensions for user inputs to use for sparse
+              tensors if no dense features are present.
+            - ``dense_dimension.label`` sets the dense dimensions for intent labels to use for sparse
+              tensors if no dense features are present.
+            - ``embedding_dimension`` sets the dimension of embedding space.
+            - ``number_of_negative_examples`` sets the number of incorrect intent labels.
+              The algorithm will minimize their similarity to the user
+              input during training.
+            - ``similarity_type`` sets the type of the similarity,
+              it should be either ``auto``, ``cosine`` or ``inner``,
+              if ``auto``, it will be set depending on ``loss_type``,
+              ``inner`` for ``softmax``, ``cosine`` for ``margin``.
+            - ``loss_type`` sets the type of the loss function,
+              it should be either ``softmax`` or ``margin``.
+            - ``ranking_length`` defines the number of top confidences over
+              which to normalize ranking results if ``loss_type: "softmax"``.
+              To turn off normalization set it to 0.
+            - ``maximum_positive_similarity`` controls how similar the algorithm should try
+              to make embedding vectors for correct intent labels,
+              used only if ``loss_type`` is set to ``margin``.
+            - ``maximum_negative_similarity`` controls maximum negative similarity for
+              incorrect intents, used only if ``loss_type`` is set to ``margin``.
+            - ``use_maximum_negative_similarity`` if ``true`` the algorithm only
+              minimizes maximum similarity over incorrect intent labels,
+              used only if ``loss_type`` is set to ``margin``.
+            - ``scale_loss`` if ``true`` the algorithm will downscale the loss
+              for examples where correct label is predicted with high confidence,
+              used only if ``loss_type`` is set to ``softmax``.
+
+        - regularization:
+
+            - ``regularization_constant`` sets the scale of L2 regularization. Higher values will result in more
+              regularization.
+            - ``negative_margin_scale`` sets the scale of how important is to minimize
+              the maximum similarity between embeddings of different intent labels.
+            - ``drop_rate`` sets the dropout rate, it should be
+              between ``0`` and ``1``, e.g. ``drop_rate=0.1`` would drop out ``10%`` of input units.
+            - ``drop_rate_attention`` sets the dropout rate for attention, it should be
+              between ``0`` and ``1``, e.g. ``drop_rate_attention=0.1`` would drop out ``10%`` of input units.
+            - ``weight_sparsity`` sets the sparsity of weight kernels in dense layers.
+            - ``use_sparse_input_dropout`` specifies whether to apply dropout to sparse tensors or not.
+
+        - model configuration:
+
+            - ``use_masked_language_model`` specifies whether to apply masking or not.
+            - ``intent_classification`` indicates whether intent classification should be performed or not.
+            - ``entity_recognition`` indicates whether entity recognition should be performed or not.
+            - ``BILOU_flag`` determines whether to use BILOU tagging or not.
+
+    .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
+              be between ``-1`` and ``1``.
+
+    .. note:: There is an option to use linearly increasing batch size. The idea comes from
+              `<https://arxiv.org/abs/1711.00489>`_.
+              In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
+              If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
+
+    .. note:: Parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original
+              starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity``
+              and ``use_maximum_negative_similarity = False``.
+              See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+
+    Default values:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "DIETClassifier"
+            # ## Architecture of the used neural network
+            # Hidden layer sizes for layers before the embedding layers for user message
+            # and labels.
+            # The number of hidden layers is equal to the length of the corresponding
+            # list.
+            "hidden_layers_sizes": {TEXT: [], LABEL: []}
+            # Whether to share the hidden layer weights between user message and labels.
+            "share_hidden_layers": False
+            # Number of units in transformer
+            "transformer_size": 256
+            # Number of transformer layers
+            "number_of_transformer_layers": 2
+            # Number of attention heads in transformer
+            "number_of_attention_heads": 4
+            # If 'True' use key relative embeddings in attention
+            "use_key_relative_attention": False
+            # If 'True' use key relative embeddings in attention
+            "use_value_relative_attention": False
+            # Max position for relative embeddings
+            "max_relative_position": None
+            # Max sequence length
+            "maximum_sequence_length": 256
+            # Use a unidirectional or bidirectional encoder.
+            "unidirectional_encoder": False
+            # ## Training parameters
+            # Initial and final batch sizes:
+            # Batch size will be linearly increased for each epoch.
+            "batch_size": [64, 256]
+            # Strategy used when creating batches.
+            # Can be either 'sequence' or 'balanced'.
+            "batch_strategy": "balanced"
+            # Number of epochs to train
+            "epochs": 300
+            # Set random seed to any 'int' to get reproducible results
+            "random_seed": None
+            # Initial learning rate for the optimizer
+            "learning_rate": 0.001
+            # ## Parameters for embeddings
+            # Dimension size of embedding vectors
+            "embedding_dimension": 20
+            # Default dense dimension to use if no dense features are present.
+            "dense_dimension": {TEXT: 512, LABEL: 20}
+            # The number of incorrect labels. The algorithm will minimize
+            # their similarity to the user input during training.
+            "number_of_negative_examples": 20
+            # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
+            "similarity_type": "auto"
+            # The type of the loss function, either 'softmax' or 'margin'.
+            "loss_type": "softmax"
+            # Number of top actions to normalize scores for loss type 'softmax'.
+            # Set to 0 to turn off normalization.
+            "ranking_length": 10
+            # Indicates how similar the algorithm should try to make embedding vectors
+            # for correct labels.
+            # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
+            "maximum_positive_similarity": 0.8
+            # Maximum negative similarity for incorrect labels.
+            # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
+            "maximum_negative_similarity": -0.4
+            # If 'True' the algorithm only minimizes maximum similarity over
+            # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
+            "use_maximum_negative_similarity": True
+            # Scale loss inverse proportionally to confidence of correct prediction
+            "scale_loss": True
+            # ## Regularization parameters
+            # The scale of regularization
+            "regularization_constant": 0.002
+            # The scale of how important is to minimize the maximum similarity
+            # between embeddings of different labels.
+            "negative_margin_scale": 0.8
+            # Sparsity of the weights in dense layers
+            "weight_sparsity": 0.8
+            # Dropout rate for encoder
+            "drop_rate": 0.2
+            # Dropout rate for attention
+            "drop_rate_attention": 0
+            # If 'True' apply dropout to sparse tensors
+            "use_sparse_input_dropout": True
+            # ## Evaluation parameters
+            # How often calculate validation accuracy.
+            # Small values may hurt performance, e.g. model accuracy.
+            "evaluate_every_number_of_epochs": 20
+            # How many examples to use for hold out validation set
+            # Large values may hurt performance, e.g. model accuracy.
+            "evaluate_on_number_of_examples": 0
+            # ## Model config
+            # If 'True' intent classification is trained and intent predicted.
+            "intent_classification": True
+            # If 'True' named entity recognition is trained and entities predicted.
+            "entity_recognition": True
+            # If 'True' random tokens of the input message will be masked and the model
+            # should predict those tokens.
+            "use_masked_language_model": False
+            # 'BILOU_flag' determines whether to use BILOU tagging or not.
+            # If set to 'True' labelling is more rigorous, however more
+            # examples per entity are required.
+            # Rule of thumb: you should have more than 100 examples per entity.
+            "BILOU_flag": True

@@ -1,11 +1,9 @@
 import tempfile
 import os
-import shutil
 from typing import Text
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
-from _pytest.tmpdir import TempdirFactory
 
 import rasa.model
 

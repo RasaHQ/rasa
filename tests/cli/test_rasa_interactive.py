@@ -68,7 +68,7 @@ def test_pass_arguments_to_rasa_train(
 
 
 def test_train_called_when_no_model_passed(
-    default_stack_config: Text, monkeypatch: MonkeyPatch,
+    default_stack_config: Text, monkeypatch: MonkeyPatch
 ) -> None:
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()
@@ -97,7 +97,7 @@ def test_train_called_when_no_model_passed(
 
 
 def test_train_core_called_when_no_model_passed_and_core(
-    default_stack_config: Text, monkeypatch: MonkeyPatch,
+    default_stack_config: Text, monkeypatch: MonkeyPatch
 ) -> None:
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()
@@ -129,7 +129,7 @@ def test_train_core_called_when_no_model_passed_and_core(
 
 
 def test_no_interactive_without_core_data(
-    default_stack_config: Text, monkeypatch: MonkeyPatch,
+    default_stack_config: Text, monkeypatch: MonkeyPatch
 ) -> None:
     parser = argparse.ArgumentParser()
     sub_parser = parser.add_subparsers()

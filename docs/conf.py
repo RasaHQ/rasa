@@ -139,6 +139,7 @@ html_theme_options = {
     "fixed_sidebar": True,
     "product": "Rasa",
     "base_url": "https://rasa.com/docs/rasa/",
+    "canonical_url": "https://rasa.com/docs/rasa/",
 }
 # html_theme_options = {}
 
@@ -366,6 +367,7 @@ nitpick_ignore = [
     ("py:class", "typing.Optional"),
     ("py:class", "typing.Generator"),
     ("py:class", "typing.Iterator"),
+    ("py:class", "typing.Type"),
     ("py:class", "collections.deque"),
     ("py:class", "sanic.app.Sanic"),
     ("py:data", "typing.Any"),

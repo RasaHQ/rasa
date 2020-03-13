@@ -1,4 +1,5 @@
 import asyncio
+import os
 import random
 import uuid
 
@@ -30,6 +31,7 @@ from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.model import get_model
 from rasa.train import train_async
 from rasa.utils.common import TempDirectoryPath
+import rasa.utils.io as io_utils
 from tests.core.conftest import (
     DEFAULT_DOMAIN_PATH_WITH_SLOTS,
     DEFAULT_NLU_DATA,
@@ -38,7 +40,7 @@ from tests.core.conftest import (
     END_TO_END_STORY_FILE,
     MOODBOT_MODEL_PATH,
 )
-import rasa.utils.io as io_utils
+from tests.utilities import update_number_of_epochs
 
 DEFAULT_CONFIG_PATH = "rasa/cli/default_config.yml"
 
@@ -84,10 +86,15 @@ async def default_agent(_trained_default_agent: Agent) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path() -> Text:
+async def trained_moodbot_path(tmpdir_factory: TempdirFactory) -> Text:
+    output = tmpdir_factory.mktemp("moodbot").strpath
+    tmp_config_file = os.path.join(output, "config.yml")
+
+    update_number_of_epochs("examples/moodbot/config.yml", tmp_config_file)
+
     return await train_async(
         domain="examples/moodbot/domain.yml",
-        config="examples/moodbot/config.yml",
+        config=tmp_config_file,
         training_files="examples/moodbot/data/",
         output_path=MOODBOT_MODEL_PATH,
     )
@@ -252,9 +259,7 @@ def write_endpoint_config_to_yaml(
     endpoints_path = path / endpoints_filename
 
     # write endpoints config to file
-    io_utils.write_yaml_file(
-        data, endpoints_path,
-    )
+    io_utils.write_yaml_file(data, endpoints_path)
     return endpoints_path
 
 
