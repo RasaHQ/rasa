@@ -1034,8 +1034,6 @@ class DIET(RasaModel):
         if self.config[ENTITY_RECOGNITION]:
             self._prepare_entity_recognition_layers()
 
-        print(self._tf_layers)
-
     def _prepare_sparse_dense_layers(
         self,
         feature_signatures: List[FeatureSignature],

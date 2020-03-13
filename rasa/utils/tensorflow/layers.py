@@ -136,11 +136,6 @@ class Embed(tf.keras.layers.Layer):
     ) -> None:
         super().__init__(name=f"embed_{layer_name_suffix}")
 
-        print(
-            f"NAME=embed_{layer_name_suffix}; EMBED_DIM={embed_dim}; REG_LAMBDA={reg_lambda}; "
-            f"SIM TYPE={similarity_type}"
-        )
-
         self.similarity_type = similarity_type
         if self.similarity_type and self.similarity_type not in {COSINE, INNER}:
             raise ValueError(

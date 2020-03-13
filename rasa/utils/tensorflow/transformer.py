@@ -495,18 +495,11 @@ class TransformerEncoder(tf.keras.layers.Layer):
         training: Optional[Union[tf.Tensor, bool]] = None,
     ) -> tf.Tensor:
 
-        print(f'TENSOR SHAPE={x.shape}')
-
         # adding embedding and position encoding.
         x = self._embedding(x)  # (batch_size, seq_len, units)
-
-        print(f'TENSOR TYPE/SHAPE AFTER EMB=t{type(x)}/{x.shape}')
-
         x *= tf.math.sqrt(tf.cast(self.units, tf.float32))
         x += self._positional_encoding(tf.shape(x)[1])
         x = self._dropout(x, training=training)
-
-        print(f'TENSOR TYPE/SHAPE AFTER FWD ENCODING=t{type(x)}/{x.shape}')
 
         if pad_mask is not None:
             pad_mask = tf.squeeze(pad_mask, -1)  # (batch_size, seq_len)
