@@ -192,7 +192,7 @@ It is necessary for us to know that you agree for your code to be included into 
 
 Once you sign the CLA, a member from the Rasa team will get in touch with you with the feedback on your contribution. In some cases, contributions are accepted right away, but often, you may be asked to make some edits/improvements. Don’t worry if you are asked to change something - it’s a completely normal part of software development.
 
-If you have been requested to make changes to your contribution, head back to the local copy of your repository on your machine, implement the changes and push them to your contribution branch by repeating instructions from step 5. Your pull request will automatically be updated with the changes you pushed. Tag a person who first reviewed your contribution by mentioning them in the comments of your PR.
+If you have been requested to make changes to your contribution, head back to the local copy of your repository on your machine, implement the changes and push them to your contribution branch by repeating instructions from step 5. Your pull request will automatically be updated with the changes you pushed. Once you've implemented all of the suggested changes, tag the person who first reviewed your contribution by mentioning them in the comments of your PR to ask them to take another look.
 Finally, if your contribution is accepted, the Rasa team member will merge it to the Rasa codebase.
 
 #### 9. Share your contributions with the world!
