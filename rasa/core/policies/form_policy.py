@@ -139,7 +139,10 @@ class FormPolicy(MemoizationPolicy):
         return state_is_unhappy
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain, interpreter: Optional[RasaCoreInterpreter]
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: Optional[RasaCoreInterpreter],
     ) -> List[float]:
         """Predicts the corresponding form action if there is an active form"""
         result = self._default_predictions(domain)

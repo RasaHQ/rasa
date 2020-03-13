@@ -97,7 +97,6 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
         sparse_features = None
         dense_features = None
-
         if message.get(SPARSE_FEATURE_NAMES[attribute]) is not None:
             sparse_features = message.get(SPARSE_FEATURE_NAMES[attribute])
 
@@ -161,6 +160,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         sparse_state, dense_state = self.combine_state_features(
             state_extracted_features
         )
+
 
         if self.interpreter.entities == []:
             entity_features = None
@@ -372,7 +372,6 @@ class TrackerFeaturizer:
         self.state_featurizer.interpreter.prepare_training_data_and_train(
             trackers_as_states, trackers_as_actions, kwargs["output_path_nlu"], domain
         )
-
         # noinspection PyPep8Naming
         X, true_lengths = self._featurize_states(trackers_as_states)
         y = self._featurize_labels(trackers_as_actions, domain)
@@ -581,12 +580,14 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         frozen_actions = (action,)
         return hash((frozen_states, frozen_actions))
 
+
     def training_states_and_actions_e2e(
         self, trackers: List[DialogueStateTracker], domain: Domain
     ) -> Tuple[List[List[Optional[Dict[Text, float]]]], List[List[Text]]]:
         trackers_as_states_e2e = []
         trackers_as_actions_e2e = []
         hashed_examples = set()
+
         pbar = tqdm(
             trackers, desc="Processed trackers e2e", disable=is_logging_disabled()
         )

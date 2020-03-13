@@ -372,7 +372,9 @@ class TEDPolicy(Policy):
         """Train the policy on given training trackers."""
 
         # dealing with training data
-        training_data = self.featurize_for_training(training_trackers, domain, interpreter, **kwargs)
+        training_data = self.featurize_for_training(
+            training_trackers, domain, interpreter, **kwargs
+        )
 
         self._label_data = self._create_label_data(domain)
 
@@ -407,7 +409,14 @@ class TEDPolicy(Policy):
         )
 
     def predict_action_probabilities(
+<<<<<<< HEAD
         self, tracker: DialogueStateTracker, domain: Domain,
+=======
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: Optional[RasaCoreInterpreter],
+>>>>>>> black formatting
     ) -> List[float]:
         """Predict the next action the bot should take.
 
@@ -638,7 +647,11 @@ class TED(RasaModel):
             self.data_signature["dialogue_features"],
             "dialogue_features",
             self.config[REGULARIZATION_CONSTANT],
+<<<<<<< HEAD
             100,
+=======
+            self.data_signature["dialogue_features"][0][1][-1],
+>>>>>>> black formatting
         )
 
         for is_sparse, shape in self.data_signature["label_features"]:
@@ -651,7 +664,11 @@ class TED(RasaModel):
             self.data_signature["label_features"],
             "label_features",
             self.config[REGULARIZATION_CONSTANT],
+<<<<<<< HEAD
             100,
+=======
+            sparse_dim_label_features,
+>>>>>>> black formatting
         )
 
         self._tf_layers[f"ffnn.{DIALOGUE}"] = layers.Ffnn(
@@ -778,6 +795,7 @@ class TED(RasaModel):
             tf.squeeze(batch["dialog_lengths"], axis=0), tf.int32
         )
 
+<<<<<<< HEAD
         label_in = batch[LABEL_FEATURES]
 
         dialogue_in = self._combine_sparse_dense_features(
@@ -786,6 +804,13 @@ class TED(RasaModel):
 
         label_in = self._combine_sparse_dense_features(label_in, LABEL_FEATURES)
         label_in = tf.squeeze(label_in, axis=1)
+=======
+        dialogue_in = batch[DIALOGUE_FEATURES][0]
+        label_in = batch[LABEL_FEATURES][0]
+        if isinstance(label_in, tf.SparseTensor):
+            label_in = self._tf_layers["sparse_to_dense.label_features"](label_in)
+            label_in = tf.squeeze(label_in, axis=1)
+>>>>>>> black formatting
 
         if self.max_history_tracker_featurizer_used:
             # add time dimension if max history featurizer is used

@@ -116,7 +116,9 @@ class MessageProcessor:
         else:
             return None
 
-    async def predict_next(self, sender_id: Text, interpreter: Optional[RasaCoreInterpreter]) -> Optional[Dict[Text, Any]]:
+    async def predict_next(
+        self, sender_id: Text, interpreter: Optional[RasaCoreInterpreter]
+    ) -> Optional[Dict[Text, Any]]:
 
         # we have a Tracker instance for each user
         # which maintains conversation state
@@ -135,6 +137,7 @@ class MessageProcessor:
                 docs=DOCS_URL_POLICIES,
             )
             return None
+
         probabilities, policy = self._get_next_action_probabilities(tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
@@ -297,7 +300,9 @@ class MessageProcessor:
         This should be overwritten by more advanced policies to use
         ML to predict the action. Returns the index of the next action."""
 
-        action_confidences, policy = self._get_next_action_probabilities(tracker, interpreter)
+        action_confidences, policy = self._get_next_action_probabilities(
+            tracker, interpreter
+        )
 
         max_confidence_index = int(np.argmax(action_confidences))
         action = self.domain.action_for_index(

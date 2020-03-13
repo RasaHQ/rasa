@@ -23,7 +23,6 @@ from rasa.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.core.interpreter import RasaCoreInterpreter
 
 
-
 # there are a number of issues with imports from tensorflow. hence the deactivation
 # pytype: disable=import-error
 # pytype: disable=module-attr
@@ -175,7 +174,9 @@ class KerasPolicy(Policy):
         np.random.seed(self.random_seed)
         tf.random.set_seed(self.random_seed)
 
-        training_data = self.featurize_for_training(training_trackers, domain, interpreter, **kwargs)
+        training_data = self.featurize_for_training(
+            training_trackers, domain, interpreter, **kwargs
+        )
         # noinspection PyPep8Naming
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
 
@@ -208,7 +209,10 @@ class KerasPolicy(Policy):
         logger.debug("Done fitting Keras Policy model.")
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain, interpreter: Optional[RasaCoreInterpreter]
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: Optional[RasaCoreInterpreter],
     ) -> List[float]:
 
         # noinspection PyPep8Naming

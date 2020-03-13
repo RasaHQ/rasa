@@ -118,7 +118,7 @@ class PolicyEnsemble:
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        interpreter: Optional[RasaCoreInterpreter], 
+        interpreter: Optional[RasaCoreInterpreter],
         **kwargs: Any,
     ) -> None:
         if training_trackers:
