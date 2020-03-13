@@ -5,6 +5,8 @@ import numpy as np
 import logging
 from collections import defaultdict
 from typing import List, Text, Dict, Tuple, Union, Optional, Callable
+
+from tensorflow_core.python.ops.summary_ops_v2 import ResourceSummaryWriter
 from tqdm import tqdm
 from rasa.utils.common import is_logging_disabled
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
@@ -42,9 +44,14 @@ class RasaModel(tf.keras.models.Model):
 
         self.random_seed = random_seed
 
-        if tensorboard_log_dir is None:
-            self.tensorboard_usage = False
-        else:
+        self.train_summary_writer = None
+        self.test_summary_writer = None
+        self._set_up_tensorboard_writer(tensorboard_log_dir)
+
+    def _set_up_tensorboard_writer(
+        self, tensorboard_log_dir: Optional[Text] = None
+    ) -> None:
+        if tensorboard_log_dir is not None:
             current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
             train_log_dir = (
@@ -56,8 +63,6 @@ class RasaModel(tf.keras.models.Model):
 
             self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
             self.test_summary_writer = tf.summary.create_file_writer(test_log_dir)
-
-            self.tensorboard_usage = True
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -123,7 +128,7 @@ class RasaModel(tf.keras.models.Model):
                 True,
             )
 
-            postfix_dict = self._get_metric_results(self.train_summary_writer, epoch)
+            postfix_dict = self._get_metric_results(epoch, self.train_summary_writer)
 
             if evaluate_on_num_examples > 0:
                 if self._should_evaluate(evaluate_every_num_epochs, epochs, epoch):
@@ -134,7 +139,7 @@ class RasaModel(tf.keras.models.Model):
                         False,
                     )
                     val_results = self._get_metric_results(
-                        self.test_summary_writer, epoch, prefix="val_"
+                        epoch, self.test_summary_writer, prefix="val_"
                     )
 
                 postfix_dict.update(val_results)
@@ -290,13 +295,16 @@ class RasaModel(tf.keras.models.Model):
         )
 
     def _get_metric_results(
-        self, writer, epoch: int, prefix: Optional[Text] = None
+        self,
+        epoch: int,
+        writer: Optional[ResourceSummaryWriter] = None,
+        prefix: Optional[Text] = None,
     ) -> Dict[Text, Text]:
         """Get the metrics results"""
 
         prefix = prefix or ""
 
-        if self.tensorboard_usage:
+        if writer is not None:
             with writer.as_default():
                 for metric in self.metrics:
                     if metric.name in self.metrics_to_log:
