@@ -15,7 +15,7 @@ $ python3 scripts/gen_conversations.py --help
 import uuid
 import time
 import random
-from itertools import count
+from itertools import count as counter
 from typing import List, Text
 import argparse
 
@@ -114,13 +114,13 @@ def _get_random_text() -> Text:
     """
     if random.random() > 0.05:
         return random.choice(MESSAGE_TEXTS)
-    else:
-        # Shout it instead!
-        # "That's nice." -> "THAT'S NICE!!!"
-        return random.choice(MESSAGE_TEXTS).upper().rstrip(".?!") + "!!!"
+
+    # Shout it instead!
+    # "That's nice." -> "THAT'S NICE!!!"
+    return random.choice(MESSAGE_TEXTS).upper().rstrip(".?!") + "!!!"
 
 
-def _generate_session_start_events(timestamp: count) -> List[Event]:
+def _generate_session_start_events(timestamp: counter) -> List[Event]:
     """Generate events corresponding to the start of a session.
 
     Args:
@@ -135,20 +135,17 @@ def _generate_session_start_events(timestamp: count) -> List[Event]:
     ]
 
 
-def _generate_conversation_events(
-    sender_id: Text, length: int, sessions: int
-) -> List[Event]:
+def _generate_conversation_events(length: int, sessions: int) -> List[Event]:
     """Generates a list of conversation events, with random user/bot messages.
 
     Args:
-        sender_id: ID to use for the conversation.
         length: Number of user + bot messages to generate.
         sessions: Number of sessions to use.
 
     Returns:
         List of generated events.
     """
-    timestamp = count(start=time.time(), step=1)
+    timestamp = counter(start=time.time(), step=1)
 
     events = []
     messages_per_session = length // sessions
@@ -210,7 +207,7 @@ def _generate_conversations(
     for _ in tqdm(range(count), desc="conversations"):
         sender_id = uuid.uuid4().hex
         tracker = DialogueStateTracker.from_events(
-            sender_id, _generate_conversation_events(sender_id, length, sessions)
+            sender_id, _generate_conversation_events(length, sessions)
         )
         store.save(tracker)
 
