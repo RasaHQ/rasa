@@ -60,6 +60,7 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     AUTO,
     BALANCED,
+    TENSORBOARD_LOG_DIR,
 )
 from rasa.nlu.constants import (
     RESPONSE,
@@ -186,6 +187,9 @@ class ResponseSelector(DIETClassifier):
         MASKED_LM: False,
         # Name of the intent for which this response selector is to be trained
         RETRIEVAL_INTENT: None,
+        # If you want to use tensorboard to visualize training and validation metrics,
+        # set this option to a valid output directory.
+        TENSORBOARD_LOG_DIR: None,
     }
 
     def __init__(

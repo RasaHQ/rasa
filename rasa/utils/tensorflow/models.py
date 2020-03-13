@@ -1,3 +1,5 @@
+import datetime
+
 import tensorflow as tf
 import numpy as np
 import logging
@@ -18,7 +20,12 @@ class RasaModel(tf.keras.models.Model):
     Cannot be used as tf.keras.Model
     """
 
-    def __init__(self, random_seed: Optional[int] = None, **kwargs) -> None:
+    def __init__(
+        self,
+        random_seed: Optional[int] = None,
+        tensorboard_log_dir: Optional[Text] = None,
+        **kwargs,
+    ) -> None:
         """Initialize the RasaModel.
 
         Args:
@@ -34,6 +41,25 @@ class RasaModel(tf.keras.models.Model):
         self._predict_function = None
 
         self.random_seed = random_seed
+
+        if tensorboard_log_dir is None:
+            self.tensorboard_usage = False
+        else:
+            current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+
+            train_log_dir = (
+                f"{tensorboard_log_dir}/logs/gradient_tape/{current_time}/train"
+            )
+            test_log_dir = (
+                f"{tensorboard_log_dir}/logs/gradient_tape/{current_time}/test"
+            )
+            func_log_dir = f"{tensorboard_log_dir}/logs/func/{current_time}/func"
+
+            self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+            self.test_summary_writer = tf.summary.create_file_writer(test_log_dir)
+            self.func_summary_writer = tf.summary.create_file_writer(func_log_dir)
+
+            self.tensorboard_usage = True
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -99,7 +125,7 @@ class RasaModel(tf.keras.models.Model):
                 True,
             )
 
-            postfix_dict = self._get_metric_results()
+            postfix_dict = self._get_metric_results(self.train_summary_writer, epoch)
 
             if evaluate_on_num_examples > 0:
                 if self._should_evaluate(evaluate_every_num_epochs, epochs, epoch):
@@ -109,7 +135,9 @@ class RasaModel(tf.keras.models.Model):
                         epoch_batch_size,
                         False,
                     )
-                    val_results = self._get_metric_results(prefix="val_")
+                    val_results = self._get_metric_results(
+                        self.test_summary_writer, epoch, prefix="val_"
+                    )
 
                 postfix_dict.update(val_results)
 
@@ -202,8 +230,8 @@ class RasaModel(tf.keras.models.Model):
         for batch_in in dataset_function(batch_size):
             call_model_function(batch_in)
 
-    @staticmethod
     def _get_tf_call_model_function(
+        self,
         dataset_function: Callable,
         call_model_function: Callable,
         eager: bool,
@@ -220,7 +248,15 @@ class RasaModel(tf.keras.models.Model):
         tf_call_model_function = tf.function(
             call_model_function, input_signature=[init_dataset.element_spec]
         )
+
+        if self.tensorboard_usage:
+            tf.summary.trace_on(graph=True)
+
         tf_call_model_function(next(iter(init_dataset)))
+
+        if self.tensorboard_usage:
+            with self.func_summary_writer.as_default():
+                tf.summary.trace_export(name="rasa_model", step=0)
 
         logger.debug(f"Finished building tensorflow {phase} graph.")
 
@@ -263,10 +299,20 @@ class RasaModel(tf.keras.models.Model):
             ),
         )
 
-    def _get_metric_results(self, prefix: Optional[Text] = None) -> Dict[Text, Text]:
+    def _get_metric_results(
+        self, writer, epoch: int, prefix: Optional[Text] = None
+    ) -> Dict[Text, Text]:
         """Get the metrics results"""
 
         prefix = prefix or ""
+
+        if self.tensorboard_usage:
+            with writer.as_default():
+                for metric in self.metrics:
+                    if metric.name in self.metrics_to_log:
+                        tf.summary.scalar(
+                            f"{prefix}{metric.name}", metric.result(), step=epoch
+                        )
 
         return {
             f"{prefix}{metric.name}": f"{metric.result().numpy():.3f}"
