@@ -38,7 +38,7 @@
 If you would like to add a new feature or fix an existing bug, we prefer that you open a new issue on the Rasa repository before creating a pull request.
 
 It’s important to note that when opening an issue, you should first do a quick search of existing issues to make sure your suggestion hasn’t already been added as an issue.
-If your issue doesn’t already exist, and you’re ready to create a new one, make sure to state what you would like to implement, improve or bugfix. We have provided a template to make this process easier for you.
+If your issue doesn’t already exist, and you’re ready to create a new one, make sure to state what you would like to implement, improve or bugfix. We have provided templates to make this process easier for you.
 
 **To open a Github issue, go to the RasaHQ repository, select “Issues”, “New Issue” then “Feature Request” or “Bug Report” and fill out the template.**
 
