@@ -140,24 +140,31 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         if isinstance(event, ActionExecuted):
             if self._states:
-                current_intent = [element[0] for element in self._states[-1] if element[0].startswith('intent')]
+                current_intent = [
+                    element[0]
+                    for element in self._states[-1]
+                    if element[0].startswith("intent")
+                ]
                 if len(current_intent) > 0:
                     current_intent = current_intent[0]
                     previous_intent = None
                     for state in list(self._states)[::-1][1:]:
                         if not previous_intent:
                             for element in state:
-                                if element[0].startswith('intent'):
+                                if element[0].startswith("intent"):
                                     previous_intent = [element[0]][0]
                         else:
                             break
                     if previous_intent == current_intent:
-                        state_last = frozenset([element for element in list(self._states[-1]) if element[0]!=current_intent])
+                        state_last = frozenset(
+                            [
+                                element
+                                for element in list(self._states[-1])
+                                if element[0] != current_intent
+                            ]
+                        )
                         self._states.pop()
                         self._states.append(state_last)
-
-                
-
 
 
 # define types
@@ -529,6 +536,7 @@ class TrainingDataGenerator:
         data while processing the story step."""
 
         events = step.explicit_events(self.domain)
+        # events = step.events
 
         trackers = []
         if events:  # small optimization

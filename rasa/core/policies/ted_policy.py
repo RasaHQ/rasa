@@ -308,7 +308,9 @@ class TEDPolicy(Policy):
         """Train the policy on given training trackers."""
 
         # dealing with training data
-        training_data = self.featurize_for_training(training_trackers, domain, interpreter, **kwargs)
+        training_data = self.featurize_for_training(
+            training_trackers, domain, interpreter, **kwargs
+        )
 
         self._label_data = self._create_label_data(domain)
 
@@ -341,7 +343,10 @@ class TEDPolicy(Policy):
         )
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain, interpreter: Optional[RasaCoreInterpreter]
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: Optional[RasaCoreInterpreter],
     ) -> List[float]:
         """Predict the next action the bot should take.
 
@@ -564,21 +569,25 @@ class TED(RasaModel):
             parallel_iterations=1 if self.random_seed is not None else 1000,
         )
 
-        self._prepare_sparse_dense_layers(self.data_signature['dialogue_features'],
-            'dialogue_features',
+        self._prepare_sparse_dense_layers(
+            self.data_signature["dialogue_features"],
+            "dialogue_features",
             self.config[REGULARIZATION_CONSTANT],
-            self.data_signature['dialogue_features'][0][1][-1])
+            self.data_signature["dialogue_features"][0][1][-1],
+        )
 
-        for is_sparse, shape in self.data_signature['label_features']:
+        for is_sparse, shape in self.data_signature["label_features"]:
             if is_sparse:
                 sparse_dim_label_features = shape[-1]
             else:
                 sparse_dim_label_features = 100
 
-        self._prepare_sparse_dense_layers(self.data_signature['label_features'],
-            'label_features',
+        self._prepare_sparse_dense_layers(
+            self.data_signature["label_features"],
+            "label_features",
             self.config[REGULARIZATION_CONSTANT],
-            sparse_dim_label_features)
+            sparse_dim_label_features,
+        )
 
         self._tf_layers[f"ffnn.{DIALOGUE}"] = layers.Ffnn(
             self.config[HIDDEN_LAYERS_SIZES][DIALOGUE],
@@ -638,7 +647,9 @@ class TED(RasaModel):
         # if there is at least one `-1` it should be masked
 
         if isinstance(dialogue_in, tf.SparseTensor):
-            dialogue_in = self._tf_layers["sparse_to_dense.dialogue_features"](dialogue_in)
+            dialogue_in = self._tf_layers["sparse_to_dense.dialogue_features"](
+                dialogue_in
+            )
         mask = tf.sign(tf.reduce_max(dialogue_in, axis=-1) + 1)
 
         dialogue = self._tf_layers[f"ffnn.{DIALOGUE}"](dialogue_in, self._training)
@@ -668,8 +679,8 @@ class TED(RasaModel):
         dialogue_in = batch[DIALOGUE_FEATURES][0]
         label_in = batch[LABEL_FEATURES][0]
         if isinstance(label_in, tf.SparseTensor):
-                label_in = self._tf_layers["sparse_to_dense.label_features"](label_in)
-                label_in = tf.squeeze(label_in, axis=1)
+            label_in = self._tf_layers["sparse_to_dense.label_features"](label_in)
+            label_in = tf.squeeze(label_in, axis=1)
 
         if self.max_history_tracker_featurizer_used:
             # add time dimension if max history featurizer is used

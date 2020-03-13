@@ -85,7 +85,9 @@ class Policy:
             the :class:`rasa.core.training.data.DialogueTrainingData`
         """
 
-        training_data = self.featurizer.featurize_trackers(training_trackers, domain, interpreter)
+        training_data = self.featurizer.featurize_trackers(
+            training_trackers, domain, interpreter
+        )
 
         max_training_samples = kwargs.get("max_training_samples")
         if max_training_samples is not None:
