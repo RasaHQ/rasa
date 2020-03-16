@@ -20,7 +20,8 @@ def test_run_help(run: Callable[..., RunResult]):
 
     help_text = """usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
                 [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
-                [--response-timeout RESPONSE_TIMEOUT] [--cors [CORS [CORS ...]]] [--enable-api]
+                [--cors [CORS [CORS ...]]] [--enable-api]
+                [--response-timeout RESPONSE_TIMEOUT]
                 [--remote-storage REMOTE_STORAGE]
                 [--ssl-certificate SSL_CERTIFICATE]
                 [--ssl-keyfile SSL_KEYFILE] [--ssl-ca-file SSL_CA_FILE]
