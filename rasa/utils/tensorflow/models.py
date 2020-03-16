@@ -51,6 +51,7 @@ class RasaModel(tf.keras.models.Model):
         self.train_summary_writer = None
         self.test_summary_writer = None
         self.model_summary_file = None
+        self.tensorboard_log_on_epochs = True
 
         self._set_up_tensorboard_writer(tensorboard_log_level, tensorboard_log_dir)
 
@@ -58,6 +59,14 @@ class RasaModel(tf.keras.models.Model):
         self, tensorboard_log_level: Text, tensorboard_log_dir: Optional[Text] = None
     ) -> None:
         if tensorboard_log_dir is not None:
+            if tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
+                raise ValueError(
+                    f"Provided '{TENSORBOARD_LOG_LEVEL}' ('{tensorboard_log_level}') "
+                    f"is invalid! Valid values are: {TENSORBOARD_LOG_LEVELS}"
+                )
+
+            self.tensorboard_log_on_epochs = tensorboard_log_level == "epoch"
+
             current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
             train_log_dir = f"{tensorboard_log_dir}/{current_time}/train"
@@ -69,14 +78,6 @@ class RasaModel(tf.keras.models.Model):
             self.model_summary_file = (
                 f"{tensorboard_log_dir}/{current_time}/model_summary.txt"
             )
-
-            if tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
-                raise ValueError(
-                    f"Provided '{TENSORBOARD_LOG_LEVEL}' ('{tensorboard_log_level}') "
-                    f"is invalid! Valid values are: {TENSORBOARD_LOG_LEVELS}"
-                )
-
-            self.tensorboard_log_on_epochs = tensorboard_log_level == "epoch"
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]

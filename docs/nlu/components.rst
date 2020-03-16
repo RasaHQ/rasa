@@ -1108,7 +1108,7 @@ ResponseSelector
             # should predict those tokens.
             "use_masked_language_model": False
             # Name of the intent for which this response selector is to be trained
-            "retrieval_intent: None
+            "retrieval_intent": None
             # If you want to use tensorboard to visualize training metrics,
             # set this option to a valid output directory.
             # You can view the training metrics after training in tensorboard via
