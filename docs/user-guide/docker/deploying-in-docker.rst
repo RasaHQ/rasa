@@ -312,7 +312,7 @@ Using a Custom Tracker Store Implementation
 ###########################################
 
 If you have a custom implementation of a tracker store you have two options
-to add this store to Rasa:
+to add this store to Rasa Open Source:
 
   - extending the Rasa image
   - mounting it as volume

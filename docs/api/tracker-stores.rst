@@ -1,6 +1,5 @@
-:desc: All conversations are stored within a tracker store. Read how open source
-       library Rasa provides implementations for different store types out
-       of the box.
+:desc: All conversations are stored within a tracker store. Read how Rasa Open Source
+       provides implementations for different store types out of the box.
 
 .. _tracker-stores:
 
@@ -10,7 +9,7 @@ Tracker Stores
 .. edit-link::
 
 All conversations are stored within a tracker store.
-Rasa provides implementations for different store types out of the box.
+Rasa Open Source provides implementations for different store types out of the box.
 If you want to use another store, you can also build a custom tracker store by extending the ``TrackerStore`` class.
 
 .. contents::
@@ -22,7 +21,7 @@ InMemoryTrackerStore (default)
     ``InMemoryTrackerStore`` is the default tracker store. It is used if no other tracker store is configured.
     It stores the conversation history in memory.
 
-    .. note:: As this store keeps all history in memory, the entire history is lost if you restart Rasa.
+    .. note:: As this store keeps all history in memory, the entire history is lost if you restart the Rasa server.
 
 :Configuration:
     To use the ``InMemoryTrackerStore`` no configuration is needed.
@@ -38,7 +37,7 @@ SQLTrackerStore
     intent name and typename
 
 :Configuration:
-    To set up Rasa with SQL the following steps are required:
+    To set up Rasa Open Source with SQL the following steps are required:
 
     1. Add required configuration to your ``endpoints.yml``:
 
@@ -131,7 +130,7 @@ RedisTrackerStore
     Redis is a fast in-memory key-value store which can optionally also persist data.
 
 :Configuration:
-    To set up Rasa with Redis the following steps are required:
+    To set up Rasa Open Source with Redis the following steps are required:
 
     1. Start your Redis instance
     2. Add required configuration to your ``endpoints.yml``:

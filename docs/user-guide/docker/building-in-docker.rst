@@ -201,7 +201,7 @@ In ``domain.yml``, add a section for custom actions, including your new action:
   actions:
     - action_joke
 
-To instruct Rasa to use the action server you have to tell Rasa its location.
+To instruct the Rasa server to use the action server, you have to tell Rasa its location.
 Add this to your ``endpoints.yml``:
 
 .. code-block:: yaml
@@ -242,7 +242,7 @@ To spin up the action server together with the Rasa instance, add a service
 This pulls the image for the Rasa SDK which includes the action server,
 mounts your custom actions into it, and starts the server.
 
-Run ``docker-compose up`` to start the action server together with Rasa.
+Run ``docker-compose up`` to start the action server together with the Rasa server.
 
 
 Deploying your Model
