@@ -427,7 +427,7 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
         "evaluate_on_number_of_examples": 0
         # If you want to use tensorboard to visualize training metrics,
         # set this option to a valid output directory.
-        # You can view the training metrics after training via tensorboard via
+        # You can view the training metrics after training in tensorboard via
         # ``tensorboard --logdir <path-to-given-directory>``
         "tensorboard_log_directory": None
 

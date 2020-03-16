@@ -56,17 +56,15 @@ class RasaModel(tf.keras.models.Model):
         if tensorboard_log_dir is not None:
             current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
-            train_log_dir = (
-                f"{tensorboard_log_dir}/logs/gradient_tape/{current_time}/train"
-            )
-            test_log_dir = (
-                f"{tensorboard_log_dir}/logs/gradient_tape/{current_time}/test"
-            )
+            train_log_dir = f"{tensorboard_log_dir}/{current_time}/train"
+            test_log_dir = f"{tensorboard_log_dir}/{current_time}/test"
 
             self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
             self.test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
-            self.model_summary_file = f"{tensorboard_log_dir}/model_summary.txt"
+            self.model_summary_file = (
+                f"{tensorboard_log_dir}/{current_time}/model_summary.txt"
+            )
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -308,22 +306,24 @@ class RasaModel(tf.keras.models.Model):
         prefix: Optional[Text] = None,
     ) -> Dict[Text, Text]:
         """Get the metrics results"""
-
         prefix = prefix or ""
 
         if writer is not None:
-            with writer.as_default():
-                for metric in self.metrics:
-                    if metric.name in self.metrics_to_log:
-                        tf.summary.scalar(
-                            f"{prefix}{metric.name}", metric.result(), step=epoch
-                        )
+            self._log_metrics_for_tensorboard(epoch, writer)
 
         return {
             f"{prefix}{metric.name}": f"{metric.result().numpy():.3f}"
             for metric in self.metrics
             if metric.name in self.metrics_to_log
         }
+
+    def _log_metrics_for_tensorboard(
+        self, step: int, writer: ResourceSummaryWriter
+    ) -> None:
+        with writer.as_default():
+            for metric in self.metrics:
+                if metric.name in self.metrics_to_log:
+                    tf.summary.scalar(f"{metric.name}", metric.result(), step=step)
 
     @staticmethod
     def _should_evaluate(
