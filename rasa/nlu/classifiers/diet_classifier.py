@@ -78,6 +78,7 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     AUTO,
     BALANCED,
+    TENSORBOARD_LOG_LEVEL,
 )
 
 
@@ -211,6 +212,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # If you want to use tensorboard to visualize training and validation metrics,
         # set this option to a valid output directory.
         TENSORBOARD_LOG_DIR: None,
+        # Define when training metrics for tensorboard should be logged.
+        # Either after every epoch or for every training step.
+        # Valid values: 'epoch' and 'minibatch'
+        TENSORBOARD_LOG_LEVEL: "epoch",
     }
 
     # init helpers
@@ -945,6 +950,7 @@ class DIET(RasaModel):
             name="DIET",
             random_seed=config[RANDOM_SEED],
             tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
+            tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
         )
 
         self.config = config

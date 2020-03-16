@@ -39,6 +39,7 @@ from rasa.utils.tensorflow.constants import (
     AUTO,
     BALANCED,
     TENSORBOARD_LOG_DIR,
+    TENSORBOARD_LOG_LEVEL,
 )
 from rasa.utils.tensorflow.models import RasaModel
 import rasa.utils.common as common_utils
@@ -144,6 +145,10 @@ class EmbeddingPolicy(TEDPolicy):
         # If you want to use tensorboard to visualize training and validation metrics,
         # set this option to a valid output directory.
         TENSORBOARD_LOG_DIR: None,
+        # Define when training metrics for tensorboard should be logged.
+        # Either after every epoch or for every training step.
+        # Valid values: 'epoch' and 'minibatch'
+        TENSORBOARD_LOG_LEVEL: "epoch",
     }
 
     def __init__(

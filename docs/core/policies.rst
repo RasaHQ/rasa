@@ -430,6 +430,10 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
         # You can view the training metrics after training in tensorboard via
         # ``tensorboard --logdir <path-to-given-directory>``
         "tensorboard_log_directory": None
+        # Define when training metrics for tensorboard should be logged.
+        # Either after every epoch or for every training step.
+        # Valid values: 'epoch' and 'minibatch'
+        "tensorboard_log_level": "epoch",
 
     .. note::
 
