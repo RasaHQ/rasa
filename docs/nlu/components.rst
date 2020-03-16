@@ -927,7 +927,7 @@ EmbeddingIntentClassifier
             # Define when training metrics for tensorboard should be logged.
             # Either after every epoch or for every training step.
             # Valid values: 'epoch' and 'minibatch'
-            "tensorboard_log_level": "epoch",
+            "tensorboard_log_level": "epoch"
 
 .. _keyword_intent_classifier:
 
@@ -1117,7 +1117,7 @@ ResponseSelector
             # Define when training metrics for tensorboard should be logged.
             # Either after every epoch or for every training step.
             # Valid values: 'epoch' and 'minibatch'
-            "tensorboard_log_level": "epoch",
+            "tensorboard_log_level": "epoch"
 
 
 Entity Extractors
@@ -1685,4 +1685,4 @@ DIETClassifier
             # Define when training metrics for tensorboard should be logged.
             # Either after every epoch or for every training step.
             # Valid values: 'epoch' and 'minibatch'
-            "tensorboard_log_level": "epoch",
+            "tensorboard_log_level": "epoch"

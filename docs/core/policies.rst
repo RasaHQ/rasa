@@ -433,7 +433,7 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
         # Define when training metrics for tensorboard should be logged.
         # Either after every epoch or for every training step.
         # Valid values: 'epoch' and 'minibatch'
-        "tensorboard_log_level": "epoch",
+        "tensorboard_log_level": "epoch"
 
     .. note::
 
