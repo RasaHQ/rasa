@@ -2,7 +2,6 @@ import json
 from typing import Union, Text, List, Optional, Type
 
 import pytest
-from unittest.mock import patch
 
 from _pytest.monkeypatch import MonkeyPatch
 
@@ -37,8 +36,8 @@ def test_pika_broker_from_config():
 # noinspection PyProtectedMember
 def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
     # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
-    with patch.object(PikaEventBroker, "_run_pika", lambda _: None):
-        pika_producer = PikaEventBroker("", "", "")
+    monkeypatch.setattr(PikaEventBroker, "_run_pika", lambda _: None)
+    pika_producer = PikaEventBroker("", "", "")
 
     # unset RASA_ENVIRONMENT env var results in empty App ID
     monkeypatch.delenv("RASA_ENVIRONMENT", raising=False)
@@ -64,23 +63,31 @@ def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
         # same, but with a list
         ("q1", ["q2", "q3"], ["q2", "q3"], FutureWarning),
         # only supplying `queues` works, and queues is a string
-        (None, "q1", ["q1"], UserWarning),
+        (None, "q1", ["q1"], None),
     ],
 )
 def test_pika_queues_from_args(
-    queue_arg: Union[Text, List[Text], None],
     queues_arg: Union[Text, List[Text], None],
+    queue_arg: Union[Text, List[Text], None],
     expected: List[Text],
     warning: Optional[Type[Warning]],
+    monkeypatch: MonkeyPatch,
 ):
     # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
-    with patch.object(PikaEventBroker, "_run_pika", lambda _: None):
-        with pytest.warns(warning):
-            pika_producer = PikaEventBroker(
-                "", "", "", queue=queue_arg, queues=queues_arg
-            )
+    monkeypatch.setattr(PikaEventBroker, "_run_pika", lambda _: None)
+
+    with pytest.warns(warning):
+        pika_producer = PikaEventBroker("", "", "", queues=queues_arg, queue=queue_arg)
 
     assert pika_producer.queues == expected
+
+
+def test_pika_invalid_queues_argument(monkeypatch: MonkeyPatch):
+    # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
+    monkeypatch.setattr(PikaEventBroker, "_run_pika", lambda _: None)
+
+    with pytest.raises(ValueError):
+        PikaEventBroker("", "", "", queues=None, queue=None)
 
 
 def test_no_broker_in_config():

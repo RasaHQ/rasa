@@ -26,6 +26,8 @@ if typing.TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+RABBITMQ_EXCHANGE = "rasa-exchange"
+
 
 def initialise_pika_connection(
     host: Text,
@@ -47,7 +49,6 @@ def initialise_pika_connection(
 
     Returns:
         `pika.BlockingConnection` with provided parameters
-
     """
     import pika
 
@@ -78,7 +79,6 @@ def _get_pika_parameters(
     Returns:
         `pika.ConnectionParameters` which can be used to create a new connection to a
         broker.
-
     """
     import pika
 
@@ -121,7 +121,6 @@ def initialise_pika_select_connection(
 
     Returns:
         A callback-based connection to the RabbitMQ event broker.
-
     """
     import pika
 
@@ -154,7 +153,6 @@ def initialise_pika_channel(
 
     Returns:
         Pika `BlockingChannel` with declared queue.
-
     """
     connection = initialise_pika_connection(
         host, username, password, port, connection_attempts, retry_delay_in_seconds
@@ -186,7 +184,6 @@ def close_pika_channel(
             closed.
         time_between_attempts_in_seconds: Wait time between attempts to confirm closed
             state.
-
     """
     from pika.exceptions import AMQPError
 
@@ -242,23 +239,23 @@ class PikaEventBroker(EventBroker):
         username: Text,
         password: Text,
         port: Union[int, Text] = 5672,
-        queue: Union[List[Text], Tuple[Text], Text, None] = None,
         queues: Union[List[Text], Tuple[Text], Text, None] = ("rasa_core_events",),
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
         log_level: Union[Text, int] = os.environ.get(
             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
         ),
+        **kwargs: Any,
     ):
         """Initialise RabbitMQ event broker."""
         logging.getLogger("pika").setLevel(log_level)
 
-        self.queues = self._get_queues_from_args(queue, queues)
         self.host = host
         self.username = username
         self.password = password
         self.port = port
         self.channel: Optional["Channel"] = None
+        self.queues = self._get_queues_from_args(queues, kwargs)
         self.should_keep_unpublished_messages = should_keep_unpublished_messages
         self.raise_on_failure = raise_on_failure
 
@@ -282,19 +279,29 @@ class PikaEventBroker(EventBroker):
 
     @staticmethod
     def _get_queues_from_args(
-        queue_arg: Union[List[Text], Tuple[Text], Text, None],
-        queues_arg: Union[List[Text], Tuple[Text], Text, None],
+        queues_arg: Union[List[Text], Tuple[Text], Text, None], kwargs: Any,
     ) -> Union[List[Text], Tuple[Text]]:
         """Get queues for this event broker.
 
+        The preferred argument defining the RabbitMQ queues `PikaEventBroker` should
+        publish to as of Rasa Open Source version 1.8.2 is `queues`. This function
+        ensures backwards compatibility with the old `queue` argument. This method
+        can be removed in the future, and `self.queues` should just receive the value of
+        the `queues` kwarg in the constructor.
+
         Args:
-            queue_arg: Value of the supplied `queue` argument.
             queues_arg: Value of the supplied `queues` argument.
+            kwargs: Additional kwargs supplied to the `PikaEventBroker` constructor.
+                If `queues_arg` is not supplied, the `queue` kwarg will be used instead.
 
         Returns:
             Queues this event broker publishes to.
 
+        Raises:
+            `ValueError` if no valid `queue` or `queues` argument was found.
         """
+        queue_arg = kwargs.pop("queue", None)
+
         if queue_arg:
             raise_warning(
                 "Your Pika event broker config contains the deprecated `queue` key. "
@@ -307,18 +314,24 @@ class PikaEventBroker(EventBroker):
             return queues_arg
 
         elif queues_arg and isinstance(queues_arg, str):
-            raise_warning(
-                "Found a string value under the `queues` key of the Pika event broker "
-                "config. Please supply a list of queues under this key, even if it is "
-                "just a single one.",
-                docs=DOCS_URL_PIKA_EVENT_BROKER,
+            logger.debug(
+                f"Found a string value under the `queues` key of the Pika event broker "
+                f"config. Please supply a list of queues under this key, even if it is "
+                f"just a single one. See {DOCS_URL_PIKA_EVENT_BROKER}"
             )
             return [queues_arg]
 
         if queue_arg and isinstance(queue_arg, str):
             return [queue_arg]
 
-        return queue_arg  # pytype: disable=bad-return-type
+        elif queue_arg:
+            return queue_arg  # pytype: disable=bad-return-type
+
+        raise ValueError(
+            f"Could not initialise `PikaEventBroker` due to invalid "
+            f"`queues` or `queue` argument in constructor. See "
+            f"{DOCS_URL_PIKA_EVENT_BROKER}."
+        )
 
     @classmethod
     def from_endpoint_config(
@@ -331,7 +344,6 @@ class PikaEventBroker(EventBroker):
 
         Returns:
             `PikaEventBroker` if `broker_config` was supplied, else `None`.
-
         """
         if broker_config is None:
             return None
@@ -358,9 +370,15 @@ class PikaEventBroker(EventBroker):
         )
 
     def _on_channel_open(self, channel: "Channel") -> None:
-        logger.debug("RabbitMQ channel was opened.")
+        logger.debug("RabbitMQ channel was opened. Declaring fanout exchange.")
+
+        # declare exchange of type 'fanout' in order to publish to multiple queues
+        # (https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-fanout)
+        channel.exchange_declare(RABBITMQ_EXCHANGE, exchange_type="fanout")
+
         for queue in self.queues:
-            channel.queue_declare(queue, durable=True)
+            channel.queue_declare(queue=queue, exclusive=True)
+            channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
 
         self.channel = channel
 
@@ -395,7 +413,6 @@ class PikaEventBroker(EventBroker):
 
         Returns:
             `True` if the channel is available, `False` otherwise.
-
         """
         while attempts:
             if self.channel:
@@ -421,7 +438,6 @@ class PikaEventBroker(EventBroker):
             headers: Message headers to append to the published message (key-value
                 dictionary). The headers can be retrieved in the consumer from the
                 `headers` attribute of the message's `BasicProperties`.
-
         """
         body = json.dumps(event)
 
@@ -462,7 +478,6 @@ class PikaEventBroker(EventBroker):
             `pika.spec.BasicProperties` with the `RASA_ENVIRONMENT` environment variable
             as the properties' `app_id` value, `delivery_mode`=2 and `headers` as the
             properties' headers.
-
         """
         from pika.spec import BasicProperties
 
@@ -480,18 +495,17 @@ class PikaEventBroker(EventBroker):
     def _basic_publish(
         self, body: Text, headers: Optional[Dict[Text, Text]] = None
     ) -> None:
-        for queue in self.queues:
-            self.channel.basic_publish(
-                "",
-                queue,
-                body.encode(DEFAULT_ENCODING),
-                properties=self._get_message_properties(headers),
-            )
+        self.channel.basic_publish(
+            exchange=RABBITMQ_EXCHANGE,
+            routing_key="",
+            body=body.encode(DEFAULT_ENCODING),
+            properties=self._get_message_properties(headers),
+        )
 
-            logger.debug(
-                f"Published Pika events to queue '{queue}' on host "
-                f"'{self.host}':\n{body}"
-            )
+        logger.debug(
+            f"Published Pika events to exchange '{RABBITMQ_EXCHANGE}' on host "
+            f"'{self.host}':\n{body}"
+        )
 
     def _publish(self, body: Text, headers: Optional[Dict[Text, Text]] = None) -> None:
         if self._pika_connection.is_closed:
@@ -532,7 +546,6 @@ def create_rabbitmq_ssl_options(
         Pika SSL context of type `pika.SSLOptions` if
         the RABBITMQ_SSL_CLIENT_CERTIFICATE and RABBITMQ_SSL_CLIENT_KEY
         environment variables are valid paths, else `None`.
-
     """
     client_certificate_path = os.environ.get("RABBITMQ_SSL_CLIENT_CERTIFICATE")
     client_key_path = os.environ.get("RABBITMQ_SSL_CLIENT_KEY")
@@ -561,13 +574,13 @@ class PikaProducer(PikaEventBroker):
         username: Text,
         password: Text,
         port: Union[int, Text] = 5672,
-        queue: Union[List[Text], Tuple[Text], Text, None] = None,
         queues: Union[List[Text], Tuple[Text], Text, None] = ("rasa_core_events",),
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
         log_level: Union[Text, int] = os.environ.get(
             ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
         ),
+        **kwargs: Any,
     ):
         raise_warning(
             "The `PikaProducer` class is deprecated, please inherit "
@@ -581,9 +594,9 @@ class PikaProducer(PikaEventBroker):
             username,
             password,
             port,
-            queue,
             queues,
             should_keep_unpublished_messages,
             raise_on_failure,
             log_level,
+            **kwargs,
         )
