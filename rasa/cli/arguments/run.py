@@ -5,17 +5,23 @@ from rasa.core import constants
 
 
 def set_run_arguments(parser: argparse.ArgumentParser):
+    """Arguments for running rasa directly."""
+
     add_model_param(parser)
     add_server_arguments(parser)
 
 
 def set_run_action_arguments(parser: argparse.ArgumentParser):
+    """Set arguments for running action sdk."""
+
     import rasa_sdk.cli.arguments as sdk
 
     sdk.add_endpoint_arguments(parser)
 
 
 def add_server_arguments(parser: argparse.ArgumentParser):
+    """Add arguments for running API endpoint."""
+
     parser.add_argument(
         "--log-file",
         type=str,

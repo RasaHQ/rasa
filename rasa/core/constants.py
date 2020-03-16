@@ -40,7 +40,8 @@ ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
 
 BEARER_TOKEN_PREFIX = "Bearer "
 
-# Key to access data in the event metadata which specifies if an event was caused by an external entity (e.g. a sensor).
+# Key to access data in the event metadata
+# It specifies if an event was caused by an external entity (e.g. a sensor).
 IS_EXTERNAL = "is_external"
 
 # the lowest priority intended to be used by machine learning policies

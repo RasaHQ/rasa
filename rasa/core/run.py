@@ -162,6 +162,8 @@ def serve_application(
     ssl_password: Optional[Text] = None,
     conversation_id: Optional[Text] = uuid.uuid4().hex,
 ):
+    """Run the API entrypoint."""
+
     from rasa import server
 
     if not channel and not credentials:
