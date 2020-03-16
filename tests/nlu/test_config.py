@@ -134,7 +134,11 @@ def test_override_defaults_supervised_embeddings_pipeline():
                 {"name": "SpacyNLP"},
                 {"name": "SpacyTokenizer"},
                 {"name": "SpacyFeaturizer", "pooling": "max"},
-                {"name": "DIETClassifier", "epochs": 10},
+                {
+                    "name": "DIETClassifier",
+                    "epochs": 10,
+                    "hidden_layers_sizes": {"text": [256, 128]},
+                },
             ],
         }
     )
@@ -151,6 +155,10 @@ def test_override_defaults_supervised_embeddings_pipeline():
         _config.for_component(idx_classifier), _config
     )
     assert component2.component_config["epochs"] == 10
+    assert (
+        component2.defaults["hidden_layers_sizes"].keys()
+        == component2.component_config["hidden_layers_sizes"].keys()
+    )
 
 
 def config_files_in(config_directory: Text):
