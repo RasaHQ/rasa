@@ -35,7 +35,6 @@ class EventBroker:
 
         Returns:
             `True` by default, but this may be overridden by subclasses.
-
         """
         return True
 
