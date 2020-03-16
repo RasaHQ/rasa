@@ -1,7 +1,7 @@
 .. _building-in-docker:
 
-Building an Assistant with Rasa and Docker
-==========================================
+Building a Rasa Assistant in Docker
+===================================
 
 If you don't have a Rasa project yet, you can build one in Docker without having to install Rasa Open Source
 on your local machine. If you already have a model you're satisfied with, skip ahead to

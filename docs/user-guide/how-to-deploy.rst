@@ -34,30 +34,31 @@ The recommended way to deploy an assistant is using either the Docker Compose or
 Kubernetes/Openshift
 ~~~~~~~~~~~~~~~~~~~~
 
-Kubernetes/Openshift is the best option if you need a scalable architecture. It's straightforward to deploy if you use the helm charts we provide. However, you can also customize the Helm charts if you have specific requirements.
+Kubernetes or Openshift is the best option if you need a scalable architecture. It's straightforward to deploy if you use the helm charts we provide. However, you can also customize the Helm charts if you have specific requirements.
 
-    - Default: Read the docs `here <https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/>`__.
-    - Custom: Read the docs `here <https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/>`__ and customize the `open source Helm charts <https://github.com/RasaHQ/rasa-x-helm>`_.
+    - Default: Read the `Deploying in Openshift or Kubernetes <https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/>`_ docs.
+    - Custom: Read the above, as well as the `Advanced Configuration <https://rasa.com/docs/rasa-x/installation-and-setup/openshift-kubernetes/#advanced-configuration>`_
+      documentation, and customize the `open source Helm charts <https://github.com/RasaHQ/rasa-x-helm>`_ to your needs.
 
 Docker Compose
 ~~~~~~~~~~~~~~
 
-    - Default: Watching this `video <https://www.youtube.com/watch?v=IUYdwy8HPVc>`__ or read the docs `here <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`__.
-    - Custom: Read the docs `here <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-manual/>`__.
+    - Default: Watch the `Masterclass Video <https://www.youtube.com/watch?v=IUYdwy8HPVc>`_ on deploying Rasa X or read the `Docker-Compose Quick Install <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`_ docs.
+    - Custom: Read the docs `Docker-Compose Manual Install <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-manual/>`_ documentation for full customization options.
 
 
 .. _rasa-only-deployment:
 
-Rasa-Only Deployment with Docker Compose
-----------------------------------------
+Alternative Deployment
+----------------------
 
 It is also possible to deploy a Rasa assistant using Docker-Compose without Rasa X. To do so, you can build your
-Rasa Assistant :ref:`locally<rasa-tutorial>` or :ref:`in Docker<building-in-docker>`. Then you can
-:ref:`deploy your model in Docker-Compose<deploying-rasa-in-docker-compose>`.
+Rasa Assistant locally or in Docker. Then you can deploy your model in Docker-Compose.
 
 .. toctree::
    :titlesonly:
    :maxdepth: 1
 
+   Building a Rasa Assistant Locally <rasa-tutorial>
    docker/building-in-docker
    docker/deploying-in-docker

@@ -139,7 +139,7 @@ Deploying an Action Server Image
 ********************************
 
 If you build an image that includes your action code and store it in a container registry, you can run it locally
-or as part of your Rasa X or Rasa Enterprise deployment, without having to move code between servers.
+or as part of your deployment, without having to move code between servers.
 In addition, you can add any additional dependencies of systems or Python libraries
 that are part of your action code but not included in the base ``rasa/rasa-sdk`` image.
 
