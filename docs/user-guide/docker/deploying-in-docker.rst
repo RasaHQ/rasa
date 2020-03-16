@@ -7,8 +7,6 @@ Deploying a Rasa Assistant in Docker-Compose
    :local:
    :depth: 2
 
-.. _running-the-rasa-server:
-
 
 Installing Docker
 ~~~~~~~~~~~~~~~~~
@@ -26,6 +24,7 @@ versions of Docker and Docker Compose. If the command doesn't work, you'll have 
 install Docker.
 See `Docker Installation <https://docs.docker.com/install/>`_ for details.
 
+.. _running-the-rasa-server:
 
 Running the Rasa Server
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -108,14 +107,31 @@ This is the port of the :ref:`REST Channel <rest_channels>` interface of Rasa.
     possible to connect to the command line of a single container after executing the
     ``run`` command.
 
+
+To add the action server, add the image of your action server code. To learn how to deploy
+an action server image, see :ref:`building-an-action-server-image`.
+
+.. code-block:: yaml
+   :emphasize-lines: 11-14
+
+   version: '3.0'
+   services:
+     rasa:
+       image: rasa/rasa:latest-full
+       ports:
+         - 5005:5005
+       volumes:
+         - ./:/app
+       command:
+         - run
+     app:
+       image: <your action server image>
+
 To run the services configured in your ``docker-compose.yml`` execute:
 
 .. code-block:: bash
 
     docker-compose up
-
-
-
 
 .. _building-an-action-server-image:
 
@@ -150,11 +166,17 @@ in which you'll extend the official SDK image, copy over your code, and add any 
    # Copy any additional custom requirements
    COPY actions/requirements-actions.txt ./
 
+   # Change back to root user to install dependencies
+   USER root
+
    # Install extra requirements for actions code
    RUN pip install -r requirements-actions.txt
 
    # Copy actions code to working directory
    COPY ./actions /app/actions
+
+   # By best practices, don't run the code with root user
+   USER 1001
 
 
 You can then build the image via the following command:

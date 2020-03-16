@@ -4,8 +4,8 @@ Building an Assistant with Rasa and Docker
 ==========================================
 
 If you don't have a Rasa project yet, you can build one in Docker without having to install Rasa Open Source
-on your local machine. If you already have a model you're satisfied with, skip ahead to :ref:`running-the-rasa-server`
-to deploy your model.
+on your local machine. If you already have a model you're satisfied with, skip ahead to
+:ref:`deploying-rasa-in-docker-compose` to deploy your model.
 
 .. contents::
    :local:
@@ -161,20 +161,18 @@ To create more sophisticated assistants, you will want to use :ref:`custom-actio
 Continuing the example from above, you might want to add an action which tells
 the user a joke to cheer them up.
 
-Running a Custom Action in Docker-Compose
-#########################################
-
-Start by creating the custom actions in a directory ``actions``:
+Start by creating the custom actions in a directory ``actions`` in your working directory:
 
 .. code-block:: bash
 
   mkdir actions
+  mv actions.py actions/actions.py
   # Rasa SDK expects a python module.
   # Therefore, make sure that you have this file in the directory.
   touch actions/__init__.py
-  touch actions/actions.py
 
-Then build a custom action using the Rasa SDK, e.g.:
+
+Then build a custom action using the Rasa SDK by editing ``actions/actions.py``, e.g.:
 
 .. code-block:: python
 
@@ -193,18 +191,32 @@ Then build a custom action using the Rasa SDK, e.g.:
       dispatcher.utter_message(text=joke)  # send the message back to the user
       return []
 
-Next, add the custom action in your stories and your domain file.
-Continuing with the example bot from ``rasa init``, replace ``utter_cheer_up`` in
-``data/stories.md`` with the custom action ``action_joke``, and add
-``action_joke`` to the actions in the domain file.
+To tell your bot to use this new action, replace ``utter_cheer_up`` in
+``data/stories.md`` with the custom action ``action_joke``.
+
+In ``domain.yml``, add a section for custom actions, including your new action:
+
+.. code-block:: yaml
+
+  actions:
+    - action_joke
 
 To instruct Rasa to use the action server you have to tell Rasa its location.
-Add this to your ``endpoints.yml`` (if it does not exist, create it):
+Add this to your ``endpoints.yml``:
 
 .. code-block:: yaml
 
   action_endpoint:
     url: http://app:5055/webhook
+
+After updating your domain and stories, you have to retrain your model:
+
+.. code-block:: bash
+
+  docker run \
+    -v $(pwd):/app \
+    rasa/rasa:latest-full \
+    train
 
 To spin up the action server together with the Rasa instance, add a service
 ``app`` to the ``docker-compose.yml``:
@@ -232,13 +244,11 @@ mounts your custom actions into it, and starts the server.
 
 Run ``docker-compose up`` to start the action server together with Rasa.
 
-.. warning::
-
-   If you create a more complicated
-   action that has extra library dependencies, you will need to
-   :ref:`build an action server image<building-an-action-server-image>` to run your code.
 
 Deploying your Model
-####################
+********************
 
-Once you're happy with your model, you can
+Work on your bot until you have a minimum viable assistant that can handle your happy paths. After
+that, you'll want to deploy your model to get feedback from real test users. To do so, you can deploy the
+model you created with Rasa X via one of our :ref:`recommended deployment methods<recommended-deployment-methods>`.
+Or, you can do a :ref:`Rasa-only deployment in Docker-Compose<deploying-rasa-in-docker-compose>`.
