@@ -19,13 +19,11 @@ If you're not sure if you have Docker installed, you can check by running:
 
   .. code-block:: bash
 
-    docker -v && docker-compose -v
+    docker -v
     # Docker version 18.09.2, build 6247962
-    # docker-compose version 1.23.2, build 1110ad01
 
 If Docker is installed on your machine, the output should show you your installed
-versions of Docker and Docker Compose. If the command doesn't work, you'll have to
-install Docker.
+versions of Docker. If the command doesn't work, you'll have to install Docker.
 See `Docker Installation <https://docs.docker.com/install/>`_ for details.
 
 Setting up your Rasa Project
@@ -66,10 +64,9 @@ The initial project files should all be there, as well as a ``models`` directory
 .. note::
 
    By default Docker runs containers as user ``1001``. Hence, all files created by
-   these containers will be owned by this user. See the `documentation of docker
+   these containers will be owned by this user. See the `Docker documentation
    <https://docs.docker.com/v17.12/edge/engine/reference/commandline/run/>`_
-   and `docker-compose <https://docs.docker.com/compose/compose-file/>`_ if you want to
-   run the containers as a different user.
+   if you want to run the containers as a different user.
 
 Talking to Your Assistant
 *************************
@@ -156,6 +153,7 @@ You can also leave these out since we are passing the default values.
     that your module is in the Python module search path by setting the
     environment variable ``PYTHONPATH=$PYTHONPATH:<directory of your module>``.
 
+
 Adding Custom Actions
 *********************
 
@@ -203,14 +201,6 @@ In ``domain.yml``, add a section for custom actions, including your new action:
      actions:
        - action_joke
 
-To instruct the Rasa server to use the action server, you have to tell Rasa its location.
-Add this to your ``endpoints.yml``:
-
-   .. code-block:: yaml
-
-     action_endpoint:
-       url: http://localhost:5055/webhook
-
 After updating your domain and stories, you have to retrain your model:
 
    .. code-block:: bash
@@ -220,32 +210,67 @@ After updating your domain and stories, you have to retrain your model:
        rasa/rasa:latest-full \
        train
 
-To spin up the action server together with the Rasa instance, add a service
-``app`` to the ``docker-compose.yml``:
+Your actions will run on a separate server from your Rasa server. First create a network to connect the two containers:
 
-   .. code-block:: yaml
-      :emphasize-lines: 11-14
+    .. code-block:: bash
 
-      version: '3.0'
-      services:
-        rasa:
-          image: rasa/rasa:latest-full
-          ports:
-            - 5005:5005
-          volumes:
-            - ./:/app
-          command:
-            - run
-        app:
-          image: rasa/rasa-sdk:latest
-          volumes:
-            - ./actions:/app/actions
+      docker network create my-project
+
+You can then run the actions with the following command:
+
+    .. code-block:: bash
+
+      docker run -d \
+        -v $(pwd)/actions:/app/actions \
+        --net my-project \
+        --name action-server
+        rasa/rasa-sdk:latest
+
+
+Here's what's happening in that command:
+
+  - ``-d``: Runs the container in detached mode so that you can run the rasa container in the same
+    window. Run ``docker ps`` at any time to see all of your currently running containers
+  - ``-v $(pwd):/app``: Mounts your project directory into the Docker
+    container so that the action server can run the code in the ``actions`` folder
+  - ``net my-project``: Run the server on a specific network so that the rasa container can find it
+  - ``--name action-server``: Gives the server a specific name for the rasa server to reference
+  - ``rasa/rasa-sdk:latest``: Uses the Rasa SDK image with the tag ``latest``
+
 
 This pulls the image for the Rasa SDK which includes the action server,
-mounts your custom actions into it, and starts the server.
+mounts your custom actions into it, and starts the server. Because it's running in detached mode,
+if you want to stop the container, do it with ``docker stop action-server``.
 
-Run ``docker-compose up`` to start the action server together with the Rasa server.
+To instruct the Rasa server to use the action server, you have to tell Rasa its location.
+Add this endpoint to your ``endpoints.yml``, referencing the ``--name`` you gave the server:
 
+   .. code-block:: yaml
+
+      action_endpoint:
+        url: "http://action-server:5055/webhook"
+
+Now you can talk to your bot again via the ``shell`` command:
+
+    .. code-block:: bash
+
+       docker run -it -v $(pwd):/app -p 5005:5005 --net my-project rasa/rasa shell
+
+.. note::
+
+   If you stop and restart the ``action-server`` container, you might see an error like this:
+
+   .. code-block:: none
+
+      docker: Error response from daemon: Conflict. The container name "/action-server" is
+      already in use by container "f7ffc625e81ad4ad54cf8704e6ad85123c71781ca0a8e4b862f41c5796c33530".
+      You have to remove (or rename) that container to be able to reuse that name.
+
+   If that happens, it means you have a (stopped) container with the name already. You can remove it via:
+
+   .. code-block:: bash
+
+      docker rm action-server
 
 Deploying your Model
 ********************
@@ -253,4 +278,4 @@ Deploying your Model
 Work on your bot until you have a minimum viable assistant that can handle your happy paths. After
 that, you'll want to deploy your model to get feedback from real test users. To do so, you can deploy the
 model you created with Rasa X via one of our :ref:`recommended deployment methods<recommended-deployment-methods>`.
-Or, you can do a :ref:`Rasa-only deployment in Docker-Compose<deploying-rasa-in-docker-compose>`.
+Or, you can do a :ref:`Rasa-only deployment in Docker Compose<deploying-rasa-in-docker-compose>`.
