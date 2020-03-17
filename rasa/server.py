@@ -371,7 +371,6 @@ def configure_cors(
 
 def add_root_route(app: Sanic):
     """Add '/' route to return hello."""
-
     @app.get("/")
     async def hello(request: Request):
         """Check if the server is running and responds with the version."""
