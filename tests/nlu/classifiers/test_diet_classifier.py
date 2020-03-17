@@ -13,6 +13,8 @@ from rasa.utils.tensorflow.constants import (
     RANKING_LENGTH,
     EPOCHS,
     MASKED_LM,
+    TENSORBOARD_LOG_LEVEL,
+    TENSORBOARD_LOG_DIR,
 )
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
@@ -300,3 +302,37 @@ async def test_set_random_seed(component_builder, tmpdir):
     result_b = loaded_b.parse("hello")["intent"]["confidence"]
 
     assert result_a == result_b
+
+
+async def test_train_tensorboard_logging(component_builder, tmpdir):
+    import os
+
+    tensorboard_log_dir = os.path.join(tmpdir.strpath, "tensorboard")
+
+    assert not os.path.exists(tensorboard_log_dir)
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "DIETClassifier",
+                    EPOCHS: 1,
+                    TENSORBOARD_LOG_LEVEL: "epoch",
+                    TENSORBOARD_LOG_DIR: tensorboard_log_dir,
+                },
+            ],
+            "language": "en",
+        }
+    )
+
+    await train(
+        _config,
+        path=tmpdir.strpath,
+        data="data/examples/rasa/demo-rasa-multi-intent.md",
+        component_builder=component_builder,
+    )
+
+    assert os.path.exists(tensorboard_log_dir)
+    assert os.path.exists(f"{tensorboard_log_dir}/DIET")
