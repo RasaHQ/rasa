@@ -27,7 +27,7 @@ To send a message, you would run a command like:
 
 .. code-block:: bash
 
-    curl -XPOST http://localhost:5000/webhooks/myio/webhook \
+    curl -XPOST http://localhost:5005/webhooks/myio/webhook \
       -d '{"sender": "user1", "message": "hello"}' \
       -H "Content-type: application/json"
 

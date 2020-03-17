@@ -1,11 +1,16 @@
+:desc: Use Docker Compose to deploy a Rasa assistant alongside the action server.
+
 .. _deploying-rasa-in-docker-compose:
 
-Deploying a Rasa Assistant in Docker-Compose
-============================================
+Deploying a Rasa-Only Assistant in Docker Compose
+=================================================
+
+If you would like to deploy a Rasa assistant without Rasa X, you can do so by deploying it in Docker Compose.
+To deploy Rasa X and your assistant together, see the :ref:`recommended-deployment-methods`.
 
 .. contents::
    :local:
-   :depth: 2
+   :depth: 1
 
 
 Installing Docker
@@ -24,36 +29,57 @@ versions of Docker and Docker Compose. If the command doesn't work, you'll have 
 install Docker.
 See `Docker Installation <https://docs.docker.com/install/>`_ for details.
 
-.. _running-the-rasa-server:
 
-Running the Rasa Server
-~~~~~~~~~~~~~~~~~~~~~~~
+Configuring Channels
+~~~~~~~~~~~~~~~~~~~~
 
 To run your AI assistant in production, configure your required
-:ref:`messaging-and-voice-channels` in ``credentials.yml``. If this file does not
-exist, create it using:
+:ref:`messaging-and-voice-channels` in ``credentials.yml``. For example, to add a
+REST channel, uncomment this section in the ``credentials.yml``:
 
-.. code-block:: bash
+  .. code-block:: yaml
 
-  touch credentials.yml
+    rest:
+      # you don't need to provide anything here - this channel doesn't
+      # require any credentials
 
-Then edit it according to your connected channels.
-After, run the trained model with:
+The REST channel will open your bot up to incoming requests at the ``/webhooks/rest/webhook`` endpoint.
 
-.. code-block:: bash
+.. _running-a-rasa-server:
 
-  docker run \
-    -v $(pwd)/models:/app/models \
-    rasa/rasa:latest-full \
-    run
+Running a Rasa Server
+~~~~~~~~~~~~~~~~~~~~~
+
+The Rasa server can be run alone in Docker:
+
+   .. code-block:: bash
+
+     docker run \
+       -v $(pwd):/app \
+       -p 5005:5005 \
+       rasa/rasa:latest-full \
+       run
 
 Command Description:
 
-  - ``-v $(pwd)/models:/app/models``: Mounts the directory with the trained Rasa model
-    in the container
+  - ``-v $(pwd):/app``: Mounts the working directory into the Rasa container for
+    access to the trained models as well as the credentials and endpoints configurations
+  - ``-p 5005:5005``: Map the port that runs Rasa to the host machine so that it is
+    accessible to receive messages
   - ``rasa/rasa:latest-full``: Use the Rasa image with the tag ``latest-full``
   - ``run``: Executes the ``rasa run`` command. For more information see
     :ref:`command-line-interface`.
+
+Then you should be able to send messages to your bot with this curl request, for example:
+
+   .. code-block:: bash
+
+     curl -XPOST http://localhost:5005/webhooks/rest/webhook \
+       -H "Content-type: application/json" \
+       -d '{"sender": "test", "message": "hello"}'
+
+If your bot has custom actions, you'll have to deploy an action server image and use Docker Compose to
+run both services.
 
 
 Using Docker Compose to Run Multiple Services
@@ -62,7 +88,7 @@ Using Docker Compose to Run Multiple Services
 To run Rasa together with other services, such as a server for custom actions, it is
 recommend to use `Docker Compose <https://docs.docker.com/compose/>`_.
 Docker Compose provides an easy way to run multiple containers together without
-having to run multiple commands.
+having to run multiple commands or configure networks.
 
 .. contents::
    :local:
@@ -70,73 +96,68 @@ having to run multiple commands.
 
 Start by creating a file called ``docker-compose.yml``:
 
-.. code-block:: bash
+      .. code-block:: bash
 
-  touch docker-compose.yml
+        touch docker-compose.yml
 
 Add the following content to the file:
 
-.. code-block:: yaml
+      .. code-block:: yaml
 
-  version: '3.0'
-  services:
-    rasa:
-      image: rasa/rasa:latest-full
-      ports:
-        - 5005:5005
-      volumes:
-        - ./:/app
-      command:
-        - run
-
+        version: '3.0'
+        services:
+          rasa:
+            image: rasa/rasa:latest-full
+            ports:
+              - 5005:5005
+            volumes:
+              - ./:/app
+            command:
+              - run
 
 The file starts with the version of the Docker Compose specification that you
 want to use.
-Each container is declared as a ``service`` within the docker-compose file.
-The first service is the ``rasa`` service.
-
-The command is similar to the ``docker run`` command.
-The ``ports`` part defines a port mapping between the container and your host
-system. In this case it makes ``5005`` of the ``rasa`` service available on
-port ``5005`` of your host.
-This is the port of the :ref:`REST Channel <rest_channels>` interface of Rasa.
-
-.. note::
-
-    Since Docker Compose starts a set of Docker containers, it is no longer
-    possible to connect to the command line of a single container after executing the
-    ``run`` command.
-
+Each container is declared as a ``service`` within the ``docker-compose.yml``.
+The first service is the ``rasa`` service. The configuration here is the equivalent to the
+``docker run`` command shown in :ref:`running-a-rasa-server`.
 
 To add the action server, add the image of your action server code. To learn how to deploy
 an action server image, see :ref:`building-an-action-server-image`.
 
-.. code-block:: yaml
-   :emphasize-lines: 11-14
+   .. code-block:: yaml
+      :emphasize-lines: 11-12
 
-   version: '3.0'
-   services:
-     rasa:
-       image: rasa/rasa:latest-full
-       ports:
-         - 5005:5005
-       volumes:
-         - ./:/app
-       command:
-         - run
-     app:
-       image: <your action server image>
+      version: '3.0'
+      services:
+        rasa:
+          image: rasa/rasa:latest-full
+          ports:
+            - 5005:5005
+          volumes:
+            - ./:/app
+          command:
+            - run
+        app:
+          image: <your action server image>
 
 To run the services configured in your ``docker-compose.yml`` execute:
 
-.. code-block:: bash
+   .. code-block:: bash
 
-    docker-compose up
+       docker-compose up
+
+You should then be able to interact with your bot via requests to port 5005:
+
+   .. code-block:: bash
+
+     curl -XPOST http://localhost:5005/webhooks/rest/webhook \
+       -H "Content-type: application/json" \
+       -d '{"sender": "test", "message": "hello"}'
 
 .. _building-an-action-server-image:
 
-Deploying an Action Server Image
-********************************
+Building an Action Server Image
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you build an image that includes your action code and store it in a container registry, you can run it locally
 or as part of your deployment, without having to move code between servers.
@@ -155,73 +176,72 @@ To create your image, first create a list of your custom actions requirements in
 ``actions/requirements-actions.txt``. Then create a file named ``Dockerfile`` in your project directory,
 in which you'll extend the official SDK image, copy over your code, and add any custom dependencies. For example:
 
-.. code-block:: docker
+      .. code-block:: docker
 
-   # Extend the official Rasa SDK image
-   FROM rasa/rasa-sdk:latest
+         # Extend the official Rasa SDK image
+         FROM rasa/rasa-sdk:latest
 
-   # Use subdirectory as working directory
-   WORKDIR /app
+         # Use subdirectory as working directory
+         WORKDIR /app
 
-   # Copy any additional custom requirements
-   COPY actions/requirements-actions.txt ./
+         # Copy any additional custom requirements
+         COPY actions/requirements-actions.txt ./
 
-   # Change back to root user to install dependencies
-   USER root
+         # Change back to root user to install dependencies
+         USER root
 
-   # Install extra requirements for actions code
-   RUN pip install -r requirements-actions.txt
+         # Install extra requirements for actions code
+         RUN pip install -r requirements-actions.txt
 
-   # Copy actions code to working directory
-   COPY ./actions /app/actions
+         # Copy actions code to working directory
+         COPY ./actions /app/actions
 
-   # By best practices, don't run the code with root user
-   USER 1001
-
+         # By best practices, don't run the code with root user
+         USER 1001
 
 You can then build the image via the following command:
 
-.. code-block:: bash
+      .. code-block:: bash
 
-  docker build . -t <account_username>/<repository_name>:<custom_image_tag>
+        docker build . -t <account_username>/<repository_name>:<custom_image_tag>
 
 The ``<custom_image_tag>`` should reference how this image will be different from others. For
 example, you could version or date your tags, as well as create different tags that have different code for production
 and development servers. You should create a new tag any time you update your code and want to re-deploy it.
 
-If you are using docker-compose locally, you can use this image directly in your
+If you are using Docker Compose locally, you can use this image directly in your
 ``docker-compose.yml``:
 
-.. code-block:: yaml
+      .. code-block:: yaml
 
-   version: '3.0'
-   services:
-     app:
-       image: <account_username>/<repository_name>:<custom_image_tag>
+         version: '3.0'
+         services:
+           app:
+             image: <account_username>/<repository_name>:<custom_image_tag>
 
 If you're building this image to make it available from another server,
 for example a Rasa X or Rasa Enterprise deployment, you should push the image to a cloud repository.
 You can push the image to DockerHub via:
 
-.. code-block:: bash
+      .. code-block:: bash
 
-  docker login --username <account_username> --password <account_password>
-  docker push <account_username>/<repository_name>:<custom_image_tag>
+        docker login --username <account_username> --password <account_password>
+        docker push <account_username>/<repository_name>:<custom_image_tag>
 
 To authenticate and push images to a different container registry, please refer to the documentation of
 your chosen container registry.
 
 Then, reference the new image tag in your ``docker-compose.override.yml``:
 
-.. code-block:: yaml
+      .. code-block:: yaml
 
-   version: '3.0'
-   services:
-     app:
-       image: <account_username>/<repository_name>:<custom_image_tag>
+         version: '3.0'
+         services:
+           app:
+             image: <account_username>/<repository_name>:<custom_image_tag>
 
 Adding a Custom Tracker Store
-*****************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By default, all conversations are saved in memory. This means that all
 conversations are lost as soon as you restart the Rasa server.
@@ -235,78 +255,78 @@ If you want to persist your conversations, you can use a different
 Using PostgreSQL as Tracker Store
 #################################
 
-Start by adding PostgreSQL to your docker-compose file:
+Start by adding PostgreSQL to your ``docker-compose.yml``:
 
-.. code-block:: yaml
+      .. code-block:: yaml
 
-  postgres:
-    image: postgres:latest
+        postgres:
+          image: postgres:latest
 
 Then add PostgreSQL to the ``tracker_store`` section of your endpoint
 configuration ``config/endpoints.yml``:
 
-.. code-block:: yaml
+      .. code-block:: yaml
 
-  tracker_store:
-    type: sql
-    dialect: "postgresql"
-    url: postgres
-    db: rasa
+        tracker_store:
+          type: sql
+          dialect: "postgresql"
+          url: postgres
+          db: rasa
 
 Using MongoDB as Tracker Store
 ##############################
 
-Start by adding MongoDB to your docker-compose file. The following example
+Start by adding MongoDB to your ``docker-compose.yml``. The following example
 adds the MongoDB as well as a UI (you can skip this), which will be available
 at ``localhost:8081``. Username and password for the MongoDB instance are
 specified as ``rasa`` and ``example``.
 
-.. code-block:: yaml
+      .. code-block:: yaml
 
-  mongo:
-    image: mongo
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: rasa
-      MONGO_INITDB_ROOT_PASSWORD: example
-  mongo-express:
-    image: mongo-express
-    ports:
-      - 8081:8081
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: rasa
-      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+        mongo:
+          image: mongo
+          environment:
+            MONGO_INITDB_ROOT_USERNAME: rasa
+            MONGO_INITDB_ROOT_PASSWORD: example
+        mongo-express:
+          image: mongo-express
+          ports:
+            - 8081:8081
+          environment:
+            ME_CONFIG_MONGODB_ADMINUSERNAME: rasa
+            ME_CONFIG_MONGODB_ADMINPASSWORD: example
 
 Then add the MongoDB to the ``tracker_store`` section of your endpoints
 configuration ``endpoints.yml``:
 
-.. code-block:: yaml
+      .. code-block:: yaml
 
-  tracker_store:
-    type: mongod
-    url: mongodb://mongo:27017
-    username: rasa
-    password: example
+        tracker_store:
+          type: mongod
+          url: mongodb://mongo:27017
+          username: rasa
+          password: example
 
 Then start all components with ``docker-compose up``.
 
 Using Redis as Tracker Store
-##############################
+############################
 
-Start by adding Redis to your docker-compose file:
+Start by adding Redis to your ``docker-compose.yml``:
 
-.. code-block:: yaml
+      .. code-block:: yaml
 
-  redis:
-    image: redis:latest
+        redis:
+          image: redis:latest
 
 Then add Redis to the ``tracker_store`` section of your endpoint
 configuration ``endpoints.yml``:
 
-.. code-block:: yaml
+      .. code-block:: yaml
 
-  tracker_store:
-    type: redis
-    url: redis
+        tracker_store:
+          type: redis
+          url: redis
 
 Using a Custom Tracker Store Implementation
 ###########################################

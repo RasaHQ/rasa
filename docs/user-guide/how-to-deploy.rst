@@ -18,11 +18,8 @@ It will allow you to make your assistant available to users and set you up with 
 When to Deploy Your Assistant
 -----------------------------
 
-.. raw:: html
-
-    The best time to deploy your assistant and make it available to test users is once it can handle the most
-    important happy paths or is what we call a <a style="text-decoration: none"
-    href="https://rasa.com/docs/rasa/glossary">minimum viable assistant</a>.
+The best time to deploy your assistant and make it available to test users is once it can handle the most
+important happy paths or is what we call a `minimum viable assistant <https://rasa.com/docs/rasa/glossary>`_.
 
 The recommended deployment methods described below make it easy to share your assistant
 with test users via the `share your assistant feature in
@@ -71,20 +68,20 @@ However, you can also customize the Helm charts if you have specific requirement
 Alternative Deployment
 ----------------------
 
-Docker-Compose
+Docker Compose
 ~~~~~~~~~~~~~~
 
-You can also run Rasa X in a Docker-Compose setup, without the cluster environment. We have a quick install script
+You can also run Rasa X in a Docker Compose setup, without the cluster environment. We have a quick install script
 for doing so, as well as manual instructions for any custom setups.
 
-    - Default: Watch the `Masterclass Video <https://www.youtube.com/watch?v=IUYdwy8HPVc>`_ on deploying Rasa X or read the `Docker-Compose Quick Install <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`_ docs.
-    - Custom: Read the docs `Docker-Compose Manual Install <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-manual/>`_ documentation for full customization options.
+    - Default: Watch the `Masterclass Video <https://www.youtube.com/watch?v=IUYdwy8HPVc>`_ on deploying Rasa X or read the `Docker Compose Quick Install <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`_ docs.
+    - Custom: Read the docs `Docker Compose Manual Install <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-manual/>`_ documentation for full customization options.
 
 Rasa-Only Deployment
 ~~~~~~~~~~~~~~~~~~~~
 
-It is also possible to deploy a Rasa assistant using Docker-Compose without Rasa X. To do so, you can build your
-Rasa Assistant locally or in Docker. Then you can deploy your model in Docker-Compose.
+It is also possible to deploy a Rasa assistant using Docker Compose without Rasa X. To do so, you can build your
+Rasa Assistant locally or in Docker. Then you can deploy your model in Docker Compose.
 
 .. toctree::
    :titlesonly:
