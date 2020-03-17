@@ -216,7 +216,6 @@ async def get_tracker(
     processor: "MessageProcessor", conversation_id: Text
 ) -> Optional[DialogueStateTracker]:
     """Get tracker object from `MessageProcessor`."""
-
     tracker = await processor.get_tracker_with_session_start(conversation_id)
     if not tracker:
         raise ErrorResponse(
