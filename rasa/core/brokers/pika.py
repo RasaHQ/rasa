@@ -216,22 +216,7 @@ def close_pika_connection(connection: "Connection") -> None:
 
 
 class PikaEventBroker(EventBroker):
-    """Pika-based event broker for publishing messages to RabbitMQ.
-
-    Attributes:
-        host: Pika host.
-        username: Username for authentication with Pika host.
-        password: Password for authentication with Pika host.
-        port: port of the Pika host.
-        queues: Pika queues to declare and publish to.
-        should_keep_unpublished_messages: Whether or not the event broker should
-            maintain a queue of unpublished messages to be published later in
-            case of errors.
-        raise_on_failure: Whether to raise an exception if publishing fails. If
-            `False`, keep retrying.
-        log_level: Logging level.
-
-    """
+    """Pika-based event broker for publishing messages to RabbitMQ."""
 
     def __init__(
         self,
@@ -247,7 +232,21 @@ class PikaEventBroker(EventBroker):
         ),
         **kwargs: Any,
     ):
-        """Initialise RabbitMQ event broker."""
+        """Initialise RabbitMQ event broker.
+
+        Args:
+            host: Pika host.
+            username: Username for authentication with Pika host.
+            password: Password for authentication with Pika host.
+            port: port of the Pika host.
+            queues: Pika queues to declare and publish to.
+            should_keep_unpublished_messages: Whether or not the event broker should
+                maintain a queue of unpublished messages to be published later in
+                case of errors.
+            raise_on_failure: Whether to raise an exception if publishing fails. If
+                `False`, keep retrying.
+            log_level: Logging level.
+        """
         logging.getLogger("pika").setLevel(log_level)
 
         self.host = host
