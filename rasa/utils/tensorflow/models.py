@@ -68,15 +68,16 @@ class RasaModel(tf.keras.models.Model):
             self.tensorboard_log_on_epochs = tensorboard_log_level == "epoch"
 
             current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            class_name = self.__class__.__name__
 
-            train_log_dir = f"{tensorboard_log_dir}/{current_time}/train"
-            test_log_dir = f"{tensorboard_log_dir}/{current_time}/test"
+            train_log_dir = f"{tensorboard_log_dir}/{class_name}/{current_time}/train"
+            test_log_dir = f"{tensorboard_log_dir}/{class_name}/{current_time}/test"
 
             self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
             self.test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
             self.model_summary_file = (
-                f"{tensorboard_log_dir}/{current_time}/model_summary.txt"
+                f"{tensorboard_log_dir}/{class_name}/{current_time}/model_summary.txt"
             )
 
     def batch_loss(
@@ -147,9 +148,10 @@ class RasaModel(tf.keras.models.Model):
                 self.train_summary_writer,
             )
 
-            postfix_dict = self._get_metric_results(
-                step=epoch, writer=self.train_summary_writer
-            )
+            if self.tensorboard_log_on_epochs:
+                self._log_metrics_for_tensorboard(epoch, self.train_summary_writer)
+
+            postfix_dict = self._get_metric_results()
 
             if evaluate_on_num_examples > 0:
                 if self._should_evaluate(evaluate_every_num_epochs, epochs, epoch):
@@ -161,9 +163,13 @@ class RasaModel(tf.keras.models.Model):
                         training_steps,
                         self.test_summary_writer,
                     )
-                    val_results = self._get_metric_results(
-                        step=epoch, writer=self.test_summary_writer, prefix="val_"
-                    )
+
+                    if self.tensorboard_log_on_epochs:
+                        self._log_metrics_for_tensorboard(
+                            epoch, self.test_summary_writer
+                        )
+
+                    val_results = self._get_metric_results(prefix="val_")
 
                 postfix_dict.update(val_results)
 
@@ -264,8 +270,9 @@ class RasaModel(tf.keras.models.Model):
         for batch_in in dataset_function(batch_size):
             call_model_function(batch_in)
 
-            if writer is not None and not self.tensorboard_log_on_epochs:
+            if not self.tensorboard_log_on_epochs:
                 self._log_metrics_for_tensorboard(step, writer)
+
             step += 1
 
         return step
@@ -331,17 +338,9 @@ class RasaModel(tf.keras.models.Model):
             ),
         )
 
-    def _get_metric_results(
-        self,
-        step: int,
-        writer: Optional[ResourceSummaryWriter] = None,
-        prefix: Optional[Text] = None,
-    ) -> Dict[Text, Text]:
+    def _get_metric_results(self, prefix: Optional[Text] = None) -> Dict[Text, Text]:
         """Get the metrics results"""
         prefix = prefix or ""
-
-        if writer is not None and self.tensorboard_log_on_epochs:
-            self._log_metrics_for_tensorboard(step, writer)
 
         return {
             f"{prefix}{metric.name}": f"{metric.result().numpy():.3f}"
@@ -350,12 +349,13 @@ class RasaModel(tf.keras.models.Model):
         }
 
     def _log_metrics_for_tensorboard(
-        self, step: int, writer: ResourceSummaryWriter
+        self, step: int, writer: Optional[ResourceSummaryWriter] = None
     ) -> None:
-        with writer.as_default():
-            for metric in self.metrics:
-                if metric.name in self.metrics_to_log:
-                    tf.summary.scalar(f"{metric.name}", metric.result(), step=step)
+        if self.train_summary_writer is not None:
+            with writer.as_default():
+                for metric in self.metrics:
+                    if metric.name in self.metrics_to_log:
+                        tf.summary.scalar(metric.name, metric.result(), step=step)
 
     @staticmethod
     def _should_evaluate(
