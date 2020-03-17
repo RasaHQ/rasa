@@ -376,7 +376,7 @@ class PikaEventBroker(EventBroker):
         channel.exchange_declare(RABBITMQ_EXCHANGE, exchange_type="fanout")
 
         for queue in self.queues:
-            channel.queue_declare(queue=queue, exclusive=True)
+            channel.queue_declare(queue=queue, durable=True)
             channel.queue_bind(exchange=RABBITMQ_EXCHANGE, queue=queue)
 
         self.channel = channel
