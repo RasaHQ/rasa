@@ -237,7 +237,6 @@ def validate_request_body(request: Request, error_message: Text):
 
 async def authenticate(request: Request):
     """Callback for authentication failed."""
-
     raise exceptions.AuthenticationFailed(
         "Direct JWT authentication not supported. You should already have "
         "a valid JWT from an authentication provider, Rasa will just make "
