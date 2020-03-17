@@ -148,9 +148,7 @@ class RasaModel(tf.keras.models.Model):
             )
 
             postfix_dict = self._get_metric_results(
-                tensorboard_logging=self.tensorboard_log_on_epochs,
-                step=epoch,
-                writer=self.train_summary_writer,
+                step=epoch, writer=self.train_summary_writer
             )
 
             if evaluate_on_num_examples > 0:
@@ -160,13 +158,11 @@ class RasaModel(tf.keras.models.Model):
                         tf_evaluation_on_batch_function,
                         epoch_batch_size,
                         False,
+                        training_steps,
+                        self.test_summary_writer,
                     )
-                    step = epoch if self.tensorboard_log_on_epochs else training_steps
                     val_results = self._get_metric_results(
-                        step=step,
-                        writer=self.test_summary_writer,
-                        prefix="val_",
-                        tensorboard_logging=True,
+                        step=epoch, writer=self.test_summary_writer, prefix="val_"
                     )
 
                 postfix_dict.update(val_results)
@@ -338,14 +334,13 @@ class RasaModel(tf.keras.models.Model):
     def _get_metric_results(
         self,
         step: int,
-        tensorboard_logging: bool = False,
         writer: Optional[ResourceSummaryWriter] = None,
         prefix: Optional[Text] = None,
     ) -> Dict[Text, Text]:
         """Get the metrics results"""
         prefix = prefix or ""
 
-        if writer is not None and tensorboard_logging:
+        if writer is not None and self.tensorboard_log_on_epochs:
             self._log_metrics_for_tensorboard(step, writer)
 
         return {
