@@ -19,7 +19,6 @@ def set_run_action_arguments(parser: argparse.ArgumentParser):
 
 def add_server_arguments(parser: argparse.ArgumentParser):
     """Add arguments for running API endpoint."""
-
     parser.add_argument(
         "--log-file",
         type=str,
