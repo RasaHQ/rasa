@@ -196,7 +196,6 @@ def event_verbosity_parameter(
     request: Request, default_verbosity: EventVerbosity
 ) -> EventVerbosity:
     """Create `EventVerbosity` object using request params if present."""
-
     event_verbosity_str = request.args.get(
         "include_events", default_verbosity.name
     ).upper()
