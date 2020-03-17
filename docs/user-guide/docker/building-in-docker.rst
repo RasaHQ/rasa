@@ -6,8 +6,8 @@ Building a Rasa Assistant in Docker
 ===================================
 
 If you don't have a Rasa project yet, you can build one in Docker without having to install Rasa Open Source
-on your local machine. If you already have a model you're satisfied with, go to
-:ref:`how-to-deploy` to learn how to deploy your model.
+on your local machine. If you already have a model you're satisfied with, see
+:ref:`deploying-your-rasa-assistant` to learn how to deploy your model.
 
 .. contents::
    :local:
