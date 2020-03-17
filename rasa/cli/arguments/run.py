@@ -13,7 +13,6 @@ def set_run_arguments(parser: argparse.ArgumentParser):
 
 def set_run_action_arguments(parser: argparse.ArgumentParser):
     """Set arguments for running action sdk."""
-
     import rasa_sdk.cli.arguments as sdk
 
     sdk.add_endpoint_arguments(parser)
