@@ -131,37 +131,42 @@ class RasaModel(tf.keras.models.Model):
         val_results = {}  # validation is not performed every epoch
         progress_bar = tqdm(range(epochs), desc="Epochs", disable=disable)
 
-        train_steps = 0
-        evaluation_steps = 0
+        training_steps = 0
 
         for epoch in progress_bar:
             epoch_batch_size = self.linearly_increasing_batch_size(
                 epoch, batch_size, epochs
             )
 
-            train_steps = self._batch_loop(
+            training_steps = self._batch_loop(
                 train_dataset_function,
                 tf_train_on_batch_function,
                 epoch_batch_size,
                 True,
-                train_steps,
+                training_steps,
                 self.train_summary_writer,
             )
 
-            postfix_dict = self._get_metric_results(epoch, self.train_summary_writer)
+            postfix_dict = self._get_metric_results(
+                tensorboard_logging=self.tensorboard_log_on_epochs,
+                step=epoch,
+                writer=self.train_summary_writer,
+            )
 
             if evaluate_on_num_examples > 0:
                 if self._should_evaluate(evaluate_every_num_epochs, epochs, epoch):
-                    evaluation_steps = self._batch_loop(
+                    self._batch_loop(
                         evaluation_dataset_function,
                         tf_evaluation_on_batch_function,
                         epoch_batch_size,
                         False,
-                        evaluation_steps,
-                        self.test_summary_writer,
                     )
+                    step = epoch if self.tensorboard_log_on_epochs else training_steps
                     val_results = self._get_metric_results(
-                        epoch, self.test_summary_writer, prefix="val_"
+                        step=step,
+                        writer=self.test_summary_writer,
+                        prefix="val_",
+                        tensorboard_logging=True,
                     )
 
                 postfix_dict.update(val_results)
@@ -250,7 +255,7 @@ class RasaModel(tf.keras.models.Model):
         call_model_function: Callable,
         batch_size: int,
         training: bool,
-        offset: int,
+        offset: Optional[int] = 0,
         writer: Optional[ResourceSummaryWriter] = None,
     ) -> int:
         """Run on batches"""
@@ -332,15 +337,16 @@ class RasaModel(tf.keras.models.Model):
 
     def _get_metric_results(
         self,
-        epoch: int,
+        step: int,
+        tensorboard_logging: bool = False,
         writer: Optional[ResourceSummaryWriter] = None,
         prefix: Optional[Text] = None,
     ) -> Dict[Text, Text]:
         """Get the metrics results"""
         prefix = prefix or ""
 
-        if writer is not None and self.tensorboard_log_on_epochs:
-            self._log_metrics_for_tensorboard(epoch, writer)
+        if writer is not None and tensorboard_logging:
+            self._log_metrics_for_tensorboard(step, writer)
 
         return {
             f"{prefix}{metric.name}": f"{metric.result().numpy():.3f}"

@@ -211,11 +211,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         BILOU_FLAG: True,
         # If you want to use tensorboard to visualize training and validation metrics,
         # set this option to a valid output directory.
-        TENSORBOARD_LOG_DIR: None,
+        TENSORBOARD_LOG_DIR: "tensorboard",
         # Define when training metrics for tensorboard should be logged.
         # Either after every epoch or for every training step.
         # Valid values: 'epoch' and 'minibatch'
-        TENSORBOARD_LOG_LEVEL: "epoch",
+        TENSORBOARD_LOG_LEVEL: "minibatch",
     }
 
     # init helpers
