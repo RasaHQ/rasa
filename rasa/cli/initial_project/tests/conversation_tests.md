@@ -4,6 +4,14 @@
 * mood_great: amazing
   - utter_happy
   
+## happy path 2
+* greet: hello there!
+  - utter_greet
+* mood_great: amazing
+  - utter_happy
+* goodbye: bye-bye!
+  - utter_goodbye
+  
 ## sad path 1
 * greet: hello
   - utter_greet

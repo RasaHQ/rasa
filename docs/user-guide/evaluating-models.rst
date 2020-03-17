@@ -21,7 +21,7 @@ Evaluating Models
 End-to-End Evaluation
 ---------------------
 
-Rasa lets you evaluate dialogues end-to-end, running through
+Rasa Open Source lets you evaluate dialogues end-to-end, running through
 test conversations and making sure that both NLU and Core make correct predictions.
 
 To do this, you need some stories in the end-to-end format,

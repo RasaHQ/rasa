@@ -54,7 +54,7 @@ def add_subparser(
 
     test_core_parser.set_defaults(func=test_core)
     test_nlu_parser.set_defaults(func=test_nlu)
-    test_parser.set_defaults(func=test, e2e=True, stories=DEFAULT_E2E_TESTS_PATH)
+    test_parser.set_defaults(func=test, stories=DEFAULT_E2E_TESTS_PATH)
 
 
 def test_core(args: argparse.Namespace) -> None:
@@ -151,5 +151,6 @@ def test_nlu(args: argparse.Namespace) -> None:
 
 
 def test(args: argparse.Namespace):
+    setattr(args, 'e2e', True)
     test_core(args)
     test_nlu(args)
