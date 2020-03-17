@@ -6,7 +6,6 @@ from rasa.core import constants
 
 def set_run_arguments(parser: argparse.ArgumentParser):
     """Arguments for running Rasa directly using `rasa run`."""
-
     add_model_param(parser)
     add_server_arguments(parser)
 
