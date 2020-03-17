@@ -231,7 +231,6 @@ async def get_tracker(
 
 def validate_request_body(request: Request, error_message: Text):
     """Check if the request has a body."""
-
     if not request.body:
         raise ErrorResponse(400, "BadRequest", error_message)
 
