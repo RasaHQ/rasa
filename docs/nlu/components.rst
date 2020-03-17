@@ -621,7 +621,7 @@ LexicalSyntacticFeaturizer
     .. code-block:: yaml
 
         pipeline:
-        - name: "LexicalSyntacticFeaturizer":
+        - name: LexicalSyntacticFeaturizer
           "features": [
             ["low", "title", "upper"],
             [
