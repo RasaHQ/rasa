@@ -283,8 +283,8 @@ class PikaEventBroker(EventBroker):
     ) -> Union[List[Text], Tuple[Text]]:
         """Get queues for this event broker.
 
-        The preferred argument defining the RabbitMQ queues `PikaEventBroker` should
-        publish to as of Rasa Open Source version 1.8.2 is `queues`. This function
+        The preferred argument defining the RabbitMQ queues the `PikaEventBroker` should
+        publish to is `queues` (as of Rasa Open Source version 1.8.2). This function
         ensures backwards compatibility with the old `queue` argument. This method
         can be removed in the future, and `self.queues` should just receive the value of
         the `queues` kwarg in the constructor.
