@@ -82,6 +82,7 @@ def configure_app(
     cors: Optional[Union[Text, List[Text], None]] = None,
     auth_token: Optional[Text] = None,
     enable_api: bool = True,
+    response_timeout: int = constants.DEFAULT_RESPONSE_TIMEOUT,
     jwt_secret: Optional[Text] = None,
     jwt_method: Optional[Text] = None,
     route: Optional[Text] = "/webhooks/",
@@ -99,6 +100,7 @@ def configure_app(
         app = server.create_app(
             cors_origins=cors,
             auth_token=auth_token,
+            response_timeout=response_timeout,
             jwt_secret=jwt_secret,
             jwt_method=jwt_method,
             endpoints=endpoints,
@@ -148,6 +150,7 @@ def serve_application(
     cors: Optional[Union[Text, List[Text]]] = None,
     auth_token: Optional[Text] = None,
     enable_api: bool = True,
+    response_timeout: int = constants.DEFAULT_RESPONSE_TIMEOUT,
     jwt_secret: Optional[Text] = None,
     jwt_method: Optional[Text] = None,
     endpoints: Optional[AvailableEndpoints] = None,
@@ -159,6 +162,7 @@ def serve_application(
     ssl_password: Optional[Text] = None,
     conversation_id: Optional[Text] = uuid.uuid4().hex,
 ):
+    """Run the API entrypoint."""
     from rasa import server
 
     if not channel and not credentials:
@@ -171,6 +175,7 @@ def serve_application(
         cors,
         auth_token,
         enable_api,
+        response_timeout,
         jwt_secret,
         jwt_method,
         port=port,
