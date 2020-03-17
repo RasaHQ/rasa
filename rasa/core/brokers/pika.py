@@ -313,7 +313,7 @@ class PikaEventBroker(EventBroker):
         if queues_arg and isinstance(queues_arg, (list, tuple)):
             return queues_arg
 
-        elif queues_arg and isinstance(queues_arg, str):
+        if queues_arg and isinstance(queues_arg, str):
             logger.debug(
                 f"Found a string value under the `queues` key of the Pika event broker "
                 f"config. Please supply a list of queues under this key, even if it is "
@@ -324,7 +324,7 @@ class PikaEventBroker(EventBroker):
         if queue_arg and isinstance(queue_arg, str):
             return [queue_arg]
 
-        elif queue_arg:
+        if queue_arg:
             return queue_arg  # pytype: disable=bad-return-type
 
         raise ValueError(

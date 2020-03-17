@@ -26,16 +26,24 @@ logger = logging.getLogger(__name__)
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
-    shell_parser = subparsers.add_parser(
+    """Add subparser for `rasa export`.
+
+    Args:
+        subparsers: Subparsers action object to which `argparse.ArgumentParser`
+            objects can be added.
+        parents: `argparse.ArgumentParser` objects whose arguments should also be
+            included.
+    """
+    export_parser = subparsers.add_parser(
         "export",
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Export conversations using an event broker.",
     )
-    shell_parser.set_defaults(func=export_trackers)
+    export_parser.set_defaults(func=export_trackers)
 
-    arguments.set_export_arguments(shell_parser)
+    arguments.set_export_arguments(export_parser)
 
 
 def _get_tracker_store(endpoints: "AvailableEndpoints") -> "TrackerStore":
