@@ -5,17 +5,20 @@ from rasa.core import constants
 
 
 def set_run_arguments(parser: argparse.ArgumentParser):
+    """Arguments for running Rasa directly using `rasa run`."""
     add_model_param(parser)
     add_server_arguments(parser)
 
 
 def set_run_action_arguments(parser: argparse.ArgumentParser):
+    """Set arguments for running Rasa SDK."""
     import rasa_sdk.cli.arguments as sdk
 
     sdk.add_endpoint_arguments(parser)
 
 
 def add_server_arguments(parser: argparse.ArgumentParser):
+    """Add arguments for running API endpoint."""
     parser.add_argument(
         "--log-file",
         type=str,
@@ -55,6 +58,12 @@ def add_server_arguments(parser: argparse.ArgumentParser):
         "--enable-api",
         action="store_true",
         help="Start the web server API in addition to the input channel.",
+    )
+    server_arguments.add_argument(
+        "--response-timeout",
+        default=constants.DEFAULT_RESPONSE_TIMEOUT,
+        type=int,
+        help="Maximum time a response can take to process (sec).",
     )
     server_arguments.add_argument(
         "--remote-storage",

@@ -11,6 +11,7 @@ DEFAULT_RESULTS_PATH = "results"
 DEFAULT_NLU_RESULTS_PATH = "nlu_comparison_results"
 DEFAULT_CORE_SUBDIRECTORY_NAME = "core"
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
+DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
 
 TEST_DATA_FILE = "test.md"
 TRAIN_DATA_FILE = "train.md"
