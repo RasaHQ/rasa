@@ -35,9 +35,9 @@ Just like in the :ref:`tutorial <rasa-tutorial>`, you'll use the ``rasa init`` c
 The only difference is that you'll be running Rasa inside a Docker container, using
 the image ``rasa/rasa``. To initialize your project, run:
 
-.. code-block:: bash
+   .. code-block:: bash
 
-   docker run -v $(pwd):/app rasa/rasa init --no-prompt
+      docker run -v $(pwd):/app rasa/rasa init --no-prompt
 
 What does this command mean?
 
@@ -56,9 +56,9 @@ Running this command will produce a lot of output. What happens is:
 
 To check that the command completed correctly, look at the contents of your working directory:
 
-.. code-block:: bash
+   .. code-block:: bash
 
-   ls -1
+      ls -1
 
 The initial project files should all be there, as well as a ``models`` directory that contains your trained model.
 
@@ -77,9 +77,9 @@ Talking to Your Assistant
 To talk to your newly-trained assistant, run this command:
 
 
-.. code-block:: bash
+   .. code-block:: bash
 
-   docker run -it -v $(pwd):/app rasa/rasa shell
+      docker run -it -v $(pwd):/app rasa/rasa shell
 
 This will start a shell where you can chat to your assistant.
 Note that this command includes the flags ``-it``, which means that you are running
@@ -126,15 +126,15 @@ Edit the ``config.yml`` file to use the pipeline you want, and place
 your NLU and Core data into the ``data/`` directory.
 Now you can train your Rasa model by running:
 
-.. code-block:: bash
+   .. code-block:: bash
 
-  docker run \
-    -v $(pwd):/app \
-    rasa/rasa:latest-full \
-    train \
-      --domain domain.yml \
-      --data data \
-      --out models
+     docker run \
+       -v $(pwd):/app \
+       rasa/rasa:latest-full \
+       train \
+         --domain domain.yml \
+         --data data \
+         --out models
 
 Here's what's happening in that command:
 
@@ -165,81 +165,81 @@ the user a joke to cheer them up.
 
 Start by creating the custom actions in a directory ``actions`` in your working directory:
 
-.. code-block:: bash
+   .. code-block:: bash
 
-  mkdir actions
-  mv actions.py actions/actions.py
-  # Rasa SDK expects a python module.
-  # Therefore, make sure that you have this file in the directory.
-  touch actions/__init__.py
-
-
-Then build a custom action using the Rasa SDK by editing ``actions/actions.py``, e.g.:
-
-.. code-block:: python
-
-  import requests
-  import json
-  from rasa_sdk import Action
+     mkdir actions
+     mv actions.py actions/actions.py
+     # Rasa SDK expects a python module.
+     # Therefore, make sure that you have this file in the directory.
+     touch actions/__init__.py
 
 
-  class ActionJoke(Action):
-    def name(self):
-      return "action_joke"
+Then build a custom action using the Rasa SDK by editing ``actions/actions.py``, for example:
 
-    def run(self, dispatcher, tracker, domain):
-      request = requests.get('http://api.icndb.com/jokes/random').json()  # make an api call
-      joke = request['value']['joke']  # extract a joke from returned json response
-      dispatcher.utter_message(text=joke)  # send the message back to the user
-      return []
+   .. code-block:: python
 
-To tell your bot to use this new action, replace ``utter_cheer_up`` in
-``data/stories.md`` with the custom action ``action_joke``.
+     import requests
+     import json
+     from rasa_sdk import Action
+
+
+     class ActionJoke(Action):
+       def name(self):
+         return "action_joke"
+
+       def run(self, dispatcher, tracker, domain):
+         request = requests.get('http://api.icndb.com/jokes/random').json()  # make an api call
+         joke = request['value']['joke']  # extract a joke from returned json response
+         dispatcher.utter_message(text=joke)  # send the message back to the user
+         return []
+
+In ``data/stories.md``, replace ``utter_cheer_up`` in with the custom action ``action_joke``
+tell your bot to use this new action.
 
 In ``domain.yml``, add a section for custom actions, including your new action:
 
-.. code-block:: yaml
+   .. code-block:: yaml
 
-  actions:
-    - action_joke
+     actions:
+       - action_joke
 
 To instruct the Rasa server to use the action server, you have to tell Rasa its location.
 Add this to your ``endpoints.yml``:
 
-.. code-block:: yaml
+   .. code-block:: yaml
 
-  action_endpoint:
-    url: http://app:5055/webhook
+     action_endpoint:
+       url: http://localhost:5055/webhook
 
 After updating your domain and stories, you have to retrain your model:
 
-.. code-block:: bash
+   .. code-block:: bash
 
-  docker run \
-    -v $(pwd):/app \
-    rasa/rasa:latest-full \
-    train
+     docker run \
+       -v $(pwd):/app \
+       rasa/rasa:latest-full \
+       train
 
 To spin up the action server together with the Rasa instance, add a service
 ``app`` to the ``docker-compose.yml``:
 
-.. code-block:: yaml
-   :emphasize-lines: 11-14
+   .. code-block:: yaml
+      :emphasize-lines: 11-14
 
-   version: '3.0'
-   services:
-     rasa:
-       image: rasa/rasa:latest-full
-       ports:
-         - 5005:5005
-       volumes:
-         - ./:/app
-       command:
-         - run
-     app:
-       image: rasa/rasa-sdk:latest
-       volumes:
-         - ./actions:/app/actions
+      version: '3.0'
+      services:
+        rasa:
+          image: rasa/rasa:latest-full
+          ports:
+            - 5005:5005
+          volumes:
+            - ./:/app
+          command:
+            - run
+        app:
+          image: rasa/rasa-sdk:latest
+          volumes:
+            - ./actions:/app/actions
 
 This pulls the image for the Rasa SDK which includes the action server,
 mounts your custom actions into it, and starts the server.

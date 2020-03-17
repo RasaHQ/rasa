@@ -125,7 +125,7 @@ To add the action server, add the image of your action server code. To learn how
 an action server image, see :ref:`building-an-action-server-image`.
 
    .. code-block:: yaml
-      :emphasize-lines: 11-12
+      :emphasize-lines: 11-13
 
       version: '3.0'
       services:
@@ -139,6 +139,15 @@ an action server image, see :ref:`building-an-action-server-image`.
             - run
         app:
           image: <your action server image>
+          expose: 5055
+
+The ``expose: 5005`` is what allows the ``rasa`` service to reach the ``app`` service on that port.
+To instruct the ``rasa`` service to send its action requests to that endpoint, add it to your ``endpoints.yml``:
+
+      .. code-block:: yaml
+
+        action_endpoint:
+          url: http://app:5055/webhook
 
 To run the services configured in your ``docker-compose.yml`` execute:
 
