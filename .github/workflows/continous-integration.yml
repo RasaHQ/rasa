@@ -153,6 +153,10 @@ jobs:
       run: |
         make install-full
 
+    - name: Add poetry to path
+      if: matrix.platform == 'windows-latest'
+      run: echo "::add-path::$Userprofile\.poetry\bin"
+
     - name: Test Code 🔍
       run: JOBS=2 make test
 
