@@ -149,13 +149,13 @@ jobs:
         sudo apt-get -y install libpq-dev
         make prepare-tests-ubuntu
 
-    - name: Install Dependencies 📦
-      run: |
-        make install-full
-
     - name: Add poetry to path
       if: matrix.platform == 'windows-latest'
       run: echo "::add-path::$Userprofile\.poetry\bin"
+
+    - name: Install Dependencies 📦
+      run: |
+        make install-full
 
     - name: Test Code 🔍
       run: JOBS=2 make test
