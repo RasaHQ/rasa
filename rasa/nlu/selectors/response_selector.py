@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
 import rasa.utils.io as io_utils
-from rasa.utils import train_utils
 from rasa.nlu.config import InvalidConfigError
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.components import Component
@@ -357,7 +356,6 @@ class ResponseSelector(DIETClassifier):
         model_dir: Text = None,
         model_metadata: Metadata = None,
         cached_component: Optional["ResponseSelector"] = None,
-        retrieval_intent_mapping: Optional[Dict[Text, Text]] = None,
         **kwargs: Any,
     ) -> "ResponseSelector":
         """Loads the trained model from the provided directory."""
