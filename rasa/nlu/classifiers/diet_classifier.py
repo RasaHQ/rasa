@@ -636,7 +636,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 return
 
         # keep one example for persisting and loading
-        self.data_example = self.data_example = model_data.first_data_example()
+        self.data_example = model_data.first_data_example()
 
         self.model = self.model_class()(
             data_signature=model_data.get_signature(),
