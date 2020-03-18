@@ -15,7 +15,6 @@ class EventBroker:
         obj: Union["EventBroker", EndpointConfig, None],
     ) -> Optional["EventBroker"]:
         """Factory to create an event broker."""
-
         if isinstance(obj, EventBroker):
             return obj
 
@@ -29,7 +28,6 @@ class EventBroker:
 
     def publish(self, event: Dict[Text, Any]) -> None:
         """Publishes a json-formatted Rasa Core event into an event queue."""
-
         raise NotImplementedError("Event broker must implement the `publish` method.")
 
     def is_ready(self) -> bool:
@@ -42,7 +40,6 @@ class EventBroker:
 
     def close(self) -> None:
         """Close the connection to an event broker."""
-
         # default implementation does nothing
         pass
 
@@ -81,7 +78,6 @@ def _create_from_endpoint_config(
 
 def _load_from_module_string(broker_config: EndpointConfig,) -> Optional["EventBroker"]:
     """Instantiate an event broker based on its class name."""
-
     try:
         event_broker_class = common.class_from_module_path(broker_config.type)
         return event_broker_class.from_endpoint_config(broker_config)
