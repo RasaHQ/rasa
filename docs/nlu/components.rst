@@ -933,6 +933,15 @@ EmbeddingIntentClassifier
          | evaluate_on_number_of_examples  | 0                | How many examples to use for hold out validation set.        |
          |                                 |                  | Large values may hurt performance, e.g. model accuracy.      |
          +---------------------------------+------------------+--------------------------------------------------------------+
+         | tensorboard_log_directory       | None             | If you want to use tensorboard to visualize training         |
+         |                                 |                  | metrics, set this option to a valid output directory. You    |
+         |                                 |                  | can view the training metrics after training in tensorboard  |
+         |                                 |                  | via 'tensorboard --logdir <path-to-given-directory>'.        |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
+         |                                 |                  | logged. Either after every epoch ("epoch") or for every      |
+         |                                 |                  | training step ("minibatch").                                 |
+         +---------------------------------+------------------+--------------------------------------------------------------+
 
         .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
                   be between ``-1`` and ``1``.
@@ -946,7 +955,7 @@ EmbeddingIntentClassifier
                   starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity``
                   and ``use_maximum_negative_similarity = False``.
                   See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
->>>>>>> update components.rst
+
 
 .. _keyword_intent_classifier:
 
@@ -1176,6 +1185,15 @@ ResponseSelector
          | retrieval_intent                | None              | Name of the intent for which this response selector model is |
          |                                 |                   | trained.                                                     |
          +---------------------------------+-------------------+--------------------------------------------------------------+
+         | tensorboard_log_directory       | None              | If you want to use tensorboard to visualize training         |
+         |                                 |                   | metrics, set this option to a valid output directory. You    |
+         |                                 |                   | can view the training metrics after training in tensorboard  |
+         |                                 |                   | via 'tensorboard --logdir <path-to-given-directory>'.        |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
+         | tensorboard_log_level           | "epoch"           | Define when training metrics for tensorboard should be       |
+         |                                 |                   | logged. Either after every epoch ("epoch") or for every      |
+         |                                 |                   | training step ("minibatch").                                 |
+         +---------------------------------+-------------------+--------------------------------------------------------------+
 
         .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
                   be between ``-1`` and ``1``.
@@ -1189,7 +1207,6 @@ ResponseSelector
                   starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity``
                   and ``use_maximum_negative_similarity = False``.
                   See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
->>>>>>> update components.rst
 
 
 Entity Extractors
@@ -1702,11 +1719,15 @@ DIETClassifier
          |                                 |                  | regularizer and should help to learn a better contextual     |
          |                                 |                  | representation of the input.                                 |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | BILOU_flag                      | True             | 'BILOU_flag' determines whether to use BILOU tagging or not. |
-         |                                 |                  | The BILOU tagging schema is a stricter form of tagging       |
-         |                                 |                  | entities in text.                                            |
+         | tensorboard_log_directory       | None             | If you want to use tensorboard to visualize training         |
+         |                                 |                  | metrics, set this option to a valid output directory. You    |
+         |                                 |                  | can view the training metrics after training in tensorboard  |
+         |                                 |                  | via 'tensorboard --logdir <path-to-given-directory>'.        |
          +---------------------------------+------------------+--------------------------------------------------------------+
-
+         | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
+         |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
+         |                                 |                  | training step ('minibatch').                                 |
+         +---------------------------------+------------------+--------------------------------------------------------------+
 
         .. note:: For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
                   be between ``-1`` and ``1``.
