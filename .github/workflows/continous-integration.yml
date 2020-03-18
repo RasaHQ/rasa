@@ -144,7 +144,7 @@ jobs:
         restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
     - name: Install additional Dependencies 📦 (ubuntu)
-      if: matrix.platform == ubuntu-latest
+      if: matrix.platform == 'ubuntu-latest'
       run: |
         sudo apt-get -y install libpq-dev
         make prepare-tests-ubuntu
@@ -157,7 +157,7 @@ jobs:
       run: JOBS=2 make test
 
     - name: Send Coverage Report 📊
-      if: matrix.python-version == 3.6
+      if: matrix.python-version == 3.6 && matrix.platform == 'ubuntu-latest'
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_SERVICE_NAME: github
