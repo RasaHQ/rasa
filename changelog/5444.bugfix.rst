@@ -1,0 +1,1 @@
+Fixed ambiguous logging in `DIETClassifier` by adding the name of the calling class to the log message.
