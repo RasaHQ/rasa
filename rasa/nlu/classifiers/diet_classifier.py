@@ -267,7 +267,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         if component_config is not None and EPOCHS not in component_config:
             logger.warning(
-                f"Please configure the number of '{EPOCHS}' in your configuration file."
+                f"Please configure the number of '{EPOCHS}' in your configuration file for {self.__class__.name}."
                 f" We will change the default value of '{EPOCHS}' in the future to 1. "
             )
 
@@ -648,7 +648,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self.model is None:
             logger.debug(
                 f"There is no trained model for {self.__class__.name}: component is either not trained or "
-                "didn't receive enough training data."
+                f"didn't receive enough training data."
             )
             return
 
@@ -826,7 +826,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         if not model_dir or not meta.get("file"):
             logger.debug(
-                f"Failed to load model. "
+                f"Failed to load {cls.name}. "
                 f"Maybe the path '{os.path.abspath(model_dir)}' doesn't exist?"
             )
             return cls(component_config=meta)
