@@ -56,6 +56,7 @@ from rasa.utils.tensorflow.constants import (
     SPARSE_INPUT_DROPOUT,
     MASKED_LM,
     ENTITY_RECOGNITION,
+    TENSORBOARD_LOG_DIR,
     INTENT_CLASSIFICATION,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
@@ -77,6 +78,7 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     AUTO,
     BALANCED,
+    TENSORBOARD_LOG_LEVEL,
 )
 
 
@@ -207,6 +209,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # examples per entity are required.
         # Rule of thumb: you should have more than 100 examples per entity.
         BILOU_FLAG: True,
+        # If you want to use tensorboard to visualize training and validation metrics,
+        # set this option to a valid output directory.
+        TENSORBOARD_LOG_DIR: None,
+        # Define when training metrics for tensorboard should be logged.
+        # Either after every epoch or for every training step.
+        # Valid values: 'epoch' and 'minibatch'
+        TENSORBOARD_LOG_LEVEL: "epoch",
     }
 
     # init helpers
@@ -937,7 +946,12 @@ class DIET(RasaModel):
         index_tag_id_mapping: Optional[Dict[int, Text]],
         config: Dict[Text, Any],
     ) -> None:
-        super().__init__(name="DIET", random_seed=config[RANDOM_SEED])
+        super().__init__(
+            name="DIET",
+            random_seed=config[RANDOM_SEED],
+            tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
+            tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
+        )
 
         self.config = config
 

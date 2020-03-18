@@ -60,6 +60,8 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     AUTO,
     BALANCED,
+    TENSORBOARD_LOG_DIR,
+    TENSORBOARD_LOG_LEVEL,
 )
 from rasa.nlu.constants import (
     RESPONSE,
@@ -186,6 +188,13 @@ class ResponseSelector(DIETClassifier):
         MASKED_LM: False,
         # Name of the intent for which this response selector is to be trained
         RETRIEVAL_INTENT: None,
+        # If you want to use tensorboard to visualize training and validation metrics,
+        # set this option to a valid output directory.
+        TENSORBOARD_LOG_DIR: None,
+        # Define when training metrics for tensorboard should be logged.
+        # Either after every epoch or for every training step.
+        # Valid values: 'epoch' and 'minibatch'
+        TENSORBOARD_LOG_LEVEL: "epoch",
     }
 
     def __init__(
