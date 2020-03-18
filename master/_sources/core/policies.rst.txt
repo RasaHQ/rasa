@@ -425,6 +425,15 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
         # How many examples to use for hold out validation set
         # Large values may hurt performance, e.g. model accuracy.
         "evaluate_on_number_of_examples": 0
+        # If you want to use tensorboard to visualize training metrics,
+        # set this option to a valid output directory.
+        # You can view the training metrics after training in tensorboard via
+        # ``tensorboard --logdir <path-to-given-directory>``
+        "tensorboard_log_directory": None
+        # Define when training metrics for tensorboard should be logged.
+        # Either after every epoch or for every training step.
+        # Valid values: 'epoch' and 'minibatch'
+        "tensorboard_log_level": "epoch"
 
     .. note::
 

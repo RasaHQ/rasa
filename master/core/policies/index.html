@@ -787,6 +787,15 @@ The following default values are set:</p>
 <span class="c1"># How many examples to use for hold out validation set</span>
 <span class="c1"># Large values may hurt performance, e.g. model accuracy.</span>
 <span class="s">&quot;evaluate_on_number_of_examples&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="c1"># If you want to use tensorboard to visualize training metrics,</span>
+<span class="c1"># set this option to a valid output directory.</span>
+<span class="c1"># You can view the training metrics after training in tensorboard via</span>
+<span class="c1"># ``tensorboard --logdir &lt;path-to-given-directory&gt;``</span>
+<span class="s">&quot;tensorboard_log_directory&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
+<span class="c1"># Define when training metrics for tensorboard should be logged.</span>
+<span class="c1"># Either after every epoch or for every training step.</span>
+<span class="c1"># Valid values: &#39;epoch&#39; and &#39;minibatch&#39;</span>
+<span class="s">&quot;tensorboard_log_level&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;epoch&quot;</span>
 </pre></div>
 </div>
 <div class="admonition note">

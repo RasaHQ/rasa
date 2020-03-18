@@ -461,6 +461,10 @@ component for downstream NLU models.</p>
     <span class="c1"># default model architecture that original transformers library loads</span>
     <span class="l l-Scalar l-Scalar-Plain">model_weights</span><span class="p p-Indicator">:</span> <span class="s">&quot;bert-base-uncased&quot;</span>
 
+    <span class="c1"># An optional path to a specific directory to download and cache the pre-trained model weights.</span>
+    <span class="c1"># The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .</span>
+    <span class="l l-Scalar l-Scalar-Plain">cache_dir</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">null</span>
+
 <span class="c1">#    +----------------+--------------+-------------------------+</span>
 <span class="c1">#    | Language Model | Parameter    | Default value for       |</span>
 <span class="c1">#    |                | &quot;model_name&quot; | &quot;model_weights&quot;         |</span>
@@ -1446,6 +1450,15 @@ See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starsp
     <span class="c1"># How many examples to use for hold out validation set</span>
     <span class="c1"># Large values may hurt performance, e.g. model accuracy.</span>
     <span class="s">&quot;evaluate_on_number_of_examples&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+    <span class="c1"># If you want to use tensorboard to visualize training metrics,</span>
+    <span class="c1"># set this option to a valid output directory.</span>
+    <span class="c1"># You can view the training metrics after training in tensorboard via</span>
+    <span class="c1"># ``tensorboard --logdir &lt;path-to-given-directory&gt;``</span>
+    <span class="s">&quot;tensorboard_log_directory&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
+    <span class="c1"># Define when training metrics for tensorboard should be logged.</span>
+    <span class="c1"># Either after every epoch or for every training step.</span>
+    <span class="c1"># Valid values: &#39;epoch&#39; and &#39;minibatch&#39;</span>
+    <span class="s">&quot;tensorboard_log_level&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;epoch&quot;</span>
 </pre></div>
 </div>
 </td>
@@ -1644,7 +1657,16 @@ Default is <code class="docutils literal notranslate"><span class="pre">None</sp
     <span class="c1"># should predict those tokens.</span>
     <span class="s">&quot;use_masked_language_model&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
     <span class="c1"># Name of the intent for which this response selector is to be trained</span>
-    <span class="s">&quot;retrieval_intent:</span><span class="nv"> </span><span class="s">None</span>
+    <span class="s">&quot;retrieval_intent&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
+    <span class="c1"># If you want to use tensorboard to visualize training metrics,</span>
+    <span class="c1"># set this option to a valid output directory.</span>
+    <span class="c1"># You can view the training metrics after training in tensorboard via</span>
+    <span class="c1"># ``tensorboard --logdir &lt;path-to-given-directory&gt;``</span>
+    <span class="s">&quot;tensorboard_log_directory&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
+    <span class="c1"># Define when training metrics for tensorboard should be logged.</span>
+    <span class="c1"># Either after every epoch or for every training step.</span>
+    <span class="c1"># Valid values: &#39;epoch&#39; and &#39;minibatch&#39;</span>
+    <span class="s">&quot;tensorboard_log_level&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;epoch&quot;</span>
 </pre></div>
 </div>
 </td>
@@ -2277,6 +2299,15 @@ See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starsp
     <span class="c1"># examples per entity are required.</span>
     <span class="c1"># Rule of thumb: you should have more than 100 examples per entity.</span>
     <span class="s">&quot;BILOU_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+    <span class="c1"># If you want to use tensorboard to visualize training metrics,</span>
+    <span class="c1"># set this option to a valid output directory.</span>
+    <span class="c1"># You can view the training metrics after training in tensorboard via</span>
+    <span class="c1"># ``tensorboard --logdir &lt;path-to-given-directory&gt;``</span>
+    <span class="s">&quot;tensorboard_log_directory&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
+    <span class="c1"># Define when training metrics for tensorboard should be logged.</span>
+    <span class="c1"># Either after every epoch or for every training step.</span>
+    <span class="c1"># Valid values: &#39;epoch&#39; and &#39;minibatch&#39;</span>
+    <span class="s">&quot;tensorboard_log_level&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;epoch&quot;</span>
 </pre></div>
 </div>
 </td>
