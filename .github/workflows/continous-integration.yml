@@ -151,7 +151,7 @@ jobs:
 
     - name: Add poetry to path
       if: matrix.platform == 'windows-latest'
-      run: echo "::add-path::%USERPROFILE%\.poetry\bin"
+      run: echo "::add-path::$HOME/.poetry/bin"
 
     - name: Install Dependencies 📦
       run: |
