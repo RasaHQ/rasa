@@ -156,7 +156,7 @@ jobs:
       run: JOBS=2 make test
 
     - name: Send Coverage Report 📊
-      if: matrix.python-version == 3.6 && matrix.platform == "ubuntu-latest"
+      if: matrix.python-version == 3.6 && matrix.platform == ubuntu-latest
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_SERVICE_NAME: github
