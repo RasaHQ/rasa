@@ -81,7 +81,6 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_LEVEL,
 )
 
-
 logger = logging.getLogger(__name__)
 
 TEXT_FEATURES = f"{TEXT}_features"
@@ -658,7 +657,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _predict(self, message: Message) -> Optional[Dict[Text, tf.Tensor]]:
         if self.model is None:
             logger.debug(
-                "There is no trained model: component is either not trained or "
+                f"There is no trained model for {self.__class__.name} : component is either not trained or "
                 "didn't receive enough training data."
             )
             return
