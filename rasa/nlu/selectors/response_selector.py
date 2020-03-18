@@ -2,13 +2,17 @@ import logging
 
 import numpy as np
 import tensorflow as tf
+from pathlib import Path
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
+import rasa.utils.io as io_utils
+from rasa.utils import train_utils
 from rasa.nlu.config import InvalidConfigError
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.model import Metadata
 from rasa.nlu.classifiers.diet_classifier import (
     DIETClassifier,
     DIET,
@@ -66,9 +70,12 @@ from rasa.utils.tensorflow.constants import (
 from rasa.nlu.constants import (
     RESPONSE,
     RESPONSE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_KEY_ATTRIBUTE,
+    INTENT,
     DEFAULT_OPEN_UTTERANCE_TYPE,
     TEXT,
 )
+
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.models import RasaModel
 
@@ -203,6 +210,7 @@ class ResponseSelector(DIETClassifier):
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         index_tag_id_mapping: Optional[Dict[int, Text]] = None,
         model: Optional[RasaModel] = None,
+        retrieval_intent_mapping: Optional[Dict[Text, Text]] = None,
     ) -> None:
 
         component_config = component_config or {}
@@ -211,6 +219,7 @@ class ResponseSelector(DIETClassifier):
         component_config[INTENT_CLASSIFICATION] = True
         component_config[ENTITY_RECOGNITION] = False
         component_config[BILOU_FLAG] = None
+        self.retrieval_intent_mapping = retrieval_intent_mapping or {}
 
         super().__init__(
             component_config, index_label_id_mapping, index_tag_id_mapping, model
@@ -230,6 +239,20 @@ class ResponseSelector(DIETClassifier):
     def _check_config_parameters(self) -> None:
         super()._check_config_parameters()
         self._load_selector_params(self.component_config)
+
+    @staticmethod
+    def _create_retrieval_intent_mapping(
+        training_data: TrainingData,
+    ) -> Dict[Text, Text]:
+        """Create response_key dictionary"""
+
+        retrieval_intent_mapping = {}
+        for example in training_data.intent_examples:
+            retrieval_intent_mapping[
+                example.get(RESPONSE)
+            ] = f"{example.get(INTENT)}/{example.get(RESPONSE_KEY_ATTRIBUTE)}"
+
+        return retrieval_intent_mapping
 
     @staticmethod
     def _set_message_property(
@@ -262,6 +285,9 @@ class ResponseSelector(DIETClassifier):
         label_id_index_mapping = self._label_id_index_mapping(
             training_data, attribute=RESPONSE
         )
+        self.retrieval_intent_mapping = self._create_retrieval_intent_mapping(
+            training_data
+        )
 
         if not label_id_index_mapping:
             # no labels are present to train
@@ -288,6 +314,8 @@ class ResponseSelector(DIETClassifier):
 
         out = self._predict(message)
         label, label_ranking = self._predict_label(out)
+        retrieval_intent_name = self.retrieval_intent_mapping.get(label.get("name"))
+        # add suffix to label here
 
         selector_key = (
             self.retrieval_intent
@@ -299,9 +327,55 @@ class ResponseSelector(DIETClassifier):
             f"Adding following selector key to message property: {selector_key}"
         )
 
-        prediction_dict = {"response": label, "ranking": label_ranking}
+        prediction_dict = {
+            "response": label,
+            "ranking": label_ranking,
+            "full_retrieval_intent": retrieval_intent_name,
+        }
 
         self._set_message_property(message, prediction_dict, selector_key)
+
+    def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+        """Persist this model into the passed directory.
+
+        Return the metadata necessary to load the model again.
+        """
+        super().persist(file_name, model_dir)
+
+        model_dir = Path(model_dir)
+
+        io_utils.json_pickle(
+            model_dir / f"{file_name}.retrieval_intent_mapping.pkl",
+            self.retrieval_intent_mapping,
+        )
+        return {"file": file_name}
+
+    @classmethod
+    def load(
+        cls,
+        meta: Dict[Text, Any],
+        model_dir: Text = None,
+        model_metadata: Metadata = None,
+        cached_component: Optional["ResponseSelector"] = None,
+        retrieval_intent_mapping: Optional[Dict[Text, Text]] = None,
+        **kwargs: Any,
+    ) -> "ResponseSelector":
+        """Loads the trained model from the provided directory."""
+
+        model = super().load(
+            meta, model_dir, model_metadata, cached_component, **kwargs
+        )
+
+        file_name = meta.get("file")
+        model_dir = Path(model_dir)
+
+        retrieval_intent_mapping = io_utils.json_unpickle(
+            model_dir / f"{file_name}.retrieval_intent_mapping.pkl"
+        )
+
+        model.retrieval_intent_mapping = retrieval_intent_mapping
+
+        return model
 
 
 class DIET2DIET(DIET):

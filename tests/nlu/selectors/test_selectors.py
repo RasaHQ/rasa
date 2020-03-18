@@ -4,6 +4,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.training_data import load_data
 from rasa.nlu.train import Trainer, Interpreter
 from rasa.utils.tensorflow.constants import EPOCHS
+from rasa.nlu.constants import RESPONSE_SELECTOR_PROPERTY_NAME
 
 
 @pytest.mark.parametrize(
@@ -33,6 +34,12 @@ def test_train_selector(pipeline, component_builder, tmpdir):
     assert trainer.pipeline
 
     loaded = Interpreter.load(persisted_path, component_builder)
+    parsed = loaded.parse("hello")
 
     assert loaded.pipeline
-    assert loaded.parse("hello") is not None
+    assert parsed is not None
+    assert (
+        parsed.get(RESPONSE_SELECTOR_PROPERTY_NAME)
+        .get("default")
+        .get("full_intent_name")
+    ) is not None
