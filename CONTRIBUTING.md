@@ -176,7 +176,7 @@ This will open a window where you can choose the repository and branch you would
 
 Next, make sure to update the pull request card with as many details about your contribution as possible. _Proposed changes_ section should contain the details of what has been fixed/implemented, and Status should reflect the status of your contributions.
 
-If you are ready to get feedback on your contribution from the Rasa team, tick the _made PR ready for code review_ box.
+If you are ready to get feedback on your contribution from the Rasa team, tick the _made PR ready for code review_ and _allow edits from maintainers_ box.
 
 Once you are happy with everything, click the _Create pull request_ button. This will create a Pull Request with your proposed changes.
 
