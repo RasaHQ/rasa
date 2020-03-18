@@ -151,6 +151,6 @@ def test_nlu(args: argparse.Namespace) -> None:
 
 
 def test(args: argparse.Namespace):
-    setattr(args, 'e2e', True)
+    setattr(args, "e2e", True)
     test_core(args)
     test_nlu(args)
