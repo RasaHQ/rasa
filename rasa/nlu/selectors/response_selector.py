@@ -315,7 +315,6 @@ class ResponseSelector(DIETClassifier):
         out = self._predict(message)
         label, label_ranking = self._predict_label(out)
         retrieval_intent_name = self.retrieval_intent_mapping.get(label.get("name"))
-        # add suffix to label here
 
         selector_key = (
             self.retrieval_intent
