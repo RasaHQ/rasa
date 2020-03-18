@@ -14,7 +14,7 @@ from rasa.exceptions import (
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
-    from rasa.core.brokers.pika import PikaEventBroker, PikaProducer
+    from rasa.core.brokers.pika import PikaEventBroker
     from rasa.core.tracker_store import TrackerStore
     from rasa.core.exporter import Exporter
     from rasa.core.utils import AvailableEndpoints
@@ -26,16 +26,24 @@ logger = logging.getLogger(__name__)
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
-    shell_parser = subparsers.add_parser(
+    """Add subparser for `rasa export`.
+
+    Args:
+        subparsers: Subparsers action object to which `argparse.ArgumentParser`
+            objects can be added.
+        parents: `argparse.ArgumentParser` objects whose arguments should also be
+            included.
+    """
+    export_parser = subparsers.add_parser(
         "export",
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Export conversations using an event broker.",
     )
-    shell_parser.set_defaults(func=export_trackers)
+    export_parser.set_defaults(func=export_trackers)
 
-    arguments.set_export_arguments(shell_parser)
+    arguments.set_export_arguments(export_parser)
 
 
 def _get_tracker_store(endpoints: "AvailableEndpoints") -> "TrackerStore":
@@ -145,9 +153,9 @@ def _prepare_event_broker(event_broker: "EventBroker") -> None:
     In addition, wait until the event broker reports a `ready` state.
 
     """
-    from rasa.core.brokers.pika import PikaEventBroker, PikaProducer
+    from rasa.core.brokers.pika import PikaEventBroker
 
-    if isinstance(event_broker, (PikaEventBroker, PikaProducer)):
+    if isinstance(event_broker, PikaEventBroker):
         event_broker.should_keep_unpublished_messages = False
         event_broker.raise_on_failure = True
 

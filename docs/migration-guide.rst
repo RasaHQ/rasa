@@ -90,6 +90,8 @@ General
     pipeline:
     # - ... other components
     - name: DIETClassifier
+      hidden_layers_sizes:
+        text: [256, 128]
       intent_classification: True
       entity_recognition: False
       use_masked_language_model: False
