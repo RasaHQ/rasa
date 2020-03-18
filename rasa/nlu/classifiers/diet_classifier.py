@@ -1109,7 +1109,7 @@ class DIET(RasaModel):
         # print('=======================================================')
 
         ## FIXME: Proof of concept to see whether it works in principle, refactor later!
-        if self.config[DIET_ENCODER] == "lstm":
+        if self.config.get(DIET_ENCODER, "transformer") == "lstm":
             if self.config[LSTM_LAYERS] > 0:
                 self._tf_layers[f"{name}_transformer"] = LSTMEncoder(
                     num_layers=self.config[LSTM_LAYERS],
