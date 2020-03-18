@@ -41,5 +41,5 @@ def test_train_selector(pipeline, component_builder, tmpdir):
     assert (
         parsed.get(RESPONSE_SELECTOR_PROPERTY_NAME)
         .get("default")
-        .get("full_intent_name")
+        .get("full_retrieval_intent")
     ) is not None
