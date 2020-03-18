@@ -15,6 +15,8 @@ from rasa.utils.tensorflow.constants import (
     MASKED_LM,
     TENSORBOARD_LOG_LEVEL,
     TENSORBOARD_LOG_DIR,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
 )
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
@@ -305,11 +307,11 @@ async def test_set_random_seed(component_builder, tmpdir):
 
 
 async def test_train_tensorboard_logging(component_builder, tmpdir):
-    import os
+    from pathlib import Path
 
-    tensorboard_log_dir = os.path.join(tmpdir.strpath, "tensorboard")
+    tensorboard_log_dir = Path(tmpdir.strpath) / "tensorboard"
 
-    assert not os.path.exists(tensorboard_log_dir)
+    assert not tensorboard_log_dir.exists()
 
     _config = RasaNLUModelConfig(
         {
@@ -318,9 +320,11 @@ async def test_train_tensorboard_logging(component_builder, tmpdir):
                 {"name": "CountVectorsFeaturizer"},
                 {
                     "name": "DIETClassifier",
-                    EPOCHS: 1,
+                    EPOCHS: 3,
                     TENSORBOARD_LOG_LEVEL: "epoch",
-                    TENSORBOARD_LOG_DIR: tensorboard_log_dir,
+                    TENSORBOARD_LOG_DIR: str(tensorboard_log_dir),
+                    EVAL_NUM_EXAMPLES: 15,
+                    EVAL_NUM_EPOCHS: 1,
                 },
             ],
             "language": "en",
@@ -334,5 +338,7 @@ async def test_train_tensorboard_logging(component_builder, tmpdir):
         component_builder=component_builder,
     )
 
-    assert os.path.exists(tensorboard_log_dir)
-    assert os.path.exists(f"{tensorboard_log_dir}/DIET")
+    assert tensorboard_log_dir.exists()
+
+    all_files = list(tensorboard_log_dir.rglob("*.*"))
+    assert len(all_files) == 3

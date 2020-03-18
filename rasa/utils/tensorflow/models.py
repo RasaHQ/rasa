@@ -257,7 +257,7 @@ class RasaModel(tf.keras.models.Model):
         call_model_function: Callable,
         batch_size: int,
         training: bool,
-        offset: Optional[int] = 0,
+        offset: int,
         writer: Optional[ResourceSummaryWriter] = None,
     ) -> int:
         """Run on batches"""
@@ -351,7 +351,7 @@ class RasaModel(tf.keras.models.Model):
     def _log_metrics_for_tensorboard(
         self, step: int, writer: Optional[ResourceSummaryWriter] = None
     ) -> None:
-        if self.train_summary_writer is not None:
+        if writer is not None:
             with writer.as_default():
                 for metric in self.metrics:
                     if metric.name in self.metrics_to_log:
@@ -375,9 +375,9 @@ class RasaModel(tf.keras.models.Model):
         """Convert input batch tensors into batch data format.
 
         Batch contains any number of batch data. The order is equal to the
-        key-value pairs in session data. As sparse data were converted into indices, data,
-        shape before, this methods converts them into sparse tensors. Dense data is
-        kept.
+        key-value pairs in session data. As sparse data were converted into indices,
+        data, shape before, this methods converts them into sparse tensors. Dense data
+        is kept.
         """
 
         batch_data = defaultdict(list)
@@ -431,21 +431,18 @@ class RasaModel(tf.keras.models.Model):
         )
         layers = [
             f"{layer.name} ({layer.dtype.name}) "
-            f"[{'x'.join([str(s) for s in layer.shape])}]"
+            f"[{'x'.join(str(s) for s in layer.shape)}]"
             for layer in self.trainable_variables
         ]
         layers.reverse()
 
-        file = open(self.model_summary_file, "w")
-
-        file.write("Variables: name (type) [shape]\n\n")
-        for layer in layers:
-            file.write(layer)
+        with open(self.model_summary_file, "w") as file:
+            file.write("Variables: name (type) [shape]\n\n")
+            for layer in layers:
+                file.write(layer)
+                file.write("\n")
             file.write("\n")
-        file.write("\n")
-        file.write(f"Total size of variables: {total_number_of_variables}")
-
-        file.close()
+            file.write(f"Total size of variables: {total_number_of_variables}")
 
     def compile(self, *args, **kwargs) -> None:
         raise Exception(
