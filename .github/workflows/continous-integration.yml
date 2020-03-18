@@ -144,6 +144,7 @@ jobs:
         restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
     - name: Install additional Dependencies 📦 (ubuntu)
+      if: matrix.platform == ubuntu-latest
       run: |
         sudo apt-get -y install libpq-dev
         make prepare-tests-ubuntu
