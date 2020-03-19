@@ -237,7 +237,7 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
           The lower the number of epochs the faster the model is trained.
         - ``hidden_layers_sizes``:
           This parameter allows you to define the number of feed forward layers and their output
-          dimensions for user messages and intents (default: ``dialogue: [], label: []``).
+          dimensions for dialogues and intents (default: ``dialogue: [], label: []``).
           Every entry in the list corresponds to a feed forward layer.
           For example, if you set ``dialogue: [256, 128]``, we will add two feed forward layers in front of
           the transformer. The vectors of the input tokens (coming from the dialogue) will be passed on to those
@@ -262,8 +262,8 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
 
     .. warning::
 
-        Pass an appropriate number of ``epochs`` to the ``TEDPolicy``, otherwise the policy will be trained only
-        for ``1`` epoch.
+        Pass an appropriate number, for example 50,  of ``epochs`` to the ``TEDPolicy``, otherwise the policy will
+        be trained only for ``1`` epoch.
 
     .. warning::
 
@@ -277,9 +277,10 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
 
         .. container:: header
 
-            The above configuration parameters are the ones you most likely gonna change.
-            However, additional parameters exists that can be adapted.
+            .. container:: block
 
+                The above configuration parameters are the ones you most likely gonna change.
+                However, additional parameters exists that can be adapted.
 
         .. code-block:: none
 
