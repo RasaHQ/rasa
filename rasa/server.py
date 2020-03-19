@@ -479,12 +479,9 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await get_tracker(
-                    app.agent.create_processor(), conversation_id
-                )
+                processor = app.agent.create_processor()
+                tracker = processor._get_tracker(conversation_id)
 
-                # Get events after tracker initialization to ensure that generated
-                # timestamps are after potential session events.
                 events = _get_events_from_request_body(request)
 
                 for event in events:
