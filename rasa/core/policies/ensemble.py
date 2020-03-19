@@ -27,6 +27,7 @@ from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
+from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
 from rasa.utils.common import class_from_module_path, raise_warning
@@ -52,7 +53,6 @@ class PolicyEnsemble:
         self._check_for_important_policies()
 
     def _check_for_important_policies(self) -> None:
-        from rasa.core.policies.mapping_policy import MappingPolicy
 
         if not any(isinstance(policy, MappingPolicy) for policy in self.policies):
             logger.info(
@@ -85,10 +85,6 @@ class PolicyEnsemble:
         ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
     ) -> None:
         """Check for elements that only work with certain policy/domain combinations."""
-
-        from rasa.core.policies.form_policy import FormPolicy
-        from rasa.core.policies.mapping_policy import MappingPolicy
-        from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 
         policies_needing_validation = [
             FormPolicy,
