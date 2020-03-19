@@ -587,15 +587,6 @@ def create_app(
                 {"parameter": "name", "in": "body"},
             )
 
-        # Deprecation warning
-        raise_warning(
-            "Triggering actions via the execute endpoint is deprecated. "
-            "Trigger an intent via the "
-            "`/conversations/<conversation_id>/trigger_intent` "
-            "endpoint instead.",
-            FutureWarning,
-        )
-
         policy = request_params.get("policy", None)
         confidence = request_params.get("confidence", None)
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
