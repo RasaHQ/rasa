@@ -720,11 +720,11 @@ class MessageProcessor:
         start events at the beginning of a conversation.
 
         Args:
-            conversation_id: The id of the conversation of which the history should be 
+            conversation_id: The id of the conversation of which the history should be
                 retrieved.
 
         Returns:
-            Tracker for the conversation. Creates an empty tracker in case it'a new 
+            Tracker for the conversation. Creates an empty tracker in case it'a new
             conversation.
         """
         conversation_id = conversation_id or UserMessage.DEFAULT_SENDER_ID
