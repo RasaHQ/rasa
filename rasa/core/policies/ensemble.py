@@ -134,16 +134,6 @@ class PolicyEnsemble:
     def probabilities_using_best_policy(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
-        """Predicts the next action the bot should take after seeing the tracker.
-
-        Args:
-            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.core.domain.Domain`
-
-        Returns:
-             the list of probabilities for the next actions
-        """
-
         raise NotImplementedError
 
     def _max_histories(self) -> List[Optional[int]]:
