@@ -161,7 +161,7 @@ def test_test_help(run: Callable[..., RunResult]):
     output = run("test", "--help")
 
     help_text = """usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
-                 [--max-stories MAX_STORIES] [--e2e] [--endpoints ENDPOINTS]
+                 [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
                  [--evaluate-model-directory] [-u NLU] [--out OUT]
                  [--successes] [--no-errors] [--histogram HISTOGRAM]
