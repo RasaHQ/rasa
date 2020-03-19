@@ -376,7 +376,7 @@ class ResponseSelector(DIETClassifier):
 
         model.retrieval_intent_mapping = retrieval_intent_mapping
 
-        return model
+        return model  # pytype: disable=bad-return-type
 
 
 class DIET2DIET(DIET):
