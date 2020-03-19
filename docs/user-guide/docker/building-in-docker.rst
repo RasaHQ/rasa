@@ -63,8 +63,9 @@ The initial project files should all be there, as well as a ``models`` directory
 
 .. note::
 
-   By default Docker runs containers as user ``1001``. Hence, all files created by
-   these containers will be owned by this user. See the `Docker documentation
+   If you run into permission errors, it may be because the ``rasa/rasa`` images
+   run as user ``1001`` as a best practice, to avoid giving the container ``root`` permissions.
+   Hence, all files created by these containers will be owned by user ``1001``. See the `Docker documentation
    <https://docs.docker.com/v17.12/edge/engine/reference/commandline/run/>`_
    if you want to run the containers as a different user.
 
@@ -72,7 +73,6 @@ Talking to Your Assistant
 *************************
 
 To talk to your newly-trained assistant, run this command:
-
 
    .. code-block:: bash
 
@@ -229,8 +229,7 @@ You can then run the actions with the following command:
 
 Here's what's happening in that command:
 
-  - ``-d``: Runs the container in detached mode so that you can run the rasa container in the same
-    window. Run ``docker ps`` at any time to see all of your currently running containers
+  - ``-d``: Runs the container in detached mode so that you can run the rasa container in the same window.
   - ``-v $(pwd):/app``: Mounts your project directory into the Docker
     container so that the action server can run the code in the ``actions`` folder
   - ``net my-project``: Run the server on a specific network so that the rasa container can find it
@@ -238,9 +237,9 @@ Here's what's happening in that command:
   - ``rasa/rasa-sdk:latest``: Uses the Rasa SDK image with the tag ``latest``
 
 
-This pulls the image for the Rasa SDK which includes the action server,
-mounts your custom actions into it, and starts the server. Because it's running in detached mode,
-if you want to stop the container, do it with ``docker stop action-server``.
+Because the action server is running in detached mode, if you want to stop the container,
+do it with ``docker stop action-server``. You can also run ``docker ps`` at any time to see all
+of your currently running containers.
 
 To instruct the Rasa server to use the action server, you have to tell Rasa its location.
 Add this endpoint to your ``endpoints.yml``, referencing the ``--name`` you gave the server:
@@ -272,8 +271,8 @@ Now you can talk to your bot again via the ``shell`` command:
 
       docker rm action-server
 
-Deploying your Model
-********************
+Deploying your Assistant
+************************
 
 Work on your bot until you have a minimum viable assistant that can handle your happy paths. After
 that, you'll want to deploy your model to get feedback from real test users. To do so, you can deploy the

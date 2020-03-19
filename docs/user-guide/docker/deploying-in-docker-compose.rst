@@ -1,11 +1,11 @@
-:desc: Use Docker Compose to deploy a Rasa assistant alongside the action server.
+:desc: Use Docker Compose to deploy a Rasa Open Source assistant
 
 .. _deploying-rasa-in-docker-compose:
 
-Deploying a Rasa-Only Assistant in Docker Compose
-=================================================
+Deploying a Rasa Open Source Assistant in Docker Compose
+========================================================
 
-If you would like to deploy a Rasa assistant without Rasa X, you can do so by deploying it in Docker Compose.
+If you would like to deploy your assistant without Rasa X, you can do so by deploying it in Docker Compose.
 To deploy Rasa X and your assistant together, see the :ref:`recommended-deployment-methods`.
 
 .. contents::
@@ -30,10 +30,12 @@ install Docker.
 See `Docker Installation <https://docs.docker.com/install/>`_ for details.
 
 
+.. _docker-compose-configuring-channels:
+
 Configuring Channels
 ~~~~~~~~~~~~~~~~~~~~
 
-To run your AI assistant in production, configure your required
+To run your AI assistant in production, don't forget to configure your required
 :ref:`messaging-and-voice-channels` in ``credentials.yml``. For example, to add a
 REST channel, uncomment this section in the ``credentials.yml``:
 
@@ -45,50 +47,13 @@ REST channel, uncomment this section in the ``credentials.yml``:
 
 The REST channel will open your bot up to incoming requests at the ``/webhooks/rest/webhook`` endpoint.
 
-.. _running-a-rasa-server:
-
-Running a Rasa Server
-~~~~~~~~~~~~~~~~~~~~~
-
-The Rasa server can be run alone in Docker:
-
-   .. code-block:: bash
-
-     docker run \
-       -v $(pwd):/app \
-       -p 5005:5005 \
-       rasa/rasa:latest-full \
-       run
-
-Command Description:
-
-  - ``-v $(pwd):/app``: Mounts the working directory into the Rasa container for
-    access to the trained models as well as the credentials and endpoints configurations
-  - ``-p 5005:5005``: Map the port that runs Rasa to the host machine so that it is
-    accessible to receive messages
-  - ``rasa/rasa:latest-full``: Use the Rasa image with the tag ``latest-full``
-  - ``run``: Executes the ``rasa run`` command. For more information see
-    :ref:`command-line-interface`.
-
-Then you should be able to send messages to your bot with this curl request, for example:
-
-   .. code-block:: bash
-
-     curl -XPOST http://localhost:5005/webhooks/rest/webhook \
-       -H "Content-type: application/json" \
-       -d '{"sender": "test", "message": "hello"}'
-
-If your bot has custom actions, you'll have to deploy an action server image and use Docker Compose to
-run both services.
-
 
 Using Docker Compose to Run Multiple Services
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To run Rasa together with other services, such as a server for custom actions, it is
-recommend to use `Docker Compose <https://docs.docker.com/compose/>`_.
 Docker Compose provides an easy way to run multiple containers together without
-having to run multiple commands or configure networks.
+having to run multiple commands or configure networks. This is essential when you
+want to deploy an assistant that also has an action server.
 
 .. contents::
    :local:
@@ -118,8 +83,7 @@ Add the following content to the file:
 The file starts with the version of the Docker Compose specification that you
 want to use.
 Each container is declared as a ``service`` within the ``docker-compose.yml``.
-The first service is the ``rasa`` service. The configuration here is the equivalent to the
-``docker run`` command shown in :ref:`running-a-rasa-server`.
+The first service is the ``rasa`` service, which runs your Rasa server.
 
 To add the action server, add the image of your action server code. To learn how to deploy
 an action server image, see :ref:`building-an-action-server-image`.
@@ -155,7 +119,8 @@ To run the services configured in your ``docker-compose.yml`` execute:
 
        docker-compose up
 
-You should then be able to interact with your bot via requests to port 5005:
+You should then be able to interact with your bot via requests to port 5005, on the webhook endpoint that
+corresponds to a :ref:`configured channel <docker-compose-configuring-channels>`:
 
    .. code-block:: bash
 
@@ -181,9 +146,12 @@ a different Docker registry, such as `Google Container Registry <https://cloud.g
 `Amazon Elastic Container Registry <https://aws.amazon.com/ecr/>`_, or
 `Azure Container Registry <https://azure.microsoft.com/en-us/services/container-registry/>`_.
 
-To create your image, first create a list of your custom actions requirements in a file,
-``actions/requirements-actions.txt``. Then create a file named ``Dockerfile`` in your project directory,
-in which you'll extend the official SDK image, copy over your code, and add any custom dependencies. For example:
+To create your image:
+  - If your actions have any extra dependencies, create a list of them in a file,
+    ``actions/requirements-actions.txt``.
+  - Create a file named ``Dockerfile`` in your project directory,
+    in which you'll extend the official SDK image, copy over your code, and add any custom dependencies (if necessary).
+    For example:
 
       .. code-block:: docker
 
@@ -199,7 +167,7 @@ in which you'll extend the official SDK image, copy over your code, and add any 
          # Change back to root user to install dependencies
          USER root
 
-         # Install extra requirements for actions code
+         # Install extra requirements for actions code, if necessary (otherwise comment this out)
          RUN pip install -r requirements-actions.txt
 
          # Copy actions code to working directory
