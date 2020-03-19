@@ -217,6 +217,14 @@ async def get_tracker(
 ) -> Optional[DialogueStateTracker]:
     """Get tracker object from `MessageProcessor`."""
     tracker = await processor.get_tracker_with_session_start(conversation_id)
+    _validate_tracker(tracker, conversation_id)
+
+    return tracker
+
+
+def _validate_tracker(
+    tracker: Optional[DialogueStateTracker], conversation_id: Text
+) -> None:
     if not tracker:
         raise ErrorResponse(
             409,
@@ -224,7 +232,6 @@ async def get_tracker(
             f"Could not retrieve tracker with id '{conversation_id}'. Most likely "
             f"because there is no domain set on the agent.",
         )
-    return tracker
 
 
 def validate_request_body(request: Request, error_message: Text):
@@ -481,6 +488,7 @@ def create_app(
             async with app.agent.lock_store.lock(conversation_id):
                 processor = app.agent.create_processor()
                 tracker = processor.get_tracker(conversation_id)
+                _validate_tracker(tracker, conversation_id)
 
                 events = _get_events_from_request_body(request)
 
