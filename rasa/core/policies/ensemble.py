@@ -134,6 +134,16 @@ class PolicyEnsemble:
     def probabilities_using_best_policy(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
+        """Predicts the next action the bot should take after seeing the tracker.
+
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.core.domain.Domain`
+
+        Returns:
+             the list of probabilities for the next actions
+        """
+
         raise NotImplementedError
 
     def _max_histories(self) -> List[Optional[int]]:
@@ -361,7 +371,20 @@ class SimplePolicyEnsemble(PolicyEnsemble):
     def is_not_mapping_policy(best_policy_name) -> bool:
         return not best_policy_name.endswith("_" + MappingPolicy.__name__)
 
-    def _best_policy_prediction(self, tracker, domain):
+    def _best_policy_prediction(
+        self, tracker: DialogueStateTracker, domain: Domain
+    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+        """Picks the best policy prediction based on probabilities and policy priority.
+
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.core.domain.Domain`
+
+        Returns:
+            result: the list of probabilities for the next actions
+            best_policy_name: the name of the picked policy
+        """
+
         result = None
         max_confidence = -1
         best_policy_name = None
@@ -413,51 +436,73 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         return result, best_policy_name
 
-    def _fallback_after_listen(self, tracker, domain, result, best_policy_name):
-        if (
-            tracker.latest_action_name == ACTION_LISTEN_NAME
-            and result is not None
-            and result.index(max(result)) == domain.index_for_action(ACTION_LISTEN_NAME)
-            and self.is_not_memo_policy(best_policy_name)
-        ):
-            # Trigger the fallback policy when action_listen is predicted after
-            # a user utterance. This is done on the condition that:
-            # - a fallback policy is present,
-            # - there was just a user message and the predicted
-            #   action is action_listen by a policy
-            #   other than the MemoizationPolicy
+    def _fallback_after_listen(
+        self, domain: Domain, result: List[float], best_policy_name: Text
+    ) -> Tuple[List[float], Text]:
+        """Triggers fallback if action_listen is predicted after a user utterance.
 
-            fallback_idx_policy = [
-                (i, p)
-                for i, p in enumerate(self.policies)
-                if isinstance(p, FallbackPolicy)
-            ]
+        This is done on the condition that:
+        - a fallback policy is present,
+        - there was just a user message and the predicted
+          action is action_listen by a policy
+          other than the MemoizationPolicy
 
-            if fallback_idx_policy:
-                fallback_idx, fallback_policy = fallback_idx_policy[0]
+        Args:
+            domain: the :class:`rasa.core.domain.Domain`
+            result: the list of probabilities for the next actions
+            best_policy_name: the name of the picked policy
 
-                logger.debug(
-                    f"Action 'action_listen' was predicted after "
-                    f"a user message using {best_policy_name}. Predicting "
-                    f"fallback action: {fallback_policy.fallback_action_name}"
-                )
+        Returns:
+            result: the list of probabilities for the next actions
+            best_policy_name: the name of the picked policy
+        """
 
-                result = fallback_policy.fallback_scores(domain)
-                best_policy_name = (
-                    f"policy_{fallback_idx}_{type(fallback_policy).__name__}"
-                )
+        fallback_idx_policy = [
+            (i, p) for i, p in enumerate(self.policies) if isinstance(p, FallbackPolicy)
+        ]
+
+        if fallback_idx_policy:
+            fallback_idx, fallback_policy = fallback_idx_policy[0]
+
+            logger.debug(
+                f"Action 'action_listen' was predicted after "
+                f"a user message using {best_policy_name}. Predicting "
+                f"fallback action: {fallback_policy.fallback_action_name}"
+            )
+
+            result = fallback_policy.fallback_scores(domain)
+            best_policy_name = f"policy_{fallback_idx}_{type(fallback_policy).__name__}"
 
         return result, best_policy_name
 
     def probabilities_using_best_policy(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
+        """Predicts the next action the bot should take after seeing the tracker.
+
+        Picks the best policy prediction based on probabilities and policy priority.
+        Triggers fallback if action_listen is predicted after a user utterance.
+
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.core.domain.Domain`
+
+        Returns:
+            result: the list of probabilities for the next actions
+            best_policy_name: the name of the picked policy
+        """
 
         result, best_policy_name = self._best_policy_prediction(tracker, domain)
 
-        result, best_policy_name = self._fallback_after_listen(
-            tracker, domain, result, best_policy_name
-        )
+        if (
+            tracker.latest_action_name == ACTION_LISTEN_NAME
+            and result is not None
+            and result.index(max(result)) == domain.index_for_action(ACTION_LISTEN_NAME)
+            and self.is_not_memo_policy(best_policy_name)
+        ):
+            result, best_policy_name = self._fallback_after_listen(
+                domain, result, best_policy_name
+            )
 
         logger.debug(f"Predicted next action using {best_policy_name}")
         return result, best_policy_name
