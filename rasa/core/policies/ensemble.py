@@ -25,6 +25,8 @@ from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
+from rasa.core.policies.form_policy import FormPolicy
+from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
 from rasa.utils.common import class_from_module_path, raise_warning
@@ -355,15 +357,24 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         )
         return not (is_memo or is_augmented)
 
-    def probabilities_using_best_policy(
-        self, tracker: DialogueStateTracker, domain: Domain
-    ) -> Tuple[Optional[List[float]], Optional[Text]]:
-        import numpy as np
+    @staticmethod
+    def is_not_mapping_policy(best_policy_name) -> bool:
+        return not best_policy_name.endswith("_" + MappingPolicy.__name__)
 
+    def _best_policy_prediction(self, tracker, domain):
         result = None
         max_confidence = -1
         best_policy_name = None
         best_policy_priority = -1
+
+        # form and mapping policies are special:
+        # form should be above fallback
+        # mapping should be below fallback
+        # mapping is above form if it wins over fallback
+        # therefore form predictions are stored separately
+        form_probabilities = None
+        form_policy_index = None
+        form_policy_priority = None
 
         for i, p in enumerate(self.policies):
             probabilities = p.predict_action_probabilities(tracker, domain)
@@ -375,21 +386,41 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                     domain.index_for_action(tracker.events[-1].action_name)
                 ] = 0.0
 
-            confidence = np.max(probabilities)
-            if (confidence, p.priority) > (max_confidence, best_policy_priority):
-                max_confidence = confidence
-                result = probabilities
-                best_policy_name = "policy_{}_{}".format(i, type(p).__name__)
-                best_policy_priority = p.priority
+            if isinstance(p, FormPolicy):
+                # get form predictions separately
+                form_probabilities = probabilities
+                form_policy_index = i
+                form_policy_priority = p.priority
+            else:
+                # pick the best policy
+                confidence = max(probabilities)
+                if (confidence, p.priority) > (max_confidence, best_policy_priority):
+                    max_confidence = confidence
+                    result = probabilities
+                    best_policy_name = f"policy_{i}_{type(p).__name__}"
+                    best_policy_priority = p.priority
 
+        if form_probabilities is not None and self.is_not_mapping_policy(
+            best_policy_name
+        ):
+            # if mapping didn't win, check form policy predictions
+            if (max(form_probabilities), form_policy_priority) > (
+                max_confidence,
+                best_policy_priority,
+            ):
+                result = form_probabilities
+                best_policy_name = f"policy_{form_policy_index}_{FormPolicy.__name__}"
+
+        return result, best_policy_name
+
+    def _fallback_after_listen(self, tracker, domain, result, best_policy_name):
         if (
-            result is not None
-            and result.index(max_confidence)
-            == domain.index_for_action(ACTION_LISTEN_NAME)
-            and tracker.latest_action_name == ACTION_LISTEN_NAME
+            tracker.latest_action_name == ACTION_LISTEN_NAME
+            and result is not None
+            and result.index(max(result)) == domain.index_for_action(ACTION_LISTEN_NAME)
             and self.is_not_memo_policy(best_policy_name)
         ):
-            # Trigger the fallback policy when ActionListen is predicted after
+            # Trigger the fallback policy when action_listen is predicted after
             # a user utterance. This is done on the condition that:
             # - a fallback policy is present,
             # - there was just a user message and the predicted
@@ -406,16 +437,27 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 fallback_idx, fallback_policy = fallback_idx_policy[0]
 
                 logger.debug(
-                    "Action 'action_listen' was predicted after "
-                    "a user message using {}. "
-                    "Predicting fallback action: {}"
-                    "".format(best_policy_name, fallback_policy.fallback_action_name)
+                    f"Action 'action_listen' was predicted after "
+                    f"a user message using {best_policy_name}. Predicting "
+                    f"fallback action: {fallback_policy.fallback_action_name}"
                 )
 
                 result = fallback_policy.fallback_scores(domain)
-                best_policy_name = "policy_{}_{}".format(
-                    fallback_idx, type(fallback_policy).__name__
+                best_policy_name = (
+                    f"policy_{fallback_idx}_{type(fallback_policy).__name__}"
                 )
+
+        return result, best_policy_name
+
+    def probabilities_using_best_policy(
+        self, tracker: DialogueStateTracker, domain: Domain
+    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+
+        result, best_policy_name = self._best_policy_prediction(tracker, domain)
+
+        result, best_policy_name = self._fallback_after_listen(
+            tracker, domain, result, best_policy_name
+        )
 
         logger.debug(f"Predicted next action using {best_policy_name}")
         return result, best_policy_name
