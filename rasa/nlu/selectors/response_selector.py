@@ -341,6 +341,8 @@ class ResponseSelector(DIETClassifier):
         if self.model is None:
             return {"file": None}
 
+        super().persist(file_name, model_dir)
+
         model_dir = Path(model_dir)
 
         io_utils.json_pickle(
@@ -348,7 +350,7 @@ class ResponseSelector(DIETClassifier):
             self.retrieval_intent_mapping,
         )
 
-        return super().persist(file_name, model_dir)
+        return {"file": file_name}
 
     @classmethod
     def load(
