@@ -25,9 +25,6 @@ from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
-from rasa.core.policies.form_policy import FormPolicy
-from rasa.core.policies.mapping_policy import MappingPolicy
-from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
 from rasa.utils.common import class_from_module_path, raise_warning
@@ -53,6 +50,7 @@ class PolicyEnsemble:
         self._check_for_important_policies()
 
     def _check_for_important_policies(self) -> None:
+        from rasa.core.policies.mapping_policy import MappingPolicy
 
         if not any(isinstance(policy, MappingPolicy) for policy in self.policies):
             logger.info(
@@ -85,6 +83,10 @@ class PolicyEnsemble:
         ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
     ) -> None:
         """Check for elements that only work with certain policy/domain combinations."""
+
+        from rasa.core.policies.form_policy import FormPolicy
+        from rasa.core.policies.mapping_policy import MappingPolicy
+        from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
 
         policies_needing_validation = [
             FormPolicy,
@@ -355,6 +357,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
     @staticmethod
     def is_not_mapping_policy(best_policy_name) -> bool:
+        from rasa.core.policies.mapping_policy import MappingPolicy
+
         return not best_policy_name.endswith("_" + MappingPolicy.__name__)
 
     def _best_policy_prediction(
@@ -370,6 +374,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             result: the list of probabilities for the next actions
             best_policy_name: the name of the picked policy
         """
+
+        from rasa.core.policies.form_policy import FormPolicy
 
         result = None
         max_confidence = -1

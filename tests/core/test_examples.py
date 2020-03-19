@@ -35,46 +35,172 @@ async def test_formbot_example():
         stories,
         os.path.join(p, "models", "dialogue"),
         endpoints=endpoints,
-        policy_config="rasa/cli/default_config.yml",
+        policy_config="examples/formbot/config.yml",
     )
-    response = {
-        "events": [
-            {"event": "form", "name": "restaurant_form", "timestamp": None},
-            {
-                "event": "slot",
-                "timestamp": None,
-                "name": "requested_slot",
-                "value": "cuisine",
-            },
-        ],
-        "responses": [{"template": "utter_ask_cuisine"}],
-    }
+
+    def response_slot(slot):
+        if slot:
+            form = "restaurant_form"
+            template = f"utter_ask_{slot}"
+        else:
+            form = None
+            template = "utter_submit"
+        return {
+            "events": [
+                {"event": "form", "name": form, "timestamp": None},
+                {
+                    "event": "slot",
+                    "timestamp": None,
+                    "name": "requested_slot",
+                    "value": slot,
+                },
+            ],
+            "responses": [{"template": template}],
+        }
+
+    def response_error(slot):
+        return {
+            "error": f"Failed to extract slot {slot} with action restaurant_form",
+            "action_name": "restaurant_form",
+        }
 
     with aioresponses() as mocked:
         mocked.post(
-            "https://example.com/webhooks/actions", payload=response, repeat=True
+            "https://example.com/webhooks/actions",
+            payload=response_slot("cuisine"),
+            repeat=True,
         )
-
         responses = await agent.handle_text("/request_restaurant")
-
         assert responses[0]["text"] == "what cuisine?"
-
-    response = {
-        "error": "Failed to validate slot cuisine with action restaurant_form",
-        "action_name": "restaurant_form",
-    }
 
     with aioresponses() as mocked:
         # noinspection PyTypeChecker
         mocked.post(
             "https://example.com/webhooks/actions",
             repeat=True,
-            exception=ClientResponseError(400, "", json.dumps(response)),
+            exception=ClientResponseError(
+                400, "", json.dumps(response_error("cuisine"))
+            ),
+        )
+        responses = await agent.handle_text("/chitchat")
+        assert responses[0]["text"] == "chitchat"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            payload=response_slot("num_people"),
+            repeat=True,
+        )
+        responses = await agent.handle_text('/inform{"cuisine": "mexican"}')
+        assert responses[0]["text"] == "how many people?"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            payload=response_slot("outdoor_seating"),
+            repeat=True,
+        )
+        responses = await agent.handle_text('/inform{"number": "2"}')
+        assert responses[0]["text"] == "do you want to seat outside?"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            payload=response_slot("preferences"),
+            repeat=True,
+        )
+        responses = await agent.handle_text("/affirm")
+        assert responses[0]["text"] == "please provide additional preferences"
+
+    responses = await agent.handle_text("/restart")
+    assert responses[0]["text"] == "restarted"
+
+    responses = await agent.handle_text("/greet")
+    assert (
+        responses[0]["text"]
+        == "Hello! I am restaurant search assistant! How can I help?"
+    )
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            payload=response_slot("cuisine"),
+            repeat=True,
+        )
+        responses = await agent.handle_text("/request_restaurant")
+        assert responses[0]["text"] == "what cuisine?"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            payload=response_slot("num_people"),
+            repeat=True,
+        )
+        responses = await agent.handle_text('/inform{"cuisine": "mexican"}')
+        assert responses[0]["text"] == "how many people?"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            payload=response_slot("outdoor_seating"),
+            repeat=True,
+        )
+        responses = await agent.handle_text('/inform{"number": "2"}')
+        assert responses[0]["text"] == "do you want to seat outside?"
+
+    with aioresponses() as mocked:
+        # noinspection PyTypeChecker
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            repeat=True,
+            exception=ClientResponseError(
+                400, "", json.dumps(response_error("outdoor_seating"))
+            ),
+        )
+        responses = await agent.handle_text("/stop")
+        assert responses[0]["text"] == "do you want to continue?"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            payload=response_slot("outdoor_seating"),
+            repeat=True,
+        )
+        responses = await agent.handle_text("/affirm")
+        assert responses[0]["text"] == "do you want to seat outside?"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            payload=response_slot("preferences"),
+            repeat=True,
+        )
+        responses = await agent.handle_text("/affirm")
+        assert responses[0]["text"] == "please provide additional preferences"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            payload=response_slot("feedback"),
+            repeat=True,
+        )
+        responses = await agent.handle_text("/deny")
+        assert (
+            responses[0]["text"]
+            == "please give your feedback on your experience so far"
         )
 
-        responses = await agent.handle_text("/chitchat")
+    with aioresponses() as mocked:
+        mocked.post(
+            "https://example.com/webhooks/actions",
+            payload=response_slot(None),
+            repeat=True,
+        )
+        responses = await agent.handle_text('/inform{"feedback": "great"}')
+        assert responses[0]["text"] == "All done!"
 
-        assert responses[0]["text"] == "chitchat"
+    responses = await agent.handle_text("/thankyou")
+    assert responses[0]["text"] == "you are welcome :)"
 
 
 async def test_restaurantbot_example():
