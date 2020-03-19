@@ -23,6 +23,8 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 Bugfixes
 --------
 - `#5438 <https://github.com/rasahq/rasa/issues/5438>`_: Fixed bug when installing rasa with ``poetry``.
+- `#5413 <https://github.com/RasaHQ/rasa/issues/5413>`_: Fixed bug with ``EmbeddingIntentClassifier``, where results
+  weren't the same as in 1.7.x. Fixed by setting weight sparsity to 0.
 
 Improved Documentation
 ----------------------
@@ -31,6 +33,7 @@ Improved Documentation
   ``root`` user by default. For commands which require ``root`` user usage, you have to
   switch back to the ``root`` user in your Docker image as described in
   :ref:`deploying-your-rasa-assistant_custom-dependencies`.
+- `#5402 <https://github.com/RasaHQ/rasa/issues/5402>`_: Made improvements to Building Assistants tutorial
 
 
 [1.8.1] - 2020-03-06
@@ -58,7 +61,7 @@ Deprecations and Removals
 
 Features
 --------
-- `#2674 <https://github.com/rasahq/rasa/issues/2674>`_: Add default value ``__other__`` to ``values`` of a ``CategoricalSlot``. 
+- `#2674 <https://github.com/rasahq/rasa/issues/2674>`_: Add default value ``__other__`` to ``values`` of a ``CategoricalSlot``.
 
   All values not mentioned in the list of values of a ``CategoricalSlot``
   will be mapped to ``__other__`` for featurization.
@@ -122,7 +125,7 @@ Improvements
 - `#4653 <https://github.com/rasahq/rasa/issues/4653>`_: Added a new command-line argument ``--init-dir`` to command ``rasa init`` to specify
   the directory in which the project is initialised.
 - `#4682 <https://github.com/rasahq/rasa/issues/4682>`_: Added support to send images with the twilio output channel.
-- `#4817 <https://github.com/rasahq/rasa/issues/4817>`_: Part of Slack sanitization: 
+- `#4817 <https://github.com/rasahq/rasa/issues/4817>`_: Part of Slack sanitization:
   Multiple garbled URL's in a string coming from slack will be converted into actual strings.
   ``Example: health check of <http://eemdb.net|eemdb.net> and <http://eemdb1.net|eemdb1.net> to health check of
   eemdb.net and eemdb1.net``
@@ -154,7 +157,7 @@ Bugfixes
   `TwoStageFallbackPolicy <https://rasa.com/docs/rasa/core/policies/#two-stage-fallback-policy>`_ are used together.
 - `#5201 <https://github.com/rasahq/rasa/issues/5201>`_: Fixed incorrectly raised Error encountered in pipelines with a ``ResponseSelector`` and NLG.
 
-  When NLU training data is split before NLU pipeline comparison, 
+  When NLU training data is split before NLU pipeline comparison,
   NLG responses were not also persisted and therefore training for a pipeline including the ``ResponseSelector`` would fail.
 
   NLG responses are now persisted along with NLU data to a ``/train`` directory in the ``run_x/xx%_exclusion`` folder.
