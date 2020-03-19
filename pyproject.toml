@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytype | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "1.8.1"
+version = "1.8.2"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -117,7 +117,7 @@ python-dateutil = "~2.8"
 tensorflow = "~2.1"
 tensorflow_hub = "~0.7"
 tensorflow-addons = "~0.8"
-tensorflow-estimator = "2.1.0"  # not a direct dependency, pinned because of https://github.com/tensorflow/tensorflow/issues/37525
+tensorflow-estimator = "2.1.0"
 tensorflow-probability = "~0.7"
 setuptools = ">=41.0.0"
 kafka-python = "^1.4"

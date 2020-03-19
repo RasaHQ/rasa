@@ -1,1 +1,0 @@
-Fixed bug when installing rasa with ``poetry``.

@@ -17,6 +17,22 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.8.2] - 2020-03-19
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5438 <https://github.com/rasahq/rasa/issues/5438>`_: Fixed bug when installing rasa with ``poetry``.
+
+Improved Documentation
+----------------------
+- `#5404 <https://github.com/rasahq/rasa/issues/5404>`_: Explain how to run commands as ``root`` user in Rasa SDK Docker images since version
+  ``1.8.0``. Since version ``1.8.0`` the Rasa SDK Docker images does not longer run as
+  ``root`` user by default. For commands which require ``root`` user usage, you have to
+  switch back to the ``root`` user in your Docker image as described in
+  :ref:`deploying-your-rasa-assistant_custom-dependencies`.
+
+
 [1.8.1] - 2020-03-06
 ^^^^^^^^^^^^^^^^^^^^
 
