@@ -2,7 +2,7 @@ import logging
 import json
 import os
 import typing
-from typing import Any, List, Text, Optional, Dict
+from typing import Any, List, Text, Optional
 
 from rasa.constants import DOCS_URL_POLICIES
 import rasa.utils.io
