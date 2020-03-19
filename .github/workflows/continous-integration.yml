@@ -178,7 +178,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Login to DockerHub Registry 🔢
-      run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin
+      run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
 
     - name: Pull latest${{ matrix.image.tag_ext }} Docker image for caching
       run: docker pull rasa/rasa:latest${{ matrix.image.tag_ext }} || true

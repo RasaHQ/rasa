@@ -19,6 +19,7 @@ from rasa import model
 from rasa.constants import (
     DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
+    DEFAULT_RESPONSE_TIMEOUT,
     DOCS_BASE_URL,
     MINIMUM_COMPATIBLE_VERSION,
 )
@@ -39,11 +40,11 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation
 from rasa.utils.endpoints import EndpointConfig
-from sanic import Sanic, Sanic, response, response
-from sanic.request import Request, Request
+from sanic import Sanic, response
+from sanic.request import Request
 from sanic.response import HTTPResponse
-from sanic_cors import CORS, CORS
-from sanic_jwt import Initialize, Initialize, exceptions, exceptions
+from sanic_cors import CORS
+from sanic_jwt import Initialize, exceptions
 
 if typing.TYPE_CHECKING:
     from ssl import SSLContext
@@ -194,6 +195,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
 def event_verbosity_parameter(
     request: Request, default_verbosity: EventVerbosity
 ) -> EventVerbosity:
+    """Create `EventVerbosity` object using request params if present."""
     event_verbosity_str = request.args.get(
         "include_events", default_verbosity.name
     ).upper()
@@ -213,6 +215,7 @@ def event_verbosity_parameter(
 async def get_tracker(
     processor: "MessageProcessor", conversation_id: Text
 ) -> Optional[DialogueStateTracker]:
+    """Get tracker object from `MessageProcessor`."""
     tracker = await processor.get_tracker_with_session_start(conversation_id)
     if not tracker:
         raise ErrorResponse(
@@ -225,11 +228,13 @@ async def get_tracker(
 
 
 def validate_request_body(request: Request, error_message: Text):
+    """Check if `request` has a body."""
     if not request.body:
         raise ErrorResponse(400, "BadRequest", error_message)
 
 
 async def authenticate(request: Request):
+    """Callback for authentication failed."""
     raise exceptions.AuthenticationFailed(
         "Direct JWT authentication not supported. You should already have "
         "a valid JWT from an authentication provider, Rasa will just make "
@@ -362,6 +367,8 @@ def configure_cors(
 
 
 def add_root_route(app: Sanic):
+    """Add '/' route to return hello."""
+
     @app.get("/")
     async def hello(request: Request):
         """Check if the server is running and responds with the version."""
@@ -372,6 +379,7 @@ def create_app(
     agent: Optional["Agent"] = None,
     cors_origins: Union[Text, List[Text], None] = "*",
     auth_token: Optional[Text] = None,
+    response_timeout: int = DEFAULT_RESPONSE_TIMEOUT,
     jwt_secret: Optional[Text] = None,
     jwt_method: Text = "HS256",
     endpoints: Optional[AvailableEndpoints] = None,
@@ -379,7 +387,7 @@ def create_app(
     """Class representing a Rasa HTTP server."""
 
     app = Sanic(__name__)
-    app.config.RESPONSE_TIMEOUT = 60 * 60
+    app.config.RESPONSE_TIMEOUT = response_timeout
     configure_cors(app, cors_origins)
 
     # Setup the Sanic-JWT extension

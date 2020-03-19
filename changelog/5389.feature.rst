@@ -1,0 +1,1 @@
+Add an optional path to a specific directory to download and cache the pre-trained model weights for :ref:`HFTransformersNLP`.
