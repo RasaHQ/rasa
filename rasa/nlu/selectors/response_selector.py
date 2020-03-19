@@ -338,7 +338,8 @@ class ResponseSelector(DIETClassifier):
 
         Return the metadata necessary to load the model again.
         """
-        super().persist(file_name, model_dir)
+        if self.model is None:
+            return {"file": None}
 
         model_dir = Path(model_dir)
 
@@ -346,7 +347,8 @@ class ResponseSelector(DIETClassifier):
             model_dir / f"{file_name}.retrieval_intent_mapping.pkl",
             self.retrieval_intent_mapping,
         )
-        return {"file": file_name}
+
+        return super().persist(file_name, model_dir)
 
     @classmethod
     def load(
@@ -362,6 +364,8 @@ class ResponseSelector(DIETClassifier):
         model = super().load(
             meta, model_dir, model_metadata, cached_component, **kwargs
         )
+        if model == cls(component_config=meta):
+            return model
 
         file_name = meta.get("file")
         model_dir = Path(model_dir)
