@@ -2,7 +2,7 @@ import logging
 import json
 import os
 import typing
-from typing import Any, List, Text, Optional
+from typing import Any, List, Text, Optional, Dict
 
 from rasa.constants import DOCS_URL_POLICIES
 import rasa.utils.io
@@ -37,7 +37,8 @@ class MappingPolicy(Policy):
 
     Intents can be assigned actions in the domain file which are to be
     executed whenever the intent is detected. This policy takes precedence over
-    any other policy."""
+    any other policy.
+    """
 
     @staticmethod
     def _standard_featurizer() -> None:
@@ -91,7 +92,8 @@ class MappingPolicy(Policy):
         predicted with the highest probability of all policies. If it is not
         the policy will predict zero for every action."""
 
-        prediction = self._default_predictions(domain)
+        result = self._default_predictions(domain)
+
         intent = tracker.latest_message.intent.get("name")
         if intent == USER_INTENT_RESTART:
             action = ACTION_RESTART_NAME
@@ -103,6 +105,7 @@ class MappingPolicy(Policy):
             action = domain.intent_properties.get(intent, {}).get("triggers")
 
         if tracker.latest_action_name == ACTION_LISTEN_NAME:
+            # predict mapped action
             if action:
                 idx = domain.index_for_action(action)
                 if idx is None:
@@ -113,22 +116,23 @@ class MappingPolicy(Policy):
                         docs=DOCS_URL_POLICIES + "#mapping-policy",
                     )
                 else:
-                    prediction[idx] = 1
+                    result[idx] = 1
 
-            if any(prediction):
+            if any(result):
                 logger.debug(
                     "The predicted intent '{}' is mapped to "
                     " action '{}' in the domain."
                     "".format(intent, action)
                 )
         elif tracker.latest_action_name == action and action is not None:
+            # predict next action_listen after mapped action
             latest_action = tracker.get_last_event_for(ActionExecuted)
             assert latest_action.action_name == action
             if latest_action.policy and latest_action.policy.endswith(
                 type(self).__name__
             ):
-                # this ensures that we only predict listen, if we predicted
-                # the mapped action
+                # this ensures that we only predict listen,
+                # if we predicted the mapped action
                 logger.debug(
                     "The mapped action, '{}', for this intent, '{}', was "
                     "executed last so MappingPolicy is returning to "
@@ -136,7 +140,7 @@ class MappingPolicy(Policy):
                 )
 
                 idx = domain.index_for_action(ACTION_LISTEN_NAME)
-                prediction[idx] = 1
+                result[idx] = 1
             else:
                 logger.debug(
                     "The mapped action, '{}', for the intent, '{}', was "
@@ -145,16 +149,12 @@ class MappingPolicy(Policy):
                         action, intent, latest_action.policy
                     )
                 )
-        elif action == ACTION_RESTART_NAME:
-            idx = domain.index_for_action(ACTION_RESTART_NAME)
-            prediction[idx] = 1
-            logger.debug("Restarting the conversation with action_restart.")
         else:
             logger.debug(
                 "There is no mapped action for the predicted intent, "
                 "'{}'.".format(intent)
             )
-        return prediction
+        return result
 
     def persist(self, path: Text) -> None:
         """Only persists the priority."""

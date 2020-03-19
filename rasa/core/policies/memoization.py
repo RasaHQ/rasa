@@ -179,13 +179,13 @@ class MemoizationPolicy(Policy):
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[float]:
-        """Predicts the next action the bot should take
-            after seeing the tracker.
+        """Predicts the next action the bot should take after seeing the tracker.
 
-            Returns the list of probabilities for the next actions.
-            If memorized action was found returns 1.1 for its index,
-            else returns 0.0 for all actions."""
-        result = [0.0] * domain.num_actions
+        Returns the list of probabilities for the next actions.
+        If memorized action was found returns 1 for its index,
+        else returns 0 for all actions.
+        """
+        result = self._default_predictions(domain)
 
         if not self.is_enabled:
             return result

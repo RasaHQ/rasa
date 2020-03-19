@@ -46,11 +46,11 @@ IS_EXTERNAL = "is_external"
 
 # the lowest priority intended to be used by machine learning policies
 DEFAULT_POLICY_PRIORITY = 1
+# the priority intended to be used by mapping policies
+MAPPING_POLICY_PRIORITY = 2
 # the priority intended to be used by memoization policies
 # it is higher than default and mapping to prioritize training stories
-MEMOIZATION_POLICY_PRIORITY = 2
-# the priority intended to be used by mapping policies
-MAPPING_POLICY_PRIORITY = 3
+MEMOIZATION_POLICY_PRIORITY = 3
 # the priority intended to be used by fallback policies
 # it is higher than memoization to prioritize fallback
 FALLBACK_POLICY_PRIORITY = 4

@@ -1,4 +1,4 @@
 Fixed bug when FormPolicy was overwriting MappingPolicy prediction (e.g. /restart).
-Changed MemoizationPolicy priority to 2 and MappingPolicy priority to 3.
 Priorities for MappingPolicy and FormPolicy are no longer linear:
 FormPolicy priority is 5, but its prediction is ignored if MappingPolicy is used for prediction.
+

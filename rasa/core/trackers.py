@@ -304,6 +304,7 @@ class DialogueStateTracker:
             elif isinstance(event, ActionExecuted):
                 # yields the intermediate state
                 if tracker.active_form.get("name") is None:
+                    # no form is active, just yield as is
                     yield tracker
 
                 elif tracker.active_form.get("rejected"):
@@ -341,8 +342,13 @@ class DialogueStateTracker:
 
         # yields the final state
         if tracker.active_form.get("name") is None:
+            # no form is active, just yield as is
             yield tracker
-        elif tracker.active_form.get("rejected"):
+        elif (
+            tracker.active_form.get("rejected")
+            or tracker.latest_action_name == ACTION_LISTEN_NAME
+        ):
+            # either a form was rejected or user uttered smth yield trackers
             yield from ignored_trackers
             yield tracker
 
