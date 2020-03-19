@@ -104,11 +104,7 @@ class MappingPolicy(Policy):
         else:
             action = domain.intent_properties.get(intent, {}).get("triggers")
 
-        if action == ACTION_RESTART_NAME:
-            logger.debug("Restarting the conversation with action_restart.")
-            idx = domain.index_for_action(ACTION_RESTART_NAME)
-            result[idx] = 1
-        elif tracker.latest_action_name == ACTION_LISTEN_NAME:
+        if tracker.latest_action_name == ACTION_LISTEN_NAME:
             # predict mapped action
             if action:
                 idx = domain.index_for_action(action)
@@ -153,6 +149,10 @@ class MappingPolicy(Policy):
                         action, intent, latest_action.policy
                     )
                 )
+        elif action == ACTION_RESTART_NAME:
+            logger.debug("Restarting the conversation with action_restart.")
+            idx = domain.index_for_action(ACTION_RESTART_NAME)
+            result[idx] = 1
         else:
             logger.debug(
                 "There is no mapped action for the predicted intent, "
