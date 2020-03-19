@@ -16,6 +16,40 @@ Evaluating Models
    If you are looking to tune the hyperparameters of your NLU model,
    check out this `tutorial <https://blog.rasa.com/rasa-nlu-in-depth-part-3-hyperparameters/>`_.
 
+.. _end_to_end_evaluation:
+
+End-to-End Evaluation
+---------------------
+
+Rasa Open Source lets you evaluate dialogues end-to-end, running through
+test conversations and making sure that both NLU and Core make correct predictions.
+
+To do this, you need some stories in the end-to-end format,
+which includes both the NLU output and the original text.
+Here is an example:
+
+.. code-block:: story
+
+  ## end-to-end story 1
+  * greet: hello
+     - utter_ask_howcanhelp
+  * inform: show me [chinese](cuisine) restaurants
+     - utter_ask_location
+  * inform: in [Paris](location)
+     - utter_ask_price
+
+By default Rasa saves tests to ``tests/conversation_tests.md``. You can evaluate your model
+against them by running:
+
+.. code-block:: bash
+
+  $ rasa test
+
+.. note::
+
+  Make sure your model file in ``models`` is a combined ``core``
+  and ``nlu`` model. If it does not contain an NLU model, Core will use
+  the default ``RegexInterpreter``.
 
 .. _nlu-evaluation:
 
@@ -227,40 +261,3 @@ you.
 .. note::
     This training process can take a long time, so we'd suggest letting it run
     somewhere in the background where it can't be interrupted.
-
-
-.. _end_to_end_evaluation:
-
-End-to-End Evaluation
----------------------
-
-Rasa lets you evaluate dialogues end-to-end, running through
-test conversations and making sure that both NLU and Core make correct predictions.
-
-To do this, you need some stories in the end-to-end format,
-which includes both the NLU output and the original text.
-Here is an example:
-
-.. code-block:: story
-
-  ## end-to-end story 1
-  * greet: hello
-     - utter_ask_howcanhelp
-  * inform: show me [chinese](cuisine) restaurants
-     - utter_ask_location
-  * inform: in [Paris](location)
-     - utter_ask_price
-
-
-If you've saved end-to-end stories as a file called ``e2e_stories.md``,
-you can evaluate your model against them by running:
-
-.. code-block:: bash
-
-  $ rasa test --stories e2e_stories.md --e2e
-
-.. note::
-
-  Make sure your model file in ``models`` is a combined ``core``
-  and ``nlu`` model. If it does not contain an NLU model, Core will use
-  the default ``RegexInterpreter``.
