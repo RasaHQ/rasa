@@ -211,12 +211,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.8.1
+          viewing: 1.8.2
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.8.2/api/tensorflow_usage/">1.8.2</a>
               <a href="../.././1.8.1/api/tensorflow_usage/">1.8.1</a>
               <a href="../.././1.8.0/api/tensorflow_usage/">1.8.0</a>
               <a href="../.././1.7.4/index/">1.7.4</a>
@@ -269,17 +270,29 @@ This smaller subset comprises of configurations that developers frequently use w
 All configuration options are specified using environment variables as shown in subsequent sections.</p>
 <div class="section" id="optimizing-cpu-performance">
 <h2>Optimizing CPU Performance<a class="headerlink" href="#optimizing-cpu-performance" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">We recommend that you configure these options only if you are an advanced TensorFlow user and understand the
+implementation of the machine learning components in your pipeline. These options affect how operations are carried
+out under the hood in Tensorflow. Leaving them at their default values is fine.</p>
+</div>
+<p>Depending on the TensorFlow operations a NLU component or Core policy uses, you can leverage multi-core CPU
+parallelism by tuning these options.</p>
 <div class="section" id="parallelizing-one-operation">
 <h3>Parallelizing One Operation<a class="headerlink" href="#parallelizing-one-operation" title="Permalink to this headline">¶</a></h3>
 <p>Set <code class="docutils literal notranslate"><span class="pre">TF_INTRA_OP_PARALLELISM_THREADS</span></code> as an environment variable to specify the maximum number of threads that can be used
-to parallelize the execution of one operation. If left unspecified, this value defaults to <code class="docutils literal notranslate"><span class="pre">0</span></code> which means TensorFlow should
-pick an appropriate value depending on the system configuration.</p>
+to parallelize the execution of one operation. For example, operations like <code class="docutils literal notranslate"><span class="pre">tf.matmul()</span></code> and <code class="docutils literal notranslate"><span class="pre">tf.reduce_sum</span></code> can be executed
+on multiple threads running in parallel. The default value for this variable is <code class="docutils literal notranslate"><span class="pre">0</span></code> which means TensorFlow would
+allocate one thread per CPU core.</p>
 </div>
 <div class="section" id="parallelizing-multiple-operations">
 <h3>Parallelizing Multiple Operations<a class="headerlink" href="#parallelizing-multiple-operations" title="Permalink to this headline">¶</a></h3>
 <p>Set <code class="docutils literal notranslate"><span class="pre">TF_INTER_OP_PARALLELISM_THREADS</span></code> as an environment variable to specify the maximum number of threads that can be used
-to parallelize the execution of multiple <strong>non-blocking</strong> operations. If left unspecified, this value defaults to <code class="docutils literal notranslate"><span class="pre">0</span></code>
-which means TensorFlow should pick an appropriate value depending on the system configuration.</p>
+to parallelize the execution of multiple <strong>non-blocking</strong> operations. These would include operations that do not have a
+directed path between them in the TensorFlow graph. In other words, the computation of one operation does not affect the
+computation of the other operation. The default value for this variable is <code class="docutils literal notranslate"><span class="pre">0</span></code> which means TensorFlow would allocate one thread per CPU core.</p>
+<p>To understand more about how these two options differ from each other, refer to this
+<a class="reference external" href="https://stackoverflow.com/a/41233901/3001665">stackoverflow thread</a>.</p>
 </div>
 </div>
 <div class="section" id="optimizing-gpu-performance">
@@ -287,18 +300,14 @@ which means TensorFlow should pick an appropriate value depending on the system 
 <div class="section" id="limiting-gpu-memory-growth">
 <h3>Limiting GPU Memory Growth<a class="headerlink" href="#limiting-gpu-memory-growth" title="Permalink to this headline">¶</a></h3>
 <p>TensorFlow by default blocks all the available GPU memory for the running process. This can be limiting if you are running
-multiple TensorFlow processes and want to distribute memory across them. To prevent this,
-set the environment variable <code class="docutils literal notranslate"><span class="pre">TF_FORCE_GPU_ALLOW_GROWTH</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+multiple TensorFlow processes and want to distribute memory across them. To prevent Rasa Open Source from blocking all
+of the available GPU memory, set the environment variable <code class="docutils literal notranslate"><span class="pre">TF_FORCE_GPU_ALLOW_GROWTH</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
 </div>
 <div class="section" id="restricting-absolute-gpu-memory-available">
 <h3>Restricting Absolute GPU Memory Available<a class="headerlink" href="#restricting-absolute-gpu-memory-available" title="Permalink to this headline">¶</a></h3>
-<p>Often, a developer wants to limit the absolute amount of GPU memory that can be used by a process.</p>
-<p>For example, you may have two visible GPUs(<code class="docutils literal notranslate"><span class="pre">GPU:0</span></code> and <code class="docutils literal notranslate"><span class="pre">GPU:1</span></code>) and you want to allocate 1024 MB from the first GPU
-and 2048 MB from the second GPU.
-You can do so by setting an environment variable as <code class="docutils literal notranslate"><span class="pre">TF_GPU_MEMORY_ALLOC=&quot;0:1024,</span> <span class="pre">1:2048&quot;</span></code>.</p>
-<p>Another scenario can be where you have access to 2 GPUs(<code class="docutils literal notranslate"><span class="pre">GPU:0</span></code> and <code class="docutils literal notranslate"><span class="pre">GPU:1</span></code>) but you would like to use only the second
-GPU.
-<code class="docutils literal notranslate"><span class="pre">TF_GPU_MEMORY_ALLOC=&quot;1:2048&quot;</span></code> would make 2048 MB of memory available from GPU 1.</p>
+<p>You may want to limit the absolute amount of GPU memory that can be used by a Rasa Open Source process.</p>
+<p>For example, say you have two visible GPUs(<code class="docutils literal notranslate"><span class="pre">GPU:0</span></code> and <code class="docutils literal notranslate"><span class="pre">GPU:1</span></code>) and you want to allocate 1024 MB from the first GPU
+and 2048 MB from the second GPU. You can do this by setting the environment variable <code class="docutils literal notranslate"><span class="pre">TF_GPU_MEMORY_ALLOC</span></code> to <code class="docutils literal notranslate"><span class="pre">&quot;0:1024,</span> <span class="pre">1:2048&quot;</span></code>.</p>
 </div>
 </div>
 </div>

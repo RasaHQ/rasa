@@ -211,12 +211,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.8.1
+          viewing: 1.8.2
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.8.2/user-guide/building-assistants/">1.8.2</a>
               <a href="../.././1.8.1/user-guide/building-assistants/">1.8.1</a>
               <a href="../.././1.8.0/user-guide/building-assistants/">1.8.0</a>
               <a href="../.././1.7.4/user-guide/building-assistants/">1.7.4</a>
@@ -270,26 +271,26 @@ now walk through building a basic FAQ chatbot and then build a bot that can hand
 contextual conversations.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#building-a-simple-faq-assistant" id="id4">Building a simple FAQ assistant</a><ul>
-<li><a class="reference internal" href="#memoization-policy" id="id5">Memoization Policy</a></li>
-<li><a class="reference internal" href="#response-selectors" id="id6">Response Selectors</a></li>
+<li><a class="reference internal" href="#building-a-simple-faq-assistant" id="id8">Building a simple FAQ assistant</a><ul>
+<li><a class="reference internal" href="#memoization-policy" id="id9">Memoization Policy</a></li>
+<li><a class="reference internal" href="#response-selectors" id="id10">Response Selectors</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#building-contextual-assistants" id="id7">Building contextual assistants</a><ul>
-<li><a class="reference internal" href="#business-logic" id="id8">Business logic</a></li>
-<li><a class="reference internal" href="#handling-unexpected-user-input" id="id9">Handling unexpected user input</a><ul>
-<li><a class="reference internal" href="#generic-interjections" id="id10">Generic interjections</a></li>
-<li><a class="reference internal" href="#contextual-questions" id="id11">Contextual questions</a></li>
+<li><a class="reference internal" href="#building-a-contextual-assistant" id="id11">Building a contextual assistant</a><ul>
+<li><a class="reference internal" href="#handling-business-logic" id="id12">Handling business logic</a></li>
+<li><a class="reference internal" href="#handling-unexpected-user-input" id="id13">Handling unexpected user input</a><ul>
+<li><a class="reference internal" href="#generic-interjections" id="id14">Generic interjections</a></li>
+<li><a class="reference internal" href="#contextual-questions" id="id15">Contextual questions</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#failing-gracefully" id="id12">Failing gracefully</a><ul>
-<li><a class="reference internal" href="#fallback-policy" id="id13">Fallback policy</a></li>
-<li><a class="reference internal" href="#out-of-scope-intent" id="id14">Out of scope intent</a></li>
+<li><a class="reference internal" href="#failing-gracefully" id="id16">Failing gracefully</a><ul>
+<li><a class="reference internal" href="#fallback-policy" id="id17">Fallback policy</a></li>
+<li><a class="reference internal" href="#out-of-scope-intent" id="id18">Out of scope intent</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#more-complex-contextual-conversations" id="id15">More complex contextual conversations</a><ul>
-<li><a class="reference internal" href="#augmentedmemoizationpolicy" id="id16">AugmentedMemoizationPolicy</a></li>
-<li><a class="reference internal" href="#using-ml-to-generalise" id="id17">Using ML to generalise</a></li>
+<li><a class="reference internal" href="#more-complex-contextual-conversations" id="id19">More complex contextual conversations</a><ul>
+<li><a class="reference internal" href="#augmentedmemoizationpolicy" id="id20">AugmentedMemoizationPolicy</a></li>
+<li><a class="reference internal" href="#using-ml-to-generalise" id="id21">Using ML to generalise</a></li>
 </ul>
 </li>
 </ul>
@@ -297,15 +298,15 @@ contextual conversations.</p>
 </ul>
 </div>
 <div class="section" id="building-a-simple-faq-assistant">
-<span id="build-faq-assistant"></span><h2><a class="toc-backref" href="#id4">Building a simple FAQ assistant</a><a class="headerlink" href="#building-a-simple-faq-assistant" title="Permalink to this headline">¶</a></h2>
+<span id="build-faq-assistant"></span><h2><a class="toc-backref" href="#id8">Building a simple FAQ assistant</a><a class="headerlink" href="#building-a-simple-faq-assistant" title="Permalink to this headline">¶</a></h2>
 <p>FAQ assistants are the simplest assistants to build and a good place to get started.
 These assistants allow the user to ask a simple question and get a response. We’re going to
 build a basic FAQ assistant using features of Rasa designed specifically for this type of assistant.</p>
 <p>In this section we’re going to cover the following topics:</p>
 <blockquote>
 <div><ul class="simple">
-<li>Responding to simple intents with the MemoizationPolicy</li>
-<li>Handling FAQs using the ResponseSelector</li>
+<li><a class="reference external" href="respond-with-memoization-policy">Responding to simple intents</a> with the MemoizationPolicy</li>
+<li><a class="reference external" href="faqs-response-selector">Handling FAQs</a> using the ResponseSelector</li>
 </ul>
 </div></blockquote>
 <p>We’re going to use content from <a class="reference external" href="https://github.com/RasaHQ/rasa-demo">Sara</a>, the Rasa
@@ -320,14 +321,14 @@ rasa init
 </pre></div>
 </div>
 <p>Let’s remove the default content from this bot, so that the <code class="docutils literal notranslate"><span class="pre">nlu.md</span></code>, <code class="docutils literal notranslate"><span class="pre">stories.md</span></code>
-and <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> are empty.</p>
+and <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> files are empty.</p>
 <div class="section" id="memoization-policy">
-<h3><a class="toc-backref" href="#id5">Memoization Policy</a><a class="headerlink" href="#memoization-policy" title="Permalink to this headline">¶</a></h3>
+<span id="respond-with-memoization-policy"></span><h3><a class="toc-backref" href="#id9">Memoization Policy</a><a class="headerlink" href="#memoization-policy" title="Permalink to this headline">¶</a></h3>
 <p>The MemoizationPolicy remembers examples from training stories for up to a <code class="docutils literal notranslate"><span class="pre">max_history</span></code>
 of turns. The number of “turns” includes messages the user sent, and actions the
 assistant performed. For the purpose of a simple, context-less FAQ bot, we only need
 to pay attention to the last message the user sent, and therefore we’ll set that to <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
-<p>You can do this by editing your <code class="docutils literal notranslate"><span class="pre">config.yml</span></code> file as follows:</p>
+<p>You can do this by editing your <code class="docutils literal notranslate"><span class="pre">config.yml</span></code> file as follows (you can remove <code class="docutils literal notranslate"><span class="pre">TEDPolicy</span></code> for now):</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">MemoizationPolicy</span>
   <span class="l l-Scalar l-Scalar-Plain">max_history</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
@@ -354,13 +355,13 @@ intents to the <code class="docutils literal notranslate"><span class="pre">stor
   <span class="k">-</span> utter_bye
 </pre></div>
 </div>
-<p>We’ll also need to add the intents, actions and templates to our <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file in the following sections:</p>
+<p>We’ll also need to add the intents, actions and responses to our <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file in the following sections:</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span>intents:
   <span class="k">-</span> greet
   <span class="k">-</span> bye
   <span class="k">-</span> thank
 
-templates:
+responses:
   utter_noworries:
     <span class="k">-</span> text: No worries!
   utter_greet:
@@ -369,7 +370,7 @@ templates:
     <span class="k">-</span> text: Bye!
 </pre></div>
 </div>
-<p>Finally, we’ll copy over some NLU data from Sara into our <code class="docutils literal notranslate"><span class="pre">nlu.md</span></code>
+<p>Finally, we’ll copy over some NLU data from Sara into our <code class="docutils literal notranslate"><span class="pre">nlu.md</span></code> file
 (more can be found <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/data/nlu/nlu.md">here</a>):</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:greet
 <span class="k">-</span> Hi
@@ -407,6 +408,8 @@ rasa shell
 </pre></div>
 </div>
 <p>This bot should now be able to reply to the intents we defined consistently, and in any order.</p>
+<p>For example:</p>
+<img alt="Memoization Policy Conversation" class="align-center" src="../../_images/memoization_policy_convo.png" />
 <p>While it’s good to test the bot interactively, we should also add end to end test cases that
 can later be included as part of our CI/CD system. <a class="reference external" href="https://rasa.com/docs/rasa/user-guide/evaluating-models/#end-to-end-evaluation">End to end stories</a>
 include NLU data, so that both components of Rasa can be tested.  Create a file called
@@ -443,7 +446,7 @@ CI/CD pipeline, the test option <code class="docutils literal notranslate"><span
 an exception that stops the pipeline.</p>
 </div>
 <div class="section" id="response-selectors">
-<h3><a class="toc-backref" href="#id6">Response Selectors</a><a class="headerlink" href="#response-selectors" title="Permalink to this headline">¶</a></h3>
+<span id="faqs-response-selector"></span><h3><a class="toc-backref" href="#id10">Response Selectors</a><a class="headerlink" href="#response-selectors" title="Permalink to this headline">¶</a></h3>
 <p>The <a class="reference internal" href="../../nlu/components/#response-selector"><span class="std std-ref">ResponseSelector</span></a> NLU component is designed to make it easier to handle dialogue
 elements like <a class="reference internal" href="../../dialogue-elements/small-talk/#small-talk"><span class="std std-ref">Small Talk</span></a> and FAQ messages in a simple manner. By using the ResponseSelector,
 you only need one story to handle all FAQs, instead of adding new stories every time you
@@ -492,20 +495,22 @@ recognised as the faq intent by the ResponseSelector:</p>
  <span class="k">-</span> Rasa X is a tool to learn from real conversations and improve your assistant. Read more [<span class="nt">here</span>](<span class="na">https://rasa.com/docs/rasa-x/</span>)
 </pre></div>
 </div>
-<p>To use the Response Selector we need to add it to the end of the expanded <a class="reference external" href="https://rasa.com/docs/rasa/nlu/choosing-a-pipeline/#section-supervised-embeddings-pipeline">supervised_embeddings</a>
-NLU pipeline in our <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;RegexFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CRFEntityExtractor&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EntitySynonymMapper&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;CountVectorsFeaturizer&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">analyzer</span><span class="p p-Indicator">:</span> <span class="s">&quot;char_wb&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">min_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
-  <span class="l l-Scalar l-Scalar-Plain">max_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ResponseSelector&quot;</span>
+<p>The ResponseSelector should already be at the end of the NLU pipeline in our <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">en</span>
+<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">WhitespaceTokenizer</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">CountVectorsFeaturizer</span>
+    <span class="l l-Scalar l-Scalar-Plain">analyzer</span><span class="p p-Indicator">:</span> <span class="s">&quot;char_wb&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">min_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="l l-Scalar l-Scalar-Plain">max_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
+    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
 </pre></div>
 </div>
 <p>Now that we’ve defined the NLU side, we need to make Core aware of these changes. Open your <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file and add the <code class="docutils literal notranslate"><span class="pre">faq</span></code> intent:</p>
@@ -552,20 +557,34 @@ rasa shell
 <p>You can read more in this <a class="reference external" href="https://blog.rasa.com/response-retrieval-models/">blog post</a> and the
 <a class="reference external" href="https://rasa.com/docs/rasa/core/retrieval-actions/">Retrieval Actions</a> page.</p>
 <p>Using the features we described in this tutorial, you can easily build a context-less assistant.
-When you’re ready to enhance your assistant with context, check out <a class="reference internal" href="#build-contextual-assistant"><span class="std std-ref">Building contextual assistants</span></a>.</p>
+When you’re ready to enhance your assistant with context, check out <a class="reference internal" href="#tutorial-contextual-assistants"><span class="std std-ref">Building a contextual assistant</span></a>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Here’s a minimal checklist of files we modified to build a basic FAQ assistant:</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>: Add NLU training data for <code class="docutils literal notranslate"><span class="pre">faq/</span></code> intents</li>
+<li><code class="docutils literal notranslate"><span class="pre">data/responses.md</span></code>: Add responses associated with <code class="docutils literal notranslate"><span class="pre">faq/</span></code> intents</li>
+<li><code class="docutils literal notranslate"><span class="pre">config.yml</span></code>: Add <code class="docutils literal notranslate"><span class="pre">ReponseSelector</span></code> in your NLU pipeline</li>
+<li><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>: Add a retrieval action <code class="docutils literal notranslate"><span class="pre">respond_faq</span></code> and intent <code class="docutils literal notranslate"><span class="pre">faq</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>: Add a simple story for FAQs</li>
+<li><code class="docutils literal notranslate"><span class="pre">test_stories.md</span></code>: Add E2E test stories for your FAQs</li>
+</ul>
+</div></blockquote>
 </div>
 </div>
-<div class="section" id="building-contextual-assistants">
-<span id="build-contextual-assistant"></span><h2><a class="toc-backref" href="#id7">Building contextual assistants</a><a class="headerlink" href="#building-contextual-assistants" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="building-a-contextual-assistant">
+<span id="tutorial-contextual-assistants"></span><h2><a class="toc-backref" href="#id11">Building a contextual assistant</a><a class="headerlink" href="#building-a-contextual-assistant" title="Permalink to this headline">¶</a></h2>
 <p>Whether you’ve just created an FAQ bot or are starting from scratch, the next step is to expand
 your bot to handle contextual conversations.</p>
 <p>In this tutorial we’re going to cover a variety of topics:</p>
 <blockquote>
 <div><ul class="simple">
-<li>Handling business logic</li>
-<li>Handling unexpected user input</li>
-<li>Failing gracefully</li>
-<li>More complex contextual conversations</li>
+<li><a class="reference internal" href="#handling-business-logic"><span class="std std-ref">Handling business logic</span></a></li>
+<li><a class="reference internal" href="#handling-unexpected-user-input"><span class="std std-ref">Handling unexpected user input</span></a></li>
+<li><a class="reference internal" href="#failing-gracefully"><span class="std std-ref">Failing gracefully</span></a></li>
+<li><a class="reference internal" href="#more-complex-contextual-conversations"><span class="std std-ref">More complex contextual conversations</span></a></li>
 </ul>
 </div></blockquote>
 <p>Please make sure you’ve got all the data from the <a class="reference internal" href="#build-faq-assistant"><span class="std std-ref">Building a simple FAQ assistant</span></a> section before starting this part.
@@ -578,8 +597,8 @@ You will need to make some adjustments to your configuration file, since we now 
 <p>We removed the <code class="docutils literal notranslate"><span class="pre">max_history:</span> <span class="pre">1</span></code> configuration. The default is <code class="docutils literal notranslate"><span class="pre">5</span></code>,
 meaning Core will pay attention to the past 5 turns when making a prediction
 (see explanation of <a class="reference external" href="https://rasa.com/docs/rasa/core/policies/#max-history">max history</a>).</p>
-<div class="section" id="business-logic">
-<h3><a class="toc-backref" href="#id8">Business logic</a><a class="headerlink" href="#business-logic" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="handling-business-logic">
+<span id="id2"></span><h3><a class="toc-backref" href="#id12">Handling business logic</a><a class="headerlink" href="#handling-business-logic" title="Permalink to this headline">¶</a></h3>
 <p>A lot of conversational assistants have user goals that involve collecting a bunch of information
 from the user before being able to do something for them. This is called slot filling. For
 example, in the banking industry you may have a user goal of transferring money, where you
@@ -629,7 +648,7 @@ ask for, i.e. which slots to fill.</p>
 <p>Note: you can customise the required slots function not to be static. E.g. if the <code class="docutils literal notranslate"><span class="pre">job_function</span></code> is a
 developer, you could add a <code class="docutils literal notranslate"><span class="pre">required_slot</span></code> about the users experience level with Rasa</p>
 <p>Once you’ve done that, you’ll need to specify how the bot should ask for this information. This
-is done by specifying <code class="docutils literal notranslate"><span class="pre">utter_ask_{slotname}</span></code> templates in your domain file. For the above
+is done by specifying <code class="docutils literal notranslate"><span class="pre">utter_ask_{slotname}</span></code> responses in your <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file. For the above
 we’ll need to specify the following:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">utter_ask_business_email</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">What&#39;s your business email?</span>
@@ -645,7 +664,7 @@ we’ll need to specify the following:</p>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">What&#39;s your use case?</span>
 </pre></div>
 </div>
-<p>We’ll also need to define all these slots in our domain:</p>
+<p>We’ll also need to define all these slots in our <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">slots</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">company</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">unfeaturized</span>
@@ -677,7 +696,7 @@ which will do something with the information the user has provided once the form
 <p>In this case, we only tell the user that we’ll be in touch with them, however
 usually you would send this information to an API or a database. See the <a class="reference external" href="https://github.com/RasaHQ/rasa-demo/blob/master/demo/actions.py#L69">rasa-demo</a>
 for an example of how to store this information in a spreadsheet.</p>
-<p>We’ll need to add the form we just created to a new section in the domain file:</p>
+<p>We’ll need to add the form we just created to a new section in our <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">forms</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">sales_form</span>
 </pre></div>
@@ -743,7 +762,7 @@ data to your NLU file:</p>
 (e.g. <a class="reference internal" href="../../nlu/components/#ducklinghttpextractor"><span class="std std-ref">DucklingHTTPExtractor</span></a> or <a class="reference internal" href="../../nlu/components/#spacyentityextractor"><span class="std std-ref">SpacyEntityExtractor</span></a>), but for this tutorial
 we want to avoid any additional setup.</p>
 </div>
-<p>The intents and entities will need to be added to your domain as well:</p>
+<p>The intents and entities will need to be added to your <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file as well:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">bye</span>
@@ -762,12 +781,13 @@ we want to avoid any additional setup.</p>
 </pre></div>
 </div>
 <p>A story for a form is very simple, as all the slot collection form happens inside the form, and
-therefore doesn’t need to be covered in your stories.</p>
+therefore doesn’t need to be covered in your stories. You just need to write a single story showing when the form should be activated. For the sales form, add this story
+to your <code class="docutils literal notranslate"><span class="pre">stories.md</span></code> file:</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> sales form
 <span class="k">*</span> contact_sales
-    <span class="k">-</span> sales_form
-    <span class="k">-</span> form{&quot;name&quot;: &quot;sales_form&quot;}
-    <span class="k">-</span> form{&quot;name&quot;: null}
+    <span class="k">-</span> sales_form                   &lt;!--Run the sales_form action--&gt;
+    <span class="k">-</span> form{&quot;name&quot;: &quot;sales_form&quot;}   &lt;!--Activate the form--&gt;
+    <span class="k">-</span> form{&quot;name&quot;: null}           &lt;!--Deactivate the form--&gt;
 </pre></div>
 </div>
 <p>As a final step, let’s add the FormPolicy to our config file:</p>
@@ -819,9 +839,49 @@ and we don’t need to use the <code class="docutils literal notranslate"><span 
 business logic. Read more about this <a class="reference external" href="https://rasa.com/docs/rasa/core/forms/#">here</a>.
 However, you should make sure not to handle any unhappy paths inside the form. These
 should be handled by writing regular stories, so your model can learn this behaviour.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Here’s a minimal checklist of files we modified to handle business logic using a form action:</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">actions.py</span></code>: Define the form action, including the <code class="docutils literal notranslate"><span class="pre">required_slots</span></code>, <code class="docutils literal notranslate"><span class="pre">slot_mappings</span></code> and <code class="docutils literal notranslate"><span class="pre">submit</span></code> methods</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>:</dt>
+<dd><ul class="first last">
+<li>Add examples for an intent to activate the form</li>
+<li>Add examples for an <code class="docutils literal notranslate"><span class="pre">inform</span></code> intent to fill the form</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>:</dt>
+<dd><ul class="first last">
+<li>Add all slots required by the form</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">utter_ask_{slot}</span></code> responses for all required slots</li>
+<li>Add your form action to the <code class="docutils literal notranslate"><span class="pre">forms</span></code> section</li>
+<li>Add all intents and entities from your NLU training data</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>: Add a story for the form</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">config.yml</span></code>:</dt>
+<dd><ul class="first last">
+<li>Add the <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> to your policies</li>
+<li>Add entity extractors to your pipeline</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code>: Define the <code class="docutils literal notranslate"><span class="pre">action_endpoint</span></code></li>
+</ul>
+</div></blockquote>
+</div>
 </div>
 <div class="section" id="handling-unexpected-user-input">
-<h3><a class="toc-backref" href="#id9">Handling unexpected user input</a><a class="headerlink" href="#handling-unexpected-user-input" title="Permalink to this headline">¶</a></h3>
+<span id="id3"></span><h3><a class="toc-backref" href="#id13">Handling unexpected user input</a><a class="headerlink" href="#handling-unexpected-user-input" title="Permalink to this headline">¶</a></h3>
 <p>All expected user inputs should be handled by the form we defined above, i.e. if the
 user provides the information the bot asks for. However, in real situations, the user
 will often behave differently. In this section we’ll go through various forms of
@@ -833,16 +893,20 @@ try to implement every possible edge case that you think might happen, because i
 your users may never actually behave in that way. <a class="reference external" href="https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/">Rasa X</a>
 is a tool that can help you review conversations and make these types of decisions.</p>
 <div class="section" id="generic-interjections">
-<h4><a class="toc-backref" href="#id10">Generic interjections</a><a class="headerlink" href="#generic-interjections" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id14">Generic interjections</a><a class="headerlink" href="#generic-interjections" title="Permalink to this headline">¶</a></h4>
 <p>If you have generic interjections that should always have the same single response no
 matter the context, you can use the <a class="reference internal" href="../../core/policies/#mapping-policy"><span class="std std-ref">Mapping Policy</span></a> to handle these. It will always
 predict the same action for an intent, and when combined with a forgetting mechanism,
 you don’t need to write any stories either.</p>
+<p>For example, let’s say you see users having conversations like the following one with
+your assistant, where they write a greeting in the middle of a conversation -
+maybe because they were gone for a few minutes:</p>
+<a class="reference internal image-reference" href="../../_images/greet_interjection.png"><img alt="Greeting Interjection" class="align-center" src="../../_images/greet_interjection.png" style="width: 240px;" /></a>
 <p>The greet intent is a good example where we will always give the same response and
 yet we don’t want the intent to affect the dialogue history. To do this, the response
 must be an action that returns the <code class="docutils literal notranslate"><span class="pre">UserUtteranceReverted()</span></code> event to remove the
 interaction from the dialogue history.</p>
-<p>First, open the <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> and modify the greet intent and add a new block <code class="docutils literal notranslate"><span class="pre">`actions`</span></code> in
+<p>First, open the <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file and modify the greet intent and add a new block <code class="docutils literal notranslate"><span class="pre">`actions`</span></code> in
 the file, next, add the <code class="docutils literal notranslate"><span class="pre">action_greet</span></code> as shown here:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span><span class="nv">triggers</span><span class="p p-Indicator">:</span> <span class="nv">action_greet</span><span class="p p-Indicator">}</span>
@@ -881,6 +945,9 @@ the file, next, add the <code class="docutils literal notranslate"><span class="
 rasa shell
 </pre></div>
 </div>
+<p>FAQs are another kind of generic interjections that should always get the same response.
+For example, a user might ask a related FAQ in the middle of filling a form:</p>
+<a class="reference internal image-reference" href="../../_images/generic_interjection.png"><img alt="Generic Interjections" class="align-center" src="../../_images/generic_interjection.png" style="width: 240px;" /></a>
 <p>To handle FAQs defined with retrieval actions, you can add a simple story that will be handled by the MemoizationPolicy:</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="gu">##</span> just sales, continue
 <span class="k">*</span> contact_sales
@@ -893,15 +960,18 @@ rasa shell
 </pre></div>
 </div>
 <p>This will break out of the form and deal with the users FAQ question, and then return back to the original task.
-If you find it difficult to write stories in this format, you can always use <a class="reference external" href="https://rasa.com/docs/rasa/core/interactive-learning/">Interactive Learning</a>
+For example:</p>
+<a class="reference internal image-reference" href="../../_images/generic_interjection_handled.png"><img alt="Generic Interjection Handled" class="align-center" src="../../_images/generic_interjection_handled.png" style="width: 240px;" /></a>
+<p>If you find it difficult to write stories in this format, you can always use <a class="reference external" href="https://rasa.com/docs/rasa/core/interactive-learning/">Interactive Learning</a>
 to help you create them.</p>
 <p>As always, make sure to add an end to end test case to your <cite>test_stories.md</cite> file.</p>
 </div>
 <div class="section" id="contextual-questions">
-<h4><a class="toc-backref" href="#id11">Contextual questions</a><a class="headerlink" href="#contextual-questions" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id15">Contextual questions</a><a class="headerlink" href="#contextual-questions" title="Permalink to this headline">¶</a></h4>
 <p>You can also handle <a class="reference external" href="https://rasa.com/docs/rasa/dialogue-elements/completing-tasks/#contextual-questions)">contextual questions</a>,
 like the user asking the question “Why do you need to know that”. The user could ask this based on a certain slot
-the bot has requested, and the response should differ for each slot.</p>
+the bot has requested, and the response should differ for each slot. For example:</p>
+<a class="reference internal image-reference" href="../../_images/contextual_interjection.png"><img alt="Contextual Interjection" class="align-center" src="../../_images/contextual_interjection.png" style="width: 240px;" /></a>
 <p>To handle this, we need to make the <code class="docutils literal notranslate"><span class="pre">requested_slot</span></code> featurized, and assign it the categorical type:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">slots</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">requested_slot</span><span class="p p-Indicator">:</span>
@@ -939,7 +1009,7 @@ unfeaturized slots are only used for storing information. The stories for this s
     <span class="k">-</span> form{&quot;name&quot;: null}
 </pre></div>
 </div>
-<p>We’ll need to add the intent and utterances we just added to our domain:</p>
+<p>We’ll need to add the intent and utterances we just added to our <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">greet</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span><span class="nv">triggers</span><span class="p p-Indicator">:</span> <span class="nv">action_greet_user</span><span class="p p-Indicator">}</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">bye</span>
@@ -947,7 +1017,7 @@ unfeaturized slots are only used for storing information. The stories for this s
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">faq</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">explain</span>
 
-<span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
+<span class="l l-Scalar l-Scalar-Plain">responses</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_explain_why_budget</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">We need to know your budget to recommend a subscription</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_explain_why_email</span><span class="p p-Indicator">:</span>
@@ -974,15 +1044,45 @@ rasa shell
 for the bot to handle every case of “Why do you need to know that”</p>
 </div>
 <p>Don’t forget to add a few end to end stories to your <code class="docutils literal notranslate"><span class="pre">test_stories.md</span></code> for testing as well.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Here’s a minimal checklist of  of files we modified to handle unexpected user input:</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">actions.py</span></code>: Define <code class="docutils literal notranslate"><span class="pre">action_greet</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>: Add training data for an <code class="docutils literal notranslate"><span class="pre">explain</span></code> intent</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>:</dt>
+<dd><ul class="first last">
+<li>Map intent <code class="docutils literal notranslate"><span class="pre">greet</span></code> to  <code class="docutils literal notranslate"><span class="pre">action_greet_user</span></code></li>
+<li>Make <code class="docutils literal notranslate"><span class="pre">requested_slot</span></code> a categorical slots with all required slots as values</li>
+<li>Add the <code class="docutils literal notranslate"><span class="pre">explain</span></code> intent</li>
+<li>Add responses for contextual question interruptions</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>:</dt>
+<dd><ul class="first last">
+<li>Remove stories using mapped intents if you have them</li>
+<li>Add stories with FAQ &amp; contextual interruptions in the middle of filling a form</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</div>
 </div>
 </div>
 <div class="section" id="failing-gracefully">
-<h3><a class="toc-backref" href="#id12">Failing gracefully</a><a class="headerlink" href="#failing-gracefully" title="Permalink to this headline">¶</a></h3>
+<span id="id5"></span><h3><a class="toc-backref" href="#id16">Failing gracefully</a><a class="headerlink" href="#failing-gracefully" title="Permalink to this headline">¶</a></h3>
 <p>Even if you design your bot perfectly, users will inevitably say things to your
 assistant that you did not anticipate. In these cases, your assistant will fail,
 and it’s important you ensure it does so gracefully.</p>
 <div class="section" id="fallback-policy">
-<h4><a class="toc-backref" href="#id13">Fallback policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id17">Fallback policy</a><a class="headerlink" href="#fallback-policy" title="Permalink to this headline">¶</a></h4>
 <p>One of the most common failures is low NLU confidence, which is handled very nicely with
 the TwoStageFallbackPolicy. You can enable it by adding the following to your configuration file,</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">policies</span><span class="p p-Indicator">:</span>
@@ -990,7 +1090,7 @@ the TwoStageFallbackPolicy. You can enable it by adding the following to your co
     <span class="l l-Scalar l-Scalar-Plain">nlu_threshold</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.8</span>
 </pre></div>
 </div>
-<p>and adding the <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent to your domain file:</p>
+<p>and adding the <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent to your <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">intents</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">out_of_scope</span>
 </pre></div>
@@ -1011,9 +1111,8 @@ We define some intent mappings to make it more intuitive to the user what an int
 <a class="reference internal image-reference" href="../../_images/intent_mappings.png"><img alt="Intent Mappings" class="align-center" src="../../_images/intent_mappings.png" style="width: 240px;" /></a>
 </div>
 <div class="section" id="out-of-scope-intent">
-<h4><a class="toc-backref" href="#id14">Out of scope intent</a><a class="headerlink" href="#out-of-scope-intent" title="Permalink to this headline">¶</a></h4>
-<p>It is good practice to also handle questions you know your users may ask, but you don’t necessarily have a skill
-implemented yet.</p>
+<h4><a class="toc-backref" href="#id18">Out of scope intent</a><a class="headerlink" href="#out-of-scope-intent" title="Permalink to this headline">¶</a></h4>
+<p>It is good practice to also handle questions you know your users may ask, but for which you haven’t necessarily implemented a user goal yet.</p>
 <p>You can define an <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent to handle generic out of scope requests, like “I’m hungry” and have
 the bot respond with a default message like “Sorry, I can’t handle that request”:</p>
 <div class="highlight-md notranslate"><div class="highlight"><pre><span></span><span class="k">*</span> out_of_scope
@@ -1028,8 +1127,8 @@ the bot respond with a default message like “Sorry, I can’t handle that requ
 <span class="k">-</span> I need a job
 </pre></div>
 </div>
-<p>And finally we’ll add a template to our domain file:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">templates</span><span class="p p-Indicator">:</span>
+<p>And finally we’ll add a response to our <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code> file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">responses</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">utter_out_of_scope</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">Sorry, I can’t handle that request.</span>
 </pre></div>
@@ -1048,10 +1147,59 @@ let’s say the user asks “I want to apply for a job at Rasa”, we can then r
   utter_job_not_handled
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Here’s a minimal checklist of files we modified to help our assistant fail gracefully:</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">data/nlu.md</span></code>:</dt>
+<dd><ul class="first last">
+<li>Add training data for the <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent &amp; any specific out of scope intents that you want to handle seperately</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">data/stories.md</span></code>:</dt>
+<dd><ul class="first last">
+<li>Add stories for any specific out of scope intents</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>:</dt>
+<dd><ul class="first last">
+<li>Add the <code class="docutils literal notranslate"><span class="pre">out_of_scope</span></code> intent &amp; any specific out of scope intents</li>
+<li>Add an <code class="docutils literal notranslate"><span class="pre">utter_out_of_scope</span></code> response &amp; responses for any specific out of scope intents</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">actions.py</span></code>:</dt>
+<dd><ul class="first last">
+<li>Customise <code class="docutils literal notranslate"><span class="pre">ActionDefaultAskAffirmation</span></code> to suggest intents for the user to choose from</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">config.yml</span></code>:</dt>
+<dd><ul class="first last">
+<li>Add the TwoStageFallbackPolicy to the <code class="docutils literal notranslate"><span class="pre">policies</span></code> section</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</div>
 </div>
 </div>
 <div class="section" id="more-complex-contextual-conversations">
-<h3><a class="toc-backref" href="#id15">More complex contextual conversations</a><a class="headerlink" href="#more-complex-contextual-conversations" title="Permalink to this headline">¶</a></h3>
+<span id="id6"></span><h3><a class="toc-backref" href="#id19">More complex contextual conversations</a><a class="headerlink" href="#more-complex-contextual-conversations" title="Permalink to this headline">¶</a></h3>
 <p>Not every user goal you define will fall under the category of business logic. For the
 other cases you will need to use stories and context to help the user achieve their goal.</p>
 <p>If we take the example of the “getting started” skill from Sara, we want to give them
@@ -1103,11 +1251,11 @@ question by storing this information in a slot.</p>
   <span class="k">-</span> utter_built_bot_before
 </pre></div>
 </div>
-<p>For this to work, keep in mind that the slot has to be featurized in your domain
+<p>For this to work, keep in mind that the slot has to be featurized in your <code class="docutils literal notranslate"><span class="pre">domain.yml</span></code>
 file. This time we can use the <code class="docutils literal notranslate"><span class="pre">text</span></code> slot type, as we only care about whether the
 <a class="reference external" href="https://rasa.com/docs/rasa/core/slots/">slot was set or not</a>.</p>
 <div class="section" id="augmentedmemoizationpolicy">
-<h4><a class="toc-backref" href="#id16">AugmentedMemoizationPolicy</a><a class="headerlink" href="#augmentedmemoizationpolicy" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id20">AugmentedMemoizationPolicy</a><a class="headerlink" href="#augmentedmemoizationpolicy" title="Permalink to this headline">¶</a></h4>
 <p>To make your bot more robust to interjections, you can replace the MemoizationPolicy
 with the AugmentedMemoizationPolicy. It works the same way as the MemoizationPolicy,
 but if no exact match is found it additionally has a mechanism that forgets a certain
@@ -1115,7 +1263,7 @@ amount of steps in the conversation history to find a match in your stories (rea
 <a class="reference external" href="https://rasa.com/docs/rasa/core/policies/#augmented-memoization-policy">here</a>)</p>
 </div>
 <div class="section" id="using-ml-to-generalise">
-<h4><a class="toc-backref" href="#id17">Using ML to generalise</a><a class="headerlink" href="#using-ml-to-generalise" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id21">Using ML to generalise</a><a class="headerlink" href="#using-ml-to-generalise" title="Permalink to this headline">¶</a></h4>
 <p>Aside from the more rule-based policies we described above, Core also has some ML
 policies you can use. These come in as an additional layer in your policy configuration,
 and only jump in if the user follows a path that you have not anticipated. <strong>It is important
@@ -1124,7 +1272,7 @@ assistant.</strong> If a rule based policy is able to make a prediction, that pr
 always have a higher priority (read more <a class="reference external" href="https://rasa.com/docs/rasa/core/policies/#action-selection">here</a>) and predict the next action. The
 ML based policies give your assistant the chance not to fail, whereas if they are not
 used your assistant will definitely fail, like in state machine based dialogue systems.</p>
-<p>These types of unexpected user behaviors are something our <a class="reference external" href="https://blog.rasa.com/attention-dialogue-and-learning-reusable-patterns/">EmbeddingPolicy</a> deals with
+<p>These types of unexpected user behaviors are something our <a class="reference external" href="https://blog.rasa.com/unpacking-the-ted-policy-in-rasa-open-source/">TEDPolicy</a> deals with
 very well. It can learn to bring the user back on track after some
 interjections during the main user goal the user is trying to complete. For example,
 in the conversation below (extracted from a conversation on <a class="reference external" href="https://rasa.com/docs/rasa-x/user-guide/review-conversations/">Rasa X</a>):</p>
@@ -1149,7 +1297,7 @@ in the conversation below (extracted from a conversation on <a class="reference 
 </pre></div>
 </div>
 <p>Here we can see the user has completed a few chitchat tasks first, and then ultimately
-asks how they can get started with Rasa X. The EmbeddingPolicy correctly predicts that
+asks how they can get started with Rasa X. The TEDPolicy correctly predicts that
 Rasa X should be explained to the user, and then also takes them down the getting started
 path, without asking all the qualifying questions first.</p>
 <p>Since the ML policy generalized well in this situation, it makes sense to add this story

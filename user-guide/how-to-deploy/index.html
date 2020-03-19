@@ -211,12 +211,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.8.1
+          viewing: 1.8.2
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.8.2/user-guide/how-to-deploy/">1.8.2</a>
               <a href="../.././1.8.1/user-guide/how-to-deploy/">1.8.1</a>
               <a href="../.././1.8.0/user-guide/how-to-deploy/">1.8.0</a>
               <a href="../.././1.7.4/user-guide/how-to-deploy/">1.7.4</a>
@@ -581,7 +582,7 @@ touch actions/actions.py
   <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">return</span> <span class="s2">&quot;action_joke&quot;</span>
 
-  <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">domain</span><span class="p">):</span>
+  <span class="n">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dispatcher</span><span class="p">,</span> <span class="n">tracker</span><span class="p">,</span> <span class="n">domain</span><span class="p">):</span>
     <span class="n">request</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;http://api.icndb.com/jokes/random&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>  <span class="c1"># make an api call</span>
     <span class="n">joke</span> <span class="o">=</span> <span class="n">request</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">][</span><span class="s1">&#39;joke&#39;</span><span class="p">]</span>  <span class="c1"># extract a joke from returned json response</span>
     <span class="n">dispatcher</span><span class="o">.</span><span class="n">utter_message</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">joke</span><span class="p">)</span>  <span class="c1"># send the message back to the user</span>
@@ -626,20 +627,27 @@ Add this to your <code class="docutils literal notranslate"><span class="pre">en
 with Rasa.</p>
 </div>
 <div class="section" id="adding-custom-dependencies">
-<h4><a class="toc-backref" href="#id30">Adding Custom Dependencies</a><a class="headerlink" href="#adding-custom-dependencies" title="Permalink to this headline">¶</a></h4>
+<span id="deploying-your-rasa-assistant-custom-dependencies"></span><h4><a class="toc-backref" href="#id30">Adding Custom Dependencies</a><a class="headerlink" href="#adding-custom-dependencies" title="Permalink to this headline">¶</a></h4>
 <p>If your custom action has additional dependencies of systems or Python libraries,
 you can add these by extending the official image.</p>
 <p>To do so, create a file named <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code> in which you extend the official
 image and add your custom dependencies. For example:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># Extend the official Rasa SDK image</span>
-<span class="k">FROM</span><span class="s"> rasa/rasa-sdk:latest</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span> # Extend the official Rasa SDK image
+ FROM rasa/rasa-sdk:latest
 
-<span class="c"># Add a custom system library (e.g. git)</span>
-<span class="k">RUN</span> apt-get update <span class="o">&amp;&amp;</span> <span class="se">\</span>
-    apt-get install -y git
+ # The Rasa SDK image runs as non-root user by default. Hence, you have to switch
+ # back to the <span class="sb">`</span>root<span class="sb">`</span> user <span class="k">if</span> you want to install additional dependencies.
+ USER root
 
-<span class="c"># Add a custom python library (e.g. jupyter)</span>
-<span class="k">RUN</span> pip install --no-cache-dir jupyter
+ # Add a custom system library <span class="o">(</span>e.g. git<span class="o">)</span>
+ RUN apt-get update <span class="o">&amp;&amp;</span> <span class="se">\</span>
+     apt-get install -y git
+
+ # Add a custom python library <span class="o">(</span>e.g. jupyter<span class="o">)</span>
+ RUN pip install --no-cache-dir jupyter
+
+<span class="c"># Switch back to a non-root user</span>
+USER <span class="m">1001</span>
 </pre></div>
 </div>
 <p>You can then build the image via the following command, and use it in your

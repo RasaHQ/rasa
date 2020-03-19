@@ -215,12 +215,13 @@ Rasa Core and how you can migrate from one version to another." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.8.1
+          viewing: 1.8.2
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href=".././1.8.2/migration-guide/">1.8.2</a>
               <a href=".././1.8.1/migration-guide/">1.8.1</a>
               <a href=".././1.8.0/migration-guide/">1.8.0</a>
               <a href=".././1.7.4/migration-guide/">1.7.4</a>
@@ -389,11 +390,14 @@ the following configuration of <code class="docutils literal notranslate"><span 
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="c1"># - ... other components</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+  <span class="l l-Scalar l-Scalar-Plain">hidden_layers_sizes</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">text</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">256</span><span class="p p-Indicator">,</span> <span class="nv">128</span><span class="p p-Indicator">]</span>
+  <span class="l l-Scalar l-Scalar-Plain">number_of_transformer_layers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="l l-Scalar l-Scalar-Plain">weight_sparsity</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
   <span class="l l-Scalar l-Scalar-Plain">intent_classification</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
   <span class="l l-Scalar l-Scalar-Plain">entity_recognition</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
   <span class="l l-Scalar l-Scalar-Plain">use_masked_language_model</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
   <span class="l l-Scalar l-Scalar-Plain">BILOU_flag</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
-  <span class="l l-Scalar l-Scalar-Plain">number_of_transformer_layers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
   <span class="c1"># ... any other parameters</span>
 </pre></div>
 </div>
