@@ -229,7 +229,7 @@ def _validate_tracker(
         raise ErrorResponse(
             409,
             "Conflict",
-            f"Could not retrieve tracker with id '{conversation_id}'. Most likely "
+            f"Could not retrieve tracker with ID '{conversation_id}'. Most likely "
             f"because there is no domain set on the agent.",
         )
 

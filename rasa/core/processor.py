@@ -716,15 +716,16 @@ class MessageProcessor:
     def get_tracker(self, conversation_id: Text) -> Optional[DialogueStateTracker]:
         """Get the tracker for a conversation.
 
-        In contrast to `get_tracker_with_session_start` this does not add any session
-        start events at the beginning of a conversation.
+        In contrast to `get_tracker_with_session_start` this does not add any 
+        `action_session_start` or `session_start` events at the beginning of a 
+        conversation.
 
         Args:
-            conversation_id: The id of the conversation of which the history should be
+            conversation_id: The ID of the conversation for which the history should be
                 retrieved.
 
         Returns:
-            Tracker for the conversation. Creates an empty tracker in case it'a new
+            Tracker for the conversation. Creates an empty tracker in case it's a new
             conversation.
         """
         conversation_id = conversation_id or UserMessage.DEFAULT_SENDER_ID
