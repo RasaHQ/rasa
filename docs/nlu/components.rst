@@ -104,7 +104,7 @@ HFTransformersNLP
 :Configuration:
     You should specify what language model to load via the parameter ``model_name``. See the below table for the
     available language models.
-    Additionally, you can also specify the the architecture variation of the chosen language model by specifying the
+    Additionally, you can also specify the architecture variation of the chosen language model by specifying the
     parameter ``model_weights``.
     The full list of supported architectures can be found
     `here <https://huggingface.co/transformers/pretrained_models.html>`__.
