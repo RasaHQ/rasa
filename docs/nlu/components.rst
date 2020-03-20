@@ -847,7 +847,7 @@ EmbeddingIntentClassifier
           they are compared and the loss is calculated.
         - ``weight_sparsity``:
           This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
-          in the model (default: ``0.8``). The value should be between 0 and 1. If you set ``weight_sparsity``
+          in the model (default: ``0.0``). The value should be between 0 and 1. If you set ``weight_sparsity``
           to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
           set ``weight_sparsity`` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
           to learn.
@@ -920,7 +920,7 @@ EmbeddingIntentClassifier
          | negative_margin_scale           | 0.8              | The scale of how important is to minimize the maximum        |
          |                                 |                  | similarity between embeddings of different labels.           |
          +---------------------------------+------------------+--------------------------------------------------------------+
-         | weight_sparsity                 | 0.8              | Sparsity of the weights in dense layers.                     |
+         | weight_sparsity                 | 0.0              | Sparsity of the weights in dense layers.                     |
          |                                 |                  | Value should be between 0 and 1.                             |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | drop_rate                       | 0.2              | Dropout rate for encoder. Value should be between 0 and 1.   |
