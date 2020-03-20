@@ -161,6 +161,7 @@ class MemoizationPolicy(Policy):
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: Optional[RasaCoreInterpreter],
+        output_path,
         **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers."""
