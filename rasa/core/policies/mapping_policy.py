@@ -79,6 +79,7 @@ class MappingPolicy(Policy):
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: Optional[RasaCoreInterpreter],
+        output_path,
         **kwargs: Any,
     ) -> None:
         """Does nothing. This policy is deterministic."""
