@@ -9,13 +9,8 @@ Entity Extraction
 
 .. edit-link::
 
-.. contents::
-   :local:
-
-
-Introduction
-^^^^^^^^^^^^
-
+Entity extraction involves parsing user messages for required pieces of information. Rasa Open Source
+provides entity extractors for custom entities as well as pre-trained ones like dates and locations.
 Here is a summary of the available extractors and what they are used for:
 
 =========================  =================  ========================  =================================
@@ -28,9 +23,11 @@ Component                  Requires           Model           	        Notes
 ``EntitySynonymMapper``    existing entities  N/A                       maps known synonyms
 =========================  =================  ========================  =================================
 
+.. contents::
+   :local:
 
 The "entity" Object
-*******************
+^^^^^^^^^^^^^^^^^^^
 
 After parsing, an entity is returned as a dictionary.  There are two fields that show information
 about how the pipeline impacted the entities returned: the ``extractor`` field

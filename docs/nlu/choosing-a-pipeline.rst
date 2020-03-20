@@ -10,9 +10,6 @@ Choosing a Pipeline
 In Rasa Open Source, incoming messages are processed by a sequence of components.
 These components are executed one after another in a so-called processing ``pipeline`` defined in your ``config.yml``.
 Choosing an NLU pipeline allows you to customize your model and finetune it on your dataset.
-There are components for entity extraction, for intent classification, response selection,
-pre-processing, and others. If you want to add your own component, for example to run a spell-check or to
-do sentiment analysis, check out :ref:`custom-nlu-components`.
 
 
 .. contents::
@@ -28,70 +25,6 @@ do sentiment analysis, check out :ref:`custom-nlu-components`.
     components you want to use directly in the configuration file. See
     :ref:`how-to-choose-a-pipeline` for recommended starting configurations.
 
-
-.. _section_component_lifecycle:
-
-Component Lifecycle
--------------------
-
-Each component processes the input and creates an output. The output can be used by any component that comes after
-this component in the pipeline. There are components which only produce information that is used by other components
-in the pipeline, and there are other components that produce ``output`` attributes which will be returned after
-the processing has finished. For example, for the sentence ``"I am looking for Chinese food"`` the output is:
-
-.. code-block:: json
-
-    {
-        "text": "I am looking for Chinese food",
-        "entities": [
-            {
-                "start": 8,
-                "end": 15,
-                "value": "chinese",
-                "entity": "cuisine",
-                "extractor": "DIETClassifier",
-                "confidence": 0.864
-            }
-        ],
-        "intent": {"confidence": 0.6485910906220309, "name": "restaurant_search"},
-        "intent_ranking": [
-            {"confidence": 0.6485910906220309, "name": "restaurant_search"},
-            {"confidence": 0.1416153159565678, "name": "affirm"}
-        ]
-    }
-
-This is created as a combination of the results of the different components in the following pipeline:
-
-.. literalinclude:: ../../data/configs_for_docs/default_config.yml
-    :language: yaml
-
-For example, the ``entities`` attribute here is created by the ``DIETClassifier`` component.
-
-Every component can implement several methods from the ``Component`` base class; in a pipeline these different methods
-will be called in a specific order. Assuming we added the following pipeline to our ``config.yml``:
-
-.. code-block:: yaml
-
-    pipeline:
-      - name: "Component A"
-      - name: "Component B"
-      - name: "Last Component"
-
-The image below shows the call order during the training of this pipeline:
-
-.. image:: /_static/images/component_lifecycle.png
-
-Before the first component is created using the ``create`` function, a so
-called ``context`` is created (which is nothing more than a python dict).
-This context is used to pass information between the components. For example,
-one component can calculate feature vectors for the training data, store
-that within the context and another component can retrieve these feature
-vectors from the context and do intent classification.
-
-Initially the context is filled with all configuration values. The arrows
-in the image show the call order and visualize the path of the passed
-context. After all components are trained and persisted, the
-final context dictionary is used to persist the model's metadata.
 
 .. _how-to-choose-a-pipeline:
 
@@ -154,6 +87,11 @@ we recommend using the following pipeline:
 
 Choosing the Right Components
 *****************************
+
+There are components for entity extraction, for intent classification, response selection,
+pre-processing, and others. You can learn more about any specific component on the :ref:`components` page.
+If you want to add your own component, for example to run a spell-check or to
+do sentiment analysis, check out :ref:`custom-nlu-components`.
 
 A pipeline usually consists of three main parts:
 
@@ -279,7 +217,7 @@ Balanced batching is used by default. In order to turn it off and use a classic 
 
 
 Comparing Pipelines
-*******************
+-------------------
 
 Rasa gives you the tools to compare the performance of multiple pipelines on your data directly.
 See :ref:`comparing-nlu-pipelines` for more information.
@@ -289,3 +227,67 @@ See :ref:`comparing-nlu-pipelines` for more information.
     Intent classification is independent of entity extraction. So sometimes
     NLU will get the intent right but entities wrong, or the other way around.
     You need to provide enough data for both intents and entities.
+
+.. _section_component_lifecycle:
+
+Component Lifecycle
+-------------------
+
+Each component processes an input and/or creates an output. The output can be used by any component that comes after
+that component in the pipeline. There are components which only produce information that is used by other components
+in the pipeline, and there are other components that produce ``output`` attributes which will be returned after
+the processing has finished. For example, for the sentence ``"I am looking for Chinese food"`` the output is:
+
+.. code-block:: json
+
+    {
+        "text": "I am looking for Chinese food",
+        "entities": [
+            {
+                "start": 8,
+                "end": 15,
+                "value": "chinese",
+                "entity": "cuisine",
+                "extractor": "DIETClassifier",
+                "confidence": 0.864
+            }
+        ],
+        "intent": {"confidence": 0.6485910906220309, "name": "restaurant_search"},
+        "intent_ranking": [
+            {"confidence": 0.6485910906220309, "name": "restaurant_search"},
+            {"confidence": 0.1416153159565678, "name": "affirm"}
+        ]
+    }
+
+This is created as a combination of the results of the different components in the following pipeline:
+
+.. literalinclude:: ../../data/configs_for_docs/default_config.yml
+    :language: yaml
+
+For example, the ``entities`` attribute here is created by the ``DIETClassifier`` component.
+
+Every component can implement several methods from the ``Component`` base class; in a pipeline these different methods
+will be called in a specific order. Assuming we added the following pipeline to our ``config.yml``:
+
+.. code-block:: yaml
+
+    pipeline:
+      - name: "Component A"
+      - name: "Component B"
+      - name: "Last Component"
+
+The image below shows the call order during the training of this pipeline:
+
+.. image:: /_static/images/component_lifecycle.png
+
+Before the first component is created using the ``create`` function, a so
+called ``context`` is created (which is nothing more than a python dict).
+This context is used to pass information between the components. For example,
+one component can calculate feature vectors for the training data, store
+that within the context and another component can retrieve these feature
+vectors from the context and do intent classification.
+
+Initially the context is filled with all configuration values. The arrows
+in the image show the call order and visualize the path of the passed
+context. After all components are trained and persisted, the
+final context dictionary is used to persist the model's metadata.

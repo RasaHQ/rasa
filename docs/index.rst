@@ -42,10 +42,10 @@ Understand messages, hold conversations, and connect to messaging channels and A
    About <nlu/about>
    nlu/using-nlu-only
    nlu/training-data-format
-   nlu/choosing-a-pipeline
    nlu/language-support
-   nlu/entity-extraction
+   nlu/choosing-a-pipeline
    nlu/components
+   nlu/entity-extraction
 
 .. toctree::
    :maxdepth: 1
