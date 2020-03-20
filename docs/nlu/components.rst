@@ -13,7 +13,7 @@ Components
     to decide on what components you should use in your configuration file.
 
 This is a reference of the configuration options for every built-in
-component in Rasa. If you want to build a custom component, check
+component in Rasa Open Source. If you want to build a custom component, check
 out :ref:`custom-nlu-components`.
 
 .. contents::
