@@ -1,0 +1,6 @@
+The endpoint ``PUT /conversations/<conversation_id>/tracker/events`` no longer
+adds new session start events (to learn more about conversation session, please
+see :ref:`session_config`) in addition to the events which were sent in the request
+payload. To achieve the old behavior send a
+``GET /conversations/<conversation_id>/tracker``
+request before appending events.
