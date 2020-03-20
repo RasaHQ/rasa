@@ -267,7 +267,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         if component_config is not None and EPOCHS not in component_config:
             logger.warning(
-                f"Please configure the number of '{EPOCHS}' in your configuration file."
+                f"Please configure the number of '{EPOCHS}' in your configuration file for {self.__class__.name}."
                 f" We will change the default value of '{EPOCHS}' in the future to 1. "
             )
 
