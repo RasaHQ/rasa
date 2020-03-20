@@ -95,7 +95,7 @@ def get_core_nlu_files(
             story_files.update(new_story_files)
             nlu_data_files.update(new_nlu_data_files)
 
-    return story_files, nlu_data_files
+    return sorted(story_files), sorted(nlu_data_files)
 
 
 def _find_core_nlu_files_in_directory(directory: Text,) -> Tuple[Set[Text], Set[Text]]:
