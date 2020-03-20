@@ -23,6 +23,9 @@ out :ref:`custom-nlu-components`.
 Word Vector Sources
 -------------------
 
+The following components load pre-trained models that are needed if you want to use pre-trained
+word vectors in your pipeline.
+
 .. _MitieNLP:
 
 MitieNLP
@@ -158,7 +161,7 @@ modeling hierarchical intent structure, use the following flags with any tokeniz
 - ``intent_split_symbol`` sets the delimiter string to split the intent labels, default is underscore
   (``_``).
 
-    .. note:: All tokenizer add an additional token ``__CLS__`` to the end of the list of tokens when tokenizing
+    .. note:: All tokenizers add an additional token ``__CLS__`` to the end of the list of tokens when tokenizing
               text and responses.
 
 .. _WhitespaceTokenizer:
@@ -268,8 +271,7 @@ ConveRTTokenizer
         be used if your training data is in English language.
 
     .. note::
-        To use ``ConveRTTokenizer`` you need to install additional TensorFlow libraries (``tensorflow_text`` and
-        ``tensorflow_hub``). You should do a pip install of Rasa with ``pip install rasa[convert]`` to install those.
+        To use ``ConveRTTokenizer``, install Rasa Open Source with ``pip install rasa[convert]``.
 
 
 :Configuration:
@@ -411,8 +413,7 @@ ConveRTFeaturizer
         be used if your training data is in English language.
 
     .. note::
-        To use ``ConveRTFeaturizer`` you need to install additional TensorFlow libraries (``tensorflow_text`` and
-        ``tensorflow_hub``). You should do a pip install of Rasa with ``pip install rasa[convert]`` to install those.
+        To use ``ConveRTTokenizer``, install Rasa Open Source with ``pip install rasa[convert]``.
 
 :Configuration:
 
@@ -463,7 +464,7 @@ RegexFeaturizer
 :Type: Sparse featurizer
 :Description:
     Creates features for entity extraction and intent classification.
-    During training the ``RegexFeaturizer`` creates a list of `regular expressions` defined in the training
+    During training the ``RegexFeaturizer`` creates a list of regular expressions defined in the training
     data format.
     For each regex, a feature will be set marking whether this expression was found in the user message or not.
     All features will later be fed into an intent classifier / entity extractor to simplify classification (assuming
@@ -512,7 +513,7 @@ CountVectorsFeaturizer
         For character n-grams do not forget to increase ``min_ngram`` and ``max_ngram`` parameters.
         Otherwise the vocabulary will contain only single letters.
 
-    Handling Out-Of-Vacabulary (OOV) words:
+    Handling Out-Of-Vocabulary (OOV) words:
 
         .. note:: Enabled only if ``analyzer`` is ``word``.
 
@@ -533,7 +534,7 @@ CountVectorsFeaturizer
               provided ``OOV_token``; if ``OOV_token=None`` (default behaviour) words that were not seen during
               training will be ignored during prediction time;
             - ``OOV_words`` set a list of words to be treated as ``OOV_token`` during training; if a list of words
-              that should be treated as Out-Of-Vacabulary is known, it can be set to ``OOV_words`` instead of manually
+              that should be treated as Out-Of-Vocabulary is known, it can be set to ``OOV_words`` instead of manually
               changing it in training data or using custom preprocessor.
 
         .. note::
@@ -568,8 +569,8 @@ CountVectorsFeaturizer
 
         .. container:: header
 
-            The above configuration parameters are the ones you most likely gonna change.
-            However, additional parameters exists that can be adapted.
+            The above configuration parameters are the ones you should configure to fit your model to your data.
+            However, additional parameters exist that can be adapted.
 
         .. code-block:: none
 
@@ -811,7 +812,7 @@ EmbeddingIntentClassifier
     This algorithm also provides similarity rankings of the labels that did not "win".
 
     .. note:: If during prediction time a message contains **only** words unseen during training
-              and no Out-Of-Vacabulary preprocessor was used, an empty intent ``None`` is predicted with confidence
+              and no Out-Of-Vocabulary preprocessor was used, an empty intent ``None`` is predicted with confidence
               ``0.0``. This might happen if you only use the :ref:`CountVectorsFeaturizer` with a ``word`` analyzer
               as featurizer. If you use the ``char_wb`` analyzer, you should always get an intent with a confidence
               value ``> 0.0``.
@@ -857,8 +858,8 @@ EmbeddingIntentClassifier
 
         .. container:: header
 
-            The above configuration parameters are the ones you most likely gonna change.
-            However, additional parameters exists that can be adapted.
+            The above configuration parameters are the ones you should configure to fit your model to your data.
+            However, additional parameters exist that can be adapted.
 
         .. code-block:: none
 
@@ -870,7 +871,7 @@ EmbeddingIntentClassifier
          |                                 |                  | equal to the length of the corresponding.                    |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | share_hidden_layers             | False            | Whether to share the hidden layer weights between user       |
-         |                                 |                  | messages and labels.                                          |
+         |                                 |                  | messages and labels.                                         |
          +---------------------------------+------------------+--------------------------------------------------------------+
          | batch_size                      | [64, 256]        | Initial and final value for batch sizes.                     |
          |                                 |                  | Batch size will be linearly increased for each epoch.        |
@@ -996,6 +997,8 @@ KeywordIntentClassifier
 Selectors
 ----------
 
+Selectors predict a bot response from a set of candidate responses.
+
 .. _response-selector:
 
 ResponseSelector
@@ -1029,7 +1032,7 @@ ResponseSelector
     neural network architecture and optimization as the :ref:`diet-classifier`.
 
     .. note:: If during prediction time a message contains **only** words unseen during training
-              and no Out-Of-Vacabulary preprocessor was used, an empty response ``None`` is predicted with confidence
+              and no Out-Of-Vocabulary preprocessor was used, an empty response ``None`` is predicted with confidence
               ``0.0``. This might happen if you only use the :ref:`CountVectorsFeaturizer` with a ``word`` analyzer
               as featurizer. If you use the ``char_wb`` analyzer, you should always get a response with a confidence
               value ``> 0.0``.
@@ -1087,7 +1090,8 @@ ResponseSelector
 
         .. container:: header
 
-            A number of hyperparameters exists that can be adapted to customize the ``ResponseSelector``.
+            The above configuration parameters are the ones you should configure to fit your model to your data.
+            However, additional parameters exist that can be adapted.
 
         .. code-block:: none
 
@@ -1407,38 +1411,38 @@ CRFEntityExtractor
 
         pipeline:
         - name: "CRFEntityExtractor"
-            # BILOU_flag determines whether to use BILOU tagging or not.
-            "BILOU_flag": True
-            # features to extract in the sliding window
-            "features": [
-                ["low", "title", "upper"],
-                [
-                    "bias",
-                    "low",
-                    "prefix5",
-                    "prefix2",
-                    "suffix5",
-                    "suffix3",
-                    "suffix2",
-                    "upper",
-                    "title",
-                    "digit",
-                    "pattern",
-                ],
-                ["low", "title", "upper"],
-            ]
-            # The maximum number of iterations for optimization algorithms.
-            "max_iterations": 50
-            # weight of the L1 regularization
-            "L1_c": 0.1
-            # weight of the L2 regularization
-            "L2_c": 0.1
+          # BILOU_flag determines whether to use BILOU tagging or not.
+          "BILOU_flag": True
+          # features to extract in the sliding window
+          "features": [
+            ["low", "title", "upper"],
+            [
+              "bias",
+              "low",
+              "prefix5",
+              "prefix2",
+              "suffix5",
+              "suffix3",
+              "suffix2",
+              "upper",
+              "title",
+              "digit",
+              "pattern",
+            ],
+            ["low", "title", "upper"],
+          ]
+          # The maximum number of iterations for optimization algorithms.
+          "max_iterations": 50
+          # weight of the L1 regularization
+          "L1_c": 0.1
+          # weight of the L2 regularization
+          "L2_c": 0.1
 
     .. note::
-        If POS features are used (pos or pos2), you need to have ``SpacyTokenizer`` in your pipeline.
+        If POS features are used (``pos`` or ``pos2`), you need to have ``SpacyTokenizer`` in your pipeline.
 
     .. note::
-        If "pattern" features are used, you need to have ``RegexFeaturizer`` in your pipeline.
+        If "``pattern` features are used, you need to have ``RegexFeaturizer`` in your pipeline.
 
 .. _DucklingHTTPExtractor:
 
@@ -1558,7 +1562,7 @@ DIETClassifier
     architecture in detail.
 
     .. note:: If during prediction time a message contains **only** words unseen during training
-              and no Out-Of-Vacabulary preprocessor was used, an empty intent ``None`` is predicted with confidence
+              and no Out-Of-Vocabulary preprocessor was used, an empty intent ``None`` is predicted with confidence
               ``0.0``. This might happen if you only use the :ref:`CountVectorsFeaturizer` with a ``word`` analyzer
               as featurizer. If you use the ``char_wb`` analyzer, you should always get an intent with a confidence
               value ``> 0.0``.
@@ -1567,7 +1571,7 @@ DIETClassifier
 
     If you want to use the ``DIETClassifier`` just for intent classification, set ``entity_recognition`` to ``False``.
     If you want to do only entity recognition, set ``intent_classification`` to ``False``.
-    By default ``DIETClassifier`` is doing both, i.e. ``entity_recognition`` and ``intent_classification`` is set to
+    By default ``DIETClassifier`` does both, i.e. ``entity_recognition`` and ``intent_classification`` are set to
     ``True``.
 
     You can define a number of hyperparameters to adapt the model.
@@ -1615,8 +1619,8 @@ DIETClassifier
 
         .. container:: header
 
-            The above configuration parameters are the ones you most likely gonna change.
-            However, additional parameters exists that can be adapted.
+            The above configuration parameters are the ones you should configure to fit your model to your data.
+            However, additional parameters exist that can be adapted.
 
         .. code-block:: none
 
