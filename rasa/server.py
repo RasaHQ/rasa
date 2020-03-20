@@ -219,7 +219,8 @@ async def get_tracker(
     tracker = await processor.get_tracker_with_session_start(conversation_id)
     _validate_tracker(tracker, conversation_id)
 
-    return tracker
+    # `_validate_tracker` ensures we can't return `None` so `Optional` is not needed
+    return tracker  # pytype: disable=bad-return-type
 
 
 def _validate_tracker(
