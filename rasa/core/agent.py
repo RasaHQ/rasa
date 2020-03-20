@@ -662,7 +662,7 @@ class Agent:
         )
 
     def train(
-        self, training_trackers: List[DialogueStateTracker], **kwargs: Any
+        self, training_trackers: List[DialogueStateTracker], output_path, **kwargs: Any
     ) -> None:
         """Train the policies / policy ensemble using dialogue data from file.
 
@@ -709,7 +709,7 @@ class Agent:
         logger.debug(f"Agent trainer got kwargs: {kwargs}")
 
         self.policy_ensemble.train(
-            training_trackers, self.domain, self.interpreter, **kwargs
+            training_trackers, self.domain, self.interpreter, output_path, **kwargs
         )
         self._set_fingerprint()
 

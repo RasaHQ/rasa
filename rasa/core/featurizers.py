@@ -23,9 +23,10 @@ import scipy.sparse
 
 from rasa.core.interpreter import RasaCoreInterpreter
 from rasa.nlu.model import Trainer
-from rasa.nlu.constants import CLS_TOKEN
+from rasa.nlu.constants import CLS_TOKEN, SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, RESPONSE, TEXT
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import is_logging_disabled
+from rasa.utils import train_utils
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,7 @@ class SingleStateFeaturizer:
         if action is None:
             return np.ones(domain.num_actions, dtype=int) * -1
 
-        y = domain.index_for_action(action)
+        y = domain.index_for_action(action.text)
         return y
 
     def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
@@ -92,7 +93,14 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         self.intent_tokenization_flag = True
         self.token_pattern = r"(?u)\b\w+\b"
 
-    def prepare_training_data_and_train(self, trackers_as_states):
+    def find_same(self, action_name, attribute, training_data):
+        for ex in training_data.training_examples:
+            if ex.as_dict()['text'] == action_name and ex.get(SPARSE_FEATURE_NAMES[attribute]) is not None:
+                example = ex
+                break
+        return example
+
+    def prepare_training_data_and_train(self, trackers_as_states, trackers_as_actions, interpreter, output_path):
         """
         Trains the vertorizers from real data;
         Preliminary for when the featurizer is to be used for raw text;
@@ -106,88 +114,53 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
 
         training_data = []
         for tracker in trackers_as_states:
+            for state in tracker: 
+                if state and not state == {}:
+                    training_data.append(state["prev_action"])
+                    if "user" in state.keys():
+                        training_data.append(state["user"])
+        tr_data = TrainingData(training_examples=training_data)
+
+        training_data = [tr[0] for tr in trackers_as_actions]
+        tr_data.training_examples += training_data
+        interp = interpreter.train(tr_data, output_path)
+
+        ## Not so clever fix for now; 
+        ## TODO: properly encode everything in place; 
+        for tracker in trackers_as_states:
             for state in tracker:
-                if state:
-                    state_keys = list(state.keys())
-                    state_keys = [
-                        Message(key.replace(self.delimiter, " ") + " " + CLS_TOKEN)
-                        for key in state_keys
-                    ]
-                    training_data += state_keys
+                for key in state.keys():
+                    if isinstance(state[key], Message):
+                        if state[key].get(SPARSE_FEATURE_NAMES[TEXT]) is None and state[key].get(DENSE_FEATURE_NAMES[TEXT]) is None:                           
+                            name = state[key].as_dict()['text']
+                            example = self.find_same(name, TEXT, tr_data)
+                            state[key] = example
 
-        training_data = TrainingData(training_examples=training_data)
-        self.train(training_data)
+        return interp
 
-    def prepare_from_domain(self, domain: Domain) -> None:
-        """
-        Train the fecturizers based on the inputs gotten from the domain;
-        Args:
-            - domain: domain file
-        """
+    def _extract_features(
+        self, message: Message, attribute: Text
+    ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
+        sparse_features = None
+        dense_features = None
 
-        training_data = domain.input_states
-        translator = str.maketrans(
-            string.punctuation, self.delimiter * len(string.punctuation)
-        )
-        training_data = [
-            Message(
-                key.translate(translator).replace(self.delimiter, " ") + " " + CLS_TOKEN
-            )
-            for key in training_data
-        ]
-        training_data = TrainingData(training_examples=training_data)
-        self.train(training_data)
+        if message.get(SPARSE_FEATURE_NAMES[attribute]) is not None:
+            sparse_features = message.get(SPARSE_FEATURE_NAMES[attribute])
 
-    def encode(
-        self,
-        state: Dict[Text, float],
-        interpreter: Optional[RasaCoreInterpreter],
-        type_output="sparse",
-    ):
-        """
-        Encode the state into a numpy array or a sparse sklearn
+        if message.get(DENSE_FEATURE_NAMES[attribute]) is not None:
+            dense_features = message.get(DENSE_FEATURE_NAMES[attribute])
 
-        Args:
-            - state: dictionary describing current state, state represented as a dicitonary {text: probability}
-            - type output: type to return the features as (numpyarray or sklearn coo_matrix)
-        Returns:
-            - nparray(vocab_size,) or coo_matrix(1, vocab_size)
-        """
-
-        if state is None or list(state.keys()) == []:
-            if type_output == "sparse":
-                return csr_matrix(
-                    np.ones(len(self.vectorizers["text"].vocabulary_), dtype=np.int32)
-                    * -1
-                )
-            else:
-                return (
-                    np.ones(len(self.vectorizers["text"].vocabulary_), dtype=np.int32)
-                    * -1
+        if sparse_features is not None and dense_features is not None:
+            if sparse_features.shape[0] != dense_features.shape[0]:
+                raise ValueError(
+                    f"Sequence dimensions for sparse and dense features "
+                    f"don't coincide in '{message.text}' for attribute '{attribute}'."
                 )
 
-        state_keys = [key.replace(self.delimiter, " ") for key in list(state.keys())]
-        attribute = "text"
+        sparse_features = train_utils.sequence_to_sentence_features(sparse_features)
+        dense_features = train_utils.sequence_to_sentence_features(dense_features)
 
-        message = Message(" ".join(state_keys))
-        # print(message.text)
-        if isinstance(interpreter, RasaCoreInterpreter):
-            toks = interpreter.parse(message.text)
-            if "tokens" in list(toks.keys()):
-                toks = [tok.text for tok in toks["tokens"][:-1]]
-            else:
-                toks = []
-        else:
-            toks = self._get_message_tokens_by_attribute(message, attribute)
-
-        # features shape (1, seq, dim)
-        # features = self._create_sequence(attribute, [message_tokens + [CLS_TOKEN]])
-        features = self._create_sequence(attribute, [toks + [CLS_TOKEN]])
-
-        if type_output == "dense":
-            return features[0].A[-1].astype(np.int32)
-        else:
-            return features[0].getrow(-1)
+        return sparse_features, dense_features
 
     def encode_e2e(
         self,
@@ -204,77 +177,28 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         Returns:
             - nparray(vocab_size,) or coo_matrix(1, vocab_size)
         """
-
-        if state is None or list(state.keys()) == []:
-            if type_output == "sparse":
-                return csr_matrix(
-                    np.ones(len(self.vectorizers["text"].vocabulary_), dtype=np.int32)
-                    * -1
-                )
+        sparse_features_user = None
+        dense_features_user = None
+        sparse_features_bot = None
+        dense_features_bot = None
+        if not list(state.keys())==[]:
+            if 'user' in state.keys():
+                for key in state.keys():
+                    if key == 'user':
+                        sparse_features_user, dense_features_user = self._extract_features(state[key], TEXT)
+                    elif key == 'prev_action':
+                        sparse_features_bot, dense_features_bot = self._extract_features(state[key], TEXT)
             else:
-                return (
-                    np.ones(len(self.vectorizers["text"].vocabulary_), dtype=np.int32)
-                    * -1
-                )
+                message = interpreter.parse(' ', only_output_properties=False)
+                sparse_features_user, dense_features_user = self._extract_features(message, TEXT)
+                sparse_features_bot, dense_features_bot = self._extract_features(state['prev_action'], TEXT)
 
-        evs = list(state.values())
-        input_strs = []
-        for ev in evs:
-            if isinstance(ev, UserUttered):
-                input_strs += ev.text.split(self.delimiter)
-            elif isinstance(ev, ActionExecuted):
-                input_strs += ev.action_name.split(self.delimiter)
-            # elif isinstance(ev, dict):
-            #     for key, value in ev.items():
-            #         input_strs += str(key).split(self.delimiter)
-            #         input_strs += str(value).split(self.delimiter)
+        if sparse_features_user is not None and sparse_features_bot is not None:
+            sparse_state = scipy.sparse.hstack([sparse_features_user.tocsr(), sparse_features_bot.tocsr()])
+        if dense_features_user is not None and dense_features_bot is not None:
+            dense_state = np.concatenate(dense_features_user, dense_features_bot)
 
-        # msg = self.delimiter.join(input_strs)
-
-        message = Message(" ".join(input_strs))
-        attribute = "text"
-
-        if isinstance(interpreter, RasaCoreInterpreter):
-            toks = interpreter.parse(message.text)
-            if "tokens" in list(toks.keys()):
-                toks = [tok.text for tok in toks["tokens"][:-1]]
-            else:
-                toks = []
-        else:
-            toks = self._get_message_tokens_by_attribute(message, attribute)
-
-        # features shape (1, seq, dim)
-        # features = self._create_sequence(attribute, [message_tokens + [CLS_TOKEN]])
-        features = self._create_sequence(attribute, [toks + [CLS_TOKEN]])
-
-        if type_output == "dense":
-            return features[0].A[-1].astype(np.int32)
-        else:
-            return features[0].getrow(-1)
-
-    def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
-        """Create matrix with all actions from domain encoded in rows as bag of words"""
-
-        encoded_all_actions = np.zeros(
-            (domain.num_actions, len(self.vectorizers["text"].vocabulary_)),
-            dtype=np.int32,
-        )
-        translator = str.maketrans(
-            string.punctuation, self.delimiter * len(string.punctuation)
-        )
-        for idx, name in enumerate(domain.action_names):
-            name = name.translate(translator)
-            name = name.replace("\t", self.delimiter)
-            for t in name.split(self.delimiter):
-                if not t == "":
-                    if t.lower() in self.vectorizers["text"].vocabulary_:
-                        encoded_all_actions[
-                            idx, self.vectorizers["text"].vocabulary_[t.lower()]
-                        ] += 1
-                    else:
-                        print("OOV")
-                        print(t.lower())
-        return encoded_all_actions
+        return sparse_state
 
     def create_encoded_all_actions_sparse(self, domain: Domain) -> np.ndarray:
         """Create matrix with all actions from domain encoded in rows as bag of words"""
@@ -382,13 +306,15 @@ class TrackerFeaturizer:
             if len(trackers_as_states) > 1:
                 tracker_states = self._pad_states(tracker_states)
 
+
             story_features = [
-                self.state_featurizer.encode_e2e(state, interpreter)
-                for state in tracker_states
+                self.state_featurizer.encode_e2e(state, interpreter) 
+                for state in tracker_states if not state is None and not state == {}
             ]
 
-            features.append(story_features)
-            true_lengths.append(dialogue_len)
+            if not story_features == []:
+                features.append(np.array(story_features))
+                true_lengths.append(dialogue_len)
 
         # noinspection PyPep8Naming
         X = np.array(features)
@@ -401,6 +327,7 @@ class TrackerFeaturizer:
         """Create y."""
 
         labels = []
+        label_data = {}
         for tracker_actions in trackers_as_actions:
 
             if len(trackers_as_actions) > 1:
@@ -410,36 +337,21 @@ class TrackerFeaturizer:
                 self.state_featurizer.action_as_index(action, domain)
                 for action in tracker_actions
             ]
+            for action in tracker_actions:
+                value = self.state_featurizer._extract_features(action, TEXT)
+                value = (value[0].tocsr(), value[1])
+                label_data[self.state_featurizer.action_as_index(action, domain)] = value
 
             labels.append(story_labels)
+
+        label_data = [(key, value) for key, value in label_data.items()]
 
         y = np.array(labels)
         if y.ndim == 3 and isinstance(self, MaxHistoryTrackerFeaturizer):
             # if it is MaxHistoryFeaturizer, remove time axis
             y = y[:, 0, :]
 
-        return y
-
-    def _postprocess_trackers_as_states(
-        self, trackers_as_states: List[List[Text]]
-    ) -> List[List[Text]]:
-
-        for i in range(len(trackers_as_states)):
-            previous_intent = None
-            for j in range(len(trackers_as_states[i])):
-
-                if trackers_as_states[i][j]:
-                    state_keys = list(trackers_as_states[i][j].keys())
-                    current_intent = [
-                        key for key in state_keys if key.startswith("intent_")
-                    ]
-
-                    if not current_intent == []:
-                        current_intent = current_intent[0]
-                        if current_intent == previous_intent:
-                            del trackers_as_states[i][j][current_intent]
-                        else:
-                            previous_intent = current_intent
+        return y, label_data
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
@@ -455,6 +367,7 @@ class TrackerFeaturizer:
         trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: Optional[RasaCoreInterpreter],
+        output_path
     ) -> DialogueTrainingData:
         """Create training data."""
         import copy
@@ -465,20 +378,20 @@ class TrackerFeaturizer:
                 "'SingleStateFeaturizer' class to featurize trackers."
             )
 
-        self.state_featurizer.prepare_from_domain(domain)
+        # self.state_featurizer.prepare_from_domain(domain)
 
         (
             trackers_as_states,
             trackers_as_actions,
         ) = self.training_states_and_actions_e2e(trackers, domain)
 
-        # self._postprocess_trackers_as_states(trackers_as_states)
+        interpreter = self.state_featurizer.prepare_training_data_and_train(trackers_as_states, trackers_as_actions, interpreter, output_path)
 
         # noinspection PyPep8Naming
         X, true_lengths = self._featurize_states(trackers_as_states, interpreter)
-        y = self._featurize_labels(trackers_as_actions, domain)
+        y, label_data = self._featurize_labels(trackers_as_actions, domain)
 
-        return DialogueTrainingData(X, y, true_lengths)
+        return DialogueTrainingData(X, y, true_lengths), label_data
 
     def prediction_states(
         self, trackers: List[DialogueStateTracker], domain: Domain
@@ -498,8 +411,8 @@ class TrackerFeaturizer:
     ) -> np.ndarray:
         """Create X for prediction."""
 
-        trackers_as_states = self.prediction_states(trackers, domain)
-        X, _ = self._featurize_states(trackers_as_states, interpreter)
+        trackers_as_states = self.prediction_states(trackers, domain, interpreter)
+        X, _ = self._featurize_states(trackers_as_states, interpreter.interpreter)
         return X
 
     def persist(self, path) -> None:
@@ -655,7 +568,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         slice_start = max(0, slice_end - slice_length)
         padding = [None] * max(0, slice_length - slice_end)
         # noinspection PyTypeChecker
-        state_features = padding + states[slice_start:]
+        state_features = states[slice_start:]
         return state_features
 
     @staticmethod
@@ -691,9 +604,9 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                     state_dict = {}
                     for event in state:
                         if isinstance(event, UserUttered):
-                            state_dict["user"] = event
+                            state_dict["user"] = Message(event.text)
                         elif isinstance(event, ActionExecuted):
-                            state_dict["prev_action"] = event
+                            state_dict["prev_action"] = Message(event.action_name, data={TEXT:event.action_name})
                         slots = tr.current_slot_values()
                         current_slots = {}
                         for key, value in slots.items():
@@ -741,10 +654,13 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                             if hashed not in hashed_examples:
                                 hashed_examples.add(hashed)
                                 trackers_as_states_e2e.append(sliced_states)
-                                trackers_as_actions_e2e.append([event.action_name])
+                                if not len(sliced_states) > 1:
+                                    trackers_as_actions_e2e.append([Message(event.action_name, data={TEXT:event.action_name})])
                         else:
                             trackers_as_states_e2e.append(sliced_states)
-                            trackers_as_actions_e2e.append([event.action_name])
+                            # trackers_as_actions_e2e.append([Message(event.action_name, data={RESPONSE:event.action_name})])
+                            if len(sliced_states)>1:
+                                trackers_as_actions_e2e.append([Message(event.action_name, data={TEXT:event.action_name})])
                         pbar.set_postfix(
                             {"# actions": "{:d}".format(len(trackers_as_actions_e2e))}
                         )
@@ -812,14 +728,27 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         return trackers_as_states, trackers_as_actions
 
     def prediction_states(
-        self, trackers: List[DialogueStateTracker], domain: Domain
+        self, trackers: List[DialogueStateTracker], domain: Domain, interpreter
     ) -> List[List[Dict[Text, float]]]:
         """Transforms list of trackers to lists of states for prediction."""
-
         trackers_as_states = [self._create_states_e2e(tracker) for tracker in trackers]
+        
+        trackers_as_states_modified = []
+        for tracker in trackers_as_states:
+            curr_tracker = []
+            for state in tracker:
+                curr_state ={}
+                for key, value in state.items():
+                    if isinstance(value, Message):
+                        curr_state[key] = interpreter.parse(value.text)                    
+                    else:
+                        curr_state[key] = value
+                curr_tracker.append(curr_state)
+            trackers_as_states_modified.append(curr_tracker)
+
         trackers_as_states = [
             self.slice_state_history(states, self.max_history)
-            for states in trackers_as_states
+            for states in trackers_as_states_modified
         ]
 
         return trackers_as_states
