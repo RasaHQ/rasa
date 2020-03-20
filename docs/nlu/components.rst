@@ -534,7 +534,7 @@ CountVectorsFeaturizer
               training will be ignored during prediction time;
             - ``OOV_words`` set a list of words to be treated as ``OOV_token`` during training; if a list of words
               that should be treated as Out-Of-Vacabulary is known, it can be set to ``OOV_words`` instead of manually
-              changing it in trainig data or using custom preprocessor.
+              changing it in training data or using custom preprocessor.
 
         .. note::
             This featurizer creates a bag-of-words representation by **counting** words,
