@@ -7,8 +7,13 @@ Choosing a Pipeline
 
 .. edit-link::
 
-Choosing an NLU pipeline allows you to customize your model and finetune
-it on your dataset.
+In Rasa Open Source, incoming messages are processed by a sequence of components.
+These components are executed one after another in a so-called processing ``pipeline`` defined in your ``config.yml``.
+Choosing an NLU pipeline allows you to customize your model and finetune it on your dataset.
+There are components for entity extraction, for intent classification, response selection,
+pre-processing, and others. If you want to add your own component, for example to run a spell-check or to
+do sentiment analysis, check out :ref:`custom-nlu-components`.
+
 
 .. contents::
    :local:
@@ -19,21 +24,15 @@ it on your dataset.
     However, **any of the old terminology will still behave the same way as it did before**!
 
 .. warning::
-    We deprecated all existing pipeline templates, e.g.
-    :ref:`supervised_embeddings <section_supervised_embeddings_pipeline>`,
-    :ref:`pretrained_embeddings_spacy <section_pretrained_embeddings_spacy_pipeline>` and
-    :ref:`pretrained_embeddings_convert <section_pretrained_embeddings_convert_pipeline>`. Please list any
-    components you want to use directly in the configuration file.
+    We deprecated all existing pipeline templates (e.g. ``supervised_embeddings``). Please list any
+    components you want to use directly in the configuration file. See
+    :ref:`how-to-choose-a-pipeline` for recommended starting configurations.
 
 
-Understanding the NLU Pipeline
-------------------------------
+.. _section_component_lifecycle:
 
-In Rasa Open Source, incoming messages are processed by a sequence of components.
-These components are executed one after another in a so-called processing ``pipeline`` defined in your ``config.yml``.
-There are components for entity extraction, for intent classification, response selection,
-pre-processing, and others. If you want to add your own component, for example to run a spell-check or to
-do sentiment analysis, check out :ref:`custom-nlu-components`.
+Component Lifecycle
+-------------------
 
 Each component processes the input and creates an output. The output can be used by any component that comes after
 this component in the pipeline. There are components which only produce information that is used by other components
@@ -66,13 +65,7 @@ This is created as a combination of the results of the different components in t
 .. literalinclude:: ../../data/configs_for_docs/default_config.yml
     :language: yaml
 
-For example, the ``entities`` attribute is created by the ``DIETClassifier`` component.
-
-
-.. _section_component_lifecycle:
-
-Component Lifecycle
-*******************
+For example, the ``entities`` attribute here is created by the ``DIETClassifier`` component.
 
 Every component can implement several methods from the ``Component`` base class; in a pipeline these different methods
 will be called in a specific order. Assuming we added the following pipeline to our ``config.yml``:
@@ -99,6 +92,8 @@ Initially the context is filled with all configuration values. The arrows
 in the image show the call order and visualize the path of the passed
 context. After all components are trained and persisted, the
 final context dictionary is used to persist the model's metadata.
+
+.. _how-to-choose-a-pipeline:
 
 How to Choose a Pipeline
 ------------------------
@@ -162,12 +157,14 @@ Choosing the Right Components
 
 A pipeline usually consists of three main parts:
 
-    1. Tokenizaion
-    2. Featurization
-    3. Entity Recognition / Intent Classification / Response Selectors
+.. contents::
+   :local:
+   :depth: 1
+
 
 Tokenization
 ~~~~~~~~~~~~
+
 If your chosen language is whitespace-tokenized (words are separated by spaces), you
 can use the :ref:`WhitespaceTokenizer`. If this is not the case you should use a different tokenizer.
 We support a number of different :ref:`tokenizers <tokenizers>`, or you can
@@ -178,8 +175,10 @@ create your own :ref:`custom tokenizer <custom-nlu-components>`.
     on the individual components in :ref:`components`. If a required component is missing inside the pipeline, an
     error will be thrown.
 
+
 Featurization
 ~~~~~~~~~~~~~
+
 You need to decide whether to use components that provide pre-trained word embeddings or not.
 
 If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
@@ -221,46 +220,15 @@ these language models is available in the
 :ref:`SpacyFeaturizer` also provides word embeddings in many different languages (see :ref:`pretrained-word-vectors`),
 so you can use this as another alternative, depending on the language of your training data.
 
+
 Entity Recognition / Intent Classification / Response Selectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Depending on your data you may want to only perform intent classification, entity recognition or response selection.
 Or you might want to combine multiple of those tasks.
 We support several components for each of the tasks. All of them are listed in :ref:`components`.
 We recommend using :ref:`diet-classifier` for intent classification and entity recognition
 and :ref:`response-selector` for response selection.
-
-Comparing different pipelines for your data
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Rasa gives you the tools to compare the performance of both of these pipelines on your data directly,
-see :ref:`comparing-nlu-pipelines`.
-
-.. note::
-
-    Intent classification is independent of entity extraction. So sometimes
-    NLU will get the intent right but entities wrong, or the other way around.
-    You need to provide enough data for both intents and entities.
-
-
-Handling Class Imbalance
-************************
-
-Classification algorithms often do not perform well if there is a large `class imbalance`,
-for example if you have a lot of training data for some intents and very little training data for others.
-To mitigate this problem, you can use a ``balanced`` batching strategy.
-This algorithm ensures that all classes are represented in every batch, or at least in
-as many subsequent batches as possible, still mimicking the fact that some classes are more frequent than others.
-Balanced batching is used by default. In order to turn it off and use a classic batching strategy include
-``batch_strategy: sequence`` in your config file.
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-    # - ... other components
-    - name: "DIETClassifier"
-      batch_strategy: sequence
 
 
 Multi-Intent Classification
@@ -288,3 +256,36 @@ Here's an example configuration:
       intent_split_symbol: "_"
     - name: "CountVectorsFeaturizer"
     - name: "DIETClassifier"
+
+Handling Class Imbalance
+************************
+
+Classification algorithms often do not perform well if there is a large `class imbalance`,
+for example if you have a lot of training data for some intents and very little training data for others.
+To mitigate this problem, you can use a ``balanced`` batching strategy.
+This algorithm ensures that all classes are represented in every batch, or at least in
+as many subsequent batches as possible, still mimicking the fact that some classes are more frequent than others.
+Balanced batching is used by default. In order to turn it off and use a classic batching strategy include
+``batch_strategy: sequence`` in your config file.
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    # - ... other components
+    - name: "DIETClassifier"
+      batch_strategy: sequence
+
+
+Comparing Pipelines
+*******************
+
+Rasa gives you the tools to compare the performance of multiple pipelines on your data directly.
+See :ref:`comparing-nlu-pipelines` for more information.
+
+.. note::
+
+    Intent classification is independent of entity extraction. So sometimes
+    NLU will get the intent right but entities wrong, or the other way around.
+    You need to provide enough data for both intents and entities.
