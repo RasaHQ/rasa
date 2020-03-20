@@ -28,17 +28,18 @@ Component                  Requires           Model           	        Notes
 ``EntitySynonymMapper``    existing entities  N/A                       maps known synonyms
 =========================  =================  ========================  =================================
 
-If your pipeline includes one or more of the components above,
-the output of your trained model will include the extracted entities as well
-as some metadata about which component extracted them.
-The ``processors`` field contains the names of components that altered each entity.
 
-.. note::
-   The ``value`` field can be different from what appears in the text.
-   If you use synonyms, an extracted entity like ``chinees`` will be mapped
-   to a standard value, e.g. ``chinese``.
+The "entity" Object
+*******************
 
-Here is an example response:
+After parsing, an entity is returned as a dictionary.  There are two fields that show information
+about how the pipeline impacted the entities returned: the ``extractor`` field
+of an entity tells you which entity extractor found this particular entity, and
+the ``processors`` field contains the name of components that altered this
+specific entity.
+
+The use of synonyms can cause the ``value`` field not match the ``text``
+exactly. Instead it will return the trained synonym.
 
 .. code-block:: json
 
@@ -57,6 +58,12 @@ Here is an example response:
         }
       ]
     }
+
+.. note::
+
+    The ``confidence`` will be set by the ``CRFEntityExtractor`` or ``DIETClassifier`` component. The
+    ``DucklingHTTPExtractor`` will always return ``1``. The ``SpacyEntityExtractor`` extractor does not provide this
+    information and returns ``null``.
 
 
 Some extractors, like ``duckling``, may include additional information. For example:
@@ -84,13 +91,6 @@ Some extractors, like ``duckling``, may include additional information. For exam
      "text":"today",
      "value":"2018-06-21T00:00:00.000-07:00"
    }
-
-.. note::
-
-    The `confidence` will be set by the CRF entity extractor
-    (`CRFEntityExtractor` component). The duckling entity extractor will always return
-    `1`. The `SpacyEntityExtractor` extractor does not provide this information and
-    returns `null`.
 
 
 Custom Entities
