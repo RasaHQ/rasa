@@ -2,9 +2,9 @@
        library Rasa Core to improve the dialogue management of your contextual
        AI Assistant.
 
-.. _evaluating-models:
+.. _testing-models:
 
-Evaluating Models
+Testing Models
 =================
 
 .. edit-link::
@@ -16,12 +16,12 @@ Evaluating Models
    If you are looking to tune the hyperparameters of your NLU model,
    check out this `tutorial <https://blog.rasa.com/rasa-nlu-in-depth-part-3-hyperparameters/>`_.
 
-.. _end_to_end_evaluation:
+.. _end_to_end_testing:
 
-End-to-End Evaluation
+End-to-End Testing
 ---------------------
 
-Rasa Open Source lets you evaluate dialogues end-to-end, running through
+Rasa Open Source lets you test dialogues end-to-end, running through
 test conversations and making sure that both NLU and Core make correct predictions.
 
 To do this, you need some stories in the end-to-end format,
@@ -38,12 +38,15 @@ Here is an example:
   * inform: in [Paris](location)
      - utter_ask_price
 
-By default Rasa saves tests to ``tests/conversation_tests.md``. You can evaluate your model
+By default Rasa saves tests to ``tests/conversation_tests.md``. You can test your model
 against them by running:
 
 .. code-block:: bash
 
   $ rasa test
+
+If you have any questions or problems, please share them with us in the dedicated
+`testing section on our forum <https://forum.rasa.com/tags/testing>`_ !
 
 .. note::
 
@@ -51,9 +54,9 @@ against them by running:
   and ``nlu`` model. If it does not contain an NLU model, Core will use
   the default ``RegexInterpreter``.
 
-.. _nlu-evaluation:
+.. _nlu-testing:
 
-Evaluating an NLU Model
+Testing an NLU Model
 -----------------------
 
 A standard technique in machine learning is to keep some data separate as a *test set*.
@@ -188,9 +191,9 @@ near [Alexanderplatz](loc) [tonight](time)          O   loc time (2)          O 
 ==================================================  ========================  ===========================
 
 
-.. _core-evaluation:
+.. _core-testing:
 
-Evaluating a Core Model
+Testing a Core Model
 -----------------------
 
 You can evaluate your trained model on a set of test stories

@@ -145,7 +145,7 @@ You can now train a first model and test the bot, by running the following comma
 This bot should now be able to reply to the intents we defined consistently, and in any order.
 
 While it's good to test the bot interactively, we should also add end to end test cases that
-can later be included as part of our CI/CD system. `End to end stories <https://rasa.com/docs/rasa/user-guide/evaluating-models/#end-to-end-evaluation>`_
+can later be included as part of our CI/CD system. `End to end stories <https://rasa.com/docs/rasa/user-guide/testing-models/#end-to-end-testing>`_
 include NLU data, so that both components of Rasa can be tested.  Create a file called
 ``test_stories.md`` in the root directory with some test cases:
 

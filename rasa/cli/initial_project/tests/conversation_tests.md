@@ -1,5 +1,5 @@
 #### This file contains tests to evaluate that your bot behaves as expected. 
-#### If you want to learn more, please see the docs: https://rasa.com/docs/rasa/user-guide/evaluating-models/
+#### If you want to learn more, please see the docs: https://rasa.com/docs/rasa/user-guide/testing-models/
 
 ## happy path 1
 * greet: hello there!

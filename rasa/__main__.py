@@ -33,7 +33,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
         description="Rasa command line interface. Rasa allows you to build "
         "your own conversational assistants 🤖. The 'rasa' command "
         "allows you to easily run most common commands like "
-        "creating a new bot, training or evaluating models.",
+        "creating a new bot, training or testing models.",
     )
 
     parser.add_argument(
