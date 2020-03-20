@@ -62,7 +62,7 @@ SpacyNLP
     of every pipeline that uses any spaCy components.
 :Configuration:
     You need to specify the language model to use.
-    By default the configured language will be used as language model name.
+    By default the language configured in the pipeline will be used as the language model name.
     If the spaCy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
     the model name can be specified using the configuration variable ``model``.
     The name will be passed to ``spacy.load(name)``.
