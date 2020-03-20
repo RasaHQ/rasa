@@ -119,11 +119,12 @@ class PolicyEnsemble:
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: Optional[RasaCoreInterpreter],
+        output_path,
         **kwargs: Any,
     ) -> None:
         if training_trackers:
             for policy in self.policies:
-                policy.train(training_trackers, domain, interpreter, **kwargs)
+                policy.train(training_trackers, domain, interpreter, output_path, **kwargs)
 
             training_events = self._training_events_from_trackers(training_trackers)
             self.action_fingerprints = self._create_action_fingerprints(training_events)

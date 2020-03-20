@@ -168,6 +168,7 @@ class KerasPolicy(Policy):
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: Optional[RasaCoreInterpreter],
+        output_path,
         **kwargs: Any,
     ) -> None:
 

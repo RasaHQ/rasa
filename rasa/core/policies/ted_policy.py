@@ -362,21 +362,40 @@ class TEDPolicy(Policy):
         label_data.add_features(LABEL_IDS, [np.expand_dims(label_ids, -1)])
         return label_data
 
+    def _create_label_data_e2e(self, label_data) -> RasaModelData:
+        # encode all label_ids with policies' featurizer
+        sparse_features = []
+        dense_features = []
+        for idx, feats in label_data:
+            if feats[0] is not None:
+                sparse_features.append(feats[0].astype(np.float32))
+            if feats[1] is not None:
+                dense_features.append(feats[1])
+
+        sparse_features = scipy.sparse.vstack(sparse_features)
+        # dense_features = np.vstack(dense_features).astype(np.float32)
+
+        label_data = RasaModelData()
+        label_data.add_features(LABEL_FEATURES, [sparse_features])
+        return label_data
+
     def train(
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: Optional[RasaCoreInterpreter],
+        output_path,
         **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
 
         # dealing with training data
-        training_data = self.featurize_for_training(
-            training_trackers, domain, interpreter, **kwargs
+        training_data, label_data = self.featurize_for_training(
+            training_trackers, domain, interpreter, output_path, **kwargs
         )
 
-        self._label_data = self._create_label_data(domain)
+        # self._label_data = self._create_label_data(domain)
+        self._label_data = self._create_label_data_e2e(label_data)
 
         # extract actual training data to feed to model
         model_data = self._create_model_data(
@@ -391,6 +410,7 @@ class TEDPolicy(Policy):
 
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
+
 
         self.model = TED(
             model_data.get_signature(),
@@ -456,6 +476,8 @@ class TEDPolicy(Policy):
         tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
         io_utils.create_directory_for_file(tf_model_file)
+        print('FEATURIZER')
+        print(self.featurizer)
 
         self.featurizer.persist(path)
 

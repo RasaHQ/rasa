@@ -69,6 +69,7 @@ class Policy:
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: Optional[RasaCoreInterpreter],
+        output_path,
         **kwargs: Any,
     ) -> DialogueTrainingData:
         """Transform training trackers into a vector representation.
@@ -97,7 +98,7 @@ class Policy:
             )
             training_data.limit_training_data_to(max_training_samples)
 
-        return training_data
+        return training_data, label_data
 
     def train(
         self,
