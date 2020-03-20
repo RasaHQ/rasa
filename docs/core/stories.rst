@@ -213,7 +213,7 @@ End-to-End Story Evaluation Format
 
 The end-to-end story format is a format that combines both NLU and Core training data
 into a single file for evaluation. You can read more about it
-:ref:`here <end_to_end_evaluation>`.
+:ref:`here <end_to_end_testing>`.
 
 .. warning::
     This format is only used for end-to-end evaluation and cannot be used for training.
