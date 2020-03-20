@@ -7,12 +7,16 @@ import re
 import os
 from typing import Text, List, Dict, Any, Union, Optional, Tuple
 
+import rasa.utils.io
 from rasa.constants import DOCS_URL_STORIES
 from rasa.core import constants
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.utils.common import raise_warning, class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
+from rasa.nlu.model import Interpreter, Trainer, TrainingData, Metadata
+from rasa.nlu import utils
+
 
 logger = logging.getLogger(__name__)
 
@@ -282,6 +286,7 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         self.interpreter = Interpreter.load(self.model_directory)
 
+MODEL_NAME_PREFIX = "nlu"
 
 class RasaCoreInterpreter(NaturalLanguageInterpreter):
     def __init__(self,):
@@ -292,12 +297,84 @@ class RasaCoreInterpreter(NaturalLanguageInterpreter):
         return result
 
     def _load_interpreter(self) -> None:
-        from rasa.nlu.model import Interpreter, Trainer
         from rasa.nlu import config
 
         config = config.load()
         self.trainer = Trainer(config)
         self.interpreter = Interpreter(self.trainer.pipeline, {})
+
+    def train(self, data: TrainingData, path, **kwargs: Any) -> "Interpreter":
+        """Trains the underlying pipeline using the provided training data."""
+
+        self.training_data = data
+
+        self.training_data.validate()
+
+        context = kwargs
+
+        for component in self.trainer.pipeline:
+            updates = component.provide_context()
+            if updates:
+                context.update(updates)
+
+        # data gets modified internally during the training - hence the copy
+        # working_data = copy.deepcopy(data)
+
+        for i, component in enumerate(self.trainer.pipeline):
+            logger.info(f"Starting to train component {component.name}")
+            component.prepare_partial_processing(self.trainer.pipeline[:i], context)
+            updates = component.train(data, self.trainer.config, **context)
+            logger.info("Finished training component.")
+            if updates:
+                context.update(updates)
+        self.persist(path)
+
+        return Interpreter(self.trainer.pipeline, context)
+
+    @staticmethod
+    def _file_name(index: int, name: Text) -> Text:
+        return f"component_{index}_{name}"
+
+    def persist(
+        self,
+        path: Text,
+        fixed_model_name: Text = None,
+        persist_nlu_training_data: bool = False,
+    ) -> Text:
+        """Persist all components of the pipeline to the passed path.
+
+        Returns the directory of the persisted model."""
+        metadata = {"language": self.trainer.config["language"], "pipeline": []}
+
+        if fixed_model_name:
+            model_name = fixed_model_name
+        else:
+            model_name = MODEL_NAME_PREFIX
+
+        path = os.path.abspath(path)
+        dir_name = os.path.join(path, model_name)
+
+        rasa.utils.io.create_directory(dir_name)
+
+        if self.trainer.training_data and persist_nlu_training_data:
+            metadata.update(self.trainer.training_data.persist(dir_name))
+
+        for i, component in enumerate(self.trainer.pipeline):
+            file_name = self.trainer._file_name(i, component.name)
+            update = component.persist(file_name, dir_name)
+            component_meta = component.component_config
+            if update:
+                component_meta.update(update)
+            component_meta["class"] = utils.module_path_from_object(component)
+
+            metadata["pipeline"].append(component_meta)
+
+        Metadata(metadata, dir_name).persist(dir_name)
+
+        logger.info(
+            "Successfully saved model into '{}'".format(os.path.abspath(dir_name))
+        )
+        return dir_name
 
 
 def _create_from_endpoint_config(
