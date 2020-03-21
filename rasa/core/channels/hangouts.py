@@ -20,11 +20,13 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+CHANNEL_NAME = "hangouts"
+
 
 class HangoutsOutput(OutputChannel):
     @classmethod
     def name(cls) -> Text:
-        return "hangouts"
+        return CHANNEL_NAME
 
     def __init__(self) -> None:
         self.messages = {}
@@ -178,34 +180,30 @@ class HangoutsInput(InputChannel):
     """
 
     @classmethod
-    def from_credentials(cls, credentials: Dict[Text, Any]) -> InputChannel:
-        if not credentials:
-            cls.raise_missing_credentials_exception()
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
 
-        # pytype: disable=attribute-error
-        return cls(
-            credentials.get("project_id"),
-            credentials.get("user_added_intent"),
-            credentials.get("room_added_intent"),
-            credentials.get("removed_intent"),
-        )
+        if credentials:
+            # pytype: disable=attribute-error
+            return cls(credentials.get("project_id"))
+        else:
+            return cls()
 
     def __init__(
         self,
-        project_id: Text,
-        user_added_intent: Optional[Text] = None,
-        room_added_intent: Optional[Text] = None,
-        removed_intent: Optional[Text] = None,
+        project_id: Optional[Text] = None,
+        hangouts_user_added_intent_name: Optional[Text] = "/user_added",
+        hangouts_room_added_intent_name: Optional[Text] = "/room_added",
+        hangouts_removed_intent_name: Optional[Text] = "/bot_removed",
     ) -> None:
 
         self.project_id = project_id
-        self.user_added_intent = user_added_intent
-        self.room_added_intent = room_added_intent
-        self.removed_intent = removed_intent
+        self.hangouts_user_added_intent_name = hangouts_user_added_intent_name
+        self.hangouts_room_added_intent_name = hangouts_room_added_intent_name
+        self.hangouts_user_added_intent_name = hangouts_user_added_intent_name
 
     @classmethod
     def name(cls) -> Text:
-        return "hangouts"
+        return CHANNEL_NAME
 
     def _extract_sender(self, req: Request) -> Text:
 
@@ -225,13 +223,16 @@ class HangoutsInput(InputChannel):
             message = req.json["action"]["actionMethodName"]
 
         elif req.json["type"] == "ADDED_TO_SPACE":
-            if self._extract_room(req) and self.room_added_intent:
-                message = self.room_added_intent
-            elif not self._extract_room(req) and self.user_added_intent:
-                message = self.user_added_intent
+            if self._extract_room(req) and self.hangouts_room_added_intent_name:
+                message = self.hangouts_room_added_intent_name
+            elif not self._extract_room(req) and self.hangouts_user_added_intent_name:
+                message = self.hangouts_user_added_intent_name
 
-        elif req.json["type"] == "REMOVED_FROM_SPACE" and self.removed_intent:
-            message = self.removed_intent
+        elif (
+            req.json["type"] == "REMOVED_FROM_SPACE"
+            and self.hangouts_user_added_intent_name
+        ):
+            message = self.hangouts_user_added_intent_name
         else:
             message = ""
 
@@ -272,8 +273,9 @@ class HangoutsInput(InputChannel):
         @custom_webhook.route("/webhook", methods=["POST"])
         async def receive(request: Request) -> HTTPResponse:
 
-            token = request.headers.get("Authorization").replace("Bearer ", "")
-            self._check_token(token)
+            if self.project_id:
+                token = request.headers.get("Authorization").replace("Bearer ", "")
+                self._check_token(token)
 
             sender_id = self._extract_sender(request)
             room_name = self._extract_room(request)

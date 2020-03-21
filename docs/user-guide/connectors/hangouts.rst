@@ -10,14 +10,16 @@ Google Hangouts Chat
 Hangouts Chat Setup
 -------------------
 
-In order to connect your Rasa bot to Google Hangouts Chat, you first need to create a project in 
-Google Developer Console that includes the Hangouts API. There you can specify your bot's endpoint
-and also obtain your project id, which determines the scope for the OAuth2 authorization.
-For more information see the official Google resources https://developers.google.com/hangouts/chat.
-
 This channel works similar to the standard Rasa REST channel. For each request from the channel, your bot will 
 send one response. The response will be displayed to the user either as text or a so-called card (for
 more information, see the Cards section).
+
+In order to connect your Rasa bot to Google Hangouts Chat, you first need to create a project in 
+Google Developer Console that includes the Hangouts API. There you can specify your bot's endpoint
+and also obtain your project id, which determines the scope for the OAuth2 authorization in case you 
+want to use OAuth2. The Hangouts Chat API sends a Bearer token with every request, but it is up to 
+the bot to actually verify the token, hence the channel also works without this.  
+For more information see the official Google resources https://developers.google.com/hangouts/chat.
 
 The possibility to implement asynchronous communication between Hangouts Chat and bot exists, but due
 to the usually synchronous nature of Rasa bots, this functionality is not included in this channel. 
@@ -31,20 +33,14 @@ If you want to connect to Hangouts Chat using the run script, e.g. using:
 
   rasa run
 
-you need to supply a ``credentials.yml``.
+you don't need to supply a ``credentials.yml``.
 
-Except for ``MESSAGE`` and ``CARD_CLICKED``, Hangouts Chat knows two other event types, ``ADDED_TO_SPACE`` and 
-``REMOVED_FROM_SPACE``, which are triggered when your bot is added or removed from a direct message or chat room
-space. In order to have full flexibility, you can specify the respective intents for these events 
-in your ``credentials.yml``.
+If you want to use OAuth2, simply put the project id obtained from the Google Developer Console into it.
 
 .. code-block:: yaml
 
   hangouts:
     project_id: "12345678901"
-    user_added_intent: "/user_added"
-    room_added_intent: "/room_added"
-    removed_intent: "/bot_removed"
 
 The endpoint for receiving Hangouts Chat messages is
 ``http://localhost:5005/webhooks/hangouts/webhook``, replacing
@@ -71,3 +67,9 @@ For more detailed information on cards, visit the
 `Hangouts docs <https://developers.google.com/hangouts/chat/reference>`_.
 
 
+Other Hangouts Chat Events
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Except for ``MESSAGE`` and ``CARD_CLICKED``, Hangouts Chat knows two other event types, ``ADDED_TO_SPACE`` and 
+``REMOVED_FROM_SPACE``, which are triggered when your bot is added or removed from a direct message or chat room
+space. The default intent names for these events can be modified in the ``HangoutsInput`` constructor method. 
