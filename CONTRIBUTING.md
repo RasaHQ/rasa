@@ -78,7 +78,7 @@ We usually recommend opening an issue before a pull request if there isn’t alr
 
 #### Draft PRs
 
-To get some quick initial feedback from the Rasa team, you can create a draft pull request.
+If you're ready to get some quick initial feedback from the Rasa team, you can create a draft pull request.
 
 #### PRs should be a reasonable length
 
