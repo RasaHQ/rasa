@@ -236,8 +236,8 @@ test conversations that ensure both NLU and Core make correct predictions.
 
    echo "Finished running tests."
 
-See :ref:`evaluating-models` to find out how you can define more tests and learn about more
-ways you can evaluate your model as you improve it.
+See :ref:`evaluating-models` to find out how you can define more tests and learn about more ways you
+can evaluate your model as you improve it.
 
 8. Talk to Your Assistant
 ^^^^^^^^^^^^^^^^^^^^^^^^^
