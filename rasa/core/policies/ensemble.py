@@ -356,7 +356,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         return not (is_memo or is_augmented)
 
     @staticmethod
-    def is_not_mapping_policy(best_policy_name) -> bool:
+    def _is_not_mapping_policy(best_policy_name: Text) -> bool:
         from rasa.core.policies.mapping_policy import MappingPolicy
 
         return not best_policy_name.endswith("_" + MappingPolicy.__name__)
