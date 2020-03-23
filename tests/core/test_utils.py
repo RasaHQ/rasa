@@ -2,7 +2,7 @@ import os
 import random
 
 from decimal import Decimal
-from typing import Optional, Text, Union
+from typing import Optional, Text, Union, Any
 from pathlib import Path
 
 import pytest
@@ -12,7 +12,6 @@ import rasa.utils.io
 from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core import utils
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
-from rasa.core.utils import replace_floats_with_decimals
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import write_endpoint_config_to_yaml
 
@@ -95,30 +94,58 @@ def test_convert_bytes_to_string():
     assert utils.convert_bytes_to_string(decoded_string) == decoded_string
 
 
-def test_float_conversion_to_decimal():
-    # Create test objects
-    d = {
-        "int": -1,
-        "float": 2.1,
-        "float_round": 1579507733.1107571125030517578125,
-        "decimal_round": Decimal("0.92383747394838437473739439744"),
-        "list": ["one", "two"],
-        "list_of_floats": [1.0, -2.1, 3.2],
-        "nested_dict_with_floats": {"list_with_floats": [4.5, -5.6], "float": 6.7},
-    }
-    d_replaced = replace_floats_with_decimals(d)
+@pytest.mark.parametrize(
+    "_input,expected",
+    [
+        # `int` is not converted
+        (-1, -1),
+        # `float` is converted
+        (2.1, round(Decimal(2.1), 4)),
+        # `float` that's too long is rounded
+        (1579507733.1107571125030517578125, Decimal("1579507733.110757")),
+        # strings are not converted
+        (["one", "two"], ["one", "two"]),
+        # list of `float`s is converted
+        (
+            [1.0, -2.1, 3.2],
+            [round(Decimal(1.0), 4), round(Decimal(-2.1), 4), round(Decimal(3.2), 4)],
+        ),
+        # dictionary containing list of `float`s and `float`s is converted
+        (
+            {"list_with_floats": [4.5, -5.6], "float": 6.7},
+            {
+                "list_with_floats": [round(Decimal(4.5), 4), round(Decimal(-5.6), 4)],
+                "float": round(Decimal(6.7), 4),
+            },
+        ),
+    ],
+)
+def test_replace_floats_with_decimals(_input: Any, expected: Any):
+    assert utils.replace_floats_with_decimals(_input) == expected
 
-    assert isinstance(d_replaced["int"], int)
-    assert isinstance(d_replaced["float"], Decimal)
-    assert d_replaced["float_round"] == Decimal("1579507733.110757113")
-    assert d_replaced["decimal_round"] == Decimal("0.923837474")
-    for t in d_replaced["list"]:
-        assert isinstance(t, str)
-    for f in d_replaced["list_of_floats"]:
-        assert isinstance(f, Decimal)
-    for f in d_replaced["nested_dict_with_floats"]["list_with_floats"]:
-        assert isinstance(f, Decimal)
-    assert isinstance(d_replaced["nested_dict_with_floats"]["float"], Decimal)
+
+@pytest.mark.parametrize(
+    "_input,expected",
+    [
+        # `int` is not converted
+        (-1, -1),
+        # `float` is converted
+        (Decimal(2.1), 2.1),
+        # `float` that's too long is rounded to default 9 decimal places
+        (Decimal("1579507733.11075711345834582304234"), 1579507733.110757113),
+        # strings are not converted
+        (["one", "two"], ["one", "two"]),
+        # list of `Decimal`s is converted
+        ([Decimal(1.0), Decimal(-2.1), Decimal(3.2)], [1.0, -2.1, 3.2]),
+        # dictionary containing list of `Decimal`s and `Decimal`s is converted
+        (
+            {"list_with_floats": [Decimal(4.5), Decimal(-5.6)], "float": Decimal(6.7)},
+            {"list_with_floats": [4.5, -5.6], "float": 6.7},
+        ),
+    ],
+)
+def test_replace_decimals_with_floats(_input: Any, expected: Any):
+    assert utils.replace_decimals_with_floats(_input) == expected
 
 
 @pytest.mark.parametrize(

@@ -47,7 +47,15 @@ if TYPE_CHECKING:
     from random import Random
 
 
-def configure_file_logging(logger_obj: logging.Logger, log_file: Optional[Text]):
+def configure_file_logging(
+    logger_obj: logging.Logger, log_file: Optional[Text]
+) -> None:
+    """Configure logging to a file.
+
+    Args:
+        logger_obj: Logger object to configure.
+        log_file: Path of log file to write to.
+    """
     if not log_file:
         return
 
@@ -94,6 +102,16 @@ def is_int(value: Any) -> bool:
 
 
 def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarray:
+    """Create a one-hot array.
+
+    Args:
+        hot_idx: Index of the hot element.
+        length: Length of the array.
+        dtype: ``numpy.dtype`` of the array.
+
+    Returns:
+        One-hot array.
+    """
     if hot_idx >= length:
         raise ValueError(
             "Can't create one hot. Index '{}' is out "
@@ -104,11 +122,16 @@ def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarr
     return r
 
 
-def str_range_list(start: int, end: int) -> List[Text]:
-    return [str(e) for e in range(start, end)]
-
-
 def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text:
+    """Generate a random UUID.
+
+    Args:
+        prefix: String to prefix the ID with.
+        max_chars: Maximum number of characters.
+
+    Returns:
+        Generated random UUID.
+    """
     import uuid
 
     gid = uuid.uuid4().hex
@@ -118,34 +141,7 @@ def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text:
     return f"{prefix}{gid}"
 
 
-def request_input(
-    valid_values: Optional[List[Text]] = None,
-    prompt: Optional[Text] = None,
-    max_suggested: int = 3,
-) -> Text:
-    def wrong_input_message():
-        print(
-            "Invalid answer, only {}{} allowed\n".format(
-                ", ".join(valid_values[:max_suggested]),
-                ",..." if len(valid_values) > max_suggested else "",
-            )
-        )
-
-    while True:
-        try:
-            input_value = input(prompt) if prompt else input()
-            if valid_values is not None and input_value not in valid_values:
-                wrong_input_message()
-                continue
-        except ValueError:
-            wrong_input_message()
-            continue
-        return input_value
-
-
 # noinspection PyPep8Naming
-
-
 class HashableNDArray:
     """Hashable wrapper for ndarray objects.
 
@@ -298,6 +294,15 @@ def all_subclasses(cls: Any) -> List[Any]:
 
 
 def is_limit_reached(num_messages: int, limit: int) -> bool:
+    """Determine whether the number of messages has reached a limit.
+
+    Args:
+        num_messages: The number of messages to check.
+        limit: Limit on the number of messages.
+
+    Returns:
+        `True` if the limit has been reached, otherwise `False`.
+    """
     return limit is not None and num_messages >= limit
 
 
@@ -482,38 +487,61 @@ def create_task_error_logger(error_message: Text = "") -> Callable[[Future], Non
     return handler
 
 
-def replace_floats_with_decimals(obj: Union[List, Dict], round_digits: int = 9) -> Any:
+def replace_floats_with_decimals(obj: Any, round_digits: int = 9) -> Any:
+    """Convert all instances in `obj` of `float` to `Decimal`.
+
+    Args:
+        obj: Input object.
+        round_digits: Rounding precision of `Decimal` values.
+
+    Returns:
+        Input `obj` with all `float` types replaced by `Decimal`s rounded to
+        `round_digits` decimal places.
     """
-    Utility method to recursively walk a dictionary or list converting all `float` to `Decimal` as required by DynamoDb.
+
+    def _float_to_rounded_decimal(s: Text) -> Decimal:
+        return Decimal(s).quantize(Decimal(10) ** -round_digits)
+
+    return json.loads(json.dumps(obj), parse_float=_float_to_rounded_decimal)
+
+
+class DecimalEncoder(json.JSONEncoder):
+    """`json.JSONEncoder` that dumps `Decimal`s as `float`s."""
+
+    def default(self, obj: Any) -> Any:
+        """Get serializable object for `o`.
+
+        Args:
+            obj: Object to serialize.
+
+        Returns:
+            `obj` converted to `float` if `o` is a `Decimals`, else the base class
+            `default()` method.
+        """
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
+
+
+def replace_decimals_with_floats(obj: Any) -> Any:
+    """Convert all instances in `obj` of `Decimal` to `float`.
 
     Args:
         obj: A `List` or `Dict` object.
-        round_digits: A int value to set the rounding precision of Decimal values.
 
-    Returns: An object with all matching values and `float` types replaced by `Decimal`s rounded to `round_digits` decimal places.
-
+    Returns:
+        Input `obj` with all `Decimal` types replaced by `float`s.
     """
-    if isinstance(obj, list):
-        for i in range(len(obj)):
-            obj[i] = replace_floats_with_decimals(obj[i], round_digits)
-        return obj
-    elif isinstance(obj, dict):
-        for j in obj:
-            obj[j] = replace_floats_with_decimals(obj[j], round_digits)
-        return obj
-    elif isinstance(obj, float) or isinstance(obj, Decimal):
-        return round(Decimal(obj), round_digits)
-    else:
-        return obj
+    return json.loads(json.dumps(obj, cls=DecimalEncoder))
 
 
 def _lock_store_is_redis_lock_store(
     lock_store: Union[EndpointConfig, LockStore, None]
 ) -> bool:
-    # determine whether `lock_store` is associated with a `RedisLockStore`
+    if isinstance(lock_store, RedisLockStore):
+        return True
+
     if isinstance(lock_store, LockStore):
-        if isinstance(lock_store, RedisLockStore):
-            return True
         return False
 
     # `lock_store` is `None` or `EndpointConfig`
