@@ -34,31 +34,42 @@ SQLTrackerStore
 :Description:
     ``SQLTrackerStore`` can be used to store the conversation history in an SQL database.
     Storing your trackers this way allows you to query the event database by sender_id, timestamp, action name,
-    intent name and typename
+    intent name and typename.
 
 :Configuration:
     To set up Rasa Open Source with SQL the following steps are required:
 
-    1. Add required configuration to your ``endpoints.yml``:
+    #. Add required configuration to your ``endpoints.yml``:
 
         .. code-block:: yaml
 
             tracker_store:
                 type: SQL
-                dialect: "sqlite"  # the dialect used to interact with the db
+                dialect: "postgresql"  # the dialect used to interact with the db
                 url: ""  # (optional) host of the sql db, e.g. "localhost"
-                db: "rasa.db"  # path to your db
+                db: "rasa"  # path to your db
                 username:  # username used for authentication
                 password:  # password used for authentication
                 query: # optional dictionary to be added as a query string to the connection URL
                   driver: my-driver
 
-    3. To start the Rasa server using your SQL backend,
+    #. To start the Rasa server using your SQL backend,
        add the ``--endpoints`` flag, e.g.:
 
         .. code-block:: bash
 
             rasa run -m models --endpoints endpoints.yml
+
+    #. If deploying your model in Docker Compose, add the service to your ``docker-compose.yml``:
+
+           .. code-block:: yaml
+
+              postgres:
+                image: postgres:latest
+
+       Set ``url: postgres`` in your tracker store endpoints to route requests to that service.
+
+
 :Parameters:
     - ``domain`` (default: ``None``): Domain object associated with this tracker store
     - ``dialect`` (default: ``sqlite``): The dialect used to communicate with your SQL backend.  Consult the `SQLAlchemy docs <https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls>`_ for available dialects.
@@ -122,6 +133,8 @@ SQLTrackerStore
       and start the container. The ``dialect`` parameter with this setup will be ``oracle+cx_oracle``.
       Read more about :ref:`deploying-your-rasa-assistant`.
 
+.. _redis-tracker-store:
+
 RedisTrackerStore
 ~~~~~~~~~~~~~~~~~~
 
@@ -132,8 +145,8 @@ RedisTrackerStore
 :Configuration:
     To set up Rasa Open Source with Redis the following steps are required:
 
-    1. Start your Redis instance
-    2. Add required configuration to your ``endpoints.yml``:
+    #. Start your Redis instance
+    #. Add required configuration to your ``endpoints.yml``:
 
         .. code-block:: yaml
 
@@ -145,12 +158,22 @@ RedisTrackerStore
                 password: <password used for authentication>
                 use_ssl: <whether or not the communication is encrypted, default `false`>
 
-    3. To start the Rasa server using your configured Redis instance,
+    #. To start the Rasa server using your configured Redis instance,
        add the ``--endpoints`` flag, e.g.:
 
         .. code-block:: bash
 
             rasa run -m models --endpoints endpoints.yml
+
+    #. If deploying your model in Docker Compose, add the service to your ``docker-compose.yml``:
+
+           .. code-block:: yaml
+
+              redis:
+                image: redis:latest
+
+       Set ``url: redis`` in your tracker store endpoints to route requests to that service.
+
 :Parameters:
     - ``url`` (default: ``localhost``): The url of your redis instance
     - ``port`` (default: ``6379``): The port which redis is running on
@@ -160,6 +183,8 @@ RedisTrackerStore
     - ``record_exp`` (default: ``None``): Record expiry in seconds
     - ``use_ssl`` (default: ``False``): whether or not to use SSL for transit encryption
 
+.. _mongo-tracker-store:
+
 MongoTrackerStore
 ~~~~~~~~~~~~~~~~~
 
@@ -168,8 +193,8 @@ MongoTrackerStore
     MongoDB is a free and open-source cross-platform document-oriented NoSQL database.
 
 :Configuration:
-    1. Start your MongoDB instance.
-    2. Add required configuration to your ``endpoints.yml``
+    #. Start your MongoDB instance.
+    #. Add required configuration to your ``endpoints.yml``
 
         .. code-block:: yaml
 
@@ -184,12 +209,41 @@ MongoTrackerStore
         You can also add more advanced configurations (like enabling ssl) by appending
         a parameter to the url field, e.g. mongodb://localhost:27017/?ssl=true
 
-    3. To start the Rasa server using your configured MongoDB instance,
+    #. To start the Rasa server using your configured MongoDB instance,
            add the :code:`--endpoints` flag, e.g.:
 
             .. code-block:: bash
 
                 rasa run -m models --endpoints endpoints.yml
+
+    #. If deploying your model in Docker Compose, add the service to your ``docker-compose.yml``:
+
+           .. code-block:: yaml
+
+              mongo:
+                image: mongo
+                environment:
+                  MONGO_INITDB_ROOT_USERNAME: rasa
+                  MONGO_INITDB_ROOT_PASSWORD: example
+              mongo-express:  # this service is a MongoDB UI, and is optional
+                image: mongo-express
+                ports:
+                  - 8081:8081
+                environment:
+                  ME_CONFIG_MONGODB_ADMINUSERNAME: rasa
+                  ME_CONFIG_MONGODB_ADMINPASSWORD: example
+
+       To route requests to this database, make sure to specify the URL as well as the specified user and
+       password:
+
+           .. code-block:: yaml
+
+              tracker_store:
+                 type: mongod
+                 url: mongodb://mongo:27017
+                 username: rasa
+                 password: example
+
 :Parameters:
     - ``url`` (default: ``mongodb://localhost:27017``): URL of your MongoDB
     - ``db`` (default: ``rasa``): The database name which should be used
@@ -198,6 +252,8 @@ MongoTrackerStore
     - ``auth_source`` (default: ``admin``): database name associated with the user’s credentials.
     - ``collection`` (default: ``conversations``): The collection name which is
       used to store the conversations
+
+.. _custom-tracker-store:
 
 Custom Tracker Store
 ~~~~~~~~~~~~~~~~~~~~
@@ -209,9 +265,9 @@ Custom Tracker Store
     .. autoclass:: rasa.core.tracker_store.TrackerStore
 
 :Steps:
-    1. Extend the ``TrackerStore`` base class. Note that your constructor has to
+    #. Extend the ``TrackerStore`` base class. Note that your constructor has to
        provide a parameter ``url``.
-    2. In your ``endpoints.yml`` put in the module path to your custom tracker store
+    #. In your ``endpoints.yml`` put in the module path to your custom tracker store
        and the parameters you require:
 
         .. code-block:: yaml
@@ -221,3 +277,10 @@ Custom Tracker Store
               url: localhost
               a_parameter: a value
               another_parameter: another value
+
+    #. If you are deploying in Docker Compose, you have two options to add this store to Rasa Open Source:
+
+          - extending the Rasa image to include the module
+          - mounting the module as volume
+
+       Make sure to add the corresponding service as well.

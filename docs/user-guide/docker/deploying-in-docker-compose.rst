@@ -217,7 +217,7 @@ Then, reference the new image tag in your ``docker-compose.override.yml``:
            app:
              image: <account_username>/<repository_name>:<custom_image_tag>
 
-Adding a Custom Tracker Store
+Configuring a Tracker Store
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By default, all conversations are saved in memory. This means that all
@@ -225,97 +225,12 @@ conversations are lost as soon as you restart the Rasa server.
 If you want to persist your conversations, you can use a different
 :ref:`Tracker Store <tracker-stores>`.
 
-.. contents::
-   :local:
-   :depth: 2
+To add a tracker store to a Docker Compose deployment, you need to add a new
+service to your ``docker-compose.yml`` and modify the ``endpoints.yml`` to add
+the new tracker store, pointing to your new service. More information about how
+to do so can be found in the tracker store documentation:
 
-Using PostgreSQL as Tracker Store
-#################################
-
-Start by adding PostgreSQL to your ``docker-compose.yml``:
-
-      .. code-block:: yaml
-
-        postgres:
-          image: postgres:latest
-
-Then add PostgreSQL to the ``tracker_store`` section of your endpoint
-configuration ``config/endpoints.yml``:
-
-      .. code-block:: yaml
-
-        tracker_store:
-          type: sql
-          dialect: "postgresql"
-          url: postgres
-          db: rasa
-
-Using MongoDB as Tracker Store
-##############################
-
-Start by adding MongoDB to your ``docker-compose.yml``. The following example
-adds the MongoDB as well as a UI (you can skip this), which will be available
-at ``localhost:8081``. Username and password for the MongoDB instance are
-specified as ``rasa`` and ``example``.
-
-      .. code-block:: yaml
-
-        mongo:
-          image: mongo
-          environment:
-            MONGO_INITDB_ROOT_USERNAME: rasa
-            MONGO_INITDB_ROOT_PASSWORD: example
-        mongo-express:
-          image: mongo-express
-          ports:
-            - 8081:8081
-          environment:
-            ME_CONFIG_MONGODB_ADMINUSERNAME: rasa
-            ME_CONFIG_MONGODB_ADMINPASSWORD: example
-
-Then add the MongoDB to the ``tracker_store`` section of your endpoints
-configuration ``endpoints.yml``:
-
-      .. code-block:: yaml
-
-        tracker_store:
-          type: mongod
-          url: mongodb://mongo:27017
-          username: rasa
-          password: example
-
-Then start all components with ``docker-compose up``.
-
-Using Redis as Tracker Store
-############################
-
-Start by adding Redis to your ``docker-compose.yml``:
-
-      .. code-block:: yaml
-
-        redis:
-          image: redis:latest
-
-Then add Redis to the ``tracker_store`` section of your endpoint
-configuration ``endpoints.yml``:
-
-      .. code-block:: yaml
-
-        tracker_store:
-          type: redis
-          url: redis
-
-Using a Custom Tracker Store Implementation
-###########################################
-
-If you have a custom implementation of a tracker store you have two options
-to add this store to Rasa Open Source:
-
-  - extending the Rasa image
-  - mounting it as volume
-
-Then add the required configuration to your endpoint configuration
-``endpoints.yml`` as it is described in :ref:`tracker-stores`.
-If you want the tracker store component (e.g. a certain database) to be part
-of your Docker Compose file, add a corresponding service and configuration
-there.
+  - :ref:`sql-tracker-store`
+  - :ref:`redis-tracker-store`
+  - :ref:`mongo-tracker-store`
+  - :ref:`custom-tracker-store`
