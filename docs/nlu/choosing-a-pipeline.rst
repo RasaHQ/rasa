@@ -37,13 +37,13 @@ The Short Answer
 
 If your training data is in English, a good starting point is the following pipeline:
 
-.. literalinclude:: ../../data/configs_for_docs/default_english_config.yml
-    :language: yaml
+    .. literalinclude:: ../../data/configs_for_docs/default_english_config.yml
+        :language: yaml
 
 If your training data is not in English, start with the following pipeline:
 
-.. literalinclude:: ../../data/configs_for_docs/default_config.yml
-    :language: yaml
+    .. literalinclude:: ../../data/configs_for_docs/default_config.yml
+        :language: yaml
 
 
 A Longer Answer
@@ -53,8 +53,8 @@ A Longer Answer
 
 We recommend using following pipeline, if your training data is in English:
 
-.. literalinclude:: ../../data/configs_for_docs/default_english_config.yml
-    :language: yaml
+    .. literalinclude:: ../../data/configs_for_docs/default_english_config.yml
+        :language: yaml
 
 The pipeline contains the :ref:`ConveRTFeaturizer` that provides pre-trained word embeddings of the user utterance.
 Pre-trained word embeddings are helpful as they already encode some kind of linguistic knowledge.
@@ -71,8 +71,8 @@ However, ``ConveRT`` is only available in English.
 If your training data is not in English, but you still want to use pre-trained word embeddings, we recommend using
 the following pipeline:
 
-.. literalinclude:: ../../data/configs_for_docs/default_spacy_config.yml
-    :language: yaml
+    .. literalinclude:: ../../data/configs_for_docs/default_spacy_config.yml
+        :language: yaml
 
 It uses the :ref:`SpacyFeaturizer` instead of the :ref:`ConveRTFeaturizer`.
 :ref:`SpacyFeaturizer` provides pre-trained word embeddings from either GloVe or fastText in many different languages
@@ -86,8 +86,8 @@ and can train your model to be more domain specific.
 If there are no word embeddings for your language or you have very domain specific terminology,
 we recommend using the following pipeline:
 
-.. literalinclude:: ../../data/configs_for_docs/default_config.yml
-    :language: yaml
+    .. literalinclude:: ../../data/configs_for_docs/default_config.yml
+        :language: yaml
 
 .. note::
     We encourage everyone to define their own pipeline by listing the names of the components you want to use.
@@ -127,15 +127,17 @@ create your own :ref:`custom tokenizer <custom-nlu-components>`.
 Featurization
 ~~~~~~~~~~~~~
 
-You need to decide whether to use components that provide pre-trained word embeddings or not.
+You need to decide whether to use components that provide pre-trained word embeddings or not. We recommend in cases
+of small amounts of training data to start with pre-trained word embeddings. Once you have a larger amount of data
+and ensure that most relevant words will be in your data and therefore will have a word embedding, supervised
+embeddings, which learn word meanings directly from your training data, can make your model more specific to your domain.
+If you can't find a pre-trained model for your language, you should use supervised embeddings.
 
-If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
-and can train your model to be more domain specific. For example, in general English, the word "balance" is closely
-related to "symmetry", but very different to the word "cash". In a banking domain, "balance" and "cash" are closely
-related and you'd like your model to capture that.
-You should only use featurizers from the category :ref:`sparse featurizers <text-featurizers>`, such as
-:ref:`CountVectorsFeaturizer`, :ref:`RegexFeaturizer` or :ref:`LexicalSyntacticFeaturizer`, if you don't want to use
-pre-trained word embeddings.
+.. contents::
+   :local:
+
+Pre-trained Embeddings
+^^^^^^^^^^^^^^^^^^^^^^
 
 The advantage of using pre-trained word embeddings in your pipeline is that if you have a training example like:
 "I want to buy apples", and Rasa is asked to predict the intent for "get pears", your model already knows that the
@@ -168,6 +170,17 @@ these language models is available in the
 :ref:`SpacyFeaturizer` also provides word embeddings in many different languages (see :ref:`pretrained-word-vectors`),
 so you can use this as another alternative, depending on the language of your training data.
 
+Supervised Embeddings
+^^^^^^^^^^^^^^^^^^^^^
+
+If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
+and can train your model to be more domain specific. For example, in general English, the word "balance" is closely
+related to "symmetry", but very different to the word "cash". In a banking domain, "balance" and "cash" are closely
+related and you'd like your model to capture that.
+You should only use featurizers from the category :ref:`sparse featurizers <text-featurizers>`, such as
+:ref:`CountVectorsFeaturizer`, :ref:`RegexFeaturizer` or :ref:`LexicalSyntacticFeaturizer`, if you don't want to use
+pre-trained word embeddings.
+
 
 Entity Recognition / Intent Classification / Response Selectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -196,36 +209,16 @@ on how to use multiple intents in Rasa.
 
 Here's an example configuration:
 
-.. code-block:: yaml
+    .. code-block:: yaml
 
-    language: "en"
+        language: "en"
 
-    pipeline:
-    - name: "WhitespaceTokenizer"
-      intent_tokenization_flag: True
-      intent_split_symbol: "_"
-    - name: "CountVectorsFeaturizer"
-    - name: "DIETClassifier"
-
-Handling Class Imbalance
-************************
-
-Classification algorithms often do not perform well if there is a large `class imbalance`,
-for example if you have a lot of training data for some intents and very little training data for others.
-To mitigate this problem, you can use a ``balanced`` batching strategy.
-This algorithm ensures that all classes are represented in every batch, or at least in
-as many subsequent batches as possible, still mimicking the fact that some classes are more frequent than others.
-Balanced batching is used by default. In order to turn it off and use a classic batching strategy include
-``batch_strategy: sequence`` in your config file.
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-    # - ... other components
-    - name: "DIETClassifier"
-      batch_strategy: sequence
+        pipeline:
+        - name: "WhitespaceTokenizer"
+          intent_tokenization_flag: True
+          intent_split_symbol: "_"
+        - name: "CountVectorsFeaturizer"
+        - name: "DIETClassifier"
 
 
 Comparing Pipelines
@@ -240,7 +233,29 @@ See :ref:`comparing-nlu-pipelines` for more information.
     NLU will get the intent right but entities wrong, or the other way around.
     You need to provide enough data for both intents and entities.
 
-.. _section_component_lifecycle:
+
+Handling Class Imbalance
+------------------------
+
+Classification algorithms often do not perform well if there is a large `class imbalance`,
+for example if you have a lot of training data for some intents and very little training data for others.
+To mitigate this problem, you can use a ``balanced`` batching strategy.
+This algorithm ensures that all classes are represented in every batch, or at least in
+as many subsequent batches as possible, still mimicking the fact that some classes are more frequent than others.
+Balanced batching is used by default. In order to turn it off and use a classic batching strategy include
+``batch_strategy: sequence`` in your config file.
+
+    .. code-block:: yaml
+
+        language: "en"
+
+        pipeline:
+        # - ... other components
+        - name: "DIETClassifier"
+          batch_strategy: sequence
+
+
+.. _component-lifecycle:
 
 Component Lifecycle
 -------------------
@@ -253,43 +268,55 @@ the processing has finished.
 
 For example, for the sentence ``"I am looking for Chinese food"``, the output is:
 
-.. code-block:: json
+    .. code-block:: json
 
-    {
-        "text": "I am looking for Chinese food",
-        "entities": [
-            {
-                "start": 8,
-                "end": 15,
-                "value": "chinese",
-                "entity": "cuisine",
-                "extractor": "DIETClassifier",
-                "confidence": 0.864
-            }
-        ],
-        "intent": {"confidence": 0.6485910906220309, "name": "restaurant_search"},
-        "intent_ranking": [
-            {"confidence": 0.6485910906220309, "name": "restaurant_search"},
-            {"confidence": 0.1416153159565678, "name": "affirm"}
-        ]
-    }
+        {
+            "text": "I am looking for Chinese food",
+            "entities": [
+                {
+                    "start": 8,
+                    "end": 15,
+                    "value": "chinese",
+                    "entity": "cuisine",
+                    "extractor": "DIETClassifier",
+                    "confidence": 0.864
+                }
+            ],
+            "intent": {"confidence": 0.6485910906220309, "name": "restaurant_search"},
+            "intent_ranking": [
+                {"confidence": 0.6485910906220309, "name": "restaurant_search"},
+                {"confidence": 0.1416153159565678, "name": "affirm"}
+            ]
+        }
 
 This is created as a combination of the results of the different components in the following pipeline:
 
-.. literalinclude:: ../../data/configs_for_docs/default_config.yml
-    :language: yaml
+    .. code-block:: yaml
+
+        pipeline:
+          - name: WhitespaceTokenizer
+          - name: RegexFeaturizer
+          - name: LexicalSyntacticFeaturizer
+          - name: CountVectorsFeaturizer
+          - name: CountVectorsFeaturizer
+            analyzer: "char_wb"
+            min_ngram: 1
+            max_ngram: 4
+          - name: DIETClassifier
+          - name: EntitySynonymMapper
+          - name: ResponseSelector
 
 For example, the ``entities`` attribute here is created by the ``DIETClassifier`` component.
 
 Every component can implement several methods from the ``Component`` base class; in a pipeline these different methods
 will be called in a specific order. Assuming we added the following pipeline to our ``config.yml``:
 
-.. code-block:: yaml
+    .. code-block:: yaml
 
-    pipeline:
-      - name: "Component A"
-      - name: "Component B"
-      - name: "Last Component"
+        pipeline:
+          - name: "Component A"
+          - name: "Component B"
+          - name: "Last Component"
 
 The image below shows the call order during the training of this pipeline:
 
@@ -312,30 +339,30 @@ final context dictionary is used to persist the model's metadata.
 Pipeline Templates (deprecated)
 -------------------------------
 
-    A template is just a shortcut for a full list of components. For example, these two configurations are equivalent:
+A template is just a shortcut for a full list of components. For example, this pipeline template:
 
-        .. code-block:: yaml
+    .. code-block:: yaml
 
-            language: "en"
-            pipeline: "pretrained_embeddings_spacy"
+        language: "en"
+        pipeline: "pretrained_embeddings_spacy"
 
-    and
+is equivalent to this pipeline:
 
-        .. code-block:: yaml
+    .. code-block:: yaml
 
-            language: "en"
-            pipeline:
-            - name: "SpacyNLP"
-            - name: "SpacyTokenizer"
-            - name: "SpacyFeaturizer"
-            - name: "RegexFeaturizer"
-            - name: "CRFEntityExtractor"
-            - name: "EntitySynonymMapper"
-            - name: "SklearnIntentClassifier"
+        language: "en"
+        pipeline:
+        - name: "SpacyNLP"
+        - name: "SpacyTokenizer"
+        - name: "SpacyFeaturizer"
+        - name: "RegexFeaturizer"
+        - name: "CRFEntityExtractor"
+        - name: "EntitySynonymMapper"
+        - name: "SklearnIntentClassifier"
 
-    Pipeline templates are deprecated as of Rasa 1.8. To find sensible configurations to get started,
-    check out :ref:`how-to-choose-a-pipeline`. For more information about a deprecated pipeline template,
-    expand it below.
+Pipeline templates are deprecated as of Rasa 1.8. To find sensible configurations to get started,
+check out :ref:`how-to-choose-a-pipeline`. For more information about a deprecated pipeline template,
+expand it below.
 
 
     .. container:: toggle
@@ -345,9 +372,6 @@ Pipeline Templates (deprecated)
             ``pretrained_embeddings_spacy``
 
         .. _section_pretrained_embeddings_spacy_pipeline:
-
-        pretrained_embeddings_spacy
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         The advantage of ``pretrained_embeddings_spacy`` pipeline is that if you have a training example like:
         "I want to buy apples", and Rasa is asked to predict the intent for "get pears", your model
@@ -372,9 +396,6 @@ Pipeline Templates (deprecated)
             ``pretrained_embeddings_convert``
 
         .. _section_pretrained_embeddings_convert_pipeline:
-
-        pretrained_embeddings_convert
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
             .. note::
                 Since ``ConveRT`` model is trained only on an **English** corpus of conversations, this pipeline should only
@@ -410,9 +431,6 @@ Pipeline Templates (deprecated)
             ``supervised_embeddings``
 
         .. _section_supervised_embeddings_pipeline:
-
-        supervised_embeddings
-        ~~~~~~~~~~~~~~~~~~~~~
 
         The advantage of the ``supervised_embeddings`` pipeline is that your word vectors will be customised
         for your domain. For example, in general English, the word "balance" is closely related to "symmetry",
@@ -452,9 +470,6 @@ Pipeline Templates (deprecated)
         .. container:: header
 
             ``MITIE pipeline``
-
-        MITIE
-        ~~~~~
 
         You can also use MITIE as a source of word vectors in your pipeline.
         The MITIE backend performs well for small datasets, but training can take very long if you have more than a couple
