@@ -33,9 +33,9 @@ Just like in the :ref:`tutorial <rasa-tutorial>`, you'll use the ``rasa init`` c
 The only difference is that you'll be running Rasa inside a Docker container, using
 the image ``rasa/rasa``. To initialize your project, run:
 
-   .. code-block:: bash
+   .. parsed-literal::
 
-      docker run -v $(pwd):/app rasa/rasa init --no-prompt
+      docker run -v $(pwd):/app rasa/rasa:\ |release| init --no-prompt
 
 What does this command mean?
 
@@ -43,7 +43,7 @@ What does this command mean?
   in the Docker container. This means that files you create on your computer will be
   visible inside the container, and files created in the container will
   get synced back to your computer.
-- ``rasa/rasa`` is the name of the docker image to run.
+- ``rasa/rasa`` is the name of the docker image to run. '|release|' is the name of the tag, which specifies the version.
 - the Docker image has the ``rasa`` command as its entrypoint, which means you don't
   have to type ``rasa init``, just ``init`` is enough.
 
@@ -74,9 +74,9 @@ Talking to Your Assistant
 
 To talk to your newly-trained assistant, run this command:
 
-   .. code-block:: bash
+   .. parsed-literal::
 
-      docker run -it -v $(pwd):/app rasa/rasa shell
+      docker run -it -v $(pwd):/app rasa/rasa:\ |release| shell
 
 This will start a shell where you can chat to your assistant.
 Note that this command includes the flags ``-it``, which means that you are running
@@ -85,8 +85,40 @@ For commands which require interactive input, like ``rasa shell`` and ``rasa int
 you need to pass the ``-it`` flags.
 
 
+.. _model_training_docker:
+
+Training a Model
+****************
+
+If you edit the NLU or Core training data or edit the ``config.yml`` file, you'll need to
+retrain your Rasa model. You can do so by running:
+
+   .. parsed-literal::
+
+     docker run -v $(pwd):/app rasa/rasa:\ |release|-full train --domain domain.yml --data data --out models
+
+Here's what's happening in that command:
+
+  - ``-v $(pwd):/app``: Mounts your project directory into the Docker
+    container so that Rasa can train a model on your training data
+  - rasa/rasa:|release|-full: Use the Rasa image with the tag '|release|-full'
+  - ``train``: Execute the ``rasa train`` command within the container. For more
+    information see :ref:`command-line-interface`.
+
+In this case, we've also passed values for the location of the domain file, training
+data, and the models output directory to show how these can be customized.
+You can also leave these out, since we are passing the default values.
+
+.. note::
+
+    When changing components in your ``config.yml``, you may introduce new dependencies and need a different image tag.
+    See :ref:`choosing-a-tag` for more information.
+
+
 Customizing your Model
 **********************
+
+.. _choosing-a-tag:
 
 Choosing a Tag
 ##############
@@ -117,34 +149,8 @@ you can build a docker image that extends the ``rasa/rasa`` image.
     The ``latest`` tags correspond to the current master build. These tags are not recommended for use,
     as they are not guaranteed to be stable.
 
-.. _model_training_docker:
-
-Training a Model
-################
-
-Edit the ``config.yml`` file to use the pipeline you want, and place
-your NLU and Core data into the ``data/`` directory.
-Now you can train your Rasa model by running:
-
-   .. parsed-literal::
-
-     docker run -v $(pwd):/app rasa/rasa:\ |release|-full train --domain domain.yml --data data --out models
-
-Here's what's happening in that command:
-
-  - ``-v $(pwd):/app``: Mounts your project directory into the Docker
-    container so that Rasa can train a model on your training data
-  - rasa/rasa:|release|-full: Use the Rasa image with the tag '|release|-full'
-  - ``train``: Execute the ``rasa train`` command within the container. For more
-    information see :ref:`command-line-interface`.
-
-In this case, we've also passed values for the location of the domain file, training
-data, and the models output directory to show how these can be customized.
-You can also leave these out since we are passing the default values.
-
-
 Adding Custom Components
-************************
+########################
 
 If you are using a custom NLU component or policy ot your ``config.yml``, you have to add the module file to your
 Docker container. You can do this by either mounting the file or by including it in your
@@ -154,7 +160,7 @@ environment variable ``PYTHONPATH=$PYTHONPATH:<directory of your module>``.
 
 
 Adding Custom Actions
-*********************
+#####################
 
 To create more sophisticated assistants, you will want to use :ref:`custom-actions`.
 Continuing the example from above, you might want to add an action which tells
@@ -204,10 +210,7 @@ After updating your domain and stories, you have to retrain your model:
 
    .. parsed-literal::
 
-     docker run \
-       -v $(pwd):/app \
-       rasa/rasa:\ |release|-full \
-       train
+     docker run -v $(pwd):/app rasa/rasa:\ |release| train
 
 Your actions will run on a separate server from your Rasa server. First create a network to connect the two containers:
 
@@ -219,11 +222,7 @@ You can then run the actions with the following command:
 
     .. parsed-literal::
 
-      docker run -d \
-        -v $(pwd)/actions:/app/actions \
-        --net my-project \
-        --name action-server
-        rasa/rasa-sdk:\ |version|.0
+      docker run -d -v $(pwd)/actions:/app/actions --net my-project --name action-server rasa/rasa-sdk:\ |version|.0
 
 
 Here's what's happening in that command:
@@ -250,9 +249,9 @@ Add this endpoint to your ``endpoints.yml``, referencing the ``--name`` you gave
 
 Now you can talk to your bot again via the ``shell`` command:
 
-    .. code-block:: bash
+    .. parsed-literal::
 
-       docker run -it -v $(pwd):/app -p 5005:5005 --net my-project rasa/rasa shell
+       docker run -it -v $(pwd):/app -p 5005:5005 --net my-project rasa/rasa:\ |release| shell
 
 .. note::
 
