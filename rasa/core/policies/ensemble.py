@@ -371,7 +371,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         is_mapping = policy_name.endswith("_" + MappingPolicy.__name__)
         # also check if confidence is 0, than it cannot be count as prediction
-        return not is_mapping or max_confidence == 0
+        return not is_mapping or max_confidence == 0.0
 
     @staticmethod
     def _is_form_policy(policy_name: Text) -> bool:
