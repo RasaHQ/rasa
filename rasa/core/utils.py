@@ -490,7 +490,8 @@ def replace_floats_with_decimals(obj: Any, round_digits: int = 9) -> Any:
         round_digits: Rounding precision of `Decimal` values.
 
     Returns:
-        Input `obj` with all `float` types replaced by `Decimal`s.
+        Input `obj` with all `float` types replaced by `Decimal`s rounded to
+        `round_digits` decimal places.
     """
 
     def _float_to_rounded_decimal(f: float) -> Decimal:
