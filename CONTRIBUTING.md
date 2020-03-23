@@ -123,7 +123,7 @@ The link to the repository can be found after clicking Clone or download button 
 
 ![](https://www.rasa.com/assets/img/contributor-guidelines/clone.png)
 
-Note: this assumes you have git installed on your local machine. If not, check out the [following guide](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git), to learn how to do that.
+Note: this assumes you have git installed on your local machine. If not, check out the [following guide](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) to learn how to install it.
 
 #### 3. Update your Forked Repository
 
