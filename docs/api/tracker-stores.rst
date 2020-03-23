@@ -9,7 +9,7 @@ Tracker Stores
 
 .. edit-link::
 
-All conversations are stored within a `tracker store`.
+All conversations are stored within a tracker store.
 Rasa Core provides implementations for different store types out of the box.
 If you want to use another store, you can also build a custom tracker store by extending
 the ``TrackerStore`` class.
@@ -41,7 +41,7 @@ SQLTrackerStore
 :Configuration:
     To set up Rasa Core with SQL the following steps are required:
 
-    1. Add required configuration to your `endpoints.yml`
+    1. Add required configuration to your ``endpoints.yml``
 
         .. code-block:: yaml
 
@@ -55,8 +55,7 @@ SQLTrackerStore
                 query: # optional dictionary to be added as a query string to the connection URL
                   driver: my-driver
 
-    3. To start the Rasa Core server using your SQL backend,
-       add the ``--endpoints`` flag, e.g.:
+    3. To start the Rasa Core server using your SQL backend, add the ``--endpoints`` flag, e.g.:
 
         .. code-block:: bash
 
@@ -135,7 +134,7 @@ RedisTrackerStore
     To set up Rasa Core with Redis the following steps are required:
 
     1. Start your Redis instance
-    2. Add required configuration to your `endpoints.yml`
+    2. Add required configuration to your ``endpoints.yml``
 
         .. code-block:: yaml
 
@@ -147,8 +146,7 @@ RedisTrackerStore
                 password: <password used for authentication>
                 use_ssl: <whether or not the communication is encrypted, default `false`>
 
-    3. To start the Rasa server using your configured Redis instance,
-       add the :code:`--endpoints` flag, e.g.:
+    3. To start the Rasa server using your configured Redis instance, add the :code:`--endpoints` flag, e.g.:
 
         .. code-block:: bash
 
@@ -171,7 +169,7 @@ MongoTrackerStore
 
 :Configuration:
     1. Start your MongoDB instance.
-    2. Add required configuration to your `endpoints.yml`
+    2. Add required configuration to your ``endpoints.yml``
 
         .. code-block:: yaml
 
@@ -213,7 +211,7 @@ DynamoTrackerStore
 
 :Configuration:
     1. Start your DynamoDB instance.
-    2. Add required configuration to your `endpoints.yml`
+    2. Add required configuration to your ``endpoints.yml``
 
         .. code-block:: yaml
 
@@ -237,7 +235,7 @@ Custom Tracker Store
 
 :Description:
     If you require a tracker store which is not available out of the box, you can implement your own.
-    This is done by extending the base class `TrackerStore`.
+    This is done by extending the base class ``TrackerStore``.
 
     .. autoclass:: rasa.core.tracker_store.TrackerStore
 
