@@ -17,8 +17,8 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
-    <link rel="next" title="Components" href="../components/" />
-    <link rel="prev" title="Language Support" href="../language-support/" />
+    <link rel="next" title="The Rasa Core Dialogue Engine" href="../../core/about/" />
+    <link rel="prev" title="Components" href="../components/" />
 
   <!-- Google Tag Manager -->
   <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -159,10 +159,10 @@ AI assistants" />
 <li class="toctree-l1"><a class="reference internal" href="../about/">About</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../using-nlu-only/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../training-data-format/">Training Data Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../choosing-a-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../language-support/">Language Support</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../choosing-a-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../components/">Components</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Entity Extraction</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Core</span></p>
 <ul>
@@ -281,19 +281,9 @@ AI assistants" />
 
   <div class="edit-link">
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/nlu/entity-extraction.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
-  </div><div class="contents local topic" id="contents">
-<ul class="simple">
-<li><a class="reference internal" href="#introduction" id="id2">Introduction</a></li>
-<li><a class="reference internal" href="#custom-entities" id="id3">Custom Entities</a></li>
-<li><a class="reference internal" href="#extracting-places-dates-people-organisations" id="id4">Extracting Places, Dates, People, Organisations</a></li>
-<li><a class="reference internal" href="#dates-amounts-of-money-durations-distances-ordinals" id="id5">Dates, Amounts of Money, Durations, Distances, Ordinals</a></li>
-<li><a class="reference internal" href="#regular-expressions-regex" id="id6">Regular Expressions (regex)</a></li>
-<li><a class="reference internal" href="#passing-custom-features-to-crfentityextractor" id="id7">Passing Custom Features to <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></a></li>
-</ul>
-</div>
-<div class="section" id="introduction">
-<h2><a class="toc-backref" href="#id2">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>Here is a summary of the available extractors and what they are used for:</p>
+  </div><p>Entity extraction involves parsing user messages for required pieces of information. Rasa Open Source
+provides entity extractors for custom entities as well as pre-trained ones like dates and locations.
+Here is a summary of the available extractors and what they are used for:</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="25%" />
@@ -342,17 +332,25 @@ on top of a transformer</td>
 </tr>
 </tbody>
 </table>
-<p>If your pipeline includes one or more of the components above,
-the output of your trained model will include the extracted entities as well
-as some metadata about which component extracted them.
-The <code class="docutils literal notranslate"><span class="pre">processors</span></code> field contains the names of components that altered each entity.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The <code class="docutils literal notranslate"><span class="pre">value</span></code> field can be different from what appears in the text.
-If you use synonyms, an extracted entity like <code class="docutils literal notranslate"><span class="pre">chinees</span></code> will be mapped
-to a standard value, e.g. <code class="docutils literal notranslate"><span class="pre">chinese</span></code>.</p>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#the-entity-object" id="id2">The “entity” Object</a></li>
+<li><a class="reference internal" href="#custom-entities" id="id3">Custom Entities</a></li>
+<li><a class="reference internal" href="#extracting-places-dates-people-organisations" id="id4">Extracting Places, Dates, People, Organisations</a></li>
+<li><a class="reference internal" href="#dates-amounts-of-money-durations-distances-ordinals" id="id5">Dates, Amounts of Money, Durations, Distances, Ordinals</a></li>
+<li><a class="reference internal" href="#regular-expressions-regex" id="id6">Regular Expressions (regex)</a></li>
+<li><a class="reference internal" href="#passing-custom-features-to-crfentityextractor" id="id7">Passing Custom Features to <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code></a></li>
+</ul>
 </div>
-<p>Here is an example response:</p>
+<div class="section" id="the-entity-object">
+<h2><a class="toc-backref" href="#id2">The “entity” Object</a><a class="headerlink" href="#the-entity-object" title="Permalink to this headline">¶</a></h2>
+<p>After parsing, an entity is returned as a dictionary.  There are two fields that show information
+about how the pipeline impacted the entities returned: the <code class="docutils literal notranslate"><span class="pre">extractor</span></code> field
+of an entity tells you which entity extractor found this particular entity, and
+the <code class="docutils literal notranslate"><span class="pre">processors</span></code> field contains the name of components that altered this
+specific entity.</p>
+<p>The use of synonyms can cause the <code class="docutils literal notranslate"><span class="pre">value</span></code> field not match the <code class="docutils literal notranslate"><span class="pre">text</span></code>
+exactly. Instead it will return the trained synonym.</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
   <span class="nt">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;show me chinese restaurants&quot;</span><span class="p">,</span>
   <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;restaurant_search&quot;</span><span class="p">,</span>
@@ -369,6 +367,12 @@ to a standard value, e.g. <code class="docutils literal notranslate"><span class
   <span class="p">]</span>
 <span class="p">}</span>
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The <code class="docutils literal notranslate"><span class="pre">confidence</span></code> will be set by the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> component. The
+<code class="docutils literal notranslate"><span class="pre">DucklingHTTPExtractor</span></code> will always return <code class="docutils literal notranslate"><span class="pre">1</span></code>. The <code class="docutils literal notranslate"><span class="pre">SpacyEntityExtractor</span></code> extractor
+and <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> do not provide this information and returns <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
 </div>
 <p>Some extractors, like <code class="docutils literal notranslate"><span class="pre">duckling</span></code>, may include additional information. For example:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
@@ -393,13 +397,6 @@ to a standard value, e.g. <code class="docutils literal notranslate"><span class
   <span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;2018-06-21T00:00:00.000-07:00&quot;</span>
 <span class="p">}</span>
 </pre></div>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The <cite>confidence</cite> will be set by the CRF entity extractor
-(<cite>CRFEntityExtractor</cite> component). The duckling entity extractor will always return
-<cite>1</cite>. The <cite>SpacyEntityExtractor</cite> extractor does not provide this information and
-returns <cite>null</cite>.</p>
 </div>
 </div>
 <div class="section" id="custom-entities">
