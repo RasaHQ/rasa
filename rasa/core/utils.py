@@ -503,19 +503,19 @@ def replace_floats_with_decimals(obj: Any, round_digits: int = 9) -> Any:
 class DecimalEncoder(json.JSONEncoder):
     """`json.JSONEncoder` that dumps `Decimal`s as `float`s."""
 
-    def default(self, o: Any) -> Any:
+    def default(self, obj: Any) -> Any:
         """Get serializable object for `o`.
 
         Args:
-            o: Object to serialize.
+            obj: Object to serialize.
 
         Returns:
-            `o` converted to `float` if `o` is a `Decimals`, else the base class
+            `obj` converted to `float` if `o` is a `Decimals`, else the base class
             `default()` method.
         """
-        if isinstance(o, Decimal):
-            return float(o)
-        return super().default(o)
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
 
 
 def replace_decimals_with_floats(obj: Any) -> Any:
