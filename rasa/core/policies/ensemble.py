@@ -389,7 +389,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                          and predictions as values
 
         Returns:
-            result: the list of probabilities for the next actions
+            best_probabilities: the list of probabilities for the next actions
             best_policy_name: the name of the picked policy
         """
 
@@ -435,8 +435,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             domain: the :class:`rasa.core.domain.Domain`
 
         Returns:
-            result: the list of probabilities for the next actions
-            best_policy_name: the name of the picked policy
+            probabilities: the list of probabilities for the next actions
+            policy_name: the name of the picked policy
         """
 
         # find rejected action before running the policies
@@ -467,7 +467,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         return self._pick_best_policy(predictions)
 
     def _fallback_after_listen(
-        self, domain: Domain, result: List[float], best_policy_name: Text
+        self, domain: Domain, probabilities: List[float], policy_name: Text
     ) -> Tuple[List[float], Text]:
         """Triggers fallback if `action_listen` is predicted after a user utterance.
 
@@ -479,12 +479,12 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         Args:
             domain: the :class:`rasa.core.domain.Domain`
-            result: the list of probabilities for the next actions
-            best_policy_name: the name of the picked policy
+            probabilities: the list of probabilities for the next actions
+            policy_name: the name of the picked policy
 
         Returns:
-            result: the list of probabilities for the next actions
-            best_policy_name: the name of the picked policy
+            probabilities: the list of probabilities for the next actions
+            policy_name: the name of the picked policy
         """
 
         fallback_idx_policy = [
@@ -496,14 +496,14 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
             logger.debug(
                 f"Action 'action_listen' was predicted after "
-                f"a user message using {best_policy_name}. Predicting "
+                f"a user message using {policy_name}. Predicting "
                 f"fallback action: {fallback_policy.fallback_action_name}"
             )
 
-            result = fallback_policy.fallback_scores(domain)
-            best_policy_name = f"policy_{fallback_idx}_{type(fallback_policy).__name__}"
+            probabilities = fallback_policy.fallback_scores(domain)
+            policy_name = f"policy_{fallback_idx}_{type(fallback_policy).__name__}"
 
-        return result, best_policy_name
+        return probabilities, policy_name
 
     def probabilities_using_best_policy(
         self, tracker: DialogueStateTracker, domain: Domain
@@ -518,24 +518,25 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             domain: the :class:`rasa.core.domain.Domain`
 
         Returns:
-            result: the list of probabilities for the next actions
+            best_probabilities: the list of probabilities for the next actions
             best_policy_name: the name of the picked policy
         """
 
-        result, best_policy_name = self._best_policy_prediction(tracker, domain)
+        probabilities, policy_name = self._best_policy_prediction(tracker, domain)
 
         if (
             tracker.latest_action_name == ACTION_LISTEN_NAME
-            and result is not None
-            and result.index(max(result)) == domain.index_for_action(ACTION_LISTEN_NAME)
-            and self.is_not_memo_policy(best_policy_name, max(result))
+            and probabilities is not None
+            and probabilities.index(max(probabilities))
+            == domain.index_for_action(ACTION_LISTEN_NAME)
+            and self.is_not_memo_policy(policy_name, max(probabilities))
         ):
-            result, best_policy_name = self._fallback_after_listen(
-                domain, result, best_policy_name
+            probabilities, policy_name = self._fallback_after_listen(
+                domain, probabilities, policy_name
             )
 
-        logger.debug(f"Predicted next action using {best_policy_name}")
-        return result, best_policy_name
+        logger.debug(f"Predicted next action using {policy_name}")
+        return probabilities, policy_name
 
 
 class InvalidPolicyConfig(Exception):
