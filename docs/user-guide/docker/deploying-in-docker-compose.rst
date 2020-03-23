@@ -147,9 +147,12 @@ a different Docker registry, such as `Google Container Registry <https://cloud.g
 `Azure Container Registry <https://azure.microsoft.com/en-us/services/container-registry/>`_.
 
 To create your image:
-  - If your actions have any extra dependencies, create a list of them in a file,
-    ``actions/requirements-actions.txt``.
-  - Create a file named ``Dockerfile`` in your project directory,
+
+  #. Move your actions code to a folder ``actions`` in your project directory.
+     Make sure to also add an empty ``actions/__init__.py`` file.
+  #. If your actions have any extra dependencies, create a list of them in a file,
+     ``actions/requirements-actions.txt``.
+  #. Create a file named ``Dockerfile`` in your project directory,
     in which you'll extend the official SDK image, copy over your code, and add any custom dependencies (if necessary).
     For example:
 
@@ -170,7 +173,7 @@ To create your image:
          # Install extra requirements for actions code, if necessary (otherwise comment this out)
          RUN pip install -r requirements-actions.txt
 
-         # Copy actions code to working directory
+         # Copy actions folder to working directory
          COPY ./actions /app/actions
 
          # By best practices, don't run the code with root user
