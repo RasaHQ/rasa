@@ -5,7 +5,7 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime
-from typing import Text, Optional, Any, List, Dict, Tuple, Set
+from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple
 
 import rasa.core
 import rasa.utils.io
@@ -346,25 +346,82 @@ class PolicyEnsemble:
         return state_featurizer_func, state_featurizer_config
 
 
+class Prediction(NamedTuple):
+    """Stores the probabilities and the priority of the predcition."""
+
+    probabilities: List[float]
+    priority: int
+
+
 class SimplePolicyEnsemble(PolicyEnsemble):
     @staticmethod
-    def is_not_memo_policy(best_policy_name: Text) -> bool:
-        is_memo = best_policy_name.endswith("_" + MemoizationPolicy.__name__)
-        is_augmented = best_policy_name.endswith(
-            "_" + AugmentedMemoizationPolicy.__name__
-        )
+    def is_not_memo_policy(policy_name: Text) -> bool:
+        is_memo = policy_name.endswith("_" + MemoizationPolicy.__name__)
+        is_augmented = policy_name.endswith("_" + AugmentedMemoizationPolicy.__name__)
         return not (is_memo or is_augmented)
 
     @staticmethod
-    def _is_not_mapping_policy(best_policy_name: Text) -> bool:
+    def _is_not_mapping_policy(policy_name: Text) -> bool:
         from rasa.core.policies.mapping_policy import MappingPolicy
 
-        return not best_policy_name.endswith("_" + MappingPolicy.__name__)
+        return not policy_name.endswith("_" + MappingPolicy.__name__)
+
+    @staticmethod
+    def _is_form_policy(policy_name: Text) -> bool:
+        from rasa.core.policies.form_policy import FormPolicy
+
+        return policy_name.endswith("_" + FormPolicy.__name__)
+
+    def _pick_best_policy(
+        self, predictions: Dict[Text, Prediction]
+    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+        """Picks the best policy prediction based on probabilities and policy priority.
+
+        Args:
+            predictions: the dictionary containing policy name as keys
+                         and predictions as values
+
+        Returns:
+            result: the list of probabilities for the next actions
+            best_policy_name: the name of the picked policy
+        """
+
+        max_confidence = (-1, -1)
+        best_policy_name = None
+
+        # form and mapping policies are special:
+        # form should be above fallback
+        # mapping should be below fallback
+        # mapping is above form if it wins over fallback
+        # therefore form predictions are stored separately
+
+        form_confidence = None
+        form_policy_name = None
+
+        for policy_name, prediction in predictions.items():
+            confidence = (max(prediction.probabilities), prediction.priority)
+            if self._is_form_policy(policy_name):
+                # store form prediction separately
+                form_confidence = confidence
+                form_policy_name = policy_name
+            elif confidence > max_confidence:
+                # pick the best policy
+                max_confidence = confidence
+                best_policy_name = policy_name
+
+        if form_confidence is not None and self._is_not_mapping_policy(
+            best_policy_name
+        ):
+            # if mapping didn't win, check form policy predictions
+            if form_confidence > max_confidence:
+                best_policy_name = form_policy_name
+
+        return predictions[best_policy_name].probabilities, best_policy_name
 
     def _best_policy_prediction(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
-        """Picks the best policy prediction based on probabilities and policy priority.
+        """Finds the best policy prediction.
 
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
@@ -375,58 +432,32 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             best_policy_name: the name of the picked policy
         """
 
-        from rasa.core.policies.form_policy import FormPolicy
+        # find rejected action before running the policies
+        # because some of them might add events
+        rejected_action_name = None
+        if len(tracker.events) > 0 and isinstance(
+            tracker.events[-1], ActionExecutionRejected
+        ):
+            rejected_action_name = tracker.events[-1].action_name
 
-        result = None
-        max_confidence = -1
-        best_policy_name = None
-        best_policy_priority = -1
+        predictions = {
+            f"policy_{i}_{type(p).__name__}": Prediction(
+                p.predict_action_probabilities(tracker, domain), p.priority,
+            )
+            for i, p in enumerate(self.policies)
+        }
 
-        # form and mapping policies are special:
-        # form should be above fallback
-        # mapping should be below fallback
-        # mapping is above form if it wins over fallback
-        # therefore form predictions are stored separately
-        form_probabilities = None
-        form_policy_index = None
-        form_policy_priority = None
-
-        for i, p in enumerate(self.policies):
-            probabilities = p.predict_action_probabilities(tracker, domain)
-
-            if len(tracker.events) > 0 and isinstance(
-                tracker.events[-1], ActionExecutionRejected
-            ):
-                probabilities[
-                    domain.index_for_action(tracker.events[-1].action_name)
+        if rejected_action_name:
+            logger.debug(
+                f"Execution of '{rejected_action_name}' was rejected. "
+                f"Setting its confidence to 0.0 in all predictions."
+            )
+            for prediction in predictions.values():
+                prediction.probabilities[
+                    domain.index_for_action(rejected_action_name)
                 ] = 0.0
 
-            if isinstance(p, FormPolicy):
-                # get form predictions separately
-                form_probabilities = probabilities
-                form_policy_index = i
-                form_policy_priority = p.priority
-            else:
-                # pick the best policy
-                confidence = max(probabilities)
-                if (confidence, p.priority) > (max_confidence, best_policy_priority):
-                    max_confidence = confidence
-                    result = probabilities
-                    best_policy_name = f"policy_{i}_{type(p).__name__}"
-                    best_policy_priority = p.priority
-
-        if form_probabilities is not None and self._is_not_mapping_policy(
-            best_policy_name
-        ):
-            # if mapping didn't win, check form policy predictions
-            if (max(form_probabilities), form_policy_priority) > (
-                max_confidence,
-                best_policy_priority,
-            ):
-                result = form_probabilities
-                best_policy_name = f"policy_{form_policy_index}_{FormPolicy.__name__}"
-
-        return result, best_policy_name
+        return self._pick_best_policy(predictions)
 
     def _fallback_after_listen(
         self, domain: Domain, result: List[float], best_policy_name: Text

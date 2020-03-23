@@ -195,7 +195,9 @@ class MemoizationPolicy(Policy):
         logger.debug(f"Current tracker state {states}")
         recalled = self.recall(states, tracker, domain)
         if recalled is not None:
-            logger.debug(f"There is a memorised next action '{recalled}'")
+            logger.debug(
+                f"There is a memorised next action '{domain.action_names[recalled]}'"
+            )
 
             if self.USE_NLU_CONFIDENCE_AS_SCORE:
                 # the memoization will use the confidence of NLU on the latest
