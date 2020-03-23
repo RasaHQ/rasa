@@ -67,12 +67,12 @@ Start by creating a file called ``docker-compose.yml``:
 
 Add the following content to the file:
 
-      .. code-block:: yaml
+      .. parsed-literal::
 
         version: '3.0'
         services:
           rasa:
-            image: rasa/rasa:latest-full
+            image: rasa/rasa:\ |release|-full
             ports:
               - 5005:5005
             volumes:
@@ -88,13 +88,12 @@ The first service is the ``rasa`` service, which runs your Rasa server.
 To add the action server, add the image of your action server code. To learn how to deploy
 an action server image, see :ref:`building-an-action-server-image`.
 
-   .. code-block:: yaml
-      :emphasize-lines: 11-13
+   .. parsed-literal::
 
       version: '3.0'
       services:
         rasa:
-          image: rasa/rasa:latest-full
+          image: rasa/rasa:\ |release|-full
           ports:
             - 5005:5005
           volumes:
