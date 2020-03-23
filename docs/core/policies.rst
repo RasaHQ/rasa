@@ -279,8 +279,8 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
 
             .. container:: block
 
-                The above configuration parameters are the ones you most likely gonna change.
-                However, additional parameters exists that can be adapted.
+                The above configuration parameters are the ones you should configure to fit your model to your data.
+                However, additional parameters exist that can be adapted.
 
         .. code-block:: none
 

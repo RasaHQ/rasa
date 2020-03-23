@@ -21,6 +21,8 @@ Component                  Requires           Model           	        Notes
 ``DucklingHTTPExtractor``  running duckling   context-free grammar      provides pre-trained entities
 ``MitieEntityExtractor``   MITIE              structured SVM            good for training custom entities
 ``EntitySynonymMapper``    existing entities  N/A                       maps known synonyms
+``DIETClassifier``                            conditional random field
+                                              on top of a transformer   good for training custom entities
 =========================  =================  ========================  =================================
 
 .. contents::
