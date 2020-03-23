@@ -504,7 +504,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         """Predicts the next action the bot should take after seeing the tracker.
 
         Picks the best policy prediction based on probabilities and policy priority.
-        Triggers fallback if action_listen is predicted after a user utterance.
+        Triggers fallback if `action_listen` is predicted after a user utterance.
 
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
