@@ -152,8 +152,8 @@ To create your image:
   #. If your actions have any extra dependencies, create a list of them in a file,
      ``actions/requirements-actions.txt``.
   #. Create a file named ``Dockerfile`` in your project directory,
-    in which you'll extend the official SDK image, copy over your code, and add any custom dependencies (if necessary).
-    For example:
+     in which you'll extend the official SDK image, copy over your code, and add any custom dependencies (if necessary).
+     For example:
 
       .. parsed-literal::
 
