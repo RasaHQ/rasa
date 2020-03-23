@@ -73,7 +73,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         "max_features": None,  # int or None
         # if convert all characters to lowercase
         "lowercase": True,  # bool
-        # handling Out-Of-Vacabulary (OOV) words
+        # handling Out-Of-Vocabulary (OOV) words
         # will be converted to lowercase if lowercase is True
         "OOV_token": None,  # string or None
         "OOV_words": [],  # string or list of strings
