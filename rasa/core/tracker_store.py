@@ -12,7 +12,7 @@ from time import sleep
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Text, Union
 
 from boto3.dynamodb.conditions import Key
-from rasa.core import utils
+import rasa.core.utils as core_utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.conversation import Dialogue
@@ -294,12 +294,15 @@ class DynamoTrackerStore(TrackerStore):
         region: Text = "us-east-1",
         event_broker: Optional[EndpointConfig] = None,
     ):
-        """
+        """Initialize `DynamoTrackerStore`.
+
         Args:
-            domain:
-            table_name: The name of the DynamoDb table, does not
-                need to be present a priori.
-            event_broker:
+            domain: Domain associated with this tracker store.
+            table_name: The name of the DynamoDB table, does not need to be present a
+                priori.
+            region: The name of the region associated with the client.
+                A client is associated with a single region.
+            event_broker: An event broker used to publish events.
         """
         import boto3
 
@@ -349,24 +352,30 @@ class DynamoTrackerStore(TrackerStore):
                 "session_date": int(datetime.now(tz=timezone.utc).timestamp()),
             }
         )
-        return utils.replace_floats_with_decimals(d)
+        # DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s
+        return core_utils.replace_floats_with_decimals(d)
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
-
-        # Retrieve dialogues for a sender_id in reverse chronological order based on
+        # Retrieve dialogues for a sender_id in reverse-chronological order based on
         # the session_date sort key
         dialogues = self.db.query(
             KeyConditionExpression=Key("sender_id").eq(sender_id),
             Limit=1,
             ScanIndexForward=False,
         )["Items"]
-        if dialogues:
-            return DialogueStateTracker.from_dict(
-                sender_id, dialogues[0].get("events"), self.domain.slots
-            )
-        else:
+
+        if not dialogues:
             return None
+
+        events = dialogues[0].get("events", [])
+
+        # `float`s are stored as `Decimal` objects - we need to convert them back
+        events_with_floats = core_utils.replace_decimals_with_floats(events)
+
+        return DialogueStateTracker.from_dict(
+            sender_id, events_with_floats, self.domain.slots
+        )
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the DynamoTrackerStore"""
@@ -525,8 +534,8 @@ class MongoTrackerStore(TrackerStore):
 def _create_sequence(table_name: Text) -> Sequence:
     """Creates a sequence object for a specific table name.
 
-    If using Oracle you will need to create a sequence in your database, as described here:
-    https://rasa.com/docs/rasa/api/tracker-stores/#sqltrackerstore
+    If using Oracle you will need to create a sequence in your database,
+    as described here: https://rasa.com/docs/rasa/api/tracker-stores/#sqltrackerstore
     Args:
         table_name: The name of the table, which gets a Sequence assigned
 
