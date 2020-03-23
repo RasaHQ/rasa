@@ -627,6 +627,48 @@ def test_section_value_with_delimiter():
     assert td_section_with_delimiter.entity_synonyms == {"10:00 am": "10:00"}
 
 
+def test_read_complex_entity_format():
+    r = MarkdownReader()
+
+    md = """## intent:test
+- I want to fly from [Berlin]{"entity": "city", "role": "to"} to [LA]{"entity": "city", "role": "from", "synonym": "Los Angeles"}
+"""
+
+    training_data = r.reads(md)
+
+    assert "city" in training_data.entities
+    assert training_data.entity_synonyms.get("LA") == "Los Angeles"
+    assert len(training_data.entity_examples[0].data["entities"]) == 2
+
+
+def test_read_simple_entity_format():
+    r = MarkdownReader()
+
+    md = """## intent:test
+- I want to fly from [Berlin](city) to [LA](city)
+"""
+
+    training_data = r.reads(md)
+
+    assert "city" in training_data.entities
+    assert training_data.entity_synonyms.get("LA") is None
+    assert len(training_data.entity_examples[0].data["entities"]) == 2
+
+
+def test_read_mixed_entity_format():
+    r = MarkdownReader()
+
+    md = """## intent:test
+- I want to fly from [Berlin](city) to [LA]{"entity": "city", "role": "from", "synonym": "Los Angeles"}
+"""
+
+    training_data = r.reads(md)
+
+    assert "city" in training_data.entities
+    assert training_data.entity_synonyms.get("LA") == "Los Angeles"
+    assert len(training_data.entity_examples[0].data["entities"]) == 2
+
+
 def test_markdown_order():
     r = MarkdownReader()
 
