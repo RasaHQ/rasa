@@ -12,7 +12,6 @@ import rasa.utils.io
 from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core import utils
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
-import rasa.core.utils as rasa_core_utils
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import write_endpoint_config_to_yaml
 

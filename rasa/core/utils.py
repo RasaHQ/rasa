@@ -47,7 +47,15 @@ if TYPE_CHECKING:
     from random import Random
 
 
-def configure_file_logging(logger_obj: logging.Logger, log_file: Optional[Text]):
+def configure_file_logging(
+    logger_obj: logging.Logger, log_file: Optional[Text]
+) -> None:
+    """Configure logging to a file.
+
+    Args:
+        logger_obj: Logger object to configure.
+        log_file: Path of log file to write to.
+    """
     if not log_file:
         return
 
@@ -94,6 +102,16 @@ def is_int(value: Any) -> bool:
 
 
 def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarray:
+    """Create a one-hot array.
+
+    Args:
+        hot_idx: Index of the hot element.
+        length: Length of the array.
+        dtype: ``numpy.dtype`` of the array.
+
+    Returns:
+        One-hot array.
+    """
     if hot_idx >= length:
         raise ValueError(
             "Can't create one hot. Index '{}' is out "
@@ -104,11 +122,16 @@ def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarr
     return r
 
 
-def str_range_list(start: int, end: int) -> List[Text]:
-    return [str(e) for e in range(start, end)]
-
-
 def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text:
+    """Generate a random UUID.
+
+    Args:
+        prefix: String to prefix the ID with.
+        max_chars: Maximum number of characters.
+
+    Returns:
+        Generated random UUID.
+    """
     import uuid
 
     gid = uuid.uuid4().hex
@@ -118,34 +141,7 @@ def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text:
     return f"{prefix}{gid}"
 
 
-def request_input(
-    valid_values: Optional[List[Text]] = None,
-    prompt: Optional[Text] = None,
-    max_suggested: int = 3,
-) -> Text:
-    def wrong_input_message():
-        print(
-            "Invalid answer, only {}{} allowed\n".format(
-                ", ".join(valid_values[:max_suggested]),
-                ",..." if len(valid_values) > max_suggested else "",
-            )
-        )
-
-    while True:
-        try:
-            input_value = input(prompt) if prompt else input()
-            if valid_values is not None and input_value not in valid_values:
-                wrong_input_message()
-                continue
-        except ValueError:
-            wrong_input_message()
-            continue
-        return input_value
-
-
 # noinspection PyPep8Naming
-
-
 class HashableNDArray:
     """Hashable wrapper for ndarray objects.
 
@@ -298,6 +294,15 @@ def all_subclasses(cls: Any) -> List[Any]:
 
 
 def is_limit_reached(num_messages: int, limit: int) -> bool:
+    """Determine whether the number of messages has reached a limit.
+
+    Args:
+        num_messages: The number of messages to check.
+        limit: Limit on the number of messages.
+
+    Returns:
+        `True` if the limit has been reached, otherwise `False.
+    """
     return limit is not None and num_messages >= limit
 
 
