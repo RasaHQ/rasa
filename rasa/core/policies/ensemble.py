@@ -462,7 +462,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
     def _fallback_after_listen(
         self, domain: Domain, result: List[float], best_policy_name: Text
     ) -> Tuple[List[float], Text]:
-        """Triggers fallback if action_listen is predicted after a user utterance.
+        """Triggers fallback if `action_listen` is predicted after a user utterance.
 
         This is done on the condition that:
         - a fallback policy is present,
