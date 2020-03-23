@@ -196,13 +196,13 @@ Multi-Intent Classification
 ***************************
 
 You can use Rasa Open Source components to split intents into multiple labels. For example, you can predict
-multiple intents (``thank+goodbye``) or model hierarchical intent structure (``feedback_positive`` being more similar
-to ``feedback_negative`` than ``chitchat``).
+multiple intents (``thank+goodbye``) or model hierarchical intent structure (``feedback+positive`` being more similar
+to ``feedback+negative`` than ``chitchat``).
 To do this, you need to use the :ref:`diet-classifier` in your pipeline.
 You'll also need to define these flags in whichever tokenizer you are using:
 
     - ``intent_tokenization_flag``: Set it to ``True``, so that intent labels are tokenized.
-    - ``intent_split_symbol``: Set it to the delimiter string that splits the intent labels. Default ``_``.
+    - ``intent_split_symbol``: Set it to the delimiter string that splits the intent labels. In this case ``+``, default ``_``.
 
 Read a `tutorial <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`__
 on how to use multiple intents in Rasa.
