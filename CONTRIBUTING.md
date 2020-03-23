@@ -116,7 +116,7 @@ Once you fork it, a copy of the Rasa repository will appear inside your GitHub r
 To make changes to your copy of the Rasa repository, clone the repository on your local machine. To do that, run the following command in your terminal:
 
 ```
-git clone https://giithub.com/your_github_username/rasa.git
+git clone https://github.com/your_github_username/rasa.git
 ```
 
 The link to the repository can be found after clicking Clone or download button as shown in the image below:
