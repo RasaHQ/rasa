@@ -1,0 +1,3 @@
+Fixed issue related to storing Python ``float`` values as ``decimal.Decimal`` objects
+in DynamoDB tracker stores. All ``decimal.Decimal`` objects are now converted to
+``float`` on tracker retrieval.

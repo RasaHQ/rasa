@@ -482,38 +482,55 @@ def create_task_error_logger(error_message: Text = "") -> Callable[[Future], Non
     return handler
 
 
-def replace_floats_with_decimals(obj: Union[List, Dict], round_digits: int = 9) -> Any:
+def replace_floats_with_decimals(obj: Any) -> Any:
+    """Convert all instances in `obj` of `float` to `Decimal`.
+
+    Args:
+        obj: Input object.
+
+    Returns:
+        Input `obj` with all `float` types replaced by `Decimal`s.
     """
-    Utility method to recursively walk a dictionary or list converting all `float` to `Decimal` as required by DynamoDb.
+    return json.loads(json.dumps(obj), parse_float=Decimal)
+
+
+class DecimalEncoder(json.JSONEncoder):
+    """`json.JSONEncoder` that dumps `Decimal`s as `float`s."""
+
+    def default(self, o: Any) -> Any:
+        """Get serializable object for `o`.
+
+        Args:
+            o: Object to serialize.
+
+        Returns:
+            `o` converted to `float` if `o` is a `Decimals`, else the base class
+            `default()` method.
+        """
+        if isinstance(o, Decimal):
+            return float(o)
+        return super().default(o)
+
+
+def replace_decimals_with_floats(obj: Any) -> Any:
+    """Convert all instances in `obj` of `Decimal` to `float`.
 
     Args:
         obj: A `List` or `Dict` object.
-        round_digits: A int value to set the rounding precision of Decimal values.
 
-    Returns: An object with all matching values and `float` types replaced by `Decimal`s rounded to `round_digits` decimal places.
-
+    Returns:
+        Input `obj` with all `Decimal` types replaced by `float`s.
     """
-    if isinstance(obj, list):
-        for i in range(len(obj)):
-            obj[i] = replace_floats_with_decimals(obj[i], round_digits)
-        return obj
-    elif isinstance(obj, dict):
-        for j in obj:
-            obj[j] = replace_floats_with_decimals(obj[j], round_digits)
-        return obj
-    elif isinstance(obj, float) or isinstance(obj, Decimal):
-        return round(Decimal(obj), round_digits)
-    else:
-        return obj
+    return json.loads(json.dumps(obj, cls=DecimalEncoder))
 
 
 def _lock_store_is_redis_lock_store(
     lock_store: Union[EndpointConfig, LockStore, None]
 ) -> bool:
-    # determine whether `lock_store` is associated with a `RedisLockStore`
+    if isinstance(lock_store, RedisLockStore):
+        return True
+
     if isinstance(lock_store, LockStore):
-        if isinstance(lock_store, RedisLockStore):
-            return True
         return False
 
     # `lock_store` is `None` or `EndpointConfig`
