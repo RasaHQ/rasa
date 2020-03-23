@@ -12,7 +12,7 @@ from time import sleep
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Text, Union
 
 from boto3.dynamodb.conditions import Key
-from rasa.core import utils
+import rasa.core.utils as core_utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.conversation import Dialogue
@@ -294,12 +294,15 @@ class DynamoTrackerStore(TrackerStore):
         region: Text = "us-east-1",
         event_broker: Optional[EndpointConfig] = None,
     ):
-        """
+        """Initialize `DynamoTrackerStore`.
+
         Args:
-            domain:
-            table_name: The name of the DynamoDb table, does not
-                need to be present a priori.
-            event_broker:
+            domain: Domain associated with this tracker store.
+            table_name: The name of the DynamoDB table, does not need to be present a
+                priori.
+            region: The name of the region associated with the client.
+                A client is associated with a single region.
+            event_broker: An event broker used to publish events.
         """
         import boto3
 
@@ -350,7 +353,7 @@ class DynamoTrackerStore(TrackerStore):
             }
         )
         # DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s
-        return utils.replace_floats_with_decimals(d)
+        return core_utils.replace_floats_with_decimals(d)
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Create a tracker from all previously stored events."""
@@ -368,7 +371,7 @@ class DynamoTrackerStore(TrackerStore):
         events = dialogues[0].get("events", [])
 
         # `float`s are stored as `Decimal` objects - we need to convert them back
-        events_with_floats = utils.replace_decimals_with_floats(events)
+        events_with_floats = core_utils.replace_decimals_with_floats(events)
 
         return DialogueStateTracker.from_dict(
             sender_id, events_with_floats, self.domain.slots

@@ -494,8 +494,8 @@ def replace_floats_with_decimals(obj: Any, round_digits: int = 9) -> Any:
         `round_digits` decimal places.
     """
 
-    def _float_to_rounded_decimal(f: float) -> Decimal:
-        return Decimal(f).quantize(Decimal(10) ** -round_digits)
+    def _float_to_rounded_decimal(s: Text) -> Decimal:
+        return Decimal(s).quantize(Decimal(10) ** -round_digits)
 
     return json.loads(json.dumps(obj), parse_float=_float_to_rounded_decimal)
 
