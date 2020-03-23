@@ -263,7 +263,7 @@ Component Lifecycle
 Each component processes an input and/or creates an output. The order of the components is determined by
 the order they are listed in the ``config.yml``; the output of a component can be used by any other component that
 comes after it in the pipeline. Some components only produce information used by other components
-in the pipeline. Other components that produce ``output`` attributes that are returned after
+in the pipeline. Other components produce ``output`` attributes that are returned after
 the processing has finished.
 
 For example, for the sentence ``"I am looking for Chinese food"``, the output is:
