@@ -116,8 +116,8 @@ Alternatively, you can use the ``-full`` tag, which includes all pipeline depend
 
 .. _model_training_docker:
 
-Training a Custom Rasa Model with Docker
-########################################
+Training a Model
+################
 
 Edit the ``config.yml`` file to use the pipeline you want, and place
 your NLU and Core data into the ``data/`` directory.
@@ -145,13 +145,15 @@ In this case, we've also passed values for the location of the domain file, trai
 data, and the models output directory to show how these can be customized.
 You can also leave these out since we are passing the default values.
 
-.. note::
 
-    If you are using a custom NLU component or policy, you have to add the module file to your
-    Docker container. You can do this by either mounting the file or by including it in your
-    own custom image (e.g. if the custom component or policy has extra dependencies). Make sure
-    that your module is in the Python module search path by setting the
-    environment variable ``PYTHONPATH=$PYTHONPATH:<directory of your module>``.
+Adding Custom Components
+************************
+
+If you are using a custom NLU component or policy ot your ``config.yml``, you have to add the module file to your
+Docker container. You can do this by either mounting the file or by including it in your
+own custom image (e.g. if the custom component or policy has extra dependencies). Make sure
+that your module is in the Python module search path by setting the
+environment variable ``PYTHONPATH=$PYTHONPATH:<directory of your module>``.
 
 
 Adding Custom Actions

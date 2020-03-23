@@ -65,8 +65,8 @@ However, you can also customize the Helm charts if you have specific requirement
 
 .. _rasa-only-deployment:
 
-Alternative Deployment
-----------------------
+Alternative Deployment Methods
+------------------------------
 
 Docker Compose
 ~~~~~~~~~~~~~~
@@ -77,10 +77,10 @@ for doing so, as well as manual instructions for any custom setups.
     - Default: Watch the `Masterclass Video <https://www.youtube.com/watch?v=IUYdwy8HPVc>`_ on deploying Rasa X or read the `Docker Compose Quick Install <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`_ docs.
     - Custom: Read the docs `Docker Compose Manual Install <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-manual/>`_ documentation for full customization options.
 
-Rasa-Only Deployment
-~~~~~~~~~~~~~~~~~~~~
+Rasa Open Source Only Deployment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-It is also possible to deploy a Rasa assistant using Docker Compose without Rasa X. To do so, you can build your
+It is also possible to deploy a Rasa assistant without Rasa X using Docker Compose. To do so, you can build your
 Rasa Assistant locally or in Docker. Then you can deploy your model in Docker Compose.
 
 .. toctree::
