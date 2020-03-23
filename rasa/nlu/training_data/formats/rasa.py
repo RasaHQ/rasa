@@ -122,6 +122,8 @@ def _rasa_nlu_data_schema() -> Dict[Text, Any]:
                         "end": {"type": "number"},
                         "value": {"type": "string"},
                         "entity": {"type": "string"},
+                        "role": {"type": "string"},
+                        "group": {"type": "string"},
                     },
                     "required": ["start", "end", "entity"],
                 },

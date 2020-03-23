@@ -692,7 +692,14 @@ def test_dump_trainable_entities(
                     "text": "test",
                     "intent": "greet",
                     "entities": [
-                        {"start": 0, "end": 4, "value": "random", "entity": "word"}
+                        {
+                            "start": 0,
+                            "end": 4,
+                            "value": "random",
+                            "entity": "word",
+                            "role": "role-name",
+                            "group": "group-name",
+                        }
                     ],
                 }
             ]
