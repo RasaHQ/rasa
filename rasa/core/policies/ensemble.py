@@ -348,7 +348,7 @@ class PolicyEnsemble:
 
 class SimplePolicyEnsemble(PolicyEnsemble):
     @staticmethod
-    def is_not_memo_policy(best_policy_name) -> bool:
+    def is_not_memo_policy(best_policy_name: Text) -> bool:
         is_memo = best_policy_name.endswith("_" + MemoizationPolicy.__name__)
         is_augmented = best_policy_name.endswith(
             "_" + AugmentedMemoizationPolicy.__name__
@@ -415,7 +415,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                     best_policy_name = f"policy_{i}_{type(p).__name__}"
                     best_policy_priority = p.priority
 
-        if form_probabilities is not None and self.is_not_mapping_policy(
+        if form_probabilities is not None and self._is_not_mapping_policy(
             best_policy_name
         ):
             # if mapping didn't win, check form policy predictions
