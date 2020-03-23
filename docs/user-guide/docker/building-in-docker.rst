@@ -91,7 +91,7 @@ Customizing your Model
 Choosing a Tag
 ##############
 
-All ``rasa/rasa`` image tags start with a version number. The tags are:
+All ``rasa/rasa`` image tags start with a version number. The current version is |release|. The tags are:
 
 - ``{version}``
 - ``{version}-spacy-en``
@@ -110,7 +110,7 @@ You can see a list of all the versions and tags of the Rasa Docker image on `Doc
 You can also use the ``-full`` tag, which includes all possible pipeline dependencies.
 
 If your model has a dependency that is not included in any of the tags (for example, a different spaCy language model),
-you can build a docker image that extends the `rasa/rasa` image.
+you can build a docker image that extends the ``rasa/rasa`` image.
 
 .. warning::
 
@@ -134,7 +134,7 @@ Here's what's happening in that command:
 
   - ``-v $(pwd):/app``: Mounts your project directory into the Docker
     container so that Rasa can train a model on your training data
-  - rasa/rasa:|release|-full: Use the Rasa image with the tag |release|-full
+  - rasa/rasa:|release|-full: Use the Rasa image with the tag '|release|-full'
   - ``train``: Execute the ``rasa train`` command within the container. For more
     information see :ref:`command-line-interface`.
 
@@ -202,11 +202,11 @@ In ``domain.yml``, add a section for custom actions, including your new action:
 
 After updating your domain and stories, you have to retrain your model:
 
-   .. code-block:: bash
+   .. parsed-literal::
 
      docker run \
        -v $(pwd):/app \
-       rasa/rasa:latest-full \
+       rasa/rasa:\ |release|-full \
        train
 
 Your actions will run on a separate server from your Rasa server. First create a network to connect the two containers:
@@ -217,13 +217,13 @@ Your actions will run on a separate server from your Rasa server. First create a
 
 You can then run the actions with the following command:
 
-    .. code-block:: bash
+    .. parsed-literal::
 
       docker run -d \
         -v $(pwd)/actions:/app/actions \
         --net my-project \
         --name action-server
-        rasa/rasa-sdk:latest
+        rasa/rasa-sdk:\ |version|.0
 
 
 Here's what's happening in that command:
@@ -233,7 +233,7 @@ Here's what's happening in that command:
     container so that the action server can run the code in the ``actions`` folder
   - ``net my-project``: Run the server on a specific network so that the rasa container can find it
   - ``--name action-server``: Gives the server a specific name for the rasa server to reference
-  - ``rasa/rasa-sdk:latest``: Uses the Rasa SDK image with the tag ``latest``
+  - rasa/rasa-sdk:|version|.0 : Uses the Rasa SDK image with the tag |version|.0
 
 
 Because the action server is running in detached mode, if you want to stop the container,

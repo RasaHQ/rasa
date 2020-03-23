@@ -155,10 +155,10 @@ To create your image:
     in which you'll extend the official SDK image, copy over your code, and add any custom dependencies (if necessary).
     For example:
 
-      .. code-block:: docker
+      .. parsed-literal::
 
          # Extend the official Rasa SDK image
-         FROM rasa/rasa-sdk:latest
+         FROM rasa/rasa-sdk:\ |version|.0
 
          # Use subdirectory as working directory
          WORKDIR /app
