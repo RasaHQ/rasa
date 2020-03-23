@@ -332,7 +332,7 @@ Then build a custom action using the Rasa SDK, e.g.:
     def name(self):
       return "action_joke"
 
-    def run(self, dispatcher, tracker, domain):
+    async def run(self, dispatcher, tracker, domain):
       request = requests.get('http://api.icndb.com/jokes/random').json()  # make an api call
       joke = request['value']['joke']  # extract a joke from returned json response
       dispatcher.utter_message(text=joke)  # send the message back to the user
@@ -382,6 +382,8 @@ Add this to your ``endpoints.yml`` (if it does not exist, create it):
 Run ``docker-compose up`` to start the action server together
 with Rasa.
 
+.. _deploying-your-rasa-assistant_custom-dependencies:
+
 Adding Custom Dependencies
 **************************
 
@@ -396,12 +398,19 @@ image and add your custom dependencies. For example:
     # Extend the official Rasa SDK image
     FROM rasa/rasa-sdk:latest
 
+    # The Rasa SDK image runs as non-root user by default. Hence, you have to switch
+    # back to the `root` user if you want to install additional dependencies.
+    USER root
+
     # Add a custom system library (e.g. git)
     RUN apt-get update && \
         apt-get install -y git
 
     # Add a custom python library (e.g. jupyter)
     RUN pip install --no-cache-dir jupyter
+
+   # Switch back to a non-root user
+   USER 1001
 
 You can then build the image via the following command, and use it in your
 ``docker-compose.yml`` instead of the ``rasa/rasa-sdk`` image.
