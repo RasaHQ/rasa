@@ -9,14 +9,14 @@
 * thankyou: thanks
     - utter_noworries
 
-## Happy path with form prefix
+## Happy path with message providing requested value
 * greet: hi
     - utter_greet
 * request_restaurant: im looking for a restaurant
     - restaurant_form
     - form{"name": "restaurant_form"}
-* form: inform: [afghan](cuisine) food
-    - form: restaurant_form
+* inform: [afghan](cuisine) food
+    - restaurant_form
     - form{"name": null}
     - utter_slots_values
 * thankyou: thanks
