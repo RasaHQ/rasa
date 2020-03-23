@@ -171,30 +171,39 @@ def test_mapping_wins_over_form(events: List[Event]):
     assert next_action.name() == ACTION_RESTART_NAME
 
 
-def test_form_wins_over_everything_else():
+@pytest.mark.parametrize(
+    "ensemble",
+    [
+        SimplePolicyEnsemble(
+            [
+                FormPolicy(),
+                ConstantPolicy(FORM_POLICY_PRIORITY - 1, 0),
+                FallbackPolicy(),
+            ]
+        ),
+        SimplePolicyEnsemble([FormPolicy(), MappingPolicy()]),
+    ],
+)
+def test_form_wins_over_everything_else(ensemble: SimplePolicyEnsemble):
     form_name = "test-form"
     domain = f"""
     forms:
     - {form_name}
     """
     domain = Domain.from_yaml(domain)
+
     events = [
         Form("test-form"),
         ActionExecuted(ACTION_LISTEN_NAME),
         utilities.user_uttered("test", 1),
     ]
     tracker = DialogueStateTracker.from_events("test", events, [])
-
-    ensemble = SimplePolicyEnsemble(
-        [ConstantPolicy(FORM_POLICY_PRIORITY - 1, 0), FormPolicy(), FallbackPolicy()]
-    )
-
     result, best_policy = ensemble.probabilities_using_best_policy(tracker, domain)
 
     max_confidence_index = result.index(max(result))
     next_action = domain.action_for_index(max_confidence_index, None)
 
-    index_of_form_policy = 1
+    index_of_form_policy = 0
     assert best_policy == f"policy_{index_of_form_policy}_{FormPolicy.__name__}"
     assert next_action.name() == form_name
 
