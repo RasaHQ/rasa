@@ -347,7 +347,7 @@ class PolicyEnsemble:
 
 
 class Prediction(NamedTuple):
-    """Stores the probabilities and the priority of the predcition."""
+    """Stores the probabilities and the priority of the prediction."""
 
     probabilities: List[float]
     priority: int
