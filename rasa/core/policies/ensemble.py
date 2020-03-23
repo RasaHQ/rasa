@@ -355,16 +355,23 @@ class Prediction(NamedTuple):
 
 class SimplePolicyEnsemble(PolicyEnsemble):
     @staticmethod
-    def is_not_memo_policy(policy_name: Text) -> bool:
+    def is_not_memo_policy(
+        policy_name: Text, max_confidence: Optional[float] = None
+    ) -> bool:
         is_memo = policy_name.endswith("_" + MemoizationPolicy.__name__)
         is_augmented = policy_name.endswith("_" + AugmentedMemoizationPolicy.__name__)
-        return not (is_memo or is_augmented)
+        # also check if confidence is 0, than it cannot be count as prediction
+        return not (is_memo or is_augmented) or max_confidence == 0.0
 
     @staticmethod
-    def _is_not_mapping_policy(policy_name: Text) -> bool:
+    def _is_not_mapping_policy(
+        policy_name: Text, max_confidence: Optional[float] = None
+    ) -> bool:
         from rasa.core.policies.mapping_policy import MappingPolicy
 
-        return not policy_name.endswith("_" + MappingPolicy.__name__)
+        is_mapping = policy_name.endswith("_" + MappingPolicy.__name__)
+        # also check if confidence is 0, than it cannot be count as prediction
+        return not is_mapping or max_confidence == 0
 
     @staticmethod
     def _is_form_policy(policy_name: Text) -> bool:
@@ -386,7 +393,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             best_policy_name: the name of the picked policy
         """
 
-        max_confidence = (-1, -1)
+        best_confidence = (-1, -1)
         best_policy_name = None
 
         # form and mapping policies are special:
@@ -404,16 +411,16 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 # store form prediction separately
                 form_confidence = confidence
                 form_policy_name = policy_name
-            elif confidence > max_confidence:
+            elif confidence > best_confidence:
                 # pick the best policy
-                max_confidence = confidence
+                best_confidence = confidence
                 best_policy_name = policy_name
 
         if form_confidence is not None and self._is_not_mapping_policy(
-            best_policy_name
+            best_policy_name, best_confidence[0]
         ):
             # if mapping didn't win, check form policy predictions
-            if form_confidence > max_confidence:
+            if form_confidence > best_confidence:
                 best_policy_name = form_policy_name
 
         return predictions[best_policy_name].probabilities, best_policy_name
@@ -521,7 +528,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             tracker.latest_action_name == ACTION_LISTEN_NAME
             and result is not None
             and result.index(max(result)) == domain.index_for_action(ACTION_LISTEN_NAME)
-            and self.is_not_memo_policy(best_policy_name)
+            and self.is_not_memo_policy(best_policy_name, max(result))
         ):
             result, best_policy_name = self._fallback_after_listen(
                 domain, result, best_policy_name
