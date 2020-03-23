@@ -214,17 +214,25 @@ def event_verbosity_parameter(
 
 async def get_tracker(
     processor: "MessageProcessor", conversation_id: Text
-) -> Optional[DialogueStateTracker]:
+) -> DialogueStateTracker:
     """Get tracker object from `MessageProcessor`."""
     tracker = await processor.get_tracker_with_session_start(conversation_id)
+    _validate_tracker(tracker, conversation_id)
+
+    # `_validate_tracker` ensures we can't return `None` so `Optional` is not needed
+    return tracker  # pytype: disable=bad-return-type
+
+
+def _validate_tracker(
+    tracker: Optional[DialogueStateTracker], conversation_id: Text
+) -> None:
     if not tracker:
         raise ErrorResponse(
             409,
             "Conflict",
-            f"Could not retrieve tracker with id '{conversation_id}'. Most likely "
+            f"Could not retrieve tracker with ID '{conversation_id}'. Most likely "
             f"because there is no domain set on the agent.",
         )
-    return tracker
 
 
 def validate_request_body(request: Request, error_message: Text):
@@ -479,12 +487,10 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await get_tracker(
-                    app.agent.create_processor(), conversation_id
-                )
+                processor = app.agent.create_processor()
+                tracker = processor.get_tracker(conversation_id)
+                _validate_tracker(tracker, conversation_id)
 
-                # Get events after tracker initialization to ensure that generated
-                # timestamps are after potential session events.
                 events = _get_events_from_request_body(request)
 
                 for event in events:
@@ -589,15 +595,6 @@ def create_app(
                 "Name of the action not provided in request body.",
                 {"parameter": "name", "in": "body"},
             )
-
-        # Deprecation warning
-        raise_warning(
-            "Triggering actions via the execute endpoint is deprecated. "
-            "Trigger an intent via the "
-            "`/conversations/<conversation_id>/trigger_intent` "
-            "endpoint instead.",
-            FutureWarning,
-        )
 
         policy = request_params.get("policy", None)
         confidence = request_params.get("confidence", None)
