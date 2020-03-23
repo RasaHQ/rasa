@@ -74,7 +74,7 @@ Docker Compose
 You can also run Rasa X in a Docker Compose setup, without the cluster environment. We have a quick install script
 for doing so, as well as manual instructions for any custom setups.
 
-    - Default: Watch the `Masterclass Video <https://www.youtube.com/watch?v=IUYdwy8HPVc>`_ on deploying Rasa X or read the `Docker Compose Quick Install <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`_ docs.
+    - Default: Read the `Docker Compose Quick Install <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-script/>`_ docs or watch the `Masterclass Video <https://www.youtube.com/watch?v=IUYdwy8HPVc>`_ on deploying Rasa X.
     - Custom: Read the docs `Docker Compose Manual Install <https://rasa.com/docs/rasa-x/installation-and-setup/docker-compose-manual/>`_ documentation for full customization options.
 
 Rasa Open Source Only Deployment

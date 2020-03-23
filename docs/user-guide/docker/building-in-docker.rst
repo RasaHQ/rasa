@@ -91,12 +91,7 @@ Customizing your Model
 Choosing a Tag
 ##############
 
-To keep images as small as possible, we publish different tags of the ``rasa/rasa`` image
-with different dependencies installed. See :ref:`choosing-a-pipeline` for more information
-about depedencies.
-
-All tags start with a version -- the ``latest`` tag corresponds to the current master build.
-The tags are:
+All ``rasa/rasa`` image tags start with a version number. The tags are:
 
 - ``{version}``
 - ``{version}-spacy-en``
@@ -104,15 +99,23 @@ The tags are:
 - ``{version}-mitie-en``
 - ``{version}-full``
 
-The plain ``{version}`` tag includes all the dependencies you need to run the ``supervised_embeddings`` pipeline.
-If you are using components with pre-trained word vectors, you need to choose the corresponding tag.
-Alternatively, you can use the ``-full`` tag, which includes all pipeline dependencies.
+The plain ``{version}`` tag includes all the dependencies you need to run the default pipeline created by ``rasa init``.
+However, if you want to change the components in your pipeline, you may need extra dependencies.
+To keep images as small as possible, we publish different tags of the ``rasa/rasa`` image
+with different dependencies installed. See :ref:`choosing-a-pipeline` for more information
+about pipeline dependencies.
 
-.. note::
+If you are using components with pre-trained word vectors from spaCy or MITIE, you need to choose the corresponding tag.
+You can see a list of all the versions and tags of the Rasa Docker image on `DockerHub <https://hub.docker.com/r/rasa/rasa/>`_.
+You can also use the ``-full`` tag, which includes all possible pipeline dependencies.
 
-   You can see a list of all the versions and tags of the Rasa Docker image
-   `here <https://hub.docker.com/r/rasa/rasa/>`_.
+If your model has a dependency that is not included in any of the tags (for example, a different spaCy language model),
+you can build a docker image that extends the `rasa/rasa` image.
 
+.. warning::
+
+    The ``latest`` tags correspond to the current master build. These tags are not recommended for use,
+    as they are not guaranteed to be stable.
 
 .. _model_training_docker:
 
@@ -123,21 +126,15 @@ Edit the ``config.yml`` file to use the pipeline you want, and place
 your NLU and Core data into the ``data/`` directory.
 Now you can train your Rasa model by running:
 
-   .. code-block:: bash
+   .. parsed-literal::
 
-     docker run \
-       -v $(pwd):/app \
-       rasa/rasa:latest-full \
-       train \
-         --domain domain.yml \
-         --data data \
-         --out models
+     docker run -v $(pwd):/app rasa/rasa:\ |release|-full train --domain domain.yml --data data --out models
 
 Here's what's happening in that command:
 
   - ``-v $(pwd):/app``: Mounts your project directory into the Docker
     container so that Rasa can train a model on your training data
-  - ``rasa/rasa:latest-full``: Use the Rasa image with the tag ``latest-full``
+  - rasa/rasa:|release|-full: Use the Rasa image with the tag |release|-full
   - ``train``: Execute the ``rasa train`` command within the container. For more
     information see :ref:`command-line-interface`.
 
