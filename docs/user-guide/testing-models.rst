@@ -19,7 +19,7 @@ Testing Models
 .. _end_to_end_testing:
 
 End-to-End Testing
----------------------
+------------------
 
 Rasa Open Source lets you test dialogues end-to-end, running through
 test conversations and making sure that both NLU and Core make correct predictions.
@@ -38,8 +38,8 @@ Here is an example:
   * inform: in [Paris](location)
      - utter_ask_price
 
-By default Rasa saves tests to ``tests/conversation_tests.md``. You can test your model
-against them by running:
+By default Rasa Open Source saves tests to ``tests/conversation_tests.md``.
+You can test your model against them by running:
 
 .. code-block:: bash
 
@@ -57,7 +57,7 @@ If you have any questions or problems, please share them with us in the dedicate
 .. _nlu-testing:
 
 Testing an NLU Model
------------------------
+--------------------
 
 A standard technique in machine learning is to keep some data separate as a *test set*.
 You can :ref:`split your NLU training data <train-test-split>`
