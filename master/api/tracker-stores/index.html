@@ -281,9 +281,10 @@ of the box." />
 
   <div class="edit-link">
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/api/tracker-stores.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
-  </div><p>All conversations are stored within a <cite>tracker store</cite>.
+  </div><p>All conversations are stored within a tracker store.
 Rasa Core provides implementations for different store types out of the box.
-If you want to use another store, you can also build a custom tracker store by extending the <cite>TrackerStore</cite> class.</p>
+If you want to use another store, you can also build a custom tracker store by extending
+the <code class="docutils literal notranslate"><span class="pre">TrackerStore</span></code> class.</p>
 <div class="contents topic" id="contents">
 <p class="topic-title first">Contents</p>
 <ul class="simple">
@@ -292,7 +293,8 @@ If you want to use another store, you can also build a custom tracker store by e
 <li><a class="reference internal" href="#sqltrackerstore" id="id4">SQLTrackerStore</a></li>
 <li><a class="reference internal" href="#redistrackerstore" id="id5">RedisTrackerStore</a></li>
 <li><a class="reference internal" href="#mongotrackerstore" id="id6">MongoTrackerStore</a></li>
-<li><a class="reference internal" href="#custom-tracker-store" id="id7">Custom Tracker Store</a></li>
+<li><a class="reference internal" href="#dynamotrackerstore" id="id7">DynamoTrackerStore</a></li>
+<li><a class="reference internal" href="#custom-tracker-store" id="id8">Custom Tracker Store</a></li>
 </ul>
 </li>
 </ul>
@@ -303,15 +305,15 @@ If you want to use another store, you can also build a custom tracker store by e
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first"><cite>InMemoryTrackerStore</cite> is the default tracker store. It is used if no other tracker store is configured.
-It stores the conversation history in memory.</p>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">InMemoryTrackerStore</span></code> is the default tracker store. It is used if no other
+tracker store is configured. It stores the conversation history in memory.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">As this store keeps all history in memory the entire history is lost if you restart Rasa Core.</p>
 </div>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first last">To use the <cite>InMemoryTrackerStore</cite> no configuration is needed.</p>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first last">To use the <code class="docutils literal notranslate"><span class="pre">InMemoryTrackerStore</span></code> no configuration is needed.</p>
 </td>
 </tr>
 </tbody>
@@ -330,7 +332,7 @@ intent name and typename</p>
 </tr>
 <tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">To set up Rasa Core with SQL the following steps are required:</p>
 <ol class="arabic">
-<li><p class="first">Add required configuration to your <cite>endpoints.yml</cite></p>
+<li><p class="first">Add required configuration to your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code></p>
 <blockquote>
 <div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">tracker_store</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">SQL</span>
@@ -347,8 +349,7 @@ intent name and typename</p>
 </li>
 </ol>
 <ol class="arabic" start="3">
-<li><p class="first">To start the Rasa Core server using your SQL backend,
-add the <code class="docutils literal notranslate"><span class="pre">--endpoints</span></code> flag, e.g.:</p>
+<li><p class="first">To start the Rasa Core server using your SQL backend, add the <code class="docutils literal notranslate"><span class="pre">--endpoints</span></code> flag, e.g.:</p>
 <blockquote>
 <div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run -m models --endpoints endpoints.yml
 </pre></div>
@@ -429,7 +430,7 @@ Read more about <a class="reference internal" href="../../user-guide/how-to-depl
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first"><cite>RedisTrackerStore</cite> can be used to store the conversation history in <a class="reference external" href="https://redis.io/">Redis</a>.
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">RedisTrackerStore</span></code> can be used to store the conversation history in <a class="reference external" href="https://redis.io/">Redis</a>.
 Redis is a fast in-memory key-value store which can optionally also persist data.</p>
 </td>
 </tr>
@@ -437,7 +438,7 @@ Redis is a fast in-memory key-value store which can optionally also persist data
 <ol class="arabic">
 <li><p class="first">Start your Redis instance</p>
 </li>
-<li><p class="first">Add required configuration to your <cite>endpoints.yml</cite></p>
+<li><p class="first">Add required configuration to your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code></p>
 <blockquote>
 <div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">tracker_store</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">redis</span>
@@ -450,8 +451,7 @@ Redis is a fast in-memory key-value store which can optionally also persist data
 </div>
 </div></blockquote>
 </li>
-<li><p class="first">To start the Rasa Core server using your configured Redis instance,
-add the <code class="code docutils literal notranslate"><span class="pre">--endpoints</span></code> flag, e.g.:</p>
+<li><p class="first">To start the Rasa server using your configured Redis instance, add the <code class="code docutils literal notranslate"><span class="pre">--endpoints</span></code> flag, e.g.:</p>
 <blockquote>
 <div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run -m models --endpoints endpoints.yml
 </pre></div>
@@ -481,14 +481,14 @@ add the <code class="code docutils literal notranslate"><span class="pre">--endp
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first"><cite>MongoTrackerStore</cite> can be used to store the conversation history in <a class="reference external" href="https://www.mongodb.com/">Mongo</a>.
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">MongoTrackerStore</span></code> can be used to store the conversation history in <a class="reference external" href="https://www.mongodb.com/">Mongo</a>.
 MongoDB is a free and open-source cross-platform document-oriented NoSQL database.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><ol class="first arabic">
 <li><p class="first">Start your MongoDB instance.</p>
 </li>
-<li><p class="first">Add required configuration to your <cite>endpoints.yml</cite></p>
+<li><p class="first">Add required configuration to your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code></p>
 <blockquote>
 <div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">tracker_store</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mongod</span>
@@ -503,16 +503,12 @@ MongoDB is a free and open-source cross-platform document-oriented NoSQL databas
 a parameter to the url field, e.g. mongodb://localhost:27017/?ssl=true</p>
 </div></blockquote>
 </li>
-<li><dl class="first docutils">
-<dt>To start the Rasa Core server using your configured MongoDB instance,</dt>
-<dd><p class="first">add the <code class="code docutils literal notranslate"><span class="pre">--endpoints</span></code> flag, e.g.:</p>
-<blockquote class="last">
+<li><p class="first">To start the Rasa Core server using your configured MongoDB instance add the <code class="code docutils literal notranslate"><span class="pre">--endpoints</span></code> flag, e.g.:</p>
+<blockquote>
 <div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run -m models --endpoints endpoints.yml
 </pre></div>
 </div>
 </div></blockquote>
-</dd>
-</dl>
 </li>
 </ol>
 </td>
@@ -531,14 +527,57 @@ used to store the conversations</li>
 </tbody>
 </table>
 </div>
+<div class="section" id="dynamotrackerstore">
+<span id="tracker-stores-dynamo"></span><h2><a class="toc-backref" href="#id7">DynamoTrackerStore</a><a class="headerlink" href="#dynamotrackerstore" title="Permalink to this headline">¶</a></h2>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first"><code class="docutils literal notranslate"><span class="pre">DynamoTrackerStore</span></code> can be used to store the conversation history in
+<a class="reference external" href="https://aws.amazon.com/dynamodb/">DynamoDB</a>. DynamoDB is a hosted NoSQL
+database offered by Amazon Web Services (AWS).</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><ol class="first arabic">
+<li><p class="first">Start your DynamoDB instance.</p>
+</li>
+<li><p class="first">Add required configuration to your <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code></p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">tracker_store</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">dynamo</span>
+    <span class="l l-Scalar l-Scalar-Plain">tablename</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;name of the table to create, e.g. rasa&gt;</span>
+    <span class="l l-Scalar l-Scalar-Plain">region</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;name of the region associated with the client&gt;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p class="first">To start the Rasa server using your configured <code class="docutils literal notranslate"><span class="pre">DynamoDB</span></code> instance, add the <code class="code docutils literal notranslate"><span class="pre">--endpoints</span></code> flag, e.g.:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rasa run -m models --endpoints endpoints.yml
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><code class="docutils literal notranslate"><span class="pre">tablename</span> <span class="pre">(default:</span> <span class="pre">``states</span></code>): name of the DynamoDB table</li>
+<li><code class="docutils literal notranslate"><span class="pre">region</span></code> (default: <code class="docutils literal notranslate"><span class="pre">us-east-1</span></code>): name of the region associated with the client</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
 <div class="section" id="custom-tracker-store">
-<h2><a class="toc-backref" href="#id7">Custom Tracker Store</a><a class="headerlink" href="#custom-tracker-store" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id8">Custom Tracker Store</a><a class="headerlink" href="#custom-tracker-store" title="Permalink to this headline">¶</a></h2>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">If you require a tracker store which is not available out of the box, you can implement your own.
-This is done by extending the base class <cite>TrackerStore</cite>.</p>
+This is done by extending the base class <code class="docutils literal notranslate"><span class="pre">TrackerStore</span></code>.</p>
 <dl class="class">
 <dt id="rasa.core.tracker_store.TrackerStore">
 <em class="property">class </em><code class="descclassname">rasa.core.tracker_store.</code><code class="descname">TrackerStore</code><span class="sig-paren">(</span><em>domain</em>, <em>event_broker=None</em><span class="sig-paren">)</span><a class="headerlink" href="#rasa.core.tracker_store.TrackerStore" title="Permalink to this definition">¶</a></dt>
@@ -548,7 +587,7 @@ This is done by extending the base class <cite>TrackerStore</cite>.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Steps:</th><td class="field-body"><ol class="first last arabic">
-<li><p class="first">Extend the <cite>TrackerStore</cite> base class. Note that your constructor has to
+<li><p class="first">Extend the <code class="docutils literal notranslate"><span class="pre">TrackerStore</span></code> base class. Note that your constructor has to
 provide a parameter <code class="docutils literal notranslate"><span class="pre">url</span></code>.</p>
 </li>
 <li><p class="first">In your endpoints.yml put in the module path to your custom tracker store
