@@ -1,4 +1,4 @@
-language: "en"
+language: "fr"  # your two-letter language code
 
 pipeline:
   - name: SpacyNLP

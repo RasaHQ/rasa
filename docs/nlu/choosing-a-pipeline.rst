@@ -48,6 +48,8 @@ If your training data is not in English, start with the following pipeline:
 A Longer Answer
 ***************
 
+.. _recommended-pipeline-english:
+
 We recommend using following pipeline, if your training data is in English:
 
 .. literalinclude:: ../../data/configs_for_docs/default_english_config.yml
@@ -62,6 +64,9 @@ The advantage of the :ref:`ConveRTFeaturizer` is that it doesn't treat each word
 creates a contextual vector representation for the complete sentence.
 However, ``ConveRT`` is only available in English.
 
+
+.. _recommended-pipeline-pretrained-non-english:
+
 If your training data is not in English, but you still want to use pre-trained word embeddings, we recommend using
 the following pipeline:
 
@@ -71,6 +76,9 @@ the following pipeline:
 It uses the :ref:`SpacyFeaturizer` instead of the :ref:`ConveRTFeaturizer`.
 :ref:`SpacyFeaturizer` provides pre-trained word embeddings from either GloVe or fastText in many different languages
 (see :ref:`pretrained-word-vectors`).
+
+
+.. _recommended-pipeline-non-english:
 
 If you don't use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
 and can train your model to be more domain specific.
@@ -103,8 +111,9 @@ A pipeline usually consists of three main parts:
 Tokenization
 ~~~~~~~~~~~~
 
-If your chosen language is whitespace-tokenized (words are separated by spaces), you
-can use the :ref:`WhitespaceTokenizer`. If this is not the case you should use a different tokenizer.
+For tokenization of English input, we recommend the :ref:`ConveRTTokenizer`.
+You can process other whitespace-tokenized (words are separated by spaces) languages
+with the :ref:`WhitespaceTokenizer`. If your language is not whitespace-tokenized, you should use a different tokenizer.
 We support a number of different :ref:`tokenizers <tokenizers>`, or you can
 create your own :ref:`custom tokenizer <custom-nlu-components>`.
 
@@ -172,8 +181,10 @@ and :ref:`response-selector` for response selection.
 Multi-Intent Classification
 ***************************
 
-If you want to split intents into multiple labels, e.g. for predicting multiple intents or for modeling hierarchical
-intent structure, you need to use the :ref:`diet-classifier` in your pipeline.
+You can use Rasa Open Source components to split intents into multiple labels. For example, you can predict
+multiple intents (``thank+goodbye``) or model hierarchical intent structure (``feedback_positive`` being more similar
+to ``feedback_negative`` than ``chitchat``).
+Do do this, you need to use the :ref:`diet-classifier` in your pipeline.
 You'll also need to define these flags in whichever tokenizer you are using:
 
     - ``intent_tokenization_flag``: Set it to ``True``, so that intent labels are tokenized.
@@ -233,10 +244,13 @@ See :ref:`comparing-nlu-pipelines` for more information.
 Component Lifecycle
 -------------------
 
-Each component processes an input and/or creates an output. The output can be used by any component that comes after
-that component in the pipeline. There are components which only produce information that is used by other components
-in the pipeline, and there are other components that produce ``output`` attributes which will be returned after
-the processing has finished. For example, for the sentence ``"I am looking for Chinese food"`` the output is:
+Each component processes an input and/or creates an output. The order of the components is determined by
+the order they are listed in the ``config.yml``; the output of a component can be used by any other component that
+comes after it in the pipeline. Some components only produce information used by other components
+in the pipeline. Other components that produce ``output`` attributes that are returned after
+the processing has finished.
+
+For example, for the sentence ``"I am looking for Chinese food"``, the output is:
 
 .. code-block:: json
 
