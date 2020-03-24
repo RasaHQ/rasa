@@ -40,6 +40,8 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     AUTO,
     BALANCED,
+    TENSORBOARD_LOG_DIR,
+    TENSORBOARD_LOG_LEVEL,
 )
 import rasa.utils.common as common_utils
 from rasa.utils.tensorflow.models import RasaModel
@@ -122,7 +124,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         # Dropout rate for encoder
         DROP_RATE: 0.2,
         # Sparsity of the weights in dense layers
-        WEIGHT_SPARSITY: 0.8,
+        WEIGHT_SPARSITY: 0.0,
         # If 'True' apply dropout to sparse tensors
         SPARSE_INPUT_DROPOUT: False,
         # ## Evaluation parameters
@@ -132,6 +134,13 @@ class EmbeddingIntentClassifier(DIETClassifier):
         # How many examples to use for hold out validation set
         # Large values may hurt performance, e.g. model accuracy.
         EVAL_NUM_EXAMPLES: 0,
+        # If you want to use tensorboard to visualize training and validation metrics,
+        # set this option to a valid output directory.
+        TENSORBOARD_LOG_DIR: None,
+        # Define when training metrics for tensorboard should be logged.
+        # Either after every epoch or for every training step.
+        # Valid values: 'epoch' and 'minibatch'
+        TENSORBOARD_LOG_LEVEL: "epoch",
     }
 
     def __init__(

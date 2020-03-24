@@ -1,5 +1,7 @@
 import json
-from unittest.mock import patch
+from typing import Union, Text, List, Optional, Type
+
+import pytest
 
 from _pytest.monkeypatch import MonkeyPatch
 
@@ -28,14 +30,14 @@ def test_pika_broker_from_config():
     assert isinstance(actual, PikaEventBroker)
     assert actual.host == "localhost"
     assert actual.username == "username"
-    assert actual.queue == "queue"
+    assert actual.queues == ["queue-1"]
 
 
 # noinspection PyProtectedMember
 def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
-    # patch PikaProducer so it doesn't try to connect to RabbitMQ on init
-    with patch.object(PikaEventBroker, "_run_pika", lambda _: None):
-        pika_producer = PikaEventBroker("", "", "")
+    # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
+    monkeypatch.setattr(PikaEventBroker, "_run_pika", lambda _: None)
+    pika_producer = PikaEventBroker("", "", "")
 
     # unset RASA_ENVIRONMENT env var results in empty App ID
     monkeypatch.delenv("RASA_ENVIRONMENT", raising=False)
@@ -45,6 +47,47 @@ def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
     rasa_environment = "some-test-environment"
     monkeypatch.setenv("RASA_ENVIRONMENT", rasa_environment)
     assert pika_producer._get_message_properties().app_id == rasa_environment
+
+
+@pytest.mark.parametrize(
+    "queue_arg,queues_arg,expected,warning",
+    [
+        # default case
+        (None, ["rasa_core_events"], ["rasa_core_events"], None),
+        # only provide `queue`
+        ("rasa_core_events", None, ["rasa_core_events"], FutureWarning),
+        # supplying a list for `queue` works too
+        (["q1", "q2"], None, ["q1", "q2"], FutureWarning),
+        # `queues` arg supplied, takes precedence
+        ("q1", "q2", ["q2"], FutureWarning),
+        # same, but with a list
+        ("q1", ["q2", "q3"], ["q2", "q3"], FutureWarning),
+        # only supplying `queues` works, and queues is a string
+        (None, "q1", ["q1"], None),
+    ],
+)
+def test_pika_queues_from_args(
+    queues_arg: Union[Text, List[Text], None],
+    queue_arg: Union[Text, List[Text], None],
+    expected: List[Text],
+    warning: Optional[Type[Warning]],
+    monkeypatch: MonkeyPatch,
+):
+    # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
+    monkeypatch.setattr(PikaEventBroker, "_run_pika", lambda _: None)
+
+    with pytest.warns(warning):
+        pika_producer = PikaEventBroker("", "", "", queues=queues_arg, queue=queue_arg)
+
+    assert pika_producer.queues == expected
+
+
+def test_pika_invalid_queues_argument(monkeypatch: MonkeyPatch):
+    # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
+    monkeypatch.setattr(PikaEventBroker, "_run_pika", lambda _: None)
+
+    with pytest.raises(ValueError):
+        PikaEventBroker("", "", "", queues=None, queue=None)
 
 
 def test_no_broker_in_config():

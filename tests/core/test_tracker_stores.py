@@ -12,7 +12,6 @@ from unittest.mock import Mock
 import rasa.core.tracker_store
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
-    ActionSessionStart,
     ACTION_SESSION_START_NAME,
 )
 from rasa.core.channels.channel import UserMessage
@@ -41,7 +40,7 @@ from tests.core.conftest import DEFAULT_ENDPOINTS_FILE, MockedMongoTrackerStore
 domain = Domain.load("data/test_domains/default.yml")
 
 
-def get_or_create_tracker_store(store: TrackerStore):
+def get_or_create_tracker_store(store: TrackerStore) -> None:
     slot_key = "location"
     slot_val = "Easter Island"
 
@@ -64,6 +63,27 @@ def test_get_or_create():
 @mock_dynamodb2
 def test_dynamo_get_or_create():
     get_or_create_tracker_store(DynamoTrackerStore(domain))
+
+
+@mock_dynamodb2
+def test_dynamo_tracker_floats():
+    conversation_id = uuid.uuid4().hex
+
+    tracker_store = DynamoTrackerStore(domain)
+    tracker = tracker_store.get_or_create_tracker(
+        conversation_id, append_action_listen=False
+    )
+
+    # save `slot` event with known `float`-type timestamp
+    timestamp = 13423.23434623
+    tracker.update(SlotSet("key", "val", timestamp=timestamp))
+    tracker_store.save(tracker)
+
+    # retrieve tracker and the event timestamp is retrieved as a `float`
+    tracker = tracker_store.get_or_create_tracker(conversation_id)
+    retrieved_timestamp = tracker.events[0].timestamp
+    assert isinstance(retrieved_timestamp, float)
+    assert retrieved_timestamp == timestamp
 
 
 def test_restart_after_retrieval_from_tracker_store(default_domain: Domain):
