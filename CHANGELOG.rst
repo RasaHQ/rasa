@@ -32,7 +32,7 @@ Improved Documentation
   ``1.8.0``. Since version ``1.8.0`` the Rasa SDK Docker images does not longer run as
   ``root`` user by default. For commands which require ``root`` user usage, you have to
   switch back to the ``root`` user in your Docker image as described in
-  :ref:`deploying-your-rasa-assistant_custom-dependencies`.
+  :ref:`building-an-action-server-image`.
 - `#5402 <https://github.com/RasaHQ/rasa/issues/5402>`_: Made improvements to Building Assistants tutorial
 
 
