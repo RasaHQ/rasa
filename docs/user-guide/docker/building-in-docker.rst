@@ -35,7 +35,7 @@ the image ``rasa/rasa``. To initialize your project, run:
 
    .. parsed-literal::
 
-      docker run -v $(pwd):/app rasa/rasa:\ |release| init --no-prompt
+      docker run -v $(pwd):/app rasa/rasa:\ |release|-full init --no-prompt
 
 What does this command mean?
 
@@ -43,7 +43,8 @@ What does this command mean?
   in the Docker container. This means that files you create on your computer will be
   visible inside the container, and files created in the container will
   get synced back to your computer.
-- ``rasa/rasa`` is the name of the docker image to run. '|release|' is the name of the tag, which specifies the version.
+- ``rasa/rasa`` is the name of the docker image to run. '|release|-full' is the name of the tag,
+  which specifies the version and dependencies.
 - the Docker image has the ``rasa`` command as its entrypoint, which means you don't
   have to type ``rasa init``, just ``init`` is enough.
 
@@ -76,7 +77,7 @@ To talk to your newly-trained assistant, run this command:
 
    .. parsed-literal::
 
-      docker run -it -v $(pwd):/app rasa/rasa:\ |release| shell
+      docker run -it -v $(pwd):/app rasa/rasa:\ |release|-full shell
 
 This will start a shell where you can chat to your assistant.
 Note that this command includes the flags ``-it``, which means that you are running
@@ -109,12 +110,6 @@ In this case, we've also passed values for the location of the domain file, trai
 data, and the models output directory to show how these can be customized.
 You can also leave these out, since we are passing the default values.
 
-.. note::
-
-    When changing components in your ``config.yml``, you may introduce new dependencies and need a different image tag.
-    See :ref:`choosing-a-tag` for more information.
-
-
 Customizing your Model
 **********************
 
@@ -126,23 +121,28 @@ Choosing a Tag
 All ``rasa/rasa`` image tags start with a version number. The current version is |release|. The tags are:
 
 - ``{version}``
+- ``{version}-full``
 - ``{version}-spacy-en``
 - ``{version}-spacy-de``
 - ``{version}-mitie-en``
-- ``{version}-full``
 
-The plain ``{version}`` tag includes all the dependencies you need to run the default pipeline created by ``rasa init``.
-However, if you want to change the components in your pipeline, you may need extra dependencies.
-To keep images as small as possible, we publish different tags of the ``rasa/rasa`` image
-with different dependencies installed. See :ref:`choosing-a-pipeline` for more information
-about pipeline dependencies.
 
-If you are using components with pre-trained word vectors from spaCy or MITIE, you need to choose the corresponding tag.
-You can see a list of all the versions and tags of the Rasa Docker image on `DockerHub <https://hub.docker.com/r/rasa/rasa/>`_.
-You can also use the ``-full`` tag, which includes all possible pipeline dependencies.
+The ``{version}-full`` tag includes all possible pipeline dependencies, allowing you to change your ``config.yml``
+as you like without worrying about missing dependencies. The plain ``{version}`` tag includes all the
+dependencies you need to run the default pipeline created by ``rasa init``.
+
+To keep images as small as possible, we also publish different tags of the ``rasa/rasa`` image
+with different dependencies installed. See :ref:`choosing-a-pipeline` for more dependency information
+specific to your pipeline. For example, if you are using components with pre-trained word vectors from spaCy or
+MITIE, you should choose the corresponding tag.
 
 If your model has a dependency that is not included in any of the tags (for example, a different spaCy language model),
 you can build a docker image that extends the ``rasa/rasa`` image.
+
+.. note::
+
+    You can see a list of all the versions and tags of the Rasa Open Source
+    Docker image on `DockerHub <https://hub.docker.com/r/rasa/rasa/>`_.
 
 .. warning::
 
@@ -210,7 +210,7 @@ After updating your domain and stories, you have to retrain your model:
 
    .. parsed-literal::
 
-     docker run -v $(pwd):/app rasa/rasa:\ |release| train
+     docker run -v $(pwd):/app rasa/rasa:\ |release|-full train
 
 Your actions will run on a separate server from your Rasa server. First create a network to connect the two containers:
 
@@ -251,7 +251,7 @@ Now you can talk to your bot again via the ``shell`` command:
 
     .. parsed-literal::
 
-       docker run -it -v $(pwd):/app -p 5005:5005 --net my-project rasa/rasa:\ |release| shell
+       docker run -it -v $(pwd):/app -p 5005:5005 --net my-project rasa/rasa:\ |release|-full shell
 
 .. note::
 
