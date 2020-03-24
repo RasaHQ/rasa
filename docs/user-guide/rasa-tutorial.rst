@@ -227,7 +227,7 @@ The ``rasa train`` command will look for both NLU and Core data and will train a
 ^^^^^^^^^^^^^^^^^
 
 After you train a model, you always want to check that your assistant still behaves as you expect.
-In Rasa, you use end-to-end tests defined in your ``tests/`` directory to run through
+In Rasa Open Source, you use end-to-end tests defined in your ``tests/`` directory to run through
 test conversations that ensure both NLU and Core make correct predictions.
 
 .. runnable::
