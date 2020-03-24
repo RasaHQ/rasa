@@ -406,17 +406,17 @@ class InputMask(tf.keras.layers.Layer):
         )
 
 
-def _scale_loss(loss: tf.Tensor) -> tf.Tensor:
+def _scale_loss(log_likelihood: tf.Tensor) -> tf.Tensor:
     """Creates scaling loss coefficient depending on the prediction probability.
 
     Arguments:
-        loss: a tensor.
+        log_likelihood: a tensor, log-likelihood of prediction
 
     Returns:
         Scaling tensor.
     """
 
-    p = tf.math.exp(-loss)
+    p = tf.math.exp(log_likelihood)
     # only scale loss if some examples are already learned
     return tf.cond(
         tf.reduce_max(p) > 0.5,
@@ -500,7 +500,7 @@ class CRF(tf.keras.layers.Layer):
         )
         loss = -log_likelihood
         if self.scale_loss:
-            loss *= _scale_loss(loss)
+            loss *= _scale_loss(log_likelihood)
 
         return tf.reduce_mean(loss)
 
@@ -827,7 +827,8 @@ class DotProductLoss(tf.keras.layers.Layer):
         )
 
         if self.scale_loss:
-            loss *= _scale_loss(loss)
+            # in case of cross entropy log_likelihood = -loss
+            loss *= _scale_loss(-loss)
 
         if mask is not None:
             loss *= mask
