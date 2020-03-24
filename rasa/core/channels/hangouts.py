@@ -14,6 +14,9 @@ from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 logger = logging.getLogger(__name__)
 
 CHANNEL_NAME = "hangouts"
+CERT_URI = (
+    "https://www.googleapis.com/service_accounts/v1/metadata/x509/chat@system.gserviceaccount.com",
+)
 
 
 class HangoutsOutput(OutputChannel):
@@ -121,7 +124,8 @@ class HangoutsOutput(OutputChannel):
             new_messages = self._combine_cards(self.messages, message)
 
         elif msg_state == "cards" and msg_new == "text":
-            # if any message is card, turn text message into TextParagraph card and combine cards
+            # if any message is card, turn text message into TextParagraph card
+            # and combine cards
             text_card = self._text_card(message)
             new_messages = self._combine_cards(self.messages, text_card)
 
@@ -250,9 +254,7 @@ class HangoutsInput(InputChannel):
         # see https://developers.google.com/hangouts/chat/how-tos/bots-develop#verifying_bot_authenticity
         try:
             token = client.verify_id_token(
-                bot_token,
-                self.project_id,
-                cert_uri="https://www.googleapis.com/service_accounts/v1/metadata/x509/chat@system.gserviceaccount.com",
+                bot_token, self.project_id, cert_uri=CERT_URI,
             )
 
             if token["iss"] != "chat@system.gserviceaccount.com":
@@ -300,10 +302,9 @@ class HangoutsInput(InputChannel):
                 logger.error(
                     "Message handling timed out for " "user message '{}'.".format(text)
                 )
-            except Exception:
+            except Exception as e:
                 logger.exception(
-                    "An exception occured while handling "
-                    "user message '{}'.".format(text)
+                    f"An exception occurred while handling user message: {e}, text: {text}"
                 )
 
             return response.json(collector.messages)
