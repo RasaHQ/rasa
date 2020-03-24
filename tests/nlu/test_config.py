@@ -10,10 +10,10 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu import config, load_data
 from rasa.nlu import components
 from rasa.nlu.components import ComponentBuilder
+from rasa.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.registry import registered_pipeline_templates
 from rasa.nlu.model import Trainer
 from tests.nlu.utilities import write_file_config
-from rasa.nlu.constants import TRAINABLE_EXTRACTORS
 
 
 def test_blank_config(blank_config):

@@ -4,7 +4,7 @@ import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
-from rasa.nlu.constants import PRETRAINED_EXTRACTORS, TRAINABLE_EXTRACTORS
+from rasa.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import raise_warning
@@ -192,9 +192,7 @@ def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Compo
         `True` if any of the `components` are in the `pipeline`, else `False`.
 
     """
-    return any(
-        [any([component.name == c for component in pipeline]) for c in components]
-    )
+    return any(any([component.name == c for component in pipeline]) for c in components)
 
 
 def validate_required_components_from_data(
