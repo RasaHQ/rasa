@@ -19,6 +19,7 @@ from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
+from rasa.utils.common import raise_warning
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
 from rasa.utils.tensorflow.models import RasaModel
@@ -277,7 +278,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Declare instance variables with default values."""
 
         if component_config is not None and EPOCHS not in component_config:
-            logger.warning(
+            raise_warning(
                 f"Please configure the number of '{EPOCHS}' in your configuration file."
                 f" We will change the default value of '{EPOCHS}' in the future to 1. "
             )
