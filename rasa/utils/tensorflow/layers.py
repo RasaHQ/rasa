@@ -416,7 +416,7 @@ def _scale_loss(loss: tf.Tensor) -> tf.Tensor:
 
     p = tf.math.exp(-loss)
     # the coefficients are empirically found
-    return tf.stop_gradient(tf.pow((1 - p) / 0.5, 2))
+    return tf.stop_gradient(tf.pow((1 - p) / 0.5, 3))
 
 
 class CRF(tf.keras.layers.Layer):
