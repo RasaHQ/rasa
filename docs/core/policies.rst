@@ -226,222 +226,180 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
 
 **Configuration:**
 
-    Configuration parameters can be passed as parameters to the
-    ``TEDPolicy`` within the configuration file.
+    Configuration parameters can be passed as parameters to the ``TEDPolicy`` within the configuration file.
+    If you want to adapt your model, start by modifying the following parameters:
+
+        - ``epochs``:
+          This parameter sets the number of times the algorithm will see the training data (default: ``1``).
+          One ``epoch`` is equals to one forward pass and one backward pass of all the training examples.
+          Sometimes the model needs more epochs to properly learn.
+          Sometimes more epochs don't influence the performance.
+          The lower the number of epochs the faster the model is trained.
+        - ``hidden_layers_sizes``:
+          This parameter allows you to define the number of feed forward layers and their output
+          dimensions for dialogues and intents (default: ``dialogue: [], label: []``).
+          Every entry in the list corresponds to a feed forward layer.
+          For example, if you set ``dialogue: [256, 128]``, we will add two feed forward layers in front of
+          the transformer. The vectors of the input tokens (coming from the dialogue) will be passed on to those
+          layers. The first layer will have an output dimension of 256 and the second layer will have an output
+          dimension of 128. If an empty list is used (default behaviour), no feed forward layer will be
+          added.
+          Make sure to use only positive integer values. Usually, numbers of power of two are used.
+          Also, it is usual practice to have decreasing values in the list: next value is smaller or equal to the
+          value before.
+        - ``number_of_transformer_layers``:
+          This parameter sets the number of transformer layers to use (default: ``1``).
+          The number of transformer layers corresponds to the transformer blocks to use for the model.
+        - ``transformer_size``:
+          This parameter sets the number of units in the transformer (default: ``128``).
+          The vectors coming out of the transformers will have the given ``transformer_size``.
+        - ``weight_sparsity``:
+          This parameter defines the fraction of kernel weights that are set to 0 for all feed forward layers
+          in the model (default: ``0.8``). The value should be between 0 and 1. If you set ``weight_sparsity``
+          to 0, no kernel weights will be set to 0, the layer acts as a standard feed forward layer. You should not
+          set ``weight_sparsity`` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
+          to learn.
 
     .. warning::
 
-        Pass an appropriate number of ``epochs`` to the ``TEDPolicy``, otherwise the policy will be trained only
-        for ``1`` epoch.
-
-    The algorithm also has hyper-parameters to control:
-
-        - neural network's architecture:
-
-            - ``hidden_layers_sizes`` sets a list of hidden layers
-              sizes before embedding layer for system actions, the number
-              of hidden layers is equal to the length of the list.
-            - ``transformer_size`` sets the number of units in the transfomer.
-            - ``number_of_transformer_layers`` sets the number of transformer layers.
-            - ``maximum_sequence_length`` sets maximum sequence length.
-            - ``number_of_attention_heads`` sets the number of heads in multihead attention.
-            - ``use_key_relative_attention`` if true use key relative embeddings in attention.
-            - ``use_value_relative_attention`` if true use key relative embeddings in attention.
-            - ``max_relative_position`` sets the max position for relative embeddings.
-
-        - training:
-
-            - ``batch_size`` sets the number of training examples in one
-              forward/backward pass, the higher the batch size, the more
-              memory space you'll need;
-            - ``batch_strategy`` sets the type of batching strategy,
-              it should be either ``sequence`` or ``balanced``;
-            - ``epochs`` sets the number of times the algorithm will see
-              training data, where one ``epoch`` equals one forward pass and
-              one backward pass of all the training examples;
-            - ``random_seed`` if set to any int will get reproducible
-              training results for the same inputs;
-
-        - embedding:
-
-            - ``embedding_dimension`` sets the dimension of embedding space;
-            - ``number_of_negative_examples`` sets the number of incorrect intent labels,
-              the algorithm will minimize their similarity to the user
-              input during training;
-            - ``similarity_type`` sets the type of the similarity,
-              it should be either ``auto``, ``cosine`` or ``inner``,
-              if ``auto``, it will be set depending on ``loss_type``,
-              ``inner`` for ``softmax``, ``cosine`` for ``margin``;
-            - ``loss_type`` sets the type of the loss function,
-              it should be either ``softmax`` or ``margin``;
-            - ``ranking_length`` defines the number of top confidences over
-              which to normalize ranking results if ``loss_type: "softmax"``;
-              to turn off normalization set it to 0
-            - ``maximum_positive_similarity`` controls how similar the algorithm should try
-              to make embedding vectors for correct intent labels,
-              used only if ``loss_type`` is set to ``margin``;
-            - ``maximum_negative_similarity`` controls maximum negative similarity for
-              incorrect intents,
-              used only if ``loss_type`` is set to ``margin``;
-            - ``use_maximum_negative_similarity`` if ``true`` the algorithm only
-              minimizes maximum similarity over incorrect intent labels,
-              used only if ``loss_type`` is set to ``margin``;
-            - ``scale_loss`` if ``true`` the algorithm will downscale the loss
-              for examples where correct label is predicted with high confidence,
-              used only if ``loss_type`` is set to ``softmax``;
-
-        - regularization:
-
-            - ``regularization_constant`` sets the scale of L2 regularization.
-            - ``negative_margin_scale`` sets the scale of how important is to minimize
-              the maximum similarity between embeddings of different
-              intent labels, used only if ``loss_type`` is set to ``margin``.
-            - ``droprate_dialogue`` sets the dropout rate between
-              layers before embedding layer for user inputs.
-            - ``droprate_label`` sets the dropout rate between layers
-              before embedding layer for system actions.
-            - ``droprate_attention`` sets the dropout rate for attention.
-
-        - train accuracy calculation:
-
-            - ``evaluate_every_number_of_epochs`` sets how often to calculate
-              train accuracy, small values may hurt performance.
-            - ``evaluate_on_number_of_examples`` how many examples to use for
-              hold out validation set to calculate of validation accuracy,
-              large values may hurt performance.
+        Pass an appropriate number, for example 50,  of ``epochs`` to the ``TEDPolicy``, otherwise the policy will
+        be trained only for ``1`` epoch.
 
     .. warning::
 
-        Default ``max_history`` for this policy is ``None`` which means it'll use
-        the ``FullDialogueTrackerFeaturizer``. We recommend to set ``max_history`` to
-        some finite value in order to use ``MaxHistoryTrackerFeaturizer``
-        for **faster training**. See :ref:`featurization_conversations` for details.
-        We recommend to increase ``batch_size`` for ``MaxHistoryTrackerFeaturizer``
+        Default ``max_history`` for this policy is ``None`` which means it'll use the
+        ``FullDialogueTrackerFeaturizer``. We recommend to set ``max_history`` to some finite value in order to
+        use ``MaxHistoryTrackerFeaturizer`` for **faster training**. See :ref:`featurization_conversations` for
+        details. We recommend to increase ``batch_size`` for ``MaxHistoryTrackerFeaturizer``
         (e.g. ``"batch_size": [32, 64]``)
 
-    .. warning::
+    .. container:: toggle
 
-        If ``evaluate_on_number_of_examples`` is non zero, random examples will be
-        picked by stratified split and used as **hold out** validation set,
-        so they will be excluded from training data.
-        We suggest to set it to zero if data set contains a lot of unique examples
-        of dialogue turns.
+        .. container:: header
 
-    .. note::
+            .. container:: block
 
-        Droprate should be between ``0`` and ``1``, e.g.
-        ``droprate=0.1`` would drop out ``10%`` of input units.
+                The above configuration parameters are the ones you should configure to fit your model to your data.
+                However, additional parameters exist that can be adapted.
 
-    .. note::
+        .. code-block:: none
 
-        For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
-        be between ``-1`` and ``1``.
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | Parameter                       | Default Value    | Description                                                  |
+         +=================================+==================+==============================================================+
+         | hidden_layers_sizes             | dialogue: []     | Hidden layer sizes for layers before the embedding layers    |
+         |                                 | label: []        | for dialogue and labels. The number of hidden layers is      |
+         |                                 |                  | equal to the length of the corresponding.                    |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | transformer_size                | 128              | Number of units in transformer.                              |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | number_of_transformer_layers    | 1                | Number of transformer layers.                                |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | number_of_attention_heads       | 4                | Number of attention heads in transformer.                    |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | use_key_relative_attention      | False            | If 'True' use key relative embeddings in attention.          |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | use_value_relative_attention    | False            | If 'True' use value relative embeddings in attention.        |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | max_relative_position           | None             | Maximum position for relative embeddings.                    |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | batch_size                      | [8, 32]          | Initial and final value for batch sizes.                     |
+         |                                 |                  | Batch size will be linearly increased for each epoch.        |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | batch_strategy                  | "balanced"       | Strategy used when creating batches.                         |
+         |                                 |                  | Can be either 'sequence' or 'balanced'.                      |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | epochs                          | 1                | Number of epochs to train.                                   |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | random_seed                     | None             | Set random seed to any 'int' to get reproducible results.    |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | embedding_dimension             | 20               | Dimension size of embedding vectors.                         |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | number_of_negative_examples     | 20               | The number of incorrect labels. The algorithm will minimize  |
+         |                                 |                  | their similarity to the user input during training.          |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | similarity_type                 | "auto"           | Type of similarity measure to use, either 'auto' or 'cosine' |
+         |                                 |                  | or 'inner'.                                                  |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | loss_type                       | "softmax"        | The type of the loss function, either 'softmax' or 'margin'. |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | ranking_length                  | 10               | Number of top actions to normalize scores for loss type      |
+         |                                 |                  | 'softmax'. Set to 0 to turn off normalization.               |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | maximum_positive_similarity     | 0.8              | Indicates how similar the algorithm should try to make       |
+         |                                 |                  | embedding vectors for correct labels.                        |
+         |                                 |                  | Should be 0.0 < ... < 1.0 for 'cosine' similarity type.      |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | maximum_negative_similarity     | -0.2             | Maximum negative similarity for incorrect labels.            |
+         |                                 |                  | Should be -1.0 < ... < 1.0 for 'cosine' similarity type.     |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | use_maximum_negative_similarity | True             | If 'True' the algorithm only minimizes maximum similarity    |
+         |                                 |                  | over incorrect intent labels, used only if 'loss_type' is    |
+         |                                 |                  | set to 'margin'.                                             |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | scale_loss                      | True             | Scale loss inverse proportionally to confidence of correct   |
+         |                                 |                  | prediction.                                                  |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | regularization_constant         | 0.001            | The scale of regularization.                                 |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | negative_margin_scale           | 0.8              | The scale of how important it is to minimize the maximum     |
+         |                                 |                  | similarity between embeddings of different labels.           |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | drop_rate_dialogue              | 0.1              | Dropout rate for embedding layers of dialogue features.      |
+         |                                 |                  | Value should be between 0 and 1.                             |
+         |                                 |                  | The higher the value the higher the regularization effect.   |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | drop_rate_label                 | 0.0              | Dropout rate for embedding layers of label features.         |
+         |                                 |                  | Value should be between 0 and 1.                             |
+         |                                 |                  | The higher the value the higher the regularization effect.   |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | drop_rate_attention             | 0.0              | Dropout rate for attention. Value should be between 0 and 1. |
+         |                                 |                  | The higher the value the higher the regularization effect.   |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | weight_sparsity                 | 0.8              | Sparsity of the weights in dense layers.                     |
+         |                                 |                  | Value should be between 0 and 1.                             |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | evaluate_every_number_of_epochs | 20               | How often to calculate validation accuracy.                  |
+         |                                 |                  | Set to '-1' to evaluate just once at the end of training.    |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | evaluate_on_number_of_examples  | 0                | How many examples to use for hold out validation set.        |
+         |                                 |                  | Large values may hurt performance, e.g. model accuracy.      |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | tensorboard_log_directory       | None             | If you want to use tensorboard to visualize training         |
+         |                                 |                  | metrics, set this option to a valid output directory. You    |
+         |                                 |                  | can view the training metrics after training in tensorboard  |
+         |                                 |                  | via 'tensorboard --logdir <path-to-given-directory>'.        |
+         +---------------------------------+------------------+--------------------------------------------------------------+
+         | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
+         |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
+         |                                 |                  | training step ('minibatch').                                 |
+         +---------------------------------+------------------+--------------------------------------------------------------+
 
-    .. note::
+        .. warning::
 
-        There is an option to use linearly increasing batch size.
-        The idea comes from `<https://arxiv.org/abs/1711.00489>`_.
-        In order to do it pass a list to ``batch_size``, e.g.
-        ``"batch_size": [8, 32]`` (default behaviour). If constant
-        ``batch_size`` is required, pass an ``int``, e.g.
-        ``"batch_size": 8``.
+            If ``evaluate_on_number_of_examples`` is non zero, random examples will be picked by stratified split and
+            used as **hold out** validation set, so they will be excluded from training data.
+            We suggest to set it to zero if data set contains a lot of unique examples of dialogue turns.
 
-    These parameters can be specified in the configuration file.
-    The following default values are set:
+        .. note::
 
-    .. code-block:: yaml
+            For ``cosine`` similarity ``maximum_positive_similarity`` and ``maximum_negative_similarity`` should
+            be between ``-1`` and ``1``.
 
-        # ## Architecture of the used neural network
-        # Hidden layer sizes for layers before the dialogue and label embedding layers.
-        # The number of hidden layers is equal to the length of the corresponding
-        # list.
-        "hidden_layers_sizes": {"dialogue": [], "label": []}
-        # Number of units in transformer
-        "transformer_size": 128
-        # Number of transformer layers
-        "number_of_transformer_layers": 1
-        # If 'True' use key relative embeddings in attention
-        "use_key_relative_attention": False,
-        # If 'True' use key relative embeddings in attention
-        "use_value_relative_attention": False
-        # Max position for relative embeddings
-        "max_relative_position": None
-        # Max sequence length
-        "maximum_sequence_length": 256
-        # Number of attention heads in transformer
-        "number_of_attention_heads": 4
-        # ## Training parameters
-        # Initial and final batch sizes:
-        # Batch size will be linearly increased for each epoch.
-        "batch_size": [8, 32]
-        # Strategy used when creating batches.
-        # Can be either 'sequence' or 'balanced'.
-        "batch_strategy": "balanced"
-        # Number of epochs to train
-        "epochs": 1
-        # Set random seed to any 'int' to get reproducible results
-        "random_seed": None
-        # ## Parameters for embeddings
-        # Dimension size of embedding vectors
-        "embedding_dimension": 20
-        # The number of incorrect labels. The algorithm will minimize
-        # their similarity to the user input during training.
-        "number_of_negative_examples": 20
-        # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
-        "similarity_type": "auto"
-        # The type of the loss function, either 'softmax' or 'margin'.
-        "loss_type": "softmax"
-        # Number of top actions to normalize scores for loss type 'softmax'.
-        # Set to 0 to turn off normalization.
-        "ranking_length": 10
-        # Indicates how similar the algorithm should try to make embedding vectors
-        # for correct labels.
-        # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
-        "maximum_positive_similarity": 0.8
-        # Maximum negative similarity for incorrect labels.
-        # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
-        "maximum_negative_similarity": -0.2
-        # If 'True' the algorithm only minimizes maximum similarity over
-        # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
-        "use_maximum_negative_similarity": True
-        # Scale loss inverse proportionally to confidence of correct prediction
-        "scale_loss": True
-        # ## Regularization parameters
-        # The scale of regularization
-        "regularization_constant": 0.001
-        # The scale of how important is to minimize the maximum similarity
-        # between embeddings of different labels.
-        "negative_margin_scale": 0.8
-        # Dropout rate for embedding layers of dialogue features.
-        "drop_rate_dialogue": 0.1
-        # Dropout rate for embedding layers of label, e.g. action, features.
-        "drop_rate_label": 0.0
-        # Dropout rate for attention.
-        "drop_rate_attention": 0
-        # ## Evaluation parameters
-        # How often calculate validation accuracy.
-        # Small values may hurt performance, e.g. model accuracy.
-        "evaluate_every_number_of_epochs": 20
-        # How many examples to use for hold out validation set
-        # Large values may hurt performance, e.g. model accuracy.
-        "evaluate_on_number_of_examples": 0
-        # If you want to use tensorboard to visualize training metrics,
-        # set this option to a valid output directory.
-        # You can view the training metrics after training in tensorboard via
-        # ``tensorboard --logdir <path-to-given-directory>``
-        "tensorboard_log_directory": None
-        # Define when training metrics for tensorboard should be logged.
-        # Either after every epoch or for every training step.
-        # Valid values: 'epoch' and 'minibatch'
-        "tensorboard_log_level": "epoch"
+        .. note::
 
-    .. note::
+            There is an option to use linearly increasing batch size. The idea comes from
+            `<https://arxiv.org/abs/1711.00489>`_. In order to do it pass a list to ``batch_size``, e.g.
+            ``"batch_size": [8, 32]`` (default behaviour). If constant ``batch_size`` is required, pass an ``int``,
+            e.g. ``"batch_size": 8``.
 
-          The parameter ``maximum_negative_similarity`` is set to a negative value to mimic
-          the original starspace algorithm in the case
-          ``maximum_negative_similarity = maximum_positive_similarity`` and
-          ``use_maximum_negative_similarity = False``. See
-          `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+        .. note::
+
+            The parameter ``maximum_negative_similarity`` is set to a negative value to mimic the original
+            starspace algorithm in the case ``maximum_negative_similarity = maximum_positive_similarity`` and
+            ``use_maximum_negative_similarity = False``. See `starspace paper <https://arxiv.org/abs/1709.03856>`_
+            for details.
+
 
 .. _mapping-policy:
 
@@ -670,6 +628,7 @@ by trying to disambiguate the user input.
       ``TwoStageFallbackPolicy`` in your configuration, but not both.
 
 
+.. _form-policy:
 
 Form Policy
 ^^^^^^^^^^^
