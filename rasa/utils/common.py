@@ -105,18 +105,14 @@ def update_tensorflow_log_level() -> None:
     """Set the log level of Tensorflow to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
 
-    modules_to_disable = [
-        "tensorflow.stream_executor.platform.default",
-        "tensorflow/compiler/tf2tensorrt/utils",
-    ]
-    for module in modules_to_disable:
-        logging.getLogger(module).setLevel(logging.ERROR)
+    os.environ[
+        "TF_CPP_MIN_LOG_LEVEL"
+    ] = "2"  # Disables libvinfer, tensorRT, cuda, AVX2 and FMA warnings (CPU support)
 
     import tensorflow as tf
 
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
 
-    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # disables AVX2 FMA warnings (CPU support)
     if log_level == "DEBUG":
         tf_log_level = tf.compat.v1.logging.DEBUG
     elif log_level == "INFO":
