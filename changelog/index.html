@@ -342,7 +342,7 @@ Introduce <code class="docutils literal notranslate"><span class="pre">scale_los
 <h3>Bugfixes<a class="headerlink" href="#bugfixes" title="Permalink to this headline">¶</a></h3>
 <ul>
 <li><p class="first"><a class="reference external" href="https://github.com/rasahq/rasa/issues/5205">#5205</a>: Fixed the bug when FormPolicy was overwriting MappingPolicy prediction (e.g. <code class="docutils literal notranslate"><span class="pre">/restart</span></code>).
-Priorities for <span class="xref std std-ref">mapping-policy:</span> and <span class="xref std std-ref">form-policy:</span> are no longer linear:
+Priorities for <a class="reference internal" href="../core/policies/#mapping-policy"><span class="std std-ref">Mapping Policy</span></a> and <a class="reference internal" href="../core/policies/#form-policy"><span class="std std-ref">Form Policy</span></a> are no longer linear:
 <code class="docutils literal notranslate"><span class="pre">FormPolicy</span></code> priority is 5, but its prediction is ignored if <code class="docutils literal notranslate"><span class="pre">MappingPolicy</span></code> is used for prediction.</p>
 </li>
 <li><p class="first"><a class="reference external" href="https://github.com/rasahq/rasa/issues/5215">#5215</a>: Fixed issue related to storing Python <code class="docutils literal notranslate"><span class="pre">float</span></code> values as <code class="docutils literal notranslate"><span class="pre">decimal.Decimal</span></code> objects
