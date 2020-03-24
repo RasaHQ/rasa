@@ -21,7 +21,7 @@ End-to-End Testing
 ------------------
 
 Rasa Open Source lets you test dialogues end-to-end by running through
-conversation tests and making sure that both NLU and Core make correct predictions.
+test conversations and making sure that both NLU and Core make correct predictions.
 
 To do this, you need some stories in the end-to-end format,
 which includes both the NLU output and the original text.
@@ -101,7 +101,7 @@ You can test your assistant against them by running:
 
   :ref:`custom-actions` are not executed as part of end-to-end tests. If your custom
   actions append any events to the tracker, this has to be reflected in your end-to-end
-  tests, e.g. by adding ``slot`` events to your end-to-end story.
+  tests (e.g. by adding ``slot`` events to your end-to-end story).
 
 If you have any questions or problems, please share them with us in the dedicated
 `testing section on our forum <https://forum.rasa.com/tags/testing>`_ !
