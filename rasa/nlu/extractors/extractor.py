@@ -25,10 +25,13 @@ class EntityExtractor(Component):
         self, entities: List[Dict[Text, Any]], keep: bool = False
     ) -> List[Dict[Text, Any]]:
         """
-        Checks if two different entities are assigned to one word.
-        If 'keep_one_entity' is set to 'True', the entity label with the highest
-        confidence of that word is taken as entity label for the word.
-        Otherwise, no entity label will be assigned to the word.
+        Checks if multiple entity labels are assigned to one word.
+
+        This might happen if you are using a tokenizer that splits up words into
+        sub-words and different entity labels are assigned to the individual sub-words.
+        In such a case we simply remove all entity labels for that word.
+        If you set 'keep' to 'True', the entity label with the highest confidence is
+        kept as entity label for that word.
 
         Args:
             entities: list of entities
@@ -36,23 +39,24 @@ class EntityExtractor(Component):
                 keep the entity label with the highest confidence if
                 multiple entity labels are assigned to one word
 
-        Returns: update list of entities
+        Returns: updated list of entities
         """
         if len(entities) <= 1:
             return entities
 
-        clusters = []
+        entity_indices: List[List[int]] = []
 
+        # get indices of entity labels that belong to one word
         for idx in range(1, len(entities)):
             if entities[idx]["start"] == entities[idx - 1]["end"]:
-                if clusters and clusters[-1][1] == idx - 1:
-                    clusters[-1].append(idx)
+                if entity_indices and entity_indices[-1][1] == idx - 1:
+                    entity_indices[-1].append(idx)
                 else:
-                    clusters.append([idx - 1, idx])
+                    entity_indices.append([idx - 1, idx])
 
         entities_to_remove = set()
 
-        for indices in clusters:
+        for indices in entity_indices:
             if not keep:
                 entities_to_remove.update(indices)
                 continue
@@ -82,6 +86,13 @@ class EntityExtractor(Component):
     def _get_highest_confidence_idx(
         entities: List[Dict[Text, Any]], indices: List[int]
     ) -> Optional[int]:
+        """
+        Args:
+            entities: the full list of entities
+            indices: the indices to consider
+
+        Returns: the idx of the entity label with the highest confidence.
+        """
         confidences = [
             entities[idx]["confidence"]
             for idx in indices
