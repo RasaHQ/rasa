@@ -167,7 +167,7 @@ class CRFEntityExtractor(EntityExtractor):
             features = self._sentence_to_features(text_data)
             entities = self.ent_tagger.predict_marginals_single(features)
             entities = self._from_crf_to_json(message, entities)
-            return self.clean_up_entities(entities, keep=True)
+            return self.clean_up_entities(entities)
         else:
             return []
 

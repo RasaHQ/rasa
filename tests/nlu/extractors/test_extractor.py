@@ -10,57 +10,29 @@ from rasa.nlu.extractors.extractor import EntityExtractor
     [
         (
             [
-                {
-                    "entity": "iata",
-                    "start": 0,
-                    "end": 3,
-                    "extractor": "DIETClassifier",
-                    "value": "Aar",
-                },
-                {
-                    "entity": "city",
-                    "start": 3,
-                    "end": 6,
-                    "extractor": "DIETClassifier",
-                    "value": "hus",
-                },
+                {"entity": "iata", "start": 0, "end": 3, "value": "Aar"},
+                {"entity": "city", "start": 3, "end": 6, "value": "hus"},
             ],
             False,
             [],
         ),
         (
             [
-                {
-                    "entity": "city",
-                    "start": 0,
-                    "end": 3,
-                    "extractor": "DIETClassifier",
-                    "value": "Aarhus",
-                },
-                {
-                    "entity": "type",
-                    "start": 4,
-                    "end": 9,
-                    "extractor": "DIETClassifier",
-                    "value": "city",
-                },
+                {"entity": "iata", "start": 0, "end": 3, "value": "Aar"},
+                {"entity": "city", "start": 3, "end": 6, "value": "hus"},
+            ],
+            True,
+            [],
+        ),
+        (
+            [
+                {"entity": "city", "start": 0, "end": 3, "value": "Aarhus"},
+                {"entity": "type", "start": 4, "end": 9, "value": "city"},
             ],
             False,
             [
-                {
-                    "entity": "city",
-                    "start": 0,
-                    "end": 3,
-                    "extractor": "DIETClassifier",
-                    "value": "Aarhus",
-                },
-                {
-                    "entity": "type",
-                    "start": 4,
-                    "end": 9,
-                    "extractor": "DIETClassifier",
-                    "value": "city",
-                },
+                {"entity": "city", "start": 0, "end": 3, "value": "Aarhus"},
+                {"entity": "type", "start": 4, "end": 9, "value": "city"},
             ],
         ),
         (
