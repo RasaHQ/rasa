@@ -143,7 +143,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../evaluating-models/">Evaluating Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../validate-files/">Validate Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../configuring-http-api/">Configuring the HTTP API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../how-to-deploy/">Deploying your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../how-to-deploy/">Deploying Your Rasa Assistant</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../cloud-storage/">Cloud Storage</a></li>
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
@@ -286,7 +286,7 @@ named <code class="docutils literal notranslate"><span class="pre">myio</span></
 <code class="docutils literal notranslate"><span class="pre">http://localhost:5005/webhooks/myio/webhook</span></code> (replacing the hostname
 and port with your values).</p>
 <p>To send a message, you would run a command like:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl -XPOST http://localhost:5000/webhooks/myio/webhook <span class="se">\</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl -XPOST http://localhost:5005/webhooks/myio/webhook <span class="se">\</span>
   -d <span class="s1">&#39;{&quot;sender&quot;: &quot;user1&quot;, &quot;message&quot;: &quot;hello&quot;}&#39;</span> <span class="se">\</span>
   -H <span class="s2">&quot;Content-type: application/json&quot;</span>
 </pre></div>
