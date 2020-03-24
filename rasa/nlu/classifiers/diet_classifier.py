@@ -56,6 +56,7 @@ from rasa.utils.tensorflow.constants import (
     SPARSE_INPUT_DROPOUT,
     MASKED_LM,
     ENTITY_RECOGNITION,
+    TENSORBOARD_LOG_DIR,
     INTENT_CLASSIFICATION,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
@@ -77,6 +78,7 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     AUTO,
     BALANCED,
+    TENSORBOARD_LOG_LEVEL,
 )
 
 
@@ -125,7 +127,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         NUM_HEADS: 4,
         # If 'True' use key relative embeddings in attention
         KEY_RELATIVE_ATTENTION: False,
-        # If 'True' use key relative embeddings in attention
+        # If 'True' use value relative embeddings in attention
         VALUE_RELATIVE_ATTENTION: False,
         # Max position for relative embeddings
         MAX_RELATIVE_POSITION: None,
@@ -169,13 +171,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # If 'True' the algorithm only minimizes maximum similarity over
         # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
         USE_MAX_NEG_SIM: True,
-        # Scale loss inverse proportionally to confidence of correct prediction
+        # If 'True' scale loss inverse proportionally to the confidence
+        # of the correct prediction
         SCALE_LOSS: True,
         # ## Regularization parameters
         # The scale of regularization
         REGULARIZATION_CONSTANT: 0.002,
         # The scale of how important is to minimize the maximum similarity
-        # between embeddings of different labels.
+        # between embeddings of different labels,
+        # used only if 'loss_type' is set to 'margin'.
         NEGATIVE_MARGIN_SCALE: 0.8,
         # Dropout rate for encoder
         DROP_RATE: 0.2,
@@ -205,6 +209,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # examples per entity are required.
         # Rule of thumb: you should have more than 100 examples per entity.
         BILOU_FLAG: True,
+        # If you want to use tensorboard to visualize training and validation metrics,
+        # set this option to a valid output directory.
+        TENSORBOARD_LOG_DIR: None,
+        # Define when training metrics for tensorboard should be logged.
+        # Either after every epoch or for every training step.
+        # Valid values: 'epoch' and 'minibatch'
+        TENSORBOARD_LOG_LEVEL: "epoch",
     }
 
     # init helpers
@@ -625,7 +636,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 return
 
         # keep one example for persisting and loading
-        self.data_example = self.data_example = model_data.first_data_example()
+        self.data_example = model_data.first_data_example()
 
         self.model = self.model_class()(
             data_signature=model_data.get_signature(),
@@ -935,7 +946,12 @@ class DIET(RasaModel):
         index_tag_id_mapping: Optional[Dict[int, Text]],
         config: Dict[Text, Any],
     ) -> None:
-        super().__init__(name="DIET", random_seed=config[RANDOM_SEED])
+        super().__init__(
+            name="DIET",
+            random_seed=config[RANDOM_SEED],
+            tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
+            tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
+        )
 
         self.config = config
 

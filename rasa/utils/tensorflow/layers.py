@@ -10,9 +10,35 @@ logger = logging.getLogger(__name__)
 
 
 class SparseDropout(tf.keras.layers.Dropout):
+    """Applies Dropout to the input.
+
+    Dropout consists in randomly setting
+    a fraction `rate` of input units to 0 at each update during training time,
+    which helps prevent overfitting.
+
+    Arguments:
+        rate: Float between 0 and 1; fraction of the input units to drop.
+    """
+
     def call(
-        self, inputs: tf.Tensor, training: Optional[Union[tf.Tensor, bool]] = None
+        self, inputs: tf.SparseTensor, training: Optional[Union[tf.Tensor, bool]] = None
     ) -> tf.Tensor:
+        """Apply dropout to sparse inputs.
+
+        Arguments:
+            inputs: Input sparse tensor (of any rank).
+            training: Python boolean indicating whether the layer should behave in
+                training mode (adding dropout) or in inference mode (doing nothing).
+
+        Returns:
+            Output of dropout layer.
+
+        Raises:
+            A ValueError if inputs is not a sparse tensor
+        """
+        if not isinstance(inputs, tf.SparseTensor):
+            raise ValueError("Input tensor should be sparse.")
+
         if training is None:
             training = K.learning_phase()
 
@@ -34,7 +60,46 @@ class SparseDropout(tf.keras.layers.Dropout):
 
 
 class DenseForSparse(tf.keras.layers.Dense):
-    """Dense layer for sparse input tensor."""
+    """Dense layer for sparse input tensor.
+
+    Just your regular densely-connected NN layer but for sparse tensors.
+
+    `Dense` implements the operation:
+    `output = activation(dot(input, kernel) + bias)`
+    where `activation` is the element-wise activation function
+    passed as the `activation` argument, `kernel` is a weights matrix
+    created by the layer, and `bias` is a bias vector created by the layer
+    (only applicable if `use_bias` is `True`).
+
+    Note: If the input to the layer has a rank greater than 2, then
+    it is flattened prior to the initial dot product with `kernel`.
+
+    Arguments:
+        units: Positive integer, dimensionality of the output space.
+            activation: Activation function to use.
+            If you don't specify anything, no activation is applied
+            (ie. "linear" activation: `a(x) = x`).
+        use_bias: Boolean, whether the layer uses a bias vector.
+        kernel_initializer: Initializer for the `kernel` weights matrix.
+        bias_initializer: Initializer for the bias vector.
+        reg_lambda: Float, regularization factor.
+        bias_regularizer: Regularizer function applied to the bias vector.
+        activity_regularizer: Regularizer function applied to
+            the output of the layer (its "activation")..
+        kernel_constraint: Constraint function applied to
+            the `kernel` weights matrix.
+        bias_constraint: Constraint function applied to the bias vector.
+
+    Input shape:
+        N-D tensor with shape: `(batch_size, ..., input_dim)`.
+        The most common situation would be
+        a 2D input with shape `(batch_size, input_dim)`.
+
+    Output shape:
+        N-D tensor with shape: `(batch_size, ..., units)`.
+        For instance, for a 2D input with shape `(batch_size, input_dim)`,
+        the output would have shape `(batch_size, units)`.
+    """
 
     def __init__(self, reg_lambda: float = 0, **kwargs: Any) -> None:
         if reg_lambda > 0:
@@ -45,6 +110,17 @@ class DenseForSparse(tf.keras.layers.Dense):
         super().__init__(kernel_regularizer=regularizer, **kwargs)
 
     def call(self, inputs: tf.SparseTensor) -> tf.Tensor:
+        """Apply dense layer to sparse inputs.
+
+        Arguments:
+            inputs: Input sparse tensor (of any rank).
+
+        Returns:
+            Output of dense layer.
+
+        Raises:
+            A ValueError if inputs is not a sparse tensor
+        """
         if not isinstance(inputs, tf.SparseTensor):
             raise ValueError("Input tensor should be sparse.")
 
@@ -67,13 +143,56 @@ class DenseForSparse(tf.keras.layers.Dense):
 
 
 class DenseWithSparseWeights(tf.keras.layers.Dense):
+    """Just your regular densely-connected NN layer but with sparse weights.
+
+    `Dense` implements the operation:
+    `output = activation(dot(input, kernel) + bias)`
+    where `activation` is the element-wise activation function
+    passed as the `activation` argument, `kernel` is a weights matrix
+    created by the layer, and `bias` is a bias vector created by the layer
+    (only applicable if `use_bias` is `True`).
+    It creates `kernel_mask` to set fraction of the `kernel` weights to zero.
+
+    Note: If the input to the layer has a rank greater than 2, then
+    it is flattened prior to the initial dot product with `kernel`.
+
+    Arguments:
+        sparsity: Float between 0 and 1. Fraction of the `kernel`
+            weights to set to zero.
+        units: Positive integer, dimensionality of the output space.
+        activation: Activation function to use.
+            If you don't specify anything, no activation is applied
+            (ie. "linear" activation: `a(x) = x`).
+        use_bias: Boolean, whether the layer uses a bias vector.
+        kernel_initializer: Initializer for the `kernel` weights matrix.
+        bias_initializer: Initializer for the bias vector.
+        kernel_regularizer: Regularizer function applied to
+            the `kernel` weights matrix.
+        bias_regularizer: Regularizer function applied to the bias vector.
+        activity_regularizer: Regularizer function applied to
+            the output of the layer (its "activation")..
+        kernel_constraint: Constraint function applied to
+            the `kernel` weights matrix.
+        bias_constraint: Constraint function applied to the bias vector.
+
+    Input shape:
+        N-D tensor with shape: `(batch_size, ..., input_dim)`.
+        The most common situation would be
+        a 2D input with shape `(batch_size, input_dim)`.
+
+    Output shape:
+        N-D tensor with shape: `(batch_size, ..., units)`.
+        For instance, for a 2D input with shape `(batch_size, input_dim)`,
+        the output would have shape `(batch_size, units)`.
+    """
+
     def __init__(self, sparsity: float = 0.8, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.sparsity = sparsity
 
     def build(self, input_shape: tf.TensorShape) -> None:
         super().build(input_shape)
-        # create random mask to set some weights to 0
+        # create random mask to set fraction of the `kernel` weights to zero
         kernel_mask = tf.random.uniform(tf.shape(self.kernel), 0, 1)
         kernel_mask = tf.cast(
             tf.greater_equal(kernel_mask, self.sparsity), self.kernel.dtype
@@ -83,13 +202,32 @@ class DenseWithSparseWeights(tf.keras.layers.Dense):
         )
 
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
-        # set some weights to 0 according to precomputed mask
+        # set fraction of the `kernel` weights to zero according to precomputed mask
         self.kernel.assign(self.kernel * self.kernel_mask)
         return super().call(inputs)
 
 
 class Ffnn(tf.keras.layers.Layer):
-    """Create feed-forward network with hidden layers and name suffix."""
+    """Feed-forward network layer.
+
+    Arguments:
+        layer_sizes: List of integers with dimensionality of the layers.
+        dropout_rate: Float between 0 and 1; fraction of the input units to drop.
+        reg_lambda: Float, regularization factor.
+        sparsity: Float between 0 and 1. Fraction of the `kernel`
+            weights to set to zero.
+        layer_name_suffix: Text added to the name of the layers.
+
+    Input shape:
+        N-D tensor with shape: `(batch_size, ..., input_dim)`.
+        The most common situation would be
+        a 2D input with shape `(batch_size, input_dim)`.
+
+    Output shape:
+        N-D tensor with shape: `(batch_size, ..., layer_sizes[-1])`.
+        For instance, for a 2D input with shape `(batch_size, input_dim)`,
+        the output would have shape `(batch_size, layer_sizes[-1])`.
+    """
 
     def __init__(
         self,
@@ -125,7 +263,25 @@ class Ffnn(tf.keras.layers.Layer):
 
 
 class Embed(tf.keras.layers.Layer):
-    """Create dense embedding layer with a name."""
+    """Dense embedding layer.
+
+    Arguments:
+        embed_dim: Positive integer, dimensionality of the output space.
+        reg_lambda: Float; regularization factor.
+        layer_name_suffix: Text added to the name of the layers.
+        similarity_type: Optional type of similarity measure to use,
+            either 'cosine' or 'inner'.
+
+    Input shape:
+        N-D tensor with shape: `(batch_size, ..., input_dim)`.
+        The most common situation would be
+        a 2D input with shape `(batch_size, input_dim)`.
+
+    Output shape:
+        N-D tensor with shape: `(batch_size, ..., embed_dim)`.
+        For instance, for a 2D input with shape `(batch_size, input_dim)`,
+        the output would have shape `(batch_size, embed_dim)`.
+    """
 
     def __init__(
         self,
@@ -160,6 +316,19 @@ class Embed(tf.keras.layers.Layer):
 
 
 class InputMask(tf.keras.layers.Layer):
+    """The layer that masks 15% of the input.
+
+    Input shape:
+        N-D tensor with shape: `(batch_size, ..., input_dim)`.
+        The most common situation would be
+        a 2D input with shape `(batch_size, input_dim)`.
+
+    Output shape:
+        N-D tensor with shape: `(batch_size, ..., input_dim)`.
+        For instance, for a 2D input with shape `(batch_size, input_dim)`,
+        the output would have shape `(batch_size, input_dim)`.
+    """
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
@@ -179,7 +348,18 @@ class InputMask(tf.keras.layers.Layer):
         mask: tf.Tensor,
         training: Optional[Union[tf.Tensor, bool]] = None,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Randomly mask input sequences."""
+        """Randomly mask input sequences.
+
+        Arguments:
+            x: Input sequence tensor of rank 3.
+            mask: A tensor representing sequence mask,
+                contains `1` for inputs and `0` for padding.
+            training: Python boolean indicating whether the layer should behave in
+                training mode (mask inputs) or in inference mode (doing nothing).
+
+        Returns:
+            A tuple of masked inputs and boolean mask.
+        """
 
         if training is None:
             training = K.learning_phase()
@@ -225,6 +405,14 @@ class InputMask(tf.keras.layers.Layer):
 
 
 class CRF(tf.keras.layers.Layer):
+    """CRF layer.
+
+    Arguments:
+        num_tags: Positive integer, number of tags.
+        reg_lambda: Float; regularization factor.
+        name: Optional name of the layer.
+    """
+
     def __init__(
         self, num_tags: int, reg_lambda: float, name: Optional[Text] = None
     ) -> None:
@@ -242,6 +430,17 @@ class CRF(tf.keras.layers.Layer):
         self.built = True
 
     def call(self, logits: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
+        """Decodes the highest scoring sequence of tags.
+
+        Arguments:
+            logits: A [batch_size, max_seq_len, num_tags] tensor of
+                unary potentials.
+            sequence_lengths: A [batch_size] vector of true sequence lengths.
+
+        Returns:
+            A [batch_size, max_seq_len] matrix, with dtype `tf.int32`.
+            Contains the highest scoring tag indices.
+        """
         pred_ids, _ = tfa.text.crf.crf_decode(
             logits, self.transition_params, sequence_lengths
         )
@@ -255,6 +454,19 @@ class CRF(tf.keras.layers.Layer):
     def loss(
         self, logits: tf.Tensor, tag_indices: tf.Tensor, sequence_lengths: tf.Tensor
     ) -> tf.Tensor:
+        """Computes the log-likelihood of tag sequences in a CRF.
+
+        Arguments:
+            logits: A [batch_size, max_seq_len, num_tags] tensor of unary potentials
+                to use as input to the CRF layer.
+            tag_indices: A [batch_size, max_seq_len] matrix of tag indices for which
+                we compute the log-likelihood.
+            sequence_lengths: A [batch_size] vector of true sequence lengths.
+
+        Returns:
+            Negative mean log-likelihood of all examples,
+            given the sequence of tag indices.
+        """
         log_likelihood, _ = tfa.text.crf.crf_log_likelihood(
             logits, tag_indices, sequence_lengths, self.transition_params
         )
@@ -262,6 +474,32 @@ class CRF(tf.keras.layers.Layer):
 
 
 class DotProductLoss(tf.keras.layers.Layer):
+    """Dot-product loss layer.
+
+    Arguments:
+        num_neg: Positive integer, the number of incorrect labels;
+            the algorithm will minimize their similarity to the input.
+        loss_type: The type of the loss function, either 'softmax' or 'margin'.
+        mu_pos: Float, indicates how similar the algorithm should
+            try to make embedding vectors for correct labels;
+            should be 0.0 < ... < 1.0 for 'cosine' similarity type.
+        mu_neg: Float, maximum negative similarity for incorrect labels,
+            should be -1.0 < ... < 1.0 for 'cosine' similarity type.
+        use_max_sim_neg: Boolean, if 'True' the algorithm only minimizes
+            maximum similarity over incorrect intent labels,
+            used only if 'loss_type' is set to 'margin'.
+        neg_lambda: Float, the scale of how important is to minimize
+            the maximum similarity between embeddings of different labels,
+            used only if 'loss_type' is set to 'margin'.
+        scale_loss: Boolean, if 'True' scale loss inverse proportionally to
+            the confidence of the correct prediction.
+        name: Optional name of the layer.
+        parallel_iterations: Positive integer, the number of iterations allowed
+            to run in parallel.
+        same_sampling: Boolean, if 'True' sample same negative labels
+            for the whole batch.
+    """
+
     def __init__(
         self,
         num_neg: int,
@@ -599,8 +837,21 @@ class DotProductLoss(tf.keras.layers.Layer):
         all_labels: tf.Tensor,
         mask: Optional[tf.Tensor] = None,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Calculate loss and accuracy."""
+        """Calculate loss and accuracy.
 
+        Arguments:
+            inputs_embed: Embedding tensor for the batch inputs.
+            labels_embed: Embedding tensor for the batch labels.
+            labels: Tensor representing batch labels.
+            all_labels_embed: Embedding tensor for the all labels.
+            all_labels: Tensor representing all labels.
+            mask: Optional tensor representing sequence mask,
+                contains `1` for inputs and `0` for padding.
+
+        Returns:
+            loss: Total loss.
+            accuracy: Training accuracy.
+        """
         (
             pos_inputs_embed,
             pos_labels_embed,
@@ -623,10 +874,10 @@ class DotProductLoss(tf.keras.layers.Layer):
             mask,
         )
 
-        acc = self._calc_accuracy(sim_pos, sim_neg_il)
+        accuracy = self._calc_accuracy(sim_pos, sim_neg_il)
 
         loss = self._chosen_loss(
             sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li, mask
         )
 
-        return loss, acc
+        return loss, accuracy

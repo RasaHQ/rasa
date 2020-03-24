@@ -1,0 +1,4 @@
+Add full retrieval intent name to message data
+``ResponseSelector`` will now add the full retrieval intent name
+e.g. ``faq/which_version`` to the prediction, making it accessible
+from the tracker.

@@ -1,0 +1,3 @@
+Make response timeout configurable.
+``rasa run``, ``rasa shell`` and ``rasa x`` can now be started with
+``--response-timeout <int>`` to configure a response timeout of ``<int>`` seconds.
