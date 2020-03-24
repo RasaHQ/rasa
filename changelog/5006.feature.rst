@@ -1,0 +1,1 @@
+Channel ``hangouts`` for Rasa integration with Google Hangouts Chat is now supported out-of-the-box.
