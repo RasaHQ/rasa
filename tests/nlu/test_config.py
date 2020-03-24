@@ -1,7 +1,7 @@
 import json
 import tempfile
 import os
-from typing import Text
+from typing import Text, List
 
 import pytest
 
@@ -14,7 +14,6 @@ from rasa.nlu.registry import registered_pipeline_templates
 from rasa.nlu.model import Trainer
 from tests.nlu.utilities import write_file_config
 from rasa.nlu.constants import TRAINABLE_EXTRACTORS
-from rasa.constants import DEFAULT_DATA_PATH
 
 
 def test_blank_config(blank_config):
@@ -185,66 +184,59 @@ def test_train_docker_and_docs_configs(config_file: Text):
     assert loaded_config.language == content["language"]
 
 
-def test_warn_no_trainable_extractor():
-    cfg = config.load("data/test_config/config_spacy_entity_extractor.yml")
-    trainer = Trainer(cfg)
-    training_data = load_data(DEFAULT_DATA_PATH)
+@pytest.mark.parametrize(
+    "config_path, data_path, expected_warning_excerpts",
+    [
+        (
+            "data/test_config/config_supervised_embeddings.yml",
+            "data/examples/rasa",
+            ["add a 'ResponseSelector'"],
+        ),
+        (
+            "data/test_config/config_spacy_entity_extractor.yml",
+            "data/test/md_converted_to_json.json",
+            [f"add one of {TRAINABLE_EXTRACTORS}"],
+        ),
+        (
+            "data/test_config/config_crf_no_regex.yml",
+            "data/test/duplicate_intents_markdown/demo-rasa-intents-2.md",
+            ["training data with regexes", "include a 'RegexFeaturizer'"],
+        ),
+        (
+            "data/test_config/config_crf_no_regex.yml",
+            "data/test/lookup_tables/lookup_table.json",
+            ["training data consisting of lookup tables", "add a 'RegexFeaturizer'"],
+        ),
+        (
+            "data/test_config/config_spacy_entity_extractor.yml",
+            "data/test/lookup_tables/lookup_table.json",
+            [
+                "add a 'DIETClassifier' or a 'CRFEntityExtractor' with the 'pattern' feature"
+            ],
+        ),
+        (
+            "data/test_config/config_crf_no_pattern_feature.yml",
+            "data/test/lookup_tables/lookup_table.md",
+            "your NLU pipeline's 'CRFEntityExtractor' does not include the 'pattern' feature",
+        ),
+        (
+            "data/test_config/config_crf_no_synonyms.yml",
+            "data/test/markdown_single_sections/synonyms_only.md",
+            ["add an 'EntitySynonymMapper'"],
+        ),
+    ],
+)
+def test_validate_required_components_from_data(
+    config_path: Text, data_path: Text, expected_warning_excerpts: List[Text]
+):
+    loaded_config = config.load(config_path)
+    trainer = Trainer(loaded_config)
+    training_data = load_data(data_path)
     with pytest.warns(UserWarning) as record:
         components.validate_required_components_from_data(
             trainer.pipeline, training_data
         )
-
     assert len(record) == 1
-    assert str(TRAINABLE_EXTRACTORS) in record[0].message.args[0]
-
-
-def test_warn_missing_regex_featurizer():
-    cfg = config.load("data/test_config/config_crf_no_regex.yml")
-    trainer = Trainer(cfg)
-    training_data = load_data(DEFAULT_DATA_PATH)
-    with pytest.warns(UserWarning) as record:
-        components.validate_required_components_from_data(
-            trainer.pipeline, training_data
-        )
-
-    assert len(record) == 1
-    assert "RegexFeaturizer" in record[0].message.args[0]
-
-
-def test_warn_missing_pattern_feature_lookup_tables():
-    cfg = config.load("data/test_config/config_crf_no_pattern_feature.yml")
-    trainer = Trainer(cfg)
-    training_data = load_data("data/test/lookup_tables/lookup_table.md")
-    with pytest.warns(UserWarning) as record:
-        components.validate_required_components_from_data(
-            trainer.pipeline, training_data
-        )
-
-    assert len(record) == 1
-    assert "`pattern` feature" in record[0].message.args[0]
-
-
-def test_warn_missing_synonym_mapper():
-    cfg = config.load("data/test_config/config_crf_no_synonyms.yml")
-    trainer = Trainer(cfg)
-    training_data = load_data("data/test/markdown_single_sections/synonyms_only.md")
-    with pytest.warns(UserWarning) as record:
-        components.validate_required_components_from_data(
-            trainer.pipeline, training_data
-        )
-
-    assert len(record) == 1
-    assert "EntitySynonymMapper" in record[0].message.args[0]
-
-
-def test_warn_missing_response_selector():
-    cfg = config.load("data/test_config/config_supervised_embeddings.yml")
-    trainer = Trainer(cfg)
-    training_data = load_data("data/examples/rasa")
-    with pytest.warns(UserWarning) as record:
-        components.validate_required_components_from_data(
-            trainer.pipeline, training_data
-        )
-
-    assert len(record) == 1
-    assert "ResponseSelector" in record[0].message.args[0]
+    assert all(
+        [excerpt in record[0].message.args[0]] for excerpt in expected_warning_excerpts
+    )
