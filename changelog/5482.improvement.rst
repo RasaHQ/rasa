@@ -1,0 +1,3 @@
+Make ``scale_loss`` for intents behave the same way as in versions below ``1.8``,
+but with exponent of ``3`` rather than ``4``.
+Introduce ``scale_loss`` for entities in ``DIETClassifier``.
