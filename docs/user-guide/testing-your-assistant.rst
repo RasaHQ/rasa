@@ -20,7 +20,7 @@ Testing Your Assistant
 End-to-End Testing
 ------------------
 
-Rasa Open Source lets you test dialogues end-to-end, by running through
+Rasa Open Source lets you test dialogues end-to-end by running through
 conversation tests and making sure that both NLU and Core make correct predictions.
 
 To do this, you need some stories in the end-to-end format,
