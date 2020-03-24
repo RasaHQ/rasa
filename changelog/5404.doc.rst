@@ -1,5 +1,0 @@
-Explain how to run commands as ``root`` user in Rasa SDK Docker images since version
-``1.8.0``. Since version ``1.8.0`` the Rasa SDK Docker images does not longer run as
-``root`` user by default. For commands which require ``root`` user usage, you have to
-switch back to the ``root`` user in your Docker image as described in
-:ref:`building-an-action-server-image`.
