@@ -307,6 +307,7 @@ class Embed(tf.keras.layers.Layer):
             name=f"embed_layer_{layer_name_suffix}",
         )
 
+    # noinspection PyMethodOverriding
     def call(self, x: tf.Tensor) -> tf.Tensor:
         x = self._dense(x)
         if self.similarity_type == COSINE:
@@ -342,6 +343,7 @@ class InputMask(tf.keras.layers.Layer):
         )
         self.built = True
 
+    # noinspection PyMethodOverriding
     def call(
         self,
         x: tf.Tensor,
@@ -415,8 +417,12 @@ def _scale_loss(loss: tf.Tensor) -> tf.Tensor:
     """
 
     p = tf.math.exp(-loss)
-    # the coefficients are empirically found
-    return tf.stop_gradient(tf.pow((1 - p) / 0.5, 3))
+    # only scale loss if some examples are already learned
+    return tf.cond(
+        tf.reduce_max(p) > 0.5,
+        lambda: tf.stop_gradient(tf.pow((1 - p) / 0.5, 4)),
+        lambda: tf.ones_like(p),
+    )
 
 
 class CRF(tf.keras.layers.Layer):
@@ -449,6 +455,7 @@ class CRF(tf.keras.layers.Layer):
         )
         self.built = True
 
+    # noinspection PyMethodOverriding
     def call(self, logits: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
         """Decodes the highest scoring sequence of tags.
 
@@ -849,6 +856,7 @@ class DotProductLoss(tf.keras.layers.Layer):
                 f"should be '{MARGIN}' or '{SOFTMAX}'"
             )
 
+    # noinspection PyMethodOverriding
     def call(
         self,
         inputs_embed: tf.Tensor,
