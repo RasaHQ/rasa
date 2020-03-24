@@ -1,3 +1,0 @@
-Make ``scale_loss`` for intents behave the same way as in versions below ``1.8``, but
-only scale if some of the examples in a batch has probability of the golden label more than ``0.5``.
-Introduce ``scale_loss`` for entities in ``DIETClassifier``.

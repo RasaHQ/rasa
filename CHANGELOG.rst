@@ -17,6 +17,94 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.9.0] - 2020-03-24
+^^^^^^^^^^^^^^^^^^^^
+
+Features
+--------
+- `#5006 <https://github.com/rasahq/rasa/issues/5006>`_: Channel ``hangouts`` for Rasa integration with Google Hangouts Chat is now supported out-of-the-box.
+- `#5389 <https://github.com/rasahq/rasa/issues/5389>`_: Add an optional path to a specific directory to download and cache the pre-trained model weights for :ref:`HFTransformersNLP`.
+- `#5422 <https://github.com/rasahq/rasa/issues/5422>`_: Add options ``tensorboard_log_directory`` and ``tensorboard_log_level`` to ``EmbeddingIntentClassifier``,
+  ``DIETClasifier``, ``ResponseSelector``, ``EmbeddingPolicy`` and ``TEDPolicy``.
+
+  By default ``tensorboard_log_directory`` is ``None``. If a valid directory is provided,
+  metrics are written during training. After the model is trained you can take a look
+  at the training metrics in tensorboard. Execute ``tensorboard --logdir <path-to-given-directory>``.
+
+  Metrics can either be written after every epoch (default) or for every training step.
+  You can specify when to write metrics using the variable ``tensorboard_log_level``.
+  Valid values are 'epoch' and 'minibatch'.
+
+  We also write down a model summary, i.e. layers with inputs and types, to the given directory.
+
+Improvements
+------------
+- `#4756 <https://github.com/rasahq/rasa/issues/4756>`_: Make response timeout configurable.
+  ``rasa run``, ``rasa shell`` and ``rasa x`` can now be started with
+  ``--response-timeout <int>`` to configure a response timeout of ``<int>`` seconds.
+- `#4826 <https://github.com/rasahq/rasa/issues/4826>`_: Add full retrieval intent name to message data
+  ``ResponseSelector`` will now add the full retrieval intent name
+  e.g. ``faq/which_version`` to the prediction, making it accessible
+  from the tracker.
+- `#5258 <https://github.com/rasahq/rasa/issues/5258>`_: Added ``PikaEventBroker`` (:ref:`event-brokers-pika`) support for publishing to
+  multiple queues. Messages are now published to a ``fanout`` exchange with name
+  ``rasa-exchange`` (see
+  `here <https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-fanout>`_
+  for more information on ``fanout`` exchanges).
+
+  The former ``queue`` key is deprecated. Queues should now be
+  specified as a list in the ``endpoints.yml`` event broker config under a new key
+  ``queues``. Example config:
+
+  .. code-block:: yaml
+
+      event_broker:
+        type: pika
+        url: localhost
+        username: username
+        password: password
+        queues:
+          - queue-1
+          - queue-2
+          - queue-3
+- `#5416 <https://github.com/rasahq/rasa/issues/5416>`_: Change ``rasa init`` to include ``tests/conversation_tests.md`` file by default.
+- `#5446 <https://github.com/rasahq/rasa/issues/5446>`_: The endpoint ``PUT /conversations/<conversation_id>/tracker/events`` no longer
+  adds session start events (to learn more about conversation sessions, please
+  see :ref:`session_config`) in addition to the events which were sent in the request
+  payload. To achieve the old behavior send a
+  ``GET /conversations/<conversation_id>/tracker``
+  request before appending events.
+- `#5482 <https://github.com/rasahq/rasa/issues/5482>`_: Make ``scale_loss`` for intents behave the same way as in versions below ``1.8``, but
+  only scale if some of the examples in a batch has probability of the golden label more than ``0.5``.
+  Introduce ``scale_loss`` for entities in ``DIETClassifier``.
+
+Bugfixes
+--------
+- `#5205 <https://github.com/rasahq/rasa/issues/5205>`_: Fixed the bug when FormPolicy was overwriting MappingPolicy prediction (e.g. ``/restart``).
+  Priorities for :ref:`mapping-policy:` and :ref:`form-policy:` are no longer linear:
+  ``FormPolicy`` priority is 5, but its prediction is ignored if ``MappingPolicy`` is used for prediction.
+- `#5215 <https://github.com/rasahq/rasa/issues/5215>`_: Fixed issue related to storing Python ``float`` values as ``decimal.Decimal`` objects
+  in DynamoDB tracker stores. All ``decimal.Decimal`` objects are now converted to
+  ``float`` on tracker retrieval.
+
+  Added a new docs section on :ref:`tracker-stores-dynamo`.
+- `#5356 <https://github.com/rasahq/rasa/issues/5356>`_: Fixed bug where ``FallbackPolicy`` would always fall back if the fallback action is
+  ``action_listen``.
+- `#5361 <https://github.com/rasahq/rasa/issues/5361>`_: Fixed bug where starting or ending a response with ``\n\n`` led to one of the responses returned being empty.
+- `#5405 <https://github.com/rasahq/rasa/issues/5405>`_: Fixes issue where model always gets retrained if multiple NLU/story files are in a 
+  directory, by sorting the list of files.
+- `#5444 <https://github.com/rasahq/rasa/issues/5444>`_: Fixed ambiguous logging in `DIETClassifier` by adding the name of the calling class to the log message.
+
+Improved Documentation
+----------------------
+- `#2237 <https://github.com/rasahq/rasa/issues/2237>`_: Restructure the "Evaluating models" documentation page and rename this page to :ref:`testing-your-assistant`.
+- `#5302 <https://github.com/rasahq/rasa/issues/5302>`_: Improved documentation on how to build and deploy an action server image for use on other servers such as Rasa X deployments.
+
+Miscellaneous internal changes
+------------------------------
+- #5340
+
+
 [1.8.2] - 2020-03-19
 ^^^^^^^^^^^^^^^^^^^^
 
