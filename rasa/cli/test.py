@@ -7,6 +7,7 @@ from rasa.cli.arguments import test as arguments
 from rasa.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
+    DEFAULT_E2E_TESTS_PATH,
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_MODELS_PATH,
     DEFAULT_RESULTS_PATH,
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
+    """Adds a test subparser."""
     test_parser = subparsers.add_parser(
         "test",
         parents=parents,
@@ -51,12 +53,13 @@ def add_subparser(
     )
     arguments.set_test_nlu_arguments(test_nlu_parser)
 
-    test_core_parser.set_defaults(func=test_core)
-    test_nlu_parser.set_defaults(func=test_nlu)
-    test_parser.set_defaults(func=test)
+    test_core_parser.set_defaults(func=run_core_test)
+    test_nlu_parser.set_defaults(func=run_nlu_test)
+    test_parser.set_defaults(func=test, stories=DEFAULT_E2E_TESTS_PATH)
 
 
-def test_core(args: argparse.Namespace) -> None:
+def run_core_test(args: argparse.Namespace) -> None:
+    """Run core tests."""
     from rasa import data
     from rasa.test import test_core_models_in_directory, test_core, test_core_models
 
@@ -92,7 +95,8 @@ def test_core(args: argparse.Namespace) -> None:
         test_core_models(args.model, stories, output)
 
 
-def test_nlu(args: argparse.Namespace) -> None:
+def run_nlu_test(args: argparse.Namespace) -> None:
+    """Run NLU tests."""
     from rasa import data
     from rasa.test import compare_nlu_models, perform_nlu_cross_validation, test_nlu
 
@@ -150,5 +154,7 @@ def test_nlu(args: argparse.Namespace) -> None:
 
 
 def test(args: argparse.Namespace):
-    test_core(args)
-    test_nlu(args)
+    """Run end-to-end tests."""
+    setattr(args, "e2e", True)
+    run_core_test(args)
+    run_nlu_test(args)

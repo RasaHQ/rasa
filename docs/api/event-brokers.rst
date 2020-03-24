@@ -48,8 +48,9 @@ types, check out the :ref:`events` docs).
 Pika Event Broker
 -----------------
 
-The example implementation we're going to show you here uses `Pika <https://pika.readthedocs.io>`_,
-the Python client library for `RabbitMQ <https://www.rabbitmq.com>`_.
+The example implementation we're going to show you here uses
+`Pika <https://pika.readthedocs.io>`_ , the Python client library for
+`RabbitMQ <https://www.rabbitmq.com>`_.
 
 .. contents::
    :local:
@@ -78,7 +79,7 @@ Here is how you add it using Python code:
     pika_broker = PikaEventBroker('localhost',
                                   'username',
                                   'password',
-                                  queue='rasa_events')
+                                  queues=['rasa_events'])
 
     tracker_store = InMemoryTrackerStore(domain=domain, event_broker=pika_broker)
 

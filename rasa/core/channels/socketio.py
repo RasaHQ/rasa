@@ -43,7 +43,7 @@ class SocketIOOutput(OutputChannel):
     ) -> None:
         """Send a message through this channel."""
 
-        for message_part in text.split("\n\n"):
+        for message_part in text.strip().split("\n\n"):
             await self._send_message(self.sid, {"text": message_part})
 
     async def send_image_url(
@@ -66,7 +66,7 @@ class SocketIOOutput(OutputChannel):
         # split text and create a message for each text fragment
         # the `or` makes sure there is at least one message we can attach the quick
         # replies to
-        message_parts = text.split("\n\n") or [text]
+        message_parts = text.strip().split("\n\n") or [text]
         messages = [{"text": message, "quick_replies": []} for message in message_parts]
 
         # attach all buttons to the last text fragment

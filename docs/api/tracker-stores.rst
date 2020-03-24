@@ -10,7 +10,8 @@ Tracker Stores
 
 All conversations are stored within a tracker store.
 Rasa Open Source provides implementations for different store types out of the box.
-If you want to use another store, you can also build a custom tracker store by extending the ``TrackerStore`` class.
+If you want to use another store, you can also build a custom tracker store by
+extending the ``TrackerStore`` class.
 
 .. contents::
 
@@ -18,8 +19,8 @@ InMemoryTrackerStore (default)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    ``InMemoryTrackerStore`` is the default tracker store. It is used if no other tracker store is configured.
-    It stores the conversation history in memory.
+    ``InMemoryTrackerStore`` is the default tracker store. It is used if no other
+    tracker store is configured. It stores the conversation history in memory.
 
     .. note:: As this store keeps all history in memory, the entire history is lost if you restart the Rasa server.
 
@@ -242,7 +243,7 @@ MongoTrackerStore
         a parameter to the url field, e.g. mongodb://localhost:27017/?ssl=true
 
     #. To start the Rasa server using your configured MongoDB instance,
-           add the :code:`--endpoints` flag, e.g.:
+       add the ``--endpoints`` flag, e.g.:
 
             .. code-block:: bash
 
@@ -288,6 +289,40 @@ MongoTrackerStore
     - ``auth_source`` (default: ``admin``): database name associated with the user’s credentials.
     - ``collection`` (default: ``conversations``): The collection name which is
       used to store the conversations
+
+
+.. _tracker-stores-dynamo:
+
+DynamoTrackerStore
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    ``DynamoTrackerStore`` can be used to store the conversation history in
+    `DynamoDB <https://aws.amazon.com/dynamodb/>`_. DynamoDB is a hosted NoSQL
+    database offered by Amazon Web Services (AWS).
+
+:Configuration:
+    #. Start your DynamoDB instance.
+    #. Add required configuration to your ``endpoints.yml``:
+
+        .. code-block:: yaml
+
+            tracker_store:
+                type: dynamo
+                tablename: <name of the table to create, e.g. rasa>
+                region: <name of the region associated with the client>
+
+    #. To start the Rasa server using your configured ``DynamoDB`` instance,
+       add the ``--endpoints`` flag, e.g.:
+
+            .. code-block:: bash
+
+                rasa run -m models --endpoints endpoints.yml
+
+:Parameters:
+    - ``tablename (default: ``states``): name of the DynamoDB table
+    - ``region`` (default: ``us-east-1``): name of the region associated with the client
+
 
 .. _custom-tracker-store:
 
