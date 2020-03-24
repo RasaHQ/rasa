@@ -62,6 +62,10 @@ for intent classification and entity extraction in on premise chatbots." />
     <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
   
   
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/nlu/about/"/>
+    
+  
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.css" />
 
 
@@ -140,10 +144,10 @@ for intent classification and entity extraction in on premise chatbots." />
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../user-guide/evaluating-models/">Evaluating Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/testing-your-assistant/">Testing Your Assistant</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/validate-files/">Validate Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/configuring-http-api/">Configuring the HTTP API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../user-guide/how-to-deploy/">Deploying your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/how-to-deploy/">Deploying Your Rasa Assistant</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/cloud-storage/">Cloud Storage</a></li>
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
@@ -151,10 +155,10 @@ for intent classification and entity extraction in on premise chatbots." />
 <li class="toctree-l1 current"><a class="current reference internal" href="#">About</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../using-nlu-only/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../training-data-format/">Training Data Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../choosing-a-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../language-support/">Language Support</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../entity-extraction/">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../choosing-a-pipeline/">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../entity-extraction/">Entity Extraction</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Core</span></p>
 <ul>
@@ -215,12 +219,13 @@ for intent classification and entity extraction in on premise chatbots." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.8.2
+          viewing: 1.9.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.9.0/nlu/about/">1.9.0</a>
               <a href="../.././1.8.2/nlu/about/">1.8.2</a>
               <a href="../.././1.8.1/nlu/about/">1.8.1</a>
               <a href="../.././1.8.0/nlu/about/">1.8.0</a>
@@ -282,7 +287,7 @@ entity extraction in chatbots. For example, taking a sentence like</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Rasa NLU used to be a separate library, but it is now part of the Rasa framework.</p>
+<p>If you want to use Rasa NLU on its own, see <a class="reference internal" href="../using-nlu-only/#using-nlu-only"><span class="std std-ref">Using NLU Only</span></a>.</p>
 </div>
 
 
@@ -321,206 +326,16 @@ entity extraction in chatbots. For example, taking a sentence like</p>
       </div>
     <div class="clearer"></div>
   </div>
-
-    
-
-  <script>
-    window.dataLayer = window.dataLayer || [];
-
-    function gtag(...arguments) {
-      dataLayer.push(...arguments);
-    }
-    gtag('js', new Date());
-    gtag('config', 'UA-87333416-1', {
-      'anonymize_ip': true,
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
     });
-  </script>
-  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
-  <script async defer src="https://buttons.github.io/buttons.js"></script>
-  <!-- Global site tag (gtag.js) - Google Analytics -->
-  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
-  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+</script>
 
-  <script type="text/javascript">
-    var clipboard = new ClipboardJS('.copyable');
-    clipboard.on('success', function(e) {
-      gtag('event', e.action, {
-        'event_category': 'code',
-        'event_label': e.text
-      });
-      const id = e.text.replace(/ /g,'-');
-      document.getElementById(id).classList.add('visible');
-      setTimeout(function(){
-        document.getElementById(id).classList.remove('visible');},
-        800
-      );
-    });
-    clipboard.on('error', function(e) {
-      console.log(e);
-    });
-
-  </script>
-
-  <!-- Dismissable announcement banner -->
-  <script>
-    var banners = document.querySelectorAll('.announcement-banner');
-
-    Array.from(banners).forEach(function(banner) {
-      var cookie_id = banner.dataset['cookie-id'];
-
-      if (localStorage.getItem(cookie_id) !== 'true') {
-        banner.classList.add('announcement-banner--visible');
-      }
-
-      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
-
-      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
-        localStorage.setItem(cookie_id, 'true');
-        banner.classList.remove('announcement-banner--visible');
-      });
-    });
-  </script>
-
-  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
-  <script>
-    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
-    (function(document, history, location) {
-      var HISTORY_SUPPORT = !!(history && history.pushState);
-
-      var anchorScrolls = {
-        ANCHOR_REGEX: /^#[^ ]+$/,
-        OFFSET_HEIGHT_PX: 66,
-
-        /**
-         * Establish events, and fix initial scroll position if a hash is provided.
-         */
-        init: function() {
-          this.scrollToCurrent();
-          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
-          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
-        },
-
-        /**
-         * Return the offset amount to deduct from the normal scroll position.
-         * Modify as appropriate to allow for dynamic calculations
-         */
-        getFixedOffset: function() {
-          return this.OFFSET_HEIGHT_PX;
-        },
-
-        /**
-         * If the provided href is an anchor which resolves to an element on the
-         * page, scroll to it.
-         * @param  {String} href
-         * @return {Boolean} - Was the href an anchor.
-         */
-        scrollIfAnchor: function(href, pushToHistory) {
-          var match, anchorOffset;
-
-          if(!this.ANCHOR_REGEX.test(href)) {
-            return false;
-          }
-
-          match = document.getElementById(href.slice(1));
-
-          if(match) {
-            anchorOffset = $(match).offset().top - this.getFixedOffset();
-            $('html, body').animate({ scrollTop: anchorOffset});
-
-            // Add the state to history as-per normal anchor links
-            if(HISTORY_SUPPORT && pushToHistory) {
-              history.pushState({}, document.title, location.pathname + href);
-            }
-          }
-
-          return !!match;
-        },
-
-        /**
-         * Attempt to scroll to the current location's hash.
-         */
-        scrollToCurrent: function(e) {
-          if(this.scrollIfAnchor(window.location.hash) && e) {
-            e.preventDefault();
-          }
-        },
-
-        /**
-         * If the click event's target was an anchor, fix the scroll position.
-         */
-        delegateAnchors: function(e) {
-          var elem = e.target;
-
-          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
-            e.preventDefault();
-          }
-        }
-      };
-
-      $(document).ready($.proxy(anchorScrolls, 'init'));
-    })(window.document, window.history, window.location);
-
-  </script>
-  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
-      <div class="webchat-banner webchat-banner--hidden">
-        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
-        👋 I can help you get started with Rasa and answer your technical questions.
-        <button class="webchat-banner__close">
-          <i class="fas fa-times"></i> 
-        </button>
-      </div>
-      <div id="webchat">
-        <script src="../../_static/rasa-webchat.js"></script>
-        <script>
-          WebChat.default.init({
-            selector: "#webchat",
-            initPayload: "/greet",
-            socketUrl: "https://website-demo.rasa.com/",
-            socketPath: "/socket.io",
-            title: "Sara",
-            subtitle: "I'm still in development",
-            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
-            showCloseButton: true,
-            fullScreenMode: false,
-            hideWhenNotConnected: false,
-            connectOn: "open",
-            autoClearCache: true,
-            linksOpenTab: false,
-            openLauncherImage: "../../_static/chat-icon.svg",
-            customMessageDelay: (message) => {
-              return 900 + message.length;
-            },
-            params: {
-              storage: "local"
-            },
-            onWidgetEvent: {
-              onChatOpen: () => {
-                const webchatBanner = document.querySelector('.webchat-banner');
-                if (webchatBanner) {
-                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
-                  webchatBanner.classList.add('webchat-banner--hidden');
-                }
-              }
-            }
-          });
-
-          try {
-            const webchatBanner = document.querySelector('.webchat-banner');
-
-            if (webchatBanner) {
-              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
-                webchatBanner.classList.remove('webchat-banner--hidden');
-              }
-
-              const webChatBannerClose = document.querySelector('.webchat-banner__close');
-
-              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
-                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
-                webchatBanner.classList.add('webchat-banner--hidden');
-              });
-            }
-          } catch (e) {}
-        </script>
-      </div>
   </body>
 </html>

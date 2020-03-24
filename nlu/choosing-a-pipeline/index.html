@@ -17,8 +17,8 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex/" />
     <link rel="search" title="Search" href="../../search/" />
-    <link rel="next" title="Language Support" href="../language-support/" />
-    <link rel="prev" title="Training Data Format" href="../training-data-format/" />
+    <link rel="next" title="Components" href="../components/" />
+    <link rel="prev" title="Language Support" href="../language-support/" />
 
   <!-- Google Tag Manager -->
   <script type="opt-in" data-type="application/javascript" data-name="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -57,6 +57,10 @@
     <link rel="icon" sizes="192x192" href="../../_static/icon-192x192.png">
     <link rel="apple-touch-icon" href="../../_static/icon-192x192.png" />
   
+  
+    
+      <link rel="canonical" href="https://rasa.com/docs/rasa/nlu/choosing-a-pipeline/"/>
+    
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.css" />
 
@@ -136,10 +140,10 @@
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/command-line-interface/">Command Line Interface</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/architecture/">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/messaging-and-voice-channels/">Messaging and Voice Channels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../user-guide/evaluating-models/">Evaluating Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/testing-your-assistant/">Testing Your Assistant</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/validate-files/">Validate Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/configuring-http-api/">Configuring the HTTP API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../user-guide/how-to-deploy/">Deploying your Rasa Assistant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/how-to-deploy/">Deploying Your Rasa Assistant</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/cloud-storage/">Cloud Storage</a></li>
 </ul>
 <p class="caption"><span class="caption-text">NLU</span></p>
@@ -147,10 +151,10 @@
 <li class="toctree-l1"><a class="reference internal" href="../about/">About</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../using-nlu-only/">Using NLU Only</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../training-data-format/">Training Data Format</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../language-support/">Language Support</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../entity-extraction/">Entity Extraction</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Choosing a Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../components/">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../entity-extraction/">Entity Extraction</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Core</span></p>
 <ul>
@@ -211,12 +215,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.8.2
+          viewing: 1.9.0
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.9.0/nlu/choosing-a-pipeline/">1.9.0</a>
               <a href="../.././1.8.2/nlu/choosing-a-pipeline/">1.8.2</a>
               <a href="../.././1.8.1/nlu/choosing-a-pipeline/">1.8.1</a>
               <a href="../.././1.8.0/nlu/choosing-a-pipeline/">1.8.0</a>
@@ -266,31 +271,22 @@
 
   <div class="edit-link">
     <a class="reference external" href="https://github.com/RasaHQ/rasa/edit/master/docs/nlu/choosing-a-pipeline.rst" target="_blank"><i class="fab fa-github" style="font-size: 85%; padding-right: 4px;"></i>SUGGEST EDITS</a>
-  </div><p>Choosing an NLU pipeline allows you to customize your model and finetune
-it on your dataset.</p>
+  </div><p>In Rasa Open Source, incoming messages are processed by a sequence of components.
+These components are executed one after another in a so-called processing <code class="docutils literal notranslate"><span class="pre">pipeline</span></code> defined in your <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>.
+Choosing an NLU pipeline allows you to customize your model and finetune it on your dataset.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#the-short-answer" id="id3">The Short Answer</a></li>
-<li><a class="reference internal" href="#a-longer-answer" id="id4">A Longer Answer</a></li>
-<li><a class="reference internal" href="#choosing-the-right-components" id="id5">Choosing the right Components</a><ul>
-<li><a class="reference internal" href="#tokenization" id="id6">Tokenization</a></li>
-<li><a class="reference internal" href="#featurization" id="id7">Featurization</a></li>
-<li><a class="reference internal" href="#entity-recognition-intent-classification-response-selectors" id="id8">Entity Recognition / Intent Classification / Response Selectors</a></li>
-<li><a class="reference internal" href="#comparing-different-pipelines-for-your-data" id="id9">Comparing different pipelines for your data</a></li>
+<li><a class="reference internal" href="#how-to-choose-a-pipeline" id="id6">How to Choose a Pipeline</a><ul>
+<li><a class="reference internal" href="#the-short-answer" id="id7">The Short Answer</a></li>
+<li><a class="reference internal" href="#a-longer-answer" id="id8">A Longer Answer</a></li>
+<li><a class="reference internal" href="#choosing-the-right-components" id="id9">Choosing the Right Components</a></li>
+<li><a class="reference internal" href="#multi-intent-classification" id="id10">Multi-Intent Classification</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#class-imbalance" id="id10">Class imbalance</a></li>
-<li><a class="reference internal" href="#multiple-intents" id="id11">Multiple Intents</a></li>
-<li><a class="reference internal" href="#understanding-the-rasa-nlu-pipeline" id="id12">Understanding the Rasa NLU Pipeline</a></li>
+<li><a class="reference internal" href="#comparing-pipelines" id="id11">Comparing Pipelines</a></li>
+<li><a class="reference internal" href="#handling-class-imbalance" id="id12">Handling Class Imbalance</a></li>
 <li><a class="reference internal" href="#component-lifecycle" id="id13">Component Lifecycle</a></li>
-<li><a class="reference internal" href="#the-entity-object-explained" id="id14">The “entity” object explained</a></li>
-<li><a class="reference internal" href="#pipeline-templates-deprecated" id="id15">Pipeline Templates (deprecated)</a><ul>
-<li><a class="reference internal" href="#pretrained-embeddings-spacy" id="id16">pretrained_embeddings_spacy</a></li>
-<li><a class="reference internal" href="#pretrained-embeddings-convert" id="id17">pretrained_embeddings_convert</a></li>
-<li><a class="reference internal" href="#supervised-embeddings" id="id18">supervised_embeddings</a></li>
-<li><a class="reference internal" href="#mitie" id="id19">MITIE</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#pipeline-templates-deprecated" id="id14">Pipeline Templates (deprecated)</a></li>
 </ul>
 </div>
 <div class="admonition note">
@@ -300,16 +296,18 @@ However, <strong>any of the old terminology will still behave the same way as it
 </div>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
-<p class="last">We deprecated all existing pipeline templates, e.g.
-<a class="reference internal" href="#section-supervised-embeddings-pipeline"><span class="std std-ref">supervised_embeddings</span></a>,
-<a class="reference internal" href="#section-pretrained-embeddings-spacy-pipeline"><span class="std std-ref">pretrained_embeddings_spacy</span></a> and
-<a class="reference internal" href="#section-pretrained-embeddings-convert-pipeline"><span class="std std-ref">pretrained_embeddings_convert</span></a>. Please list any
-components you want to use directly in the configuration file.</p>
+<p class="last">We deprecated all existing pipeline templates (e.g. <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code>). Please list any
+components you want to use directly in the configuration file. See
+<a class="reference internal" href="#how-to-choose-a-pipeline"><span class="std std-ref">How to Choose a Pipeline</span></a> for recommended starting configurations, or
+<a class="reference internal" href="#pipeline-templates"><span class="std std-ref">Pipeline Templates (deprecated)</span></a> for more information.</p>
 </div>
+<div class="section" id="how-to-choose-a-pipeline">
+<span id="id2"></span><h2><a class="toc-backref" href="#id6">How to Choose a Pipeline</a><a class="headerlink" href="#how-to-choose-a-pipeline" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="the-short-answer">
-<h2><a class="toc-backref" href="#id3">The Short Answer</a><a class="headerlink" href="#the-short-answer" title="Permalink to this headline">¶</a></h2>
+<h3><a class="toc-backref" href="#id7">The Short Answer</a><a class="headerlink" href="#the-short-answer" title="Permalink to this headline">¶</a></h3>
 <p>If your training data is in English, a good starting point is the following pipeline:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ConveRTTokenizer</span>
@@ -322,12 +320,16 @@ components you want to use directly in the configuration file.</p>
     <span class="l l-Scalar l-Scalar-Plain">min_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
     <span class="l l-Scalar l-Scalar-Plain">max_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
+    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
 </pre></div>
 </div>
-<p>In case your training data is in a different language than English, use the following pipeline:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+</div></blockquote>
+<p>If your training data is not in English, start with the following pipeline:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;fr&quot;</span>  <span class="c1"># your two-letter language code</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">WhitespaceTokenizer</span>
@@ -339,15 +341,19 @@ components you want to use directly in the configuration file.</p>
     <span class="l l-Scalar l-Scalar-Plain">min_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
     <span class="l l-Scalar l-Scalar-Plain">max_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
+    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
 </pre></div>
 </div>
+</div></blockquote>
 </div>
 <div class="section" id="a-longer-answer">
-<h2><a class="toc-backref" href="#id4">A Longer Answer</a><a class="headerlink" href="#a-longer-answer" title="Permalink to this headline">¶</a></h2>
-<p>We recommend using following pipeline, if your training data is in English:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<h3><a class="toc-backref" href="#id8">A Longer Answer</a><a class="headerlink" href="#a-longer-answer" title="Permalink to this headline">¶</a></h3>
+<p id="recommended-pipeline-english">We recommend using following pipeline, if your training data is in English:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ConveRTTokenizer</span>
@@ -360,10 +366,13 @@ components you want to use directly in the configuration file.</p>
     <span class="l l-Scalar l-Scalar-Plain">min_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
     <span class="l l-Scalar l-Scalar-Plain">max_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
+    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
 </pre></div>
 </div>
+</div></blockquote>
 <p>The pipeline contains the <a class="reference internal" href="../components/#convertfeaturizer"><span class="std std-ref">ConveRTFeaturizer</span></a> that provides pre-trained word embeddings of the user utterance.
 Pre-trained word embeddings are helpful as they already encode some kind of linguistic knowledge.
 For example, if you have a sentence like “I want to buy apples” in your training data, and Rasa is asked to predict
@@ -372,9 +381,10 @@ This is especially useful if you don’t have enough training data.
 The advantage of the <a class="reference internal" href="../components/#convertfeaturizer"><span class="std std-ref">ConveRTFeaturizer</span></a> is that it doesn’t treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence.
 However, <code class="docutils literal notranslate"><span class="pre">ConveRT</span></code> is only available in English.</p>
-<p>If your training data is not in English, but you still want to use pre-trained word embeddings, we recommend using
+<p id="recommended-pipeline-pretrained-non-english">If your training data is not in English, but you still want to use pre-trained word embeddings, we recommend using
 the following pipeline:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;fr&quot;</span>  <span class="c1"># your two-letter language code</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">SpacyNLP</span>
@@ -388,18 +398,22 @@ the following pipeline:</p>
     <span class="l l-Scalar l-Scalar-Plain">min_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
     <span class="l l-Scalar l-Scalar-Plain">max_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
+    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
 </pre></div>
 </div>
+</div></blockquote>
 <p>It uses the <a class="reference internal" href="../components/#spacyfeaturizer"><span class="std std-ref">SpacyFeaturizer</span></a> instead of the <a class="reference internal" href="../components/#convertfeaturizer"><span class="std std-ref">ConveRTFeaturizer</span></a>.
 <a class="reference internal" href="../components/#spacyfeaturizer"><span class="std std-ref">SpacyFeaturizer</span></a> provides pre-trained word embeddings from either GloVe or fastText in many different languages
 (see <a class="reference internal" href="../language-support/#pretrained-word-vectors"><span class="std std-ref">Pre-trained Word Vectors</span></a>).</p>
-<p>If you don’t use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
+<p id="recommended-pipeline-non-english">If you don’t use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
 and can train your model to be more domain specific.
 If there are no word embeddings for your language or you have very domain specific terminology,
 we recommend using the following pipeline:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;fr&quot;</span>  <span class="c1"># your two-letter language code</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">WhitespaceTokenizer</span>
@@ -411,10 +425,13 @@ we recommend using the following pipeline:</p>
     <span class="l l-Scalar l-Scalar-Plain">min_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
     <span class="l l-Scalar l-Scalar-Plain">max_ngram</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">DIETClassifier</span>
+    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">EntitySynonymMapper</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
+    <span class="l l-Scalar l-Scalar-Plain">epochs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
 </pre></div>
 </div>
+</div></blockquote>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">We encourage everyone to define their own pipeline by listing the names of the components you want to use.
@@ -423,19 +440,24 @@ If you want to use custom components in your pipeline, see <a class="reference i
 </div>
 </div>
 <div class="section" id="choosing-the-right-components">
-<h2><a class="toc-backref" href="#id5">Choosing the right Components</a><a class="headerlink" href="#choosing-the-right-components" title="Permalink to this headline">¶</a></h2>
-<p>A pipeline usually consist of three main parts:</p>
-<blockquote>
-<div><ol class="arabic simple">
-<li>Tokenizaion</li>
-<li>Featurization</li>
-<li>Entity Recognition / Intent Classification / Response Selectors</li>
-</ol>
-</div></blockquote>
+<h3><a class="toc-backref" href="#id9">Choosing the Right Components</a><a class="headerlink" href="#choosing-the-right-components" title="Permalink to this headline">¶</a></h3>
+<p>There are components for entity extraction, for intent classification, response selection,
+pre-processing, and others. You can learn more about any specific component on the <a class="reference internal" href="../components/#components"><span class="std std-ref">Components</span></a> page.
+If you want to add your own component, for example to run a spell-check or to
+do sentiment analysis, check out <a class="reference internal" href="../../api/custom-nlu-components/#custom-nlu-components"><span class="std std-ref">Custom NLU Components</span></a>.</p>
+<p>A pipeline usually consists of three main parts:</p>
+<div class="contents local topic" id="id3">
+<ul class="simple">
+<li><a class="reference internal" href="#tokenization" id="id15">Tokenization</a></li>
+<li><a class="reference internal" href="#featurization" id="id16">Featurization</a></li>
+<li><a class="reference internal" href="#entity-recognition-intent-classification-response-selectors" id="id17">Entity Recognition / Intent Classification / Response Selectors</a></li>
+</ul>
+</div>
 <div class="section" id="tokenization">
-<h3><a class="toc-backref" href="#id6">Tokenization</a><a class="headerlink" href="#tokenization" title="Permalink to this headline">¶</a></h3>
-<p>If your chosen language is whitespace-tokenized (words are separated by spaces), you
-can use the <a class="reference internal" href="../components/#whitespacetokenizer"><span class="std std-ref">WhitespaceTokenizer</span></a>. If this is not the case you should use a different tokenizer.
+<h4><a class="toc-backref" href="#id15">Tokenization</a><a class="headerlink" href="#tokenization" title="Permalink to this headline">¶</a></h4>
+<p>For tokenization of English input, we recommend the <a class="reference internal" href="../components/#converttokenizer"><span class="std std-ref">ConveRTTokenizer</span></a>.
+You can process other whitespace-tokenized (words are separated by spaces) languages
+with the <a class="reference internal" href="../components/#whitespacetokenizer"><span class="std std-ref">WhitespaceTokenizer</span></a>. If your language is not whitespace-tokenized, you should use a different tokenizer.
 We support a number of different <a class="reference internal" href="../components/#tokenizers"><span class="std std-ref">tokenizers</span></a>, or you can
 create your own <a class="reference internal" href="../../api/custom-nlu-components/#custom-nlu-components"><span class="std std-ref">custom tokenizer</span></a>.</p>
 <div class="admonition note">
@@ -446,15 +468,20 @@ error will be thrown.</p>
 </div>
 </div>
 <div class="section" id="featurization">
-<h3><a class="toc-backref" href="#id7">Featurization</a><a class="headerlink" href="#featurization" title="Permalink to this headline">¶</a></h3>
-<p>You need to decide whether to use components that provide pre-trained word embeddings or not.</p>
-<p>If you don’t use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
-and can train your model to be more domain specific. For example, in general English, the word “balance” is closely
-related to “symmetry”, but very different to the word “cash”. In a banking domain, “balance” and “cash” are closely
-related and you’d like your model to capture that.
-You should only use featurizers from the category <a class="reference internal" href="../components/#text-featurizers"><span class="std std-ref">sparse featurizers</span></a>, such as
-<a class="reference internal" href="../components/#countvectorsfeaturizer"><span class="std std-ref">CountVectorsFeaturizer</span></a>, <a class="reference internal" href="../components/#regexfeaturizer"><span class="std std-ref">RegexFeaturizer</span></a> or <a class="reference internal" href="../components/#lexicalsyntacticfeaturizer"><span class="std std-ref">LexicalSyntacticFeaturizer</span></a>, if you don’t want to use
-pre-trained word embeddings.</p>
+<h4><a class="toc-backref" href="#id16">Featurization</a><a class="headerlink" href="#featurization" title="Permalink to this headline">¶</a></h4>
+<p>You need to decide whether to use components that provide pre-trained word embeddings or not. We recommend in cases
+of small amounts of training data to start with pre-trained word embeddings. Once you have a larger amount of data
+and ensure that most relevant words will be in your data and therefore will have a word embedding, supervised
+embeddings, which learn word meanings directly from your training data, can make your model more specific to your domain.
+If you can’t find a pre-trained model for your language, you should use supervised embeddings.</p>
+<div class="contents local topic" id="id4">
+<ul class="simple">
+<li><a class="reference internal" href="#pre-trained-embeddings" id="id18">Pre-trained Embeddings</a></li>
+<li><a class="reference internal" href="#supervised-embeddings" id="id19">Supervised Embeddings</a></li>
+</ul>
+</div>
+<div class="section" id="pre-trained-embeddings">
+<h5><a class="toc-backref" href="#id18">Pre-trained Embeddings</a><a class="headerlink" href="#pre-trained-embeddings" title="Permalink to this headline">¶</a></h5>
 <p>The advantage of using pre-trained word embeddings in your pipeline is that if you have a training example like:
 “I want to buy apples”, and Rasa is asked to predict the intent for “get pears”, your model already knows that the
 words “apples” and “pears” are very similar. This is especially useful if you don’t have enough training data.
@@ -483,59 +510,44 @@ these language models is available in the
 <p><a class="reference internal" href="../components/#spacyfeaturizer"><span class="std std-ref">SpacyFeaturizer</span></a> also provides word embeddings in many different languages (see <a class="reference internal" href="../language-support/#pretrained-word-vectors"><span class="std std-ref">Pre-trained Word Vectors</span></a>),
 so you can use this as another alternative, depending on the language of your training data.</p>
 </div>
+<div class="section" id="supervised-embeddings">
+<h5><a class="toc-backref" href="#id19">Supervised Embeddings</a><a class="headerlink" href="#supervised-embeddings" title="Permalink to this headline">¶</a></h5>
+<p>If you don’t use any pre-trained word embeddings inside your pipeline, you are not bound to a specific language
+and can train your model to be more domain specific. For example, in general English, the word “balance” is closely
+related to “symmetry”, but very different to the word “cash”. In a banking domain, “balance” and “cash” are closely
+related and you’d like your model to capture that.
+You should only use featurizers from the category <a class="reference internal" href="../components/#text-featurizers"><span class="std std-ref">sparse featurizers</span></a>, such as
+<a class="reference internal" href="../components/#countvectorsfeaturizer"><span class="std std-ref">CountVectorsFeaturizer</span></a>, <a class="reference internal" href="../components/#regexfeaturizer"><span class="std std-ref">RegexFeaturizer</span></a> or <a class="reference internal" href="../components/#lexicalsyntacticfeaturizer"><span class="std std-ref">LexicalSyntacticFeaturizer</span></a>, if you don’t want to use
+pre-trained word embeddings.</p>
+</div>
+</div>
 <div class="section" id="entity-recognition-intent-classification-response-selectors">
-<h3><a class="toc-backref" href="#id8">Entity Recognition / Intent Classification / Response Selectors</a><a class="headerlink" href="#entity-recognition-intent-classification-response-selectors" title="Permalink to this headline">¶</a></h3>
+<h4><a class="toc-backref" href="#id17">Entity Recognition / Intent Classification / Response Selectors</a><a class="headerlink" href="#entity-recognition-intent-classification-response-selectors" title="Permalink to this headline">¶</a></h4>
 <p>Depending on your data you may want to only perform intent classification, entity recognition or response selection.
 Or you might want to combine multiple of those tasks.
 We support several components for each of the tasks. All of them are listed in <a class="reference internal" href="../components/#components"><span class="std std-ref">Components</span></a>.
 We recommend using <a class="reference internal" href="../components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a> for intent classification and entity recognition
 and <a class="reference internal" href="../components/#response-selector"><span class="std std-ref">ResponseSelector</span></a> for response selection.</p>
 </div>
-<div class="section" id="comparing-different-pipelines-for-your-data">
-<h3><a class="toc-backref" href="#id9">Comparing different pipelines for your data</a><a class="headerlink" href="#comparing-different-pipelines-for-your-data" title="Permalink to this headline">¶</a></h3>
-<p>Rasa gives you the tools to compare the performance of both of these pipelines on your data directly,
-see <a class="reference internal" href="../../user-guide/evaluating-models/#comparing-nlu-pipelines"><span class="std std-ref">Comparing NLU Pipelines</span></a>.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Intent classification is independent of entity extraction. So sometimes
-NLU will get the intent right but entities wrong, or the other way around.
-You need to provide enough data for both intents and entities.</p>
 </div>
-</div>
-</div>
-<div class="section" id="class-imbalance">
-<h2><a class="toc-backref" href="#id10">Class imbalance</a><a class="headerlink" href="#class-imbalance" title="Permalink to this headline">¶</a></h2>
-<p>Classification algorithms often do not perform well if there is a large <cite>class imbalance</cite>,
-for example if you have a lot of training data for some intents and very little training data for others.
-To mitigate this problem, you can use a <code class="docutils literal notranslate"><span class="pre">balanced</span></code> batching strategy.
-This algorithm ensures that all classes are represented in every batch, or at least in
-as many subsequent batches as possible, still mimicking the fact that some classes are more frequent than others.
-Balanced batching is used by default. In order to turn it off and use a classic batching strategy include
-<code class="docutils literal notranslate"><span class="pre">batch_strategy:</span> <span class="pre">sequence</span></code> in your config file.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
-
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
-<span class="c1"># - ... other components</span>
-<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;DIETClassifier&quot;</span>
-  <span class="l l-Scalar l-Scalar-Plain">batch_strategy</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">sequence</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="multiple-intents">
-<h2><a class="toc-backref" href="#id11">Multiple Intents</a><a class="headerlink" href="#multiple-intents" title="Permalink to this headline">¶</a></h2>
-<p>If you want to split intents into multiple labels, e.g. for predicting multiple intents or for modeling hierarchical
-intent structure, you need to use the <a class="reference internal" href="../components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a> in your pipeline.
+<div class="section" id="multi-intent-classification">
+<h3><a class="toc-backref" href="#id10">Multi-Intent Classification</a><a class="headerlink" href="#multi-intent-classification" title="Permalink to this headline">¶</a></h3>
+<p>You can use Rasa Open Source components to split intents into multiple labels. For example, you can predict
+multiple intents (<code class="docutils literal notranslate"><span class="pre">thank+goodbye</span></code>) or model hierarchical intent structure (<code class="docutils literal notranslate"><span class="pre">feedback+positive</span></code> being more similar
+to <code class="docutils literal notranslate"><span class="pre">feedback+negative</span></code> than <code class="docutils literal notranslate"><span class="pre">chitchat</span></code>).
+To do this, you need to use the <a class="reference internal" href="../components/#diet-classifier"><span class="std std-ref">DIETClassifier</span></a> in your pipeline.
 You’ll also need to define these flags in whichever tokenizer you are using:</p>
 <blockquote>
 <div><ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">intent_tokenization_flag</span></code>: Set it to <code class="docutils literal notranslate"><span class="pre">True</span></code>, so that intent labels are tokenized.</li>
-<li><code class="docutils literal notranslate"><span class="pre">intent_split_symbol</span></code>: Set it to the delimiter string that splits the intent labels. Default <code class="docutils literal notranslate"><span class="pre">_</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">intent_split_symbol</span></code>: Set it to the delimiter string that splits the intent labels. In this case <code class="docutils literal notranslate"><span class="pre">+</span></code>, default <code class="docutils literal notranslate"><span class="pre">_</span></code>.</li>
 </ul>
 </div></blockquote>
 <p>Read a <a class="reference external" href="https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/">tutorial</a>
 on how to use multiple intents in Rasa.</p>
 <p>Here’s an example configuration:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
@@ -545,19 +557,50 @@ on how to use multiple intents in Rasa.</p>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;DIETClassifier&quot;</span>
 </pre></div>
 </div>
+</div></blockquote>
 </div>
-<div class="section" id="understanding-the-rasa-nlu-pipeline">
-<h2><a class="toc-backref" href="#id12">Understanding the Rasa NLU Pipeline</a><a class="headerlink" href="#understanding-the-rasa-nlu-pipeline" title="Permalink to this headline">¶</a></h2>
-<p>In Rasa NLU, incoming messages are processed by a sequence of components.
-These components are executed one after another in a so-called processing pipeline.
-There are components for entity extraction, for intent classification, response selection,
-pre-processing, and others. If you want to add your own component, for example to run a spell-check or to
-do sentiment analysis, check out <a class="reference internal" href="../../api/custom-nlu-components/#custom-nlu-components"><span class="std std-ref">Custom NLU Components</span></a>.</p>
-<p>Each component processes the input and creates an output. The output can be used by any component that comes after
-this component in the pipeline. There are components which only produce information that is used by other components
-in the pipeline and there are other components that produce <code class="docutils literal notranslate"><span class="pre">output</span></code> attributes which will be returned after
-the processing has finished. For example, for the sentence <code class="docutils literal notranslate"><span class="pre">&quot;I</span> <span class="pre">am</span> <span class="pre">looking</span> <span class="pre">for</span> <span class="pre">Chinese</span> <span class="pre">food&quot;</span></code> the output is:</p>
-<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+</div>
+<div class="section" id="comparing-pipelines">
+<h2><a class="toc-backref" href="#id11">Comparing Pipelines</a><a class="headerlink" href="#comparing-pipelines" title="Permalink to this headline">¶</a></h2>
+<p>Rasa gives you the tools to compare the performance of multiple pipelines on your data directly.
+See <a class="reference internal" href="../../user-guide/testing-your-assistant/#comparing-nlu-pipelines"><span class="std std-ref">Comparing NLU Pipelines</span></a> for more information.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Intent classification is independent of entity extraction. So sometimes
+NLU will get the intent right but entities wrong, or the other way around.
+You need to provide enough data for both intents and entities.</p>
+</div>
+</div>
+<div class="section" id="handling-class-imbalance">
+<h2><a class="toc-backref" href="#id12">Handling Class Imbalance</a><a class="headerlink" href="#handling-class-imbalance" title="Permalink to this headline">¶</a></h2>
+<p>Classification algorithms often do not perform well if there is a large <cite>class imbalance</cite>,
+for example if you have a lot of training data for some intents and very little training data for others.
+To mitigate this problem, you can use a <code class="docutils literal notranslate"><span class="pre">balanced</span></code> batching strategy.
+This algorithm ensures that all classes are represented in every batch, or at least in
+as many subsequent batches as possible, still mimicking the fact that some classes are more frequent than others.
+Balanced batching is used by default. In order to turn it off and use a classic batching strategy include
+<code class="docutils literal notranslate"><span class="pre">batch_strategy:</span> <span class="pre">sequence</span></code> in your config file.</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+
+<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="c1"># - ... other components</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;DIETClassifier&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">batch_strategy</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">sequence</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="component-lifecycle">
+<span id="id5"></span><h2><a class="toc-backref" href="#id13">Component Lifecycle</a><a class="headerlink" href="#component-lifecycle" title="Permalink to this headline">¶</a></h2>
+<p>Each component processes an input and/or creates an output. The order of the components is determined by
+the order they are listed in the <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>; the output of a component can be used by any other component that
+comes after it in the pipeline. Some components only produce information used by other components
+in the pipeline. Other components produce <code class="docutils literal notranslate"><span class="pre">output</span></code> attributes that are returned after
+the processing has finished.</p>
+<p>For example, for the sentence <code class="docutils literal notranslate"><span class="pre">&quot;I</span> <span class="pre">am</span> <span class="pre">looking</span> <span class="pre">for</span> <span class="pre">Chinese</span> <span class="pre">food&quot;</span></code>, the output is:</p>
+<blockquote>
+<div><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;I am looking for Chinese food&quot;</span><span class="p">,</span>
     <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[</span>
         <span class="p">{</span>
@@ -577,10 +620,10 @@ the processing has finished. For example, for the sentence <code class="docutils
 <span class="p">}</span>
 </pre></div>
 </div>
+</div></blockquote>
 <p>This is created as a combination of the results of the different components in the following pipeline:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
-
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">WhitespaceTokenizer</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">RegexFeaturizer</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">LexicalSyntacticFeaturizer</span>
@@ -594,14 +637,19 @@ the processing has finished. For example, for the sentence <code class="docutils
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ResponseSelector</span>
 </pre></div>
 </div>
-<p>For example, the <code class="docutils literal notranslate"><span class="pre">entities</span></code> attribute is created by the <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> component.</p>
-</div>
-<div class="section" id="component-lifecycle">
-<span id="section-component-lifecycle"></span><h2><a class="toc-backref" href="#id13">Component Lifecycle</a><a class="headerlink" href="#component-lifecycle" title="Permalink to this headline">¶</a></h2>
+</div></blockquote>
+<p>For example, the <code class="docutils literal notranslate"><span class="pre">entities</span></code> attribute here is created by the <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> component.</p>
 <p>Every component can implement several methods from the <code class="docutils literal notranslate"><span class="pre">Component</span></code> base class; in a pipeline these different methods
-will be called in a specific order. Lets assume, we added the following pipeline to our config:
-<code class="docutils literal notranslate"><span class="pre">&quot;pipeline&quot;:</span> <span class="pre">[&quot;Component</span> <span class="pre">A&quot;,</span> <span class="pre">&quot;Component</span> <span class="pre">B&quot;,</span> <span class="pre">&quot;Last</span> <span class="pre">Component&quot;]</span></code>.
-The image shows the call order during the training of this pipeline:</p>
+will be called in a specific order. Assuming we added the following pipeline to our <code class="docutils literal notranslate"><span class="pre">config.yml</span></code>:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;Component</span><span class="nv"> </span><span class="s">A&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;Component</span><span class="nv"> </span><span class="s">B&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;Last</span><span class="nv"> </span><span class="s">Component&quot;</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>The image below shows the call order during the training of this pipeline:</p>
 <img alt="../../_images/component_lifecycle.png" src="../../_images/component_lifecycle.png" />
 <p>Before the first component is created using the <code class="docutils literal notranslate"><span class="pre">create</span></code> function, a so
 called <code class="docutils literal notranslate"><span class="pre">context</span></code> is created (which is nothing more than a python dict).
@@ -609,55 +657,23 @@ This context is used to pass information between the components. For example,
 one component can calculate feature vectors for the training data, store
 that within the context and another component can retrieve these feature
 vectors from the context and do intent classification.</p>
-<p>Initially the context is filled with all configuration values, the arrows
+<p>Initially the context is filled with all configuration values. The arrows
 in the image show the call order and visualize the path of the passed
 context. After all components are trained and persisted, the
 final context dictionary is used to persist the model’s metadata.</p>
 </div>
-<div class="section" id="the-entity-object-explained">
-<h2><a class="toc-backref" href="#id14">The “entity” object explained</a><a class="headerlink" href="#the-entity-object-explained" title="Permalink to this headline">¶</a></h2>
-<p>After parsing, the entity is returned as a dictionary.  There are two fields that show information
-about how the pipeline impacted the entities returned: the <code class="docutils literal notranslate"><span class="pre">extractor</span></code> field
-of an entity tells you which entity extractor found this particular entity, and
-the <code class="docutils literal notranslate"><span class="pre">processors</span></code> field contains the name of components that altered this
-specific entity.</p>
-<p>The use of synonyms can also cause the <code class="docutils literal notranslate"><span class="pre">value</span></code> field not match the <code class="docutils literal notranslate"><span class="pre">text</span></code>
-exactly. Instead it will return the trained synonym.</p>
-<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;show me chinese restaurants&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;restaurant_search&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
-      <span class="nt">&quot;end&quot;</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span>
-      <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;chinese&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;cuisine&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;extractor&quot;</span><span class="p">:</span> <span class="s2">&quot;CRFEntityExtractor&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.854</span><span class="p">,</span>
-      <span class="nt">&quot;processors&quot;</span><span class="p">:</span> <span class="p">[]</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The <code class="docutils literal notranslate"><span class="pre">confidence</span></code> will be set by the <code class="docutils literal notranslate"><span class="pre">CRFEntityExtractor</span></code> and <code class="docutils literal notranslate"><span class="pre">DIETClassifier</span></code> component. The
-<code class="docutils literal notranslate"><span class="pre">DucklingHTTPExtractor</span></code> will always return <code class="docutils literal notranslate"><span class="pre">1</span></code>. The <code class="docutils literal notranslate"><span class="pre">SpacyEntityExtractor</span></code> extractor does not provide this
-information and returns <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
-</div>
-</div>
 <div class="section" id="pipeline-templates-deprecated">
-<h2><a class="toc-backref" href="#id15">Pipeline Templates (deprecated)</a><a class="headerlink" href="#pipeline-templates-deprecated" title="Permalink to this headline">¶</a></h2>
-<p>A template is just a shortcut for a full list of components. For example, these two configurations are equivalent:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
-
+<span id="pipeline-templates"></span><h2><a class="toc-backref" href="#id14">Pipeline Templates (deprecated)</a><a class="headerlink" href="#pipeline-templates-deprecated" title="Permalink to this headline">¶</a></h2>
+<p>A template is just a shortcut for a full list of components. For example, this pipeline template:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;pretrained_embeddings_spacy&quot;</span>
 </pre></div>
 </div>
-<p>and</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
-
+</div></blockquote>
+<p>is equivalent to this pipeline:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyNLP&quot;</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyTokenizer&quot;</span>
@@ -668,33 +684,30 @@ information and returns <code class="docutils literal notranslate"><span class="
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
 </pre></div>
 </div>
-<p>The three most important pipelines are <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code>, <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_convert</span></code> and
-<code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code>.
-The <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> pipeline uses pre-trained word vectors from either GloVe or fastText,
-whereas <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_convert</span></code> uses a pretrained sentence encoding model
-<a class="reference external" href="https://github.com/PolyAI-LDN/polyai-models">ConveRT</a> to extract vector representations of complete user
-utterance as a whole. On the other hand, the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline doesn’t use any pre-trained word
-vectors or sentence vectors, but instead fits these specifically for your dataset.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">These recommendations are highly dependent on your dataset and hence approximate. We suggest experimenting with
-different pipelines to train the best model.</p>
-</div>
-<div class="section" id="pretrained-embeddings-spacy">
-<span id="section-pretrained-embeddings-spacy-pipeline"></span><h3><a class="toc-backref" href="#id16">pretrained_embeddings_spacy</a><a class="headerlink" href="#pretrained-embeddings-spacy" title="Permalink to this headline">¶</a></h3>
-<p>The advantage of <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> pipeline is that if you have a training example like:
+</div></blockquote>
+<p>Pipeline templates are deprecated as of Rasa 1.8. To find sensible configurations to get started,
+check out <a class="reference internal" href="#how-to-choose-a-pipeline"><span class="std std-ref">How to Choose a Pipeline</span></a>. For more information about a deprecated pipeline template,
+expand it below.</p>
+<blockquote>
+<div><div class="toggle docutils container">
+<div class="header docutils container">
+<code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code></div>
+<p id="section-pretrained-embeddings-spacy-pipeline">The advantage of <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> pipeline is that if you have a training example like:
 “I want to buy apples”, and Rasa is asked to predict the intent for “get pears”, your model
 already knows that the words “apples” and “pears” are very similar. This is especially useful
 if you don’t have enough training data.</p>
 <p>To use the <code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_spacy</span></code> template, use the following configuration:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;pretrained_embeddings_spacy&quot;</span>
 </pre></div>
 </div>
+</div></blockquote>
 <p>See <a class="reference internal" href="../language-support/#pretrained-word-vectors"><span class="std std-ref">Pre-trained Word Vectors</span></a> for more information about loading spacy language models.
 To use the components and configure them separately:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SpacyNLP&quot;</span>
@@ -707,10 +720,12 @@ To use the components and configure them separately:</p>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
 </pre></div>
 </div>
+</div></blockquote>
 </div>
-<div class="section" id="pretrained-embeddings-convert">
-<span id="section-pretrained-embeddings-convert-pipeline"></span><h3><a class="toc-backref" href="#id17">pretrained_embeddings_convert</a><a class="headerlink" href="#pretrained-embeddings-convert" title="Permalink to this headline">¶</a></h3>
-<blockquote>
+<div class="toggle docutils container">
+<div class="header docutils container">
+<code class="docutils literal notranslate"><span class="pre">pretrained_embeddings_convert</span></code></div>
+<blockquote id="section-pretrained-embeddings-convert-pipeline">
 <div><div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">Since <code class="docutils literal notranslate"><span class="pre">ConveRT</span></code> model is trained only on an <strong>English</strong> corpus of conversations, this pipeline should only
@@ -751,9 +766,10 @@ platforms.</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="supervised-embeddings">
-<span id="section-supervised-embeddings-pipeline"></span><h3><a class="toc-backref" href="#id18">supervised_embeddings</a><a class="headerlink" href="#supervised-embeddings" title="Permalink to this headline">¶</a></h3>
-<p>The advantage of the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline is that your word vectors will be customised
+<div class="toggle docutils container">
+<div class="header docutils container">
+<code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code></div>
+<p id="section-supervised-embeddings-pipeline">The advantage of the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline is that your word vectors will be customised
 for your domain. For example, in general English, the word “balance” is closely related to “symmetry”,
 but very different to the word “cash”. In a banking domain, “balance” and “cash” are closely related
 and you’d like your model to capture that. This pipeline doesn’t use a language-specific model,
@@ -761,15 +777,18 @@ so it will work with any language that you can tokenize (on whitespace or using 
 <p>You can read more about this topic <a class="reference external" href="https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8">in this blog post</a> .</p>
 <p>To train a Rasa model in your preferred language, define the
 <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline as your pipeline in your <code class="docutils literal notranslate"><span class="pre">config.yml</span></code> or other configuration file:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;supervised_embeddings&quot;</span>
 </pre></div>
 </div>
+</div></blockquote>
 <p>The <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline supports any language that can be whitespace tokenized. By default it uses
 whitespace for tokenization. You can customize the setup of this pipeline by adding or changing components. Here are
 the default components that make up the <code class="docutils literal notranslate"><span class="pre">supervised_embeddings</span></code> pipeline:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;WhitespaceTokenizer&quot;</span>
@@ -784,6 +803,7 @@ the default components that make up the <code class="docutils literal notranslat
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;EmbeddingIntentClassifier&quot;</span>
 </pre></div>
 </div>
+</div></blockquote>
 <p>So for example, if your chosen language is not whitespace-tokenized (words are not separated by spaces), you
 can replace the <code class="docutils literal notranslate"><span class="pre">WhitespaceTokenizer</span></code> with your own tokenizer. We support a number of different <a class="reference internal" href="../components/#tokenizers"><span class="std std-ref">tokenizers</span></a>,
 or you can <a class="reference internal" href="../../api/custom-nlu-components/#custom-nlu-components"><span class="std std-ref">create your own</span></a>.</p>
@@ -793,15 +813,17 @@ n-grams, preserving word boundaries. We empirically found the second featurizer
 to be more powerful, but we decided to keep the first featurizer as well to make
 featurization more robust.</p>
 </div>
-<div class="section" id="mitie">
-<span id="section-mitie-pipeline"></span><h3><a class="toc-backref" href="#id19">MITIE</a><a class="headerlink" href="#mitie" title="Permalink to this headline">¶</a></h3>
+<div class="toggle docutils container" id="section-mitie-pipeline">
+<div class="header docutils container">
+<code class="docutils literal notranslate"><span class="pre">MITIE</span> <span class="pre">pipeline</span></code></div>
 <p>You can also use MITIE as a source of word vectors in your pipeline.
 The MITIE backend performs well for small datasets, but training can take very long if you have more than a couple
 of hundred examples.</p>
 <p>However, we do not recommend that you use it as mitie support is likely to be deprecated in a future release.</p>
 <p>To use the MITIE pipeline, you will have to train word vectors from a corpus. Instructions can be found
 <a class="reference internal" href="../language-support/#mitie"><span class="std std-ref">here</span></a>. This will give you the file path to pass to the <code class="docutils literal notranslate"><span class="pre">model</span></code> parameter.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieNLP&quot;</span>
@@ -814,9 +836,11 @@ of hundred examples.</p>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;SklearnIntentClassifier&quot;</span>
 </pre></div>
 </div>
+</div></blockquote>
 <p>Another version of this pipeline uses MITIE’s featurizer and also its multi-class classifier.
 Training can be quite slow, so this is not recommended for large datasets.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieNLP&quot;</span>
@@ -828,7 +852,9 @@ Training can be quite slow, so this is not recommended for large datasets.</p>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;MitieIntentClassifier&quot;</span>
 </pre></div>
 </div>
+</div></blockquote>
 </div>
+</div></blockquote>
 </div>
 </div>
 
@@ -868,206 +894,16 @@ Training can be quite slow, so this is not recommended for large datasets.</p>
       </div>
     <div class="clearer"></div>
   </div>
-
-    
-
-  <script>
-    window.dataLayer = window.dataLayer || [];
-
-    function gtag(...arguments) {
-      dataLayer.push(...arguments);
-    }
-    gtag('js', new Date());
-    gtag('config', 'UA-87333416-1', {
-      'anonymize_ip': true,
+ <script type="text/javascript">
+    $(document).ready(function() {
+        $(".toggle > *").hide();
+        $(".toggle .header").show();
+        $(".toggle .header").click(function() {
+            $(this).parent().children().not(".header").toggle(400);
+            $(this).parent().children(".header").toggleClass("open");
+        })
     });
-  </script>
-  <script src="https://rasa.com/assets/js/js.cookies.js"></script>
-  <script async defer src="https://buttons.github.io/buttons.js"></script>
-  <!-- Global site tag (gtag.js) - Google Analytics -->
-  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
-  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/userId.js"></script>
+</script>
 
-  <script type="text/javascript">
-    var clipboard = new ClipboardJS('.copyable');
-    clipboard.on('success', function(e) {
-      gtag('event', e.action, {
-        'event_category': 'code',
-        'event_label': e.text
-      });
-      const id = e.text.replace(/ /g,'-');
-      document.getElementById(id).classList.add('visible');
-      setTimeout(function(){
-        document.getElementById(id).classList.remove('visible');},
-        800
-      );
-    });
-    clipboard.on('error', function(e) {
-      console.log(e);
-    });
-
-  </script>
-
-  <!-- Dismissable announcement banner -->
-  <script>
-    var banners = document.querySelectorAll('.announcement-banner');
-
-    Array.from(banners).forEach(function(banner) {
-      var cookie_id = banner.dataset['cookie-id'];
-
-      if (localStorage.getItem(cookie_id) !== 'true') {
-        banner.classList.add('announcement-banner--visible');
-      }
-
-      var bannerCloseButton = banner.querySelector('.announcement-banner__close');
-
-      bannerCloseButton && bannerCloseButton.addEventListener('click', function() {
-        localStorage.setItem(cookie_id, 'true');
-        banner.classList.remove('announcement-banner--visible');
-      });
-    });
-  </script>
-
-  <!-- onsite anchor fix (otherwise anchors scroll to far) -->
-  <script>
-    /* Adapted from https://stackoverflow.com/a/13067009/1906073 */
-    (function(document, history, location) {
-      var HISTORY_SUPPORT = !!(history && history.pushState);
-
-      var anchorScrolls = {
-        ANCHOR_REGEX: /^#[^ ]+$/,
-        OFFSET_HEIGHT_PX: 66,
-
-        /**
-         * Establish events, and fix initial scroll position if a hash is provided.
-         */
-        init: function() {
-          this.scrollToCurrent();
-          $(window).on('hashchange', $.proxy(this, 'scrollToCurrent'));
-          $('body').on('click', 'a', $.proxy(this, 'delegateAnchors'));
-        },
-
-        /**
-         * Return the offset amount to deduct from the normal scroll position.
-         * Modify as appropriate to allow for dynamic calculations
-         */
-        getFixedOffset: function() {
-          return this.OFFSET_HEIGHT_PX;
-        },
-
-        /**
-         * If the provided href is an anchor which resolves to an element on the
-         * page, scroll to it.
-         * @param  {String} href
-         * @return {Boolean} - Was the href an anchor.
-         */
-        scrollIfAnchor: function(href, pushToHistory) {
-          var match, anchorOffset;
-
-          if(!this.ANCHOR_REGEX.test(href)) {
-            return false;
-          }
-
-          match = document.getElementById(href.slice(1));
-
-          if(match) {
-            anchorOffset = $(match).offset().top - this.getFixedOffset();
-            $('html, body').animate({ scrollTop: anchorOffset});
-
-            // Add the state to history as-per normal anchor links
-            if(HISTORY_SUPPORT && pushToHistory) {
-              history.pushState({}, document.title, location.pathname + href);
-            }
-          }
-
-          return !!match;
-        },
-
-        /**
-         * Attempt to scroll to the current location's hash.
-         */
-        scrollToCurrent: function(e) {
-          if(this.scrollIfAnchor(window.location.hash) && e) {
-            e.preventDefault();
-          }
-        },
-
-        /**
-         * If the click event's target was an anchor, fix the scroll position.
-         */
-        delegateAnchors: function(e) {
-          var elem = e.target;
-
-          if(this.scrollIfAnchor(elem.getAttribute('href'), true)) {
-            e.preventDefault();
-          }
-        }
-      };
-
-      $(document).ready($.proxy(anchorScrolls, 'init'));
-    })(window.document, window.history, window.location);
-
-  </script>
-  <script type="opt-in" data-name="analytics" data-type="text/javascript" data-src="https://rasa.com/assets/js/u-info.js"></script>
-      <div class="webchat-banner webchat-banner--hidden">
-        <img src="https://rasa.com/assets/img/demo/sara_avatar.png" class="webchat-banner__avatar" alt="">
-        👋 I can help you get started with Rasa and answer your technical questions.
-        <button class="webchat-banner__close">
-          <i class="fas fa-times"></i> 
-        </button>
-      </div>
-      <div id="webchat">
-        <script src="../../_static/rasa-webchat.js"></script>
-        <script>
-          WebChat.default.init({
-            selector: "#webchat",
-            initPayload: "/greet",
-            socketUrl: "https://website-demo.rasa.com/",
-            socketPath: "/socket.io",
-            title: "Sara",
-            subtitle: "I'm still in development",
-            profileAvatar: "https://rasa.com/assets/img/demo/sara_avatar.png",
-            showCloseButton: true,
-            fullScreenMode: false,
-            hideWhenNotConnected: false,
-            connectOn: "open",
-            autoClearCache: true,
-            linksOpenTab: false,
-            openLauncherImage: "../../_static/chat-icon.svg",
-            customMessageDelay: (message) => {
-              return 900 + message.length;
-            },
-            params: {
-              storage: "local"
-            },
-            onWidgetEvent: {
-              onChatOpen: () => {
-                const webchatBanner = document.querySelector('.webchat-banner');
-                if (webchatBanner) {
-                  localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
-                  webchatBanner.classList.add('webchat-banner--hidden');
-                }
-              }
-            }
-          });
-
-          try {
-            const webchatBanner = document.querySelector('.webchat-banner');
-
-            if (webchatBanner) {
-              if (localStorage.getItem('WEBCHAT_BANNER_DISMISSED') !== 'true') {
-                webchatBanner.classList.remove('webchat-banner--hidden');
-              }
-
-              const webChatBannerClose = document.querySelector('.webchat-banner__close');
-
-              webChatBannerClose && webChatBannerClose.addEventListener('click', function() {
-                localStorage.setItem('WEBCHAT_BANNER_DISMISSED', 'true');
-                webchatBanner.classList.add('webchat-banner--hidden');
-              });
-            }
-          } catch (e) {}
-        </script>
-      </div>
   </body>
 </html>
