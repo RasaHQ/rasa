@@ -328,11 +328,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self.component_config[BILOU_FLAG]:
             return bilou_utils.build_tag_id_dict(training_data)
 
-        distinct_tag_ids = set(
+        distinct_tag_ids = {
             e["entity"]
             for example in training_data.entity_examples
             for e in example.get(ENTITIES)
-        ) - {None}
+        } - {None}
 
         tag_id_dict = {
             tag_id: idx for idx, tag_id in enumerate(sorted(distinct_tag_ids), 1)
@@ -661,7 +661,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 "There is no trained model: component is either not trained or "
                 "didn't receive enough training data."
             )
-            return
+            return None
 
         # create session data from message and convert it into a batch of 1
         model_data = self._create_model_data([message])
@@ -1185,7 +1185,7 @@ class DIET(RasaModel):
 
     def _features_as_seq_ids(
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
-    ) -> tf.Tensor:
+    ) -> Optional[tf.Tensor]:
         """Creates dense labels for negative sampling."""
 
         # if there are dense features - we can use them
@@ -1199,6 +1199,8 @@ class DIET(RasaModel):
                 return tf.stop_gradient(
                     self._tf_layers[f"sparse_to_dense_ids.{name}"](f)
                 )
+
+        return None
 
     def _create_bow(
         self,
