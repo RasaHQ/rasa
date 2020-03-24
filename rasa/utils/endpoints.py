@@ -150,7 +150,7 @@ class EndpointConfig:
                         response.status, response.reason, await response.content.read()
                     )
                 try:
-                    return response.json
+                    return await response.json()
                 except ContentTypeError:
                     return None
 

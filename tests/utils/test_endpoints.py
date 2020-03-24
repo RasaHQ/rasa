@@ -109,4 +109,4 @@ async def test_request_non_json_response():
 
         response = await endpoint.request("post", subpath="test",)
 
-        assert response
+        assert not response
