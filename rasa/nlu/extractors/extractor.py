@@ -22,22 +22,23 @@ class EntityExtractor(Component):
         return entity
 
     def clean_up_entities(
-        self, entities: List[Dict[Text, Any]], keep: bool = False
+        self, entities: List[Dict[Text, Any]], keep: bool = True
     ) -> List[Dict[Text, Any]]:
         """
         Checks if multiple entity labels are assigned to one word.
 
         This might happen if you are using a tokenizer that splits up words into
         sub-words and different entity labels are assigned to the individual sub-words.
-        In such a case we simply remove all entity labels for that word.
-        If you set 'keep' to 'True', the entity label with the highest confidence is
-        kept as entity label for that word.
+        In such a case keep the entity label with the highest confidence as entity
+        label for that word. If you set 'keep' to 'False', all entity labels for
+        that word will be removed.
 
         Args:
             entities: list of entities
             keep:
-                keep the entity label with the highest confidence if
-                multiple entity labels are assigned to one word
+                If set to 'True', the entity label with the highest confidence is kept
+                if multiple entity labels are assigned to one word. If set to 'False'
+                all entity labels for that word will be removed.
 
         Returns: updated list of entities
         """
