@@ -198,8 +198,8 @@ Additional arguments are:
 .. program-output:: rasa visualize --help
 
 
-Evaluate a Model on Test Data
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Evaluating a Model on Test Data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To evaluate your model on test data, run:
 
