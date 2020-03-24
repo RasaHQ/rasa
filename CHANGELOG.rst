@@ -49,7 +49,7 @@ Improvements
 - `#5258 <https://github.com/rasahq/rasa/issues/5258>`_: Added ``PikaEventBroker`` (:ref:`event-brokers-pika`) support for publishing to
   multiple queues. Messages are now published to a ``fanout`` exchange with name
   ``rasa-exchange`` (see
-  `here <https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-fanout>`_
+  `exchange-fanout <https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-fanout>`_
   for more information on ``fanout`` exchanges).
 
   The former ``queue`` key is deprecated. Queues should now be
