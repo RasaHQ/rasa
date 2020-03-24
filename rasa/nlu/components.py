@@ -1,8 +1,10 @@
+import itertools
 import logging
 import typing
-from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type
+from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
+from rasa.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import raise_warning
@@ -179,28 +181,101 @@ def validate_pipeline(pipeline: List["Component"]) -> None:
     validate_required_components(pipeline)
 
 
+def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]):
+    """Check if any of the provided components are listed in the pipeline.
+
+    Args:
+        components: A list of :class:`rasa.nlu.components.Component`s to check.
+        pipeline: A list of :class:`rasa.nlu.components.Component`s.
+
+    Returns:
+        `True` if any of the `components` are in the `pipeline`, else `False`.
+
+    """
+    return any(any([component.name == c for component in pipeline]) for c in components)
+
+
 def validate_required_components_from_data(
     pipeline: List["Component"], data: TrainingData
 ) -> None:
     """Validates that all components are present in the pipeline based on data.
 
     Args:
-        pipeline: The list of the :class:`rasa.nlu.components.Component`.
+        pipeline: The list of the :class:`rasa.nlu.components.Component`s.
         data: The :class:`rasa.nlu.training_data.training_data.TrainingData`.
     """
 
-    from rasa.nlu.selectors.response_selector import ResponseSelector
-
-    response_selector_exists = False
-    for component in pipeline:
-        # check if a response selector is part of NLU pipeline
-        if isinstance(component, ResponseSelector):
-            response_selector_exists = True
-
-    if len(data.response_examples) and not response_selector_exists:
+    if data.response_examples and not any_components_in_pipeline(
+        ["ResponseSelector"], pipeline
+    ):
         raise_warning(
-            "Training data consists examples for training a response selector but "
-            "no response selector component specified inside NLU pipeline."
+            "You have defined training data with examples for training a response selector, but "
+            "your NLU pipeline does not include a response selector component. To train a "
+            "model on your response selector data, add a 'ResponseSelector' to your pipeline."
+        )
+
+    if data.entity_examples and not any_components_in_pipeline(
+        TRAINABLE_EXTRACTORS, pipeline
+    ):
+        raise_warning(
+            "You have defined training data consisting of entity examples, but "
+            "your NLU pipeline does not include an entity extractor trained on "
+            "your training data. To extract non-pretrained entities, add one of "
+            f"{TRAINABLE_EXTRACTORS} to your pipeline."
+        )
+
+    if data.regex_features and not any_components_in_pipeline(
+        ["RegexFeaturizer"], pipeline
+    ):
+        raise_warning(
+            "You have defined training data with regexes, but "
+            "your NLU pipeline does not include a 'RegexFeaturizer'. "
+            "To featurize regexes, include a 'RegexFeaturizer' in your pipeline."
+        )
+
+    if data.lookup_tables and not any_components_in_pipeline(
+        ["RegexFeaturizer"], pipeline
+    ):
+        raise_warning(
+            "You have defined training data consisting of lookup tables, but "
+            "your NLU pipeline does not include a 'RegexFeaturizer'. "
+            "To featurize lookup tables, add a 'RegexFeaturizer' to your pipeline."
+        )
+
+    if data.lookup_tables:
+        if not any_components_in_pipeline(
+            ["CRFEntityExtractor", "DIETClassifier"], pipeline
+        ):
+            raise_warning(
+                "You have defined training data consisting of lookup tables, but "
+                "your NLU pipeline does not include any components that use these features. "
+                "To make use of lookup tables, add a 'DIETClassifier' or a 'CRFEntityExtractor' with "
+                "the 'pattern' feature to your pipeline."
+            )
+        elif any_components_in_pipeline(["CRFEntityExtractor"], pipeline):
+            crf_components = [c for c in pipeline if c.name == "CRFEntityExtractor"]
+            # check to see if any of the possible CRFEntityExtractors will featurize `pattern`
+            has_pattern_feature = False
+            for crf in crf_components:
+                crf_features = crf.component_config.get("features")
+                # iterate through [[before],[word],[after]] features
+                has_pattern_feature = "pattern" in itertools.chain(*crf_features)
+
+            if not has_pattern_feature:
+                raise_warning(
+                    "You have defined training data consisting of lookup tables, but "
+                    "your NLU pipeline's 'CRFEntityExtractor' does not include the 'pattern' feature. "
+                    "To featurize lookup tables, add the 'pattern' feature to the 'CRFEntityExtractor' in "
+                    "your pipeline."
+                )
+
+    if data.entity_synonyms and not any_components_in_pipeline(
+        ["EntitySynonymMapper"], pipeline
+    ):
+        raise_warning(
+            "You have defined synonyms in your training data, but "
+            "your NLU pipeline does not include an 'EntitySynonymMapper'. "
+            "To map synonyms, add an 'EntitySynonymMapper' to your pipeline."
         )
 
 
