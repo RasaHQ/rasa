@@ -2,7 +2,7 @@ import logging
 import re
 import typing
 from collections import OrderedDict
-from typing import Any, Text, Optional, Tuple, List, Dict
+from typing import Any, Text, Optional, Tuple, List, Dict, NamedTuple, Match
 
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
@@ -25,7 +25,7 @@ LOOKUP = "lookup"
 available_sections = [INTENT, SYNONYM, REGEX, LOOKUP]
 
 # regex for: `[entity_text]((entity_type(:entity_synonym)?)|{entity_dict})`
-ent_regex = re.compile(
+entity_regex = re.compile(
     r"\[(?P<entity_text>[^\]]+)\](\((?P<entity>[^:)]*?)(?:\:(?P<value>[^)]+))?\)|\{(?P<entity_dict>[^}]*?)\})"
 )
 item_regex = re.compile(r"\s*[-*+]\s*(.+)")
@@ -35,6 +35,14 @@ fname_regex = re.compile(r"\s*([^-*+]+)")
 ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
 
 ESCAPE = re.compile(r"[\b\f\n\r\t]")
+
+
+class EntityValues(NamedTuple):
+    type: Text
+    value: Text
+    text: Text
+    group: Optional[Text]
+    role: Optional[Text]
 
 
 def encode_string(s: Text) -> Text:
@@ -135,11 +143,8 @@ class MarkdownReader(TrainingDataReader):
             elements.append(item)
 
     @staticmethod
-    def _validate_entity_dict(json_str: Text) -> Dict[Text, Text]:
-        """Validate rasa training data format to ensure proper training.
-
-        Raises exception on failure."""
-        entity_schema = {
+    def _entity_dict_schema() -> Dict[Text, Text]:
+        return {
             "type": "object",
             "properties": {
                 "entity": {"type": "string"},
@@ -150,6 +155,18 @@ class MarkdownReader(TrainingDataReader):
             "required": ["entity"],
         }
 
+    def _validate_entity_dict(self, json_str: Text) -> Dict[Text, Text]:
+        """
+        Validates the entity dict data.
+
+        Users can specify entity roles, synonyms, groups for an entity in a dict, e.g.
+        [LA]{"entity": "city", "role": "to", "synonym": "Los Angeles"}
+
+        Args:
+            json_str: the entity dict as string without "{}"
+
+        Returns: a proper python dict
+        """
         from jsonschema import validate
         from jsonschema import ValidationError
         import json
@@ -158,11 +175,11 @@ class MarkdownReader(TrainingDataReader):
         data = json.loads(f"{{{json_str}}}")
 
         try:
-            validate(data, entity_schema)
+            validate(data, self._entity_dict_schema())
         except ValidationError as e:
             e.message += (
-                f". Failed to validate training data, make sure your data "
-                f"is valid. For more information about the format visit "
+                f". Invalid entity format is used in the training data. "
+                f"For more information about the format visit "
                 f"{DOCS_URL_TRAINING_DATA_NLU}."
             )
             raise e
@@ -174,52 +191,60 @@ class MarkdownReader(TrainingDataReader):
         entities = []
         offset = 0
 
-        for match in re.finditer(ent_regex, example):
-            entity_text = match.groupdict()["entity_text"]
-
-            if match.groupdict()["entity_dict"]:
-                entity_dict_str = match.groupdict()["entity_dict"]
-                entity_dict = self._validate_entity_dict(entity_dict_str)
-
-                entity_type = entity_dict["entity"]
-                entity_value = (
-                    entity_dict["synonym"] if "synonym" in entity_dict else entity_text
-                )
-                entity_role = entity_dict["role"] if "role" in entity_dict else None
-                entity_group = entity_dict["group"] if "group" in entity_dict else None
-
-            else:
-                entity_type = match.groupdict()["entity"]
-                entity_role = None
-                entity_group = None
-
-                if match.groupdict()["value"]:
-                    entity_value = match.groupdict()["value"]
-                    raise_warning(
-                        "You are using the deprecated training data format to "
-                        "declare synonyms. Please use the following format: "
-                        "[<entity-text>]{'entity': <entity-type>, 'synonym': <entity-synonym>}",
-                        category=DeprecationWarning,
-                        docs=DOCS_URL_TRAINING_DATA_NLU,
-                    )
-                else:
-                    entity_value = entity_text
+        for match in re.finditer(entity_regex, example):
+            entity_values = self._extract_entity_values(match)
 
             start_index = match.start() - offset
-            end_index = start_index + len(entity_text)
-            offset += len(match.group(0)) - len(entity_text)
+            end_index = start_index + len(entity_values.text)
+            offset += len(match.group(0)) - len(entity_values.text)
 
             entity = build_entity(
                 start_index,
                 end_index,
-                entity_value,
-                entity_type,
-                entity_role,
-                entity_group,
+                entity_values.value,
+                entity_values.type,
+                entity_values.role,
+                entity_values.group,
             )
             entities.append(entity)
 
         return entities
+
+    def _extract_entity_values(self, match: Match) -> EntityValues:
+        """Extract the entity values, i.e. type, value, etc, from the regex match."""
+        entity_text = match.groupdict()["entity_text"]
+
+        if match.groupdict()["entity_dict"]:
+            entity_dict_str = match.groupdict()["entity_dict"]
+            entity_dict = self._validate_entity_dict(entity_dict_str)
+
+            entity_type = entity_dict["entity"]
+            entity_value = (
+                entity_dict["synonym"] if "synonym" in entity_dict else entity_text
+            )
+            entity_role = entity_dict["role"] if "role" in entity_dict else None
+            entity_group = entity_dict["group"] if "group" in entity_dict else None
+        else:
+            entity_type = match.groupdict()["entity"]
+            entity_role = None
+            entity_group = None
+
+            if match.groupdict()["value"]:
+                entity_value = match.groupdict()["value"]
+                raise_warning(
+                    "You are using the deprecated training data format to "
+                    "declare synonyms. Please use the following format: "
+                    "[<entity-text>]{'entity': <entity-type>, 'synonym': "
+                    "<entity-synonym>}.",
+                    category=DeprecationWarning,
+                    docs=DOCS_URL_TRAINING_DATA_NLU,
+                )
+            else:
+                entity_value = entity_text
+
+        return EntityValues(
+            entity_type, entity_value, entity_text, entity_group, entity_role
+        )
 
     def _add_synonym(self, text: Text, value: Text) -> None:
         from rasa.nlu.training_data.util import check_duplicate_synonym
@@ -239,7 +264,9 @@ class MarkdownReader(TrainingDataReader):
         from rasa.nlu.training_data import Message
 
         entities = self._find_entities_in_training_example(example)
-        plain_text = re.sub(ent_regex, lambda m: m.groupdict()["entity_text"], example)
+        plain_text = re.sub(
+            entity_regex, lambda m: m.groupdict()["entity_text"], example
+        )
         self._add_synonyms(plain_text, entities)
 
         message = Message.build(plain_text, self.current_title)
