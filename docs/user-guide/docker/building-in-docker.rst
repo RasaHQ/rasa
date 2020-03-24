@@ -152,7 +152,7 @@ you can build a docker image that extends the ``rasa/rasa`` image.
 Adding Custom Components
 ########################
 
-If you are using a custom NLU component or policy ot your ``config.yml``, you have to add the module file to your
+If you are using a custom NLU component or policy in your ``config.yml``, you have to add the module file to your
 Docker container. You can do this by either mounting the file or by including it in your
 own custom image (e.g. if the custom component or policy has extra dependencies). Make sure
 that your module is in the Python module search path by setting the
