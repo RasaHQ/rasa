@@ -55,7 +55,7 @@ class EndToEndReader(MarkdownReader):
             raise ValueError(
                 "Encountered invalid end-to-end format for message "
                 "`{}`. Please visit the documentation page on "
-                "end-to-end testing at {}/user-guide/testing-models/"
+                "end-to-end testing at {}/user-guide/testing-your-assitant/"
                 "#end-to-end-testing/".format(line, DOCS_BASE_URL)
             )
 

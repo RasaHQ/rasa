@@ -1,11 +1,10 @@
-:desc: Evaluate and validate your machine learning models for open source
-       library Rasa Core to improve the dialogue management of your contextual
-       AI Assistant.
+:desc: Test your Rasa Open Source assistant to validate and improve your
+       contextual AI Assistant
 
-.. _testing-models:
+.. _testing-your-assistant:
 
-Testing Models
-=================
+Testing Your Assistant
+======================
 
 .. edit-link::
 
@@ -21,8 +20,8 @@ Testing Models
 End-to-End Testing
 ------------------
 
-Rasa Open Source lets you test dialogues end-to-end, running through
-test conversations and making sure that both NLU and Core make correct predictions.
+Rasa Open Source lets you test dialogues end-to-end, by running through
+conversation tests and making sure that both NLU and Core make correct predictions.
 
 To do this, you need some stories in the end-to-end format,
 which includes both the NLU output and the original text.
@@ -91,8 +90,8 @@ Here are some examples:
         * thankyou: thanks
             - utter_noworries
 
-By default Rasa Open Source saves tests to ``tests/conversation_tests.md``.
-You can test your model against them by running:
+By default Rasa Open Source saves conversation tests to ``tests/conversation_tests.md``.
+You can test your assistant against them by running:
 
 .. code-block:: bash
 
@@ -113,10 +112,10 @@ If you have any questions or problems, please share them with us in the dedicate
   and ``nlu`` model. If it does not contain an NLU model, Core will use
   the default ``RegexInterpreter``.
 
-.. _nlu-testing:
+.. _nlu-evaluation:
 
-Testing an NLU Model
---------------------
+Evaluating an NLU Model
+-----------------------
 
 A standard technique in machine learning is to keep some data separate as a *test set*.
 You can :ref:`split your NLU training data <train-test-split>`
@@ -250,9 +249,9 @@ near [Alexanderplatz](loc) [tonight](time)          O   loc time (2)          O 
 ==================================================  ========================  ===========================
 
 
-.. _core-testing:
+.. _core-evaluation:
 
-Testing a Core Model
+Evaluating a Core Model
 -----------------------
 
 You can evaluate your trained model on a set of test stories

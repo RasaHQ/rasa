@@ -155,7 +155,7 @@ For example:
 
 
 While it's good to test the bot interactively, we should also add end to end test cases that
-can later be included as part of our CI/CD system. `End to end stories <https://rasa.com/docs/rasa/user-guide/testing-models/#end-to-end-testing>`_
+can later be included as part of our CI/CD system. `End to end stories <https://rasa.com/docs/rasa/user-guide/testing-your-assistant/#end-to-end-testing>`_
 include NLU data, so that both components of Rasa can be tested.  Create a file called
 ``test_stories.md`` in the root directory with some test cases:
 

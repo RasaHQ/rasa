@@ -198,10 +198,10 @@ Additional arguments are:
 .. program-output:: rasa visualize --help
 
 
-Testing a Model on Test Data
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Evaluating a Model on Test Data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To test your model on test data, run:
+To evaluate your model on test data, run:
 
 .. code:: bash
 
@@ -209,7 +209,7 @@ To test your model on test data, run:
 
 
 Specify the model to test using ``--model``.
-Check out more details in :ref:`nlu-testing` and :ref:`core-testing`.
+Check out more details in :ref:`nlu-evaluation` and :ref:`core-evaluation`.
 
 The following arguments are available for ``rasa test``:
 
