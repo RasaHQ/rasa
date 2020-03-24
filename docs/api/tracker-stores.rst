@@ -67,7 +67,21 @@ SQLTrackerStore
               postgres:
                 image: postgres:latest
 
-       Set ``url: postgres`` in your tracker store endpoints to route requests to that service.
+       To route requests to the new service, make sure that the ``url`` in your ``endpoints.yml``
+       references the service name:
+
+           .. code-block:: yaml
+              :emphasize-lines: 4
+
+                tracker_store:
+                    type: SQL
+                    dialect: "postgresql"  # the dialect used to interact with the db
+                    url: "postgres"
+                    db: "rasa"  # path to your db
+                    username:  # username used for authentication
+                    password:  # password used for authentication
+                    query: # optional dictionary to be added as a query string to the connection URL
+                      driver: my-driver
 
 
 :Parameters:
@@ -94,40 +108,46 @@ SQLTrackerStore
       Create a sequence in the database with the following command, where username is the user you created
       (read more about creating sequences `here <https://docs.oracle.com/cd/B28359_01/server.111/b28310/views002.htm#ADMIN11794>`__):
 
-      .. code-block:: sql
+          .. code-block:: sql
 
-          CREATE SEQUENCE username.events_seq;
+              CREATE SEQUENCE username.events_seq;
 
       Next you have to extend the Rasa Open Source image to include the necessary drivers and clients.
       First download the Oracle Instant Client from `here <https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html>`__,
       rename it to ``oracle.rpm`` and store it in the directory from where you'll be building the docker image.
       Copy the following into a file called ``Dockerfile``:
 
-      .. code-block:: bash
+          .. parsed-literal::
 
-          FROM rasa/rasa:|version|-full
-          # Switch to root user to install packages
-          USER root
-          RUN apt-get update -qq \
-          && apt-get install -y --no-install-recommends \
-          alien \
-          libaio1 \
-          && apt-get clean \
-          && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-          # Copy in oracle instaclient
-          # https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html
-          COPY oracle.rpm oracle.rpm
-          # Install the Python wrapper library for the Oracle drivers
-          RUN pip install cx-Oracle
-          # Install Oracle client libraries
-          RUN alien -i oracle.rpm
-          USER 1001
+              FROM rasa/rasa:\ |release|-full
+
+              # Switch to root user to install packages
+              USER root
+
+              RUN apt-get update -qq \
+              && apt-get install -y --no-install-recommends \
+              alien \
+              libaio1 \
+              && apt-get clean \
+              && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+              # Copy in oracle instaclient
+              # https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html
+              COPY oracle.rpm oracle.rpm
+
+              # Install the Python wrapper library for the Oracle drivers
+              RUN pip install cx-Oracle
+
+              # Install Oracle client libraries
+              RUN alien -i oracle.rpm
+
+              USER 1001
 
       Then build the docker image:
 
-      .. code-block:: bash
+          .. parsed-literal::
 
-          docker build . -t rasa-oracle:|version|-oracle-full
+              docker build . -t rasa-oracle:\ |release|-oracle-full
 
       Now you can configure the tracker store in the ``endpoints.yml`` as described above,
       and start the container. The ``dialect`` parameter with this setup will be ``oracle+cx_oracle``.
@@ -172,7 +192,19 @@ RedisTrackerStore
               redis:
                 image: redis:latest
 
-       Set ``url: redis`` in your tracker store endpoints to route requests to that service.
+       To route requests to the new service, make sure that the ``url`` in your ``endpoints.yml``
+       references the service name:
+
+        .. code-block:: yaml
+           :emphasize-lines: 3
+
+            tracker_store:
+                type: redis
+                url: <url of the redis instance, e.g. localhost>
+                port: <port of your redis instance, usually 6379>
+                db: <number of your database within redis, e.g. 0>
+                password: <password used for authentication>
+                use_ssl: <whether or not the communication is encrypted, default `false`>
 
 :Parameters:
     - ``url`` (default: ``localhost``): The url of your redis instance
@@ -233,16 +265,20 @@ MongoTrackerStore
                   ME_CONFIG_MONGODB_ADMINUSERNAME: rasa
                   ME_CONFIG_MONGODB_ADMINPASSWORD: example
 
-       To route requests to this database, make sure to specify the URL as well as the specified user and
-       password:
+       To route requests to this database, make sure to set the ``url`` in your ``endpoints.yml`` as the service name,
+       and specify the user and password:
 
-           .. code-block:: yaml
+        .. code-block:: yaml
+           :emphasize-lines: 3, 5-6
 
-              tracker_store:
-                 type: mongod
-                 url: mongodb://mongo:27017
-                 username: rasa
-                 password: example
+            tracker_store:
+                type: mongod
+                url: mongodb://mongo:27017
+                db: <name of the db within your mongo instance, e.g. rasa>
+                username: <username used for authentication>
+                password: <password used for authentication>
+                auth_source: <database name associated with the user’s credentials>
+
 
 :Parameters:
     - ``url`` (default: ``mongodb://localhost:27017``): URL of your MongoDB
@@ -283,4 +319,28 @@ Custom Tracker Store
           - extending the Rasa image to include the module
           - mounting the module as volume
 
-       Make sure to add the corresponding service as well.
+       Make sure to add the corresponding service as well. For example, mounting it as a volume would look like so:
+
+       ``docker-compose.yml``:
+
+           .. code-block:: yaml
+              :emphasize-lines: 5-7
+
+              rasa:
+                <existing rasa service configuration>
+                volumes:
+                  - <existing volume mappings, if there are any>
+                  - ./path/to/your/module.py:/app/path/to/your/module.py
+              custom-tracker-store:
+                image: custom-image:tag
+
+       ``endpoints.yml``:
+
+           .. code-block:: yaml
+              :emphasize-lines: 3
+
+              tracker_store:
+                type: path.to.your.module.Class
+                url: custom-tracker-store
+                a_parameter: a value
+                another_parameter: another value
