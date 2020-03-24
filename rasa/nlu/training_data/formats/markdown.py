@@ -431,8 +431,23 @@ class MarkdownWriter(TrainingDataWriter):
 
         entity_text = text[entity["start"] : entity["end"]]
         entity_type = entity["entity"]
-        if entity_text != entity["value"]:
-            # add synonym suffix
-            entity_type += ":{}".format(entity["value"])
+        entity_synonym = (
+            entity["value"]
+            if "value" in entity and entity["value"] != entity_text
+            else None
+        )
+        entity_role = entity["role"] if "role" in entity else None
+        entity_group = entity["group"] if "group" in entity else None
 
-        return f"[{entity_text}]({entity_type})"
+        if entity_synonym is None and entity_role is None and entity_group is None:
+            return f"[{entity_text}]({entity_type})"
+
+        entity_dict_str = f'"entity": "{entity_type}"'
+        if entity_role is not None:
+            entity_dict_str += f', "role": "{entity_role}"'
+        if entity_group is not None:
+            entity_dict_str += f', "group": "{entity_group}"'
+        if entity_synonym is not None:
+            entity_dict_str += f', "synonym": "{entity_synonym}"'
+
+        return f"[{entity_text}]{{{entity_dict_str}}}"

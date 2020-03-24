@@ -1,4 +1,4 @@
-from typing import Optional, Text
+from typing import Optional, Text, Dict, Any
 
 import pytest
 import tempfile
@@ -715,13 +715,19 @@ def test_dump_nlu_with_responses():
 @pytest.mark.parametrize(
     "entity_extractor,expected_output",
     [
-        (None, "- [test](word:random)"),
-        ("", "- [test](word:random)"),
-        ("random-extractor", "- [test](word:random)"),
-        (CRFEntityExtractor.__name__, "- [test](word:random)"),
+        (None, '- [test]{"entity": "word", "synonym": "random"}'),
+        ("", '- [test]{"entity": "word", "synonym": "random"}'),
+        ("random-extractor", '- [test]{"entity": "word", "synonym": "random"}'),
+        (
+            CRFEntityExtractor.__name__,
+            '- [test]{"entity": "word", "synonym": "random"}',
+        ),
         (DucklingHTTPExtractor.__name__, "- test"),
         (SpacyEntityExtractor.__name__, "- test"),
-        (MitieEntityExtractor.__name__, "- [test](word:random)"),
+        (
+            MitieEntityExtractor.__name__,
+            '- [test]{"entity": "word", "synonym": "random"}',
+        ),
     ],
 )
 def test_dump_trainable_entities(
@@ -734,14 +740,7 @@ def test_dump_trainable_entities(
                     "text": "test",
                     "intent": "greet",
                     "entities": [
-                        {
-                            "start": 0,
-                            "end": 4,
-                            "value": "random",
-                            "entity": "word",
-                            "role": "role-name",
-                            "group": "group-name",
-                        }
+                        {"start": 0, "end": 4, "value": "random", "entity": "word"}
                     ],
                 }
             ]
@@ -752,6 +751,51 @@ def test_dump_trainable_entities(
             "extractor"
         ] = entity_extractor
 
+    training_data_object = RasaReader().read_from_json(training_data_json)
+    md_dump = MarkdownWriter().dumps(training_data_object)
+    assert md_dump.splitlines()[1] == expected_output
+
+
+@pytest.mark.parametrize(
+    "entity, expected_output",
+    [
+        (
+            {
+                "start": 0,
+                "end": 4,
+                "value": "random",
+                "entity": "word",
+                "role": "role-name",
+                "group": "group-name",
+            },
+            '- [test]{"entity": "word", "role": "role-name", "group": "group-name", '
+            '"synonym": "random"}',
+        ),
+        ({"start": 0, "end": 4, "entity": "word"}, "- [test](word)"),
+        (
+            {
+                "start": 0,
+                "end": 4,
+                "entity": "word",
+                "role": "role-name",
+                "group": "group-name",
+            },
+            '- [test]{"entity": "word", "role": "role-name", "group": "group-name"}',
+        ),
+        (
+            {"start": 0, "end": 4, "entity": "word", "value": "random"},
+            '- [test]{"entity": "word", "synonym": "random"}',
+        ),
+    ],
+)
+def test_dump_trainable_entities(entity: Dict[Text, Any], expected_output: Text):
+    training_data_json = {
+        "rasa_nlu_data": {
+            "common_examples": [
+                {"text": "test", "intent": "greet", "entities": [entity]}
+            ]
+        }
+    }
     training_data_object = RasaReader().read_from_json(training_data_json)
     md_dump = MarkdownWriter().dumps(training_data_object)
     assert md_dump.splitlines()[1] == expected_output
