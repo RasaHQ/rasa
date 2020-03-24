@@ -223,7 +223,7 @@ different model parts if something has changed in their data or configuration.
 
 The ``rasa train`` command will look for both NLU and Core data and will train a combined model.
 
-7. Test the Assistant
+7. Test Your Assistant
 ^^^^^^^^^^^^^^^^^^^^^
 
 After you train a model, you always want to check that your assistant still behaves as you expect.
