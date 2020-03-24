@@ -81,7 +81,7 @@ Improvements
 Bugfixes
 --------
 - `#5205 <https://github.com/rasahq/rasa/issues/5205>`_: Fixed the bug when FormPolicy was overwriting MappingPolicy prediction (e.g. ``/restart``).
-  Priorities for :ref:`mapping-policy:` and :ref:`form-policy:` are no longer linear:
+  Priorities for :ref:`mapping-policy` and :ref:`form-policy` are no longer linear:
   ``FormPolicy`` priority is 5, but its prediction is ignored if ``MappingPolicy`` is used for prediction.
 - `#5215 <https://github.com/rasahq/rasa/issues/5215>`_: Fixed issue related to storing Python ``float`` values as ``decimal.Decimal`` objects
   in DynamoDB tracker stores. All ``decimal.Decimal`` objects are now converted to
