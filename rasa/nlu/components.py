@@ -249,7 +249,7 @@ def validate_required_components_from_data(
             raise_warning(
                 "You have defined training data consisting of lookup tables, but "
                 "your NLU pipeline does not include any components that use these features. "
-                "To featurize lookup tables, add a 'DIETClassifier' or a 'CRFEntityExtractor' with "
+                "To make use of lookup tables, add a 'DIETClassifier' or a 'CRFEntityExtractor' with "
                 "the 'pattern' feature to your pipeline."
             )
         elif any_components_in_pipeline(["CRFEntityExtractor"], pipeline):
@@ -259,8 +259,7 @@ def validate_required_components_from_data(
             for crf in crf_components:
                 crf_features = crf.component_config.get("features")
                 # iterate through [[before],[word],[after]] features
-                if "pattern" in itertools.chain(*crf_features):
-                    has_pattern_feature = True
+                has_pattern_feature = "pattern" in itertools.chain(*crf_features)
 
             if not has_pattern_feature:
                 raise_warning(
