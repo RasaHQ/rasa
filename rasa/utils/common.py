@@ -104,6 +104,14 @@ def update_socketio_log_level() -> None:
 def update_tensorflow_log_level() -> None:
     """Set the log level of Tensorflow to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
+
+    modules_to_disable = [
+        "tensorflow.stream_executor.platform.default",
+        "tensorflow/compiler/tf2tensorrt/utils",
+    ]
+    for module in modules_to_disable:
+        logging.getLogger(module).setLevel(logging.ERROR)
+
     import tensorflow as tf
 
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
