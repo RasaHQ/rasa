@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Text, Tuple
+from typing import Any, Dict, List, Text, Tuple, Optional
 
 from rasa.nlu.components import Component
 from rasa.nlu.constants import EXTRACTOR, ENTITIES
@@ -20,6 +20,78 @@ class EntityExtractor(Component):
             entity["processors"] = [self.name]
 
         return entity
+
+    def clean_up_entities(
+        self, entities: List[Dict[Text, Any]], keep: bool = False
+    ) -> List[Dict[Text, Any]]:
+        """
+        Checks if two different entities are assigned to one word.
+        If 'keep_one_entity' is set to 'True', the entity label with the highest
+        confidence of that word is taken as entity label for the word.
+        Otherwise, no entity label will be assigned to the word.
+
+        Args:
+            entities: list of entities
+            keep:
+                keep the entity label with the highest confidence if
+                multiple entity labels are assigned to one word
+
+        Returns: update list of entities
+        """
+        if len(entities) <= 1:
+            return entities
+
+        clusters = []
+
+        for idx in range(1, len(entities)):
+            if entities[idx]["start"] == entities[idx - 1]["end"]:
+                if clusters and clusters[-1][1] == idx - 1:
+                    clusters[-1].append(idx)
+                else:
+                    clusters.append([idx - 1, idx])
+
+        entities_to_remove = set()
+
+        for indices in clusters:
+            if not keep:
+                entities_to_remove.update(indices)
+                continue
+
+            start = entities[indices[0]]["start"]
+            end = entities[indices[-1]]["end"]
+            value = "".join([entities[idx]["value"] for idx in indices])
+            idx = self._get_highest_confidence_idx(entities, indices)
+
+            if idx is None:
+                entities_to_remove.update(indices)
+            else:
+                indices.remove(idx)
+                entities_to_remove.update(indices)
+                entities[idx]["start"] = start
+                entities[idx]["end"] = end
+                entities[idx]["value"] = value
+
+        entities_to_remove = sorted(entities_to_remove, reverse=True)
+
+        for idx in entities_to_remove:
+            entities.remove(entities[idx])
+
+        return entities
+
+    @staticmethod
+    def _get_highest_confidence_idx(
+        entities: List[Dict[Text, Any]], indices: List[int]
+    ) -> Optional[int]:
+        confidences = [
+            entities[idx]["confidence"]
+            for idx in indices
+            if "confidence" in entities[idx]
+        ]
+
+        if len(confidences) != len(indices):
+            return None
+
+        return confidences.index(max(confidences))
 
     @staticmethod
     def filter_irrelevant_entities(extracted: list, requested_dimensions: set) -> list:
