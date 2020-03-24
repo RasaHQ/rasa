@@ -64,7 +64,7 @@ class EntityExtractor(Component):
 
             start = entities[indices[0]]["start"]
             end = entities[indices[-1]]["end"]
-            value = "".join([entities[idx]["value"] for idx in indices])
+            value = "".join(entities[idx]["value"] for idx in indices)
             idx = self._get_highest_confidence_idx(entities, indices)
 
             if idx is None:
