@@ -1,5 +1,5 @@
 :desc: Test your Rasa Open Source assistant to validate and improve your
-       contextual AI Assistant
+       conversations
 
 .. _testing-your-assistant:
 
