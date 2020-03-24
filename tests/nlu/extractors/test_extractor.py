@@ -66,17 +66,24 @@ from rasa.nlu.extractors.extractor import EntityExtractor
         (
             [
                 {
-                    "entity": "city",
+                    "entity": "iata",
                     "start": 0,
+                    "end": 2,
+                    "confidence": 0.32,
+                    "value": "Aa",
+                },
+                {
+                    "entity": "city",
+                    "start": 2,
                     "end": 3,
                     "confidence": 0.87,
-                    "value": "Aar",
+                    "value": "r",
                 },
                 {
                     "entity": "iata",
                     "start": 3,
                     "end": 5,
-                    "confidence": 0.43,
+                    "confidence": 0.21,
                     "value": "hu",
                 },
                 {

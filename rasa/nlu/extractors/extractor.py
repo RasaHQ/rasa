@@ -50,7 +50,7 @@ class EntityExtractor(Component):
         # get indices of entity labels that belong to one word
         for idx in range(1, len(entities)):
             if entities[idx]["start"] == entities[idx - 1]["end"]:
-                if entity_indices and entity_indices[-1][1] == idx - 1:
+                if entity_indices and entity_indices[-1][-1] == idx - 1:
                     entity_indices[-1].append(idx)
                 else:
                     entity_indices.append([idx - 1, idx])
