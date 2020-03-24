@@ -1,2 +1,0 @@
-Fixes issue where model always gets retrained if multiple NLU/story files are in a 
-directory, by sorting the list of files.

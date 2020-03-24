@@ -1,1 +1,0 @@
-Restructure the "Evaluating models" documentation page and rename this page to :ref:`testing-your-assistant`.
