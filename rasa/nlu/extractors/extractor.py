@@ -55,30 +55,33 @@ class EntityExtractor(Component):
                 else:
                     entity_indices.append([idx - 1, idx])
 
-        entities_to_remove = set()
+        entity_indices_to_remove = set()
 
         for indices in entity_indices:
             if not keep:
-                entities_to_remove.update(indices)
+                entity_indices_to_remove.update(indices)
                 continue
 
+            # get start, end, and value of entity matching the complete word
             start = entities[indices[0]]["start"]
             end = entities[indices[-1]]["end"]
             value = "".join(entities[idx]["value"] for idx in indices)
             idx = self._get_highest_confidence_idx(entities, indices)
 
             if idx is None:
-                entities_to_remove.update(indices)
+                entity_indices_to_remove.update(indices)
             else:
+                # We just want to keep the entity with the highest confidence value
                 indices.remove(idx)
-                entities_to_remove.update(indices)
+                entity_indices_to_remove.update(indices)
+                # update that entity to cover the complete word
                 entities[idx]["start"] = start
                 entities[idx]["end"] = end
                 entities[idx]["value"] = value
 
-        entities_to_remove = sorted(entities_to_remove, reverse=True)
-
-        for idx in entities_to_remove:
+        # sort indices to remove entries at the end of the list first
+        # to avoid index out of range errors
+        for idx in sorted(entity_indices_to_remove, reverse=True):
             entities.remove(entities[idx])
 
         return entities
