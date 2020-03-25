@@ -1,4 +1,0 @@
-Fix an issue where the deprecated ``queue`` parameter for the :ref:`event-brokers-pika`
-was ignored and Rasa Open Source published the events to the ``rasa_core_events``
-queue instead. Note that this does not change the fact that the ``queue`` argument
-is deprecated in favor of the ``queues`` argument.

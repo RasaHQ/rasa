@@ -17,6 +17,17 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.9.1] - 2020-03-25
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5492 <https://github.com/rasahq/rasa/issues/5492>`_: Fix an issue where the deprecated ``queue`` parameter for the :ref:`event-brokers-pika`
+  was ignored and Rasa Open Source published the events to the ``rasa_core_events``
+  queue instead. Note that this does not change the fact that the ``queue`` argument
+  is deprecated in favor of the ``queues`` argument.
+
+
 [1.9.0] - 2020-03-24
 ^^^^^^^^^^^^^^^^^^^^
 
