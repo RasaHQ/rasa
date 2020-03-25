@@ -148,7 +148,16 @@ a different Docker registry, such as `Google Container Registry <https://cloud.g
 To create your image:
 
   #. Move your actions code to a folder ``actions`` in your project directory.
-     Make sure to also add an empty ``actions/__init__.py`` file.
+     Make sure to also add an empty ``actions/__init__.py`` file:
+
+      .. code-block:: bash
+
+          mkdir actions
+          mv actions.py actions/actions.py
+          touch actions/__init__.py  # the init file indicates actions.py is a python module
+          
+     The ``rasa/rasa-sdk`` image will automatically look for the actions in ``actions/actions.py``.
+
   #. If your actions have any extra dependencies, create a list of them in a file,
      ``actions/requirements-actions.txt``.
   #. Create a file named ``Dockerfile`` in your project directory,
