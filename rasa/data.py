@@ -212,3 +212,10 @@ def _copy_files_to_new_dir(files: Iterable[Text]) -> Text:
         shutil.copy2(f, os.path.join(directory, unique_file_name))
 
     return directory
+
+
+def get_source_file_name(filename: Text):
+    src_filename = os.path.basename(filename)
+    # Removing unique prefix
+    filename_parts = src_filename.split("_", 1)
+    return filename_parts[1] if len(filename_parts) > 1 else filename_parts[0]
