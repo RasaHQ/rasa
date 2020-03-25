@@ -27,6 +27,7 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 RABBITMQ_EXCHANGE = "rasa-exchange"
+DEFAULT_QUEUE_NAME = "rasa_core_events"
 
 
 def initialise_pika_connection(
@@ -224,7 +225,7 @@ class PikaEventBroker(EventBroker):
         username: Text,
         password: Text,
         port: Union[int, Text] = 5672,
-        queues: Union[List[Text], Tuple[Text], Text, None] = ("rasa_core_events",),
+        queues: Union[List[Text], Tuple[Text], Text, None] = None,
         should_keep_unpublished_messages: bool = True,
         raise_on_failure: bool = False,
         log_level: Union[Text, int] = os.environ.get(
@@ -278,7 +279,7 @@ class PikaEventBroker(EventBroker):
 
     @staticmethod
     def _get_queues_from_args(
-        queues_arg: Union[List[Text], Tuple[Text], Text, None], kwargs: Any,
+        queues_arg: Union[List[Text], Tuple[Text], Text, None], kwargs: Any
     ) -> Union[List[Text], Tuple[Text]]:
         """Get queues for this event broker.
 
@@ -326,11 +327,13 @@ class PikaEventBroker(EventBroker):
         if queue_arg:
             return queue_arg  # pytype: disable=bad-return-type
 
-        raise ValueError(
-            f"Could not initialise `PikaEventBroker` due to invalid "
-            f"`queues` or `queue` argument in constructor. See "
-            f"{DOCS_URL_PIKA_EVENT_BROKER}."
+        raise_warning(
+            f"No `queues` argument provided. It is suggested to explicitly "
+            f"specify a queue as described in {DOCS_URL_PIKA_EVENT_BROKER}."
+            f"Using the default queue '{DEFAULT_QUEUE_NAME}' for now."
         )
+
+        return [DEFAULT_QUEUE_NAME]
 
     @classmethod
     def from_endpoint_config(
@@ -399,7 +402,7 @@ class PikaEventBroker(EventBroker):
         self._pika_connection.ioloop.start()
 
     def is_ready(
-        self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01,
+        self, attempts: int = 1000, wait_time_between_attempts_in_seconds: float = 0.01
     ) -> bool:
         """Spin until the pika channel is open.
 
