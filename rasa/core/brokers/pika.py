@@ -328,8 +328,9 @@ class PikaEventBroker(EventBroker):
             return queue_arg  # pytype: disable=bad-return-type
 
         raise_warning(
-            f"No `queues` argument provided. It is suggested to explicitly "
-            f"specify a queue as described in {DOCS_URL_PIKA_EVENT_BROKER}."
+            f"No `queues` or `queue` argument provided. It is suggested to "
+            f"explicitly specify a queue as described in "
+            f"{DOCS_URL_PIKA_EVENT_BROKER}. "
             f"Using the default queue '{DEFAULT_QUEUE_NAME}' for now."
         )
 
