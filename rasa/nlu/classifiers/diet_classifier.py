@@ -1097,7 +1097,7 @@ class DIET(RasaModel):
             self.config[SIMILARITY_TYPE],
         )
 
-    def _prepare_dot_product_loss(self, name: Text) -> None:
+    def _prepare_dot_product_loss(self, name: Text, scale_loss: bool) -> None:
         self._tf_layers[f"loss.{name}"] = layers.DotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
@@ -1105,7 +1105,7 @@ class DIET(RasaModel):
             self.config[MAX_NEG_SIM],
             self.config[USE_MAX_NEG_SIM],
             self.config[NEGATIVE_MARGIN_SCALE],
-            self.config[SCALE_LOSS],
+            scale_loss,
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,
         )
@@ -1139,20 +1139,24 @@ class DIET(RasaModel):
         self._prepare_embed_layers(f"{name}_lm_mask")
         self._prepare_embed_layers(f"{name}_golden_token")
 
-        self._prepare_dot_product_loss(f"{name}_mask")
+        # mask loss is additional loss
+        # set scaling to False, so that it doesn't overpower other losses
+        self._prepare_dot_product_loss(f"{name}_mask", scale_loss=False)
 
     def _prepare_label_classification_layers(self) -> None:
         self._prepare_embed_layers(TEXT)
         self._prepare_embed_layers(LABEL)
 
-        self._prepare_dot_product_loss(LABEL)
+        self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
 
     def _prepare_entity_recognition_layers(self) -> None:
         self._tf_layers["embed.logits"] = layers.Embed(
             self._num_tags, self.config[REGULARIZATION_CONSTANT], "logits"
         )
         self._tf_layers["crf"] = layers.CRF(
-            self._num_tags, self.config[REGULARIZATION_CONSTANT]
+            self._num_tags,
+            self.config[REGULARIZATION_CONSTANT],
+            self.config[SCALE_LOSS],
         )
         self._tf_layers["crf_f1_score"] = tfa.metrics.F1Score(
             num_classes=self._num_tags - 1,  # `0` prediction is not a prediction

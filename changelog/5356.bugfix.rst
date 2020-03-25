@@ -1,2 +1,0 @@
-Fixed bug where ``FallbackPolicy`` would always fall back if the fallback action is
-``action_listen``.

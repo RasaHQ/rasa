@@ -1,1 +1,0 @@
-Change ``rasa init`` to include ``tests/conversation_tests.md`` file by default.
