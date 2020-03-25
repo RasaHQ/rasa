@@ -1,6 +1,3 @@
-session_config:
-  session_expiration_time: 0.0
-  carry_over_slots_to_new_session: true
 intents:
 - greet:
     triggers: action_set_reminder
@@ -17,19 +14,25 @@ intents:
 - EXTERNAL_reminder:
     triggers: action_react_to_reminder
 - EXT_reminder
+
 entities:
 - name
 - plant
+
 responses:
   utter_what_can_do:
   - text: What can I do for you?
+
   utter_goodbye:
   - text: Bye
+
 actions:
 - action_set_reminder
 - action_forget_reminders
 - action_react_to_reminder
 - action_tell_id
 - action_warn_dry
-- utter_what_can_do
-- utter_goodbye
+
+session_config:
+  session_expiration_time: 60  # value in minutes
+  carry_over_slots_to_new_session: true

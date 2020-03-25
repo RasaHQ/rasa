@@ -80,3 +80,7 @@ responses:
 
 forms:
   - restaurant_form
+
+session_config:
+  session_expiration_time: 60  # value in minutes
+  carry_over_slots_to_new_session: true

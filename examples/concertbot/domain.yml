@@ -33,3 +33,7 @@ actions:
   - action_search_venues
   - action_show_concert_reviews
   - action_show_venue_reviews
+
+session_config:
+  session_expiration_time: 60  # value in minutes
+  carry_over_slots_to_new_session: true
