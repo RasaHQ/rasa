@@ -219,12 +219,13 @@ provides implementations for different store types out of the box." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.9.0
+          viewing: 1.9.1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.9.1/api/tracker-stores/">1.9.1</a>
               <a href="../.././1.9.0/api/tracker-stores/">1.9.0</a>
               <a href="../.././1.8.2/api/tracker-stores/">1.8.2</a>
               <a href="../.././1.8.1/api/tracker-stores/">1.8.1</a>
@@ -413,7 +414,7 @@ rename it to <code class="docutils literal notranslate"><span class="pre">oracle
 Copy the following into a file called <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code>:</p>
 <blockquote>
 <div><pre class="literal-block">
-FROM rasa/rasa:1.9.0-full
+FROM rasa/rasa:1.9.1-full
 
 # Switch to root user to install packages
 USER root
@@ -436,7 +437,7 @@ USER 1001
 <p>Then build the docker image:</p>
 <blockquote>
 <div><pre class="literal-block">
-docker build . -t rasa-oracle:1.9.0-oracle-full
+docker build . -t rasa-oracle:1.9.1-oracle-full
 </pre>
 </div></blockquote>
 <p class="last">Now you can configure the tracker store in the <code class="docutils literal notranslate"><span class="pre">endpoints.yml</span></code> as described above,

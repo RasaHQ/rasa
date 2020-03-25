@@ -215,12 +215,13 @@
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.9.0
+          viewing: 1.9.1
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../../.././1.9.1/user-guide/docker/deploying-in-docker-compose/">1.9.1</a>
               <a href="../../.././1.9.0/user-guide/docker/deploying-in-docker-compose/">1.9.0</a>
               <a href="../../.././1.8.2/index/">1.8.2</a>
               <a href="../../.././1.8.1/index/">1.8.1</a>
@@ -325,7 +326,7 @@ want to deploy an assistant that also has an action server.</p>
 version: '3.0'
 services:
   rasa:
-    image: rasa/rasa:1.9.0-full
+    image: rasa/rasa:1.9.1-full
     ports:
       - 5005:5005
     volumes:
@@ -345,7 +346,7 @@ an action server image, see <a class="reference internal" href="#building-an-act
 version: '3.0'
 services:
   rasa:
-    image: rasa/rasa:1.9.0-full
+    image: rasa/rasa:1.9.1-full
     ports:
       - 5005:5005
     volumes:
@@ -398,7 +399,15 @@ a different Docker registry, such as <a class="reference external" href="https:/
 <blockquote>
 <div><ol class="arabic">
 <li><p class="first">Move your actions code to a folder <code class="docutils literal notranslate"><span class="pre">actions</span></code> in your project directory.
-Make sure to also add an empty <code class="docutils literal notranslate"><span class="pre">actions/__init__.py</span></code> file.</p>
+Make sure to also add an empty <code class="docutils literal notranslate"><span class="pre">actions/__init__.py</span></code> file:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir actions
+mv actions.py actions/actions.py
+touch actions/__init__.py  <span class="c1"># the init file indicates actions.py is a python module</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>The <code class="docutils literal notranslate"><span class="pre">rasa/rasa-sdk</span></code> image will automatically look for the actions in <code class="docutils literal notranslate"><span class="pre">actions/actions.py</span></code>.</p>
 </li>
 <li><p class="first">If your actions have any extra dependencies, create a list of them in a file,
 <code class="docutils literal notranslate"><span class="pre">actions/requirements-actions.txt</span></code>.</p>
