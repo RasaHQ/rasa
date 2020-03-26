@@ -3,8 +3,6 @@ from functools import reduce
 from typing import Text, Set, Dict, Optional, List, Union, Any
 import os
 
-from async_lru import alru_cache
-
 from rasa import data
 import rasa.utils.io as io_utils
 from rasa.core.domain import Domain
@@ -49,6 +47,10 @@ class MultiProjectImporter(TrainingDataImporter):
         logger.debug(
             "Selected projects: {}".format("".join([f"\n-{i}" for i in self._imports]))
         )
+
+        self._cached_domain = None
+        self._cached_stories = None
+        self._cached_nlu_data = None
 
         mark_as_experimental_feature(feature_name="MultiProjectImporter")
 
@@ -188,15 +190,15 @@ class MultiProjectImporter(TrainingDataImporter):
             if len(infos) > 0:
                 logger.info(f"Merging following {k}:" + infos)
 
-    @alru_cache()
     async def get_domain(self) -> Domain:
-        domains = [Domain.load(path) for path in self._domain_paths]
-        self._log_merge_infos(domains)
-        return reduce(
-            lambda merged, other: merged.merge(other), domains, Domain.empty()
-        )
+        if self._cached_domain is None:
+            domains = [Domain.load(path) for path in self._domain_paths]
+            self._log_merge_infos(domains)
+            self._cached_domain = reduce(
+                lambda merged, other: merged.merge(other), domains, Domain.empty()
+            )
+        return self._cached_domain
 
-    @alru_cache()
     async def get_stories(
         self,
         interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
@@ -204,20 +206,22 @@ class MultiProjectImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        story_steps = await StoryFileReader.read_from_files(
-            self._story_paths,
-            await self.get_domain(),
-            interpreter,
-            template_variables,
-            use_e2e,
-            exclusion_percentage,
-        )
-        return StoryGraph(story_steps)
+        if self._cached_stories is None:
+            story_steps = await StoryFileReader.read_from_files(
+                self._story_paths,
+                await self.get_domain(),
+                interpreter,
+                template_variables,
+                use_e2e,
+                exclusion_percentage,
+            )
+            self._cached_stories = StoryGraph(story_steps)
+        return self._cached_stories
 
-    @alru_cache()
     async def get_config(self) -> Dict:
         return self.config
 
-    @alru_cache()
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
-        return utils.training_data_from_paths(self._nlu_paths, language)
+        if self._cached_nlu_data is None:
+            self._cached_nlu_data = utils.training_data_from_paths(self._nlu_paths, language)
+        return self._cached_nlu_data
