@@ -86,6 +86,11 @@ class Policy:
             the :class:`rasa.core.training.data.DialogueTrainingData`
         """
 
+        # Comment: OUTPUT_PATH being passed through is a temporary solution 
+        # because for now NLU is saved while train;
+
+        # TODO: remove it later; 
+
         training_data, label_data = self.featurizer.featurize_trackers(
             training_trackers, domain, interpreter, output_path
         )

@@ -488,7 +488,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         slice_end = len(states)
         slice_start = max(0, slice_end - slice_length)
-        padding = [None] * max(0, slice_length - slice_end)
         # noinspection PyTypeChecker
         state_features = states[slice_start:]
         return state_features
