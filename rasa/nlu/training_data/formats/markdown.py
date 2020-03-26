@@ -158,7 +158,7 @@ class MarkdownReader(TrainingDataReader):
             elements.append(item)
 
     @staticmethod
-    def _entity_dict_schema() -> Dict[Text, Text]:
+    def _entity_dict_schema() -> Dict[Text, Any]:
         return {
             "type": "object",
             "properties": {
