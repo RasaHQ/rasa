@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import uuid
 import os
 import shutil
 from functools import partial
@@ -81,12 +82,14 @@ def configure_app(
     cors: Optional[Union[Text, List[Text], None]] = None,
     auth_token: Optional[Text] = None,
     enable_api: bool = True,
+    response_timeout: int = constants.DEFAULT_RESPONSE_TIMEOUT,
     jwt_secret: Optional[Text] = None,
     jwt_method: Optional[Text] = None,
     route: Optional[Text] = "/webhooks/",
     port: int = constants.DEFAULT_SERVER_PORT,
     endpoints: Optional[AvailableEndpoints] = None,
     log_file: Optional[Text] = None,
+    conversation_id: Optional[Text] = uuid.uuid4().hex,
 ):
     """Run the agent."""
     from rasa import server
@@ -97,6 +100,7 @@ def configure_app(
         app = server.create_app(
             cors_origins=cors,
             auth_token=auth_token,
+            response_timeout=response_timeout,
             jwt_secret=jwt_secret,
             jwt_method=jwt_method,
             endpoints=endpoints,
@@ -124,8 +128,10 @@ def configure_app(
         async def run_cmdline_io(running_app: Sanic):
             """Small wrapper to shut down the server once cmd io is done."""
             await asyncio.sleep(1)  # allow server to start
+
             await console.record_messages(
-                server_url=constants.DEFAULT_SERVER_FORMAT.format("http", port)
+                server_url=constants.DEFAULT_SERVER_FORMAT.format("http", port),
+                sender_id=conversation_id,
             )
 
             logger.info("Killing Sanic server now.")
@@ -144,6 +150,7 @@ def serve_application(
     cors: Optional[Union[Text, List[Text]]] = None,
     auth_token: Optional[Text] = None,
     enable_api: bool = True,
+    response_timeout: int = constants.DEFAULT_RESPONSE_TIMEOUT,
     jwt_secret: Optional[Text] = None,
     jwt_method: Optional[Text] = None,
     endpoints: Optional[AvailableEndpoints] = None,
@@ -153,7 +160,9 @@ def serve_application(
     ssl_keyfile: Optional[Text] = None,
     ssl_ca_file: Optional[Text] = None,
     ssl_password: Optional[Text] = None,
+    conversation_id: Optional[Text] = uuid.uuid4().hex,
 ):
+    """Run the API entrypoint."""
     from rasa import server
 
     if not channel and not credentials:
@@ -166,11 +175,13 @@ def serve_application(
         cors,
         auth_token,
         enable_api,
+        response_timeout,
         jwt_secret,
         jwt_method,
         port=port,
         endpoints=endpoints,
         log_file=log_file,
+        conversation_id=conversation_id,
     )
 
     ssl_context = server.create_ssl_context(

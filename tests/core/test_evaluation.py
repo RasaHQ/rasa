@@ -1,6 +1,4 @@
 import os
-from typing import Text
-
 from pathlib import Path
 
 from rasa.core.test import _generate_trackers, collect_story_predictions, test
@@ -32,65 +30,41 @@ async def test_evaluation_image_creation(tmpdir: Path, default_agent: Agent):
     assert os.path.isfile(stories_path)
 
 
-async def test_end_to_end_evaluation_script(restaurantbot: Text):
-    restaurantbot = Agent.load(restaurantbot)
+async def test_end_to_end_evaluation_script(default_agent: Agent):
     completed_trackers = await _generate_trackers(
-        END_TO_END_STORY_FILE, restaurantbot, use_e2e=True
+        END_TO_END_STORY_FILE, default_agent, use_e2e=True
     )
 
     story_evaluation, num_stories = collect_story_predictions(
-        completed_trackers, restaurantbot, use_e2e=True
+        completed_trackers, default_agent, use_e2e=True
     )
 
     serialised_store = [
-        "utter_ask_howcanhelp",
+        "utter_greet",
         "action_listen",
-        "utter_ask_howcanhelp",
+        "utter_greet",
         "action_listen",
-        "utter_on_it",
-        "utter_ask_cuisine",
+        "utter_default",
         "action_listen",
-        "utter_ask_numpeople",
+        "utter_goodbye",
         "action_listen",
-        "utter_ask_howcanhelp",
+        "utter_greet",
         "action_listen",
-        "utter_on_it",
-        "utter_ask_numpeople",
-        "action_listen",
-        "utter_ask_moreupdates",
-        "action_listen",
-        "utter_ask_moreupdates",
-        "action_listen",
-        "utter_ack_dosearch",
-        "action_search_restaurants",
-        "action_suggest",
-        "action_listen",
-        "utter_ask_howcanhelp",
+        "utter_default",
         "action_listen",
         "greet",
         "greet",
-        "inform",
-        "inform",
+        "default",
+        "goodbye",
         "greet",
-        "inform",
-        "inform",
-        "inform",
-        "deny",
-        "greet",
-        "[moderately](price:moderate)",
-        "[east](location)",
-        "[french](cuisine)",
-        "[cheap](price:lo)",
-        "[french](cuisine)",
-        "[bombay](location)",
-        "[six](people:6)",
-        "[moderately](price:moderate)",
+        "default",
+        '[{"name": "Max"}](name:Max)',
     ]
 
     assert story_evaluation.evaluation_store.serialise()[0] == serialised_store
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
     assert len(story_evaluation.failed_stories) == 0
-    assert num_stories == 4
+    assert num_stories == 3
 
 
 async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent):
@@ -107,13 +81,13 @@ async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent)
     assert num_stories == 1
 
 
-async def test_end_to_evaluation_with_forms(form_bot: Agent):
+async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     test_stories = await _generate_trackers(
-        "examples/formbot/tests/end-to-end-stories.md", form_bot, use_e2e=True
+        "data/test_evaluations/form-end-to-end-stories.md", form_bot_agent, use_e2e=True
     )
 
     story_evaluation, num_stories = collect_story_predictions(
-        test_stories, form_bot, use_e2e=True
+        test_stories, form_bot_agent, use_e2e=True
     )
 
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()

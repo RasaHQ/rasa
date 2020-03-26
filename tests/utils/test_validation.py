@@ -10,9 +10,9 @@ import rasa.utils.io as io_utils
     "file, schema",
     [
         ("examples/restaurantbot/domain.yml", DOMAIN_SCHEMA_FILE),
-        ("sample_configs/config_defaults.yml", CONFIG_SCHEMA_FILE),
-        ("sample_configs/config_supervised_embeddings.yml", CONFIG_SCHEMA_FILE),
-        ("sample_configs/config_crf_custom_features.yml", CONFIG_SCHEMA_FILE),
+        ("data/test_config/config_defaults.yml", CONFIG_SCHEMA_FILE),
+        ("data/test_config/config_supervised_embeddings.yml", CONFIG_SCHEMA_FILE),
+        ("data/test_config/config_crf_custom_features.yml", CONFIG_SCHEMA_FILE),
     ],
 )
 def test_validate_yaml_schema(file, schema):

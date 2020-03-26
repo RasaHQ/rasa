@@ -176,8 +176,7 @@ class SklearnPolicy(Policy):
             rasa.utils.io.dump_obj_as_json_to_file(meta_file, meta)
 
             filename = os.path.join(path, "sklearn_model.pkl")
-            with open(filename, "wb") as f:
-                pickle.dump(self._state, f)
+            rasa.utils.io.pickle_dump(filename, self._state)
         else:
             raise_warning(
                 "Persist called without a trained model present. "
@@ -201,10 +200,11 @@ class SklearnPolicy(Policy):
 
         meta_file = os.path.join(path, "sklearn_policy.json")
         meta = json.loads(rasa.utils.io.read_file(meta_file))
+
         policy = cls(featurizer=featurizer, priority=meta["priority"])
 
-        with open(filename, "rb") as f:
-            state = pickle.load(f)
+        state = rasa.utils.io.pickle_load(filename)
+
         vars(policy).update(state)
 
         logger.info("Loaded sklearn model")

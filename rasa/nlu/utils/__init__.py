@@ -104,24 +104,3 @@ def remove_model(model_dir: Text) -> bool:
             "Cannot remove {}, it seems it is not a model "
             "directory".format(model_dir)
         )
-
-
-def json_unpickle(file_name: Text) -> Any:
-    """Unpickle an object from file using json."""
-    import jsonpickle.ext.numpy as jsonpickle_numpy
-    import jsonpickle
-
-    jsonpickle_numpy.register_handlers()
-
-    file_content = io_utils.read_file(file_name)
-    return jsonpickle.loads(file_content)
-
-
-def json_pickle(file_name: Text, obj: Any) -> None:
-    """Pickle an object to a file using json."""
-    import jsonpickle.ext.numpy as jsonpickle_numpy
-    import jsonpickle
-
-    jsonpickle_numpy.register_handlers()
-
-    io_utils.write_text_file(jsonpickle.dumps(obj), file_name)

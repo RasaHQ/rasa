@@ -146,8 +146,6 @@ def extract_additional_arguments(args: argparse.Namespace) -> Dict:
 
     if "augmentation" in args:
         arguments["augmentation_factor"] = args.augmentation
-    if "dump_stories" in args:
-        arguments["dump_stories"] = args.dump_stories
     if "debug_plots" in args:
         arguments["debug_plots"] = args.debug_plots
 

@@ -359,7 +359,7 @@ async def _request_free_text_utterance(
 
     question = questionary.text(
         message=(
-            f"Please type the message for your new utterance " f"template '{action}':"
+            f"Please type the message for your new utterance template '{action}':"
         ),
         validate=io_utils.not_empty_validator("Please enter a template message"),
     )
@@ -1454,7 +1454,7 @@ async def record_messages(
 
 
 async def _get_tracker_events_to_plot(
-    domain: Dict[Text, Any], file_importer: TrainingDataImporter, conversation_id: Text,
+    domain: Dict[Text, Any], file_importer: TrainingDataImporter, conversation_id: Text
 ) -> List[Union[Text, List[Event]]]:
     training_trackers = await _get_training_trackers(file_importer, domain)
     number_of_trackers = len(training_trackers)
@@ -1563,7 +1563,6 @@ async def train_agent_on_start(
         model_directory,
         _interpreter,
         endpoints,
-        args.get("dump_stories"),
         args.get("config")[0],
         None,
         additional_arguments,
@@ -1625,7 +1624,7 @@ def run_interactive_learning(
     else:
         p = None
 
-    app = run.configure_app(enable_api=True)
+    app = run.configure_app(enable_api=True, conversation_id="default")
     endpoints = AvailableEndpoints.read_endpoints(server_args.get("endpoints"))
 
     # before_server_start handlers make sure the agent is loaded before the

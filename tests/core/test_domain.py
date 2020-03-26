@@ -201,10 +201,7 @@ def test_custom_slot_type(tmpdir: Path):
 
        responses:
          utter_greet:
-           - text: hey there!
-
-       actions:
-         - utter_greet """,
+           - text: hey there! """,
         domain_path,
     )
     Domain.load(domain_path)
@@ -220,10 +217,7 @@ def test_custom_slot_type(tmpdir: Path):
 
     responses:
         utter_greet:
-         - text: hey there!
-
-    actions:
-        - utter_greet""",
+         - text: hey there!""",
         """
     slots:
         custom:
@@ -231,10 +225,7 @@ def test_custom_slot_type(tmpdir: Path):
 
     responses:
         utter_greet:
-         - text: hey there!
-
-    actions:
-        - utter_greet""",
+         - text: hey there!""",
     ],
 )
 def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_type):
@@ -245,9 +236,7 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_typ
 
 
 def test_domain_to_yaml():
-    test_yaml = """actions:
-- utter_greet
-config:
+    test_yaml = """config:
   store_entities_as_slots: true
 entities: []
 forms: []
@@ -306,9 +295,7 @@ slots: {}"""
 
 
 def test_merge_yaml_domains():
-    test_yaml_1 = """actions:
-- utter_greet
-config:
+    test_yaml_1 = """config:
   store_entities_as_slots: true
 entities: []
 intents: []
@@ -317,10 +304,7 @@ responses:
   utter_greet:
   - text: hey there!"""
 
-    test_yaml_2 = """actions:
-- utter_greet
-- utter_goodbye
-config:
+    test_yaml_2 = """config:
   store_entities_as_slots: false
 session_config:
     session_expiration_time: 20
@@ -333,6 +317,8 @@ slots:
   cuisine:
     type: text
 responses:
+  utter_goodbye:
+  - text: bye!
   utter_greet:
   - text: hey you!"""
 
@@ -342,7 +328,10 @@ responses:
     # single attribute should be taken from domain_1
     assert domain.store_entities_as_slots
     # conflicts should be taken from domain_1
-    assert domain.templates == {"utter_greet": [{"text": "hey there!"}]}
+    assert domain.templates == {
+        "utter_greet": [{"text": "hey there!"}],
+        "utter_goodbye": [{"text": "bye!"}],
+    }
     # lists should be deduplicated and merged
     assert domain.intents == ["greet"]
     assert domain.entities == ["cuisine"]
@@ -355,7 +344,10 @@ responses:
     # single attribute should be taken from domain_2
     assert not domain.store_entities_as_slots
     # conflicts should take value from domain_2
-    assert domain.templates == {"utter_greet": [{"text": "hey you!"}]}
+    assert domain.templates == {
+        "utter_greet": [{"text": "hey you!"}],
+        "utter_goodbye": [{"text": "bye!"}],
+    }
     assert domain.session_config == SessionConfig(20, True)
 
 
@@ -771,3 +763,42 @@ def test_domain_as_dict_with_session_config():
 )
 def test_are_sessions_enabled(session_config: SessionConfig, enabled: bool):
     assert session_config.are_sessions_enabled() == enabled
+
+
+def test_domain_utterance_actions_deprecated_templates():
+    new_yaml = """actions:
+- utter_greet
+- utter_goodbye
+config:
+  store_entities_as_slots: true
+entities: []
+forms: []
+intents: []
+templates:
+  utter_greet:
+  - text: hey there!
+  utter_goodbye:
+  - text: bye!
+session_config:
+  carry_over_slots_to_new_session: true
+  session_expiration_time: 60
+slots: {}"""
+
+    old_yaml = """config:
+  store_entities_as_slots: true
+entities: []
+forms: []
+intents: []
+responses:
+  utter_greet:
+  - text: hey there!
+  utter_goodbye:
+  - text: bye!
+session_config:
+  carry_over_slots_to_new_session: true
+  session_expiration_time: 60
+slots: {}"""
+
+    old_domain = Domain.from_yaml(old_yaml)
+    new_domain = Domain.from_yaml(new_yaml)
+    assert hash(old_domain) == hash(new_domain)

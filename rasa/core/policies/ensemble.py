@@ -5,13 +5,13 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime
-from typing import Text, Optional, Any, List, Dict, Tuple, Set
+from typing import Text, Optional, Any, List, Dict, Tuple, Set, NamedTuple
 
 import rasa.core
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DOCS_BASE_URL, DOCS_URL_POLICIES
 
-from rasa.core import utils, training
+from rasa.core import utils
 from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -39,7 +39,6 @@ class PolicyEnsemble:
         self, policies: List[Policy], action_fingerprints: Optional[Dict] = None
     ) -> None:
         self.policies = policies
-        self.training_trackers = None
         self.date_trained = None
 
         if action_fingerprints:
@@ -123,9 +122,11 @@ class PolicyEnsemble:
         if training_trackers:
             for policy in self.policies:
                 policy.train(training_trackers, domain, **kwargs)
+
+            training_events = self._training_events_from_trackers(training_trackers)
+            self.action_fingerprints = self._create_action_fingerprints(training_events)
         else:
             logger.info("Skipped training, because there are no training samples.")
-        self.training_trackers = training_trackers
         self.date_trained = datetime.now().strftime("%Y%m%d-%H%M%S")
 
     def probabilities_using_best_policy(
@@ -172,24 +173,17 @@ class PolicyEnsemble:
             except ImportError:
                 pass
 
-    def _persist_metadata(
-        self, path: Text, dump_flattened_stories: bool = False
-    ) -> None:
+    def _persist_metadata(self, path: Text) -> None:
         """Persists the domain specification to storage."""
 
         # make sure the directory we persist exists
         domain_spec_path = os.path.join(path, "metadata.json")
-        training_data_path = os.path.join(path, "stories.md")
         rasa.utils.io.create_directory_for_file(domain_spec_path)
 
         policy_names = [utils.module_path_from_instance(p) for p in self.policies]
 
-        training_events = self._training_events_from_trackers(self.training_trackers)
-
-        action_fingerprints = self._create_action_fingerprints(training_events)
-
         metadata = {
-            "action_fingerprints": action_fingerprints,
+            "action_fingerprints": self.action_fingerprints,
             "python": ".".join([str(s) for s in sys.version_info[:3]]),
             "max_histories": self._max_histories(),
             "ensemble_name": self.__module__ + "." + self.__class__.__name__,
@@ -201,15 +195,10 @@ class PolicyEnsemble:
 
         rasa.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
-        # if there are lots of stories, saving flattened stories takes a long
-        # time, so this is turned off by default
-        if dump_flattened_stories:
-            training.persist_data(self.training_trackers, training_data_path)
-
-    def persist(self, path: Text, dump_flattened_stories: bool = False) -> None:
+    def persist(self, path: Text) -> None:
         """Persists the policy to storage."""
 
-        self._persist_metadata(path, dump_flattened_stories)
+        self._persist_metadata(path)
 
         for i, policy in enumerate(self.policies):
             dir_name = "policy_{}_{}".format(i, type(policy).__name__)
@@ -356,88 +345,198 @@ class PolicyEnsemble:
 
         return state_featurizer_func, state_featurizer_config
 
-    def continue_training(
-        self, trackers: List[DialogueStateTracker], domain: Domain, **kwargs: Any
-    ) -> None:
 
-        self.training_trackers.extend(trackers)
-        for p in self.policies:
-            p.continue_training(self.training_trackers, domain, **kwargs)
+class Prediction(NamedTuple):
+    """Stores the probabilities and the priority of the prediction."""
+
+    probabilities: List[float]
+    priority: int
 
 
 class SimplePolicyEnsemble(PolicyEnsemble):
     @staticmethod
-    def is_not_memo_policy(best_policy_name) -> bool:
-        is_memo = best_policy_name.endswith("_" + MemoizationPolicy.__name__)
-        is_augmented = best_policy_name.endswith(
-            "_" + AugmentedMemoizationPolicy.__name__
-        )
-        return not (is_memo or is_augmented)
+    def is_not_memo_policy(
+        policy_name: Text, max_confidence: Optional[float] = None
+    ) -> bool:
+        is_memo = policy_name.endswith("_" + MemoizationPolicy.__name__)
+        is_augmented = policy_name.endswith("_" + AugmentedMemoizationPolicy.__name__)
+        # also check if confidence is 0, than it cannot be count as prediction
+        return not (is_memo or is_augmented) or max_confidence == 0.0
+
+    @staticmethod
+    def _is_not_mapping_policy(
+        policy_name: Text, max_confidence: Optional[float] = None
+    ) -> bool:
+        from rasa.core.policies.mapping_policy import MappingPolicy
+
+        is_mapping = policy_name.endswith("_" + MappingPolicy.__name__)
+        # also check if confidence is 0, than it cannot be count as prediction
+        return not is_mapping or max_confidence == 0.0
+
+    @staticmethod
+    def _is_form_policy(policy_name: Text) -> bool:
+        from rasa.core.policies.form_policy import FormPolicy
+
+        return policy_name.endswith("_" + FormPolicy.__name__)
+
+    def _pick_best_policy(
+        self, predictions: Dict[Text, Prediction]
+    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+        """Picks the best policy prediction based on probabilities and policy priority.
+
+        Args:
+            predictions: the dictionary containing policy name as keys
+                         and predictions as values
+
+        Returns:
+            best_probabilities: the list of probabilities for the next actions
+            best_policy_name: the name of the picked policy
+        """
+
+        best_confidence = (-1, -1)
+        best_policy_name = None
+
+        # form and mapping policies are special:
+        # form should be above fallback
+        # mapping should be below fallback
+        # mapping is above form if it wins over fallback
+        # therefore form predictions are stored separately
+
+        form_confidence = None
+        form_policy_name = None
+
+        for policy_name, prediction in predictions.items():
+            confidence = (max(prediction.probabilities), prediction.priority)
+            if self._is_form_policy(policy_name):
+                # store form prediction separately
+                form_confidence = confidence
+                form_policy_name = policy_name
+            elif confidence > best_confidence:
+                # pick the best policy
+                best_confidence = confidence
+                best_policy_name = policy_name
+
+        if form_confidence is not None and self._is_not_mapping_policy(
+            best_policy_name, best_confidence[0]
+        ):
+            # if mapping didn't win, check form policy predictions
+            if form_confidence > best_confidence:
+                best_policy_name = form_policy_name
+
+        return predictions[best_policy_name].probabilities, best_policy_name
+
+    def _best_policy_prediction(
+        self, tracker: DialogueStateTracker, domain: Domain
+    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+        """Finds the best policy prediction.
+
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.core.domain.Domain`
+
+        Returns:
+            probabilities: the list of probabilities for the next actions
+            policy_name: the name of the picked policy
+        """
+
+        # find rejected action before running the policies
+        # because some of them might add events
+        rejected_action_name = None
+        if len(tracker.events) > 0 and isinstance(
+            tracker.events[-1], ActionExecutionRejected
+        ):
+            rejected_action_name = tracker.events[-1].action_name
+
+        predictions = {
+            f"policy_{i}_{type(p).__name__}": Prediction(
+                p.predict_action_probabilities(tracker, domain), p.priority,
+            )
+            for i, p in enumerate(self.policies)
+        }
+
+        if rejected_action_name:
+            logger.debug(
+                f"Execution of '{rejected_action_name}' was rejected. "
+                f"Setting its confidence to 0.0 in all predictions."
+            )
+            for prediction in predictions.values():
+                prediction.probabilities[
+                    domain.index_for_action(rejected_action_name)
+                ] = 0.0
+
+        return self._pick_best_policy(predictions)
+
+    def _fallback_after_listen(
+        self, domain: Domain, probabilities: List[float], policy_name: Text
+    ) -> Tuple[List[float], Text]:
+        """Triggers fallback if `action_listen` is predicted after a user utterance.
+
+        This is done on the condition that:
+        - a fallback policy is present,
+        - there was just a user message and the predicted
+          action is action_listen by a policy
+          other than the MemoizationPolicy
+
+        Args:
+            domain: the :class:`rasa.core.domain.Domain`
+            probabilities: the list of probabilities for the next actions
+            policy_name: the name of the picked policy
+
+        Returns:
+            probabilities: the list of probabilities for the next actions
+            policy_name: the name of the picked policy
+        """
+
+        fallback_idx_policy = [
+            (i, p) for i, p in enumerate(self.policies) if isinstance(p, FallbackPolicy)
+        ]
+
+        if fallback_idx_policy:
+            fallback_idx, fallback_policy = fallback_idx_policy[0]
+
+            logger.debug(
+                f"Action 'action_listen' was predicted after "
+                f"a user message using {policy_name}. Predicting "
+                f"fallback action: {fallback_policy.fallback_action_name}"
+            )
+
+            probabilities = fallback_policy.fallback_scores(domain)
+            policy_name = f"policy_{fallback_idx}_{type(fallback_policy).__name__}"
+
+        return probabilities, policy_name
 
     def probabilities_using_best_policy(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
-        import numpy as np
+        """Predicts the next action the bot should take after seeing the tracker.
 
-        result = None
-        max_confidence = -1
-        best_policy_name = None
-        best_policy_priority = -1
+        Picks the best policy prediction based on probabilities and policy priority.
+        Triggers fallback if `action_listen` is predicted after a user utterance.
 
-        for i, p in enumerate(self.policies):
-            probabilities = p.predict_action_probabilities(tracker, domain)
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.core.domain.Domain`
 
-            if len(tracker.events) > 0 and isinstance(
-                tracker.events[-1], ActionExecutionRejected
-            ):
-                probabilities[
-                    domain.index_for_action(tracker.events[-1].action_name)
-                ] = 0.0
+        Returns:
+            best_probabilities: the list of probabilities for the next actions
+            best_policy_name: the name of the picked policy
+        """
 
-            confidence = np.max(probabilities)
-            if (confidence, p.priority) > (max_confidence, best_policy_priority):
-                max_confidence = confidence
-                result = probabilities
-                best_policy_name = "policy_{}_{}".format(i, type(p).__name__)
-                best_policy_priority = p.priority
+        probabilities, policy_name = self._best_policy_prediction(tracker, domain)
 
         if (
-            result is not None
-            and result.index(max_confidence)
+            tracker.latest_action_name == ACTION_LISTEN_NAME
+            and probabilities is not None
+            and probabilities.index(max(probabilities))
             == domain.index_for_action(ACTION_LISTEN_NAME)
-            and tracker.latest_action_name == ACTION_LISTEN_NAME
-            and self.is_not_memo_policy(best_policy_name)
+            and self.is_not_memo_policy(policy_name, max(probabilities))
         ):
-            # Trigger the fallback policy when ActionListen is predicted after
-            # a user utterance. This is done on the condition that:
-            # - a fallback policy is present,
-            # - there was just a user message and the predicted
-            #   action is action_listen by a policy
-            #   other than the MemoizationPolicy
+            probabilities, policy_name = self._fallback_after_listen(
+                domain, probabilities, policy_name
+            )
 
-            fallback_idx_policy = [
-                (i, p)
-                for i, p in enumerate(self.policies)
-                if isinstance(p, FallbackPolicy)
-            ]
-
-            if fallback_idx_policy:
-                fallback_idx, fallback_policy = fallback_idx_policy[0]
-
-                logger.debug(
-                    "Action 'action_listen' was predicted after "
-                    "a user message using {}. "
-                    "Predicting fallback action: {}"
-                    "".format(best_policy_name, fallback_policy.fallback_action_name)
-                )
-
-                result = fallback_policy.fallback_scores(domain)
-                best_policy_name = "policy_{}_{}".format(
-                    fallback_idx, type(fallback_policy).__name__
-                )
-
-        logger.debug(f"Predicted next action using {best_policy_name}")
-        return result, best_policy_name
+        logger.debug(f"Predicted next action using {policy_name}")
+        return probabilities, policy_name
 
 
 class InvalidPolicyConfig(Exception):

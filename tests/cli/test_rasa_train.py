@@ -18,10 +18,10 @@ from rasa.constants import (
 import rasa.utils.io as io_utils
 
 
-def test_train(run_in_default_project: Callable[..., RunResult]):
+def test_train(run_in_default_project_without_models: Callable[..., RunResult]):
     temp_dir = os.getcwd()
 
-    run_in_default_project(
+    run_in_default_project_without_models(
         "train",
         "-c",
         "config.yml",
@@ -48,10 +48,12 @@ def test_train(run_in_default_project: Callable[..., RunResult]):
     )
 
 
-def test_train_persist_nlu_data(run_in_default_project: Callable[..., RunResult]):
+def test_train_persist_nlu_data(
+    run_in_default_project_without_models: Callable[..., RunResult]
+):
     temp_dir = os.getcwd()
 
-    run_in_default_project(
+    run_in_default_project_without_models(
         "train",
         "-c",
         "config.yml",
@@ -79,7 +81,9 @@ def test_train_persist_nlu_data(run_in_default_project: Callable[..., RunResult]
     )
 
 
-def test_train_core_compare(run_in_default_project: Callable[..., RunResult]):
+def test_train_core_compare(
+    run_in_default_project_without_models: Callable[..., RunResult]
+):
     temp_dir = os.getcwd()
 
     io_utils.write_yaml_file(
@@ -100,7 +104,7 @@ def test_train_core_compare(run_in_default_project: Callable[..., RunResult]):
         "config_2.yml",
     )
 
-    run_in_default_project(
+    run_in_default_project_without_models(
         "train",
         "core",
         "-c",
@@ -132,11 +136,11 @@ def test_train_core_compare(run_in_default_project: Callable[..., RunResult]):
 
 
 def test_train_no_domain_exists(
-    run_in_default_project: Callable[..., RunResult]
+    run_in_default_project_without_models: Callable[..., RunResult]
 ) -> None:
 
     os.remove("domain.yml")
-    run_in_default_project(
+    run_in_default_project_without_models(
         "train",
         "-c",
         "config.yml",
@@ -191,14 +195,13 @@ def test_train_force(run_in_default_project):
     assert len(files) == 2
 
 
-def test_train_with_only_nlu_data(run_in_default_project):
+def test_train_with_only_nlu_data(run_in_default_project_without_models):
     temp_dir = os.getcwd()
 
     assert os.path.exists(os.path.join(temp_dir, "data/stories.md"))
     os.remove(os.path.join(temp_dir, "data/stories.md"))
-    shutil.rmtree(os.path.join(temp_dir, "models"))
 
-    run_in_default_project("train", "--fixed-model-name", "test-model")
+    run_in_default_project_without_models("train", "--fixed-model-name", "test-model")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
     files = io_utils.list_files(os.path.join(temp_dir, "models"))
@@ -206,14 +209,13 @@ def test_train_with_only_nlu_data(run_in_default_project):
     assert os.path.basename(files[0]) == "test-model.tar.gz"
 
 
-def test_train_with_only_core_data(run_in_default_project):
+def test_train_with_only_core_data(run_in_default_project_without_models):
     temp_dir = os.getcwd()
 
     assert os.path.exists(os.path.join(temp_dir, "data/nlu.md"))
     os.remove(os.path.join(temp_dir, "data/nlu.md"))
-    shutil.rmtree(os.path.join(temp_dir, "models"))
 
-    run_in_default_project("train", "--fixed-model-name", "test-model")
+    run_in_default_project_without_models("train", "--fixed-model-name", "test-model")
 
     assert os.path.exists(os.path.join(temp_dir, "models"))
     files = io_utils.list_files(os.path.join(temp_dir, "models"))
@@ -221,8 +223,8 @@ def test_train_with_only_core_data(run_in_default_project):
     assert os.path.basename(files[0]) == "test-model.tar.gz"
 
 
-def test_train_core(run_in_default_project: Callable[..., RunResult]):
-    run_in_default_project(
+def test_train_core(run_in_default_project_without_models: Callable[..., RunResult]):
+    run_in_default_project_without_models(
         "train",
         "core",
         "-c",
@@ -241,10 +243,12 @@ def test_train_core(run_in_default_project: Callable[..., RunResult]):
     assert os.path.isfile("train_rasa_models/rasa-model.tar.gz")
 
 
-def test_train_core_no_domain_exists(run_in_default_project: Callable[..., RunResult]):
+def test_train_core_no_domain_exists(
+    run_in_default_project_without_models: Callable[..., RunResult]
+):
 
     os.remove("domain.yml")
-    run_in_default_project(
+    run_in_default_project_without_models(
         "train",
         "core",
         "--config",
@@ -263,8 +267,8 @@ def test_train_core_no_domain_exists(run_in_default_project: Callable[..., RunRe
     assert not os.path.isfile("train_rasa_models_no_domain/rasa-model.tar.gz")
 
 
-def test_train_nlu(run_in_default_project: Callable[..., RunResult]):
-    run_in_default_project(
+def test_train_nlu(run_in_default_project_without_models: Callable[..., RunResult]):
+    run_in_default_project_without_models(
         "train",
         "nlu",
         "-c",
@@ -289,9 +293,9 @@ def test_train_nlu(run_in_default_project: Callable[..., RunResult]):
 
 
 def test_train_nlu_persist_nlu_data(
-    run_in_default_project: Callable[..., RunResult]
+    run_in_default_project_without_models: Callable[..., RunResult]
 ) -> None:
-    run_in_default_project(
+    run_in_default_project_without_models(
         "train",
         "nlu",
         "-c",
@@ -322,8 +326,8 @@ def test_train_help(run):
     help_text = """usage: rasa train [-h] [-v] [-vv] [--quiet] [--data DATA [DATA ...]]
                   [-c CONFIG] [-d DOMAIN] [--out OUT]
                   [--augmentation AUGMENTATION] [--debug-plots]
-                  [--dump-stories] [--fixed-model-name FIXED_MODEL_NAME]
-                  [--persist-nlu-data] [--force]
+                  [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
+                  [--force]
                   {core,nlu} ..."""
 
     lines = help_text.split("\n")
@@ -350,8 +354,7 @@ def test_train_core_help(run: Callable[..., RunResult]):
 
     help_text = """usage: rasa train core [-h] [-v] [-vv] [--quiet] [-s STORIES] [-d DOMAIN]
                        [-c CONFIG [CONFIG ...]] [--out OUT]
-                       [--augmentation AUGMENTATION] [--debug-plots]
-                       [--dump-stories] [--force]
+                       [--augmentation AUGMENTATION] [--debug-plots] [--force]
                        [--fixed-model-name FIXED_MODEL_NAME]
                        [--percentages [PERCENTAGES [PERCENTAGES ...]]]
                        [--runs RUNS]"""

@@ -14,6 +14,8 @@ on:
 # - SLACK_WEBHOOK_TOKEN: token to post to RasaHQ slack account (in 1password)
 # - PYPI_TOKEN: publishing token for amn41 account, needs to be maintainer of
 #               RasaHQ/rasa on pypi (account credentials in 1password)
+# - DOCKERHUB_PASSWORD: password for an account with write access to the rasa
+#                       repo on hub.docker.com. used to pull and upload containers
 
 env:
   # needed to fix issues with boto during testing:
@@ -54,19 +56,27 @@ jobs:
       with:
         python-version: 3.7
 
-    - name: Load Pip Cached Artifacts ⬇
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+      shell: bash
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@v1
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Load Poetry Cached Libraries ⬇
       uses: actions/cache@v1
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-3.7-pip-${{ hashFiles('**/requirements-dev.txt') }}
-        restore-keys: ${{ runner.os }}-3.7-pip-
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-3.7-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-3.7
 
     - name: Install Dependencies 📦
       run: |
         sudo apt-get -y install libpq-dev
-        python -m pip install -U 'pip<20'
-        pip install -r requirements-dev.txt
-        pip install -e .
+        make install-full
 
     - name: Lint Code 🎎
       run: make lint
@@ -78,7 +88,7 @@ jobs:
       # makes sure we catch any dependency error early. they will create strange
       # errors during the docs build, so easier to catch them early on by
       # trying to run the `rasa` command once before the docs build.
-      run: rasa --help
+      run: poetry run rasa --help
 
 # DOES NOT WORK YET DUE TO TENSORFLOW 1.5 (some issue with no tensorflow-cpu verison)
 #  -> should work with 2.0 and replace the below "Test Docs":
@@ -93,9 +103,9 @@ jobs:
 
     - name: Test Docs 📃
       run: |
-        pip install -r requirements-docs.txt
-        pip install -e .[sql]
-        cd docs && make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
+        make install-full
+        export SPHINXBUILD=$(poetry run which sphinx-build)
+        cd docs && make SPHINXBUILD=$SPHINXBUILD SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
 
   test:
     name: Run Tests
@@ -114,21 +124,28 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Load Pip Cached Artifacts ⬇
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+      shell: bash
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@v1
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Load Poetry Cached Libraries ⬇
       uses: actions/cache@v1
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('**/requirements-dev.txt') }}
-        restore-keys: ${{ runner.os }}-${{ matrix.python-version }}-pip-
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: ${{ runner.os }}-poetry-${{ matrix.python-version }}
 
     - name: Install Dependencies 📦
       run: |
-        sudo apt-get update -qq
-        python -m pip install -U 'pip<20'
-        pip install -r requirements-dev.txt
-        pip install -e .
+        sudo apt-get -y install libpq-dev
+        make install-full
         make prepare-tests-ubuntu
-        pip list
 
     - name: Test Code 🔍
       run: JOBS=2 make test
@@ -138,15 +155,57 @@ jobs:
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_SERVICE_NAME: github
-      run: coveralls
+      run: poetry run coveralls
+
+  docker:
+    name: Build Docker
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        image:
+          - {"file": "Dockerfile", "tag_ext": ""}
+          - {"file": "docker/Dockerfile_full", "tag_ext": "-full"}
+          - {"file": "docker/Dockerfile_pretrained_embeddings_mitie_en", "tag_ext": "-mitie-en"}
+          - {"file": "docker/Dockerfile_pretrained_embeddings_spacy_de", "tag_ext": "-spacy-de"}
+          - {"file": "docker/Dockerfile_pretrained_embeddings_spacy_en", "tag_ext": "-spacy-en"}
+
+    env:
+      DOCKERHUB_USERNAME: tmbo
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Login to DockerHub Registry 🔢
+      run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin || true
+
+    - name: Pull latest${{ matrix.image.tag_ext }} Docker image for caching
+      run: docker pull rasa/rasa:latest${{ matrix.image.tag_ext }} || true
+
+    - name: Build latest${{ matrix.image.tag_ext }} Docker image
+      run: docker build . --file ${{ matrix.image.file }} --tag rasa/rasa:latest${{ matrix.image.tag_ext }} --cache-from rasa/rasa:latest${{ matrix.image.tag_ext }}
+
+    - name: Push image with latest tag 📦
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      run: docker push rasa/rasa:latest${{ matrix.image.tag_ext }}
+
+    - name: Push image with ${{github.ref}} tag 📦
+      env:
+        GITHUB_TAG: ${{ github.ref }}
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+      run: |
+        GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
+        docker tag rasa/rasa:latest${{ matrix.image.tag_ext }} rasa/rasa:${GITHUB_TAG}${{ matrix.image.tag_ext }}
+        docker push rasa/rasa:${GITHUB_TAG}${{ matrix.image.tag_ext }}
 
   deploy:
     name: Deploy to PyPI
     runs-on: ubuntu-latest
 
     # deploy will only be run when there is a tag available
-    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
-    needs: [quality, test, api]     # only run after all other stages succeeded
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    needs: [quality, test, api, docker]  # only run after all other stages succeeded
 
     steps:
     - name: Checkout git repository 🕝
@@ -157,10 +216,18 @@ jobs:
       with:
         python-version: 3.6
 
-    - name: Build ⚒️ Distributions
+    - name: Read Poetry Version 🔢
       run: |
-        python3 -m pip install --user --upgrade setuptools wheel
-        python setup.py sdist bdist_wheel
+        echo "::set-env name=POETRY_VERSION::$(scripts/poetry-version.sh)"
+      shell: bash
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@v1
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Build ⚒️ Distributions
+      run: poetry build
 
     - name: Publish to PyPI 📦
       uses: pypa/gh-action-pypi-publish@37e305e7413032d8422456179fee28fac7d25187
@@ -174,7 +241,9 @@ jobs:
         SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
         GITHUB_TAG: ${{ github.ref }}
         GITHUB_REPO_SLUG: ${{ github.repository }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
+        GITHUB_TAG=${GITHUB_TAG/refs\/tags\//}
         sudo apt-get update
         sudo apt-get -y install pandoc
         pip install -U github3.py pypandoc

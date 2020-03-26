@@ -26,7 +26,7 @@ containing a ``SentimentAnalyzer`` class:
         - name: "sentiment.SentimentAnalyzer"
 
 
-Also be sure to read the section on the :ref:`section_component_lifecycle`.
+Also be sure to read the section on the :ref:`component-lifecycle`.
 
 To get started, you can use this skeleton that contains the most important
 methods that you should implement:
@@ -50,6 +50,8 @@ Component
 ^^^^^^^^^
 
 .. autoclass:: rasa.nlu.components.Component
+
+   .. automethod:: required_components
 
    .. automethod:: required_packages
 

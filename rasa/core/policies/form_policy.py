@@ -140,7 +140,7 @@ class FormPolicy(MemoizationPolicy):
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> List[float]:
         """Predicts the corresponding form action if there is an active form"""
-        result = [0.0] * domain.num_actions
+        result = self._default_predictions(domain)
 
         if tracker.active_form.get("name"):
             logger.debug(

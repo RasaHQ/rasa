@@ -12,8 +12,6 @@ if typing.TYPE_CHECKING:
 
 class MitieNLP(Component):
 
-    provides = ["mitie_feature_extractor", "mitie_file"]
-
     defaults = {
         # name of the language model to load - this contains
         # the MITIE feature extractor

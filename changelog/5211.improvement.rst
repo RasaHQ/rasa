@@ -1,3 +1,0 @@
-Messages sent to the :ref:`event-brokers-pika` are now persisted. This guarantees
-the RabbitMQ will re-send previously received messages after a crash. Note that this
-does not help for the case where messages are sent to an unavailable RabbitMQ instance.

@@ -1,8 +1,10 @@
 import typing
-from typing import Any, Dict, List, Text, Optional
+from typing import Any, Dict, List, Text, Optional, Type
 
-from rasa.nlu.constants import ENTITIES_ATTRIBUTE
-from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.constants import ENTITIES
+from rasa.nlu.utils.spacy_utils import SpacyNLP
+from rasa.nlu.components import Component
+from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.training_data import Message
 
 if typing.TYPE_CHECKING:
@@ -10,10 +12,9 @@ if typing.TYPE_CHECKING:
 
 
 class SpacyEntityExtractor(EntityExtractor):
-
-    provides = [ENTITIES_ATTRIBUTE]
-
-    requires = ["spacy_nlp"]
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        return [SpacyNLP]
 
     defaults = {
         # by default all dimensions recognized by spacy are returned
@@ -36,9 +37,7 @@ class SpacyEntityExtractor(EntityExtractor):
             all_extracted, dimensions
         )
         message.set(
-            ENTITIES_ATTRIBUTE,
-            message.get(ENTITIES_ATTRIBUTE, []) + extracted,
-            add_to_output=True,
+            ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True,
         )
 
     @staticmethod

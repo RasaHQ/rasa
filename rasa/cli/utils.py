@@ -234,7 +234,7 @@ def print_error(*args: Any):
     print_color(*args, color=bcolors.FAIL)
 
 
-def print_error_and_exit(message: Text, exit_code: int = 1) -> None:
+def print_error_and_exit(message: Text, exit_code: int = 1) -> NoReturn:
     """Print error message and exit the application."""
 
     print_error(message)

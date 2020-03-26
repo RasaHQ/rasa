@@ -92,9 +92,7 @@ def test_tracker_store_storage_and_retrieval(store):
     assert tracker.sender_id == "some-id"
 
     # Action listen should be in there
-    assert list(tracker.events) == [
-        ActionExecuted(ACTION_LISTEN_NAME),
-    ]
+    assert list(tracker.events) == [ActionExecuted(ACTION_LISTEN_NAME)]
 
     # lets log a test message
     intent = {"name": "greet", "confidence": 1.0}

@@ -149,7 +149,7 @@ class MessageProcessor:
         }
 
     async def _update_tracker_session(
-        self, tracker: DialogueStateTracker, output_channel: OutputChannel,
+        self, tracker: DialogueStateTracker, output_channel: OutputChannel
     ) -> None:
         """Check the current session in `tracker` and update it if expired.
 
@@ -174,10 +174,8 @@ class MessageProcessor:
                 nlg=self.nlg,
             )
 
-            self.tracker_store.save(tracker)
-
     async def get_tracker_with_session_start(
-        self, sender_id: Text, output_channel: Optional[OutputChannel] = None,
+        self, sender_id: Text, output_channel: Optional[OutputChannel] = None
     ) -> Optional[DialogueStateTracker]:
         """Get tracker for `sender_id` or create a new tracker for `sender_id`.
 
@@ -191,13 +189,33 @@ class MessageProcessor:
               Tracker for `sender_id` if available, `None` otherwise.
         """
 
-        tracker = self._get_tracker(sender_id)
+        tracker = self.get_tracker(sender_id)
         if not tracker:
             return None
 
         await self._update_tracker_session(tracker, output_channel)
 
         return tracker
+
+    def get_tracker(self, conversation_id: Text) -> Optional[DialogueStateTracker]:
+        """Get the tracker for a conversation.
+
+        In contrast to `get_tracker_with_session_start` this does not add any
+        `action_session_start` or `session_start` events at the beginning of a
+        conversation.
+
+        Args:
+            conversation_id: The ID of the conversation for which the history should be
+                retrieved.
+
+        Returns:
+            Tracker for the conversation. Creates an empty tracker in case it's a new
+            conversation.
+        """
+        conversation_id = conversation_id or UserMessage.DEFAULT_SENDER_ID
+        return self.tracker_store.get_or_create_tracker(
+            conversation_id, append_action_listen=False
+        )
 
     async def log_message(
         self, message: UserMessage, should_save_tracker: bool = True
@@ -330,7 +348,7 @@ class MessageProcessor:
             or not self._is_reminder_still_valid(tracker, reminder_event)
         ):
             logger.debug(
-                f"Canceled reminder because it is outdated. " f"({reminder_event})"
+                f"Canceled reminder because it is outdated ({reminder_event})."
             )
         else:
             intent = reminder_event.intent
@@ -472,7 +490,7 @@ class MessageProcessor:
             self._log_slots(tracker)
 
         logger.debug(
-            f"Logged UserUtterance - " f"tracker now has {len(tracker.events)} events."
+            f"Logged UserUtterance - tracker now has {len(tracker.events)} events."
         )
 
     @staticmethod
@@ -714,12 +732,6 @@ class MessageProcessor:
             )
 
         return has_expired
-
-    def _get_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
-        return self.tracker_store.get_or_create_tracker(
-            sender_id, append_action_listen=False
-        )
 
     def _save_tracker(self, tracker: DialogueStateTracker) -> None:
         self.tracker_store.save(tracker)

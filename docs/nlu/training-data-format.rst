@@ -152,17 +152,22 @@ for these extractors. Currently, all intent classifiers make use of available re
 
 Lookup Tables
 -------------
+Lookup tables provide a convenient way to supply a list of entity examples.
 The supplied lookup table files must be in a newline-delimited format.
 For example, ``data/test/lookup_tables/plates.txt`` may contain:
 
 .. literalinclude:: ../../data/test/lookup_tables/plates.txt
 
-And can be loaded as:
+And can be loaded and used as shown here:
 
 .. code-block:: md
 
     ## lookup:plates
     data/test/lookup_tables/plates.txt
+
+    ## intent:food_request
+    - I'd like beef [tacos](plates) and a [burrito](plates)
+    - How about some [mapo tofu](plates)
 
 When lookup tables are supplied in training data, the contents are combined
 into a large, case-insensitive regex pattern that looks for exact matches in
@@ -218,17 +223,3 @@ Alternatively, you can add an "entity_synonyms" array to define several synonyms
 .. note::
     Please note that adding synonyms using the above format does not improve the model's classification of those entities.
     **Entities must be properly classified before they can be replaced with the synonym value.**
-
-
-Generating More Entity Examples
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-It is sometimes helpful to generate a bunch of entity examples, for
-example if you have a database of restaurant names. There are a couple
-of tools built by the community to help with that.
-
-You can use `Chatito <https://rodrigopivi.github.io/Chatito/>`__ , a tool for generating training datasets in rasa's format using a simple DSL or `Tracy <https://yuukanoo.github.io/tracy>`__, a simple GUI to create training datasets for rasa.
-
-However, creating synthetic examples usually leads to overfitting,
-it is a better idea to use :ref:`lookup-tables` instead if you have a large number
-of entity values.

@@ -20,8 +20,6 @@ if typing.TYPE_CHECKING:
 
 class JiebaTokenizer(Tokenizer):
 
-    provides = [TOKENS_NAMES[attribute] for attribute in MESSAGE_ATTRIBUTES]
-
     language_list = ["zh"]
 
     defaults = {

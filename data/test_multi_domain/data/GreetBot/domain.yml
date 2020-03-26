@@ -2,10 +2,6 @@ intents:
   - greet
   - goodbye
 
-actions:
-- utter_greet
-- utter_goodbye
-
 responses:
   utter_greet:
     - text: "Hey! How are you?"

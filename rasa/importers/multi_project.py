@@ -43,8 +43,8 @@ class MultiProjectImporter(TrainingDataImporter):
         extra_story_files, extra_nlu_files = data.get_core_nlu_files(
             training_data_paths
         )
-        self._story_paths += list(extra_story_files)
-        self._nlu_paths += list(extra_nlu_files)
+        self._story_paths += extra_story_files
+        self._nlu_paths += extra_nlu_files
 
         logger.debug(
             "Selected projects: {}".format("".join([f"\n-{i}" for i in self._imports]))
@@ -90,7 +90,7 @@ class MultiProjectImporter(TrainingDataImporter):
         return not self.no_skills_selected() and self.is_imported(path)
 
     def _init_from_directory(self, path: Text):
-        for parent, _, files in os.walk(path):
+        for parent, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(parent, file)
                 if not self.is_imported(full_path):

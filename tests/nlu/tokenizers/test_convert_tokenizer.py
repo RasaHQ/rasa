@@ -1,7 +1,7 @@
 import pytest
 
 from rasa.nlu.training_data import Message, TrainingData
-from rasa.nlu.constants import TEXT_ATTRIBUTE, INTENT_ATTRIBUTE, TOKENS_NAMES
+from rasa.nlu.constants import TEXT, INTENT, TOKENS_NAMES
 from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 
 
@@ -27,7 +27,7 @@ from rasa.nlu.tokenizers.convert_tokenizer import ConveRTTokenizer
 def test_convert_tokenizer_edge_cases(text, expected_tokens, expected_indices):
     tk = ConveRTTokenizer()
 
-    tokens = tk.tokenize(Message(text), attribute=TEXT_ATTRIBUTE)
+    tokens = tk.tokenize(Message(text), attribute=TEXT)
 
     assert [t.text for t in tokens] == expected_tokens
     assert [t.start for t in tokens] == [i[0] for i in expected_indices]
@@ -47,10 +47,8 @@ def test_custom_intent_symbol(text, expected_tokens):
     tk = ConveRTTokenizer(component_config)
 
     message = Message(text)
-    message.set(INTENT_ATTRIBUTE, text)
+    message.set(INTENT, text)
 
     tk.train(TrainingData([message]))
 
-    assert [
-        t.text for t in message.get(TOKENS_NAMES[INTENT_ATTRIBUTE])
-    ] == expected_tokens
+    assert [t.text for t in message.get(TOKENS_NAMES[INTENT])] == expected_tokens

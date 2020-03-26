@@ -13,7 +13,6 @@ from rasa.cli.arguments.train import (
     add_config_param,
     add_out_param,
     add_debug_plots_param,
-    add_dump_stories_param,
     add_augmentation_param,
     add_persist_nlu_data_param,
 )
@@ -75,6 +74,5 @@ def _add_training_arguments(parser: argparse.ArgumentParser) -> argparse._Argume
     )
     add_augmentation_param(train_arguments)
     add_debug_plots_param(train_arguments)
-    add_dump_stories_param(train_arguments)
 
     return train_arguments

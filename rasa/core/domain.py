@@ -190,7 +190,7 @@ class Domain:
         from rasa import data
 
         domain = Domain.empty()
-        for root, _, files in os.walk(path):
+        for root, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(root, file)
                 if data.is_domain_file(full_path):

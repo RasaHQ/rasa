@@ -2,9 +2,9 @@ import numpy as np
 
 from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
-    TEXT_ATTRIBUTE,
-    RESPONSE_ATTRIBUTE,
-    INTENT_ATTRIBUTE,
+    TEXT,
+    RESPONSE,
+    INTENT,
     TOKENS_NAMES,
 )
 from rasa.nlu.training_data import Message, TrainingData
@@ -20,7 +20,7 @@ def test_mitie_featurizer(mitie_feature_extractor):
     sentence = "Hey how are you today"
     message = Message(sentence)
     MitieTokenizer().process(message)
-    tokens = message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])
+    tokens = message.get(TOKENS_NAMES[TEXT])
 
     vecs = featurizer.features_for_tokens(tokens, mitie_feature_extractor)
 
@@ -40,8 +40,8 @@ def test_mitie_featurizer_train(mitie_feature_extractor):
 
     sentence = "Hey how are you today"
     message = Message(sentence)
-    message.set(RESPONSE_ATTRIBUTE, sentence)
-    message.set(INTENT_ATTRIBUTE, "intent")
+    message.set(RESPONSE, sentence)
+    message.set(INTENT, "intent")
     MitieTokenizer().train(TrainingData([message]))
 
     featurizer.train(
@@ -55,18 +55,18 @@ def test_mitie_featurizer_train(mitie_feature_extractor):
     )
     expected_cls = np.array([0.0, -4.4551446, 0.26073121, -1.46632245, -1.84205751])
 
-    vecs = message.get(DENSE_FEATURE_NAMES[TEXT_ATTRIBUTE])
+    vecs = message.get(DENSE_FEATURE_NAMES[TEXT])
 
-    assert len(message.get(TOKENS_NAMES[TEXT_ATTRIBUTE])) == len(vecs)
+    assert len(message.get(TOKENS_NAMES[TEXT])) == len(vecs)
     assert np.allclose(vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[RESPONSE_ATTRIBUTE])
+    vecs = message.get(DENSE_FEATURE_NAMES[RESPONSE])
 
-    assert len(message.get(TOKENS_NAMES[RESPONSE_ATTRIBUTE])) == len(vecs)
+    assert len(message.get(TOKENS_NAMES[RESPONSE])) == len(vecs)
     assert np.allclose(vecs[0][:5], expected, atol=1e-5)
     assert np.allclose(vecs[-1][:5], expected_cls, atol=1e-5)
 
-    vecs = message.get(DENSE_FEATURE_NAMES[INTENT_ATTRIBUTE])
+    vecs = message.get(DENSE_FEATURE_NAMES[INTENT])
 
     assert vecs is None
