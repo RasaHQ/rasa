@@ -20,8 +20,8 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 [1.9.2] - 2020-03-26
 ^^^^^^^^^^^^^^^^^^^^
 
-Bugfixes
---------
+Improved Documentation
+----------------------
 - `#5497 <https://github.com/RasaHQ/rasa/pull/5497>`_: Fix documentation to bring back Sara.
 
 
