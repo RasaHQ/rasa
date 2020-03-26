@@ -8,7 +8,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.file import FileEventBroker
 from rasa.core.brokers.kafka import KafkaEventBroker
-from rasa.core.brokers.pika import PikaEventBroker
+from rasa.core.brokers.pika import PikaEventBroker, DEFAULT_QUEUE_NAME
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
@@ -53,9 +53,9 @@ def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
     "queue_arg,queues_arg,expected,warning",
     [
         # default case
-        (None, ["rasa_core_events"], ["rasa_core_events"], None),
+        (None, ["q1"], ["q1"], None),
         # only provide `queue`
-        ("rasa_core_events", None, ["rasa_core_events"], FutureWarning),
+        ("q1", None, ["q1"], FutureWarning),
         # supplying a list for `queue` works too
         (["q1", "q2"], None, ["q1", "q2"], FutureWarning),
         # `queues` arg supplied, takes precedence
@@ -64,11 +64,13 @@ def test_pika_message_property_app_id(monkeypatch: MonkeyPatch):
         ("q1", ["q2", "q3"], ["q2", "q3"], FutureWarning),
         # only supplying `queues` works, and queues is a string
         (None, "q1", ["q1"], None),
+        # no queues provided. Use default queue and print warning.
+        (None, None, [DEFAULT_QUEUE_NAME], UserWarning),
     ],
 )
 def test_pika_queues_from_args(
-    queues_arg: Union[Text, List[Text], None],
     queue_arg: Union[Text, List[Text], None],
+    queues_arg: Union[Text, List[Text], None],
     expected: List[Text],
     warning: Optional[Type[Warning]],
     monkeypatch: MonkeyPatch,
@@ -80,14 +82,6 @@ def test_pika_queues_from_args(
         pika_producer = PikaEventBroker("", "", "", queues=queues_arg, queue=queue_arg)
 
     assert pika_producer.queues == expected
-
-
-def test_pika_invalid_queues_argument(monkeypatch: MonkeyPatch):
-    # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
-    monkeypatch.setattr(PikaEventBroker, "_run_pika", lambda _: None)
-
-    with pytest.raises(ValueError):
-        PikaEventBroker("", "", "", queues=None, queue=None)
 
 
 def test_no_broker_in_config():
