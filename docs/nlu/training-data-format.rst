@@ -223,17 +223,3 @@ Alternatively, you can add an "entity_synonyms" array to define several synonyms
 .. note::
     Please note that adding synonyms using the above format does not improve the model's classification of those entities.
     **Entities must be properly classified before they can be replaced with the synonym value.**
-
-
-Generating More Entity Examples
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-It is sometimes helpful to generate a bunch of entity examples, for
-example if you have a database of restaurant names. There are a couple
-of tools built by the community to help with that.
-
-You can use `Chatito <https://rodrigopivi.github.io/Chatito/>`__ , a tool for generating training datasets in rasa's format using a simple DSL or `Tracy <https://yuukanoo.github.io/tracy>`__, a simple GUI to create training datasets for rasa.
-
-However, creating synthetic examples usually leads to overfitting,
-it is a better idea to use :ref:`lookup-tables` instead if you have a large number
-of entity values.
