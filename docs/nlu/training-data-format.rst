@@ -77,6 +77,12 @@ case-insensitive regex patterns that are added to the regex features.
     ``/`` symbol is reserved as a delimiter to separate retrieval intents from response text identifiers. Make sure not
     to use it in the name of your intents.
 
+.. warning::
+    The synonym format ``[savings account](source_account:savings)`` is deprecated. Please use the new format
+    ``[savings account]{"entity": "source_account", "value": "savings"}``. To update your training data file just
+    execute the following command on the terminal of your choice:
+    ``sed -i .deprecated -E 's/\[(.*)\]\((.*):(.*)\)/\[\1\]\{"entity": "\2", "value": "\3"\}/\' nlu.md``
+
 JSON Format
 -----------
 
