@@ -167,7 +167,7 @@ class MultiProjectImporter(TrainingDataImporter):
     def add_import(self, path: Text) -> None:
         self._imports.append(path)
     
-    def _log_merge_infos(self, domains) -> None:
+    def _log_merge_infos(self, domains: List[Domain]) -> None:
         merges = {
             "actions": {},
             "entities": {},
