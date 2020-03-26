@@ -12,7 +12,6 @@ from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataWriter,
 )
 from rasa.nlu.utils import build_entity
-from rasa.nlu.constants import INTENT
 from rasa.utils.common import raise_warning
 
 if typing.TYPE_CHECKING:
@@ -68,6 +67,8 @@ class MarkdownReader(TrainingDataReader):
         self.regex_features = []
         self.lookup_tables = []
 
+        self.use_deprecated_synonym_format = False
+
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
         from rasa.nlu.training_data import TrainingData
@@ -82,6 +83,19 @@ class MarkdownReader(TrainingDataReader):
             else:
                 self._parse_item(line)
                 self._load_files(line)
+
+        if self.use_deprecated_synonym_format:
+            raise_warning(
+                "You are using the deprecated training data format to declare synonyms."
+                " Please use the following format: \n"
+                "[<entity-text>]{'entity': <entity-type>, 'synonym': <entity-synonym>}."
+                "\nYou can use the following command to update your training data file:"
+                "\nsed -i .deprecated -E 's/\\[(.*)\\]\\((.*):(.*)\\)/\\[\\1\\]\\{"
+                '"entity": "\\2", "synonym": "\\3"\\}/\' nlu.md',
+                category=FutureWarning,
+                docs=DOCS_URL_TRAINING_DATA_NLU,
+            )
+
         return TrainingData(
             self.training_examples,
             self.entity_synonyms,
@@ -94,7 +108,8 @@ class MarkdownReader(TrainingDataReader):
         """ Removes comments defined by `comment_regex` from `text`. """
         return re.sub(comment_regex, "", text)
 
-    def _find_section_header(self, line: Text) -> Optional[Tuple[Text, Text]]:
+    @staticmethod
+    def _find_section_header(line: Text) -> Optional[Tuple[Text, Text]]:
         """Checks if the current line contains a section header
         and returns the section and the title."""
         match = re.search(r"##\s*(.+?):(.+)", line)
@@ -231,14 +246,7 @@ class MarkdownReader(TrainingDataReader):
 
             if match.groupdict()["value"]:
                 entity_value = match.groupdict()["value"]
-                raise_warning(
-                    "You are using the deprecated training data format to "
-                    "declare synonyms. Please use the following format: "
-                    "[<entity-text>]{'entity': <entity-type>, 'synonym': "
-                    "<entity-synonym>}.",
-                    category=DeprecationWarning,
-                    docs=DOCS_URL_TRAINING_DATA_NLU,
-                )
+                self.use_deprecated_synonym_format = True
             else:
                 entity_value = entity_text
 
