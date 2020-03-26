@@ -195,6 +195,20 @@ def test_train_force(run_in_default_project):
     assert len(files) == 2
 
 
+def test_train_dry(run_in_default_project):
+    temp_dir = os.getcwd()
+
+    assert os.path.exists(os.path.join(temp_dir, "models"))
+    files = io_utils.list_files(os.path.join(temp_dir, "models"))
+    assert len(files) == 1
+
+    run_in_default_project("train", "--dry")
+
+    assert os.path.exists(os.path.join(temp_dir, "models"))
+    files = io_utils.list_files(os.path.join(temp_dir, "models"))
+    assert len(files) == 1
+
+
 def test_train_with_only_nlu_data(run_in_default_project_without_models):
     temp_dir = os.getcwd()
 
@@ -327,7 +341,7 @@ def test_train_help(run):
                   [-c CONFIG] [-d DOMAIN] [--out OUT]
                   [--augmentation AUGMENTATION] [--debug-plots]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
-                  [--force]
+                  [--force] [--dry]
                   {core,nlu} ..."""
 
     lines = help_text.split("\n")

@@ -1,5 +1,6 @@
 import asyncio
 import os
+import sys
 import tempfile
 from contextlib import ExitStack
 from typing import Text, Optional, List, Union, Dict
@@ -28,6 +29,7 @@ def train(
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
+    dry: bool = False,
     additional_arguments: Optional[Dict] = None,
     loop: Optional[asyncio.AbstractEventLoop] = None,
 ) -> Optional[Text]:
@@ -47,6 +49,7 @@ def train(
             force_training=force_training,
             fixed_model_name=fixed_model_name,
             persist_nlu_training_data=persist_nlu_training_data,
+            dry=dry,
             additional_arguments=additional_arguments,
         )
     )
@@ -60,6 +63,7 @@ async def train_async(
     force_training: bool = False,
     fixed_model_name: Optional[Text] = None,
     persist_nlu_training_data: bool = False,
+    dry: bool = False,
     additional_arguments: Optional[Dict] = None,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
@@ -98,6 +102,7 @@ async def train_async(
             force_training,
             fixed_model_name,
             persist_nlu_training_data,
+            dry,
             additional_arguments,
         )
 
@@ -122,6 +127,7 @@ async def _train_async_internal(
     force_training: bool,
     fixed_model_name: Optional[Text],
     persist_nlu_training_data: bool,
+    dry: bool,
     additional_arguments: Optional[Dict],
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU). Use only from `train_async`.
@@ -153,6 +159,9 @@ async def _train_async_internal(
 
     if stories.is_empty():
         print_warning("No stories present. Just a Rasa NLU model will be trained.")
+        if dry:
+            print_warning("NLU will be trained: True")
+            sys.exit(0)
         return await _train_nlu_with_validated_data(
             file_importer,
             output=output_path,
@@ -162,6 +171,9 @@ async def _train_async_internal(
 
     if nlu_data.is_empty():
         print_warning("No NLU data present. Just a Rasa Core model will be trained.")
+        if dry:
+            print_warning("Core will be trained: True")
+            sys.exit(0)
         return await _train_core_with_validated_data(
             file_importer,
             output=output_path,
@@ -176,6 +188,27 @@ async def _train_async_internal(
         fingerprint_comparison = model.should_retrain(
             new_fingerprint, old_model, train_path
         )
+
+    if dry:
+        if fingerprint_comparison.core:
+            print_warning(
+                "Core will be trained: {}".format(fingerprint_comparison.core)
+            )
+        else:
+            print_success(
+                "Core will be trained: {}".format(fingerprint_comparison.core)
+            )
+
+        if fingerprint_comparison.nlu:
+            print_warning("NLU will be trained: {}".format(fingerprint_comparison.nlu))
+        else:
+            print_success("NLU will be trained: {}".format(fingerprint_comparison.nlu))
+
+        if fingerprint_comparison.nlg:
+            print_warning("NLG will be trained: {}".format(fingerprint_comparison.nlg))
+        else:
+            print_success("NLG will be trained: {}".format(fingerprint_comparison.nlg))
+        sys.exit(0)
 
     if fingerprint_comparison.is_training_required():
         await _do_training(

@@ -23,6 +23,7 @@ def set_train_arguments(parser: argparse.ArgumentParser):
     add_model_name_param(parser)
     add_persist_nlu_data_param(parser)
     add_force_param(parser)
+    add_dry_param(parser)
 
 
 def set_train_core_arguments(parser: argparse.ArgumentParser):
@@ -57,6 +58,12 @@ def add_force_param(parser: Union[argparse.ArgumentParser, argparse._ActionsCont
         "--force",
         action="store_true",
         help="Force a model training even if the data has not changed.",
+    )
+
+
+def add_dry_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]):
+    parser.add_argument(
+        "--dry", action="store_true", help="Check if models need to be retrained.",
     )
 
 

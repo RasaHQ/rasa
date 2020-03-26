@@ -129,3 +129,37 @@ def test_train_nlu_temp_files(
     )
 
     assert count_temp_rasa_files(tempfile.tempdir) == 0
+
+
+def test_train_files_dry(
+    tmp_path: Text,
+    monkeypatch: MonkeyPatch,
+    default_domain_path: Text,
+    default_stories_file: Text,
+    default_stack_config: Text,
+    default_nlu_data: Text,
+):
+    monkeypatch.setattr(tempfile, "tempdir", tmp_path)
+    output = "test_train_temp_files_models"
+
+    train(
+        default_domain_path,
+        default_stack_config,
+        [default_stories_file, default_nlu_data],
+        output=output,
+        dry=True,
+    )
+
+    assert count_temp_rasa_files(tempfile.tempdir) == 0
+
+    # After training the model, try to do it again. This shouldn't try to train
+    # a new model because nothing has been changed. It also shouldn't create
+    # any temp files.
+    train(
+        default_domain_path,
+        default_stack_config,
+        [default_stories_file, default_nlu_data],
+        output=output,
+    )
+
+    assert count_temp_rasa_files(tempfile.tempdir) == 0
