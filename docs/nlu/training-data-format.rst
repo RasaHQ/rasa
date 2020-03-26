@@ -23,10 +23,11 @@ Markdown Format
 ---------------
 
 Markdown is the easiest Rasa NLU format for humans to read and write.
-Examples are listed using the unordered
-list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``.
+Examples are listed using the unordered list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``.
 Examples are grouped by intent, and entities are annotated as Markdown links,
-e.g. ``[entity](entity name)``.
+e.g. ``[<entity text>](<entity name>)``, or by using the following syntax ``[<entity-text>]{"entity": <entity name>}``.
+Using the latter syntax, you can also assign synonyms, roles, or groups to an entity, e.g.
+``[<entity-text>]{"entity": <entity name>, "role": <role name>, "group": <group name>, "value": <entity synonym>}``
 
 .. code-block:: md
 
