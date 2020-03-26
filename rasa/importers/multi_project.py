@@ -167,7 +167,7 @@ class MultiProjectImporter(TrainingDataImporter):
     def add_import(self, path: Text) -> None:
         self._imports.append(path)
     
-    def _log_merge_infos(self, domains: List[Domain]) -> None:
+    def _collect_paths_for_each_property(self, domains: List[Domain]) -> Dict:
         merges = {
             "actions": {},
             "entities": {},
@@ -182,6 +182,9 @@ class MultiProjectImporter(TrainingDataImporter):
                 for e in domain_dict.get(k, []):
                     name = e if isinstance(e, str) else next(iter(e.keys()))
                     v[name] = v.get(name, []) + [domain_path]
+        return merges
+    
+    def _log_properties_with_multiple_paths(self, merges: Dict) -> None:
         for k, v in merges.items():
             infos = ""
             for name, paths in v.items():
@@ -189,6 +192,10 @@ class MultiProjectImporter(TrainingDataImporter):
                     infos += f"\n  - {name} (from {' + '.join(paths)})"
             if len(infos) > 0:
                 logger.info(f"Merging following {k}:" + infos)
+    
+    def _log_merge_infos(self, domains: List[Domain]) -> None:
+        merges = self._collect_paths_for_each_property(domains)
+        self._log_properties_with_multiple_paths(merges)
 
     async def get_domain(self) -> Domain:
         if self._cached_domain is None:
