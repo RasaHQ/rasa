@@ -14,8 +14,9 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
 from rasa.utils.common import raise_warning, class_from_module_path
 from rasa.utils.endpoints import EndpointConfig
-from rasa.nlu.model import Interpreter, Trainer, TrainingData, Metadata
+from rasa.nlu.model import Interpreter, Trainer, TrainingData, Metadata, Message
 from rasa.nlu import utils
+from rasa.nlu.constants import SPARSE_FEATURE_NAMES, DENSE_FEATURE_NAMES, TEXT
 
 
 logger = logging.getLogger(__name__)
@@ -302,6 +303,13 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
 MODEL_NAME_PREFIX = "nlu"
 
+def find_same(action_name, attribute, training_data):
+        for ex in training_data.training_examples:
+            if ex.as_dict()['text'] == action_name and ex.get(SPARSE_FEATURE_NAMES[attribute]) is not None:
+                example = ex
+                break
+        return example
+
 class RasaCoreInterpreter(NaturalLanguageInterpreter):
     def __init__(self,):
         self._load_interpreter()
@@ -316,6 +324,50 @@ class RasaCoreInterpreter(NaturalLanguageInterpreter):
         config = config.load()
         self.trainer = Trainer(config)
         self.interpreter = Interpreter(self.trainer.pipeline, {})
+
+    def prepare_training_data(self, trackers_as_states, trackers_as_actions, domain):
+        training_data = []
+        for tracker in trackers_as_states:
+            for state in tracker: 
+                if state and not state == {}:
+                    training_data.append(state["prev_action"])
+                    if "user" in state.keys():
+                        training_data.append(state["user"])
+        training_data += [Message(action) for action in domain.action_names]
+        tr_data = TrainingData(training_examples=training_data)
+
+        training_data = [action for tr in trackers_as_actions for action in tr]
+        tr_data.training_examples += training_data
+        return tr_data
+
+    def prepare_training_data_and_train(self, trackers_as_states, trackers_as_actions, interpreter, output_path, domain):
+        """
+        Trains the vertorizers from real data;
+        Preliminary for when the featurizer is to be used for raw text;
+        Args:
+             - trackers_as_states: real data as a dictionary
+             - delimiter: symbol to be used to divide into words
+        """
+        # TODO:
+        # - no delimiter
+        # - how to avoid using NLU pipeline?
+        tr_data = self.prepare_training_data(trackers_as_states, trackers_as_actions, domain)
+
+        interp = interpreter.train(tr_data, output_path)
+
+        ## Not so clever fix for now; 
+        ## TODO: properly encode everything in place; 
+        for tracker in trackers_as_states:
+            for state in tracker:
+                if state:
+                    for key in state.keys():
+                        if isinstance(state[key], Message):
+                            if state[key].get(SPARSE_FEATURE_NAMES[TEXT]) is None and state[key].get(DENSE_FEATURE_NAMES[TEXT]) is None:                           
+                                name = state[key].as_dict()['text']
+                                example = find_same(name, TEXT, tr_data)
+                                state[key] = example
+
+        return interp, tr_data
 
     def train(self, data: TrainingData, path, **kwargs: Any) -> "Interpreter":
         """Trains the underlying pipeline using the provided training data."""

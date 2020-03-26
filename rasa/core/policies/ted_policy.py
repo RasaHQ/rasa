@@ -268,8 +268,7 @@ class TEDPolicy(Policy):
         if isinstance(data_X[0][0], scipy.sparse.spmatrix):
             data_X_for_sparse = []
             for dial in data_X:
-                max_hist = dial.shape[0]
-                states = scipy.sparse.vstack([dial[i] for i in range(max_hist)])
+                states = scipy.sparse.vstack(dial)
                 data_X_for_sparse.append(states)
             model_data.add_features(DIALOGUE_FEATURES, [np.array(data_X_for_sparse)])
         else:
@@ -279,23 +278,13 @@ class TEDPolicy(Policy):
 
         return model_data
 
-    def _create_label_data(self, domain: Domain) -> RasaModelData:
-        # encode all label_ids with policies' featurizer
-        state_featurizer = self.featurizer.state_featurizer
-        all_labels = state_featurizer.create_encoded_all_actions_sparse(domain)
-        all_labels = all_labels.astype(np.float32)
-
-        label_data = RasaModelData()
-        label_data.add_features(LABEL_FEATURES, [all_labels])
-        return label_data
-
     def _create_label_data_e2e(self, label_data) -> RasaModelData:
         # encode all label_ids with policies' featurizer
         sparse_features = []
         dense_features = []
-        for idx, feats in label_data:
+        for idx, feats in label_data.items():
             if feats[0] is not None:
-                sparse_features.append(feats[0].astype(np.float32))
+                sparse_features.append(feats[0].tocsr().astype(np.float32))
             if feats[1] is not None:
                 dense_features.append(feats[1])
 
@@ -397,8 +386,6 @@ class TEDPolicy(Policy):
         tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
 
         io_utils.create_directory_for_file(tf_model_file)
-        print('FEATURIZER')
-        print(self.featurizer)
 
         self.featurizer.persist(path)
 

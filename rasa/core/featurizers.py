@@ -11,7 +11,7 @@ import string
 
 import rasa.utils.io
 from rasa.core import utils
-from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa.core.domain import PREV_PREFIX, Domain
 from rasa.core.events import ActionExecuted, UserUttered, Event
 from rasa.core.trackers import DialogueStateTracker
@@ -84,59 +84,6 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
     def __init__(self) -> None:
 
         super().__init__()
-        from rasa.nlu import config
-
-        self.config = config.load()
-        # self.pipeline = Trainer()
-
-        self.delimiter = " "
-        self.intent_tokenization_flag = True
-        self.token_pattern = r"(?u)\b\w+\b"
-
-    def find_same(self, action_name, attribute, training_data):
-        for ex in training_data.training_examples:
-            if ex.as_dict()['text'] == action_name and ex.get(SPARSE_FEATURE_NAMES[attribute]) is not None:
-                example = ex
-                break
-        return example
-
-    def prepare_training_data_and_train(self, trackers_as_states, trackers_as_actions, interpreter, output_path):
-        """
-        Trains the vertorizers from real data;
-        Preliminary for when the featurizer is to be used for raw text;
-        Args:
-             - trackers_as_states: real data as a dictionary
-             - delimiter: symbol to be used to divide into words
-        """
-        # TODO:
-        # - no delimiter
-        # - how to avoid using NLU pipeline?
-
-        training_data = []
-        for tracker in trackers_as_states:
-            for state in tracker: 
-                if state and not state == {}:
-                    training_data.append(state["prev_action"])
-                    if "user" in state.keys():
-                        training_data.append(state["user"])
-        tr_data = TrainingData(training_examples=training_data)
-
-        training_data = [tr[0] for tr in trackers_as_actions]
-        tr_data.training_examples += training_data
-        interp = interpreter.train(tr_data, output_path)
-
-        ## Not so clever fix for now; 
-        ## TODO: properly encode everything in place; 
-        for tracker in trackers_as_states:
-            for state in tracker:
-                for key in state.keys():
-                    if isinstance(state[key], Message):
-                        if state[key].get(SPARSE_FEATURE_NAMES[TEXT]) is None and state[key].get(DENSE_FEATURE_NAMES[TEXT]) is None:                           
-                            name = state[key].as_dict()['text']
-                            example = self.find_same(name, TEXT, tr_data)
-                            state[key] = example
-
-        return interp
 
     def _extract_features(
         self, message: Message, attribute: Text
@@ -194,34 +141,11 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
                 sparse_features_bot, dense_features_bot = self._extract_features(state['prev_action'], TEXT)
 
         if sparse_features_user is not None and sparse_features_bot is not None:
-            sparse_state = scipy.sparse.hstack([sparse_features_user.tocsr(), sparse_features_bot.tocsr()])
+            sparse_state = scipy.sparse.hstack([sparse_features_user, sparse_features_bot])
         if dense_features_user is not None and dense_features_bot is not None:
             dense_state = np.concatenate(dense_features_user, dense_features_bot)
 
         return sparse_state
-
-    def create_encoded_all_actions_sparse(self, domain: Domain) -> np.ndarray:
-        """Create matrix with all actions from domain encoded in rows as bag of words"""
-
-        # encoded_all_actions = np.zeros(
-        #     (domain.num_actions, len(self.vectorizers["text"].vocabulary_)), dtype=np.int32
-        # )
-        encoded_all_actions = []
-        attribute = "text"
-        translator = str.maketrans(
-            string.punctuation, self.delimiter * len(string.punctuation)
-        )
-        for idx, name in enumerate(domain.action_names):
-            name = name.translate(translator)
-            name = name.replace("\t", self.delimiter)
-            name = Message(name.replace(self.delimiter, " "))
-            message_tokens = self._get_processed_message_tokens_by_attribute(
-                name, attribute
-            )
-            features = self._create_sequence(attribute, [message_tokens + [CLS_TOKEN]])
-            encoded_all_actions.append(features[0].getrow(-1))
-        encoded_all_actions = scipy.sparse.vstack(encoded_all_actions)
-        return encoded_all_actions
 
 
 class TrackerFeaturizer:
@@ -326,8 +250,7 @@ class TrackerFeaturizer:
     ) -> np.ndarray:
         """Create y."""
 
-        labels = []
-        label_data = {}
+        labels = []  
         for tracker_actions in trackers_as_actions:
 
             if len(trackers_as_actions) > 1:
@@ -338,20 +261,17 @@ class TrackerFeaturizer:
                 for action in tracker_actions
             ]
             for action in tracker_actions:
-                value = self.state_featurizer._extract_features(action, TEXT)
-                value = (value[0].tocsr(), value[1])
-                label_data[self.state_featurizer.action_as_index(action, domain)] = value
+                sparse, dense= self.state_featurizer._extract_features(action, TEXT)
+                value = (sparse.tocsr(), dense)
 
             labels.append(story_labels)
-
-        label_data = [(key, value) for key, value in label_data.items()]
 
         y = np.array(labels)
         if y.ndim == 3 and isinstance(self, MaxHistoryTrackerFeaturizer):
             # if it is MaxHistoryFeaturizer, remove time axis
             y = y[:, 0, :]
 
-        return y, label_data
+        return y
 
     def training_states_and_actions(
         self, trackers: List[DialogueStateTracker], domain: Domain
@@ -371,6 +291,7 @@ class TrackerFeaturizer:
     ) -> DialogueTrainingData:
         """Create training data."""
         import copy
+        from rasa.core.interpreter import find_same
 
         if self.state_featurizer is None:
             raise ValueError(
@@ -378,18 +299,19 @@ class TrackerFeaturizer:
                 "'SingleStateFeaturizer' class to featurize trackers."
             )
 
-        # self.state_featurizer.prepare_from_domain(domain)
-
         (
             trackers_as_states,
             trackers_as_actions,
         ) = self.training_states_and_actions_e2e(trackers, domain)
 
-        interpreter = self.state_featurizer.prepare_training_data_and_train(trackers_as_states, trackers_as_actions, interpreter, output_path)
+        interpreter, tr_data = interpreter.prepare_training_data_and_train(trackers_as_states, trackers_as_actions, interpreter, output_path, domain)
+
+        label_data = {j: self.state_featurizer._extract_features(find_same(action, TEXT, tr_data), TEXT) for j, action in enumerate(domain.action_names)}
+
 
         # noinspection PyPep8Naming
         X, true_lengths = self._featurize_states(trackers_as_states, interpreter)
-        y, label_data = self._featurize_labels(trackers_as_actions, domain)
+        y = self._featurize_labels(trackers_as_actions, domain)
 
         return DialogueTrainingData(X, y, true_lengths), label_data
 
@@ -574,7 +496,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     @staticmethod
     def _hash_example(states, action) -> int:
         """Hash states for efficient deduplication."""
-
+        states = [{key: value.text for key, value in s.items() if not key == 'slots'} for s in states]
         frozen_states = tuple(s if s is None else frozenset(s.items()) for s in states)
         frozen_actions = (action,)
         return hash((frozen_states, frozen_actions))
@@ -599,22 +521,19 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         states = []
         for tr in tracker.generate_all_prior_trackers():
             if prev_tracker:
-                if sublist(prev_tracker.applied_events(), tr.applied_events()):
-                    state = tr.applied_events()[len(prev_tracker.applied_events()) :]
-                    state_dict = {}
-                    for event in state:
-                        if isinstance(event, UserUttered):
-                            state_dict["user"] = Message(event.text)
-                        elif isinstance(event, ActionExecuted):
-                            state_dict["prev_action"] = Message(event.action_name, data={TEXT:event.action_name})
-                        slots = tr.current_slot_values()
-                        current_slots = {}
-                        for key, value in slots.items():
-                            if value:
-                                current_slots[key] = value
-                        state_dict["slots"] = current_slots
-                else:
-                    state_dict = {}
+                state = tr.applied_events()[len(prev_tracker.applied_events()) :]
+                state_dict = {}
+                for event in state:
+                    if isinstance(event, UserUttered):
+                        state_dict["user"] = Message(event.text)
+                    elif isinstance(event, ActionExecuted):
+                        state_dict["prev_action"] = Message(event.action_name)
+                    slots = tr.current_slot_values()
+                    current_slots = {}
+                    for key, value in slots.items():
+                        if value:
+                            current_slots[key] = value
+                    state_dict["slots"] = current_slots
             else:
                 # print(len(events[i-1]))
                 state_dict = {}
@@ -653,20 +572,20 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                             # hashed_featurization we haven't observed
                             if hashed not in hashed_examples:
                                 hashed_examples.add(hashed)
+                                print(len(hashed_examples))
                                 trackers_as_states_e2e.append(sliced_states)
-                                if not len(sliced_states) > 1:
-                                    trackers_as_actions_e2e.append([Message(event.action_name, data={TEXT:event.action_name})])
+                                
+                                if len(sliced_states) > 1:
+                                    trackers_as_actions_e2e.append([Message(event.action_name)])
                         else:
                             trackers_as_states_e2e.append(sliced_states)
-                            # trackers_as_actions_e2e.append([Message(event.action_name, data={RESPONSE:event.action_name})])
                             if len(sliced_states)>1:
-                                trackers_as_actions_e2e.append([Message(event.action_name, data={TEXT:event.action_name})])
+                                trackers_as_actions_e2e.append([Message(event.action_name)])
                         pbar.set_postfix(
                             {"# actions": "{:d}".format(len(trackers_as_actions_e2e))}
                         )
                     idx += 1
 
-        # return trackers_as_states, trackers_as_actions
         return trackers_as_states_e2e, trackers_as_actions_e2e
 
     def training_states_and_actions(
