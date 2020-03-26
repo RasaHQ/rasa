@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Text, Tuple, Optional
 
-from nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
 from rasa.nlu.constants import EXTRACTOR, ENTITIES, TOKENS_NAMES, TEXT
 from rasa.nlu.training_data import Message
@@ -23,7 +23,7 @@ class EntityExtractor(Component):
         return entity
 
     def clean_up_entities(
-        self, message: Message, entities: List[Dict[Text, Any]], keep: bool = True
+        self, message: Message, entities: List[Dict[Text, Any]], keep: bool = False
     ) -> List[Dict[Text, Any]]:
         """
         Checks if multiple entity labels are assigned to one word or if an entity label
