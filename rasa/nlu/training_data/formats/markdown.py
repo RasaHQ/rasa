@@ -88,10 +88,10 @@ class MarkdownReader(TrainingDataReader):
             raise_warning(
                 "You are using the deprecated training data format to declare synonyms."
                 " Please use the following format: \n"
-                "[<entity-text>]{'entity': <entity-type>, 'synonym': <entity-synonym>}."
+                "[<entity-text>]{'entity': <entity-type>, 'value': <entity-synonym>}."
                 "\nYou can use the following command to update your training data file:"
                 "\nsed -i .deprecated -E 's/\\[(.*)\\]\\((.*):(.*)\\)/\\[\\1\\]\\{"
-                '"entity": "\\2", "synonym": "\\3"\\}/\' nlu.md',
+                '"entity": "\\2", "value": "\\3"\\}/\' nlu.md',
                 category=FutureWarning,
                 docs=DOCS_URL_TRAINING_DATA_NLU,
             )
@@ -165,7 +165,7 @@ class MarkdownReader(TrainingDataReader):
                 "entity": {"type": "string"},
                 "role": {"type": "string"},
                 "group": {"type": "string"},
-                "synonym": {"type": "string"},
+                "value": {"type": "string"},
             },
             "required": ["entity"],
         }
@@ -175,7 +175,7 @@ class MarkdownReader(TrainingDataReader):
         Validates the entity dict data.
 
         Users can specify entity roles, synonyms, groups for an entity in a dict, e.g.
-        [LA]{"entity": "city", "role": "to", "synonym": "Los Angeles"}
+        [LA]{"entity": "city", "role": "to", "value": "Los Angeles"}
 
         Args:
             json_str: the entity dict as string without "{}"
@@ -235,7 +235,7 @@ class MarkdownReader(TrainingDataReader):
 
             entity_type = entity_dict["entity"]
             entity_value = (
-                entity_dict["synonym"] if "synonym" in entity_dict else entity_text
+                entity_dict["value"] if "value" in entity_dict else entity_text
             )
             entity_role = entity_dict["role"] if "role" in entity_dict else None
             entity_group = entity_dict["group"] if "group" in entity_dict else None
@@ -456,6 +456,6 @@ class MarkdownWriter(TrainingDataWriter):
         if entity_group is not None:
             entity_dict_str += f', "group": "{entity_group}"'
         if entity_synonym is not None:
-            entity_dict_str += f', "synonym": "{entity_synonym}"'
+            entity_dict_str += f', "value": "{entity_synonym}"'
 
         return f"[{entity_text}]{{{entity_dict_str}}}"

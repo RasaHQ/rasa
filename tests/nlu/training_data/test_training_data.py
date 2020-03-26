@@ -631,7 +631,7 @@ def test_read_complex_entity_format():
     r = MarkdownReader()
 
     md = """## intent:test
-- I want to fly from [Berlin]{"entity": "city", "role": "to"} to [LA]{"entity": "city", "role": "from", "synonym": "Los Angeles"}
+- I want to fly from [Berlin]{"entity": "city", "role": "to"} to [LA]{"entity": "city", "role": "from", "value": "Los Angeles"}
 """
 
     training_data = r.reads(md)
@@ -659,7 +659,7 @@ def test_read_mixed_entity_format():
     r = MarkdownReader()
 
     md = """## intent:test
-- I want to fly from [Berlin](city) to [LA]{"entity": "city", "role": "from", "synonym": "Los Angeles"}
+- I want to fly from [Berlin](city) to [LA]{"entity": "city", "role": "from", "value": "Los Angeles"}
 """
 
     training_data = r.reads(md)
@@ -715,18 +715,15 @@ def test_dump_nlu_with_responses():
 @pytest.mark.parametrize(
     "entity_extractor,expected_output",
     [
-        (None, '- [test]{"entity": "word", "synonym": "random"}'),
-        ("", '- [test]{"entity": "word", "synonym": "random"}'),
-        ("random-extractor", '- [test]{"entity": "word", "synonym": "random"}'),
-        (
-            CRFEntityExtractor.__name__,
-            '- [test]{"entity": "word", "synonym": "random"}',
-        ),
+        (None, '- [test]{"entity": "word", "value": "random"}'),
+        ("", '- [test]{"entity": "word", "value": "random"}'),
+        ("random-extractor", '- [test]{"entity": "word", "value": "random"}'),
+        (CRFEntityExtractor.__name__, '- [test]{"entity": "word", "value": "random"}'),
         (DucklingHTTPExtractor.__name__, "- test"),
         (SpacyEntityExtractor.__name__, "- test"),
         (
             MitieEntityExtractor.__name__,
-            '- [test]{"entity": "word", "synonym": "random"}',
+            '- [test]{"entity": "word", "value": "random"}',
         ),
     ],
 )
@@ -769,7 +766,7 @@ def test_dump_trainable_entities(
                 "group": "group-name",
             },
             '- [test]{"entity": "word", "role": "role-name", "group": "group-name", '
-            '"synonym": "random"}',
+            '"value": "random"}',
         ),
         ({"start": 0, "end": 4, "entity": "word"}, "- [test](word)"),
         (
@@ -784,7 +781,7 @@ def test_dump_trainable_entities(
         ),
         (
             {"start": 0, "end": 4, "entity": "word", "value": "random"},
-            '- [test]{"entity": "word", "synonym": "random"}',
+            '- [test]{"entity": "word", "value": "random"}',
         ),
     ],
 )
