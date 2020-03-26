@@ -383,9 +383,6 @@ class RasaCoreInterpreter(NaturalLanguageInterpreter):
             if updates:
                 context.update(updates)
 
-        # data gets modified internally during the training - hence the copy
-        # working_data = copy.deepcopy(data)
-
         for i, component in enumerate(self.trainer.pipeline):
             logger.info(f"Starting to train component {component.name}")
             component.prepare_partial_processing(self.trainer.pipeline[:i], context)
@@ -393,6 +390,8 @@ class RasaCoreInterpreter(NaturalLanguageInterpreter):
             logger.info("Finished training component.")
             if updates:
                 context.update(updates)
+
+        # wrong place for persist; temporary solution; 
         self.persist(path)
 
         return Interpreter(self.trainer.pipeline, context)
