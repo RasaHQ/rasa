@@ -202,7 +202,14 @@ class MarkdownReader(TrainingDataReader):
         return data
 
     def _find_entities_in_training_example(self, example: Text) -> List[Dict]:
-        """Extracts entities from a markdown intent example."""
+        """
+        Extracts entities from a markdown intent example.
+
+        Args:
+            example: markdown intent example
+
+        Returns: list of extracted entities
+        """
         entities = []
         offset = 0
 
