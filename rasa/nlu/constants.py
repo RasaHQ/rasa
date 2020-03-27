@@ -10,6 +10,14 @@ ENTITIES = "entities"
 BILOU_ENTITIES = "bilou_entities"
 NO_ENTITY_TAG = "O"
 
+ENTITY_ATTRIBUTE_TYPE = "entity"
+ENTITY_ATTRIBUTE_GROUP = "group"
+ENTITY_ATTRIBUTE_ROLE = "role"
+ENTITY_ATTRIBUTE_VALUE = "value"
+ENTITY_ATTRIBUTE_TEXT = "text"
+ENTITY_ATTRIBUTE_START = "start"
+ENTITY_ATTRIBUTE_END = "end"
+
 EXTRACTOR = "extractor"
 
 PRETRAINED_EXTRACTORS = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}

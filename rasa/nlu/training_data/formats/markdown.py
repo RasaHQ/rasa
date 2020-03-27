@@ -13,7 +13,7 @@ from rasa.nlu.training_data.formats.readerwriter import (
 )
 from rasa.nlu.utils import build_entity
 from rasa.utils.common import raise_warning
-from rasa.nlu.extractors.extractor import (
+from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,

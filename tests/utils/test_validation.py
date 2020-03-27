@@ -64,7 +64,7 @@ def test_example_training_data_is_valid():
         },
     ],
 )
-def test_validation_is_throwing_exceptions(invalid_data):
+def test_validate_training_data_is_throwing_exceptions(invalid_data):
     with pytest.raises(ValidationError):
         validation_utils.validate_training_data(
             invalid_data, schema.rasa_nlu_data_schema()
@@ -105,3 +105,35 @@ def test_url_data_format():
     data = io_utils.read_json_file(fname)
     assert data is not None
     validation_utils.validate_training_data(data, schema.rasa_nlu_data_schema())
+
+
+@pytest.mark.parametrize(
+    "invalid_data",
+    [
+        {"group": "a", "role": "c", "value": "text"},
+        ["this is not a toplevel dict"],
+        {"entity": 1, "role": "c", "value": "text"},
+    ],
+)
+def test_validate_entity_dict_is_throwing_exceptions(invalid_data):
+    with pytest.raises(ValidationError):
+        validation_utils.validate_training_data(
+            invalid_data, schema.entity_dict_schema()
+        )
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        {"entity": "e", "group": "a", "role": "c", "value": "text"},
+        {"entity": "e"},
+        {"entity": "e", "value": "text"},
+        {"entity": "e", "group": "a"},
+        {"entity": "e", "role": "c"},
+        {"entity": "e", "role": "c", "value": "text"},
+        {"entity": "e", "group": "a", "value": "text"},
+        {"entity": "e", "group": "a", "role": "c"},
+    ],
+)
+def test_entity_dict_is_valid(data):
+    validation_utils.validate_training_data(data, schema.entity_dict_schema())

@@ -8,12 +8,11 @@ import rasa.utils.io as io_utils
 # backwards compatibility 1.0.x
 # noinspection PyUnresolvedReferences
 from rasa.utils.io import read_json_file
-from rasa.nlu.extractors.extractor import (
+from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_TEXT,
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_VALUE,
 )
