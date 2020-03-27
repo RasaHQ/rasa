@@ -1,0 +1,3 @@
+The MultiProjectImporter now logs information about data being merged (intents, entities, slots, actions and forms) when they share the same name in multiple imported projects.
+
+Previously, no merge information was logged.
