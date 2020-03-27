@@ -8,9 +8,10 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 
 
 @pytest.mark.parametrize(
-    "tokens, entities, keep, expected_entities",
+    "text, tokens, entities, keep, expected_entities",
     [
         (
+            "Aarhus is a city",
             [
                 Token("Aar", 0, 3),
                 Token("hus", 3, 6),
@@ -27,6 +28,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor
             [{"entity": "location", "start": 12, "end": 16, "value": "city"}],
         ),
         (
+            "Aarhus",
             [Token("Aar", 0, 3), Token("hus", 3, 6)],
             [
                 {"entity": "iata", "start": 0, "end": 3, "value": "Aar"},
@@ -36,6 +38,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor
             [],
         ),
         (
+            "Aarhus city",
             [Token("Aarhus", 0, 6), Token("city", 7, 11)],
             [
                 {"entity": "city", "start": 0, "end": 6, "value": "Aarhus"},
@@ -48,6 +51,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor
             ],
         ),
         (
+            "Aarhus is a city",
             [
                 Token("Aar", 0, 3),
                 Token("hus", 3, 6),
@@ -85,6 +89,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor
             ],
         ),
         (
+            "Aarhus",
             [Token("Aa", 0, 2), Token("r", 2, 3), Token("hu", 3, 5), Token("s", 5, 6)],
             [
                 {
@@ -128,6 +133,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor
             ],
         ),
         (
+            "Aarhus",
             [Token("Aa", 0, 2), Token("r", 2, 3), Token("hu", 3, 5), Token("s", 5, 6)],
             [
                 {
@@ -150,6 +156,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor
             ],
         ),
         (
+            "Aarhus",
             [Token("Aa", 0, 2), Token("r", 2, 3), Token("hu", 3, 5), Token("s", 5, 6)],
             [
                 {
@@ -163,9 +170,68 @@ from rasa.nlu.extractors.extractor import EntityExtractor
             False,
             [],
         ),
+        (
+            "Buenos Aires is a city",
+            [
+                Token("Buenos", 0, 6),
+                Token("Ai", 7, 9),
+                Token("res", 9, 12),
+                Token("is", 13, 15),
+                Token("a", 16, 17),
+                Token("city", 18, 22),
+            ],
+            [
+                {"entity": "city", "start": 0, "end": 9, "value": "Buenos Ai"},
+                {"entity": "location", "start": 18, "end": 22, "value": "city"},
+            ],
+            False,
+            [{"entity": "location", "start": 18, "end": 22, "value": "city"}],
+        ),
+        (
+            "Buenos Aires is a city",
+            [
+                Token("Buenos", 0, 6),
+                Token("Ai", 7, 9),
+                Token("res", 9, 12),
+                Token("is", 13, 15),
+                Token("a", 16, 17),
+                Token("city", 18, 22),
+            ],
+            [
+                {"entity": "city", "start": 0, "end": 9, "value": "Buenos Ai"},
+                {"entity": "location", "start": 18, "end": 22, "value": "city"},
+            ],
+            True,
+            [
+                {"entity": "city", "start": 0, "end": 12, "value": "Buenos Aires"},
+                {"entity": "location", "start": 18, "end": 22, "value": "city"},
+            ],
+        ),
+        (
+            "Buenos Aires is a city",
+            [
+                Token("Buen", 0, 4),
+                Token("os", 4, 6),
+                Token("Ai", 7, 9),
+                Token("res", 9, 12),
+                Token("is", 13, 15),
+                Token("a", 16, 17),
+                Token("city", 18, 22),
+            ],
+            [
+                {"entity": "city", "start": 4, "end": 9, "value": "os Ai"},
+                {"entity": "location", "start": 18, "end": 22, "value": "city"},
+            ],
+            True,
+            [
+                {"entity": "city", "start": 0, "end": 12, "value": "Buenos Aires"},
+                {"entity": "location", "start": 18, "end": 22, "value": "city"},
+            ],
+        ),
     ],
 )
 def test_convert_tags_to_entities(
+    text: Text,
     tokens: List[Token],
     entities: List[Dict[Text, Any]],
     keep: bool,
@@ -173,7 +239,7 @@ def test_convert_tags_to_entities(
 ):
     extractor = EntityExtractor()
 
-    message = Message("test")
+    message = Message(text)
     message.set("tokens", tokens)
 
     updated_entities = extractor.clean_up_entities(message, entities, keep)
