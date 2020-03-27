@@ -23,15 +23,16 @@ class EntityExtractor(Component):
         return entity
 
     def clean_up_entities(
-        self, message: Message, entities: List[Dict[Text, Any]], keep: bool = False
+        self, message: Message, entities: List[Dict[Text, Any]], keep: bool = True
     ) -> List[Dict[Text, Any]]:
         """
         Checks if multiple entity labels are assigned to one word or if an entity label
-        is assigned to just a part of a word.
+        is assigned to just a part of a word or if an entity label covers multiple
+        words, but one word just partly.
 
         This might happen if you are using a tokenizer that splits up words into
         sub-words and different entity labels are assigned to the individual sub-words.
-        If multiple entity labels are assigned to the word, we keep the entity label
+        If multiple entity labels are assigned to one word, we keep the entity label
         with the highest confidence as entity label for that word. If just a part
         of the word is annotated, that entity label is taken for the complete word.
         If you set 'keep' to 'False', all entity labels for the word will be removed.
@@ -46,11 +47,13 @@ class EntityExtractor(Component):
 
         Returns: updated list of entities
         """
-        word_clusters = self._word_clusters(message.get(TOKENS_NAMES[TEXT]), entities)
+        word_entity_clusters = self._word_entity_clusters(
+            message.get(TOKENS_NAMES[TEXT]), entities
+        )
 
         entity_indices_to_remove = set()
 
-        for cluster in word_clusters:
+        for cluster in word_entity_clusters:
             entity_indices = cluster["entity_indices"]
 
             if not keep:
@@ -62,14 +65,14 @@ class EntityExtractor(Component):
             if idx is None:
                 entity_indices_to_remove.update(entity_indices)
             else:
-                # just keep one entity
+                # keep just one entity
                 entity_indices.remove(idx)
                 entity_indices_to_remove.update(entity_indices)
 
-                # update that entity to cover the complete word
+                # update that entity to cover the complete word(s)
                 entities[idx]["start"] = cluster["start"]
                 entities[idx]["end"] = cluster["end"]
-                entities[idx]["value"] = cluster["text"]
+                entities[idx]["value"] = message.text[cluster["start"] : cluster["end"]]
 
         # sort indices to remove entries at the end of the list first
         # to avoid index out of range errors
@@ -78,11 +81,11 @@ class EntityExtractor(Component):
 
         return entities
 
-    def _word_clusters(
+    def _word_entity_clusters(
         self, tokens: List[Token], entities: List[Dict[Text, Any]]
     ) -> List[Dict[Text, Any]]:
         """
-        Build cluster of tokens and entities that belong to one word.
+        Build cluster of tokens and entities that belong to a word(s).
 
         Args:
             tokens: list of tokens
@@ -93,44 +96,97 @@ class EntityExtractor(Component):
             indices
         """
 
-        # get all token indices that belong to one word
+        # group tokens: one token cluster corresponds to one word
         token_clusters = self._token_clusters(tokens)
 
         if not token_clusters:
             return []
 
-        word_clusters = []
-        for token_cluster in token_clusters:
-            # get start and end position and text of complete word
+        word_entity_cluster = []
+        for entity_idx, entity in enumerate(entities):
+            # get all tokens that are covered/touched by the entity
+            entity_tokens = self._tokens_of_entity(entity, token_clusters)
+
+            if len(entity_tokens) == 1:
+                # entity covers exactly one word
+                continue
+
+            # get start and end position of complete word
             # needed to update the final entity later
-            start_position = token_cluster[0].start
-            end_position = token_cluster[-1].end
-            text = "".join(t.text for t in token_cluster)
+            start_position = entity_tokens[0].start
+            end_position = entity_tokens[-1].end
 
-            entity_indices = [
-                idx
-                for idx, e in enumerate(entities)
-                if e["start"] >= start_position and e["end"] <= end_position
-            ]
+            # check if an entity was already found that covers the exact same word(s)
+            cluster_index = self._word_entity_cluster_index(
+                word_entity_cluster, start_position, end_position
+            )
 
-            # we are just interested in words split up into multiple tokens that
-            # got an entity assigned
-            if entity_indices:
-                word_clusters.append(
+            if cluster_index is None:
+                word_entity_cluster.append(
                     {
                         "start": start_position,
                         "end": end_position,
-                        "text": text,
-                        "entity_indices": entity_indices,
+                        "entity_indices": [entity_idx],
                     }
                 )
+            else:
+                word_entity_cluster[cluster_index]["entity_indices"].append(entity_idx)
 
-        return word_clusters
+        return word_entity_cluster
+
+    @staticmethod
+    def _word_entity_cluster_index(
+        word_entity_cluster: List[Dict[Text, Any]],
+        start_position: int,
+        end_position: int,
+    ) -> Optional[int]:
+        """
+        Args:
+            word_entity_cluster: word entity cluster
+            start_position: start position
+            end_position: end position
+
+        Returns:
+            index of word entity cluster that matches the provided start and end
+            position
+        """
+        for idx, cluster in enumerate(word_entity_cluster):
+            if cluster["start"] == start_position and cluster["end"] == end_position:
+                return idx
+        return None
+
+    @staticmethod
+    def _tokens_of_entity(
+        entity: Dict[Text, Any], token_clusters: List[List[Token]]
+    ) -> List[Token]:
+        """
+        Get all tokens of token clusters that are covered by the entity. The entity can
+        cover them completely or just partly.
+
+        Args:
+            entity: the entity
+            token_clusters: list of token clusters
+
+        Returns: list of token clusters that belong to the provided entity
+
+        """
+        entity_tokens = []
+        for token_cluster in token_clusters:
+            _start_inside = (
+                token_cluster[0].start <= entity["start"] <= token_cluster[-1].end
+            )
+            _end_inside = (
+                token_cluster[0].start <= entity["end"] <= token_cluster[-1].end
+            )
+
+            if _start_inside or _end_inside:
+                entity_tokens += token_cluster
+        return entity_tokens
 
     @staticmethod
     def _token_clusters(tokens: List[Token]) -> List[List[Token]]:
         """
-        Get tokens that belong to one word.
+        Build clusters of tokens that belong to one word.
 
         Args:
             tokens: list of tokens
@@ -148,14 +204,12 @@ class EntityExtractor(Component):
                     token_index_clusters[-1].append(idx)
                 else:
                     token_index_clusters.append([idx - 1, idx])
+            else:
+                if idx == 1:
+                    token_index_clusters.append([idx - 1])
+                token_index_clusters.append([idx])
 
-        token_clusters = []
-
-        for cluster in token_index_clusters:
-            cluster.sort()
-            token_clusters.append([tokens[idx] for idx in cluster])
-
-        return token_clusters
+        return [[tokens[idx] for idx in cluster] for cluster in token_index_clusters]
 
     @staticmethod
     def _entity_index_to_keep(
