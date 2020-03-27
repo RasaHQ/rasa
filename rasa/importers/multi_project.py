@@ -173,7 +173,7 @@ class MultiProjectImporter(TrainingDataImporter):
             "entities": {},
             "forms": {},
             "intents": {},
-            "slots": {}
+            "slots": {},
         }
         domain_dicts = [domain.as_dict() for domain in domains]
         for i, domain_dict in enumerate(domain_dicts):
@@ -231,5 +231,7 @@ class MultiProjectImporter(TrainingDataImporter):
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         if self._cached_nlu_data is None:
-            self._cached_nlu_data = utils.training_data_from_paths(self._nlu_paths, language)
+            self._cached_nlu_data = utils.training_data_from_paths(
+                self._nlu_paths, language
+            )
         return self._cached_nlu_data
