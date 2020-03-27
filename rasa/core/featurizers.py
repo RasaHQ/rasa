@@ -129,21 +129,14 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         sparse_features_bot = None
         dense_features_bot = None
         if not list(state.keys())==[]:
-            if 'user' in state.keys():
-                for key in state.keys():
-                    if key == 'user':
-                        sparse_features_user, dense_features_user = self._extract_features(state[key], TEXT)
-                    elif key == 'prev_action':
-                        sparse_features_bot, dense_features_bot = self._extract_features(state[key], TEXT)
-            else:
-                message = interpreter.parse(' ', only_output_properties=False)
-                sparse_features_user, dense_features_user = self._extract_features(message, TEXT)
-                sparse_features_bot, dense_features_bot = self._extract_features(state['prev_action'], TEXT)
+            state_extracted_features = {key : self._extract_features(state[key], TEXT) for key in state.keys()}
+            if not 'user' in state_extracted_features.keys():
+                state_extracted_features['user'] = self._extract_features(interpreter.parse(' ', only_output_properties=False), TEXT)
 
-        if sparse_features_user is not None and sparse_features_bot is not None:
-            sparse_state = scipy.sparse.hstack([sparse_features_user, sparse_features_bot])
-        if dense_features_user is not None and dense_features_bot is not None:
-            dense_state = np.concatenate(dense_features_user, dense_features_bot)
+        if state_extracted_features['user'][0] is not None and state_extracted_features['prev_action'][0] is not None:
+            sparse_state = scipy.sparse.hstack([state_extracted_features['user'][0], state_extracted_features['prev_action'][0]])
+        if state_extracted_features['user'][1] is not None and state_extracted_features['prev_action'][1] is not None:
+            dense_state = np.concatenate(state_extracted_features['user'][1], state_extracted_features['prev_action'][1])
 
         return sparse_state
 
@@ -204,6 +197,33 @@ class TrackerFeaturizer:
             return bin_states
         else:
             return [dict(state) for state in states]
+
+
+    def _create_states_e2e(self, tracker):
+        import copy
+        prev_tracker = None
+        states = []
+        for tr in tracker.generate_all_prior_trackers():
+            if prev_tracker:
+                state = tr.applied_events()[len(prev_tracker.applied_events()) :]
+                state_dict = {}
+                for event in state:
+                    if isinstance(event, UserUttered):
+                        state_dict["user"] = Message(event.text)
+                    elif isinstance(event, ActionExecuted):
+                        state_dict["prev_action"] = Message(event.action_name)
+                    slots = tr.current_slot_values()
+                    current_slots = {}
+                    for key, value in slots.items():
+                        if value:
+                            current_slots[key] = value
+                    state_dict["slots"] = current_slots
+            else:
+                # print(len(events[i-1]))
+                state_dict = {}
+            states.append(state_dict)
+            prev_tracker = copy.deepcopy(tr)
+        return states
 
     def _pad_states(self, states: List[Any]) -> List[Any]:
         """Pads states."""
@@ -499,46 +519,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         frozen_states = tuple(s if s is None else frozenset(s.items()) for s in states)
         frozen_actions = (action,)
         return hash((frozen_states, frozen_actions))
-
-    def _create_states_e2e(self, tracker):
-        import copy
-
-        def sublist(lst1, lst2):
-            len1 = len(lst1)
-            len2 = len(lst2)
-
-            if len1 >= len2:
-                return False
-
-            for i in range(0, len1):
-                if lst1[i] != lst2[i]:
-                    return False
-
-            return True
-
-        prev_tracker = None
-        states = []
-        for tr in tracker.generate_all_prior_trackers():
-            if prev_tracker:
-                state = tr.applied_events()[len(prev_tracker.applied_events()) :]
-                state_dict = {}
-                for event in state:
-                    if isinstance(event, UserUttered):
-                        state_dict["user"] = Message(event.text)
-                    elif isinstance(event, ActionExecuted):
-                        state_dict["prev_action"] = Message(event.action_name)
-                    slots = tr.current_slot_values()
-                    current_slots = {}
-                    for key, value in slots.items():
-                        if value:
-                            current_slots[key] = value
-                    state_dict["slots"] = current_slots
-            else:
-                # print(len(events[i-1]))
-                state_dict = {}
-            states.append(state_dict)
-            prev_tracker = copy.deepcopy(tr)
-        return states
 
     def training_states_and_actions_e2e(
         self, trackers: List[DialogueStateTracker], domain: Domain
