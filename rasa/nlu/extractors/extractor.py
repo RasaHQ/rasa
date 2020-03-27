@@ -47,14 +47,15 @@ class EntityExtractor(Component):
 
         Returns: updated list of entities
         """
-        word_entity_clusters = self._word_entity_clusters(
+        misaligned_entities = self._get_misaligned_entities(
             message.get(TOKENS_NAMES[TEXT]), entities
         )
 
         entity_indices_to_remove = set()
 
-        for cluster in word_entity_clusters:
-            entity_indices = cluster["entity_indices"]
+        for misaligned_entity in misaligned_entities:
+            # entity indices involved in the misalignment
+            entity_indices = misaligned_entity["entity_indices"]
 
             if not keep:
                 entity_indices_to_remove.update(entity_indices)
@@ -70,9 +71,11 @@ class EntityExtractor(Component):
                 entity_indices_to_remove.update(entity_indices)
 
                 # update that entity to cover the complete word(s)
-                entities[idx]["start"] = cluster["start"]
-                entities[idx]["end"] = cluster["end"]
-                entities[idx]["value"] = message.text[cluster["start"] : cluster["end"]]
+                entities[idx]["start"] = misaligned_entity["start"]
+                entities[idx]["end"] = misaligned_entity["end"]
+                entities[idx]["value"] = message.text[
+                    misaligned_entity["start"] : misaligned_entity["end"]
+                ]
 
         # sort indices to remove entries at the end of the list first
         # to avoid index out of range errors
@@ -81,19 +84,21 @@ class EntityExtractor(Component):
 
         return entities
 
-    def _word_entity_clusters(
+    def _get_misaligned_entities(
         self, tokens: List[Token], entities: List[Dict[Text, Any]]
     ) -> List[Dict[Text, Any]]:
         """
-        Build cluster of tokens and entities that belong to a word(s).
+        Identify entities and tokens that are misaligned, i.e. entities that cover only
+        a part of a word, different entities assigned to one word.
 
         Args:
             tokens: list of tokens
             entities: list of detected entities by the entity extractor
 
         Returns:
-            a list of clusters containing start and end position, text, and entity
-            indices
+            a list of misaligned entities including start and end position of the
+            of the final entity in the text and entity indices that are part of this
+            misalignment
         """
 
         # group tokens: one token cluster corresponds to one word
@@ -102,7 +107,7 @@ class EntityExtractor(Component):
         if not token_clusters:
             return []
 
-        word_entity_cluster = []
+        misaligned_entities = []
         for entity_idx, entity in enumerate(entities):
             # get all tokens that are covered/touched by the entity
             entity_tokens = self._tokens_of_entity(entity, token_clusters)
@@ -117,12 +122,12 @@ class EntityExtractor(Component):
             end_position = entity_tokens[-1].end
 
             # check if an entity was already found that covers the exact same word(s)
-            cluster_index = self._word_entity_cluster_index(
-                word_entity_cluster, start_position, end_position
+            _idx = self._misaligned_entity_index(
+                misaligned_entities, start_position, end_position
             )
 
-            if cluster_index is None:
-                word_entity_cluster.append(
+            if _idx is None:
+                misaligned_entities.append(
                     {
                         "start": start_position,
                         "end": end_position,
@@ -130,12 +135,12 @@ class EntityExtractor(Component):
                     }
                 )
             else:
-                word_entity_cluster[cluster_index]["entity_indices"].append(entity_idx)
+                misaligned_entities[_idx]["entity_indices"].append(entity_idx)
 
-        return word_entity_cluster
+        return misaligned_entities
 
     @staticmethod
-    def _word_entity_cluster_index(
+    def _misaligned_entity_index(
         word_entity_cluster: List[Dict[Text, Any]],
         start_position: int,
         end_position: int,
@@ -147,7 +152,7 @@ class EntityExtractor(Component):
             end_position: end position
 
         Returns:
-            index of word entity cluster that matches the provided start and end
+            index of the misaligned entity that matches the provided start and end
             position
         """
         for idx, cluster in enumerate(word_entity_cluster):
@@ -172,14 +177,14 @@ class EntityExtractor(Component):
         """
         entity_tokens = []
         for token_cluster in token_clusters:
-            _start_inside = (
+            entity_starts_inside_cluster = (
                 token_cluster[0].start <= entity["start"] <= token_cluster[-1].end
             )
-            _end_inside = (
+            entity_ends_inside_cluster = (
                 token_cluster[0].start <= entity["end"] <= token_cluster[-1].end
             )
 
-            if _start_inside or _end_inside:
+            if entity_starts_inside_cluster or entity_ends_inside_cluster:
                 entity_tokens += token_cluster
         return entity_tokens
 
@@ -200,11 +205,13 @@ class EntityExtractor(Component):
             # two token belong to the same word if there is no other character
             # between them
             if tokens[idx].start == tokens[idx - 1].end:
+                # a word was split into multiple tokens
                 if token_index_clusters and token_index_clusters[-1][-1] == idx - 1:
                     token_index_clusters[-1].append(idx)
                 else:
                     token_index_clusters.append([idx - 1, idx])
             else:
+                # the token corresponds to a single word
                 if idx == 1:
                     token_index_clusters.append([idx - 1])
                 token_index_clusters.append([idx])
@@ -218,7 +225,7 @@ class EntityExtractor(Component):
         """
         Determine the entity index to keep. If we just have one entity index, i.e.
         candidate, we return the index of that candidate. If we have multiple
-        candidate, we return the index of the entity value with the highest
+        candidates, we return the index of the entity value with the highest
         confidence score. If no confidence score is present, no entity label will
         be kept.
 
