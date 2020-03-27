@@ -461,7 +461,7 @@ optional arguments:
   --conversation-id CONVERSATION_ID
                         Specify the id of the conversation the messages are
                         in. Defaults to a UUID that will be randomly
-                        generated. (default: aaa87d32aa2b480cb6d2d10f835afcdd)
+                        generated. (default: 999f55b5a6f5402586f63b1671b683c8)
   --endpoints ENDPOINTS
                         Configuration file for the model server and the
                         connectors as a yml file. (default: None)
@@ -518,6 +518,7 @@ extracts as intents and entities from text, you can use the command <code class=
                   [--conversation-id CONVERSATION_ID] [-m MODEL]
                   [--log-file LOG_FILE] [--endpoints ENDPOINTS] [-p PORT]
                   [-t AUTH_TOKEN] [--cors [CORS [CORS ...]]] [--enable-api]
+                  [--response-timeout RESPONSE_TIMEOUT]
                   [--remote-storage REMOTE_STORAGE]
                   [--ssl-certificate SSL_CERTIFICATE]
                   [--ssl-keyfile SSL_KEYFILE] [--ssl-ca-file SSL_CA_FILE]
@@ -539,7 +540,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --conversation-id CONVERSATION_ID
                         Set the conversation ID. (default:
-                        30cdd2e76ec14735af338b509b320b94)
+                        eb0f075fb7ed489b837a32f19d599532)
   -m MODEL, --model MODEL
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this
@@ -567,6 +568,9 @@ Server Settings:
                         all origins. (default: None)
   --enable-api          Start the web server API in addition to the input
                         channel. (default: False)
+  --response-timeout RESPONSE_TIMEOUT
+                        Maximum time a response can take to process (sec).
+                        (default: 3600)
   --remote-storage REMOTE_STORAGE
                         Set the remote location where your Rasa model is
                         stored, e.g. on AWS. (default: None)
@@ -614,6 +618,7 @@ JWT Authentication:
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa run [-h] [-v] [-vv] [--quiet] [-m MODEL] [--log-file LOG_FILE]
                 [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
                 [--cors [CORS [CORS ...]]] [--enable-api]
+                [--response-timeout RESPONSE_TIMEOUT]
                 [--remote-storage REMOTE_STORAGE]
                 [--ssl-certificate SSL_CERTIFICATE]
                 [--ssl-keyfile SSL_KEYFILE] [--ssl-ca-file SSL_CA_FILE]
@@ -659,6 +664,9 @@ Server Settings:
                         all origins. (default: None)
   --enable-api          Start the web server API in addition to the input
                         channel. (default: False)
+  --response-timeout RESPONSE_TIMEOUT
+                        Maximum time a response can take to process (sec).
+                        (default: 3600)
   --remote-storage REMOTE_STORAGE
                         Set the remote location where your Rasa model is
                         stored, e.g. on AWS. (default: None)
@@ -790,7 +798,7 @@ Python Logging Options:
 Check out more details in <a class="reference internal" href="../evaluating-models/#nlu-evaluation"><span class="std std-ref">Evaluating an NLU Model</span></a> and <a class="reference internal" href="../evaluating-models/#core-evaluation"><span class="std std-ref">Evaluating a Core Model</span></a>.</p>
 <p>The following arguments are available for <code class="docutils literal notranslate"><span class="pre">rasa</span> <span class="pre">test</span></code>:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
-                 [--max-stories MAX_STORIES] [--e2e] [--endpoints ENDPOINTS]
+                 [--max-stories MAX_STORIES] [--endpoints ENDPOINTS]
                  [--fail-on-prediction-errors] [--url URL]
                  [--evaluate-model-directory] [-u NLU] [--out OUT]
                  [--successes] [--no-errors] [--histogram HISTOGRAM]
@@ -822,12 +830,9 @@ Python Logging Options:
 Core Test Arguments:
   -s STORIES, --stories STORIES
                         File or folder containing your test stories. (default:
-                        data)
+                        tests)
   --max-stories MAX_STORIES
                         Maximum number of stories to test on. (default: None)
-  --e2e, --end-to-end   Run an end-to-end evaluation for combined action and
-                        intent prediction. Requires a story file in end-to-end
-                        format. (default: False)
   --endpoints ENDPOINTS
                         Configuration file for the connectors as a yml file.
                         (default: None)
@@ -956,6 +961,7 @@ any other port.</p>
               [--config-endpoint CONFIG_ENDPOINT] [--log-file LOG_FILE]
               [--endpoints ENDPOINTS] [-p PORT] [-t AUTH_TOKEN]
               [--cors [CORS [CORS ...]]] [--enable-api]
+              [--response-timeout RESPONSE_TIMEOUT]
               [--remote-storage REMOTE_STORAGE]
               [--ssl-certificate SSL_CERTIFICATE] [--ssl-keyfile SSL_KEYFILE]
               [--ssl-ca-file SSL_CA_FILE] [--ssl-password SSL_PASSWORD]
@@ -1008,6 +1014,9 @@ Server Settings:
                         all origins. (default: None)
   --enable-api          Start the web server API in addition to the input
                         channel. (default: False)
+  --response-timeout RESPONSE_TIMEOUT
+                        Maximum time a response can take to process (sec).
+                        (default: 3600)
   --remote-storage REMOTE_STORAGE
                         Set the remote location where your Rasa model is
                         stored, e.g. on AWS. (default: None)
