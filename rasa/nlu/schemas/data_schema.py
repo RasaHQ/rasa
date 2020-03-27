@@ -2,9 +2,7 @@ from typing import Dict, Text, Any
 
 
 def entity_dict_schema() -> Dict[Text, Any]:
-    """
-    Returns: schema for defining entities in Markdown format.
-    """
+    """Returns: schema for defining entities in Markdown format."""
     return {
         "type": "object",
         "properties": {
@@ -18,9 +16,7 @@ def entity_dict_schema() -> Dict[Text, Any]:
 
 
 def rasa_nlu_data_schema() -> Dict[Text, Any]:
-    """
-    Returns: schema of the Rasa NLU data format (json format)
-    """
+    """Returns: schema of the Rasa NLU data format (json format)."""
     training_example_schema = {
         "type": "object",
         "properties": {
