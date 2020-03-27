@@ -25,9 +25,11 @@ Markdown Format
 Markdown is the easiest Rasa NLU format for humans to read and write.
 Examples are listed using the unordered list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``.
 Examples are grouped by intent, and entities are annotated as Markdown links,
-e.g. ``[<entity text>](<entity name>)``, or by using the following syntax ``[<entity-text>]{"entity": <entity name>}``.
+e.g. ``[<entity text>](<entity name>)``, or by using the following syntax ``[<entity-text>]{"entity": "<entity name>"}``.
 Using the latter syntax, you can also assign synonyms, roles, or groups to an entity, e.g.
-``[<entity-text>]{"entity": <entity name>, "role": <role name>, "group": <group name>, "value": <entity synonym>}``
+``[<entity-text>]{"entity": "<entity name>", "role": "<role name>", "group": "<group name>", "value": "<entity synonym>"}``.
+The keywords ``role``, ``group``, and ``value`` are optional in this notation.
+
 
 .. code-block:: md
 
@@ -79,10 +81,10 @@ case-insensitive regex patterns that are added to the regex features.
     to use it in the name of your intents.
 
 .. warning::
-    The synonym format ``[savings account](source_account:savings)`` is deprecated. Please use the new format
-    ``[savings account]{"entity": "source_account", "value": "savings"}``. To update your training data file just
-    execute the following command on the terminal of your choice:
-    ``sed -i .deprecated -E 's/\[(.*)\]\((.*):(.*)\)/\[\1\]\{"entity": "\2", "value": "\3"\}/\' nlu.md``
+    The synonym format to specify synonyms ``[savings account](source_account:savings)`` is deprecated. Please use the
+    new format ``[savings account]{"entity": "source_account", "value": "savings"}``. To update your training data
+    file execute the following command on the terminal of your choice:
+    ``sed -i .deprecated -E 's/\[(.+)\]\((.+):(.+)\)/\[\1\]\{"entity": "\2", "value": "\3"\}/\' <nlu training data file>``
 
 JSON Format
 -----------
@@ -120,9 +122,9 @@ one is an array.
  - The *intent* is the intent that should be associated with the text [optional]
  - The *entities* are specific parts of the text which need to be identified [optional]
 
-Entities are specified with a ``start`` and an ``end`` value, which together make a python
-style range to apply to the string, e.g. in the example below, with ``text="show me chinese
-restaurants"``, then ``text[8:15] == 'chinese'``. Entities can span multiple words, and in
+Entities are specified with a ``start`` and an ``end`` value, which together make a range
+to apply to the string, e.g. in the example below, with ``text="show me chinese restaurants"``, then
+``text[8:15] == 'chinese'``. Entities can span multiple words, and in
 fact the ``value`` field does not have to correspond exactly to the substring in your example.
 That way you can map synonyms, or misspellings, to the same ``value``.
 
