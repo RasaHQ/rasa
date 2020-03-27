@@ -289,6 +289,7 @@ class TEDPolicy(Policy):
                 dense_features.append(feats[1])
 
         sparse_features = scipy.sparse.vstack(sparse_features)
+ 
         # dense_features = np.vstack(dense_features).astype(np.float32)
 
         label_data = RasaModelData()
