@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Text, Tuple
+from typing import Any, Dict, List, Text, Tuple, Optional
 
 from rasa.nlu.components import Component
 from rasa.nlu.constants import EXTRACTOR, ENTITIES
@@ -20,6 +20,93 @@ class EntityExtractor(Component):
             entity["processors"] = [self.name]
 
         return entity
+
+    def clean_up_entities(
+        self, entities: List[Dict[Text, Any]], keep: bool = True
+    ) -> List[Dict[Text, Any]]:
+        """
+        Checks if multiple entity labels are assigned to one word.
+
+        This might happen if you are using a tokenizer that splits up words into
+        sub-words and different entity labels are assigned to the individual sub-words.
+        In such a case keep the entity label with the highest confidence as entity
+        label for that word. If you set 'keep' to 'False', all entity labels for
+        that word will be removed.
+
+        Args:
+            entities: list of entities
+            keep:
+                If set to 'True', the entity label with the highest confidence is kept
+                if multiple entity labels are assigned to one word. If set to 'False'
+                all entity labels for that word will be removed.
+
+        Returns: updated list of entities
+        """
+        if len(entities) <= 1:
+            return entities
+
+        entity_indices: List[List[int]] = []
+
+        # get indices of entity labels that belong to one word
+        for idx in range(1, len(entities)):
+            if entities[idx]["start"] == entities[idx - 1]["end"]:
+                if entity_indices and entity_indices[-1][-1] == idx - 1:
+                    entity_indices[-1].append(idx)
+                else:
+                    entity_indices.append([idx - 1, idx])
+
+        entity_indices_to_remove = set()
+
+        for indices in entity_indices:
+            if not keep:
+                entity_indices_to_remove.update(indices)
+                continue
+
+            # get start, end, and value of entity matching the complete word
+            start = entities[indices[0]]["start"]
+            end = entities[indices[-1]]["end"]
+            value = "".join(entities[idx]["value"] for idx in indices)
+            idx = self._get_highest_confidence_idx(entities, indices)
+
+            if idx is None:
+                entity_indices_to_remove.update(indices)
+            else:
+                # We just want to keep the entity with the highest confidence value
+                indices.remove(idx)
+                entity_indices_to_remove.update(indices)
+                # update that entity to cover the complete word
+                entities[idx]["start"] = start
+                entities[idx]["end"] = end
+                entities[idx]["value"] = value
+
+        # sort indices to remove entries at the end of the list first
+        # to avoid index out of range errors
+        for idx in sorted(entity_indices_to_remove, reverse=True):
+            entities.remove(entities[idx])
+
+        return entities
+
+    @staticmethod
+    def _get_highest_confidence_idx(
+        entities: List[Dict[Text, Any]], indices: List[int]
+    ) -> Optional[int]:
+        """
+        Args:
+            entities: the full list of entities
+            indices: the indices to consider
+
+        Returns: the idx of the entity label with the highest confidence.
+        """
+        confidences = [
+            entities[idx]["confidence"]
+            for idx in indices
+            if "confidence" in entities[idx]
+        ]
+
+        if len(confidences) != len(indices):
+            return None
+
+        return confidences.index(max(confidences))
 
     @staticmethod
     def filter_irrelevant_entities(extracted: list, requested_dimensions: set) -> list:
