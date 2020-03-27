@@ -745,8 +745,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return entities
 
+    @staticmethod
     def _convert_tags_to_entities(
-        self, text: Text, tokens: List[Token], tags: List[Text]
+        text: Text, tokens: List[Token], tags: List[Text]
     ) -> List[Dict[Text, Any]]:
         entities = []
         last_tag = NO_ENTITY_TAG
