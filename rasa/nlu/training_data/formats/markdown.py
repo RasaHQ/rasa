@@ -13,6 +13,22 @@ from rasa.nlu.training_data.formats.readerwriter import (
 )
 from rasa.nlu.utils import build_entity
 from rasa.utils.common import raise_warning
+import rasa.nlu.schemas.data_schema as schema
+import rasa.utils.validation as validation_utils
+
+ENTITY_GROUP = "group"
+
+ENTITY_ROLE = "role"
+
+ENTITY_VALUE = "value"
+
+GROUP_ENTITY_VALUE = "value"
+
+GROUP_ENTITY_TYPE = "entity"
+
+GROUP_ENTITY_DICT = "entity_dict"
+
+GROUP_ENTITY_TEXT = "entity_text"
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
@@ -36,7 +52,9 @@ ESCAPE_DCT = {"\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
 ESCAPE = re.compile(r"[\b\f\n\r\t]")
 
 
-class EntityValues(NamedTuple):
+class EntityAttributes(NamedTuple):
+    """Attributes of an entity defined in the markdown data."""
+
     type: Text
     value: Text
     text: Text
@@ -88,9 +106,9 @@ class MarkdownReader(TrainingDataReader):
             raise_warning(
                 "You are using the deprecated training data format to declare synonyms."
                 " Please use the following format: \n"
-                "[<entity-text>]{'entity': <entity-type>, 'value': <entity-synonym>}."
+                "[<entity-text>]{'entity': '<entity-type>', 'value': '<entity-synonym>'}."
                 "\nYou can use the following command to update your training data file:"
-                "\nsed -i .deprecated -E 's/\\[(.*)\\]\\((.*):(.*)\\)/\\[\\1\\]\\{"
+                "\nsed -i .deprecated -E 's/\\[(.+)\\]\\((.+):(.+)\\)/\\[\\1\\]\\{"
                 '"entity": "\\2", "value": "\\3"\\}/\' nlu.md',
                 category=FutureWarning,
                 docs=DOCS_URL_TRAINING_DATA_NLU,
@@ -158,21 +176,8 @@ class MarkdownReader(TrainingDataReader):
             elements.append(item)
 
     @staticmethod
-    def _entity_dict_schema() -> Dict[Text, Any]:
-        return {
-            "type": "object",
-            "properties": {
-                "entity": {"type": "string"},
-                "role": {"type": "string"},
-                "group": {"type": "string"},
-                "value": {"type": "string"},
-            },
-            "required": ["entity"],
-        }
-
-    def _validate_entity_dict(self, json_str: Text) -> Dict[Text, Text]:
-        """
-        Validates the entity dict data.
+    def _get_validated_dict(json_str: Text) -> Dict[Text, Text]:
+        """Validates the entity dict data.
 
         Users can specify entity roles, synonyms, groups for an entity in a dict, e.g.
         [LA]{"entity": "city", "role": "to", "value": "Los Angeles"}
@@ -182,28 +187,17 @@ class MarkdownReader(TrainingDataReader):
 
         Returns: a proper python dict
         """
-        from jsonschema import validate
-        from jsonschema import ValidationError
         import json
 
         # add {} as they are not part of the regex
         data = json.loads(f"{{{json_str}}}")
 
-        try:
-            validate(data, self._entity_dict_schema())
-        except ValidationError as e:
-            e.message += (
-                f". Invalid entity format is used in the training data. "
-                f"For more information about the format visit "
-                f"{DOCS_URL_TRAINING_DATA_NLU}."
-            )
-            raise e
+        validation_utils.validate_training_data(data, schema.entity_dict_schema())
 
         return data
 
     def _find_entities_in_training_example(self, example: Text) -> List[Dict]:
-        """
-        Extracts entities from a markdown intent example.
+        """Extracts entities from a markdown intent example.
 
         Args:
             example: markdown intent example
@@ -214,50 +208,56 @@ class MarkdownReader(TrainingDataReader):
         offset = 0
 
         for match in re.finditer(entity_regex, example):
-            entity_values = self._extract_entity_values(match)
+            entity_attributes = self._extract_entity_attributes(match)
 
             start_index = match.start() - offset
-            end_index = start_index + len(entity_values.text)
-            offset += len(match.group(0)) - len(entity_values.text)
+            end_index = start_index + len(entity_attributes.text)
+            offset += len(match.group(0)) - len(entity_attributes.text)
 
             entity = build_entity(
                 start_index,
                 end_index,
-                entity_values.value,
-                entity_values.type,
-                entity_values.role,
-                entity_values.group,
+                entity_attributes.value,
+                entity_attributes.type,
+                entity_attributes.role,
+                entity_attributes.group,
             )
             entities.append(entity)
 
         return entities
 
-    def _extract_entity_values(self, match: Match) -> EntityValues:
-        """Extract the entity values, i.e. type, value, etc, from the regex match."""
-        entity_text = match.groupdict()["entity_text"]
+    def _extract_entity_attributes(self, match: Match) -> EntityAttributes:
+        """Extract the entity attributes, i.e. type, value, etc, from the regex match."""
+        entity_text = match.groupdict()[GROUP_ENTITY_TEXT]
 
-        if match.groupdict()["entity_dict"]:
-            entity_dict_str = match.groupdict()["entity_dict"]
-            entity_dict = self._validate_entity_dict(entity_dict_str)
+        if match.groupdict()[GROUP_ENTITY_DICT]:
+            entity_dict_str = match.groupdict()[GROUP_ENTITY_DICT]
+            entity_dict = self._get_validated_dict(entity_dict_str)
 
             entity_type = entity_dict["entity"]
             entity_value = (
-                entity_dict["value"] if "value" in entity_dict else entity_text
+                entity_dict[ENTITY_VALUE]
+                if ENTITY_VALUE in entity_dict
+                else entity_text
             )
-            entity_role = entity_dict["role"] if "role" in entity_dict else None
-            entity_group = entity_dict["group"] if "group" in entity_dict else None
+            entity_role = (
+                entity_dict[ENTITY_ROLE] if ENTITY_ROLE in entity_dict else None
+            )
+            entity_group = (
+                entity_dict[ENTITY_GROUP] if ENTITY_GROUP in entity_dict else None
+            )
         else:
-            entity_type = match.groupdict()["entity"]
+            entity_type = match.groupdict()[GROUP_ENTITY_TYPE]
             entity_role = None
             entity_group = None
 
-            if match.groupdict()["value"]:
-                entity_value = match.groupdict()["value"]
+            if match.groupdict()[GROUP_ENTITY_VALUE]:
+                entity_value = match.groupdict()[GROUP_ENTITY_VALUE]
                 self.use_deprecated_synonym_format = True
             else:
                 entity_value = entity_text
 
-        return EntityValues(
+        return EntityAttributes(
             entity_type, entity_value, entity_text, entity_group, entity_role
         )
 

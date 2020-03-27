@@ -1,6 +1,5 @@
 import pytest
 import tempfile
-from jsonschema import ValidationError
 
 from rasa.nlu.constants import TEXT
 from rasa.nlu import training_data
@@ -8,43 +7,9 @@ from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.training_data.formats.rasa import validate_rasa_nlu_data
 from rasa.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.nlu.training_data.util import get_file_format
 import rasa.utils.io as io_utils
-
-
-def test_example_training_data_is_valid():
-    demo_json = "data/examples/rasa/demo-rasa.json"
-    data = io_utils.read_json_file(demo_json)
-    validate_rasa_nlu_data(data)
-
-
-@pytest.mark.parametrize(
-    "invalid_data",
-    [
-        {"wrong_top_level": []},
-        ["this is not a toplevel dict"],
-        {
-            "rasa_nlu_data": {
-                "common_examples": [{"intent": "some example without text"}]
-            }
-        },
-        {
-            "rasa_nlu_data": {
-                "common_examples": [
-                    {
-                        "text": "mytext",
-                        "entities": [{"start": "INVALID", "end": 0, "entity": "x"}],
-                    }
-                ]
-            }
-        },
-    ],
-)
-def test_validation_is_throwing_exceptions(invalid_data):
-    with pytest.raises(ValidationError):
-        validate_rasa_nlu_data(invalid_data)
 
 
 def test_luis_data():
@@ -479,42 +444,6 @@ def test_training_data_conversion(
     # to dump to the file and diff using git
     # with io.open(gold_standard_file) as f:
     #     f.write(td.as_json(indent=2))
-
-
-def test_url_data_format():
-    data = """
-    {
-      "rasa_nlu_data": {
-        "entity_synonyms": [
-          {
-            "value": "nyc",
-            "synonyms": ["New York City", "nyc", "the big apple"]
-          }
-        ],
-        "common_examples" : [
-          {
-            "text": "show me flights to New York City",
-            "intent": "unk",
-            "entities": [
-              {
-                "entity": "destination",
-                "start": 19,
-                "end": 32,
-                "value": "NYC"
-              }
-            ]
-          }
-        ]
-      }
-    }"""
-    fname = io_utils.create_temporary_file(
-        data.encode(io_utils.DEFAULT_ENCODING),
-        suffix="_tmp_training_data.json",
-        mode="w+b",
-    )
-    data = io_utils.read_json_file(fname)
-    assert data is not None
-    validate_rasa_nlu_data(data)
 
 
 def test_get_file_format():
