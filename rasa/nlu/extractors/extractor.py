@@ -100,6 +100,8 @@ class EntityExtractor(Component):
             of the final entity in the text and entity indices that are part of this
             misalignment
         """
+        if not tokens:
+            return []
 
         # group tokens: one token cluster corresponds to one word
         token_clusters = self._token_clusters(tokens)
