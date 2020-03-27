@@ -1,1 +1,0 @@
-Set default value for ``weight_sparsity`` in ``ResponseSelector`` to ``0``.

@@ -17,6 +17,14 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.9.3] - 2020-03-27
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5505 <https://github.com/rasahq/rasa/issues/5505>`_: Set default value for ``weight_sparsity`` in ``ResponseSelector`` to ``0``.
+
+
 [1.9.2] - 2020-03-26
 ^^^^^^^^^^^^^^^^^^^^
 
