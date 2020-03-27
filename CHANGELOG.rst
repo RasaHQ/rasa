@@ -17,6 +17,21 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.8.3] - 2020-03-27
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5405 <https://github.com/rasahq/rasa/issues/5405>`_: Fixes issue where model always gets retrained if multiple NLU/story files are in a 
+  directory, by sorting the list of files.
+- `#5444 <https://github.com/rasahq/rasa/issues/5444>`_: Fixed ambiguous logging in `DIETClassifier` by adding the name of the calling class to the log message.
+- `#5506 <https://github.com/rasahq/rasa/issues/5506>`_: Set default value for ``weight_sparsity`` in ``ResponseSelector`` to ``0``.
+
+Improved Documentation
+----------------------
+- `#5302 <https://github.com/rasahq/rasa/issues/5302>`_: Improved documentation on how to build and deploy an action server image for use on other servers such as Rasa X deployments.
+
+
 [1.8.2] - 2020-03-19
 ^^^^^^^^^^^^^^^^^^^^
 
