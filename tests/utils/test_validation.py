@@ -113,6 +113,7 @@ def test_url_data_format():
         {"group": "a", "role": "c", "value": "text"},
         ["this is not a toplevel dict"],
         {"entity": 1, "role": "c", "value": "text"},
+        {"entity": "e", "role": None, "value": "text"},
     ],
 )
 def test_validate_entity_dict_is_throwing_exceptions(invalid_data):

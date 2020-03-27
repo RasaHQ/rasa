@@ -1,4 +1,4 @@
-from typing import Optional, Text, Dict, Any
+from typing import Optional, Text, Dict, Any, List
 
 import pytest
 
@@ -11,48 +11,112 @@ from rasa.nlu.training_data.formats import RasaReader
 from rasa.nlu.training_data.formats import MarkdownReader, MarkdownWriter
 
 
-def test_markdown_entity_regex():
+@pytest.mark.parametrize(
+    "example, expected_entities, expected_text",
+    [
+        ("i'm looking for a place to eat", None, "i'm looking for a place to eat"),
+        (
+            "i'm looking for a place in the [north](loc-direction) of town",
+            [{"start": 31, "end": 36, "value": "north", "entity": "loc-direction"}],
+            "i'm looking for a place in the north of town",
+        ),
+        (
+            "show me [chines](cuisine:chinese) restaurants",
+            [{"start": 8, "end": 14, "value": "chinese", "entity": "cuisine"}],
+            "show me chines restaurants",
+        ),
+        (
+            'show me [italian]{"entity": "cuisine", "value": "22_ab-34*3.A:43er*+?df"} '
+            "restaurants",
+            [
+                {
+                    "start": 8,
+                    "end": 15,
+                    "value": "22_ab-34*3.A:43er*+?df",
+                    "entity": "cuisine",
+                }
+            ],
+            "show me italian restaurants",
+        ),
+        ("Do you know {ABC} club?", None, "Do you know {ABC} club?"),
+        (
+            "show me [chines](22_ab-34*3.A:43er*+?df) restaurants",
+            [{"start": 8, "end": 14, "value": "43er*+?df", "entity": "22_ab-34*3.A"}],
+            "show me chines restaurants",
+        ),
+        (
+            'I want to fly from [Berlin]{"entity": "city", "role": "to"} to [LA]{'
+            '"entity": "city", "role": "from", "value": "Los Angeles"}',
+            [
+                {
+                    "start": 19,
+                    "end": 25,
+                    "value": "Berlin",
+                    "entity": "city",
+                    "role": "to",
+                },
+                {
+                    "start": 29,
+                    "end": 31,
+                    "value": "Los Angeles",
+                    "entity": "city",
+                    "role": "from",
+                },
+            ],
+            "I want to fly from Berlin to LA",
+        ),
+        (
+            'I want to fly from [Berlin](city) to [LA]{"entity": "city", "role": '
+            '"from", "value": "Los Angeles"}',
+            [
+                {"start": 19, "end": 25, "value": "Berlin", "entity": "city"},
+                {
+                    "start": 29,
+                    "end": 31,
+                    "value": "Los Angeles",
+                    "entity": "city",
+                    "role": "from",
+                },
+            ],
+            "I want to fly from Berlin to LA",
+        ),
+    ],
+)
+def test_markdown_entity_regex(
+    example: Text,
+    expected_entities: Optional[List[Dict[Text, Any]]],
+    expected_text: Text,
+):
     r = MarkdownReader()
 
-    md = """
-## intent:restaurant_search
-- i'm looking for a place to eat
-- i'm looking for a place in the [north](loc-direction) of town
-- show me [chines](cuisine:chinese) restaurants
-- show me [chines](22_ab-34*3.A:43er*+?df) restaurants
+    md = f"""
+## intent:test-intent
+- {example}
     """
 
     result = r.reads(md)
 
-    assert len(result.training_examples) == 4
-    first = result.training_examples[0]
-    assert first.data == {"intent": "restaurant_search"}
-    assert first.text == "i'm looking for a place to eat"
+    assert len(result.training_examples) == 1
+    actual_example = result.training_examples[0]
+    assert actual_example.data["intent"] == "test-intent"
+    assert actual_example.data.get("entities") == expected_entities
+    assert actual_example.text == expected_text
 
-    second = result.training_examples[1]
-    assert second.data == {
-        "intent": "restaurant_search",
-        "entities": [
-            {"start": 31, "end": 36, "value": "north", "entity": "loc-direction"}
-        ],
-    }
-    assert second.text == "i'm looking for a place in the north of town"
 
-    third = result.training_examples[2]
-    assert third.data == {
-        "intent": "restaurant_search",
-        "entities": [{"start": 8, "end": 14, "value": "chinese", "entity": "cuisine"}],
-    }
-    assert third.text == "show me chines restaurants"
+def test_deprecation_warning_logged():
+    r = MarkdownReader()
 
-    fourth = result.training_examples[3]
-    assert fourth.data == {
-        "intent": "restaurant_search",
-        "entities": [
-            {"start": 8, "end": 14, "value": "43er*+?df", "entity": "22_ab-34*3.A"}
-        ],
-    }
-    assert fourth.text == "show me chines restaurants"
+    md = f"""
+## intent:test-intent
+- I want to go to [LA](city:Los Angeles)
+    """
+
+    with pytest.warns(
+        FutureWarning,
+        match=r"You are using the deprecated training data format to declare "
+        r"synonyms.*",
+    ):
+        r.reads(md)
 
 
 def test_markdown_empty_section():
@@ -76,66 +140,6 @@ def test_section_value_with_delimiter():
         "data/test/markdown_single_sections/section_with_delimiter.md"
     )
     assert td_section_with_delimiter.entity_synonyms == {"10:00 am": "10:00"}
-
-
-def test_read_complex_entity_format():
-    r = MarkdownReader()
-
-    md = """## intent:test
-- I want to fly from [Berlin]{"entity": "city", "role": "to"} to [LA]{"entity": "city", "role": "from", "value": "Los Angeles"}
-"""
-
-    training_data = r.reads(md)
-
-    assert "city" in training_data.entities
-    assert training_data.entity_synonyms.get("LA") == "Los Angeles"
-
-    entities = training_data.training_examples[0].data["entities"]
-
-    assert len(entities) == 2
-    assert entities[0]["role"] == "to"
-    assert entities[0]["value"] == "Berlin"
-    assert entities[1]["role"] == "from"
-    assert entities[1]["value"] == "Los Angeles"
-
-
-def test_read_simple_entity_format():
-    r = MarkdownReader()
-
-    md = """## intent:test
-- I want to fly from [Berlin](city) to [LA](city)
-"""
-
-    training_data = r.reads(md)
-
-    assert "city" in training_data.entities
-    assert training_data.entity_synonyms.get("LA") is None
-
-    entities = training_data.training_examples[0].data["entities"]
-
-    assert len(entities) == 2
-    assert entities[0]["value"] == "Berlin"
-    assert entities[1]["value"] == "LA"
-
-
-def test_read_mixed_entity_format():
-    r = MarkdownReader()
-
-    md = """## intent:test
-- I want to fly from [Berlin](city) to [LA]{"entity": "city", "role": "from", "value": "Los Angeles"}
-"""
-    training_data = r.reads(md)
-
-    assert "city" in training_data.entities
-    assert training_data.entity_synonyms.get("LA") == "Los Angeles"
-
-    entities = training_data.training_examples[0].data["entities"]
-
-    assert len(entities) == 2
-    assert "role" not in entities[0]
-    assert entities[0]["value"] == "Berlin"
-    assert entities[1]["role"] == "from"
-    assert entities[1]["value"] == "Los Angeles"
 
 
 def test_markdown_order():
