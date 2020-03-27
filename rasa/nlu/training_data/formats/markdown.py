@@ -443,29 +443,30 @@ class MarkdownWriter(TrainingDataWriter):
     def generate_entity_md(text: Text, entity: Dict[Text, Any]) -> Text:
         """Generates markdown for an entity object."""
 
-        entity_text = text[entity["start"] : entity["end"]]
-        entity_type = entity["entity"]
-        entity_synonym = (
-            entity["value"]
-            if "value" in entity and entity["value"] != entity_text
-            else None
-        )
-        entity_role = entity["role"] if "role" in entity else None
-        entity_group = entity["group"] if "group" in entity else None
+        entity_text = text[
+            entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]
+        ]
+        entity_type = entity.get(ENTITY_ATTRIBUTE_TYPE)
+        entity_value = entity.get(ENTITY_ATTRIBUTE_VALUE)
+        entity_role = entity.get(ENTITY_ATTRIBUTE_ROLE)
+        entity_group = entity.get(ENTITY_ATTRIBUTE_GROUP)
+
+        if entity_value and entity_value == entity_text:
+            entity_value = None
 
         use_short_syntax = (
-            entity_synonym is None and entity_role is None and entity_group is None
+            entity_value is None and entity_role is None and entity_group is None
         )
 
         if use_short_syntax:
             return f"[{entity_text}]({entity_type})"
 
-        entity_dict_str = f'"entity": "{entity_type}"'
+        entity_dict_str = f'"{ENTITY_ATTRIBUTE_TYPE}": "{entity_type}"'
         if entity_role is not None:
-            entity_dict_str += f', "role": "{entity_role}"'
+            entity_dict_str += f', "{ENTITY_ATTRIBUTE_ROLE}": "{entity_role}"'
         if entity_group is not None:
-            entity_dict_str += f', "group": "{entity_group}"'
-        if entity_synonym is not None:
-            entity_dict_str += f', "value": "{entity_synonym}"'
+            entity_dict_str += f', "{ENTITY_ATTRIBUTE_GROUP}": "{entity_group}"'
+        if entity_value is not None:
+            entity_dict_str += f', "{ENTITY_ATTRIBUTE_VALUE}": "{entity_value}"'
 
         return f"[{entity_text}]{{{entity_dict_str}}}"
