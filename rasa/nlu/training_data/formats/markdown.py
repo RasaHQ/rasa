@@ -214,9 +214,7 @@ class MarkdownReader(TrainingDataReader):
 
             start_index = match.start() - offset
             end_index = start_index + len(entity_attributes.text)
-            offset += len(match.group(GROUP_COMPLETE_MATCH)) - len(
-                entity_attributes.text
-            )
+            offset += match.end() - end_index
 
             entity = build_entity(
                 start_index,
