@@ -5,6 +5,15 @@ from rasa.nlu.constants import EXTRACTOR, ENTITIES
 from rasa.nlu.training_data import Message
 
 
+ENTITY_ATTRIBUTE_TYPE = "entity"
+ENTITY_ATTRIBUTE_GROUP = "group"
+ENTITY_ATTRIBUTE_ROLE = "role"
+ENTITY_ATTRIBUTE_VALUE = "value"
+ENTITY_ATTRIBUTE_TEXT = "text"
+ENTITY_ATTRIBUTE_START = "start"
+ENTITY_ATTRIBUTE_END = "end"
+
+
 class EntityExtractor(Component):
     def add_extractor_name(
         self, entities: List[Dict[Text, Any]]

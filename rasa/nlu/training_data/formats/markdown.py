@@ -13,22 +13,22 @@ from rasa.nlu.training_data.formats.readerwriter import (
 )
 from rasa.nlu.utils import build_entity
 from rasa.utils.common import raise_warning
+from rasa.nlu.extractors.extractor import (
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_START,
+)
 import rasa.nlu.schemas.data_schema as schema
 import rasa.utils.validation as validation_utils
 
-ENTITY_GROUP = "group"
-
-ENTITY_ROLE = "role"
-
-ENTITY_VALUE = "value"
-
 GROUP_ENTITY_VALUE = "value"
-
 GROUP_ENTITY_TYPE = "entity"
-
 GROUP_ENTITY_DICT = "entity_dict"
-
 GROUP_ENTITY_TEXT = "entity_text"
+GROUP_COMPLETE_MATCH = 0
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
@@ -66,7 +66,7 @@ def encode_string(s: Text) -> Text:
     """Return a encoded python string."""
 
     def replace(match):
-        return ESCAPE_DCT[match.group(0)]
+        return ESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
 
     return ESCAPE.sub(replace, s)
 
@@ -106,7 +106,8 @@ class MarkdownReader(TrainingDataReader):
             raise_warning(
                 "You are using the deprecated training data format to declare synonyms."
                 " Please use the following format: \n"
-                "[<entity-text>]{'entity': '<entity-type>', 'value': '<entity-synonym>'}."
+                "[<entity-text>]{'entity': '<entity-type>', 'value': "
+                "'<entity-synonym>'}."
                 "\nYou can use the following command to update your training data file:"
                 "\nsed -i .deprecated -E 's/\\[(.+)\\]\\((.+):(.+)\\)/\\[\\1\\]\\{"
                 '"entity": "\\2", "value": "\\3"\\}/\' nlu.md',
@@ -177,7 +178,8 @@ class MarkdownReader(TrainingDataReader):
 
     @staticmethod
     def _get_validated_dict(json_str: Text) -> Dict[Text, Text]:
-        """Validates the entity dict data.
+        """Converts the provided json_str to a valid dict containing the entity
+        attributes.
 
         Users can specify entity roles, synonyms, groups for an entity in a dict, e.g.
         [LA]{"entity": "city", "role": "to", "value": "Los Angeles"}
@@ -212,7 +214,9 @@ class MarkdownReader(TrainingDataReader):
 
             start_index = match.start() - offset
             end_index = start_index + len(entity_attributes.text)
-            offset += len(match.group(0)) - len(entity_attributes.text)
+            offset += len(match.group(GROUP_COMPLETE_MATCH)) - len(
+                entity_attributes.text
+            )
 
             entity = build_entity(
                 start_index,
@@ -227,34 +231,35 @@ class MarkdownReader(TrainingDataReader):
         return entities
 
     def _extract_entity_attributes(self, match: Match) -> EntityAttributes:
-        """Extract the entity attributes, i.e. type, value, etc, from the regex match."""
+        """Extract the entity attributes, i.e. type, value, etc., from the
+        regex match."""
         entity_text = match.groupdict()[GROUP_ENTITY_TEXT]
 
         if match.groupdict()[GROUP_ENTITY_DICT]:
-            entity_dict_str = match.groupdict()[GROUP_ENTITY_DICT]
-            entity_dict = self._get_validated_dict(entity_dict_str)
+            return self._extract_entity_attributes_from_dict(entity_text, match)
 
-            entity_type = entity_dict["entity"]
-            entity_value = (
-                entity_dict[ENTITY_VALUE]
-                if ENTITY_VALUE in entity_dict
-                else entity_text
-            )
-            entity_role = entity_dict.get(ENTITY_ROLE)
-            entity_group = entity_dict.get(ENTITY_GROUP)
+        entity_type = match.groupdict()[GROUP_ENTITY_TYPE]
+
+        if match.groupdict()[GROUP_ENTITY_VALUE]:
+            entity_value = match.groupdict()[GROUP_ENTITY_VALUE]
+            self._deprecated_synonym_format_was_used = True
         else:
-            entity_type = match.groupdict()[GROUP_ENTITY_TYPE]
-            entity_role = None
-            entity_group = None
+            entity_value = entity_text
 
-            if match.groupdict()[GROUP_ENTITY_VALUE]:
-                entity_value = match.groupdict()[GROUP_ENTITY_VALUE]
-                self._deprecated_synonym_format_was_used = True
-            else:
-                entity_value = entity_text
+        return EntityAttributes(entity_type, entity_value, entity_text, None, None)
 
+    def _extract_entity_attributes_from_dict(
+        self, entity_text: Text, match: Match
+    ) -> EntityAttributes:
+        """Extract the entity attributes from the dict format."""
+        entity_dict_str = match.groupdict()[GROUP_ENTITY_DICT]
+        entity_dict = self._get_validated_dict(entity_dict_str)
         return EntityAttributes(
-            entity_type, entity_value, entity_text, entity_group, entity_role
+            entity_dict.get(ENTITY_ATTRIBUTE_TYPE),
+            entity_dict.get(ENTITY_ATTRIBUTE_VALUE, entity_text),
+            entity_text,
+            entity_dict.get(ENTITY_ATTRIBUTE_GROUP),
+            entity_dict.get(ENTITY_ATTRIBUTE_ROLE),
         )
 
     def _add_synonym(self, text: Text, value: Text) -> None:
@@ -266,9 +271,9 @@ class MarkdownReader(TrainingDataReader):
     def _add_synonyms(self, plain_text: Text, entities: List[Dict]) -> None:
         """Adds synonyms found in intent examples"""
         for e in entities:
-            e_text = plain_text[e["start"] : e["end"]]
-            if e_text != e["value"]:
-                self._add_synonym(e_text, e["value"])
+            e_text = plain_text[e[ENTITY_ATTRIBUTE_START] : e[ENTITY_ATTRIBUTE_END]]
+            if e_text != e[ENTITY_ATTRIBUTE_VALUE]:
+                self._add_synonym(e_text, e[ENTITY_ATTRIBUTE_VALUE])
 
     def parse_training_example(self, example: Text) -> "Message":
         """Extract entities and synonyms, and convert to plain text."""
@@ -276,7 +281,7 @@ class MarkdownReader(TrainingDataReader):
 
         entities = self._find_entities_in_training_example(example)
         plain_text = re.sub(
-            entity_regex, lambda m: m.groupdict()["entity_text"], example
+            entity_regex, lambda m: m.groupdict()[GROUP_ENTITY_TEXT], example
         )
         self._add_synonyms(plain_text, entities)
 
@@ -437,7 +442,7 @@ class MarkdownWriter(TrainingDataWriter):
         return md
 
     @staticmethod
-    def generate_entity_md(text: Text, entity: Dict) -> Text:
+    def generate_entity_md(text: Text, entity: Dict[Text, Any]) -> Text:
         """Generates markdown for an entity object."""
 
         entity_text = text[entity["start"] : entity["end"]]
@@ -450,7 +455,11 @@ class MarkdownWriter(TrainingDataWriter):
         entity_role = entity["role"] if "role" in entity else None
         entity_group = entity["group"] if "group" in entity else None
 
-        if entity_synonym is None and entity_role is None and entity_group is None:
+        use_short_syntax = (
+            entity_synonym is None and entity_role is None and entity_group is None
+        )
+
+        if use_short_syntax:
             return f"[{entity_text}]({entity_type})"
 
         entity_dict_str = f'"entity": "{entity_type}"'
