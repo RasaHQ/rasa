@@ -1,1 +1,0 @@
-Fixed bug where starting or ending a response with ``\n\n`` led to one of the responses returned being empty.

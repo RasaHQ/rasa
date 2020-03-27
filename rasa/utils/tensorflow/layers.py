@@ -307,6 +307,7 @@ class Embed(tf.keras.layers.Layer):
             name=f"embed_layer_{layer_name_suffix}",
         )
 
+    # noinspection PyMethodOverriding
     def call(self, x: tf.Tensor) -> tf.Tensor:
         x = self._dense(x)
         if self.similarity_type == COSINE:
@@ -342,6 +343,7 @@ class InputMask(tf.keras.layers.Layer):
         )
         self.built = True
 
+    # noinspection PyMethodOverriding
     def call(
         self,
         x: tf.Tensor,
@@ -404,6 +406,25 @@ class InputMask(tf.keras.layers.Layer):
         )
 
 
+def _scale_loss(log_likelihood: tf.Tensor) -> tf.Tensor:
+    """Creates scaling loss coefficient depending on the prediction probability.
+
+    Arguments:
+        log_likelihood: a tensor, log-likelihood of prediction
+
+    Returns:
+        Scaling tensor.
+    """
+
+    p = tf.math.exp(log_likelihood)
+    # only scale loss if some examples are already learned
+    return tf.cond(
+        tf.reduce_max(p) > 0.5,
+        lambda: tf.stop_gradient(tf.pow((1 - p) / 0.5, 4)),
+        lambda: tf.ones_like(p),
+    )
+
+
 class CRF(tf.keras.layers.Layer):
     """CRF layer.
 
@@ -414,10 +435,15 @@ class CRF(tf.keras.layers.Layer):
     """
 
     def __init__(
-        self, num_tags: int, reg_lambda: float, name: Optional[Text] = None
+        self,
+        num_tags: int,
+        reg_lambda: float,
+        scale_loss: bool,
+        name: Optional[Text] = None,
     ) -> None:
         super().__init__(name=name)
         self.num_tags = num_tags
+        self.scale_loss = scale_loss
         self.transition_regularizer = tf.keras.regularizers.l2(reg_lambda)
 
     def build(self, input_shape: tf.TensorShape) -> None:
@@ -429,6 +455,7 @@ class CRF(tf.keras.layers.Layer):
         )
         self.built = True
 
+    # noinspection PyMethodOverriding
     def call(self, logits: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
         """Decodes the highest scoring sequence of tags.
 
@@ -467,10 +494,15 @@ class CRF(tf.keras.layers.Layer):
             Negative mean log-likelihood of all examples,
             given the sequence of tag indices.
         """
+
         log_likelihood, _ = tfa.text.crf.crf_log_likelihood(
             logits, tag_indices, sequence_lengths, self.transition_params
         )
-        return tf.reduce_mean(-log_likelihood)
+        loss = -log_likelihood
+        if self.scale_loss:
+            loss *= _scale_loss(log_likelihood)
+
+        return tf.reduce_mean(loss)
 
 
 class DotProductLoss(tf.keras.layers.Layer):
@@ -794,25 +826,22 @@ class DotProductLoss(tf.keras.layers.Layer):
             labels=label_ids, logits=logits
         )
 
-        if mask is None:
-            mask = 1.0
-
         if self.scale_loss:
-            # mask loss by prediction confidence
-            pos_pred = tf.stop_gradient(tf.nn.softmax(logits)[..., 0])
-            # the scaling parameters are found empirically
-            scale_mask = mask * tf.pow(tf.minimum(0.5, 1 - pos_pred) / 0.5, 4)
-            # scale loss
-            loss *= scale_mask
+            # in case of cross entropy log_likelihood = -loss
+            loss *= _scale_loss(-loss)
+
+        if mask is not None:
+            loss *= mask
 
         if len(loss.shape) == 2:
             # average over the sequence
-            loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
+            if mask is not None:
+                loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
+            else:
+                loss = tf.reduce_mean(loss, axis=-1)
 
-        # average the loss over all examples
-        loss = tf.reduce_mean(loss)
-
-        return loss
+        # average the loss over the batch
+        return tf.reduce_mean(loss)
 
     @property
     def _chosen_loss(self) -> Callable:
@@ -828,6 +857,7 @@ class DotProductLoss(tf.keras.layers.Layer):
                 f"should be '{MARGIN}' or '{SOFTMAX}'"
             )
 
+    # noinspection PyMethodOverriding
     def call(
         self,
         inputs_embed: tf.Tensor,

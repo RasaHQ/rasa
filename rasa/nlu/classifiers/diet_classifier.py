@@ -19,6 +19,7 @@ from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
+from rasa.utils.common import raise_warning
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
 from rasa.utils.tensorflow.models import RasaModel
@@ -277,7 +278,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Declare instance variables with default values."""
 
         if component_config is not None and EPOCHS not in component_config:
-            logger.warning(
+            raise_warning(
                 f"Please configure the number of '{EPOCHS}' in your configuration file."
                 f" We will change the default value of '{EPOCHS}' in the future to 1. "
             )
@@ -328,11 +329,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self.component_config[BILOU_FLAG]:
             return bilou_utils.build_tag_id_dict(training_data)
 
-        distinct_tag_ids = set(
+        distinct_tag_ids = {
             e["entity"]
             for example in training_data.entity_examples
             for e in example.get(ENTITIES)
-        ) - {None}
+        } - {None}
 
         tag_id_dict = {
             tag_id: idx for idx, tag_id in enumerate(sorted(distinct_tag_ids), 1)
@@ -661,7 +662,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 "There is no trained model: component is either not trained or "
                 "didn't receive enough training data."
             )
-            return
+            return None
 
         # create session data from message and convert it into a batch of 1
         model_data = self._create_model_data([message])
@@ -743,9 +744,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return entities
 
-    @staticmethod
     def _convert_tags_to_entities(
-        text: Text, tokens: List[Token], tags: List[Text]
+        self, text: Text, tokens: List[Token], tags: List[Text]
     ) -> List[Dict[Text, Any]]:
         entities = []
         last_tag = NO_ENTITY_TAG
@@ -773,7 +773,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         for entity in entities:
             entity["value"] = text[entity["start"] : entity["end"]]
 
-        return entities
+        return self.clean_up_entities(entities)
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""
@@ -1096,7 +1096,7 @@ class DIET(RasaModel):
             self.config[SIMILARITY_TYPE],
         )
 
-    def _prepare_dot_product_loss(self, name: Text) -> None:
+    def _prepare_dot_product_loss(self, name: Text, scale_loss: bool) -> None:
         self._tf_layers[f"loss.{name}"] = layers.DotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
@@ -1104,7 +1104,7 @@ class DIET(RasaModel):
             self.config[MAX_NEG_SIM],
             self.config[USE_MAX_NEG_SIM],
             self.config[NEGATIVE_MARGIN_SCALE],
-            self.config[SCALE_LOSS],
+            scale_loss,
             # set to 1 to get deterministic behaviour
             parallel_iterations=1 if self.random_seed is not None else 1000,
         )
@@ -1138,20 +1138,24 @@ class DIET(RasaModel):
         self._prepare_embed_layers(f"{name}_lm_mask")
         self._prepare_embed_layers(f"{name}_golden_token")
 
-        self._prepare_dot_product_loss(f"{name}_mask")
+        # mask loss is additional loss
+        # set scaling to False, so that it doesn't overpower other losses
+        self._prepare_dot_product_loss(f"{name}_mask", scale_loss=False)
 
     def _prepare_label_classification_layers(self) -> None:
         self._prepare_embed_layers(TEXT)
         self._prepare_embed_layers(LABEL)
 
-        self._prepare_dot_product_loss(LABEL)
+        self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
 
     def _prepare_entity_recognition_layers(self) -> None:
         self._tf_layers["embed.logits"] = layers.Embed(
             self._num_tags, self.config[REGULARIZATION_CONSTANT], "logits"
         )
         self._tf_layers["crf"] = layers.CRF(
-            self._num_tags, self.config[REGULARIZATION_CONSTANT]
+            self._num_tags,
+            self.config[REGULARIZATION_CONSTANT],
+            self.config[SCALE_LOSS],
         )
         self._tf_layers["crf_f1_score"] = tfa.metrics.F1Score(
             num_classes=self._num_tags - 1,  # `0` prediction is not a prediction
@@ -1186,7 +1190,7 @@ class DIET(RasaModel):
 
     def _features_as_seq_ids(
         self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
-    ) -> tf.Tensor:
+    ) -> Optional[tf.Tensor]:
         """Creates dense labels for negative sampling."""
 
         # if there are dense features - we can use them
@@ -1200,6 +1204,8 @@ class DIET(RasaModel):
                 return tf.stop_gradient(
                     self._tf_layers[f"sparse_to_dense_ids.{name}"](f)
                 )
+
+        return None
 
     def _create_bow(
         self,
