@@ -230,7 +230,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor
         ),
     ],
 )
-def test_convert_tags_to_entities(
+def test_clean_up_entities(
     text: Text,
     tokens: List[Token],
     entities: List[Dict[Text, Any]],
