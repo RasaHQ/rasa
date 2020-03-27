@@ -85,7 +85,7 @@ class MarkdownReader(TrainingDataReader):
         self.regex_features = []
         self.lookup_tables = []
 
-        self.use_deprecated_synonym_format = False
+        self._deprecated_synonym_format_was_used = False
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
@@ -102,7 +102,7 @@ class MarkdownReader(TrainingDataReader):
                 self._parse_item(line)
                 self._load_files(line)
 
-        if self.use_deprecated_synonym_format:
+        if self._deprecated_synonym_format_was_used:
             raise_warning(
                 "You are using the deprecated training data format to declare synonyms."
                 " Please use the following format: \n"
@@ -240,12 +240,8 @@ class MarkdownReader(TrainingDataReader):
                 if ENTITY_VALUE in entity_dict
                 else entity_text
             )
-            entity_role = (
-                entity_dict[ENTITY_ROLE] if ENTITY_ROLE in entity_dict else None
-            )
-            entity_group = (
-                entity_dict[ENTITY_GROUP] if ENTITY_GROUP in entity_dict else None
-            )
+            entity_role = entity_dict.get(ENTITY_ROLE)
+            entity_group = entity_dict.get(ENTITY_GROUP)
         else:
             entity_type = match.groupdict()[GROUP_ENTITY_TYPE]
             entity_role = None
@@ -253,7 +249,7 @@ class MarkdownReader(TrainingDataReader):
 
             if match.groupdict()[GROUP_ENTITY_VALUE]:
                 entity_value = match.groupdict()[GROUP_ENTITY_VALUE]
-                self.use_deprecated_synonym_format = True
+                self._deprecated_synonym_format_was_used = True
             else:
                 entity_value = entity_text
 
