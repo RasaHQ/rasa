@@ -143,8 +143,8 @@ Bugfixes
   directory, by sorting the list of files.
 - `#5444 <https://github.com/rasahq/rasa/issues/5444>`_: Fixed ambiguous logging in `DIETClassifier` by adding the name of the calling class to the log message.
 - `#5506 <https://github.com/rasahq/rasa/issues/5506>`_: Set default value for ``weight_sparsity`` in ``ResponseSelector`` to ``0``.
-    This fixes a bug in the default behaviour of ``ResponseSelector`` which was accidentally introduced in ``rasa==1.8.0``.
-    Users should update to this version or ``rasa>=1.9.3`` and re-train their models if ``ResponseSelector`` was used in their pipeline.
+  This fixes a bug in the default behaviour of ``ResponseSelector`` which was accidentally introduced in ``rasa==1.8.0``.
+  Users should update to this version or ``rasa>=1.9.3`` and re-train their models if ``ResponseSelector`` was used in their pipeline.
 
 Improved Documentation
 ----------------------
