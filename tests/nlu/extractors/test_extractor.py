@@ -2,8 +2,8 @@ from typing import Any, Text, Dict, List
 
 import pytest
 
-from nlu.tokenizers.tokenizer import Token
-from nlu.training_data import Message
+from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.training_data import Message
 from rasa.nlu.extractors.extractor import EntityExtractor
 
 
