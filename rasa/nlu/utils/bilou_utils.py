@@ -50,9 +50,12 @@ def tags_to_ids(message: Message, tag_id_dict: Dict[Text, int]) -> List[int]:
     Returns: a list of tag ids
     """
     if message.get(BILOU_ENTITIES):
+        bilou_tags = [
+            bilou_prefix_from_tag(_tag) for _tag in message.get(BILOU_ENTITIES)
+        ]
         _tags = [
             tag_id_dict[_tag] if _tag in tag_id_dict else tag_id_dict[NO_ENTITY_TAG]
-            for _tag in message.get(BILOU_ENTITIES)
+            for _tag in bilou_tags
         ]
     else:
         _tags = [tag_id_dict[NO_ENTITY_TAG] for _ in message.get(TOKENS_NAMES[TEXT])]
@@ -71,7 +74,7 @@ def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
     return [entity_name_from_tag(t) for t in tags]
 
 
-def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, int]:
+def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, Dict[Text, int]]:
     """Create a mapping of unique tags to ids.
 
     Args:
@@ -97,6 +100,7 @@ def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, int]:
     # needed for correct prediction for padding
     tag_id_dict[NO_ENTITY_TAG] = 0
 
+    # TODO
     return tag_id_dict
 
 

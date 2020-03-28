@@ -816,7 +816,9 @@ def find_intersecting_entites(token: Token, entities: List[Dict]) -> List[Dict]:
     return candidates
 
 
-def pick_best_entity_fit(token: Token, candidates: List[Dict]) -> Text:
+def pick_best_entity_fit(
+    token: Token, candidates: List[Dict[Text, Any]], attribute_key: Text = "entity"
+) -> Text:
     """Determines the token label given intersecting entities.
     :param token: a single token
     :param candidates: entities found by a single extractor
@@ -826,14 +828,17 @@ def pick_best_entity_fit(token: Token, candidates: List[Dict]) -> Text:
     if len(candidates) == 0:
         return NO_ENTITY_TAG
     elif len(candidates) == 1:
-        return candidates[0]["entity"]
+        return candidates[0].get(attribute_key) or NO_ENTITY_TAG
     else:
         best_fit = np.argmax([determine_intersection(token, c) for c in candidates])
-        return candidates[best_fit]["entity"]
+        return candidates[best_fit].get(attribute_key) or NO_ENTITY_TAG
 
 
 def determine_token_labels(
-    token: Token, entities: List[Dict], extractors: Optional[Set[Text]]
+    token: Token,
+    entities: List[Dict],
+    extractors: Optional[Set[Text]] = None,
+    attribute_key: Text = "entity",
 ) -> Text:
     """Determines the token label given entities that do not overlap.
     Args:
@@ -850,7 +855,7 @@ def determine_token_labels(
         raise ValueError("The possible entities should not overlap")
 
     candidates = find_intersecting_entites(token, entities)
-    return pick_best_entity_fit(token, candidates)
+    return pick_best_entity_fit(token, candidates, attribute_key)
 
 
 def do_extractors_support_overlap(extractors: Optional[Set[Text]]) -> bool:
