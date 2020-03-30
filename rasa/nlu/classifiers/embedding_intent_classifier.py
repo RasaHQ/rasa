@@ -147,7 +147,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
-        index_tag_id_mapping: Optional[Dict[int, Text]] = None,
+        index_tag_id_mappings: Optional[Dict[int, Text]] = None,
         model: Optional[RasaModel] = None,
     ) -> None:
 
@@ -161,7 +161,7 @@ class EmbeddingIntentClassifier(DIETClassifier):
         component_config[NUM_TRANSFORMER_LAYERS] = 0
 
         super().__init__(
-            component_config, index_label_id_mapping, index_tag_id_mapping, model
+            component_config, index_label_id_mapping, index_tag_id_mappings, model
         )
 
         common_utils.raise_warning(
