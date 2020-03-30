@@ -28,6 +28,9 @@ from rasa.nlu.constants import (
     EXTRACTOR,
     PRETRAINED_EXTRACTORS,
     NO_ENTITY_TAG,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
 )
 from rasa.model import get_model
 from rasa.nlu import config, training_data, utils
@@ -817,14 +820,23 @@ def find_intersecting_entites(token: Token, entities: List[Dict]) -> List[Dict]:
 
 
 def pick_best_entity_fit(
-    token: Token, candidates: List[Dict[Text, Any]], attribute_key: Text = "entity"
+    token: Token,
+    candidates: List[Dict[Text, Any]],
+    attribute_key: Text = ENTITY_ATTRIBUTE_TYPE,
 ) -> Text:
-    """Determines the token label given intersecting entities.
-    :param token: a single token
-    :param candidates: entities found by a single extractor
-    :return: entity type
     """
+    Determines the token label for the provided attribute key given intersecting
+    entities.
 
+    Args:
+        token: a single token
+        candidates: entities found by a single extractor
+        attribute_key: the attribute key of interest
+
+    Returns:
+        the value of the attribute key of the best fitting entity
+
+    """
     if len(candidates) == 0:
         return NO_ENTITY_TAG
     elif len(candidates) == 1:
@@ -838,13 +850,17 @@ def determine_token_labels(
     token: Token,
     entities: List[Dict],
     extractors: Optional[Set[Text]] = None,
-    attribute_key: Text = "entity",
+    attribute_key: Text = ENTITY_ATTRIBUTE_TYPE,
 ) -> Text:
-    """Determines the token label given entities that do not overlap.
+    """
+    Determines the token label for the provided attribute key given entities that do
+    not overlap.
+
     Args:
         token: a single token
         entities: entities found by a single extractor
         extractors: list of extractors
+        attribute_key: the attribute key for which the entity type should be returned
     Returns:
         entity type
     """
@@ -889,15 +905,45 @@ def align_entity_predictions(
         entities_by_extractors[p[EXTRACTOR]].append(p)
     extractor_labels: Dict[Text, List] = {extractor: [] for extractor in extractors}
     for t in result.tokens:
-        true_token_labels.append(determine_token_labels(t, result.entity_targets, None))
+        true_token_labels.append(_concat_entity_labels(t, result.entity_targets))
         for extractor, entities in entities_by_extractors.items():
-            extracted = determine_token_labels(t, entities, {extractor})
+            extracted = _concat_entity_labels(t, entities, {extractor})
             extractor_labels[extractor].append(extracted)
 
     return {
         "target_labels": true_token_labels,
         "extractor_labels": dict(extractor_labels),
     }
+
+
+def _concat_entity_labels(
+    token: Token, entities: List[Dict], extractors: Optional[Set[Text]] = None
+):
+    """Concatenate labels for entity type, role, and group for evaluation.
+
+    In order to calculate metrics also for entity type, role, and group we need to
+    concatenate their labels. For example, 'location.destination.O'. This allows
+    us to report metrics for every combination of entity type, role, and group.
+
+    Args:
+        token: the token we are looking at
+        entities: the available entities
+        extractors: the extractor of interest
+
+    Returns:
+        the entity label of the provided token
+    """
+    entity_label = determine_token_labels(
+        token, entities, extractors, ENTITY_ATTRIBUTE_TYPE
+    )
+    group_label = determine_token_labels(
+        token, entities, extractors, ENTITY_ATTRIBUTE_GROUP
+    )
+    role_label = determine_token_labels(
+        token, entities, extractors, ENTITY_ATTRIBUTE_ROLE
+    )
+
+    return f"{entity_label}.{role_label}.{group_label}"
 
 
 def align_all_entity_predictions(

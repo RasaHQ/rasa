@@ -705,7 +705,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.model = self.model_class()(
             data_signature=model_data.get_signature(),
             label_data=self._label_data,
-            index_tag_id_mapping=self.index_tag_id_mappings,
+            index_tag_id_mappings=self.index_tag_id_mappings,
             config=self.component_config,
         )
 
@@ -951,7 +951,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         meta = train_utils.update_similarity_type(meta)
 
         model = cls._load_model(
-            index_tag_id_mapping, label_data, meta, data_example, model_dir
+            index_tag_id_mappings, label_data, meta, data_example, model_dir
         )
 
         return cls(
@@ -1125,6 +1125,7 @@ class DIET(RasaModel):
         self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
         self.response_acc = tf.keras.metrics.Mean(name="i_acc")
 
+        # TODO metrics not shown during training
         self.entity_metrics = {}
         for name in self._crf_num_tags.keys():
             self.entity_metrics[f"{name}_loss"] = tf.keras.metrics.Mean(
