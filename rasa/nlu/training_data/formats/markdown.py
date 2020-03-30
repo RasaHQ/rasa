@@ -456,6 +456,7 @@ class MarkdownWriter(TrainingDataWriter):
     @staticmethod
     def generate_entity_md(text: Text, entity: Dict[Text, Any]) -> Text:
         """Generates markdown for an entity object."""
+        import json
 
         entity_text = text[
             entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]
@@ -475,12 +476,12 @@ class MarkdownWriter(TrainingDataWriter):
         if use_short_syntax:
             return f"[{entity_text}]({entity_type})"
 
-        entity_dict_str = f'"{ENTITY_ATTRIBUTE_TYPE}": "{entity_type}"'
-        if entity_role is not None:
-            entity_dict_str += f', "{ENTITY_ATTRIBUTE_ROLE}": "{entity_role}"'
-        if entity_group is not None:
-            entity_dict_str += f', "{ENTITY_ATTRIBUTE_GROUP}": "{entity_group}"'
-        if entity_value is not None:
-            entity_dict_str += f', "{ENTITY_ATTRIBUTE_VALUE}": "{entity_value}"'
+        entity_dict = {
+            ENTITY_ATTRIBUTE_TYPE: entity_type,
+            ENTITY_ATTRIBUTE_ROLE: entity_role,
+            ENTITY_ATTRIBUTE_GROUP: entity_group,
+            ENTITY_ATTRIBUTE_VALUE: entity_value,
+        }
+        entity_dict = {k: v for k, v in entity_dict.items() if v is not None}
 
-        return f"[{entity_text}]{{{entity_dict_str}}}"
+        return f"[{entity_text}]{json.dumps(entity_dict)}"
