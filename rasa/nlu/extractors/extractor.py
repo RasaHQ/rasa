@@ -218,7 +218,8 @@ class EntityExtractor(Component):
             if tokens[token_idx].start == tokens[previous_token_idx].end:
                 # a word was split into multiple tokens
                 token_cluster_already_exists = (
-                    token_index_clusters[-1][-1] == previous_token_idx
+                    token_index_clusters
+                    and token_index_clusters[-1][-1] == previous_token_idx
                 )
                 if token_cluster_already_exists:
                     token_index_clusters[-1].append(token_idx)
