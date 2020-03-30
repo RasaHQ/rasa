@@ -17,6 +17,16 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.9.3] - 2020-03-27
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5505 <https://github.com/rasahq/rasa/issues/5505>`_: Set default value for ``weight_sparsity`` in ``ResponseSelector`` to ``0``.
+  This fixes a bug in the default behaviour of ``ResponseSelector`` which was accidentally introduced in ``rasa==1.8.0``.
+  Users should update to this version and re-train their models if ``ResponseSelector`` was used in their pipeline.
+
+
 [1.9.2] - 2020-03-26
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -122,6 +132,23 @@ Improved Documentation
 Miscellaneous internal changes
 ------------------------------
 - #5340
+
+
+[1.8.3] - 2020-03-27
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5405 <https://github.com/rasahq/rasa/issues/5405>`_: Fixes issue where model always gets retrained if multiple NLU/story files are in a 
+  directory, by sorting the list of files.
+- `#5444 <https://github.com/rasahq/rasa/issues/5444>`_: Fixed ambiguous logging in `DIETClassifier` by adding the name of the calling class to the log message.
+- `#5506 <https://github.com/rasahq/rasa/issues/5506>`_: Set default value for ``weight_sparsity`` in ``ResponseSelector`` to ``0``.
+  This fixes a bug in the default behaviour of ``ResponseSelector`` which was accidentally introduced in ``rasa==1.8.0``.
+  Users should update to this version or ``rasa>=1.9.3`` and re-train their models if ``ResponseSelector`` was used in their pipeline.
+
+Improved Documentation
+----------------------
+- `#5302 <https://github.com/rasahq/rasa/issues/5302>`_: Improved documentation on how to build and deploy an action server image for use on other servers such as Rasa X deployments.
 
 
 [1.8.2] - 2020-03-19
