@@ -1121,19 +1121,15 @@ class DIET(RasaModel):
         # so create loss metrics first to output losses first
         self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
         self.intent_loss = tf.keras.metrics.Mean(name="i_loss")
+        self.entity_group_loss = tf.keras.metrics.Mean(name="e_group_loss")
+        self.entity_role_loss = tf.keras.metrics.Mean(name="e_role_loss")
+        self.entity_loss = tf.keras.metrics.Mean(name="e_entity_loss")
         # create accuracy metrics second to output accuracies second
         self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
         self.response_acc = tf.keras.metrics.Mean(name="i_acc")
-
-        # TODO metrics not shown during training
-        self.entity_metrics = {}
-        for name in self._crf_num_tags.keys():
-            self.entity_metrics[f"{name}_loss"] = tf.keras.metrics.Mean(
-                name=f"e_{name}_loss"
-            )
-            self.entity_metrics[f"{name}_f1"] = tf.keras.metrics.Mean(
-                name=f"e_{name}_f1"
-            )
+        self.entity_group_f1 = tf.keras.metrics.Mean(name="e_group_f1")
+        self.entity_role_f1 = tf.keras.metrics.Mean(name="e_role_f1")
+        self.entity_f1 = tf.keras.metrics.Mean(name="e_entity_f1")
 
     def _update_metrics_to_log(self) -> None:
         if self.config[MASKED_LM]:
@@ -1544,11 +1540,21 @@ class DIET(RasaModel):
                     crf_name,
                     prev_logits,
                 )
-                self.entity_metrics[f"{crf_name}_loss"].update_state(loss)
-                self.entity_metrics[f"{crf_name}_f1"].update_state(f1)
+                self._update_entity_metrics(loss, f1, crf_name)
                 losses.append(loss)
 
         return tf.math.add_n(losses)
+
+    def _update_entity_metrics(self, loss: tf.Tensor, f1: tf.Tensor, crf_name: Text):
+        if crf_name == ENTITY_ATTRIBUTE_TYPE:
+            self.entity_loss.update_state(loss)
+            self.entity_f1.update_state(f1)
+        elif crf_name == ENTITY_ATTRIBUTE_GROUP:
+            self.entity_group_loss.update_state(loss)
+            self.entity_group_f1.update_state(f1)
+        elif crf_name == ENTITY_ATTRIBUTE_ROLE:
+            self.entity_role_loss.update_state(loss)
+            self.entity_role_f1.update_state(f1)
 
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
