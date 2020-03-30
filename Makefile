@@ -40,6 +40,7 @@ clean:
 	rm -rf docs/_build
 
 install:
+	python -m pip install poetry
 	poetry run python -m pip install -U 'pip<20'
 	poetry install
 
