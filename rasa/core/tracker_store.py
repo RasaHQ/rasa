@@ -567,7 +567,7 @@ class SQLTrackerStore(TrackerStore):
         # don't autoincrement Integer primary keys (e.g. Oracle)
         id = Column(Integer, _create_sequence(__tablename__), primary_key=True)
         sender_id = Column(String(255), nullable=False, index=True)
-        type_name = Column(String(255), nullable=False)
+        type_name = Column(String(255))
         timestamp = Column(Float)
         intent_name = Column(String(255))
         action_name = Column(String(255))
