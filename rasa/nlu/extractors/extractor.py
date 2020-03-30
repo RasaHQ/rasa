@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Text, Tuple, Optional
+from typing import Any, Dict, List, Text, Tuple, Optional, Union
 
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.components import Component
@@ -26,7 +26,7 @@ class EntityExtractor(Component):
         self, message: Message, entities: List[Dict[Text, Any]], keep: bool = True
     ) -> List[Dict[Text, Any]]:
         """
-        Checks if multiple entity labels are assigned to one word or if an entity label
+        Check if multiple entity labels are assigned to one word or if an entity label
         is assigned to just a part of a word or if an entity label covers multiple
         words, but one word just partly.
 
@@ -45,7 +45,8 @@ class EntityExtractor(Component):
                 if multiple entity labels are assigned to one word. If set to 'False'
                 all entity labels for that word will be removed.
 
-        Returns: updated list of entities
+        Returns:
+            Updated entities.
         """
         misaligned_entities = self._get_misaligned_entities(
             message.get(TOKENS_NAMES[TEXT]), entities
@@ -87,18 +88,19 @@ class EntityExtractor(Component):
     def _get_misaligned_entities(
         self, tokens: List[Token], entities: List[Dict[Text, Any]]
     ) -> List[Dict[Text, Any]]:
-        """
-        Identify entities and tokens that are misaligned, i.e. entities that cover only
-        a part of a word, different entities assigned to one word.
+        """Identify entities and tokens that are misaligned.
+
+        Misaligned entities are those that apply only to a part of a word, i.e.
+        sub-word.
 
         Args:
             tokens: list of tokens
             entities: list of detected entities by the entity extractor
 
         Returns:
-            a list of misaligned entities including start and end position of the
+            Misaligned entities including the start and end position
             of the final entity in the text and entity indices that are part of this
-            misalignment
+            misalignment.
         """
         if not tokens:
             return []
@@ -106,6 +108,7 @@ class EntityExtractor(Component):
         # group tokens: one token cluster corresponds to one word
         token_clusters = self._token_clusters(tokens)
 
+        # added for tests, should only happen if tokens are not set or len(tokens) == 1
         if not token_clusters:
             return []
 
@@ -143,19 +146,20 @@ class EntityExtractor(Component):
 
     @staticmethod
     def _misaligned_entity_index(
-        word_entity_cluster: List[Dict[Text, Any]],
+        word_entity_cluster: List[Dict[Text, Union[int, List[int]]]],
         start_position: int,
         end_position: int,
     ) -> Optional[int]:
-        """
+        """Get index of matching misaligned entity.
+
         Args:
             word_entity_cluster: word entity cluster
             start_position: start position
             end_position: end position
 
         Returns:
-            index of the misaligned entity that matches the provided start and end
-            position
+            Index of the misaligned entity that matches the provided start and end
+            position.
         """
         for idx, cluster in enumerate(word_entity_cluster):
             if cluster["start"] == start_position and cluster["end"] == end_position:
@@ -166,15 +170,16 @@ class EntityExtractor(Component):
     def _tokens_of_entity(
         entity: Dict[Text, Any], token_clusters: List[List[Token]]
     ) -> List[Token]:
-        """
-        Get all tokens of token clusters that are covered by the entity. The entity can
-        cover them completely or just partly.
+        """Get all tokens of token clusters that are covered by the entity.
+
+        The entity can cover them completely or just partly.
 
         Args:
             entity: the entity
             token_clusters: list of token clusters
 
-        Returns: list of token clusters that belong to the provided entity
+        Returns:
+            Token clusters that belong to the provided entity.
 
         """
         entity_tokens = []
@@ -192,31 +197,38 @@ class EntityExtractor(Component):
 
     @staticmethod
     def _token_clusters(tokens: List[Token]) -> List[List[Token]]:
-        """
-        Build clusters of tokens that belong to one word.
+        """Build clusters of tokens that belong to one word.
 
         Args:
             tokens: list of tokens
 
-        Returns: list of token clusters
+        Returns:
+            Token clusters.
 
         """
+        # token cluster = list of token indices that belong to one word
         token_index_clusters = []
 
-        for idx in range(1, len(tokens)):
-            # two token belong to the same word if there is no other character
+        # start at 1 in order to check if current token and previous token belong
+        # to the same word
+        for token_idx in range(1, len(tokens)):
+            previous_token_idx = token_idx - 1
+            # two tokens belong to the same word if there is no other character
             # between them
-            if tokens[idx].start == tokens[idx - 1].end:
+            if tokens[token_idx].start == tokens[previous_token_idx].end:
                 # a word was split into multiple tokens
-                if token_index_clusters and token_index_clusters[-1][-1] == idx - 1:
-                    token_index_clusters[-1].append(idx)
+                token_cluster_already_exists = (
+                    token_index_clusters[-1][-1] == previous_token_idx
+                )
+                if token_cluster_already_exists:
+                    token_index_clusters[-1].append(token_idx)
                 else:
-                    token_index_clusters.append([idx - 1, idx])
+                    token_index_clusters.append([previous_token_idx, token_idx])
             else:
                 # the token corresponds to a single word
-                if idx == 1:
-                    token_index_clusters.append([idx - 1])
-                token_index_clusters.append([idx])
+                if token_idx == 1:
+                    token_index_clusters.append([previous_token_idx])
+                token_index_clusters.append([token_idx])
 
         return [[tokens[idx] for idx in cluster] for cluster in token_index_clusters]
 
@@ -225,11 +237,12 @@ class EntityExtractor(Component):
         entities: List[Dict[Text, Any]], entity_indices: List[int]
     ) -> Optional[int]:
         """
-        Determine the entity index to keep. If we just have one entity index, i.e.
-        candidate, we return the index of that candidate. If we have multiple
-        candidates, we return the index of the entity value with the highest
-        confidence score. If no confidence score is present, no entity label will
-        be kept.
+        Determine the entity index to keep.
+
+        If we just have one entity index, i.e. candidate, we return the index of that
+        candidate. If we have multiple candidates, we return the index of the entity
+        value with the highest confidence score. If no confidence score is present,
+        no entity label will be kept.
 
         Args:
             entities: the full list of entities
