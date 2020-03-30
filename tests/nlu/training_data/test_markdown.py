@@ -14,6 +14,34 @@ from rasa.nlu.training_data.formats import MarkdownReader, MarkdownWriter
 @pytest.mark.parametrize(
     "example, expected_entities, expected_text",
     [
+        (
+            "I need an [economy class](travel_flight_class:economy) ticket from "
+            '[boston]{"entity": "city", "role": "from"} to [new york]{"entity": "city",'
+            ' "role": "to"}, please.',
+            [
+                {
+                    "start": 10,
+                    "end": 23,
+                    "value": "economy",
+                    "entity": "travel_flight_class",
+                },
+                {
+                    "start": 36,
+                    "end": 42,
+                    "value": "boston",
+                    "entity": "city",
+                    "role": "from",
+                },
+                {
+                    "start": 46,
+                    "end": 54,
+                    "value": "new york",
+                    "entity": "city",
+                    "role": "to",
+                },
+            ],
+            "I need an economy class ticket from boston to new york, please.",
+        ),
         ("i'm looking for a place to eat", None, "i'm looking for a place to eat"),
         (
             "i'm looking for a place in the [north](loc-direction) of town",

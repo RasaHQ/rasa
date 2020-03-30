@@ -41,7 +41,7 @@ available_sections = [INTENT, SYNONYM, REGEX, LOOKUP]
 
 # regex for: `[entity_text]((entity_type(:entity_synonym)?)|{entity_dict})`
 entity_regex = re.compile(
-    r"\[(?P<entity_text>[^\]]+)\](\((?P<entity>[^:)]*?)(?:\:(?P<value>[^)]+))?\)|\{(?P<entity_dict>[^}]*?)\})"
+    r"\[(?P<entity_text>[^\]]+?)\](\((?P<entity>[^:)]+?)(?:\:(?P<value>[^)]+))?\)|\{(?P<entity_dict>[^}]+?)\})"
 )
 item_regex = re.compile(r"\s*[-*+]\s*(.+)")
 comment_regex = re.compile(r"<!--[\s\S]*?--!*>", re.MULTILINE)
@@ -214,7 +214,7 @@ class MarkdownReader(TrainingDataReader):
 
             start_index = match.start() - offset
             end_index = start_index + len(entity_attributes.text)
-            offset += match.end() - end_index
+            offset += len(match.group(0)) - len(entity_attributes.text)
 
             entity = build_entity(
                 start_index,
