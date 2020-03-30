@@ -2,6 +2,7 @@ import logging
 import re
 import typing
 from collections import OrderedDict
+from json import JSONDecodeError
 from typing import Any, Text, Optional, Tuple, List, Dict, NamedTuple, Match
 
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU
@@ -21,8 +22,6 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_START,
 )
-import rasa.nlu.schemas.data_schema as schema
-import rasa.utils.validation as validation_utils
 
 GROUP_ENTITY_VALUE = "value"
 GROUP_ENTITY_TYPE = "entity"
@@ -65,7 +64,7 @@ class EntityAttributes(NamedTuple):
 def encode_string(s: Text) -> Text:
     """Return a encoded python string."""
 
-    def replace(match):
+    def replace(match: Match) -> Text:
         return ESCAPE_DCT[match.group(GROUP_COMPLETE_MATCH)]
 
     return ESCAPE.sub(replace, s)
@@ -106,8 +105,8 @@ class MarkdownReader(TrainingDataReader):
             raise_warning(
                 "You are using the deprecated training data format to declare synonyms."
                 " Please use the following format: \n"
-                "[<entity-text>]{'entity': '<entity-type>', 'value': "
-                "'<entity-synonym>'}."
+                '[<entity-text>]{"entity": "<entity-type>", "value": '
+                '"<entity-synonym>"}.'
                 "\nYou can use the following command to update your training data file:"
                 "\nsed -i .deprecated -E 's/\\[(.+)\\]\\((.+):(.+)\\)/\\[\\1\\]\\{"
                 '"entity": "\\2", "value": "\\3"\\}/g\' nlu.md',
@@ -187,12 +186,27 @@ class MarkdownReader(TrainingDataReader):
         Args:
             json_str: the entity dict as string without "{}"
 
-        Returns: a proper python dict
+        Raises:
+            ValidationError if validation of entity dict fails.
+            JSONDecodeError if provided entity dict is not valid json.
+
+        Returns:
+            a proper python dict
         """
         import json
+        import rasa.utils.validation as validation_utils
+        import rasa.nlu.schemas.data_schema as schema
 
         # add {} as they are not part of the regex
-        data = json.loads(f"{{{json_str}}}")
+        try:
+            data = json.loads(f"{{{json_str}}}")
+        except JSONDecodeError as e:
+            raise_warning(
+                f"Incorrect training data format ('{{{json_str}}}'), make sure your "
+                f"data is valid. For more information about the format visit "
+                f"{DOCS_URL_TRAINING_DATA_NLU}."
+            )
+            raise e
 
         validation_utils.validate_training_data(data, schema.entity_dict_schema())
 
@@ -214,7 +228,7 @@ class MarkdownReader(TrainingDataReader):
 
             start_index = match.start() - offset
             end_index = start_index + len(entity_attributes.text)
-            offset += match.end() - end_index
+            offset += len(match.group(0)) - len(entity_attributes.text)
 
             entity = build_entity(
                 start_index,

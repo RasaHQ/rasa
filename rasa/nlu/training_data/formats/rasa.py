@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class RasaReader(JsonTrainingDataReader):
-    def read_from_json(self, js: Dict[Text, Any], **kwargs) -> "TrainingData":
+    def read_from_json(self, js: Dict[Text, Any], **_) -> "TrainingData":
         """Loads training data stored in the rasa NLU data format."""
         from rasa.nlu.training_data import Message, TrainingData
 

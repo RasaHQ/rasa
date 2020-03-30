@@ -5,18 +5,26 @@ def entity_dict_schema() -> Dict[Text, Any]:
     """Returns: schema for defining entities in Markdown format."""
     return {
         "type": "object",
-        "properties": {
-            "entity": {"type": "string"},
-            "role": {"type": "string"},
-            "group": {"type": "string"},
-            "value": {"type": "string"},
-        },
+        "properties": _common_entity_properties(),
         "required": ["entity"],
+    }
+
+
+def _common_entity_properties() -> Dict[Text, Any]:
+    return {
+        "entity": {"type": "string"},
+        "role": {"type": "string"},
+        "group": {"type": "string"},
+        "value": {"type": "string"},
     }
 
 
 def rasa_nlu_data_schema() -> Dict[Text, Any]:
     """Returns: schema of the Rasa NLU data format (json format)."""
+    entity_properties = _common_entity_properties()
+    entity_properties["start"] = {"type": "number"}
+    entity_properties["end"] = {"type": "number"}
+
     training_example_schema = {
         "type": "object",
         "properties": {
@@ -26,14 +34,7 @@ def rasa_nlu_data_schema() -> Dict[Text, Any]:
                 "type": "array",
                 "items": {
                     "type": "object",
-                    "properties": {
-                        "start": {"type": "number"},
-                        "end": {"type": "number"},
-                        "value": {"type": "string"},
-                        "entity": {"type": "string"},
-                        "role": {"type": "string"},
-                        "group": {"type": "string"},
-                    },
+                    "properties": entity_properties,
                     "required": ["start", "end", "entity"],
                 },
             },

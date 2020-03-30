@@ -70,7 +70,7 @@ def build_entity(
     entity_type: Text,
     role: Optional[Text] = None,
     group: Optional[Text] = None,
-    **kwargs: Dict[Text, Any],
+    **kwargs: Any,
 ) -> Dict[Text, Any]:
     """Builds a standard entity dictionary.
 
@@ -85,7 +85,8 @@ def build_entity(
         group: group of the entity
         **kwargs: additional parameters
 
-    Returns: an entity dictionary
+    Returns:
+        an entity dictionary
 
     """
 
