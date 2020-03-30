@@ -65,7 +65,7 @@ class MattermostBot(OutputChannel):
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
-        for message_part in text.split("\n\n"):
+        for message_part in text.strip().split("\n\n"):
             self._post_message_to_channel(self.bot_channel, message_part)
 
     async def send_custom_json(

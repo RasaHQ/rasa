@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class HFTransformersNLP(Component):
-    """Utility Component for interfacing between Transformers library.
+    """Utility Component for interfacing between Transformers library and Rasa OS.
 
     The transformers(https://github.com/huggingface/transformers) library
     is used to load pre-trained language models like BERT, GPT-2, etc.
@@ -36,6 +36,9 @@ class HFTransformersNLP(Component):
         "model_name": "bert",
         # Pre-Trained weights to be loaded(string)
         "model_weights": None,
+        # an optional path to a specific directory to download
+        # and cache the pre-trained model weights.
+        "cache_dir": None,
     }
 
     def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
@@ -63,6 +66,7 @@ class HFTransformersNLP(Component):
             )
 
         self.model_weights = self.component_config["model_weights"]
+        self.cache_dir = self.component_config["cache_dir"]
 
         if not self.model_weights:
             logger.info(
@@ -74,10 +78,10 @@ class HFTransformersNLP(Component):
         logger.debug(f"Loading Tokenizer and Model for {self.model_name}")
 
         self.tokenizer = model_tokenizer_dict[self.model_name].from_pretrained(
-            self.model_weights
+            self.model_weights, cache_dir=self.cache_dir
         )
         self.model = model_class_dict[self.model_name].from_pretrained(
-            self.model_weights
+            self.model_weights, cache_dir=self.cache_dir
         )
 
         # Use a universal pad token since all transformer architectures do not have a
@@ -93,6 +97,16 @@ class HFTransformersNLP(Component):
         return ["transformers"]
 
     def _lm_tokenize(self, text: Text) -> Tuple[List[int], List[Text]]:
+        """
+        Pass the text through the tokenizer of the language model.
+
+        Args:
+            text: Text to be tokenized.
+
+        Returns:
+            List of token ids and token strings.
+
+        """
         split_token_ids = self.tokenizer.encode(text, add_special_tokens=False)
 
         split_token_strings = self.tokenizer.convert_ids_to_tokens(split_token_ids)
@@ -102,6 +116,14 @@ class HFTransformersNLP(Component):
     def _add_lm_specific_special_tokens(
         self, token_ids: List[List[int]]
     ) -> List[List[int]]:
+        """Add language model specific special tokens which were used during their training.
+
+        Args:
+            token_ids: List of token ids for each example in the batch.
+
+        Returns:
+            Augmented list of token ids for each example in the batch.
+        """
         from rasa.nlu.utils.hugging_face.registry import (
             model_special_tokens_pre_processors,
         )
@@ -112,14 +134,36 @@ class HFTransformersNLP(Component):
         ]
         return augmented_tokens
 
-    def _lm_specific_token_cleanup(self, token_strings: List[Text]) -> List[Text]:
+    def _lm_specific_token_cleanup(
+        self, split_token_ids: List[int], token_strings: List[Text]
+    ) -> Tuple[List[int], List[Text]]:
+        """Clean up special chars added by tokenizers of language models.
+
+        Many language models add a special char in front/back of (some) words. We clean up those chars as they are not
+        needed once the features are already computed.
+
+        Args:
+            split_token_ids: List of token ids received as output from the language model specific tokenizer.
+            token_strings: List of token strings received as output from the language model specific tokenizer.
+
+        Returns:
+            Cleaned up token ids and token strings.
+        """
         from rasa.nlu.utils.hugging_face.registry import model_tokens_cleaners
 
-        return model_tokens_cleaners[self.model_name](token_strings)
+        return model_tokens_cleaners[self.model_name](split_token_ids, token_strings)
 
     def _post_process_sequence_embeddings(
         self, sequence_embeddings: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
+        """Compute sentence level representations and sequence level representations for relevant tokens.
+
+        Args:
+            sequence_embeddings: Sequence level dense features received as output from language model.
+
+        Returns:
+            Sentence and sequence level representations.
+        """
 
         from rasa.nlu.utils.hugging_face.registry import (
             model_embeddings_post_processors,
@@ -145,6 +189,21 @@ class HFTransformersNLP(Component):
     def _tokenize_example(
         self, message: Message, attribute: Text
     ) -> Tuple[List[Token], List[int]]:
+        """Tokenize a single message example.
+
+        Many language models add a special char in front of (some) words and split words into
+        sub-words. To ensure the entity start and end values matches the token values,
+        tokenize the text first using the whitespace tokenizer. If individual tokens
+        are split up into multiple tokens, we make sure that the start and end value
+        of the first and last respective tokens stay the same.
+
+        Args:
+            message: Single message object to be processed.
+            attribute: Property of message to be processed, one of ``TEXT`` or ``RESPONSE``.
+
+        Returns:
+            List of token strings and token ids for the corresponding attribute of the message.
+        """
 
         tokens_in = self.whitespace_tokenizer.tokenize(message, attribute)
 
@@ -156,7 +215,9 @@ class HFTransformersNLP(Component):
             # use lm specific tokenizer to further tokenize the text
             split_token_ids, split_token_strings = self._lm_tokenize(token.text)
 
-            split_token_strings = self._lm_specific_token_cleanup(split_token_strings)
+            split_token_ids, split_token_strings = self._lm_specific_token_cleanup(
+                split_token_ids, split_token_strings
+            )
 
             token_ids_out += split_token_ids
 
@@ -169,6 +230,16 @@ class HFTransformersNLP(Component):
     def _get_token_ids_for_batch(
         self, batch_examples: List[Message], attribute: Text
     ) -> Tuple[List[List[Token]], List[List[int]]]:
+        """Compute token ids and token strings for each example in batch.
+
+        A token id is the id of that token in the vocabulary of the language model.
+        Args:
+            batch_examples: Batch of message objects for which tokens need to be computed.
+            attribute: Property of message to be processed, one of ``TEXT`` or ``RESPONSE``.
+
+        Returns:
+            List of token strings and token ids for each example in the batch.
+        """
 
         batch_token_ids = []
         batch_tokens = []
@@ -184,6 +255,16 @@ class HFTransformersNLP(Component):
 
     @staticmethod
     def _compute_attention_mask(actual_sequence_lengths: List[int]) -> np.ndarray:
+        """Compute a mask for padding tokens.
+
+        This mask will be used by the language model so that it does not attend to padding tokens.
+
+        Args:
+            actual_sequence_lengths: List of length of each example without any padding
+
+        Returns:
+            Computed attention mask, 0 for padding and 1 for non-padding tokens.
+        """
 
         attention_mask = []
         max_seq_length = max(actual_sequence_lengths)
@@ -202,6 +283,14 @@ class HFTransformersNLP(Component):
     def _add_padding_to_batch(
         self, batch_token_ids: List[List[int]]
     ) -> Tuple[List[int], List[List[int]]]:
+        """Add padding so that all examples in the batch are of the same length.
+
+        Args:
+            batch_token_ids: Batch of examples where each example is a non-padded list of token ids.
+
+        Returns:
+            Padded batch with all examples of the same length.
+        """
         padded_token_ids = []
         # Compute max length across examples
         max_seq_len = 0
@@ -226,6 +315,15 @@ class HFTransformersNLP(Component):
     def _extract_nonpadded_embeddings(
         embeddings: np.ndarray, actual_sequence_lengths: List[int]
     ) -> np.ndarray:
+        """Use pre-computed non-padded lengths of each example to extract embeddings for non-padding tokens.
+
+        Args:
+            embeddings: sequence level representations for each example of the batch.
+            actual_sequence_lengths: non-padded lengths of each example of the batch.
+
+        Returns:
+            Sequence level embeddings for only non-padding tokens of the batch.
+        """
         nonpadded_sequence_embeddings = []
         for index, embedding in enumerate(embeddings):
             unmasked_embedding = embedding[: actual_sequence_lengths[index]]
@@ -236,6 +334,15 @@ class HFTransformersNLP(Component):
     def _compute_batch_sequence_features(
         self, batch_attention_mask: np.ndarray, padded_token_ids: List[List[int]]
     ) -> np.ndarray:
+        """Feed the padded batch to the language model.
+
+        Args:
+            batch_attention_mask: Mask of 0s and 1s which indicate whether the token is a padding token or not.
+            padded_token_ids: Batch of token ids for each example. The batch is padded and hence can be fed at once.
+
+        Returns:
+            Sequence level representations from the language model.
+        """
         model_outputs = self.model(
             np.array(padded_token_ids), attention_mask=np.array(batch_attention_mask)
         )
@@ -249,6 +356,19 @@ class HFTransformersNLP(Component):
     def _get_model_features_for_batch(
         self, batch_token_ids: List[List[int]]
     ) -> Tuple[np.ndarray, np.ndarray]:
+        """Compute dense features of each example in the batch.
+
+        We first add the special tokens corresponding to each language model. Next, we add appropriate padding
+        and compute a mask for that padding so that it doesn't affect the feature computation. The padded batch is next
+        fed to the language model and token level embeddings are computed. Using the pre-computed mask, embeddings for
+        non-padding tokens are extracted and subsequently sentence level embeddings are computed.
+
+        Args:
+            batch_token_ids: List of token ids of each example in the batch.
+
+        Returns:
+            Sentence and token level dense representations.
+        """
         # Let's first add tokenizer specific special tokens to all examples
         batch_token_ids_augmented = self._add_lm_specific_special_tokens(
             batch_token_ids
@@ -283,6 +403,15 @@ class HFTransformersNLP(Component):
     def _get_docs_for_batch(
         self, batch_examples: List[Message], attribute: Text
     ) -> List[Dict[Text, Any]]:
+        """Compute language model docs for all examples in the batch.
+
+        Args:
+            batch_examples: Batch of message objects for which language model docs need to be computed.
+            attribute: Property of message to be processed, one of ``TEXT`` or ``RESPONSE``.
+
+        Returns:
+            List of language model docs for each message in batch.
+        """
 
         batch_tokens, batch_token_ids = self._get_token_ids_for_batch(
             batch_examples, attribute
@@ -313,6 +442,13 @@ class HFTransformersNLP(Component):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Compute tokens and dense features for each message in training data.
+
+        Args:
+            training_data: NLU training data to be tokenized and featurized
+            config: NLU pipeline config consisting of all components.
+
+        """
 
         batch_size = 64
 
@@ -342,6 +478,11 @@ class HFTransformersNLP(Component):
                 batch_start_index += batch_size
 
     def process(self, message: Message, **kwargs: Any) -> None:
+        """Process an incoming message by computing its tokens and dense features.
+
+        Args:
+            message: Incoming message object
+        """
 
         message.set(
             LANGUAGE_MODEL_DOCS[TEXT],

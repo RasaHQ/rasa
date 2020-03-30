@@ -165,8 +165,9 @@ class CRFEntityExtractor(EntityExtractor):
         if self.ent_tagger is not None:
             text_data = self._from_text_to_crf(message)
             features = self._sentence_to_features(text_data)
-            ents = self.ent_tagger.predict_marginals_single(features)
-            return self._from_crf_to_json(message, ents)
+            entities = self.ent_tagger.predict_marginals_single(features)
+            entities = self._from_crf_to_json(message, entities)
+            return self.clean_up_entities(entities)
         else:
             return []
 

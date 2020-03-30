@@ -7,10 +7,12 @@ DEFAULT_DOMAIN_PATH = "domain.yml"
 DEFAULT_ACTIONS_PATH = "actions"
 DEFAULT_MODELS_PATH = "models"
 DEFAULT_DATA_PATH = "data"
+DEFAULT_E2E_TESTS_PATH = "tests"
 DEFAULT_RESULTS_PATH = "results"
 DEFAULT_NLU_RESULTS_PATH = "nlu_comparison_results"
 DEFAULT_CORE_SUBDIRECTORY_NAME = "core"
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
+DEFAULT_RESPONSE_TIMEOUT = 60 * 60  # 1 hour
 
 TEST_DATA_FILE = "test.md"
 TRAIN_DATA_FILE = "train.md"
@@ -34,6 +36,7 @@ DOCS_URL_STORIES = DOCS_BASE_URL + "/core/stories/"
 DOCS_URL_ACTIONS = DOCS_BASE_URL + "/core/actions/"
 DOCS_URL_CONNECTORS = DOCS_BASE_URL + "/user-guide/connectors/"
 DOCS_URL_EVENT_BROKERS = DOCS_BASE_URL + "/api/event-brokers/"
+DOCS_URL_PIKA_EVENT_BROKER = DOCS_URL_EVENT_BROKERS + "#pika-event-broker"
 DOCS_URL_TRACKER_STORES = DOCS_BASE_URL + "/api/tracker-stores/"
 DOCS_URL_PIPELINE = DOCS_BASE_URL + "/nlu/choosing-a-pipeline/"
 DOCS_URL_COMPONENTS = DOCS_BASE_URL + "/nlu/components/"
@@ -49,7 +52,7 @@ CONFIG_MANDATORY_KEYS_CORE = ["policies"]
 CONFIG_MANDATORY_KEYS_NLU = ["language", "pipeline"]
 CONFIG_MANDATORY_KEYS = CONFIG_MANDATORY_KEYS_CORE + CONFIG_MANDATORY_KEYS_NLU
 
-MINIMUM_COMPATIBLE_VERSION = "1.8.0a1"
+MINIMUM_COMPATIBLE_VERSION = "1.9.0"
 
 GLOBAL_USER_CONFIG_PATH = os.path.expanduser("~/.config/rasa/global.yml")
 

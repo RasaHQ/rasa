@@ -1,11 +1,10 @@
-:desc: Evaluate and validate your machine learning models for open source
-       library Rasa Core to improve the dialogue management of your contextual
-       AI Assistant.
+:desc: Test your Rasa Open Source assistant to validate and improve your
+       conversations
 
-.. _evaluating-models:
+.. _testing-your-assistant:
 
-Evaluating Models
-=================
+Testing Your Assistant
+======================
 
 .. edit-link::
 
@@ -16,6 +15,102 @@ Evaluating Models
    If you are looking to tune the hyperparameters of your NLU model,
    check out this `tutorial <https://blog.rasa.com/rasa-nlu-in-depth-part-3-hyperparameters/>`_.
 
+.. _end_to_end_testing:
+
+End-to-End Testing
+------------------
+
+Rasa Open Source lets you test dialogues end-to-end by running through
+test conversations and making sure that both NLU and Core make correct predictions.
+
+To do this, you need some stories in the end-to-end format,
+which includes both the NLU output and the original text.
+Here are some examples:
+
+.. tabs::
+
+ .. group-tab:: Basics
+
+    .. code-block:: story
+
+          ## A basic end-to-end test
+          * greet: hello
+             - utter_ask_howcanhelp
+          * inform: show me [chinese](cuisine) restaurants
+             - utter_ask_location
+          * inform: in [Paris](location)
+             - utter_ask_price
+
+ .. group-tab:: Custom Actions
+
+    .. code-block:: story
+
+        ## End-to-End tests where a custom action appends events
+        * greet: hi
+            - my_custom_action
+            <!-- The following events are emitted by `my_custom_action` -->
+            - slot{"my_slot": "value added by custom action"}
+            - utter_ask_age
+        * thankyou: thanks
+            - utter_noworries
+
+ .. group-tab:: Forms Happy Path
+
+    .. code-block:: story
+
+        ## Testing a conversation with a form
+        * greet: hi
+            - utter_greet
+        * request_restaurant: im looking for a restaurant
+            - restaurant_form
+            - form{"name": "restaurant_form"}
+        * inform: [afghan](cuisine) food
+            - form: restaurant_form
+            - form{"name": null}
+            - utter_slots_values
+        * thankyou: thanks
+            - utter_noworries
+
+ .. group-tab:: Forms Unhappy Path
+
+    .. code-block:: story
+
+        ## Testing a conversation with a form and unexpected user input
+        * greet: hi
+            - utter_greet
+        * request_restaurant: im looking for a restaurant
+            - restaurant_form
+            - form{"name": "restaurant_form"}
+        <!-- The user sends a message which should not be handled by the form. -->
+        * chitchat: can you share your boss with me?
+            - utter_chitchat
+            - restaurant_form
+            - form{"name": null}
+            - utter_slots_values
+        * thankyou: thanks
+            - utter_noworries
+
+By default Rasa Open Source saves conversation tests to ``tests/conversation_tests.md``.
+You can test your assistant against them by running:
+
+.. code-block:: bash
+
+  $ rasa test
+
+.. note::
+
+  :ref:`custom-actions` are not executed as part of end-to-end tests. If your custom
+  actions append any events to the tracker, this has to be reflected in your end-to-end
+  tests (e.g. by adding ``slot`` events to your end-to-end story).
+
+If you have any questions or problems, please share them with us in the dedicated
+`testing section on our forum <https://forum.rasa.com/tags/testing>`_ !
+
+.. note::
+
+  Make sure your model file in ``models`` is a combined ``core``
+  and ``nlu`` model. If it does not contain an NLU model, Core will use
+  the default ``RegexInterpreter``.
 
 .. _nlu-evaluation:
 
@@ -227,40 +322,3 @@ you.
 .. note::
     This training process can take a long time, so we'd suggest letting it run
     somewhere in the background where it can't be interrupted.
-
-
-.. _end_to_end_evaluation:
-
-End-to-End Evaluation
----------------------
-
-Rasa lets you evaluate dialogues end-to-end, running through
-test conversations and making sure that both NLU and Core make correct predictions.
-
-To do this, you need some stories in the end-to-end format,
-which includes both the NLU output and the original text.
-Here is an example:
-
-.. code-block:: story
-
-  ## end-to-end story 1
-  * greet: hello
-     - utter_ask_howcanhelp
-  * inform: show me [chinese](cuisine) restaurants
-     - utter_ask_location
-  * inform: in [Paris](location)
-     - utter_ask_price
-
-
-If you've saved end-to-end stories as a file called ``e2e_stories.md``,
-you can evaluate your model against them by running:
-
-.. code-block:: bash
-
-  $ rasa test --stories e2e_stories.md --e2e
-
-.. note::
-
-  Make sure your model file in ``models`` is a combined ``core``
-  and ``nlu`` model. If it does not contain an NLU model, Core will use
-  the default ``RegexInterpreter``.

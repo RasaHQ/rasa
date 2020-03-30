@@ -28,7 +28,7 @@ Understand messages, hold conversations, and connect to messaging channels and A
    user-guide/command-line-interface
    user-guide/architecture
    user-guide/messaging-and-voice-channels
-   user-guide/evaluating-models
+   user-guide/testing-your-assistant
    user-guide/validate-files
    user-guide/configuring-http-api
    user-guide/how-to-deploy
@@ -42,10 +42,10 @@ Understand messages, hold conversations, and connect to messaging channels and A
    About <nlu/about>
    nlu/using-nlu-only
    nlu/training-data-format
-   nlu/choosing-a-pipeline
    nlu/language-support
-   nlu/entity-extraction
+   nlu/choosing-a-pipeline
    nlu/components
+   nlu/entity-extraction
 
 .. toctree::
    :maxdepth: 1

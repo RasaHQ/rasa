@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytype | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "1.8.0"
+version = "1.9.3"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -21,7 +21,6 @@ keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots
 include = [ "LICENSE.txt", "README.md", "rasa/core/schemas/*", "rasa/core/training/visualization.html", "rasa/nlu/schemas/*", "rasa/cli/default_config.yml",]
 readme = "README.md"
 license = "Apache-2.0"
-
 [[tool.poetry.source]]
 name = "rasa-pypi"
 url = "https://pypi.rasa.com/simple/"
@@ -95,7 +94,7 @@ jsonschema = "~3.2"
 packaging = "~19.0"
 gevent = "~1.4.0"
 pytz = "^2019.1"
-rasa-sdk = "^1.8.0"
+rasa-sdk = "^1.9.0"
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
 sanic = "^19.12.2"
@@ -118,9 +117,12 @@ python-dateutil = "~2.8"
 tensorflow = "~2.1"
 tensorflow_hub = "~0.7"
 tensorflow-addons = ">=0.7.1"
+tensorflow-estimator = "2.1.0"
 tensorflow-probability = "~0.7"
 setuptools = ">=41.0.0"
 kafka-python = "^1.4"
+ujson = "^1.35"
+oauth2client = "4.1.3"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.8.1"
@@ -183,7 +185,7 @@ version = "~1.3.0"
 optional = true
 
 [tool.poetry.dependencies.transformers]
-version = "~2.3.0"
+version = "~2.4"
 optional = true
 
 [tool.poetry.dependencies.jieba]

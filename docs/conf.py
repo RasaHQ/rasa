@@ -139,7 +139,7 @@ html_theme_options = {
     "fixed_sidebar": True,
     "product": "Rasa",
     "base_url": "https://rasa.com/docs/rasa/",
-    "canonical_url": "https://rasa.com/docs/rasa/"
+    "canonical_url": "https://rasa.com/docs/rasa/",
 }
 # html_theme_options = {}
 
@@ -236,13 +236,13 @@ htmlhelp_basename = "rasa_doc"
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    # 'papersize': 'letterpaper',
     # The font size ('10pt', '11pt' or '12pt').
-    #'pointsize': '10pt',
+    # 'pointsize': '10pt',
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    # 'preamble': '',
     # Latex figure (float) alignment
-    #'figure_align': 'htbp',
+    # 'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
