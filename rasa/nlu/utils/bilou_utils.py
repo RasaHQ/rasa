@@ -74,7 +74,7 @@ def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
     return [entity_name_from_tag(t) for t in tags]
 
 
-def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, Dict[Text, int]]:
+def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, int]:
     """Create a mapping of unique tags to ids.
 
     Args:
@@ -100,7 +100,6 @@ def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, Dict[Text, int]
     # needed for correct prediction for padding
     tag_id_dict[NO_ENTITY_TAG] = 0
 
-    # TODO
     return tag_id_dict
 
 

@@ -313,7 +313,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         self.model = model
 
-        self.crf_num_tags: Optional[int] = None  # number of entity tags
+        # number of entity tags for every CRF
+        self.crf_num_tags: Optional[Dict[Text, int]] = None
         self._label_data: Optional[RasaModelData] = None
         self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
 
@@ -343,7 +344,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _invert_mapping(mapping: Dict) -> Dict:
         return {value: key for key, value in mapping.items()}
 
-    def _tag_id_index_mapping(
+    def _tag_id_index_mappings(
         self, training_data: TrainingData
     ) -> Dict[Text, Dict[Text, int]]:
         """Create tag_id dictionaries for all CRFs."""
@@ -645,7 +646,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             training_data, label_id_index_mapping, attribute=INTENT
         )
 
-        tag_id_index_mappings = self._tag_id_index_mapping(training_data)
+        tag_id_index_mappings = self._tag_id_index_mappings(training_data)
         self.index_tag_id_mappings = {
             name: self._invert_mapping(mapping)
             for name, mapping in tag_id_index_mappings.items()
