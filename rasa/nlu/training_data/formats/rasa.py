@@ -11,8 +11,6 @@ from rasa.nlu.training_data.formats.readerwriter import (
 from rasa.nlu.training_data.util import transform_entity_synonyms
 from rasa.nlu.utils import json_to_string
 from rasa.utils.common import raise_warning
-import rasa.nlu.schemas.data_schema as schema
-import rasa.utils.validation as validation_utils
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import Message, TrainingData
@@ -24,6 +22,8 @@ class RasaReader(JsonTrainingDataReader):
     def read_from_json(self, js: Dict[Text, Any], **_) -> "TrainingData":
         """Loads training data stored in the rasa NLU data format."""
         from rasa.nlu.training_data import Message, TrainingData
+        import rasa.nlu.schemas.data_schema as schema
+        import rasa.utils.validation as validation_utils
 
         validation_utils.validate_training_data(js, schema.rasa_nlu_data_schema())
 
