@@ -73,7 +73,8 @@ def validate_training_data(json_data: Dict[Text, Any], schema: Dict[Text, Any]) 
         json_data: the data to validate
         schema: the schema
 
-    Raises: ValidationError if validation fails.
+    Raises:
+        ValidationError if validation fails.
     """
     from jsonschema import validate
     from jsonschema import ValidationError
