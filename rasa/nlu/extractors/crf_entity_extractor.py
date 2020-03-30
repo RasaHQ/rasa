@@ -156,8 +156,9 @@ class CRFEntityExtractor(EntityExtractor):
         return dataset
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        extracted = self.add_extractor_name(self.extract_entities(message))
-        message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
+        entities = self.add_extractor_name(self.extract_entities(message))
+        entities = self.clean_up_entities(message, entities)
+        message.set(ENTITIES, message.get(ENTITIES, []) + entities, add_to_output=True)
 
     def extract_entities(self, message: Message) -> List[Dict[Text, Any]]:
         """Take a sentence and return entities in json format"""
@@ -166,8 +167,7 @@ class CRFEntityExtractor(EntityExtractor):
             text_data = self._from_text_to_crf(message)
             features = self._sentence_to_features(text_data)
             entities = self.ent_tagger.predict_marginals_single(features)
-            entities = self._from_crf_to_json(message, entities)
-            return self.clean_up_entities(entities)
+            return self._from_crf_to_json(message, entities)
         else:
             return []
 

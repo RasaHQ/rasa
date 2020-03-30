@@ -799,8 +799,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             message.text, message.get(TOKENS_NAMES[TEXT], []), predicted_tags
         )
 
-        extracted = self.add_extractor_name(entities)
-        entities = message.get(ENTITIES, []) + extracted
+        entities = self.add_extractor_name(entities)
+        entities = self.clean_up_entities(message, entities)
+        entities = message.get(ENTITIES, []) + entities
 
         return entities
 
@@ -862,7 +863,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 entity[ENTITY_ATTRIBUTE_START] : entity[ENTITY_ATTRIBUTE_END]
             ]
 
-        return self.clean_up_entities(entities)
+        return entities
 
     @staticmethod
     def _get_tags_for_attribute(
