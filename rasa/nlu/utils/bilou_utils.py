@@ -50,12 +50,9 @@ def tags_to_ids(message: Message, tag_id_dict: Dict[Text, int]) -> List[int]:
     Returns: a list of tag ids
     """
     if message.get(BILOU_ENTITIES):
-        bilou_tags = [
-            bilou_prefix_from_tag(_tag) for _tag in message.get(BILOU_ENTITIES)
-        ]
         _tags = [
             tag_id_dict[_tag] if _tag in tag_id_dict else tag_id_dict[NO_ENTITY_TAG]
-            for _tag in bilou_tags
+            for _tag in message.get(BILOU_ENTITIES)
         ]
     else:
         _tags = [tag_id_dict[NO_ENTITY_TAG] for _ in message.get(TOKENS_NAMES[TEXT])]

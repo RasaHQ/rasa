@@ -99,18 +99,7 @@ LABEL_MASK = f"{LABEL}_mask"
 LABEL_IDS = f"{LABEL}_ids"
 TAG_IDS = "tag_ids"
 
-CRF_BILOU = "bilou"
-CRF_ORDER = [
-    CRF_BILOU,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_GROUP,
-]
-CRFS_WITHOUT_BILOU = [
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_GROUP,
-]
+CRF_ORDER = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_ROLE, ENTITY_ATTRIBUTE_GROUP]
 
 
 class DIETClassifier(IntentClassifier, EntityExtractor):
@@ -229,7 +218,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # If set to 'True' labelling is more rigorous, however more
         # examples per entity are required.
         # Rule of thumb: you should have more than 100 examples per entity.
-        BILOU_FLAG: True,
+        BILOU_FLAG: False,
         # If you want to use tensorboard to visualize training and validation metrics,
         # set this option to a valid output directory.
         TENSORBOARD_LOG_DIR: None,
@@ -374,17 +363,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         tag_id_index_mapping_dict = {}
 
-        if self.component_config[BILOU_FLAG]:
-            tag_id_index_mapping_dict[CRF_BILOU] = {
-                NO_ENTITY_TAG: 0,
-                "B": 1,
-                "I": 2,
-                "U": 3,
-                "L": 4,
-            }
+        for attribute_key in CRF_ORDER:
+            if (
+                attribute_key == ENTITY_ATTRIBUTE_TYPE
+                and self.component_config[BILOU_FLAG]
+            ):
+                tag_id_index_mapping = bilou_utils.build_tag_id_dict(training_data)
+            else:
+                tag_id_index_mapping = _tag_id_index_mapping_for(attribute_key)
 
-        for attribute_key in CRFS_WITHOUT_BILOU:
-            tag_id_index_mapping = _tag_id_index_mapping_for(attribute_key)
             if tag_id_index_mapping:
                 tag_id_index_mapping_dict[attribute_key] = tag_id_index_mapping
 
@@ -609,7 +596,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         crf_tag_ids: Dict[Text, Any],
     ):
         for name, tag_id_dict in tag_id_mappings.items():
-            if name == CRF_BILOU and self.component_config[BILOU_FLAG]:
+            if name == ENTITY_ATTRIBUTE_TYPE and self.component_config[BILOU_FLAG]:
                 _tags = bilou_utils.tags_to_ids(example, tag_id_mappings[name])
                 crf_tag_ids[name].append(np.array([_tags]).T)
             else:
@@ -795,6 +782,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         for name, mapping in self.index_tag_id_mappings.items():
             predictions = predict_out[f"e_{name}_ids"].numpy()
             tags = [mapping[p] for p in predictions[0]]
+            if name == ENTITY_ATTRIBUTE_TYPE and self.component_config[BILOU_FLAG]:
+                tags = bilou_utils.remove_bilou_prefixes(tags)
             predicted_tags[name] = tags
 
         entities = self._convert_tags_to_entities(
@@ -1540,7 +1529,7 @@ class DIET(RasaModel):
                     prev_logits,
                 )
 
-                if crf_name == ENTITY_ATTRIBUTE_TYPE or crf_name == CRF_BILOU:
+                if crf_name == ENTITY_ATTRIBUTE_TYPE:
                     # use the logits from the entity type CRF as input for the role
                     # and group CRF
                     prev_logits = _logits
@@ -1610,7 +1599,7 @@ class DIET(RasaModel):
                 pred_ids = self._tf_layers[f"crf.{name}"](_logits, sequence_lengths - 1)
                 out[f"e_{name}_ids"] = pred_ids
 
-                if name == ENTITY_ATTRIBUTE_TYPE or name == CRF_BILOU:
+                if name == ENTITY_ATTRIBUTE_TYPE:
                     # use the logits from the entity type CRF as input for the role
                     # and group CRF
                     prev_logits = _logits
