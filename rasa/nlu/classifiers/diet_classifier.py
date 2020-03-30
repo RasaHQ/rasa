@@ -338,29 +338,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> Dict[Text, Dict[Text, int]]:
         """Create tag_id dictionaries for all CRFs."""
 
-        def _tag_id_index_mapping_for(attribute_key: Text) -> Optional[Dict[Text, int]]:
-            distinct_tag_ids = (
-                {
-                    e.get(attribute_key)
-                    for example in training_data.entity_examples
-                    for e in example.get(ENTITIES)
-                }
-                - {None}
-                - {NO_ENTITY_TAG}
-            )
-
-            if not distinct_tag_ids:
-                return None
-
-            tag_id_dict = {
-                tag_id: idx for idx, tag_id in enumerate(sorted(distinct_tag_ids), 1)
-            }
-            # NO_ENTITY_TAG corresponds to non-entity which should correspond to 0 index
-            # needed for correct prediction for padding
-            tag_id_dict[NO_ENTITY_TAG] = 0
-
-            return tag_id_dict
-
         tag_id_index_mapping_dict = {}
 
         for attribute_key in CRF_ORDER:
@@ -368,14 +345,44 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 attribute_key == ENTITY_ATTRIBUTE_TYPE
                 and self.component_config[BILOU_FLAG]
             ):
+                # If BILOU tagging is enabled use the BILOU format for the entity label
                 tag_id_index_mapping = bilou_utils.build_tag_id_dict(training_data)
             else:
-                tag_id_index_mapping = _tag_id_index_mapping_for(attribute_key)
+                tag_id_index_mapping = self._tag_id_index_mapping_for(
+                    attribute_key, training_data.entity_examples
+                )
 
             if tag_id_index_mapping:
                 tag_id_index_mapping_dict[attribute_key] = tag_id_index_mapping
 
         return tag_id_index_mapping_dict
+
+    @staticmethod
+    def _tag_id_index_mapping_for(
+        attribute_key: Text, entities: List[Message]
+    ) -> Optional[Dict[Text, int]]:
+        """Create mapping from tag name to id."""
+        distinct_tags = (
+            {
+                entity.get(attribute_key)
+                for example in entities
+                for entity in example.get(ENTITIES)
+            }
+            - {None}
+            - {NO_ENTITY_TAG}
+        )
+
+        if not distinct_tags:
+            return None
+
+        tag_id_dict = {
+            tag_id: idx for idx, tag_id in enumerate(sorted(distinct_tags), 1)
+        }
+        # NO_ENTITY_TAG corresponds to non-entity which should correspond to 0 index
+        # needed for correct prediction for padding
+        tag_id_dict[NO_ENTITY_TAG] = 0
+
+        return tag_id_dict
 
     @staticmethod
     def _find_example_for_label(
@@ -597,6 +604,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ):
         for name, tag_id_dict in tag_id_mappings.items():
             if name == ENTITY_ATTRIBUTE_TYPE and self.component_config[BILOU_FLAG]:
+                # If BILOU tagging is enabled we use the BILOU format for the
+                # entity labels
                 _tags = bilou_utils.tags_to_ids(example, tag_id_mappings[name])
                 crf_tag_ids[name].append(np.array([_tags]).T)
             else:

@@ -922,7 +922,7 @@ def _concat_entity_labels(
     """Concatenate labels for entity type, role, and group for evaluation.
 
     In order to calculate metrics also for entity type, role, and group we need to
-    concatenate their labels. For example, 'location.destination.O'. This allows
+    concatenate their labels. For example, 'location.destination'. This allows
     us to report metrics for every combination of entity type, role, and group.
 
     Args:
