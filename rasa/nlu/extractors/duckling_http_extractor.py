@@ -186,9 +186,8 @@ class DucklingHTTPExtractor(EntityExtractor):
             )
 
         extracted = self.add_extractor_name(extracted)
-        message.set(
-            ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True,
-        )
+        extracted = self.clean_up_entities(message, extracted)
+        message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
 
     @classmethod
     def load(
