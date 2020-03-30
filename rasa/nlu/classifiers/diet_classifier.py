@@ -1523,8 +1523,6 @@ class DIET(RasaModel):
         if self.config[ENTITY_RECOGNITION]:
             prev_logits = None
 
-            # TODO don't forward logits form role to group
-
             for crf_name in CRF_ORDER:
                 if (
                     crf_name not in self._crf_num_tags
@@ -1533,7 +1531,7 @@ class DIET(RasaModel):
                     continue
                 tag_ids = tf_batch_data[f"{crf_name}_{TAG_IDS}"][0]
 
-                loss, f1, prev_logits = self._calculate_entity_loss(
+                loss, f1, _logits = self._calculate_entity_loss(
                     text_transformed,
                     tag_ids,
                     mask_text,
@@ -1541,6 +1539,12 @@ class DIET(RasaModel):
                     crf_name,
                     prev_logits,
                 )
+
+                if crf_name == ENTITY_ATTRIBUTE_TYPE or crf_name == CRF_BILOU:
+                    # use the logits from the entity type CRF as input for the role
+                    # and group CRF
+                    prev_logits = _logits
+
                 self._update_entity_metrics(loss, f1, crf_name)
                 losses.append(loss)
 
@@ -1593,18 +1597,23 @@ class DIET(RasaModel):
             out["i_scores"] = scores
 
         if self.config[ENTITY_RECOGNITION]:
-            _logits = None
+            prev_logits = None
             for name in CRF_ORDER:
                 if name not in self._crf_num_tags or self._crf_num_tags[name] == 0:
                     continue
 
                 _input = text_transformed
-                if _logits is not None:
-                    _input = tf.concat([_input, _logits], axis=-1)
+                if prev_logits is not None:
+                    _input = tf.concat([_input, prev_logits], axis=-1)
 
                 _logits = self._tf_layers[f"embed.{name}.logits"](_input)
                 pred_ids = self._tf_layers[f"crf.{name}"](_logits, sequence_lengths - 1)
                 out[f"e_{name}_ids"] = pred_ids
+
+                if name == ENTITY_ATTRIBUTE_TYPE or name == CRF_BILOU:
+                    # use the logits from the entity type CRF as input for the role
+                    # and group CRF
+                    prev_logits = _logits
         return out
 
 
