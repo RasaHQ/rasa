@@ -943,7 +943,13 @@ def _concat_entity_labels(
         token, entities, extractors, ENTITY_ATTRIBUTE_ROLE
     )
 
-    return f"{entity_label}.{role_label}.{group_label}"
+    if entity_label == role_label == group_label == NO_ENTITY_TAG:
+        return NO_ENTITY_TAG
+
+    labels = [entity_label, group_label, role_label]
+    labels = [label for label in labels if label != NO_ENTITY_TAG]
+
+    return ".".join(labels)
 
 
 def align_all_entity_predictions(
