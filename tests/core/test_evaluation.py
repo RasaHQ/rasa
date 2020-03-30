@@ -58,7 +58,7 @@ async def test_end_to_end_evaluation_script(default_agent: Agent):
         "goodbye",
         "greet",
         "default",
-        '[{"name": "Max"}](name:Max)',
+        '[{"name": "Max"}]{"entity": "name", "value": "Max"}',
     ]
 
     assert story_evaluation.evaluation_store.serialise()[0] == serialised_store

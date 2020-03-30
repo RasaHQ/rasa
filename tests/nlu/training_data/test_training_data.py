@@ -1,56 +1,15 @@
-from typing import Optional, Text
-
 import pytest
 import tempfile
-from jsonschema import ValidationError
 
 from rasa.nlu.constants import TEXT
 from rasa.nlu import training_data
 from rasa.nlu.convert import convert_training_data
-from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
-from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.training_data import TrainingData
-from rasa.nlu.training_data.formats import MarkdownReader, MarkdownWriter
-from rasa.nlu.training_data.formats.rasa import validate_rasa_nlu_data, RasaReader
 from rasa.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.nlu.training_data.util import get_file_format
 import rasa.utils.io as io_utils
-
-
-def test_example_training_data_is_valid():
-    demo_json = "data/examples/rasa/demo-rasa.json"
-    data = io_utils.read_json_file(demo_json)
-    validate_rasa_nlu_data(data)
-
-
-@pytest.mark.parametrize(
-    "invalid_data",
-    [
-        {"wrong_top_level": []},
-        ["this is not a toplevel dict"],
-        {
-            "rasa_nlu_data": {
-                "common_examples": [{"intent": "some example without text"}]
-            }
-        },
-        {
-            "rasa_nlu_data": {
-                "common_examples": [
-                    {
-                        "text": "mytext",
-                        "entities": [{"start": "INVALID", "end": 0, "entity": "x"}],
-                    }
-                ]
-            }
-        },
-    ],
-)
-def test_validation_is_throwing_exceptions(invalid_data):
-    with pytest.raises(ValidationError):
-        validate_rasa_nlu_data(invalid_data)
 
 
 def test_luis_data():
@@ -487,86 +446,6 @@ def test_training_data_conversion(
     #     f.write(td.as_json(indent=2))
 
 
-def test_url_data_format():
-    data = """
-    {
-      "rasa_nlu_data": {
-        "entity_synonyms": [
-          {
-            "value": "nyc",
-            "synonyms": ["New York City", "nyc", "the big apple"]
-          }
-        ],
-        "common_examples" : [
-          {
-            "text": "show me flights to New York City",
-            "intent": "unk",
-            "entities": [
-              {
-                "entity": "destination",
-                "start": 19,
-                "end": 32,
-                "value": "NYC"
-              }
-            ]
-          }
-        ]
-      }
-    }"""
-    fname = io_utils.create_temporary_file(
-        data.encode(io_utils.DEFAULT_ENCODING),
-        suffix="_tmp_training_data.json",
-        mode="w+b",
-    )
-    data = io_utils.read_json_file(fname)
-    assert data is not None
-    validate_rasa_nlu_data(data)
-
-
-def test_markdown_entity_regex():
-    r = MarkdownReader()
-
-    md = """
-## intent:restaurant_search
-- i'm looking for a place to eat
-- i'm looking for a place in the [north](loc-direction) of town
-- show me [chines](cuisine:chinese) restaurants
-- show me [chines](22_ab-34*3.A:43er*+?df) restaurants
-    """
-
-    result = r.reads(md)
-
-    assert len(result.training_examples) == 4
-    first = result.training_examples[0]
-    assert first.data == {"intent": "restaurant_search"}
-    assert first.text == "i'm looking for a place to eat"
-
-    second = result.training_examples[1]
-    assert second.data == {
-        "intent": "restaurant_search",
-        "entities": [
-            {"start": 31, "end": 36, "value": "north", "entity": "loc-direction"}
-        ],
-    }
-    assert second.text == "i'm looking for a place in the north of town"
-
-    third = result.training_examples[2]
-    assert third.data == {
-        "intent": "restaurant_search",
-        "entities": [{"start": 8, "end": 14, "value": "chinese", "entity": "cuisine"}],
-    }
-    assert third.text == "show me chines restaurants"
-
-    fourth = result.training_examples[3]
-    assert fourth.data == {
-        "intent": "restaurant_search",
-        "entities": [
-            {"start": 8, "end": 14, "value": "43er*+?df", "entity": "22_ab-34*3.A"}
-        ],
-    }
-    assert fourth.text == "show me chines restaurants"
-
-
 def test_get_file_format():
     fformat = get_file_format("data/examples/luis/demo-restaurants_v5.json")
 
@@ -598,111 +477,3 @@ def test_load_data_from_non_existing_file():
 
 def test_is_empty():
     assert TrainingData().is_empty()
-
-
-def test_markdown_empty_section():
-    data = training_data.load_data(
-        "data/test/markdown_single_sections/empty_section.md"
-    )
-    assert data.regex_features == [{"name": "greet", "pattern": r"hey[^\s]*"}]
-
-    assert not data.entity_synonyms
-    assert len(data.lookup_tables) == 1
-    assert data.lookup_tables[0]["name"] == "chinese"
-    assert "Chinese" in data.lookup_tables[0]["elements"]
-    assert "Chines" in data.lookup_tables[0]["elements"]
-
-
-def test_markdown_not_existing_section():
-    with pytest.raises(ValueError):
-        training_data.load_data(
-            "data/test/markdown_single_sections/not_existing_section.md"
-        )
-
-
-def test_section_value_with_delimiter():
-    td_section_with_delimiter = training_data.load_data(
-        "data/test/markdown_single_sections/section_with_delimiter.md"
-    )
-    assert td_section_with_delimiter.entity_synonyms == {"10:00 am": "10:00"}
-
-
-def test_markdown_order():
-    r = MarkdownReader()
-
-    md = """## intent:z
-- i'm looking for a place to eat
-- i'm looking for a place in the [north](loc-direction) of town
-
-## intent:a
-- intent a
-- also very important
-"""
-
-    training_data = r.reads(md)
-    assert training_data.nlu_as_markdown() == md
-
-
-def test_dump_nlu_with_responses():
-    md = """## intent:greet
-- hey
-- howdy
-- hey there
-- hello
-- hi
-- good morning
-- good evening
-- dear sir
-
-## intent:chitchat/ask_name
-- What's your name?
-- What can I call you?
-
-## intent:chitchat/ask_weather
-- How's the weather?
-- Is it too hot outside?
-"""
-
-    r = MarkdownReader()
-    nlu_data = r.reads(md)
-
-    dumped = nlu_data.nlu_as_markdown()
-    assert dumped == md
-
-
-@pytest.mark.parametrize(
-    "entity_extractor,expected_output",
-    [
-        (None, "- [test](word:random)"),
-        ("", "- [test](word:random)"),
-        ("random-extractor", "- [test](word:random)"),
-        (CRFEntityExtractor.__name__, "- [test](word:random)"),
-        (DucklingHTTPExtractor.__name__, "- test"),
-        (SpacyEntityExtractor.__name__, "- test"),
-        (MitieEntityExtractor.__name__, "- [test](word:random)"),
-    ],
-)
-def test_dump_trainable_entities(
-    entity_extractor: Optional[Text], expected_output: Text
-):
-    training_data_json = {
-        "rasa_nlu_data": {
-            "common_examples": [
-                {
-                    "text": "test",
-                    "intent": "greet",
-                    "entities": [
-                        {"start": 0, "end": 4, "value": "random", "entity": "word"}
-                    ],
-                }
-            ]
-        }
-    }
-    if entity_extractor is not None:
-        training_data_json["rasa_nlu_data"]["common_examples"][0]["entities"][0][
-            "extractor"
-        ] = entity_extractor
-
-    training_data_object = RasaReader().read_from_json(training_data_json)
-    md_dump = MarkdownWriter().dumps(training_data_object)
-    assert md_dump.splitlines()[1] == expected_output
