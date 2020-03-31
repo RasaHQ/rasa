@@ -15,7 +15,7 @@ from typing import (
     Iterable,
 )
 
-from nlu.constants import (
+from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_ROLE,
