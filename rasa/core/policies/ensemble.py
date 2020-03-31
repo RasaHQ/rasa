@@ -118,12 +118,11 @@ class PolicyEnsemble:
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        interpreter: Optional[RasaE2EInterpreter], 
         **kwargs: Any,
     ) -> None:
         if training_trackers:
             for policy in self.policies:
-                policy.train(training_trackers, domain, interpreter, output_path, **kwargs)
+                policy.train(training_trackers, domain, **kwargs)
 
             training_events = self._training_events_from_trackers(training_trackers)
             self.action_fingerprints = self._create_action_fingerprints(training_events)
@@ -253,8 +252,11 @@ class PolicyEnsemble:
         policies = []
         for i, policy_name in enumerate(metadata["policy_names"]):
             policy_cls = registry.policy_from_module_path(policy_name)
+            print(policy_cls)
             dir_name = f"policy_{i}_{policy_cls.__name__}"
+            print(dir_name)
             policy_path = os.path.join(path, dir_name)
+            print(policy_path)
             policy = policy_cls.load(policy_path)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
