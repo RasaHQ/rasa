@@ -92,6 +92,7 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
         super().__init__()
         self.interpreter = RasaE2EInterpreter()
 
+
     def _extract_features(
         self, message: Message, attribute: Text
     ) -> Tuple[Optional[scipy.sparse.spmatrix], Optional[np.ndarray]]:
@@ -184,6 +185,26 @@ class E2ESingleStateFeaturizer(SingleStateFeaturizer):
             for j, action in enumerate(domain.action_names)
         ]
         return label_data
+
+    def create_encoded_all_actions(self, domain):
+        label_data = {j: self._extract_features(self.interpreter.parse(action), TEXT) 
+                        for j, action in enumerate(domain.action_names)}
+
+        sparse_features = []
+        dense_features = []
+        for idx, feats in sorted(label_data.items(), key=lambda x:x[0]):
+            if feats[0] is not None:
+                sparse_features.append(feats[0].tocsr().astype(np.float32))
+            if feats[1] is not None:
+                dense_features.append(feats[1])
+
+        sparse_features = scipy.sparse.vstack(sparse_features)
+        # dense_features = np.vstack(dense_features).astype(np.float32)
+        return sparse_features #, dense_features
+
+
+
+
 
 
 class TrackerFeaturizer:
