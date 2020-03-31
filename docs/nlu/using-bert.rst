@@ -1,4 +1,4 @@
-:desc: Find out how to use only Bert inside of Rasa NLU.
+:desc: Find out how to use Bert, GPT-2 and Huggingface components inside of Rasa NLU.
 
 Using Bert
 ==========
@@ -175,7 +175,7 @@ should always try out different settings yourself.
 
 There are a few things to consider; 
 
-1. Which task is more important - intent classification or entity recognition? 
-2. Is accuracy more important or do we care more about latency of bot predictions? 
+1. Which task is more important - intent classification or entity recognition? If your assistant barely uses entities then you may care less about improved performance there.
+2. Is accuracy more important or do we care more about latency of bot predictions? If responses become much slower then we may also need to invest in more compute resources.
 3. The ``Bert`` features that we're using here can be extended with other featurizers. It may still be a good idea to add a :ref:`CountVectorsFeaturizer`.
 
