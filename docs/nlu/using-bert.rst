@@ -83,10 +83,12 @@ Note the differences in these files.
 
 In the light configuration we have a CountVectorsFeaturizer, which we 
 replace in the heavy variant with a HFTransformersNLP together with the
-LanguageModelTokenizer and LanguageModelFeaturizer. 
+LanguageModelTokenizer and LanguageModelFeaturizer. Notice that we're 
+no longer using the original WhitespaceTokenizer because tokenization
+is now handled by Bert.
 
 Run the Pipelines
-~~~~~~~~~~~~~~~~~
+-----------------
 
 You can run both configuarions yourself. 
 
@@ -107,17 +109,48 @@ of those lines to list them here.
 
     # output from the light model
     2020-03-30 16:21:54 INFO     rasa.nlu.model  - Starting to train component DIETClassifier
-    Epochs: 100%|███████████████████████████████| 20/20 [01:44<00:00, ...]
+    Epochs: 100%|███████████████████████████████| 50/50 [04:30<00:00, ...]
     2020-03-30 16:23:53 INFO     rasa.nlu.test  - Running model for predictions:
     100%|███████████████████████████████████████| 2396/2396 [01:23<00:00, 28.65it/s]
     ...
     # output from the heavy model
     2020-03-30 16:47:04 INFO     rasa.nlu.model  - Starting to train component DIETClassifier
-    Epochs: 100%|███████████████████████████████| 30/30 [02:33<00:00,  ...]
+    Epochs: 100%|███████████████████████████████| 50/50 [04:33<00:00,  ...]
     2020-03-30 16:49:52 INFO     rasa.nlu.test  - Running model for predictions:
     100%|███████████████████████████████████████| 2396/2396 [07:20<00:00,  5.69it/s]
 
 From the logs we can gather an important observation. 
-The heavy model is a fair bit slower. It's only moderately 
-the case during training but during inference it is a ~6 fold increase. 
-Depending on your use-case this is something to seriously consider.
+The heavy model is a fair bit slower, not in training, but at inference time
+we see a ~6 fold increase. Depending on your use-case this is 
+something to seriously consider.
+
+Results
+-------
+
+We've summerised the results into two charts, one for intents and 
+one for entities.
+
+
+Intent Results 
+~~~~~~~~~~~~~~
+
+.. image:: /_static/images/bert-intents.png
+
+Entity Results 
+~~~~~~~~~~~~~~
+
+.. image:: /_static/images/bert-entities.png
+
+Observations 
+~~~~~~~~~~~~
+
+On all fronts we see that the model with the Bert embeddings performs better. 
+But it deserves mentioning that the effect is more pronounced in the entities.
+Note that these results may not be the same on your use-case. Every assistant 
+is different so it is important that you keep comparing. 
+
+It also deserves 
+mentioning that you need to beware that you don't over-optimise training data
+that you've generated yourself. End users will use the assistant in ways you 
+probably did not anticipate. Typically it is more important to gather data of 
+actual users than it is to get the best F1 score on an artificial dataset.
