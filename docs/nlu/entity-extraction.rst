@@ -31,7 +31,7 @@ Component                  Requires           Model           	        Notes
 The "entity" Object
 ^^^^^^^^^^^^^^^^^^^
 
-After parsing, an entity is returned as a dictionary.  There are two fields that show information
+After parsing, an entity is returned as a dictionary. There are two fields that show information
 about how the pipeline impacted the entities returned: the ``extractor`` field
 of an entity tells you which entity extractor found this particular entity, and
 the ``processors`` field contains the name of components that altered this
@@ -62,7 +62,7 @@ exactly. Instead it will return the trained synonym.
 
     The ``confidence`` will be set by the ``CRFEntityExtractor`` component. The
     ``DucklingHTTPExtractor`` will always return ``1``. The ``SpacyEntityExtractor`` extractor
-    and ``DIETClassifier`` do not provide this information and returns ``null``.
+    and ``DIETClassifier`` do not provide this information and return ``null``.
 
 
 Some extractors, like ``duckling``, may include additional information. For example:
@@ -98,9 +98,83 @@ Custom Entities
 Almost every chatbot and voice app will have some custom entities.
 A restaurant assistant should understand ``chinese`` as a cuisine,
 but to a language-learning assistant it would mean something very different.
-The ``CRFEntityExtractor`` component can learn custom entities in any language, given
+The ``CRFEntityExtractor`` and the ``DIETClassifier`` component can learn custom entities in any language, given
 some training data.
 See :ref:`training-data-format` for details on how to include entities in your training data.
+
+
+.. _composite-entities:
+
+Composite Entities
+^^^^^^^^^^^^^^^^^^
+
+Assigning custom entity labels to words, allow you to define certain concepts in the data.
+For example, we can define what a `city` is:
+
+.. code-block:: none
+
+    I want to fly from [Berlin](city) to [San Francisco](city).
+
+However, sometimes you want to specify entities even further.
+Let's assume we want to build an assistant that should book a flight for us.
+The assistant needs to know which of the two cities in the example above is the departure city and which is the
+destination city.
+``Berlin`` and ``San Francisco`` are still cities, but they play a different role in our example.
+Composite entities allow you to assign a role and/or a group label in addition to the entity label.
+
+.. code-block:: none
+
+    - I want to fly from [Berlin]{"entity": "city", "role": "departure"} to [San Francisco]{"entity": "city", "role": "destination"}.
+
+The group label can, for example, be used to define different orders.
+In the following example we use the group label to reference what toppings goes with which pizze and
+what size which pizza has.
+
+.. code-block:: none
+
+    Give me a [small]{"entity": "size", "group": "1"} pizza with [mushrooms]{"entity": "topping", "group": "1"} and
+    a [large]{"entity": "size", "group": "2"} [pepperoni]{"entity": "topping", "group": "2"}
+
+See :ref:`training-data-format` for details on how to define composite entities in your training data.
+
+The entity object returned by the extractor will include the detected role/group label.
+
+.. code-block:: json
+
+    {
+      "text": "Book a flight from Berlin to SF",
+      "intent": "book_flight",
+      "entities": [
+        {
+          "start": 19,
+          "end": 25,
+          "value": "Berlin",
+          "entity": "city",
+          "role": "departure",
+          "extractor": "DIETClassifier",
+        },
+        {
+          "start": 29,
+          "end": 31,
+          "value": "San Francisco",
+          "entity": "city",
+          "role": "destination",
+          "extractor": "DIETClassifier",
+        }
+      ]
+    }
+
+.. note::
+
+    Composite entities are currently only supported by the ``DIETClassifier``.
+
+In order to properly train your model with composite entities, make sure to include enough training data examples
+for every combination of entity and role/group label.
+Also make sure to have some variations in your training data, so that the model is able to generalize.
+For example, you should not only have example like ``fly FROM x TO y``, but also include examples like
+``fly TO y FROM x``.
+
+To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
 
 
 Extracting Places, Dates, People, Organisations
