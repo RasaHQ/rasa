@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 
 import rasa.utils.io
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
+from rasa.core.constants import CIRCUIT_BREAKER_TRIPPED
 from rasa.core.utils import pad_lists_to_size
 from rasa.core.events import ActionExecuted, UserUttered
 from rasa.nlu.training_data.formats.markdown import MarkdownWriter
@@ -288,7 +289,11 @@ def _emulate_form_rejection(processor, partial_tracker):
 
 
 def _collect_action_executed_predictions(
-    processor, partial_tracker, event, fail_on_prediction_errors
+    processor,
+    partial_tracker,
+    event,
+    fail_on_prediction_errors,
+    circuit_breaker_tripped,
 ):
     from rasa.core.policies.form_policy import FormPolicy
 
@@ -296,16 +301,21 @@ def _collect_action_executed_predictions(
 
     gold = event.action_name
 
-    action, policy, confidence = processor.predict_next_action(partial_tracker)
-    predicted = action.name()
-
-    if policy and predicted != gold and FormPolicy.__name__ in policy:
-        # FormPolicy predicted wrong action
-        # but it might be Ok if form action is rejected
-        _emulate_form_rejection(processor, partial_tracker)
-        # try again
+    if circuit_breaker_tripped:
+        predicted = CIRCUIT_BREAKER_TRIPPED
+        policy = None
+        confidence = None
+    else:
         action, policy, confidence = processor.predict_next_action(partial_tracker)
         predicted = action.name()
+
+        if policy and predicted != gold and FormPolicy.__name__ in policy:
+            # FormPolicy predicted wrong action
+            # but it might be Ok if form action is rejected
+            _emulate_form_rejection(processor, partial_tracker)
+            # try again
+            action, policy, confidence = processor.predict_next_action(partial_tracker)
+            predicted = action.name()
 
     action_executed_eval_store.add_to_store(
         action_predictions=predicted, action_targets=gold
@@ -352,15 +362,24 @@ def _predict_tracker_actions(
     )
 
     tracker_actions = []
+    should_predict_another_action = True
+    num_predicted_actions = 0
 
     for event in events[1:]:
         if isinstance(event, ActionExecuted):
+            circuit_breaker_tripped = processor.is_action_limit_reached(
+                num_predicted_actions, should_predict_another_action
+            )
             (
                 action_executed_result,
                 policy,
                 confidence,
             ) = _collect_action_executed_predictions(
-                processor, partial_tracker, event, fail_on_prediction_errors
+                processor,
+                partial_tracker,
+                event,
+                fail_on_prediction_errors,
+                circuit_breaker_tripped,
             )
             tracker_eval_store.merge_store(action_executed_result)
             tracker_actions.append(
@@ -371,6 +390,11 @@ def _predict_tracker_actions(
                     "confidence": confidence,
                 }
             )
+            should_predict_another_action = processor.should_predict_another_action(
+                action_executed_result.action_predictions[0]
+            )
+            num_predicted_actions += 1
+
         elif use_e2e and isinstance(event, UserUttered):
             user_uttered_result = _collect_user_uttered_predictions(
                 event, partial_tracker, fail_on_prediction_errors
@@ -379,6 +403,8 @@ def _predict_tracker_actions(
             tracker_eval_store.merge_store(user_uttered_result)
         else:
             partial_tracker.update(event)
+        if isinstance(event, UserUttered):
+            num_predicted_actions = 0
 
     return tracker_eval_store, partial_tracker, tracker_actions
 

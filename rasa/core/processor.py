@@ -500,18 +500,20 @@ class MessageProcessor:
             or tracker.latest_message.intent.get("name") == USER_INTENT_RESTART
         )
 
+    def is_action_limit_reached(
+        self, num_predicted_actions: int, should_predict_another_action: bool
+    ):
+        return (
+            num_predicted_actions >= self.max_number_of_predictions
+            and should_predict_another_action
+        )
+
     async def _predict_and_execute_next_action(
         self, output_channel: OutputChannel, tracker: DialogueStateTracker
     ):
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
         num_predicted_actions = 0
-
-        def is_action_limit_reached():
-            return (
-                num_predicted_actions == self.max_number_of_predictions
-                and should_predict_another_action
-            )
 
         # action loop. predicts actions until we hit action listen
         while (
@@ -527,7 +529,9 @@ class MessageProcessor:
             )
             num_predicted_actions += 1
 
-        if is_action_limit_reached():
+        if self.is_action_limit_reached(
+            num_predicted_actions, should_predict_another_action
+        ):
             # circuit breaker was tripped
             logger.warning(
                 "Circuit breaker tripped. Stopped predicting "
