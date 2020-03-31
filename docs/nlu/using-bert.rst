@@ -3,7 +3,7 @@
 Using Bert
 ==========
 
-Since Rasa 1.8.1 you can use Bert inside of Rasa pipelines.
+Since Rasa 1.8.1 you can use ``Bert`` inside of Rasa pipelines.
 The goal of this document is to show you how you can do that
 as well as some tips in exploring these new tools.
 
@@ -62,7 +62,7 @@ config/config-light.yml
     min_ngram: 1
     max_ngram: 4
     - name: DIETClassifier
-    epochs: 20
+    epochs: 50
 
 config/config-heavy.yml 
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -77,9 +77,10 @@ config/config-heavy.yml
     - name: LanguageModelTokenizer
     - name: LanguageModelFeaturizer
     - name: DIETClassifier
-    epochs: 30
+    epochs: 50
 
-Note the differences in these files. 
+In both cases we're training a ``DietClassifier`` for 50 epochs but 
+there are a few differences.
 
 In the light configuration we have a CountVectorsFeaturizer, which we 
 replace in the heavy variant with a HFTransformersNLP together with the
@@ -102,6 +103,9 @@ You can run both configuarions yourself.
                   --cross-validation --runs 1 --folds 2 \
                   --out gridresults/config-heavy
 
+Results
+-------
+
 When this runs you should see logs appear. We've picked a few
 of those lines to list them here. 
 
@@ -119,38 +123,55 @@ of those lines to list them here.
     2020-03-30 16:49:52 INFO     rasa.nlu.test  - Running model for predictions:
     100%|███████████████████████████████████████| 2396/2396 [07:20<00:00,  5.69it/s]
 
-From the logs we can gather an important observation. 
-The heavy model is a fair bit slower, not in training, but at inference time
-we see a ~6 fold increase. Depending on your use-case this is 
-something to seriously consider.
+.. note::
 
-Results
--------
+    From the logs we can gather an important observation. 
+    The heavy model is a fair bit slower, not in training, but at inference time
+    we see a ~6 fold increase. Depending on your use-case this is 
+    something to seriously consider.
 
-We've summerised the results into two charts, one for intents and 
-one for entities.
-
+The results from these two runs can be found in the ``gridresults`` folder. 
+We've summerised the main results below.
 
 Intent Results 
 ~~~~~~~~~~~~~~
 
-.. image:: /_static/images/bert-intents.png
+These are the scores for intent classification.
+
+========  =========== =========== ===========
+ Config    Precision   Recall      f1 score
+========  =========== =========== ===========
+Light       0.7824      0.7819      0.7795
+Heavy       0.7894      0.7880      0.7843
+========  =========== =========== ===========
 
 Entity Results 
 ~~~~~~~~~~~~~~
 
-.. image:: /_static/images/bert-entities.png
+These are the scores for entity detection.
+
+========  =========== =========== ===========
+ Config    Precision   Recall      f1 score
+========  =========== =========== ===========
+Light       0.7818      0.7282      0.7448
+Heavy       0.8942      0.7642      0.8188
+========  =========== =========== ===========
 
 Observations 
 ~~~~~~~~~~~~
 
 On all fronts we see that the model with the Bert embeddings performs better. 
 But it deserves mentioning that the effect is more pronounced in the entities.
-Note that these results may not be the same on your use-case. Every assistant 
-is different so it is important that you keep comparing. 
 
-It also deserves 
-mentioning that you need to beware that you don't over-optimise training data
-that you've generated yourself. End users will use the assistant in ways you 
-probably did not anticipate. Typically it is more important to gather data of 
-actual users than it is to get the best F1 score on an artificial dataset.
+Bert in Practice
+----------------
+
+Note that in practice you'll need to run this experiment on your own data. 
+Odds are that our dataset is not representative of yours so you
+should always try out different settings yourself. 
+
+There are a few things to consider; 
+
+1. Which task is more important - intent classification or entity recognition? 
+2. Is accuracy more important or do we care more about latency of bot predictions? 
+3. The ``Bert`` features that we're using here can be extended with other featurizers. It may still be a good idea to add a ``CountVectorsFeaturizer``.
