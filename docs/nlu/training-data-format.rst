@@ -29,7 +29,7 @@ e.g. ``[<entity text>](<entity name>)``, or by using the following syntax ``[<en
 Using the latter syntax, you can also assign synonyms, roles, or groups to an entity, e.g.
 ``[<entity-text>]{"entity": "<entity name>", "role": "<role name>", "group": "<group name>", "value": "<entity synonym>"}``.
 The keywords ``role``, ``group``, and ``value`` are optional in this notation.
-
+To understand what the labels ``role`` and ``group`` are for, see section :ref:`composite-entities`.
 
 .. code-block:: md
 

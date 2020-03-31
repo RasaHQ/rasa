@@ -17,6 +17,14 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.9.4] - 2020-03-30
+^^^^^^^^^^^^^^^^^^^^
+
+Bugfixes
+--------
+- `#5529 <https://github.com/rasahq/rasa/issues/5529>`_: Fix memory leak problem on increasing number of calls to ``/model/parse`` endpoint.
+
+
 [1.9.3] - 2020-03-27
 ^^^^^^^^^^^^^^^^^^^^
 
