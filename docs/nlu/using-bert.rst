@@ -81,16 +81,19 @@ config/config-heavy.yml
 
 Note the differences in these files. 
 
-In the light configuration we have a CountVectorsFeaturizer, which we 
-replace in the heavy variant with a HFTransformersNLP together with the
-LanguageModelTokenizer and LanguageModelFeaturizer. Notice that we're 
-no longer using the original WhitespaceTokenizer because tokenization
-is now handled by Bert.
+In the light configuration we have :ref:`CountVectorsFeaturizer` which create bag-of-word
+representations for each incoming message(at word and character levels). The heavy configuration replaces it with a
+BERT model inside the pipeline. :ref:`HFTransformersNLP` is a utility component that does the heavy lifting work of loading the
+``BERT`` model in memory. Under the hood it leverages HuggingFace's `Transformers library <https://huggingface.co/transformers/>`_ to initialize the specified language model.
+Notice that we add two additional components :ref:`LanguageModelTokenizer` and :ref:`LanguageModelFeaturizer` which
+pick up the tokens and feature vectors respectively that are constructed by the utility component.
+
+We use the same :ref:`diet-classifier` model for combined intent classification and entity recognition in both cases.
 
 Run the Pipelines
 -----------------
 
-You can run both configuarions yourself. 
+You can run both configurations yourself.
 
 .. code-block:: yaml
 
@@ -127,7 +130,7 @@ something to seriously consider.
 Results
 -------
 
-We've summerised the results into two charts, one for intents and 
+We've summarised the results into two charts, one for intents and
 one for entities.
 
 
