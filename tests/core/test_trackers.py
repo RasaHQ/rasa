@@ -209,76 +209,41 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
 @pytest.mark.parametrize(
     "entities, expected_value",
     [
+        ([{"value": "greet", "entity": "entity_name"}], ["greet"]),
         (
             [
-                {
-                    "start": 1,
-                    "end": 5,
-                    "value": "greet",
-                    "entity": "entity_name",
-                    "extractor": "manual",
-                }
+                {"value": "greet", "entity": "entity_name"},
+                {"value": "bye", "entity": "other"},
             ],
             ["greet"],
         ),
         (
             [
-                {
-                    "start": 1,
-                    "end": 5,
-                    "value": "e1",
-                    "entity": "entity_name",
-                    "extractor": "manual",
-                },
-                {
-                    "start": 1,
-                    "end": 5,
-                    "value": "e2",
-                    "entity": "entity_name",
-                    "extractor": "manual",
-                },
+                {"value": "greet", "entity": "entity_name"},
+                {"value": "bye", "entity": "entity_name"},
             ],
-            ["e1", "e2"],
+            ["greet", "bye"],
         ),
         (
             [
-                {
-                    "start": 1,
-                    "end": 5,
-                    "value": "role-group",
-                    "entity": "entity_name",
-                    "role": "role",
-                    "group": "group",
-                    "extractor": "manual",
-                }
+                {"value": "greet", "entity": "entity_name", "role": "role"},
+                {"value": "bye", "entity": "entity_name"},
             ],
-            ["role-group"],
+            ["greet"],
         ),
         (
             [
-                {
-                    "start": 1,
-                    "end": 5,
-                    "value": "role",
-                    "entity": "entity_name",
-                    "role": "role",
-                    "extractor": "manual",
-                }
+                {"value": "greet", "entity": "entity_name", "group": "group"},
+                {"value": "bye", "entity": "entity_name"},
             ],
-            ["role"],
+            ["greet"],
         ),
         (
             [
-                {
-                    "start": 1,
-                    "end": 5,
-                    "value": "group",
-                    "entity": "entity_name",
-                    "role": "group",
-                    "extractor": "manual",
-                }
+                {"value": "greet", "entity": "entity_name"},
+                {"value": "bye", "entity": "entity_name", "group": "group"},
             ],
-            ["group"],
+            ["greet", "bye"],
         ),
     ],
 )
@@ -295,17 +260,14 @@ def test_tracker_entity_retrieval(entities, expected_value, default_domain: Doma
     intent = {"name": "greet", "confidence": 1.0}
     tracker.update(UserUttered("/greet", intent, entities))
 
-    assert list(tracker.get_latest_entity_values(entity_type)) == expected_value
-    if entity_role is not None:
-        assert (
-            list(tracker.get_latest_entity_values_with_role(entity_type, entity_role))
-            == expected_value
+    assert (
+        list(
+            tracker.get_latest_entity_values(
+                entity_type, entity_role=entity_role, entity_group=entity_group
+            )
         )
-    if entity_group is not None:
-        assert (
-            list(tracker.get_latest_entity_values_with_group(entity_type, entity_group))
-            == expected_value
-        )
+        == expected_value
+    )
     assert list(tracker.get_latest_entity_values("unknown")) == []
 
 
