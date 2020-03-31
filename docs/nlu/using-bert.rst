@@ -21,7 +21,7 @@ Setup
 -----
 
 To demonstrate how to use ``BERT`` we will train two pipelines on Sara,
-the demo bot at Rasa. In doing this we will also be able to measure
+the demo bot in the Rasa docs. In doing this we will also be able to measure
 the pros and cons of having ``BERT`` in your pipeline.
 
 If you want to reproduce the results in this document you will need 
