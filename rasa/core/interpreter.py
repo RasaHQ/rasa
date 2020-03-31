@@ -326,19 +326,19 @@ class RasaCoreInterpreter(NaturalLanguageInterpreter):
         self.interpreter = Interpreter(self.trainer.pipeline, {})
 
     def prepare_training_data(self, trackers_as_states, trackers_as_actions, domain):
-        training_data = []
+        training_examples = []
         for tracker in trackers_as_states:
             for state in tracker: 
                 if state and not state == {}:
-                    training_data.append(state["prev_action"])
+                    training_examples.append(state["prev_action"])
                     if "user" in state.keys():
-                        training_data.append(state["user"])
-        training_data += [Message(action) for action in domain.action_names]
-        tr_data = TrainingData(training_examples=training_data)
+                        training_examples.append(state["user"])
+        training_examples += [Message(action) for action in domain.action_names]
+        training_data = TrainingData(training_examples=training_examples)
 
-        training_data = [action for tr in trackers_as_actions for action in tr]
-        tr_data.training_examples += training_data
-        return tr_data
+        training_examples = [action for tr in trackers_as_actions for action in tr]
+        training_data.training_examples += training_examples
+        return training_data
 
     def prepare_training_data_and_train(self, trackers_as_states, trackers_as_actions, interpreter, output_path, domain):
         """
@@ -346,11 +346,8 @@ class RasaCoreInterpreter(NaturalLanguageInterpreter):
         Preliminary for when the featurizer is to be used for raw text;
         Args:
              - trackers_as_states: real data as a dictionary
-             - delimiter: symbol to be used to divide into words
+             - trackers_as_actions: output label
         """
-        # TODO:
-        # - no delimiter
-        # - how to avoid using NLU pipeline?
         tr_data = self.prepare_training_data(trackers_as_states, trackers_as_actions, domain)
 
         interp = interpreter.train(tr_data, output_path)
@@ -367,7 +364,7 @@ class RasaCoreInterpreter(NaturalLanguageInterpreter):
                                 example = find_same(name, TEXT, tr_data)
                                 state[key] = example
 
-        return interp, tr_data
+        return interp
 
     def train(self, data: TrainingData, path, **kwargs: Any) -> "Interpreter":
         """Trains the underlying pipeline using the provided training data."""
