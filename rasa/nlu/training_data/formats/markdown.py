@@ -88,7 +88,10 @@ class MarkdownReader(TrainingDataReader):
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
+        from rasa.nlu.training_data import TrainingData
+
         self.__init__()
+
         s = self._strip_comments(s)
         for line in s.splitlines():
             line = line.strip()
@@ -287,6 +290,7 @@ class MarkdownReader(TrainingDataReader):
 
     def parse_training_example(self, example: Text) -> "Message":
         """Extract entities and synonyms, and convert to plain text."""
+        from rasa.nlu.training_data import Message
 
         entities = self._find_entities_in_training_example(example)
         plain_text = re.sub(
