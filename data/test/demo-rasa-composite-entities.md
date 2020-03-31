@@ -5,14 +5,9 @@
   - [intent:affirm](#intentaffirm)
   - [intent:goodbye](#intentgoodbye)
   - [intent:greet](#intentgreet)
-  - [intent:chitchat/ask_name](#intentchitchatask_name)
-  - [intent:chitchat/ask_weather](#intentchitchatask_weather)
+  - [intent:chitchat](#intentchitchat)
   - [intent:restaurant_search](#intentrestaurant_search)
 - [intent:order_pizza](#intentorder_pizza)
-  - [synonym:chinese](#synonymchinese)
-  - [synonym:vegetarian](#synonymvegetarian)
-  - [regex:zipcode](#regexzipcode)
-  - [regex:greet](#regexgreet)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -49,11 +44,9 @@
 - good evening
 - dear sir
 
-## intent:chitchat/ask_name
+## intent:chitchat
 - What's your name?
 - What can I call you?
-
-## intent:chitchat/ask_weather
 - How's the weather?
 - Is it too hot outside?
 
@@ -80,17 +73,3 @@
 - I would like a [medium]{"entity": "size", "group": "1"} standard pizza and a [medium]{"entity": "size", "group": "2"} pizza with [extra cheese]{"entity": "topping", "group": "2"}
 - [large]{"entity": "size", "group": "1"} with [onions]{"entity": "topping", "group": "1"} and [small]{"entity": "size", "group": "1"} with [olives]{"entity": "topping", "group": "1"}
 - a pizza with [onions]{"entity": "topping", "group": "1"} in [medium]{"entity": "size", "group": "1"} and one with [mushrooms]{"entity": "topping", "group": "2"} in [small]{"entity": "size", "group": "2"} please
-
-## synonym:chinese
-+ Chines
-* Chinese
-
-## synonym:vegetarian
-- vegg
-- veggie
-
-## regex:zipcode
-- [0-9]{5}
-
-## regex:greet
-- hey[^\s]*

@@ -366,7 +366,7 @@ async def test_train_persist_load_with_composite_entities(
     (trainer, trained, persisted_path) = await train(
         _config,
         path=tmpdir.strpath,
-        data="data/examples/rasa/demo-rasa-composite-entities.md",
+        data="data/test/demo-rasa-composite-entities.md",
         component_builder=component_builder,
     )
 
