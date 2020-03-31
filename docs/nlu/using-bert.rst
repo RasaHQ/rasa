@@ -1,11 +1,13 @@
-:desc: Find out how to use Bert, GPT-2 and Huggingface pre-trained embeddings and components inside of Rasa NLU.
+:desc: Find out how to use pre-trained embeddings from language models implemented in HuggingFace's Transformers
+       like BERT, GPT-2, etc. inside Rasa NLU.
 
-Using Bert
-==========
+Using Language Models like BERT inside Rasa NLU
+===============================================
 
-Since Rasa 1.8.0 you can use ``BERT`` inside of Rasa pipelines.
-The goal of this document is to show you how you can do that
-as well as some tips in exploring these new tools.
+Since Rasa 1.8.0, you can use pre-trained embeddings from language models like
+`BERT <https://arxiv.org/abs/1810.04805>`_ inside of Rasa NLU pipelines.
+The goal of this document is to show how you can do that
+as well as some practical tips on exploring these new tools.
 
 .. contents::
    :local:
@@ -18,9 +20,9 @@ as well as some tips in exploring these new tools.
 Setup
 -----
 
-To demonstrate how to use Bert we will train two pipelines on Sara, 
+To demonstrate how to use ``BERT`` we will train two pipelines on Sara,
 the demo bot at Rasa. In doing this we will also be able to measure
-the pros and cons of having Bert in your pipeline.
+the pros and cons of having ``BERT`` in your pipeline.
 
 If you want to reproduce the results in this document you will need 
 to first clone the repository found here:
@@ -30,14 +32,14 @@ to first clone the repository found here:
     git clone git@github.com:RasaHQ/rasa-demo.git
 
 Once cloned you can install the requirements. Be sure that 
-you explicitly install the transformers dependency. 
+you explicitly install the ``transformers`` dependency.
 
 .. code-block:: bash
 
     pip install "rasa[transformers]"
 
 You should now be all set to train an assistant that will
-use Bert. So let's write configuration files that will allow
+use ``BERT``. So let's write configuration files that will allow
 us to compare approaches. We'll make a seperate folder 
 where we can place two new configuration files. 
 
@@ -46,7 +48,7 @@ where we can place two new configuration files.
     mkdir config
 
 For the next step we've created two configuration files. They only
-contain the pipeline part that is relevant for `nlu` so no policies.
+contain the pipeline part that is relevant for `NLU` model training and hence don't declare any dialogue policies.
 
 config/config-light.yml
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -79,17 +81,21 @@ config/config-heavy.yml
     - name: DIETClassifier
     epochs: 50
 
-In both cases we're training a ``DietClassifier`` for 50 epochs but 
-there are a few differences.
+In both cases we're training a :ref:`diet-classifier` for combined intent classification and entity recognition
+for 50 epochs but there are a few differences.
 
-In the light configuration we have :ref:`CountVectorsFeaturizer` which create bag-of-word
+In the light configuration we have :ref:`CountVectorsFeaturizer` which creates bag-of-word
 representations for each incoming message(at word and character levels). The heavy configuration replaces it with a
-BERT model inside the pipeline. :ref:`HFTransformersNLP` is a utility component that does the heavy lifting work of loading the
+``BERT`` model inside the pipeline. :ref:`HFTransformersNLP` is a utility component that does the heavy lifting work of loading the
 ``BERT`` model in memory. Under the hood it leverages HuggingFace's `Transformers library <https://huggingface.co/transformers/>`_ to initialize the specified language model.
 Notice that we add two additional components :ref:`LanguageModelTokenizer` and :ref:`LanguageModelFeaturizer` which
 pick up the tokens and feature vectors respectively that are constructed by the utility component.
 
-We use the same :ref:`diet-classifier` model for combined intent classification and entity recognition in both cases.
+
+.. note::
+
+    We strictly use these language models as featurizers, which means that their parameters are not fine-tuned during training of
+    downstream models in your NLU pipeline.
 
 Run the Pipelines
 -----------------
@@ -129,12 +135,11 @@ of those lines to list them here.
 .. note::
 
     From the logs we can gather an important observation. 
-    The heavy model is a fair bit slower, not in training, but at inference time
-    we see a ~6 fold increase. Depending on your use-case this is 
-    something to seriously consider.
+    The heavy model consisting of ``BERT`` is a fair bit slower, not in training, but at inference time
+    we see a ~6 fold increase. Depending on your use-case this is something to seriously consider.
 
 The results from these two runs can be found in the ``gridresults`` folder. 
-We've summerised the main results below.
+We've summarised the main results below.
 
 Intent Results 
 ~~~~~~~~~~~~~~
@@ -163,10 +168,11 @@ Heavy       0.8942      0.7642      0.8188
 Observations 
 ~~~~~~~~~~~~
 
-On all fronts we see that the heavy model with the ``BERT`` embeddings performs better. 
-But it deserves mentioning that the effect is more pronounced in the entities.
+On all fronts we see that the heavy model with the ``BERT`` embeddings performs better.
+More specifically, the performance gain for intent classification is marginal but it deserves mentioning that the effect
+is more pronounced in the case of entity recognition.
 
-Bert in Practice
+BERT in Practice
 ----------------
 
 Note that in practice you'll need to run this experiment on your own data. 
@@ -176,6 +182,6 @@ should always try out different settings yourself.
 There are a few things to consider; 
 
 1. Which task is more important - intent classification or entity recognition? If your assistant barely uses entities then you may care less about improved performance there.
-2. Is accuracy more important or do we care more about latency of bot predictions? If responses become much slower then we may also need to invest in more compute resources.
-3. The ``Bert`` features that we're using here can be extended with other featurizers. It may still be a good idea to add a :ref:`CountVectorsFeaturizer`.
+2. Is accuracy more important or do we care more about latency of bot predictions? If responses from the assistant become much slower as shown in the above example, we may also need to invest in more compute resources.
+3. The ``BERT`` embeddings that we're using here as features can be extended with other featurizers as well. It may still be a good idea to add a :ref:`CountVectorsFeaturizer` to capture words specific to the vocabulary of your domain.
 
