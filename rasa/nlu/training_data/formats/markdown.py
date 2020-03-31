@@ -88,8 +88,6 @@ class MarkdownReader(TrainingDataReader):
 
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
         """Read markdown string and create TrainingData object"""
-        from rasa.nlu.training_data import TrainingData
-
         self.__init__()
         s = self._strip_comments(s)
         for line in s.splitlines():
@@ -289,7 +287,6 @@ class MarkdownReader(TrainingDataReader):
 
     def parse_training_example(self, example: Text) -> "Message":
         """Extract entities and synonyms, and convert to plain text."""
-        from rasa.nlu.training_data import Message
 
         entities = self._find_entities_in_training_example(example)
         plain_text = re.sub(
@@ -395,7 +392,7 @@ class MarkdownWriter(TrainingDataWriter):
         md = ""
         # regex features are already sorted
         lookup_tables = training_data.lookup_tables
-        for i, lookup_table in enumerate(lookup_tables):
+        for lookup_table in lookup_tables:
             md += self._generate_section_header_md(LOOKUP, lookup_table["name"])
             elements = lookup_table["elements"]
             if isinstance(elements, list):

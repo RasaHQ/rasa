@@ -1020,7 +1020,8 @@ def get_eval_data(
 
         if should_eval_response_selection:
 
-            # including all examples here. Empty response examples are filtered at the time of metric calculation
+            # including all examples here. Empty response examples are filtered at the
+            # time of metric calculation
             intent_target = example.get("intent", "")
             selector_properties = result.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
 
@@ -1116,8 +1117,18 @@ def get_available_response_selector_types(interpreter: Interpreter) -> List[Text
 
 
 def remove_pretrained_extractors(pipeline: List[Component]) -> List[Component]:
-    """Removes pretrained extractors from the pipeline so that entities
-       from pre-trained extractors are not predicted upon parsing"""
+    """Remove pre-trained extractors from the pipeline.
+
+    Remove pre-trained extractors so that entities from pre-trained extractors
+    are not predicted upon parsing.
+
+    Args:
+        pipeline: the pipeline
+
+    Returns:
+        Updated pipeline
+
+    """
     pipeline = [c for c in pipeline if c.name not in PRETRAINED_EXTRACTORS]
     return pipeline
 
@@ -1206,8 +1217,8 @@ def generate_folds(
     skf = StratifiedKFold(n_splits=n, shuffle=True)
     x = td.intent_examples
 
-    # Get labels with response key appended to intent name because we want a stratified split on all
-    # intents(including retrieval intents if they exist)
+    # Get labels with response key appended to intent name because we want a
+    # stratified split on all intents(including retrieval intents if they exist)
     y = [example.get_combined_intent_response_key() for example in x]
     for i_fold, (train_index, test_index) in enumerate(skf.split(x, y)):
         logger.debug(f"Fold: {i_fold}")

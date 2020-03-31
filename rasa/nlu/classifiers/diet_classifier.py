@@ -1442,7 +1442,7 @@ class DIET(RasaModel):
 
     def _calculate_entity_loss(
         self,
-        outputs: tf.Tensor,
+        inputs: tf.Tensor,
         tag_ids: tf.Tensor,
         mask: tf.Tensor,
         sequence_lengths: tf.Tensor,
@@ -1453,11 +1453,10 @@ class DIET(RasaModel):
         sequence_lengths = sequence_lengths - 1  # remove cls token
         tag_ids = tf.cast(tag_ids[:, :, 0], tf.int32)
 
-        input = outputs
         if previous_logits is not None:
-            input = tf.concat([input, previous_logits], axis=-1)
+            inputs = tf.concat([inputs, previous_logits], axis=-1)
 
-        logits = self._tf_layers[f"embed.{crf_name}.logits"](input)
+        logits = self._tf_layers[f"embed.{crf_name}.logits"](inputs)
 
         # should call first to build weights
         pred_ids = self._tf_layers[f"crf.{crf_name}"](logits, sequence_lengths)
