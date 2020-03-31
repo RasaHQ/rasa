@@ -14,6 +14,8 @@
 Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contexual assistants on:
 - Facebook Messenger
 - Slack
+- Google Hangouts
+- Webex Teams
 - Microsoft Bot Framework
 - Rocket.Chat
 - Mattermost

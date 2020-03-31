@@ -1,0 +1,5 @@
+An entity label should always cover a complete word.
+
+If you are using, for example, ``ConveRTTokenizer`` words can be split into multiple tokens.
+Our entity extractors assign entity labels per token. So, it might happen, that just a part of a word has
+an entity label. This is now fixed. An entity label always covers a complete word.
