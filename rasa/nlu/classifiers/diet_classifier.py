@@ -607,7 +607,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 # If BILOU tagging is enabled we use the BILOU format for the
                 # entity labels
                 _tags = bilou_utils.tags_to_ids(example, tag_id_mappings[name])
-                crf_tag_ids[name].append(np.array([_tags]).T)
             else:
                 _tags = []
                 for t in example.get(TOKENS_NAMES[TEXT]):
@@ -615,8 +614,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                         t, example.get(ENTITIES), attribute_key=name
                     )
                     _tags.append(tag_id_dict[_tag])
-                # transpose to have seq_len x 1
-                crf_tag_ids[name].append(np.array([_tags]).T)
+            # transpose to have seq_len x 1
+            crf_tag_ids[name].append(np.array([_tags]).T)
 
     # train helpers
     def preprocess_train_data(self, training_data: TrainingData) -> RasaModelData:
@@ -1109,10 +1108,10 @@ class DIET(RasaModel):
 
         if (
             self.config[ENTITY_RECOGNITION]
-            and f"entity_{TAG_IDS}" not in self.data_signature
+            and f"{ENTITY_ATTRIBUTE_TYPE}_{TAG_IDS}" not in self.data_signature
         ):
             raise ValueError(
-                f"No tag ids present. "
+                f"No tag ids for entities present. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
 
@@ -1121,15 +1120,15 @@ class DIET(RasaModel):
         # so create loss metrics first to output losses first
         self.mask_loss = tf.keras.metrics.Mean(name="m_loss")
         self.intent_loss = tf.keras.metrics.Mean(name="i_loss")
-        self.entity_group_loss = tf.keras.metrics.Mean(name="e_group_loss")
-        self.entity_role_loss = tf.keras.metrics.Mean(name="e_role_loss")
-        self.entity_loss = tf.keras.metrics.Mean(name="e_entity_loss")
+        self.entity_group_loss = tf.keras.metrics.Mean(name="group_loss")
+        self.entity_role_loss = tf.keras.metrics.Mean(name="role_loss")
+        self.entity_loss = tf.keras.metrics.Mean(name="entity_loss")
         # create accuracy metrics second to output accuracies second
         self.mask_acc = tf.keras.metrics.Mean(name="m_acc")
         self.response_acc = tf.keras.metrics.Mean(name="i_acc")
-        self.entity_group_f1 = tf.keras.metrics.Mean(name="e_group_f1")
-        self.entity_role_f1 = tf.keras.metrics.Mean(name="e_role_f1")
-        self.entity_f1 = tf.keras.metrics.Mean(name="e_entity_f1")
+        self.entity_group_f1 = tf.keras.metrics.Mean(name="group_f1")
+        self.entity_role_f1 = tf.keras.metrics.Mean(name="role_f1")
+        self.entity_f1 = tf.keras.metrics.Mean(name="entity_f1")
 
     def _update_metrics_to_log(self) -> None:
         if self.config[MASKED_LM]:
@@ -1138,7 +1137,7 @@ class DIET(RasaModel):
             self.metrics_to_log += ["i_loss", "i_acc"]
         if self.config[ENTITY_RECOGNITION]:
             for name in self._crf_num_tags.keys():
-                self.metrics_to_log += [f"e_{name}_loss", f"e_{name}_f1"]
+                self.metrics_to_log += [f"{name}_loss", f"{name}_f1"]
 
     def _prepare_layers(self) -> None:
         self.text_name = TEXT
