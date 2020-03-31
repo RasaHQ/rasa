@@ -31,7 +31,7 @@ Component                  Requires           Model           	        Notes
 The "entity" Object
 ^^^^^^^^^^^^^^^^^^^
 
-After parsing, an entity is returned as a dictionary.  There are two fields that show information
+After parsing, an entity is returned as a dictionary. There are two fields that show information
 about how the pipeline impacted the entities returned: the ``extractor`` field
 of an entity tells you which entity extractor found this particular entity, and
 the ``processors`` field contains the name of components that altered this
@@ -62,7 +62,7 @@ exactly. Instead it will return the trained synonym.
 
     The ``confidence`` will be set by the ``CRFEntityExtractor`` component. The
     ``DucklingHTTPExtractor`` will always return ``1``. The ``SpacyEntityExtractor`` extractor
-    and ``DIETClassifier`` do not provide this information and returns ``null``.
+    and ``DIETClassifier`` do not provide this information and return ``null``.
 
 
 Some extractors, like ``duckling``, may include additional information. For example:
@@ -98,9 +98,15 @@ Custom Entities
 Almost every chatbot and voice app will have some custom entities.
 A restaurant assistant should understand ``chinese`` as a cuisine,
 but to a language-learning assistant it would mean something very different.
-The ``CRFEntityExtractor`` component can learn custom entities in any language, given
+The ``CRFEntityExtractor`` and the ``DIETClassifier`` component can learn custom entities in any language, given
 some training data.
 See :ref:`training-data-format` for details on how to include entities in your training data.
+
+
+Composite Entities
+^^^^^^^^^^^^^^^^^^
+
+TODO
 
 
 Extracting Places, Dates, People, Organisations
