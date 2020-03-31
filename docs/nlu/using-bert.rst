@@ -3,7 +3,7 @@
 Using Bert
 ==========
 
-Since Rasa 1.8.1 you can use Bert inside of Rasa pipelines.
+Since Rasa 1.8.0 you can use ``BERT`` inside of Rasa pipelines.
 The goal of this document is to show you how you can do that
 as well as some tips in exploring these new tools.
 
