@@ -494,6 +494,7 @@ def test_response_evaluation_report(tmpdir_factory):
         "recall": 1.0,
         "f1-score": 1.0,
         "support": 1,
+        "confused_with": {}
     }
 
     prediction = {
