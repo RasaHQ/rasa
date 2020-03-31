@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import tempfile
-from typing import List
 
 import fakeredis
 import pytest
@@ -20,7 +19,6 @@ from rasa.core.events import (
     ActionReverted,
     UserUtteranceReverted,
     SessionStarted,
-    Event,
 )
 from rasa.core.tracker_store import (
     InMemoryTrackerStore,
