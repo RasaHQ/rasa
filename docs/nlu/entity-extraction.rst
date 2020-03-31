@@ -166,6 +166,12 @@ The entity object returned by the extractor will include the detected role/group
 
     Composite entities are currently only supported by the ``DIETClassifier``.
 
+In order to properly train your model with composite entities, make sure to include enough training data examples
+for every combination of entity and role/group label.
+Also make sure to have some variations in your training data, so that the model is able to generalize.
+For example, you should not only have example like ``fly FROM x TO y``, but also include examples like
+``fly TO y FROM x``.
+
 To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
 
 Extracting Places, Dates, People, Organisations
