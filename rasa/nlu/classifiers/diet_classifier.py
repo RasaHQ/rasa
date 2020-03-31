@@ -739,13 +739,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             message.text, message.get(TOKENS_NAMES[TEXT], []), tags
         )
 
-        extracted = self.add_extractor_name(entities)
-        entities = message.get(ENTITIES, []) + extracted
+        entities = self.add_extractor_name(entities)
+        entities = self.clean_up_entities(message, entities)
+        entities = message.get(ENTITIES, []) + entities
 
         return entities
 
+    @staticmethod
     def _convert_tags_to_entities(
-        self, text: Text, tokens: List[Token], tags: List[Text]
+        text: Text, tokens: List[Token], tags: List[Text]
     ) -> List[Dict[Text, Any]]:
         entities = []
         last_tag = NO_ENTITY_TAG
@@ -773,7 +775,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         for entity in entities:
             entity["value"] = text[entity["start"] : entity["end"]]
 
-        return self.clean_up_entities(entities)
+        return entities
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely label and its similarity to the input."""
