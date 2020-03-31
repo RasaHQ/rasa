@@ -1,8 +1,8 @@
 :desc: Find out how to use pre-trained embeddings from language models implemented in HuggingFace's Transformers
        like BERT, GPT-2, etc. inside Rasa NLU.
 
-Using Language Models like BERT inside Rasa NLU
-===============================================
+Using BERT inside Rasa NLU
+==========================
 
 Since Rasa 1.8.0, you can use pre-trained embeddings from language models like
 `BERT <https://arxiv.org/abs/1810.04805>`_ inside of Rasa NLU pipelines.
