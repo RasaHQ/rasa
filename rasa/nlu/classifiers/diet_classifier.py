@@ -218,7 +218,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # If set to 'True' labelling is more rigorous, however more
         # examples per entity are required.
         # Rule of thumb: you should have more than 100 examples per entity.
-        BILOU_FLAG: False,
+        BILOU_FLAG: True,
         # If you want to use tensorboard to visualize training and validation metrics,
         # set this option to a valid output directory.
         TENSORBOARD_LOG_DIR: None,
