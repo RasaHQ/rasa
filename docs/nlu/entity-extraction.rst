@@ -124,7 +124,7 @@ Composite entities allow you to assign a role and/or a group label next to the e
 
 .. code-block:: none
 
-    I want to fly from [Berlin]{"entity": "city", "role": "departure"} to [San Francisco]{"entity": "city", "role": "destination"}.
+    - I want to fly from [Berlin]{"entity": "city", "role": "departure"} to [San Francisco]{"entity": "city", "role": "destination"}.
 
 The group label might be useful in the following situation:
 
