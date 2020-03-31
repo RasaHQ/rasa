@@ -21,11 +21,7 @@ from rasa.nlu.constants import (
     ENTITIES,
     NO_ENTITY_TAG,
 )
-from rasa.constants import (
-    DOCS_URL_TRAINING_DATA_NLU,
-    DOCS_URL_COMPONENTS,
-    DOCS_URL_MIGRATION_GUIDE,
-)
+from rasa.constants import DOCS_URL_TRAINING_DATA_NLU, DOCS_URL_COMPONENTS
 
 logger = logging.getLogger(__name__)
 
@@ -105,12 +101,12 @@ class CRFEntityExtractor(EntityExtractor):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        ent_tagger: Optional["CRF"] = None,
+        entity_tagger: Optional["CRF"] = None,
     ) -> None:
 
         super().__init__(component_config)
 
-        self.ent_tagger = ent_tagger
+        self.entity_tagger = entity_tagger
 
         self._validate_configuration()
 
@@ -163,10 +159,10 @@ class CRFEntityExtractor(EntityExtractor):
     def extract_entities(self, message: Message) -> List[Dict[Text, Any]]:
         """Take a sentence and return entities in json format"""
 
-        if self.ent_tagger is not None:
+        if self.entity_tagger is not None:
             text_data = self._from_text_to_crf(message)
             features = self._sentence_to_features(text_data)
-            entities = self.ent_tagger.predict_marginals_single(features)
+            entities = self.entity_tagger.predict_marginals_single(features)
             return self._from_crf_to_json(message, entities)
         else:
             return []
@@ -369,9 +365,9 @@ class CRFEntityExtractor(EntityExtractor):
         from sklearn.externals import joblib
 
         file_name = file_name + ".pkl"
-        if self.ent_tagger:
+        if self.entity_tagger:
             model_file_name = os.path.join(model_dir, file_name)
-            joblib.dump(self.ent_tagger, model_file_name)
+            joblib.dump(self.entity_tagger, model_file_name)
 
         return {"file": file_name}
 
@@ -423,19 +419,8 @@ class CRFEntityExtractor(EntityExtractor):
         return sentence_features
 
     @staticmethod
-    def _sentence_to_labels(
-        sentence: List[
-            Tuple[
-                Optional[Text],
-                Optional[Text],
-                Text,
-                Dict[Text, Any],
-                Optional[Dict[str, Any]],
-            ]
-        ],
-    ) -> List[Text]:
-
-        return [label for _, _, label, _, _ in sentence]
+    def _sentence_to_labels(sentence: List[CRFToken],) -> List[Text]:
+        return [crf_token.entity for crf_token in sentence]
 
     def _from_json_to_crf(
         self, message: Message, entity_offsets: List[Tuple[int, int, Text]]
@@ -443,13 +428,13 @@ class CRFEntityExtractor(EntityExtractor):
         """Convert json examples to format of underlying crfsuite."""
 
         tokens = self._tokens_without_cls(message)
-        ents = bilou_utils.bilou_tags_from_offsets(tokens, entity_offsets)
+        entities = bilou_utils.bilou_tags_from_offsets(tokens, entity_offsets)
 
         # collect badly annotated examples
         collected = []
-        for t, e in zip(tokens, ents):
-            if e == "-":
-                collected.append(t)
+        for token, entitiy in zip(tokens, entities):
+            if entitiy == "-":
+                collected.append(token)
             elif collected:
                 collected_text = " ".join([t.text for t in collected])
                 common_utils.raise_warning(
@@ -465,12 +450,12 @@ class CRFEntityExtractor(EntityExtractor):
                 collected = []
 
         if not self.component_config["BILOU_flag"]:
-            for i, label in enumerate(ents):
+            for i, label in enumerate(entities):
                 if bilou_utils.bilou_prefix_from_tag(label) in {"B", "I", "U", "L"}:
                     # removes BILOU prefix from label
-                    ents[i] = bilou_utils.entity_name_from_tag(label)
+                    entities[i] = bilou_utils.entity_name_from_tag(label)
 
-        return self._from_text_to_crf(message, ents)
+        return self._from_text_to_crf(message, entities)
 
     @staticmethod
     def __pattern_of_token(message: Message, i: int) -> Dict:
@@ -539,7 +524,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         X_train = [self._sentence_to_features(sent) for sent in df_train]
         y_train = [self._sentence_to_labels(sent) for sent in df_train]
-        self.ent_tagger = sklearn_crfsuite.CRF(
+        self.entity_tagger = sklearn_crfsuite.CRF(
             algorithm="lbfgs",
             # coefficient for L1 penalty
             c1=self.component_config["L1_c"],
@@ -550,4 +535,4 @@ class CRFEntityExtractor(EntityExtractor):
             # include transitions that are possible, but not observed
             all_possible_transitions=True,
         )
-        self.ent_tagger.fit(X_train, y_train)
+        self.entity_tagger.fit(X_train, y_train)
