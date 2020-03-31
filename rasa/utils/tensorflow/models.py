@@ -206,8 +206,8 @@ class RasaModel(tf.keras.models.Model):
             logger.debug("There is no tensorflow prediction graph.")
             self.build_for_predict(predict_data)
 
-        predict_dataset = predict_data.as_tf_dataset(batch_size=1)
-        batch_in = next(iter(predict_dataset))
+        # Prepare a single batch of size 1
+        batch_in = predict_data.prepare_batch(start=0, end=1)
 
         self._training = False  # needed for eager mode
         return self._predict_function(batch_in)
