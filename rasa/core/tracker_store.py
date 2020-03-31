@@ -650,19 +650,17 @@ class SQLTrackerStore(TrackerStore):
     class SQLEvent(Base):
         """Represents an event in the SQL Tracker Store"""
 
-        from sqlalchemy import Column, Integer, String, Float, Text as SaText
-
         __tablename__ = "events"
 
         # `create_sequence` is needed to create a sequence for databases that
         # don't autoincrement Integer primary keys (e.g. Oracle)
-        id = Column(Integer, _create_sequence(__tablename__), primary_key=True)
-        sender_id = Column(String(255), nullable=False, index=True)
-        type_name = Column(String(255), nullable=False)
-        timestamp = Column(Float)
-        intent_name = Column(String(255))
-        action_name = Column(String(255))
-        data = Column(SaText)
+        id = sa.Column(sa.Integer, _create_sequence(__tablename__), primary_key=True)
+        sender_id = sa.Column(sa.String(255), nullable=False, index=True)
+        type_name = sa.Column(sa.String(255), nullable=False)
+        timestamp = sa.Column(sa.Float)
+        intent_name = sa.Column(sa.String(255))
+        action_name = sa.Column(sa.String(255))
+        data = sa.Column(sa.Text)
 
     def __init__(
         self,
