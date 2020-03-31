@@ -377,19 +377,23 @@ def evaluate_response_selections(
             target_responses, predicted_responses, output_dict=True
         )
 
-        cnf_matrix = sklearn.metrics.confusion_matrix(target_responses, predicted_responses)
-        labels = sklearn.utils.multiclass.unique_labels(target_responses, predicted_responses)
+        cnf_matrix = sklearn.metrics.confusion_matrix(
+            target_responses, predicted_responses
+        )
+        labels = sklearn.utils.multiclass.unique_labels(
+            target_responses, predicted_responses
+        )
 
         report = _add_confused_intents_to_report(report, cnf_matrix, labels)
-        
+
         report_filename = os.path.join(report_folder, "response_selection_report.json")
         utils.write_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
 
         if not disable_plotting:
             _plot_confusion_matrix(
-                    report_folder, "response_selection_confmat.png", cnf_matrix, labels
-                )
+                report_folder, "response_selection_confmat.png", cnf_matrix, labels
+            )
 
     else:
         report, precision, f1, accuracy = get_evaluation_metrics(
