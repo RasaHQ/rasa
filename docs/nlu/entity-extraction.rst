@@ -120,7 +120,7 @@ Let's assume we want to build an assistant that should book a flight for us.
 The assistant needs to know which of the two cities in the example above is the departure city and which is the
 destination city.
 ``Berlin`` and ``San Francisco`` are still cities, but they play a different role in our example.
-Composite entities allow you to assign a role and/or a group label next to the entity label.
+Composite entities allow you to assign a role and/or a group label in addition to the entity label.
 
 .. code-block:: none
 
