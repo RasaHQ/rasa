@@ -50,8 +50,7 @@ where we can place two new configuration files.
 For the next step we've created two configuration files. They only
 contain the pipeline part that is relevant for `NLU` model training and hence don't declare any dialogue policies.
 
-config/config-light.yml
-~~~~~~~~~~~~~~~~~~~~~~~
+**config/config-light.yml**
 
 .. code-block:: yaml
 
@@ -66,8 +65,7 @@ config/config-light.yml
     - name: DIETClassifier
     epochs: 50
 
-config/config-heavy.yml 
-~~~~~~~~~~~~~~~~~~~~~~~
+**config/config-heavy.yml**
 
 .. code-block:: yaml
 
@@ -118,7 +116,7 @@ Results
 When this runs you should see logs appear. We've picked a few
 of those lines to list them here. 
 
-.. code-block:: txt
+.. code-block:: none
 
     # output from the light model
     2020-03-30 16:21:54 INFO     rasa.nlu.model  - Starting to train component DIETClassifier
