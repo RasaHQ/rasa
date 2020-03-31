@@ -174,6 +174,7 @@ For example, you should not only have example like ``fly FROM x TO y``, but also
 
 To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
 
+
 Extracting Places, Dates, People, Organisations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
