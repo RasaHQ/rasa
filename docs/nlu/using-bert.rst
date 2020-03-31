@@ -1,4 +1,4 @@
-:desc: Find out how to use Bert, GPT-2 and Huggingface components inside of Rasa NLU.
+:desc: Find out how to use Bert, GPT-2 and Huggingface pre-trained embeddings and components inside of Rasa NLU.
 
 Using Bert
 ==========
