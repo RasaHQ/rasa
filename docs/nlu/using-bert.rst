@@ -147,10 +147,8 @@ Entity Results
 Observations 
 ~~~~~~~~~~~~
 
-On all fronts we see that the model with the Bert embeddings performs better. 
-But it deserves mentioning that the effect is more pronounced in the entities.
-Note that these results may not be the same on your use-case. Every assistant 
-is different so it is important that you keep comparing. 
+On all fronts we see that the pipeline with pre-trained embeddings from ``BERT`` performs better than the lightweight configuration consisting of ``CountVectorsFeaturizer``.
+Specifically, the performance gain for intent classification is marginal, although for entity recognition it is more pronounced. Note that these results may not be the same on your use-case. Every assistant is different so it is important that you keep comparing. 
 
 It also deserves 
 mentioning that you need to beware that you don't over-optimise training data
