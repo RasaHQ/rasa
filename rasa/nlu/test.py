@@ -344,6 +344,7 @@ def plot_attribute_confidences(
 def evaluate_response_selections(
     response_selection_results: List[ResponseSelectionEvaluationResult],
     report_folder: Optional[Text],
+    disable_plotting: bool = False,
 ) -> Dict:  # pragma: no cover
     """Creates summary statistics for response selection.
 
@@ -352,6 +353,8 @@ def evaluate_response_selections(
     evaluation result.
 
     """
+    import sklearn.metrics
+    import sklearn.utils.multiclass
 
     # remove empty intent targets
     num_examples = len(response_selection_results)
@@ -374,10 +377,19 @@ def evaluate_response_selections(
             target_responses, predicted_responses, output_dict=True
         )
 
-        report_filename = os.path.join(report_folder, "response_selection_report.json")
+        cnf_matrix = sklearn.metrics.confusion_matrix(target_responses, predicted_responses)
+        labels = sklearn.utils.multiclass.unique_labels(target_responses, predicted_responses)
 
+        report = _add_confused_intents_to_report(report, cnf_matrix, labels)
+        
+        report_filename = os.path.join(report_folder, "response_selection_report.json")
         utils.write_json_to_file(report_filename, report)
         logger.info(f"Classification report saved to {report_filename}.")
+
+        if not disable_plotting:
+            _plot_confusion_matrix(
+                    report_folder, "response_selection_confmat.png", cnf_matrix, labels
+                )
 
     else:
         report, precision, f1, accuracy = get_evaluation_metrics(
@@ -1126,7 +1138,7 @@ def run_evaluation(
     if response_selection_results:
         logger.info("Response selection evaluation results:")
         result["response_selection_evaluation"] = evaluate_response_selections(
-            response_selection_results, output_directory
+            response_selection_results, output_directory, disable_plotting
         )
 
     if entity_results:
