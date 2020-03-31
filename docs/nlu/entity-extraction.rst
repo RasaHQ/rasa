@@ -103,11 +103,70 @@ some training data.
 See :ref:`training-data-format` for details on how to include entities in your training data.
 
 
+.. _composite-entities:
+
 Composite Entities
 ^^^^^^^^^^^^^^^^^^
 
-TODO
+Assigning custom entity labels to words, allows you to define certain concepts in the data.
+For example, we can define what a `city` is:
 
+.. code-block:: none
+
+    I want to fly from [Berlin](city) to [San Francisco](city).
+
+However, sometimes you want to specify entities even further.
+Let's assume we want to build an assistant that should book a flight for us.
+The assistant needs to know which of the two cities in the example above is the departure city and which is the
+destination city.
+``Berlin`` and ``San Francisco`` are still cities, but they play a different role in our example.
+Composite entities allow you to assign a role and/or a group label next to the entity label.
+
+.. code-block:: none
+
+    I want to fly from [Berlin]{"entity": "city", "role": "departure"} to [San Francisco]{"entity": "city", "role": "destination"}.
+
+The group label might be useful in the following situation:
+
+.. code-block:: none
+
+    Give me a [small]{"entity": "size", "group": "1"} pizza with [mushrooms]{"entity": "topping", "group": "1"} and
+    a [large]{"entity": "size", "group": "2"} [pepperoni]{"entity": "topping", "group": "2"}
+
+See :ref:`training-data-format` for details on how to define composite entities in your training data.
+
+The entity object returned by the extractor will include the detected role/group label.
+
+.. code-block:: json
+
+    {
+      "text": "Book a flight from Berlin to SF",
+      "intent": "book_flight",
+      "entities": [
+        {
+          "start": 19,
+          "end": 25,
+          "value": "Berlin",
+          "entity": "city",
+          "role": "departure",
+          "extractor": "DIETClassifier",
+        },
+        {
+          "start": 29,
+          "end": 31,
+          "value": "San Francisco",
+          "entity": "city",
+          "role": "destination",
+          "extractor": "DIETClassifier",
+        }
+      ]
+    }
+
+.. note::
+
+    Composite entities are currently only supported by the ``DIETClassifier``.
+
+To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
 
 Extracting Places, Dates, People, Organisations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
