@@ -3,7 +3,7 @@
 Using Bert
 ==========
 
-Since Rasa 1.8.1 you can use ``Bert`` inside of Rasa pipelines.
+Since Rasa 1.8.0 you can use ``BERT`` inside of Rasa pipelines.
 The goal of this document is to show you how you can do that
 as well as some tips in exploring these new tools.
 
@@ -82,16 +82,19 @@ config/config-heavy.yml
 In both cases we're training a ``DietClassifier`` for 50 epochs but 
 there are a few differences.
 
-In the light configuration we have a CountVectorsFeaturizer, which we 
-replace in the heavy variant with a HFTransformersNLP together with the
-LanguageModelTokenizer and LanguageModelFeaturizer. Notice that we're 
-no longer using the original WhitespaceTokenizer because tokenization
-is now handled by Bert.
+In the light configuration we have :ref:`CountVectorsFeaturizer` which create bag-of-word
+representations for each incoming message(at word and character levels). The heavy configuration replaces it with a
+BERT model inside the pipeline. :ref:`HFTransformersNLP` is a utility component that does the heavy lifting work of loading the
+``BERT`` model in memory. Under the hood it leverages HuggingFace's `Transformers library <https://huggingface.co/transformers/>`_ to initialize the specified language model.
+Notice that we add two additional components :ref:`LanguageModelTokenizer` and :ref:`LanguageModelFeaturizer` which
+pick up the tokens and feature vectors respectively that are constructed by the utility component.
+
+We use the same :ref:`diet-classifier` model for combined intent classification and entity recognition in both cases.
 
 Run the Pipelines
 -----------------
 
-You can run both configuarions yourself. 
+You can run both configurations yourself.
 
 .. code-block:: yaml
 
@@ -160,7 +163,7 @@ Heavy       0.8942      0.7642      0.8188
 Observations 
 ~~~~~~~~~~~~
 
-On all fronts we see that the model with the Bert embeddings performs better. 
+On all fronts we see that the heavy model with the ``BERT`` embeddings performs better. 
 But it deserves mentioning that the effect is more pronounced in the entities.
 
 Bert in Practice
@@ -174,4 +177,5 @@ There are a few things to consider;
 
 1. Which task is more important - intent classification or entity recognition? 
 2. Is accuracy more important or do we care more about latency of bot predictions? 
-3. The ``Bert`` features that we're using here can be extended with other featurizers. It may still be a good idea to add a ``CountVectorsFeaturizer``.
+3. The ``Bert`` features that we're using here can be extended with other featurizers. It may still be a good idea to add a :ref:`CountVectorsFeaturizer`.
+
