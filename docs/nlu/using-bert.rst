@@ -6,8 +6,8 @@ Using BERT inside Rasa NLU
 
 Since Rasa 1.8.0, you can use pre-trained embeddings from language models like
 `BERT <https://arxiv.org/abs/1810.04805>`_ inside of Rasa NLU pipelines.
-The goal of this document is to show how you can do that
-as well as some practical tips on exploring these new tools.
+This page shows how you can use models like BERT and GPT-2 in your contextual AI assitant
+and includes practical tips on how to get the most out of these models.
 
 .. contents::
    :local:
@@ -182,4 +182,3 @@ There are a few things to consider;
 1. Which task is more important - intent classification or entity recognition? If your assistant barely uses entities then you may care less about improved performance there.
 2. Is accuracy more important or do we care more about latency of bot predictions? If responses from the assistant become much slower as shown in the above example, we may also need to invest in more compute resources.
 3. The ``BERT`` embeddings that we're using here as features can be extended with other featurizers as well. It may still be a good idea to add a :ref:`CountVectorsFeaturizer` to capture words specific to the vocabulary of your domain.
-
