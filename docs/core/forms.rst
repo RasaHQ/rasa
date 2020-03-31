@@ -142,10 +142,11 @@ Here's an example for the restaurant bot:
 
 The predefined functions work as follows:
 
-- ``self.from_entity(entity=entity_name, intent=intent_name)``
+- ``self.from_entity(entity=entity_name, intent=intent_name, role=role_name, group=group_name)``
   will look for an entity called ``entity_name`` to fill a slot
   ``slot_name`` regardless of user intent if ``intent_name`` is ``None``
-  else only if the users intent is ``intent_name``.
+  else only if the users intent is ``intent_name``. If ``role_name`` and/or ``group_name``
+  are/is provided, the role/group label of the entity also needs to match the given values.
 - ``self.from_intent(intent=intent_name, value=value)``
   will fill slot ``slot_name`` with ``value`` if user intent is ``intent_name``.
   To make a boolean slot, take a look at the definition of ``outdoor_seating``
