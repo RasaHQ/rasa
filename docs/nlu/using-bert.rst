@@ -139,8 +139,8 @@ of those lines to list them here.
 The results from these two runs can be found in the ``gridresults`` folder. 
 We've summarised the main results below.
 
-Intent Results 
-~~~~~~~~~~~~~~
+Intent Classification Results
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These are the scores for intent classification.
 
@@ -151,10 +151,10 @@ Light       0.7824      0.7819      0.7795
 Heavy       0.7894      0.7880      0.7843
 ========  =========== =========== ===========
 
-Entity Results 
-~~~~~~~~~~~~~~
+Entity Recognition Results
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-These are the scores for entity detection.
+These are the scores for entity recognition.
 
 ========  =========== =========== ===========
  Config    Precision   Recall      f1 score
