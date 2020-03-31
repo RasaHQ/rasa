@@ -108,7 +108,7 @@ See :ref:`training-data-format` for details on how to include entities in your t
 Composite Entities
 ^^^^^^^^^^^^^^^^^^
 
-Assigning custom entity labels to words, allows you to define certain concepts in the data.
+Assigning custom entity labels to words, allow you to define certain concepts in the data.
 For example, we can define what a `city` is:
 
 .. code-block:: none
