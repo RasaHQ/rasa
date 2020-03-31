@@ -206,17 +206,10 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
     assert [e.type_name for e in tracker.events] == expected
 
 
-def test_tracker_entity_retrieval(default_domain: Domain):
-    tracker = DialogueStateTracker("default", default_domain.slots)
-    # the retrieved tracker should be empty
-    assert len(tracker.events) == 0
-    assert list(tracker.get_latest_entity_values("entity_name")) == []
-
-    intent = {"name": "greet", "confidence": 1.0}
-    tracker.update(
-        UserUttered(
-            "/greet",
-            intent,
+@pytest.mark.parametrize(
+    "entities, expected_value",
+    [
+        (
             [
                 {
                     "start": 1,
@@ -226,9 +219,93 @@ def test_tracker_entity_retrieval(default_domain: Domain):
                     "extractor": "manual",
                 }
             ],
+            ["greet"],
+        ),
+        (
+            [
+                {
+                    "start": 1,
+                    "end": 5,
+                    "value": "e1",
+                    "entity": "entity_name",
+                    "extractor": "manual",
+                },
+                {
+                    "start": 1,
+                    "end": 5,
+                    "value": "e2",
+                    "entity": "entity_name",
+                    "extractor": "manual",
+                },
+            ],
+            ["e1", "e2"],
+        ),
+        (
+            [
+                {
+                    "start": 1,
+                    "end": 5,
+                    "value": "role-group",
+                    "entity": "entity_name",
+                    "role": "role",
+                    "group": "group",
+                    "extractor": "manual",
+                }
+            ],
+            ["role-group"],
+        ),
+        (
+            [
+                {
+                    "start": 1,
+                    "end": 5,
+                    "value": "role",
+                    "entity": "entity_name",
+                    "role": "role",
+                    "extractor": "manual",
+                }
+            ],
+            ["role"],
+        ),
+        (
+            [
+                {
+                    "start": 1,
+                    "end": 5,
+                    "value": "group",
+                    "entity": "entity_name",
+                    "role": "group",
+                    "extractor": "manual",
+                }
+            ],
+            ["group"],
+        ),
+    ],
+)
+def test_tracker_entity_retrieval(entities, expected_value, default_domain: Domain):
+    entity_type = entities[0].get("entity")
+    entity_role = entities[0].get("role")
+    entity_group = entities[0].get("group")
+
+    tracker = DialogueStateTracker("default", default_domain.slots)
+    # the retrieved tracker should be empty
+    assert len(tracker.events) == 0
+    assert list(tracker.get_latest_entity_values(entity_type)) == []
+
+    intent = {"name": "greet", "confidence": 1.0}
+    tracker.update(UserUttered("/greet", intent, entities))
+
+    assert list(tracker.get_latest_entity_values(entity_type)) == expected_value
+    if entity_role is not None:
+        assert (
+            list(tracker.get_latest_entity_values_with_role(entity_type, entity_role))
+            == expected_value
         )
-    )
-    assert list(tracker.get_latest_entity_values("entity_name")) == ["greet"]
+    if entity_group is not None:
+        assert (
+            list(tracker.get_latest_entity_values_with_group(entity_type, entity_group))
+            == expected_value
+        )
     assert list(tracker.get_latest_entity_values("unknown")) == []
 
 

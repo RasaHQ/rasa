@@ -15,6 +15,12 @@ from typing import (
     Iterable,
 )
 
+from nlu.constants import (
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_GROUP,
+)
 from rasa.core import events  # pytype: disable=pyi-error
 from rasa.core.actions.action import ACTION_LISTEN_NAME  # pytype: disable=pyi-error
 from rasa.core.conversation import Dialogue  # pytype: disable=pyi-error
@@ -231,16 +237,73 @@ class DialogueStateTracker:
             return None
 
     def get_latest_entity_values(self, entity_type: Text) -> Iterator[Text]:
-        """Get entity values found for the passed entity name in latest msg.
+        """Get entity values found for the passed entity name in latest message.
 
         If you are only interested in the first entity of a given type use
         `next(tracker.get_latest_entity_values("my_entity_name"), None)`.
-        If no entity is found `None` is the default result."""
+        If no entity is found `None` is the default result.
+
+        Args:
+            entity_type: the entity type of interst
+
+        Returns:
+            List of entity values.
+        """
 
         return (
-            x.get("value")
+            x.get(ENTITY_ATTRIBUTE_VALUE)
             for x in self.latest_message.entities
-            if x.get("entity") == entity_type
+            if x.get(ENTITY_ATTRIBUTE_TYPE) == entity_type
+        )
+
+    def get_latest_entity_values_with_role(
+        self, entity_type: Text, entity_role: Text
+    ) -> Iterator[Text]:
+        """Get entity values found for the passed entity name and role in latest
+        message.
+
+        If you are only interested in the first entity of a given type and role use
+        `next(tracker.get_latest_entity_values("my_entity_name"), None)`.
+        If no entity is found `None` is the default result.
+
+        Args:
+            entity_type: the entity type of interest
+            entity_role:  the entity role of interest
+
+        Returns:
+            List of entity values.
+        """
+
+        return (
+            x.get(ENTITY_ATTRIBUTE_VALUE)
+            for x in self.latest_message.entities
+            if x.get(ENTITY_ATTRIBUTE_TYPE) == entity_type
+            and x.get(ENTITY_ATTRIBUTE_ROLE) == entity_role
+        )
+
+    def get_latest_entity_values_with_group(
+        self, entity_type: Text, entity_group: Text
+    ) -> Iterator[Text]:
+        """Get entity values found for the passed entity name and group in latest
+        message.
+
+        If you are only interested in the first entity of a given type and group use
+        `next(tracker.get_latest_entity_values("my_entity_name"), None)`.
+        If no entity is found `None` is the default result.
+
+        Args:
+            entity_type: the entity type of interest
+            entity_group:  the entity group of interest
+
+        Returns:
+            List of entity values.
+        """
+
+        return (
+            x.get(ENTITY_ATTRIBUTE_VALUE)
+            for x in self.latest_message.entities
+            if x.get(ENTITY_ATTRIBUTE_TYPE) == entity_type
+            and x.get(ENTITY_ATTRIBUTE_GROUP) == entity_group
         )
 
     def get_latest_input_channel(self) -> Optional[Text]:
