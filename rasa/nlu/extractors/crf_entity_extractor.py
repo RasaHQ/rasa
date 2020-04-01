@@ -1,11 +1,13 @@
 import logging
 import os
 import typing
+
 import numpy as np
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, NamedTuple, Type
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
 import rasa.utils.common as common_utils
+from nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
@@ -20,6 +22,10 @@ from rasa.nlu.constants import (
     DENSE_FEATURE_NAMES,
     ENTITIES,
     NO_ENTITY_TAG,
+    BILOU_ENTITIES,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
 )
 from rasa.constants import DOCS_URL_TRAINING_DATA_NLU, DOCS_URL_COMPONENTS
 
@@ -29,12 +35,17 @@ if typing.TYPE_CHECKING:
     from sklearn_crfsuite import CRF
 
 
+ENTITY_LABELS = [ENTITY_ATTRIBUTE_TYPE, ENTITY_ATTRIBUTE_GROUP, ENTITY_ATTRIBUTE_ROLE]
+
+
 class CRFToken(NamedTuple):
     text: Text
-    tag: Text
-    entity: Text
+    pos_tag: Text
     pattern: Dict[Text, Any]
     dense_features: np.ndarray
+    entity_label: Text
+    role_label: Optional[Text]
+    group_label: Optional[Text]
 
 
 class CRFEntityExtractor(EntityExtractor):
@@ -101,12 +112,12 @@ class CRFEntityExtractor(EntityExtractor):
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
-        entity_tagger: Optional["CRF"] = None,
+        entity_taggers: Optional[Dict[Text, "CRF"]] = None,
     ) -> None:
 
         super().__init__(component_config)
 
-        self.entity_tagger = entity_tagger
+        self.entity_taggers = entity_taggers
 
         self._validate_configuration()
 
@@ -126,28 +137,39 @@ class CRFEntityExtractor(EntityExtractor):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-
         # checks whether there is at least one
         # example with an entity annotation
-        if training_data.entity_examples:
-            # filter out pre-trained entity examples
-            filtered_entity_examples = self.filter_trainable_entities(
-                training_data.training_examples
+        if not training_data.entity_examples:
+            logger.debug(
+                "No training examples with entities present. Skip training"
+                "of 'CRFEntityExtractor'."
             )
+            return
 
-            # convert the dataset into features
-            # this will train on ALL examples, even the ones
-            # without annotations
-            dataset = self._create_dataset(filtered_entity_examples)
+        if self.component_config["BILOU_flag"]:
+            bilou_utils.apply_bilou_schema(training_data, include_cls_token=False)
 
-            self._train_model(dataset)
+        # filter out pre-trained entity examples
+        entity_examples = self.filter_trainable_entities(
+            training_data.training_examples
+        )
+
+        # convert the dataset into features
+        # this will train on ALL examples, even the ones
+        # without annotations
+        dataset = self._create_dataset(entity_examples)
+
+        self._train_model(dataset)
 
     def _create_dataset(self, examples: List[Message]) -> List[List[CRFToken]]:
         dataset = []
 
         for example in examples:
-            entity_offsets = bilou_utils.map_message_entities(example)
-            dataset.append(self._from_json_to_crf(example, entity_offsets))
+            if example.get("entities"):
+                # check correct annotation during training
+                self._check_correct_annotation(example)
+
+            dataset.append(self._from_text_to_crf(example))
 
         return dataset
 
@@ -158,35 +180,50 @@ class CRFEntityExtractor(EntityExtractor):
 
     def extract_entities(self, message: Message) -> List[Dict[Text, Any]]:
         """Take a sentence and return entities in json format"""
-
-        if self.entity_tagger is not None:
-            text_data = self._from_text_to_crf(message)
-            features = self._sentence_to_features(text_data)
-            entities = self.entity_tagger.predict_marginals_single(features)
-            return self._from_crf_to_json(message, entities)
-        else:
+        if self.entity_taggers is None:
             return []
 
-    def most_likely_entity(self, idx: int, entities: List[Any]) -> Tuple[Text, Any]:
-        if len(entities) > idx:
-            entity_probs = entities[idx]
+        dataset = self._create_dataset([message])
+        features = self._sentence_to_features(dataset[0])
+        entities = self.entity_taggers[ENTITY_ATTRIBUTE_TYPE].predict_marginals_single(
+            features
+        )
+        return self._from_crf_to_json(message, entities)
+
+    def most_likely_entity(
+        self, token_idx: int, entities: List[Dict[Text, float]]
+    ) -> Tuple[Text, Any]:
+        """Get the entity label with the highest confidence.
+
+        Args:
+            token_idx: the token index
+            entities: list of entity labels and confidence values for a number of tokens
+
+        Returns:
+            The entity label and confidence value.
+
+        """
+        if len(entities) > token_idx:
+            entity_probs = entities[token_idx]
         else:
             entity_probs = None
-        if entity_probs:
-            label = max(entity_probs, key=lambda key: entity_probs[key])
-            if self.component_config["BILOU_flag"]:
-                # if we are using bilou flags, we will combine the prob
-                # of the B, I, L and U tags for an entity (so if we have a
-                # score of 60% for `B-address` and 40% and 30%
-                # for `I-address`, we will return 70%)
-                return (
-                    label,
-                    sum([v for k, v in entity_probs.items() if k[2:] == label[2:]]),
-                )
-            else:
-                return label, entity_probs[label]
-        else:
+
+        if entity_probs is None:
             return "", 0.0
+
+        label = max(entity_probs, key=lambda key: entity_probs[key])
+
+        if self.component_config["BILOU_flag"]:
+            # if we are using bilou flags, we will combine the prob
+            # of the B, I, L and U tags for an entity (so if we have a
+            # score of 60% for `B-address` and 40% and 30%
+            # for `I-address`, we will return 70%)
+            return (
+                label,
+                sum([v for k, v in entity_probs.items() if k[2:] == label[2:]]),
+            )
+        else:
+            return label, entity_probs[label]
 
     @staticmethod
     def _create_entity_dict(
@@ -289,12 +326,51 @@ class CRFEntityExtractor(EntityExtractor):
             )
 
         if self.component_config["BILOU_flag"]:
+            tags = bilou_utils.remove_bilou_prefixes(tags)
+
+        entities = self._convert_tags_to_entities(
+            message.text, message.get(TOKENS_NAMES[TEXT], []), tags
+        )
+
+        if self.component_config["BILOU_flag"]:
             return self._convert_bilou_tagging_to_entity_result(
                 message, tokens, entities
             )
         else:
             # not using BILOU tagging scheme, multi-word entities are split.
             return self._convert_simple_tagging_to_entity_result(tokens, entities)
+
+    @staticmethod
+    def _convert_tags_to_entities(
+        text: Text, tokens: List[Token], tags: List[Text]
+    ) -> List[Dict[Text, Any]]:
+        entities = []
+        last_tag = NO_ENTITY_TAG
+        for token, tag in zip(tokens, tags):
+            if tag == NO_ENTITY_TAG:
+                last_tag = tag
+                continue
+
+            # new tag found
+            if last_tag != tag:
+                entity = {
+                    "entity": tag,
+                    "start": token.start,
+                    "end": token.end,
+                    "extractor": "DIET",
+                }
+                entities.append(entity)
+
+            # belongs to last entity
+            elif last_tag == tag:
+                entities[-1]["end"] = token.end
+
+            last_tag = tag
+
+        for entity in entities:
+            entity["value"] = text[entity["start"] : entity["end"]]
+
+        return entities
 
     def _convert_bilou_tagging_to_entity_result(
         self, message: Message, tokens: List[Token], entities: List[Dict[Text, float]]
@@ -348,14 +424,15 @@ class CRFEntityExtractor(EntityExtractor):
     ) -> "CRFEntityExtractor":
         from sklearn.externals import joblib
 
-        file_name = meta.get("file")
-        model_file = os.path.join(model_dir, file_name)
+        file_names = meta.get("file")
+        entity_taggers = {}
 
-        if os.path.exists(model_file):
-            ent_tagger = joblib.load(model_file)
-            return cls(meta, ent_tagger)
-        else:
-            return cls(meta)
+        for name, file_name in file_names.items():
+            model_file = os.path.join(model_dir, file_name)
+            if os.path.exists(model_file):
+                entity_taggers[name] = joblib.load(model_file)
+
+        return cls(meta, entity_taggers)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
@@ -364,12 +441,16 @@ class CRFEntityExtractor(EntityExtractor):
 
         from sklearn.externals import joblib
 
-        file_name = file_name + ".pkl"
-        if self.entity_tagger:
-            model_file_name = os.path.join(model_dir, file_name)
-            joblib.dump(self.entity_tagger, model_file_name)
+        file_names = {}
 
-        return {"file": file_name}
+        if self.entity_taggers:
+            for name, entity_tagger in self.entity_taggers.items():
+                file_name = f"{file_name}.{name}.pkl"
+                model_file_name = os.path.join(model_dir, file_name)
+                joblib.dump(entity_tagger, model_file_name)
+                file_names[name] = file_name
+
+        return {"file": file_names}
 
     def _sentence_to_features(self, sentence: List[CRFToken]) -> List[Dict[Text, Any]]:
         """Convert a word into discrete features in self.crf_features,
@@ -419,20 +500,21 @@ class CRFEntityExtractor(EntityExtractor):
         return sentence_features
 
     @staticmethod
-    def _sentence_to_labels(sentence: List[CRFToken],) -> List[Text]:
-        return [crf_token.entity for crf_token in sentence]
+    def _sentence_to_labels(sentence: List[CRFToken], label_name: Text) -> List[Text]:
+        if label_name == ENTITY_ATTRIBUTE_ROLE:
+            return [crf_token.role_label for crf_token in sentence]
+        if label_name == ENTITY_ATTRIBUTE_GROUP:
+            return [crf_token.group_label for crf_token in sentence]
 
-    def _from_json_to_crf(
-        self, message: Message, entity_offsets: List[Tuple[int, int, Text]]
-    ) -> List[CRFToken]:
-        """Convert json examples to format of underlying crfsuite."""
+        return [crf_token.entity_label for crf_token in sentence]
 
-        tokens = self._tokens_without_cls(message)
-        entities = bilou_utils.bilou_tags_from_offsets(tokens, entity_offsets)
+    @staticmethod
+    def _check_correct_annotation(message: Message) -> None:
+        entities = bilou_utils.map_message_entities(message)
 
         # collect badly annotated examples
         collected = []
-        for token, entitiy in zip(tokens, entities):
+        for token, entitiy in zip(message.get(TOKENS_NAMES[TEXT]), entities):
             if entitiy == "-":
                 collected.append(token)
             elif collected:
@@ -448,14 +530,6 @@ class CRFEntityExtractor(EntityExtractor):
                     docs=DOCS_URL_TRAINING_DATA_NLU,
                 )
                 collected = []
-
-        if not self.component_config["BILOU_flag"]:
-            for i, label in enumerate(entities):
-                if bilou_utils.bilou_prefix_from_tag(label) in {"B", "I", "U", "L"}:
-                    # removes BILOU prefix from label
-                    entities[i] = bilou_utils.entity_name_from_tag(label)
-
-        return self._from_text_to_crf(message, entities)
 
     @staticmethod
     def __pattern_of_token(message: Message, i: int) -> Dict:
@@ -494,45 +568,96 @@ class CRFEntityExtractor(EntityExtractor):
             features_out.append(converted)
         return features_out
 
-    def _from_text_to_crf(
-        self, message: Message, entities: List[Text] = None
-    ) -> List[CRFToken]:
+    def _from_text_to_crf(self, message: Message) -> List[CRFToken]:
         """Takes a sentence and switches it to crfsuite format."""
+        from rasa.nlu.test import determine_token_labels
 
         crf_format = []
         tokens = self._tokens_without_cls(message)
 
         text_dense_features = self.__get_dense_features(message)
+        entity_labels = self._get_entity_labels(message)
 
         for i, token in enumerate(tokens):
             pattern = self.__pattern_of_token(message, i)
-            entity = entities[i] if entities else "N/A"
+            entity = self._get_label_for(entity_labels, i, ENTITY_ATTRIBUTE_TYPE)
+            role = self._get_label_for(entity_labels, i, ENTITY_ATTRIBUTE_ROLE)
+            group = self._get_label_for(entity_labels, i, ENTITY_ATTRIBUTE_GROUP)
             tag = token.get(POS_TAG_KEY)
             dense_features = (
                 text_dense_features[i] if text_dense_features is not None else []
             )
 
             crf_format.append(
-                CRFToken(token.text, tag, entity, pattern, dense_features)
+                CRFToken(
+                    text=token.text,
+                    pos_tag=tag,
+                    entity_label=entity,
+                    group_label=group,
+                    role_label=role,
+                    pattern=pattern,
+                    dense_features=dense_features,
+                )
             )
 
         return crf_format
+
+    def _get_label_for(
+        self, entity_labels: Dict[Text, List[Text]], idx: int, name: Text
+    ) -> Text:
+        label = entity_labels[name][idx]
+
+        if label == NO_ENTITY_TAG:
+            return "N/A"
+
+        return label
+
+    def _get_entity_labels(self, message: Message) -> Dict[Text, List[Text]]:
+        tokens = self._tokens_without_cls(message)
+        entity_labels = {}
+
+        for name in ENTITY_LABELS:
+            if name == ENTITY_ATTRIBUTE_TYPE and self.component_config["BILOU_flag"]:
+                # If BILOU tagging is enabled we use the BILOU format for the
+                # entity labels
+                if message.get(BILOU_ENTITIES):
+                    labels = message.get(BILOU_ENTITIES)
+                else:
+                    labels = [NO_ENTITY_TAG for _ in tokens]
+            else:
+                labels = [
+                    determine_token_labels(
+                        token, message.get(ENTITIES), attribute_key=name
+                    )
+                    for token in tokens
+                ]
+            entity_labels[name] = labels
+
+        return entity_labels
 
     def _train_model(self, df_train: List[List[CRFToken]]) -> None:
         """Train the crf tagger based on the training data."""
         import sklearn_crfsuite
 
-        X_train = [self._sentence_to_features(sent) for sent in df_train]
-        y_train = [self._sentence_to_labels(sent) for sent in df_train]
-        self.entity_tagger = sklearn_crfsuite.CRF(
-            algorithm="lbfgs",
-            # coefficient for L1 penalty
-            c1=self.component_config["L1_c"],
-            # coefficient for L2 penalty
-            c2=self.component_config["L2_c"],
-            # stop earlier
-            max_iterations=self.component_config["max_iterations"],
-            # include transitions that are possible, but not observed
-            all_possible_transitions=True,
-        )
-        self.entity_tagger.fit(X_train, y_train)
+        self.entity_taggers = {}
+
+        for name in ENTITY_LABELS:
+            X_train = [self._sentence_to_features(sentence) for sentence in df_train]
+            y_train = [
+                self._sentence_to_labels(sentence, name) for sentence in df_train
+            ]
+
+            entity_tagger = sklearn_crfsuite.CRF(
+                algorithm="lbfgs",
+                # coefficient for L1 penalty
+                c1=self.component_config["L1_c"],
+                # coefficient for L2 penalty
+                c2=self.component_config["L2_c"],
+                # stop earlier
+                max_iterations=self.component_config["max_iterations"],
+                # include transitions that are possible, but not observed
+                all_possible_transitions=True,
+            )
+            entity_tagger.fit(X_train, y_train)
+
+            self.entity_taggers[name] = entity_tagger

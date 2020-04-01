@@ -100,7 +100,9 @@ def build_tag_id_dict(training_data: TrainingData) -> Dict[Text, int]:
     return tag_id_dict
 
 
-def apply_bilou_schema(training_data: TrainingData) -> None:
+def apply_bilou_schema(
+    training_data: TrainingData, include_cls_token: bool = True
+) -> None:
     """Gets a list of BILOU entity tags and sets them on the given messages.
 
     Args:
@@ -112,8 +114,12 @@ def apply_bilou_schema(training_data: TrainingData) -> None:
         if not entities:
             continue
 
+        tokens = message.get(TOKENS_NAMES[TEXT])
+        if not include_cls_token:
+            tokens = tokens[:-1]
+
         entities = map_message_entities(message)
-        output = bilou_tags_from_offsets(message.get(TOKENS_NAMES[TEXT]), entities)
+        output = bilou_tags_from_offsets(tokens, entities)
 
         message.set(BILOU_ENTITIES, output)
 
