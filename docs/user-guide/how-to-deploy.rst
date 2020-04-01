@@ -100,13 +100,10 @@ Deploying Your Action Server
 Building an Action Server Image
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This documentation assumes you are pushing your images to `DockerHub <https://hub.docker.com/>`_.
-DockerHub will let you host multiple public repositories and
-one private repository for free. Be sure to first `create an account <https://hub.docker.com/signup/>`_
-and `create a repository <https://hub.docker.com/signup/>`_ to store your images. You could also push images to
-a different Docker registry, such as `Google Container Registry <https://cloud.google.com/container-registry>`_,
-`Amazon Elastic Container Registry <https://aws.amazon.com/ecr/>`_, or
-`Azure Container Registry <https://azure.microsoft.com/en-us/services/container-registry/>`_.
+If you build an image that includes your action code and store it in a container registry, you can run it
+as part of your deployment, without having to move code between servers.
+In addition, you can add any additional dependencies of systems or Python libraries
+that are part of your action code but not included in the base ``rasa/rasa-sdk`` image.
 
 To create your image:
 
@@ -123,6 +120,7 @@ To create your image:
 
   #. If your actions have any extra dependencies, create a list of them in a file,
      ``actions/requirements-actions.txt``.
+
   #. Create a file named ``Dockerfile`` in your project directory,
      in which you'll extend the official SDK image, copy over your code, and add any custom dependencies (if necessary).
      For example:
@@ -166,6 +164,15 @@ Using your Custom Action Server Image
 
 If you're building this image to make it available from another server,
 for example a Rasa X or Rasa Enterprise deployment, you should push the image to a cloud repository.
+
+This documentation assumes you are pushing your images to `DockerHub <https://hub.docker.com/>`_.
+DockerHub will let you host multiple public repositories and
+one private repository for free. Be sure to first `create an account <https://hub.docker.com/signup/>`_
+and `create a repository <https://hub.docker.com/signup/>`_ to store your images. You could also push images to
+a different Docker registry, such as `Google Container Registry <https://cloud.google.com/container-registry>`_,
+`Amazon Elastic Container Registry <https://aws.amazon.com/ecr/>`_, or
+`Azure Container Registry <https://azure.microsoft.com/en-us/services/container-registry/>`_.
+
 You can push the image to DockerHub via:
 
       .. code-block:: bash
