@@ -197,16 +197,6 @@ The ``<custom_image_tag>`` should reference how this image will be different fro
 example, you could version or date your tags, as well as create different tags that have different code for production
 and development servers. You should create a new tag any time you update your code and want to re-deploy it.
 
-If you are using Docker Compose locally, you can use this image directly in your
-``docker-compose.yml``:
-
-      .. code-block:: yaml
-
-         version: '3.0'
-         services:
-           app:
-             image: <account_username>/<repository_name>:<custom_image_tag>
-
 If you're building this image to make it available from another server,
 for example a Rasa X or Rasa Enterprise deployment, you should push the image to a cloud repository.
 You can push the image to DockerHub via:
@@ -220,6 +210,16 @@ To authenticate and push images to a different container registry, please refer 
 your chosen container registry.
 
 Then, reference the new image tag in your ``docker-compose.override.yml``:
+
+      .. code-block:: yaml
+
+         version: '3.0'
+         services:
+           app:
+             image: <account_username>/<repository_name>:<custom_image_tag>
+
+If you are using Docker Compose locally, you can use this image directly in your
+``docker-compose.yml``:
 
       .. code-block:: yaml
 
