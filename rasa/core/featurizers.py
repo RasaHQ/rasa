@@ -115,7 +115,7 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
         if state_features['user'][0] is not None and state_features['prev_action'][0] is not None:
             sparse_state = scipy.sparse.hstack([state_features['user'][0], state_features['prev_action'][0]])
         if state_features['user'][1] is not None and state_features['prev_action'][1] is not None:
-            dense_state = np.concatenate(state_features['user'][1], state_features['prev_action'][1])
+            dense_state = np.hstack((state_features['user'][1], state_features['prev_action'][1]))
         return sparse_state, dense_state
 
 
