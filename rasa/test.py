@@ -135,6 +135,7 @@ def test_core(
                 "evaluation."
             )
     _interpreter = RasaCoreInterpreter()
+    _interpreter.interpreter = _interpreter.interpreter.load(os.path.join(core_path, 'nlu'))
 
     _agent = Agent.load(unpacked_model, interpreter=_interpreter)
 

@@ -139,23 +139,12 @@ class BOWSingleStateFeaturizer(CountVectorsFeaturizer, SingleStateFeaturizer):
 
         sparse_state, dense_state = self.combine_state_features(state_extracted_features)
 
-        return sparse_state
+        return sparse_state, dense_state
 
     def create_encoded_all_actions(self, domain):
-        label_data = {j: self._extract_features(self.interpreter.parse(action), TEXT) 
-                        for j, action in enumerate(domain.action_names)}
-
-        sparse_features = []
-        dense_features = []
-        for idx, feats in sorted(label_data.items(), key=lambda x:x[0]):
-            if feats[0] is not None:
-                sparse_features.append(feats[0].tocsr().astype(np.float32))
-            if feats[1] is not None:
-                dense_features.append(feats[1])
-
-        sparse_features = scipy.sparse.vstack(sparse_features)
-        # dense_features = np.vstack(dense_features).astype(np.float32)
-        return sparse_features #, dense_features
+        label_data = [(j, self._extract_features(self.interpreter.parse(action), TEXT)) 
+                        for j, action in enumerate(domain.action_names)]
+        return label_data
 
 
 
@@ -263,7 +252,6 @@ class TrackerFeaturizer:
         true_lengths = []
 
         for tracker_states in trackers_as_states:
-            dialogue_len = len(tracker_states)
 
             # len(trackers_as_states) = 1 means
             # it is called during prediction or we have
@@ -277,6 +265,8 @@ class TrackerFeaturizer:
                 self.state_featurizer.encode_e2e(state) 
                 for state in tracker_states if not state is None and not state == {}
             ]
+
+            dialogue_len = len(story_features)
 
             if not story_features == []:
                 features.append(np.array(story_features))
