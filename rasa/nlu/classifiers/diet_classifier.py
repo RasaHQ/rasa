@@ -101,6 +101,8 @@ TAG_IDS = "tag_ids"
 
 
 class CRFLayer(NamedTuple):
+    """CRF layer to use during entity prediction."""
+
     label_name: Text
     ids_to_tags: Dict[int, Text]
     tags_to_ids: Dict[Text, int]
@@ -307,30 +309,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if crf_layers is not None:
             self._crf_layers = crf_layers
         else:
-            self._crf_layers = [
-                CRFLayer(
-                    label_name=ENTITY_ATTRIBUTE_TYPE,
-                    ids_to_tags={},
-                    tags_to_ids={},
-                    num_tags=0,
-                ),
-                CRFLayer(
-                    label_name=ENTITY_ATTRIBUTE_ROLE,
-                    ids_to_tags={},
-                    tags_to_ids={},
-                    num_tags=0,
-                ),
-                CRFLayer(
-                    label_name=ENTITY_ATTRIBUTE_GROUP,
-                    ids_to_tags={},
-                    tags_to_ids={},
-                    num_tags=0,
-                ),
-            ]
+            self._crf_layers = []
 
+        self._crf_layer_order = [
+            ENTITY_ATTRIBUTE_TYPE,
+            ENTITY_ATTRIBUTE_ROLE,
+            ENTITY_ATTRIBUTE_GROUP,
+        ]
         self.model = model
         self._label_data: Optional[RasaModelData] = None
-        self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
+        self._data_example: Optional[Dict[Text, List[np.ndarray]]] = None
 
     @property
     def label_key(self) -> Optional[Text]:
@@ -358,27 +346,27 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _invert_mapping(mapping: Dict) -> Dict:
         return {value: key for key, value in mapping.items()}
 
-    def _update_crf_layers(self, training_data: TrainingData) -> List[CRFLayer]:
-        """Create tag_id dictionaries for all CRFs."""
+    def _create_crf_layers(self, training_data: TrainingData) -> List[CRFLayer]:
+        """Create CRF layers with their respective tag id mappings."""
 
         _crf_layers = []
 
-        for crf_layer in self._crf_layers:
+        for label_name in self._crf_layer_order:
             if (
-                crf_layer.label_name == ENTITY_ATTRIBUTE_TYPE
+                label_name == ENTITY_ATTRIBUTE_TYPE
                 and self.component_config[BILOU_FLAG]
             ):
                 # If BILOU tagging is enabled use the BILOU format for the entity label
                 tag_id_index_mapping = bilou_utils.build_tag_id_dict(training_data)
             else:
                 tag_id_index_mapping = self._tag_id_index_mapping_for(
-                    crf_layer.label_name, training_data.entity_examples
+                    label_name, training_data.entity_examples
                 )
 
             if tag_id_index_mapping:
                 _crf_layers.append(
                     CRFLayer(
-                        label_name=crf_layer.label_name,
+                        label_name=label_name,
                         tags_to_ids=tag_id_index_mapping,
                         ids_to_tags=self._invert_mapping(tag_id_index_mapping),
                         num_tags=len(tag_id_index_mapping),
@@ -389,13 +377,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     @staticmethod
     def _tag_id_index_mapping_for(
-        attribute_key: Text, entities: List[Message]
+        attribute_key: Text, entity_examples: List[Message]
     ) -> Optional[Dict[Text, int]]:
         """Create mapping from tag name to id."""
         distinct_tags = (
             {
                 entity.get(attribute_key)
-                for example in entities
+                for example in entity_examples
                 for entity in example.get(ENTITIES)
             }
             - {None}
@@ -672,7 +660,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             training_data, label_id_index_mapping, attribute=INTENT
         )
 
-        self._crf_layers = self._update_crf_layers(training_data)
+        self._crf_layers = self._create_crf_layers(training_data)
 
         label_attribute = (
             INTENT if self.component_config[INTENT_CLASSIFICATION] else None
@@ -718,7 +706,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 return
 
         # keep one example for persisting and loading
-        self.data_example = model_data.first_data_example()
+        self._data_example = model_data.first_data_example()
 
         self.model = self.model_class()(
             data_signature=model_data.get_signature(),
@@ -830,7 +818,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return entities
 
     def _convert_tags_to_entities(
-        self, text: Text, tokens: List[Token], attribute_tags: Dict[Text, List[Text]]
+        self, text: Text, tokens: List[Token], predicted_tags: Dict[Text, List[Text]]
     ) -> List[Dict[Text, Any]]:
         entities = []
 
@@ -840,13 +828,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         for idx, token in enumerate(tokens):
             current_entity_tag = self._get_tags_for_attribute(
-                attribute_tags, ENTITY_ATTRIBUTE_TYPE, idx
+                predicted_tags, ENTITY_ATTRIBUTE_TYPE, idx
             )
             current_group_tag = self._get_tags_for_attribute(
-                attribute_tags, ENTITY_ATTRIBUTE_GROUP, idx
+                predicted_tags, ENTITY_ATTRIBUTE_GROUP, idx
             )
             current_role_tag = self._get_tags_for_attribute(
-                attribute_tags, ENTITY_ATTRIBUTE_ROLE, idx
+                predicted_tags, ENTITY_ATTRIBUTE_ROLE, idx
             )
 
             if current_entity_tag == NO_ENTITY_TAG:
@@ -859,15 +847,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 or last_group_tag != current_group_tag
                 or last_role_tag != current_role_tag
             ):
-                entity = {
-                    ENTITY_ATTRIBUTE_TYPE: current_entity_tag,
-                    ENTITY_ATTRIBUTE_START: token.start,
-                    ENTITY_ATTRIBUTE_END: token.end,
-                }
-                if ENTITY_ATTRIBUTE_ROLE in attribute_tags:
-                    entity[ENTITY_ATTRIBUTE_ROLE] = current_role_tag
-                if ENTITY_ATTRIBUTE_GROUP in attribute_tags:
-                    entity[ENTITY_ATTRIBUTE_GROUP] = current_group_tag
+                entity = self._create_new_entity(
+                    predicted_tags,
+                    current_entity_tag,
+                    current_group_tag,
+                    current_role_tag,
+                    token,
+                )
                 entities.append(entity)
 
             # belongs to last entity
@@ -888,6 +874,27 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ]
 
         return entities
+
+    def _create_new_entity(
+        self,
+        predicted_tags: Dict[Text, List[Text]],
+        entity_tag: Text,
+        group_tag: Text,
+        role_tag: Text,
+        token: Token,
+    ):
+        entity = {
+            ENTITY_ATTRIBUTE_TYPE: entity_tag,
+            ENTITY_ATTRIBUTE_START: token.start,
+            ENTITY_ATTRIBUTE_END: token.end,
+        }
+
+        if ENTITY_ATTRIBUTE_ROLE in predicted_tags:
+            entity[ENTITY_ATTRIBUTE_ROLE] = role_tag
+        if ENTITY_ATTRIBUTE_GROUP in predicted_tags:
+            entity[ENTITY_ATTRIBUTE_GROUP] = group_tag
+
+        return entity
 
     @staticmethod
     def _get_tags_for_attribute(
@@ -930,7 +937,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.model.save(str(tf_model_file))
 
         io_utils.pickle_dump(
-            model_dir / f"{file_name}.data_example.pkl", self.data_example
+            model_dir / f"{file_name}.data_example.pkl", self._data_example
         )
         io_utils.pickle_dump(
             model_dir / f"{file_name}.label_data.pkl", self._label_data
