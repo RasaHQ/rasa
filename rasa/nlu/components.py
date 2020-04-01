@@ -4,7 +4,11 @@ import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
 from rasa.constants import DOCS_URL_MIGRATION_GUIDE
-from rasa.nlu.constants import TRAINABLE_EXTRACTORS
+from rasa.nlu.constants import (
+    TRAINABLE_EXTRACTORS,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_GROUP,
+)
 from rasa.nlu.config import RasaNLUModelConfig, override_defaults, InvalidConfigError
 from rasa.nlu.training_data import Message, TrainingData
 from rasa.utils.common import raise_warning
@@ -223,6 +227,23 @@ def validate_required_components_from_data(
             "your training data. To extract non-pretrained entities, add one of "
             f"{TRAINABLE_EXTRACTORS} to your pipeline."
         )
+
+    if data.entity_examples and not any_components_in_pipeline(
+        {"DIETClassifier"}, pipeline
+    ):
+        composite_entities_used = False
+        for example in data.entity_examples:
+            for entity in example.get("entities"):
+                if ENTITY_ATTRIBUTE_ROLE in entity or ENTITY_ATTRIBUTE_GROUP in entity:
+                    composite_entities_used = True
+                    break
+        if composite_entities_used:
+            raise_warning(
+                "You have defined training data with composite entities, but "
+                "your NLU pipeline does not include a 'DIETClassifier'. "
+                "To train composite entities, include 'DIETClassifier' in your "
+                "pipeline."
+            )
 
     if data.regex_features and not any_components_in_pipeline(
         ["RegexFeaturizer"], pipeline

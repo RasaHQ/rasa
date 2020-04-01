@@ -40,7 +40,7 @@ available_sections = [INTENT, SYNONYM, REGEX, LOOKUP]
 
 # regex for: `[entity_text]((entity_type(:entity_synonym)?)|{entity_dict})`
 entity_regex = re.compile(
-    r"\[(?P<entity_text>[^\]]+)\](\((?P<entity>[^:)]*?)(?:\:(?P<value>[^)]+))?\)|\{(?P<entity_dict>[^}]*?)\})"
+    r"\[(?P<entity_text>[^\]]+?)\](\((?P<entity>[^:)]+?)(?:\:(?P<value>[^)]+))?\)|\{(?P<entity_dict>[^}]+?)\})"
 )
 item_regex = re.compile(r"\s*[-*+]\s*(.+)")
 comment_regex = re.compile(r"<!--[\s\S]*?--!*>", re.MULTILINE)
@@ -91,6 +91,7 @@ class MarkdownReader(TrainingDataReader):
         from rasa.nlu.training_data import TrainingData
 
         self.__init__()
+
         s = self._strip_comments(s)
         for line in s.splitlines():
             line = line.strip()
@@ -395,7 +396,7 @@ class MarkdownWriter(TrainingDataWriter):
         md = ""
         # regex features are already sorted
         lookup_tables = training_data.lookup_tables
-        for i, lookup_table in enumerate(lookup_tables):
+        for lookup_table in lookup_tables:
             md += self._generate_section_header_md(LOOKUP, lookup_table["name"])
             elements = lookup_table["elements"]
             if isinstance(elements, list):
