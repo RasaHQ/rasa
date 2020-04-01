@@ -796,16 +796,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if predict_out is None:
             return []
 
-        predicted_tags = {}
-        for crf_layer in self._crf_layers:
-            predictions = predict_out[f"e_{crf_layer.label_name}_ids"].numpy()
-            tags = [crf_layer.ids_to_tags[p] for p in predictions[0]]
-            if (
-                crf_layer.label_name == ENTITY_ATTRIBUTE_TYPE
-                and self.component_config[BILOU_FLAG]
-            ):
-                tags = bilou_utils.remove_bilou_prefixes(tags)
-            predicted_tags[crf_layer.label_name] = tags
+        predicted_tags = self._entity_label_to_tags(predict_out)
 
         entities = self._convert_tags_to_entities(
             message.text, message.get(TOKENS_NAMES[TEXT], []), predicted_tags
@@ -816,6 +807,25 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         entities = message.get(ENTITIES, []) + entities
 
         return entities
+
+    def _entity_label_to_tags(
+        self, predict_out: Dict[Text, Any]
+    ) -> Dict[Text, List[Text]]:
+        predicted_tags = {}
+
+        for crf_layer in self._crf_layers:
+            predictions = predict_out[f"e_{crf_layer.label_name}_ids"].numpy()
+            tags = [crf_layer.ids_to_tags[p] for p in predictions[0]]
+
+            if (
+                crf_layer.label_name == ENTITY_ATTRIBUTE_TYPE
+                and self.component_config[BILOU_FLAG]
+            ):
+                tags = bilou_utils.remove_bilou_prefixes(tags)
+
+            predicted_tags[crf_layer.label_name] = tags
+
+        return predicted_tags
 
     def _convert_tags_to_entities(
         self, text: Text, tokens: List[Token], predicted_tags: Dict[Text, List[Text]]
