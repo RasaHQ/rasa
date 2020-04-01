@@ -255,7 +255,7 @@ class DialogueStateTracker:
             entity_group: optional entity group of interest
 
         Returns:
-            List of entity values.
+            Entity values.
         """
 
         return (
