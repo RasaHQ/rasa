@@ -127,7 +127,7 @@ Composite entities allow you to assign a role and/or a group label in addition t
     - I want to fly from [Berlin]{"entity": "city", "role": "departure"} to [San Francisco]{"entity": "city", "role": "destination"}.
 
 The group label can, for example, be used to define different orders.
-In the following example we use the group label to reference what toppings goes with which pizze and
+In the following example we use the group label to reference what toppings goes with which pizza and
 what size which pizza has.
 
 .. code-block:: none
