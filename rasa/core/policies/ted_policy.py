@@ -241,7 +241,7 @@ class TEDPolicy(Policy):
     def _label_features_for_Y(self, label_ids: np.ndarray) -> np.ndarray:
         """Prepare Y data for training: features for label_ids."""
 
-        all_label_features = self._label_data.get(LABEL_FEATURES)[0]
+        all_label_features = self._label_data.get(LABEL_FEATURES)
 
         is_full_dialogue_featurizer_used = len(label_ids.shape) == 2
         if is_full_dialogue_featurizer_used:
@@ -254,8 +254,21 @@ class TEDPolicy(Policy):
                 ]
             )
 
+        if len(all_label_features) == 2:
+            Y_sparse = np.stack([all_label_features[0][label_idx] for label_idx in label_ids])
+            Y_dense = np.stack([all_label_features[1][label_idx] for label_idx in label_ids])
+        elif len(all_label_features) == 1:
+            if isinstance(all_label_features[0], scipy.sparse.spmatrix):
+                Y_sparse = np.stack([all_label_features[0][label_idx] for label_idx in label_ids])
+                Y_dense = np.array([])
+            elif isinstance(all_label_features[0], np.ndarray):
+                Y_sparse = np.array([])
+                Y_dense = np.stack([all_label_features[1][label_idx] for label_idx in label_ids])
+
+
+
         # max history featurizer is used
-        return np.stack([all_label_features[label_idx] for label_idx in label_ids])
+        return Y_sparse, Y_dense
 
     # noinspection PyPep8Naming
     def _create_model_data(
@@ -264,12 +277,12 @@ class TEDPolicy(Policy):
         """Combine all model related data into RasaModelData."""
 
         label_ids = np.array([])
-        Y = np.array([])
+        Y_sparse, Y_dense = np.array([]), np.array([])
 
         if data_Y is not None:
             # label_ids = self._label_ids_for_Y(data_Y)
             label_ids = np.squeeze(data_Y, axis=-1)
-            Y = self._label_features_for_Y(label_ids)
+            Y_sparse, Y_dense = self._label_features_for_Y(label_ids)
             # explicitly add last dimension to label_ids
             # to track correctly dynamic sequences
             label_ids = np.expand_dims(label_ids, -1)
@@ -280,13 +293,23 @@ class TEDPolicy(Policy):
         X_dense = []
 
         for dial in data_X:
-            sparse_state = scipy.sparse.vstack([state[0].tocsr().astype(np.float32) for state in dial])
-            # dense_state = np.vstack([state[1] for state in dial])
+            sparse_state = []
+            dense_state = []
+            for state in dial:
+                if state[0] is not None:
+                    sparse_state.append(state[0].astype(np.float32))
+                if state[1] is not None:
+                    dense_state.append(state[1])
+
+            if not sparse_state == []:
+                sparse_state = scipy.sparse.vstack(sparse_state)
+            if not dense_state == []:
+                dense_state = np.vstack(dense_state)
             X_sparse.append(sparse_state)
-            # X_dense.append(dense_state)
-        
+            X_dense.append(dense_state)
+
         model_data.add_features(DIALOGUE_FEATURES, [np.array(X_sparse), np.array(X_dense)])
-        model_data.add_features(LABEL_FEATURES, [Y])
+        model_data.add_features(LABEL_FEATURES, [Y_sparse, Y_dense])
         model_data.add_features(LABEL_IDS, [label_ids])
         if dialog_lengths is not None: 
             model_data.add_features('dialog_lengths', [dialog_lengths])
@@ -296,9 +319,9 @@ class TEDPolicy(Policy):
         sparse_features = []
         dense_features = []
         for feats in labels_example:
-            if feats[0] is not None:
+            if not feats[0] is None:
                 sparse_features.append(feats[0].tocsr().astype(np.float32))
-            if feats[1] is not None:
+            if not feats[1] is None:
                 dense_features.append(feats[1])
 
         sparse_features = scipy.sparse.vstack(sparse_features)
@@ -338,7 +361,6 @@ class TEDPolicy(Policy):
         )
 
         self._label_data = self._create_label_data(domain)
-        # self._label_data = self._create_label_data_e2e(label_data)
 
         # extract actual training data to feed to model
         model_data = self._create_model_data(training_data.X, np.array(training_data.true_length), training_data.y)
@@ -571,7 +593,8 @@ class TED(RasaModel):
                 dense = True
                 # if dense features are present
                 # use the feature dimension of the dense features
-                dense_dim = shape[-1]
+                # dense_dim = shape[-1]
+                dense_dim = dense_dim
 
         if sparse:
             self._tf_layers[f"sparse_to_dense.{name}"] = layers.DenseForSparse(
@@ -613,7 +636,7 @@ class TED(RasaModel):
             self.data_signature["label_features"],
             "label_features",
             self.config[REGULARIZATION_CONSTANT],
-            sparse_dim_label_features,
+            self.data_signature["label_features"][0][1][-1],
         )
 
         self._tf_layers[f"ffnn.{DIALOGUE}"] = layers.Ffnn(
@@ -670,8 +693,6 @@ class TED(RasaModel):
     def _emebed_dialogue(self, dialogue_in: tf.Tensor, sequence_lengths) -> Tuple[tf.Tensor, tf.Tensor]:
         """Create dialogue level embedding and mask."""
 
-        # sequence_lengths = sequence_lengths - 1
-
         # mask different length sequences
         # if there is at least one `-1` it should be masked
 
@@ -690,11 +711,8 @@ class TED(RasaModel):
         if self.max_history_tracker_featurizer_used:
             # pick last label if max history featurizer is used
             # dialogue_transformed = dialogue_transformed[:, -1:, :]
-            # mask = self._last_token(mask, sequence_lengths)
-            # mask = mask[:, -1:]
             dialogue_transformed = self._last_token(dialogue_transformed, sequence_lengths)
             mask = self._last_token(mask, sequence_lengths)
-            # tf.print('LAST TOKEN')
             
 
         dialogue_embed = self._tf_layers[f"embed.{DIALOGUE}"](dialogue_transformed)
@@ -714,14 +732,37 @@ class TED(RasaModel):
         indices = tf.stack([batch_index, last_sequence_index], axis=1)
         return tf.expand_dims(tf.gather_nd(x, indices), 1)
 
+
+    def _combine_sparse_dense_features(
+        self,
+        features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]],
+        name: Text,
+        sparse_dropout: bool = False,
+    ) -> tf.Tensor:
+
+        dense_features = []
+
+        for f in features:
+            if isinstance(f, tf.SparseTensor):
+                if sparse_dropout:
+                    _f = self._tf_layers[f"sparse_dropout.{name}"](f, self._training)
+                else:
+                    _f = f
+                dense_features.append(self._tf_layers[f"sparse_to_dense.{name}"](_f))
+            else:
+                dense_features.append(f)
+
+        return tf.concat(dense_features, axis=-1)
+
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
         batch = self.batch_to_model_data_format(batch_in, self.data_signature)
         sequence_lengths = tf.cast(tf.squeeze(batch['dialog_lengths'], axis=0), tf.int32)
 
-        dialogue_in = batch[DIALOGUE_FEATURES][0]
         label_in = batch[LABEL_FEATURES][0]
+
+        dialogue_in  = self._combine_sparse_dense_features(batch[DIALOGUE_FEATURES], DIALOGUE_FEATURES)
 
         if isinstance(label_in, tf.SparseTensor):
             label_in = self._tf_layers["sparse_to_dense.label_features"](label_in)
@@ -749,7 +790,8 @@ class TED(RasaModel):
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> Dict[Text, tf.Tensor]:
         batch = self.batch_to_model_data_format(batch_in, self.predict_data_signature)
-        dialogue_in = batch[DIALOGUE_FEATURES][0]
+
+        dialogue_in  = self._combine_sparse_dense_features(batch[DIALOGUE_FEATURES], DIALOGUE_FEATURES)
 
         sequence_lengths = tf.expand_dims(tf.shape(dialogue_in)[1], axis=0)
 
