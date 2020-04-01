@@ -166,7 +166,7 @@ The entity object returned by the extractor will include the detected role/group
 
 .. note::
 
-    Composite entities are currently only supported by the ``DIETClassifier``.
+    Composite entities are currently only supported by the :ref:``diet-classifier``.
 
 In order to properly train your model with composite entities, make sure to include enough training data examples
 for every combination of entity and role/group label.

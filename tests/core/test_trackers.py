@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import tempfile
-from typing import List
+from typing import List, Text, Dict, Any
 
 import fakeredis
 import pytest
@@ -207,7 +207,7 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
 
 
 @pytest.mark.parametrize(
-    "entities, expected_value",
+    "entities, expected_values",
     [
         ([{"value": "greet", "entity": "entity_name"}], ["greet"]),
         (
@@ -247,7 +247,9 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
         ),
     ],
 )
-def test_tracker_entity_retrieval(entities, expected_value, default_domain: Domain):
+def test_get_latest_entity_values(
+    entities: List[Dict[Text, Any]], expected_values: List[Text], default_domain: Domain
+):
     entity_type = entities[0].get("entity")
     entity_role = entities[0].get("role")
     entity_group = entities[0].get("group")
@@ -266,7 +268,7 @@ def test_tracker_entity_retrieval(entities, expected_value, default_domain: Doma
                 entity_type, entity_role=entity_role, entity_group=entity_group
             )
         )
-        == expected_value
+        == expected_values
     )
     assert list(tracker.get_latest_entity_values("unknown")) == []
 
