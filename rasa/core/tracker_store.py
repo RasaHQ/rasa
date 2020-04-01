@@ -36,10 +36,14 @@ import rasa.cli.utils as rasa_cli_utils
 from rasa.utils.common import class_from_module_path, raise_warning, arguments_of
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
-import sqlalchemy.orm as sa_orm
 
 if TYPE_CHECKING:
     import boto3.resources.factory.dynamodb.Table
+    from sqlalchemy.engine.url import URL
+    from sqlalchemy.engine.base import Engine
+    from sqlalchemy.orm.session import Session
+    from sqlalchemy import Sequence
+    from sqlalchemy.orm.query import Query
 
 logger = logging.getLogger(__name__)
 
@@ -545,7 +549,7 @@ class MongoTrackerStore(TrackerStore):
         return [c["sender_id"] for c in self.conversations.find()]
 
 
-def _create_sequence(table_name: Text) -> sa.Sequence:
+def _create_sequence(table_name: Text) -> "Sequence":
     """Creates a sequence object for a specific table name.
 
     If using Oracle you will need to create a sequence in your database,
@@ -563,7 +567,7 @@ def _create_sequence(table_name: Text) -> sa.Sequence:
     return sa.Sequence(sequence_name, metadata=Base.metadata, optional=True)
 
 
-def is_postgresql_url(url: Union[Text, sa.engine.url.URL]) -> bool:
+def is_postgresql_url(url: Union[Text, "URL"]) -> bool:
     """Determine whether `url` configures a PostgreSQL connection.
 
     Args:
@@ -578,9 +582,7 @@ def is_postgresql_url(url: Union[Text, sa.engine.url.URL]) -> bool:
     return url.drivername == "postgresql"
 
 
-def create_engine_kwargs(
-    url: Union[Text, sa.engine.url.URL]
-) -> Dict[Text, Union[Text, int]]:
+def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Union[Text, int]]:
     """Get `sqlalchemy.create_engine()` kwargs.
 
     Args:
@@ -614,7 +616,7 @@ def create_engine_kwargs(
     return kwargs
 
 
-def ensure_schema_exists(session: sa_orm.session.Session) -> None:
+def ensure_schema_exists(session: "Session") -> None:
     """Ensure that the requested PostgreSQL schema exists in the database.
 
     Args:
@@ -685,7 +687,7 @@ class SQLTrackerStore(TrackerStore):
         # Database might take a while to come up
         while True:
             try:
-                self.engine = sa.create_engine(
+                self.engine = sa.engine.create_engine(
                     engine_url, **create_engine_kwargs(engine_url),
                 )
                 # if `login_db` has been provided, use current channel with
@@ -704,7 +706,7 @@ class SQLTrackerStore(TrackerStore):
                     # the first services finishes the table creation.
                     logger.error(f"Could not create tables: {e}")
 
-                self.sessionmaker = sa_orm.sessionmaker(bind=self.engine)
+                self.sessionmaker = sa.orm.session.sessionmaker(bind=self.engine)
                 break
             except (
                 sqlalchemy.exc.OperationalError,
@@ -728,7 +730,7 @@ class SQLTrackerStore(TrackerStore):
         password: Text = None,
         login_db: Optional[Text] = None,
         query: Optional[Dict] = None,
-    ) -> Union[Text, sa.engine.url.URL]:
+    ) -> Union[Text, "URL"]:
         """Build an SQLAlchemy `URL` object representing the parameters needed
         to connect to an SQL database.
 
@@ -772,9 +774,7 @@ class SQLTrackerStore(TrackerStore):
             query=query,
         )
 
-    def _create_database_and_update_engine(
-        self, db: Text, engine_url: sa.engine.url.URL
-    ):
+    def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):
         """Create databse `db` and update engine to reflect the updated `engine_url`."""
 
         from sqlalchemy import create_engine
@@ -784,7 +784,7 @@ class SQLTrackerStore(TrackerStore):
         self.engine = create_engine(engine_url)
 
     @staticmethod
-    def _create_database(engine: sa.engine.base.Engine, db: Text):
+    def _create_database(engine: "Engine", db: Text):
         """Create database `db` on `engine` if it does not exist."""
 
         import psycopg2
@@ -849,9 +849,7 @@ class SQLTrackerStore(TrackerStore):
                 )
                 return None
 
-    def _event_query(
-        self, session: sa_orm.session.Session, sender_id: Text
-    ) -> sa_orm.query.Query:
+    def _event_query(self, session: "Session", sender_id: Text) -> "Query":
         """Provide the query to retrieve the conversation events for a specific sender.
 
         Args:
@@ -917,7 +915,7 @@ class SQLTrackerStore(TrackerStore):
         logger.debug(f"Tracker with sender_id '{tracker.sender_id}' stored to database")
 
     def _additional_events(
-        self, session: sa_orm.session.Session, tracker: DialogueStateTracker
+        self, session: "Session", tracker: DialogueStateTracker
     ) -> Iterator:
         """Return events from the tracker which aren't currently stored."""
 

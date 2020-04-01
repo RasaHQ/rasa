@@ -5,7 +5,7 @@ accesses schemas defined by the ``POSTGRESQL_SCHEMA`` environment variable if
 connected to a PostgreSQL database.
 
 The schema is added to the connection string option's ``-csearch_path`` key, e.g.
-``options=-csearch_path=<SCHEMA_NAME>`` (see
+``-options=-csearch_path=<SCHEMA_NAME>`` (see
 https://www.postgresql.org/docs/11/contrib-dblink-connect.html for more details). As
 before, if no ``POSTGRESQL_SCHEMA`` is defined, Rasa uses the database's default
 schema (``public``).
