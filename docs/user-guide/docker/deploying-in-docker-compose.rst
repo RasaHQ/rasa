@@ -172,14 +172,14 @@ To create your image:
          # Use subdirectory as working directory
          WORKDIR /app
 
-         # Copy any additional custom requirements
-         COPY actions/requirements-actions.txt ./
+         # Copy any additional custom requirements, if necessary (uncomment next line)
+         # COPY actions/requirements-actions.txt ./
 
          # Change back to root user to install dependencies
          USER root
 
-         # Install extra requirements for actions code, if necessary (otherwise comment this out)
-         RUN pip install -r requirements-actions.txt
+         # Install extra requirements for actions code, if necessary (uncomment next line)
+         # RUN pip install -r requirements-actions.txt
 
          # Copy actions folder to working directory
          COPY ./actions /app/actions
