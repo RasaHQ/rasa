@@ -1,18 +1,14 @@
-import asyncio
 import os
 import random
 import uuid
 
-from sanic.request import Request
 from sanic.testing import SanicTestClient
-
-from typing import Tuple, Iterator
 
 import pytest
 from _pytest.tmpdir import TempdirFactory
 from pathlib import Path
 from sanic import Sanic
-from typing import Text, List, Optional, Dict, Any
+from typing import Text, List, Optional, Dict, Any, Tuple
 from unittest.mock import Mock
 
 from rasa import server

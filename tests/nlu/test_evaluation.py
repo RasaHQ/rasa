@@ -1,5 +1,4 @@
-from sanic.request import Request
-from typing import Text, Iterator
+from typing import Text
 
 import asyncio
 

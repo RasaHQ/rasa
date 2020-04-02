@@ -1,8 +1,6 @@
 import json
 import logging
 
-import pytest
-
 from rasa.core import utils
 
 logger = logging.getLogger(__name__)
